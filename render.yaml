@@ -9,22 +9,24 @@ services:
         sync: false # set manually — paste your Neon connection string
       - key: JWT_SECRET
         generateValue: true # Render generates a random secret for you
+      - key: API_KEY_ENCRYPTION_SECRET
+        sync: false # set manually — generate with: openssl rand -hex 32
       - key: PORT
         value: 3000
       - key: ALLOWED_ORIGINS
         sync: false # set manually to your frontend's Render URL once you have it
       - key: REGISTRATION_OPEN
         value: "true"
-      - key: ETHEREUM_RPC_URL
-        sync: false # optional — only needed if you want deposits working
-      - key: ETHEREUM_TREASURY_ADDRESS
-        sync: false
-      - key: ETHEREUM_MIN_CONFIRMATIONS
-        value: 12
-      - key: ETHEREUM_NATIVE_ASSET
-        value: ETH
-      - key: ETHEREUM_TOKENS
-        sync: false
+      - key: BITCOIN_TREASURY_ADDRESS
+        sync: false # optional — only needed if you want Bitcoin deposits working; your own wallet address (e.g. Trust Wallet)
+      - key: BITCOIN_NATIVE_ASSET
+        value: BTC
+      - key: TRON_TREASURY_ADDRESS
+        sync: false # optional — only needed if you want USDT-TRC20 deposits working; your own wallet address (e.g. Trust Wallet)
+      - key: TRON_NATIVE_ASSET
+        value: TRX
+      - key: TRON_TOKENS
+        value: "USDT:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t:6"
 
   - type: web
     name: exchange-frontend
