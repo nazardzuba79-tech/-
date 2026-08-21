@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 interface Order {
   id: string;
@@ -13,14 +14,14 @@ interface Order {
   createdAt: string;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  OPEN: 'Відкритий',
-  PARTIALLY_FILLED: 'Частково виконано',
-  FILLED: 'Виконано',
-  CANCELLED: 'Скасовано',
-};
-
 export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
+  const { t } = useLanguage();
+  const STATUS_LABEL: Record<string, string> = {
+    OPEN: t('trade.status.OPEN'),
+    PARTIALLY_FILLED: t('trade.status.PARTIALLY_FILLED'),
+    FILLED: t('trade.status.FILLED'),
+    CANCELLED: t('trade.status.CANCELLED'),
+  };
   const [orders, setOrders] = useState<Order[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +43,7 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
       await api.cancelOrder(orderId);
       load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось скасувати ордер');
+      setError(err instanceof ApiError ? err.message : t('trade.cancelOrderError'));
     } finally {
       setCancellingId(null);
     }
@@ -52,29 +53,29 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
 
   return (
     <div style={styles.panel}>
-      <div style={styles.header}>Мої ордери ({pair})</div>
+      <div style={styles.header}>{t('trade.myOrders')} ({pair})</div>
       {error && <div style={styles.error}>{error}</div>}
       <div style={styles.columns}>
-        <span>Сторона</span>
-        <span>Ціна</span>
-        <span>Залишок</span>
-        <span>Статус</span>
+        <span>{t('trade.side')}</span>
+        <span>{t('trade.price')}</span>
+        <span>{t('trade.remaining')}</span>
+        <span>{t('trade.status')}</span>
         <span></span>
       </div>
       <div style={styles.rows}>
         {pairOrders.map((o) => (
           <div key={o.id} style={styles.row}>
             <span className={o.side === 'BUY' ? 'text-buy' : 'text-sell'} style={{ fontWeight: 600 }}>
-              {o.side === 'BUY' ? 'Купівля' : 'Продаж'}
+              {o.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
             </span>
-            <span className="mono">{o.price ? parseFloat(o.price).toFixed(2) : 'Ринок'}</span>
+            <span className="mono">{o.price ? parseFloat(o.price).toFixed(2) : t('trade.market')}</span>
             <span className="mono">
               {parseFloat(o.remainingQuantity).toFixed(5)} / {parseFloat(o.originalQuantity).toFixed(5)}
             </span>
             <span style={{ color: 'var(--text-secondary)' }}>{STATUS_LABEL[o.status] ?? o.status}</span>
             {(o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED') ? (
               <button onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id} style={styles.cancelBtn}>
-                {cancellingId === o.id ? '...' : 'Скасувати'}
+                {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
               </button>
             ) : (
               <span />
@@ -82,7 +83,7 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
           </div>
         ))}
         {pairOrders.length === 0 && (
-          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Ще немає ордерів по цій парі.</p>
+          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noOrdersForPair')}</p>
         )}
       </div>
     </div>

@@ -18,12 +18,12 @@ import { adminRouter } from './api/routes/admin';
 import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
 import { recoverOrderBook } from './services/OrderBookRecovery';
-import { BybitMarketDataService } from './services/BybitMarketDataService';
+import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 
 const app = express();
 const prisma = new PrismaClient();
 const engine = new MatchingEngine();
-const marketDataService = new BybitMarketDataService(process.env.BYBIT_API_BASE_URL || 'https://api.bybit.com');
+const marketDataService = new KrakenMarketDataService(process.env.KRAKEN_API_BASE_URL || 'https://api.kraken.com');
 
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));

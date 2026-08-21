@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 interface Stats {
   lastPrice: number;
@@ -9,15 +10,16 @@ interface Stats {
   volume24h: number;
 }
 
-/** Bybit-style stats strip: last price + 24h change/high/low/volume, derived from our own trade candles. */
+/** Bybit-style stats strip: last price + 24h change/high/low/volume, mirrored from Kraken (real market data — our own internal trade history is too thin for this). */
 export function TickerBar({ pair }: { pair: string }) {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     function load() {
       api
-        .getCandles(pair, '1h', 24)
+        .getExternalCandles(pair, '1h', 24)
         .then((res) => {
           if (cancelled) return;
           if (res.candles.length === 0) return setStats(null);
@@ -57,10 +59,10 @@ export function TickerBar({ pair }: { pair: string }) {
         </span>
       </div>
 
-      <Stat label="Зміна 24г" value={stats ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'} color={stats ? (positive ? 'var(--buy)' : 'var(--sell)') : undefined} />
-      <Stat label="Максимум 24г" value={stats ? stats.high24h.toFixed(2) : '—'} />
-      <Stat label="Мінімум 24г" value={stats ? stats.low24h.toFixed(2) : '—'} />
-      <Stat label="Обсяг 24г" value={stats ? stats.volume24h.toFixed(4) : '—'} />
+      <Stat label={t('trade.change24h')} value={stats ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'} color={stats ? (positive ? 'var(--buy)' : 'var(--sell)') : undefined} />
+      <Stat label={t('trade.high24h')} value={stats ? stats.high24h.toFixed(2) : '—'} />
+      <Stat label={t('trade.low24h')} value={stats ? stats.low24h.toFixed(2) : '—'} />
+      <Stat label={t('trade.volume24h')} value={stats ? stats.volume24h.toFixed(4) : '—'} />
     </div>
   );
 }

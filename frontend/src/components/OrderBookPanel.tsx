@@ -1,3 +1,5 @@
+import { useLanguage } from '../lib/i18n';
+
 interface Level {
   price: string;
   quantity: string;
@@ -5,6 +7,7 @@ interface Level {
 }
 
 export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] }) {
+  const { t } = useLanguage();
   const maxQty = Math.max(
     ...bids.map((b) => parseFloat(b.quantity)),
     ...asks.map((a) => parseFloat(a.quantity)),
@@ -14,8 +17,8 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
   return (
     <div style={styles.panel}>
       <div style={styles.columnLabels}>
-        <span>Ціна</span>
-        <span style={{ textAlign: 'right' }}>Кількість</span>
+        <span>{t('trade.price')}</span>
+        <span style={{ textAlign: 'right' }}>{t('trade.quantity')}</span>
       </div>
 
       <div style={styles.rows}>
@@ -29,7 +32,7 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
 
       <div style={styles.spread}>
         {asks[0] && bids[0]
-          ? `Спред: ${(parseFloat(asks[0].price) - parseFloat(bids[0].price)).toFixed(2)}`
+          ? `${t('trade.spread')}: ${(parseFloat(asks[0].price) - parseFloat(bids[0].price)).toFixed(2)}`
           : '—'}
       </div>
 

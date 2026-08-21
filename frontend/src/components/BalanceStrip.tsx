@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 export function BalanceStrip() {
+  const { t } = useLanguage();
   const [balances, setBalances] = useState<{ asset: string; available: string }[]>([]);
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export function BalanceStrip() {
   }, []);
 
   if (balances.length === 0) {
-    return <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Баланс: 0</span>;
+    return <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('balance.zero')}</span>;
   }
 
   return (

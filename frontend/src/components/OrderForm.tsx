@@ -1,7 +1,9 @@
 import { useState, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => void }) {
+  const { t } = useLanguage();
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -20,7 +22,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       setQuantity('');
       onPlaced();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось розмістити ордер');
+      setError(err instanceof ApiError ? err.message : t('trade.placeOrderError'));
     } finally {
       setSubmitting(false);
     }
@@ -34,20 +36,20 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
           onClick={() => setSide('BUY')}
           style={{ ...styles.sideTab, ...(side === 'BUY' ? styles.sideTabBuy : {}) }}
         >
-          Купити
+          {t('trade.buy')}
         </button>
         <button
           type="button"
           onClick={() => setSide('SELL')}
           style={{ ...styles.sideTab, ...(side === 'SELL' ? styles.sideTabSell : {}) }}
         >
-          Продати
+          {t('trade.sell')}
         </button>
       </div>
 
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
-          Ціна
+          {t('trade.price')}
           <input
             className="mono"
             type="number"
@@ -60,7 +62,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
           />
         </label>
         <label style={styles.label}>
-          Кількість
+          {t('trade.quantity')}
           <input
             className="mono"
             type="number"
@@ -74,7 +76,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
         </label>
 
         <div style={styles.total}>
-          <span style={{ color: 'var(--text-secondary)' }}>Разом</span>
+          <span style={{ color: 'var(--text-secondary)' }}>{t('trade.total')}</span>
           <span className="mono">{total}</span>
         </div>
 
@@ -88,7 +90,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
             background: side === 'BUY' ? 'var(--buy)' : 'var(--sell)',
           }}
         >
-          {submitting ? 'Зачекай...' : side === 'BUY' ? 'Купити' : 'Продати'}
+          {submitting ? t('auth.wait') : side === 'BUY' ? t('trade.buy') : t('trade.sell')}
         </button>
       </form>
     </div>

@@ -1,20 +1,15 @@
 import { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearToken } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { BalanceStrip } from './BalanceStrip';
 import { Logo } from './Logo';
-
-const LINKS = [
-  { to: '/trade', label: 'Торгівля' },
-  { to: '/markets', label: 'Ринки' },
-  { to: '/products', label: 'Товари' },
-];
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
  * extra content right after the nav links (e.g. the trade page's pair
  * label); `rightExtra` renders a button before the balance/settings/logout
- * cluster (e.g. the trade page's "Поповнити" button).
+ * cluster (e.g. the trade page's deposit button).
  */
 export function Nav({
   active,
@@ -26,6 +21,13 @@ export function Nav({
   rightExtra?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const { t, lang, setLang } = useLanguage();
+
+  const LINKS = [
+    { to: '/trade', label: t('nav.trade') },
+    { to: '/markets', label: t('nav.markets') },
+    { to: '/products', label: t('nav.products') },
+  ];
 
   function handleLogout() {
     clearToken();
@@ -47,17 +49,31 @@ export function Nav({
         style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
       >
         <CardIcon active={active === '/card'} />
-        Картка
+        {t('nav.card')}
       </Link>
       {middle}
       <div style={styles.right}>
         <BalanceStrip />
         {rightExtra}
-        <Link to="/settings" style={styles.settingsLink} title="Налаштування" aria-label="Налаштування">
+        <div style={styles.langSwitch}>
+          <button
+            onClick={() => setLang('ru')}
+            style={{ ...styles.langBtn, ...(lang === 'ru' ? styles.langBtnActive : {}) }}
+          >
+            RU
+          </button>
+          <button
+            onClick={() => setLang('en')}
+            style={{ ...styles.langBtn, ...(lang === 'en' ? styles.langBtnActive : {}) }}
+          >
+            EN
+          </button>
+        </div>
+        <Link to="/settings" style={styles.settingsLink} title={t('nav.settings')} aria-label={t('nav.settings')}>
           <GearIcon active={active === '/settings'} />
         </Link>
         <button onClick={handleLogout} style={styles.logoutBtn}>
-          Вийти
+          {t('nav.logout')}
         </button>
       </div>
     </nav>
@@ -134,6 +150,26 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 18,
+  },
+  langSwitch: {
+    display: 'flex',
+    gap: 2,
+    background: 'var(--panel-alt)',
+    borderRadius: 4,
+    padding: 2,
+  },
+  langBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    borderRadius: 3,
+    padding: '4px 8px',
+    fontSize: 11,
+    fontWeight: 700,
+  },
+  langBtnActive: {
+    background: 'var(--panel)',
+    color: 'var(--text-primary)',
   },
   settingsLink: {
     display: 'flex',

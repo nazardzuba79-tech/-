@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 
@@ -15,12 +16,13 @@ interface Ticker {
 }
 
 /**
- * Read-only mirror of Bybit spot market data: every tradable pair, its live
+ * Read-only mirror of Kraken spot market data: every tradable pair, its live
  * price, and (for the pair you select) live order book depth. Purely
- * informational — nothing here touches our own matching engine or Bybit
- * itself, see BybitMarketDataService for the source.
+ * informational — nothing here touches our own matching engine or Kraken
+ * itself, see KrakenMarketDataService for the source.
  */
 export function MarketsPage() {
+  const { t, lang } = useLanguage();
   const [tickers, setTickers] = useState<Ticker[]>([]);
   const [search, setSearch] = useState('');
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function MarketsPage() {
           setError(null);
           setSelectedPair((current) => current ?? res.tickers[0]?.pair ?? null);
         })
-        .catch(() => setError('Не вдалось завантажити дані з Bybit'));
+        .catch(() => setError(t('markets.loadError')));
     }
     refreshTickers();
     const interval = setInterval(refreshTickers, 5000);
@@ -72,9 +74,9 @@ export function MarketsPage() {
 
       <main style={styles.main}>
         <div style={styles.headerRow}>
-          <h1 style={styles.title}>Ринки (дзеркало Bybit)</h1>
+          <h1 style={styles.title}>{t('markets.title')}</h1>
           <input
-            placeholder="Пошук пари, напр. BTC"
+            placeholder={t('markets.searchPair')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.search}
@@ -86,29 +88,29 @@ export function MarketsPage() {
         <div style={styles.grid}>
           <div style={styles.listPanel}>
             <div style={styles.listHeader}>
-              <span>Пара</span>
-              <span style={{ textAlign: 'right' }}>Ціна</span>
-              <span style={{ textAlign: 'right' }}>24г %</span>
-              <span style={{ textAlign: 'right' }}>24г максимум</span>
-              <span style={{ textAlign: 'right' }}>24г мінімум</span>
-              <span style={{ textAlign: 'right' }}>Обсяг (24г)</span>
+              <span>{t('markets.pair')}</span>
+              <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
+              <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+              <span style={{ textAlign: 'right' }}>{t('markets.high24h')}</span>
+              <span style={{ textAlign: 'right' }}>{t('markets.low24h')}</span>
+              <span style={{ textAlign: 'right' }}>{t('markets.volume24h')}</span>
             </div>
             <div style={styles.listBody}>
-              {filtered.map((t) => {
-                const change = parseFloat(t.changePercent24h) * 100;
+              {filtered.map((tk) => {
+                const change = parseFloat(tk.changePercent24h) * 100;
                 const positive = change >= 0;
                 return (
                   <div
-                    key={t.pair}
-                    onClick={() => setSelectedPair(t.pair)}
+                    key={tk.pair}
+                    onClick={() => setSelectedPair(tk.pair)}
                     style={{
                       ...styles.listRow,
-                      background: t.pair === selectedPair ? 'var(--panel-alt)' : 'transparent',
+                      background: tk.pair === selectedPair ? 'var(--panel-alt)' : 'transparent',
                     }}
                   >
-                    <span>{t.pair}</span>
+                    <span>{tk.pair}</span>
                     <span className="mono" style={{ textAlign: 'right' }}>
-                      {parseFloat(t.lastPrice)}
+                      {parseFloat(tk.lastPrice)}
                     </span>
                     <span
                       className={positive ? 'text-buy' : 'text-sell'}
@@ -118,22 +120,22 @@ export function MarketsPage() {
                       {change.toFixed(2)}%
                     </span>
                     <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                      {parseFloat(t.high24h)}
+                      {parseFloat(tk.high24h)}
                     </span>
                     <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                      {parseFloat(t.low24h)}
+                      {parseFloat(tk.low24h)}
                     </span>
                     <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                      {parseFloat(t.volume24h).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}
+                      {parseFloat(tk.volume24h).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 );
               })}
               {filtered.length === 0 && tickers.length > 0 && (
-                <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>Нічого не знайдено.</p>
+                <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>{t('markets.nothingFound')}</p>
               )}
               {tickers.length === 0 && !error && (
-                <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>Завантаження...</p>
+                <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>{t('markets.loading')}</p>
               )}
             </div>
           </div>
@@ -147,7 +149,7 @@ export function MarketsPage() {
                 <OrderBookPanel bids={book.bids} asks={book.asks} />
               </>
             ) : (
-              <p style={{ color: 'var(--text-tertiary)' }}>Обери пару зі списку</p>
+              <p style={{ color: 'var(--text-tertiary)' }}>{t('markets.selectPair')}</p>
             )}
           </div>
         </div>

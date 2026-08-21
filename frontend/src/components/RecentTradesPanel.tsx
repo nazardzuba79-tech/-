@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 interface Trade {
   id: string;
@@ -9,9 +10,10 @@ interface Trade {
   time: number;
 }
 
-// Live-scrolling trade tape, mirrored from Bybit — same "рынок бежит" feel
-// as Bybit's own trades tab, purely for display next to the order book.
+// Live-scrolling trade tape, mirrored from Kraken — same "market is moving"
+// feel as a real exchange's own trades tab, purely for display next to the order book.
 export function RecentTradesPanel({ pair }: { pair: string }) {
+  const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
   const seenIds = useRef<Set<string>>(new Set());
 
@@ -42,9 +44,9 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
   return (
     <div style={styles.panel}>
       <div style={styles.columnLabels}>
-        <span>Ціна</span>
-        <span style={{ textAlign: 'right' }}>Кількість</span>
-        <span style={{ textAlign: 'right' }}>Час</span>
+        <span>{t('trade.price')}</span>
+        <span style={{ textAlign: 'right' }}>{t('trade.quantity')}</span>
+        <span style={{ textAlign: 'right' }}>{t('trade.time')}</span>
       </div>
       <div style={styles.rows}>
         {trades.map((t) => (
@@ -56,11 +58,15 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
               {parseFloat(t.quantity).toFixed(5)}
             </span>
             <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
-              {new Date(t.time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {new Date(t.time).toLocaleTimeString(lang === 'ru' ? 'ru-RU' : 'en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              })}
             </span>
           </div>
         ))}
-        {trades.length === 0 && <p style={styles.hint}>Завантаження угод...</p>}
+        {trades.length === 0 && <p style={styles.hint}>{t('trade.loadingTrades')}</p>}
       </div>
     </div>
   );

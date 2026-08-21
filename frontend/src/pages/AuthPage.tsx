@@ -1,9 +1,11 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Logo } from '../components/Logo';
 
 export function AuthPage() {
+  const { t, lang, setLang } = useLanguage();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +22,7 @@ export function AuthPage() {
       setToken(token);
       navigate('/trade');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Щось пішло не так. Спробуй ще раз.');
+      setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);
     }
@@ -28,6 +30,15 @@ export function AuthPage() {
 
   return (
     <div style={styles.page}>
+      <div style={styles.langSwitch}>
+        <button onClick={() => setLang('ru')} style={{ ...styles.langBtn, ...(lang === 'ru' ? styles.langBtnActive : {}) }}>
+          RU
+        </button>
+        <button onClick={() => setLang('en')} style={{ ...styles.langBtn, ...(lang === 'en' ? styles.langBtnActive : {}) }}>
+          EN
+        </button>
+      </div>
+
       <div style={styles.card}>
         <div style={styles.logo}>
           <Logo size="large" />
@@ -39,20 +50,20 @@ export function AuthPage() {
             onClick={() => setMode('login')}
             type="button"
           >
-            Вхід
+            {t('auth.login')}
           </button>
           <button
             style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
             onClick={() => setMode('register')}
             type="button"
           >
-            Реєстрація
+            {t('auth.register')}
           </button>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label}>
-            Email
+            {t('auth.email')}
             <input
               type="email"
               required
@@ -63,7 +74,7 @@ export function AuthPage() {
             />
           </label>
           <label style={styles.label}>
-            Пароль
+            {t('auth.password')}
             <input
               type="password"
               required
@@ -73,13 +84,13 @@ export function AuthPage() {
               style={styles.input}
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             />
-            {mode === 'register' && <span style={styles.hint}>Мінімум 10 символів</span>}
+            {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
           </label>
 
           {error && <div style={styles.error}>{error}</div>}
 
           <button type="submit" disabled={loading} style={styles.submit}>
-            {loading ? 'Зачекай...' : mode === 'login' ? 'Увійти' : 'Створити акаунт'}
+            {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
           </button>
         </form>
       </div>
@@ -93,8 +104,32 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
     background:
       'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(247,166,0,0.08), transparent), var(--bg)',
+  },
+  langSwitch: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    display: 'flex',
+    gap: 2,
+    background: 'var(--panel-alt)',
+    borderRadius: 4,
+    padding: 2,
+  },
+  langBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    borderRadius: 3,
+    padding: '5px 10px',
+    fontSize: 11,
+    fontWeight: 700,
+  },
+  langBtnActive: {
+    background: 'var(--panel)',
+    color: 'var(--text-primary)',
   },
   card: {
     width: 360,

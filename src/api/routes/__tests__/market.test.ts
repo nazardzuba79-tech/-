@@ -1,7 +1,7 @@
 import request from 'supertest';
 import express from 'express';
 import { marketRouter } from '../market';
-import { ExternalMarketDataError } from '../../../services/BybitMarketDataService';
+import { ExternalMarketDataError } from '../../../services/KrakenMarketDataService';
 
 function buildApp(marketDataService: any) {
   const app = express();
@@ -18,7 +18,7 @@ describe('market routes', () => {
     const res = await request(app).get('/api/v1/market/external/symbols');
 
     expect(res.status).toBe(200);
-    expect(res.body.source).toBe('bybit');
+    expect(res.body.source).toBe('kraken');
     expect(res.body.symbols).toHaveLength(1);
   });
 
@@ -76,12 +76,12 @@ describe('market routes', () => {
   });
 
   it('returns 502 when the upstream service fails', async () => {
-    const service = { listSymbols: jest.fn().mockRejectedValue(new ExternalMarketDataError('Bybit is down')) };
+    const service = { listSymbols: jest.fn().mockRejectedValue(new ExternalMarketDataError('Kraken is down')) };
     const app = buildApp(service);
 
     const res = await request(app).get('/api/v1/market/external/symbols');
 
     expect(res.status).toBe(502);
-    expect(res.body.error).toBe('Bybit is down');
+    expect(res.body.error).toBe('Kraken is down');
   });
 });

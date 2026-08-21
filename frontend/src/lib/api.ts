@@ -133,7 +133,7 @@ export const api = {
       body: JSON.stringify({ txHash, asset }),
     }),
 
-  // Read-only mirror of Bybit market data — coin list, price, order book.
+  // Read-only mirror of Kraken market data — coin list, price, order book.
   getExternalSymbols: () =>
     request<{ source: string; symbols: { pair: string; baseAsset: string; quoteAsset: string }[] }>(
       '/market/external/symbols'

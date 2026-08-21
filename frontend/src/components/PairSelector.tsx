@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 /**
  * Trade-page pair picker — button showing the current pair, opens a
- * searchable dropdown of pairs. Reuses the Bybit symbol mirror
+ * searchable dropdown of pairs. Reuses the Kraken symbol mirror
  * (/market/external/symbols) as the pair list, since that's already a
  * real, maintained list of tradeable assets — but trading itself only
  * ever happens on our OWN internal order book for that pair name, not on
- * Bybit. A pair nobody has traded here yet just starts with an empty book.
+ * Kraken. A pair nobody has traded here yet just starts with an empty book.
  */
 export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair: string) => void }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [pairs, setPairs] = useState<string[]>([]);
   const [search, setSearch] = useState('');
@@ -46,7 +48,7 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
         <div style={styles.dropdown}>
           <input
             autoFocus
-            placeholder="Пошук пари, напр. ETH"
+            placeholder={t('trade.searchPair')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.search}
@@ -66,8 +68,8 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
                 {p}
               </button>
             ))}
-            {pairs.length === 0 && <p style={styles.hint}>Завантаження...</p>}
-            {pairs.length > 0 && filtered.length === 0 && <p style={styles.hint}>Нічого не знайдено.</p>}
+            {pairs.length === 0 && <p style={styles.hint}>{t('trade.loading')}</p>}
+            {pairs.length > 0 && filtered.length === 0 && <p style={styles.hint}>{t('trade.nothingFound')}</p>}
           </div>
         </div>
       )}

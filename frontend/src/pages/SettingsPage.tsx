@@ -1,24 +1,31 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
-import { COUNTRIES } from '../lib/countries';
+import { getCountries, getCountryName } from '../lib/countries';
 
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
+type T = ReturnType<typeof useLanguage>['t'];
 
-const DOC_TYPE_LABEL: Record<string, string> = {
-  PASSPORT: 'Паспорт',
-  ID_CARD: 'ID-картка',
-  DRIVERS_LICENSE: 'Посвідчення водія',
-};
+function kycStatusLabel(t: T): Record<string, { text: string; color: string }> {
+  return {
+    NOT_STARTED: { text: t('settings.kyc.NOT_STARTED'), color: 'var(--text-secondary)' },
+    PENDING: { text: t('settings.kyc.PENDING'), color: 'var(--accent)' },
+    APPROVED: { text: t('settings.kyc.APPROVED'), color: 'var(--buy)' },
+    REJECTED: { text: t('settings.kyc.REJECTED'), color: 'var(--sell)' },
+  };
+}
 
-const KYC_STATUS_LABEL: Record<string, { text: string; color: string }> = {
-  NOT_STARTED: { text: 'Не розпочато', color: 'var(--text-secondary)' },
-  PENDING: { text: 'На розгляді', color: 'var(--accent)' },
-  APPROVED: { text: 'Верифіковано', color: 'var(--buy)' },
-  REJECTED: { text: 'Відхилено', color: 'var(--sell)' },
-};
+function docTypeLabel(t: T): Record<string, string> {
+  return {
+    PASSPORT: t('settings.doc.PASSPORT'),
+    ID_CARD: t('settings.doc.ID_CARD'),
+    DRIVERS_LICENSE: t('settings.doc.DRIVERS_LICENSE'),
+  };
+}
 
 export function SettingsPage() {
+  const { t, lang } = useLanguage();
   const [tab, setTab] = useState<Tab>('profile');
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -30,16 +37,16 @@ export function SettingsPage() {
     <div style={styles.page}>
       <Nav active="/settings" />
       <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' ? 1080 : 760 }}>
-        <h1 style={styles.title}>Налаштування</h1>
+        <h1 style={styles.title}>{t('settings.title')}</h1>
 
         <div style={styles.layout}>
           <div style={styles.tabs}>
-            <TabButton label="Профіль" active={tab === 'profile'} onClick={() => setTab('profile')} />
-            <TabButton label="Безпека" active={tab === 'security'} onClick={() => setTab('security')} />
-            <TabButton label="Верифікація" active={tab === 'verification'} onClick={() => setTab('verification')} />
-            <TabButton label="API" active={tab === 'api'} onClick={() => setTab('api')} />
+            <TabButton label={t('settings.tab.profile')} active={tab === 'profile'} onClick={() => setTab('profile')} />
+            <TabButton label={t('settings.tab.security')} active={tab === 'security'} onClick={() => setTab('security')} />
+            <TabButton label={t('settings.tab.verification')} active={tab === 'verification'} onClick={() => setTab('verification')} />
+            <TabButton label={t('settings.tab.api')} active={tab === 'api'} onClick={() => setTab('api')} />
             {isAdmin && (
-              <TabButton label="Клієнти" active={tab === 'clients'} onClick={() => setTab('clients')} />
+              <TabButton label={t('settings.tab.clients')} active={tab === 'clients'} onClick={() => setTab('clients')} />
             )}
           </div>
 
@@ -71,22 +78,26 @@ function ProfileTab() {
     api.getMe().then(setMe).catch(() => {});
   }, []);
 
-  if (!me) return <p style={{ color: 'var(--text-tertiary)' }}>Завантаження...</p>;
+  const { t, lang } = useLanguage();
+  const KYC_STATUS_LABEL = kycStatusLabel(t);
+
+  if (!me) return <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>;
 
   const kyc = KYC_STATUS_LABEL[me.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
 
   return (
     <div style={styles.card}>
-      <Row label="Email" value={me.email} />
-      <Row label="Учасник з" value={new Date(me.createdAt).toLocaleDateString('uk-UA')} />
-      <Row label="Роль" value={me.isAdmin ? 'Адміністратор' : 'Користувач'} />
-      <Row label="Верифікація" value={<span style={{ color: kyc.color, fontWeight: 600 }}>{kyc.text}</span>} />
-      <Row label="Двофакторна автентифікація" value={<span style={{ color: 'var(--text-tertiary)' }}>Незабаром</span>} />
+      <Row label={t('settings.email')} value={me.email} />
+      <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
+      <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
+      <Row label={t('settings.verification')} value={<span style={{ color: kyc.color, fontWeight: 600 }}>{kyc.text}</span>} />
+      <Row label={t('settings.twoFactor')} value={<span style={{ color: 'var(--text-tertiary)' }}>{t('settings.comingSoon')}</span>} />
     </div>
   );
 }
 
 function SecurityTab() {
+  const { t } = useLanguage();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +115,7 @@ function SecurityTab() {
       setCurrentPassword('');
       setNewPassword('');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось змінити пароль');
+      setError(err instanceof ApiError ? err.message : t('settings.changePasswordError'));
     } finally {
       setSubmitting(false);
     }
@@ -112,10 +123,10 @@ function SecurityTab() {
 
   return (
     <div style={styles.card}>
-      <h3 style={styles.cardTitle}>Зміна пароля</h3>
+      <h3 style={styles.cardTitle}>{t('settings.changePassword')}</h3>
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
-          Поточний пароль
+          {t('settings.currentPassword')}
           <input
             type="password"
             required
@@ -126,7 +137,7 @@ function SecurityTab() {
           />
         </label>
         <label style={styles.label}>
-          Новий пароль
+          {t('settings.newPassword')}
           <input
             type="password"
             required
@@ -136,14 +147,14 @@ function SecurityTab() {
             style={styles.input}
             autoComplete="new-password"
           />
-          <span style={styles.hint}>Мінімум 10 символів</span>
+          <span style={styles.hint}>{t('auth.minChars')}</span>
         </label>
 
         {error && <div style={styles.errorBox}>{error}</div>}
-        {success && <div style={styles.successBox}>Пароль змінено</div>}
+        {success && <div style={styles.successBox}>{t('settings.passwordChanged')}</div>}
 
         <button type="submit" disabled={submitting} style={styles.submitBtn}>
-          {submitting ? 'Зачекай...' : 'Зберегти'}
+          {submitting ? t('auth.wait') : t('settings.save')}
         </button>
       </form>
     </div>
@@ -151,6 +162,8 @@ function SecurityTab() {
 }
 
 function VerificationTab() {
+  const { t, lang } = useLanguage();
+  const KYC_STATUS_LABEL = kycStatusLabel(t);
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
   const [country, setCountry] = useState('UA');
   const [fullName, setFullName] = useState('');
@@ -171,7 +184,7 @@ function VerificationTab() {
     e.preventDefault();
     setError(null);
     if (!document) {
-      setError('Додай фото документа');
+      setError(t('settings.addDocumentPhoto'));
       return;
     }
     setSubmitting(true);
@@ -183,40 +196,39 @@ function VerificationTab() {
       setDocument(null);
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось надіслати заявку');
+      setError(err instanceof ApiError ? err.message : t('settings.submitKycError'));
     } finally {
       setSubmitting(false);
     }
   }
 
-  if (!status) return <p style={{ color: 'var(--text-tertiary)' }}>Завантаження...</p>;
+  if (!status) return <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>;
 
   const badge = KYC_STATUS_LABEL[status.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
   const canSubmit = status.kycStatus === 'NOT_STARTED' || status.kycStatus === 'REJECTED';
+  const DOC_TYPE_LABEL = docTypeLabel(t);
 
   return (
     <div style={styles.card}>
       <div style={styles.kycStatusRow}>
-        <span style={{ color: 'var(--text-secondary)' }}>Статус верифікації</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{t('settings.verificationStatus')}</span>
         <span style={{ color: badge.color, fontWeight: 700 }}>{badge.text}</span>
       </div>
 
       {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (
-        <div style={styles.errorBox}>Причина відхилення: {status.latestSubmission.rejectionReason}</div>
+        <div style={styles.errorBox}>{t('settings.rejectionReason', { reason: status.latestSubmission.rejectionReason })}</div>
       )}
 
       {!canSubmit ? (
         <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-          {status.kycStatus === 'APPROVED'
-            ? 'Твій акаунт вже верифіковано.'
-            : 'Заявка на розгляді — очікуй на рішення адміністратора.'}
+          {status.kycStatus === 'APPROVED' ? t('settings.alreadyVerified') : t('settings.pendingReview')}
         </p>
       ) : (
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label}>
-            Країна
+            {t('settings.country')}
             <select value={country} onChange={(e) => setCountry(e.target.value)} style={styles.input}>
-              {COUNTRIES.map((c) => (
+              {getCountries(lang).map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.name}
                 </option>
@@ -224,7 +236,7 @@ function VerificationTab() {
             </select>
           </label>
           <label style={styles.label}>
-            Повне ім'я (як у документі)
+            {t('settings.fullName')}
             <input
               type="text"
               required
@@ -234,7 +246,7 @@ function VerificationTab() {
             />
           </label>
           <label style={styles.label}>
-            Дата народження
+            {t('settings.dateOfBirth')}
             <input
               type="date"
               required
@@ -244,15 +256,15 @@ function VerificationTab() {
             />
           </label>
           <label style={styles.label}>
-            Тип документа
+            {t('settings.documentType')}
             <select value={documentType} onChange={(e) => setDocumentType(e.target.value as typeof documentType)} style={styles.input}>
-              <option value="PASSPORT">Паспорт</option>
-              <option value="ID_CARD">ID-картка</option>
-              <option value="DRIVERS_LICENSE">Посвідчення водія</option>
+              <option value="PASSPORT">{DOC_TYPE_LABEL.PASSPORT}</option>
+              <option value="ID_CARD">{DOC_TYPE_LABEL.ID_CARD}</option>
+              <option value="DRIVERS_LICENSE">{DOC_TYPE_LABEL.DRIVERS_LICENSE}</option>
             </select>
           </label>
           <label style={styles.label}>
-            Номер документа
+            {t('settings.documentNumber')}
             <input
               type="text"
               required
@@ -262,7 +274,7 @@ function VerificationTab() {
             />
           </label>
           <label style={styles.label}>
-            Фото документа (JPEG, PNG або PDF)
+            {t('settings.documentPhoto')}
             <input
               type="file"
               required
@@ -275,7 +287,7 @@ function VerificationTab() {
           {error && <div style={styles.errorBox}>{error}</div>}
 
           <button type="submit" disabled={submitting} style={styles.submitBtn}>
-            {submitting ? 'Надсилаємо...' : 'Надіслати на перевірку'}
+            {submitting ? t('settings.sending') : t('settings.sendForReview')}
           </button>
         </form>
       )}
@@ -283,13 +295,10 @@ function VerificationTab() {
   );
 }
 
-function countryName(code: string) {
-  return COUNTRIES.find((c) => c.code === code)?.name ?? code;
-}
-
 /** Admin-only: every registered client and their KYC data — approve/reject pending submissions. */
 /** API keys for connecting a trading bot/script to this account — HMAC-signed requests, see the code example below. */
 function ApiKeysTab() {
+  const { t } = useLanguage();
   const [keys, setKeys] = useState<Awaited<ReturnType<typeof api.getApiKeys>>>([]);
   const [label, setLabel] = useState('');
   const [canTrade, setCanTrade] = useState(false);
@@ -315,14 +324,14 @@ function ApiKeysTab() {
       setCanTrade(false);
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось створити ключ');
+      setError(err instanceof ApiError ? err.message : t('settings.createKeyError'));
     } finally {
       setCreating(false);
     }
   }
 
   async function handleRevoke(id: string) {
-    if (!confirm('Відкликати цей ключ? Будь-який бот, підключений через нього, одразу втратить доступ.')) return;
+    if (!confirm(t('settings.revokeConfirm'))) return;
     await api.revokeApiKey(id).catch(() => {});
     reload();
   }
@@ -337,24 +346,23 @@ function ApiKeysTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={styles.card}>
-        <h3 style={styles.cardTitle}>API-ключі</h3>
+        <h3 style={styles.cardTitle}>{t('settings.apiKeys')}</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
-          Дозволяють підключити торгового бота чи власний скрипт до цього акаунта — той самий баланс і ордери, що й
-          у браузері, без пароля. Ключ без "Дозволити торгівлю" може тільки читати баланс і ордери.
+          {t('settings.apiKeysDesc')}
         </p>
 
         {justCreated && (
           <div style={styles.secretBox}>
             <div style={{ fontSize: 12, color: 'var(--sell)', fontWeight: 700, marginBottom: 8 }}>
-              ⚠ Секретний ключ показується лише один раз — збережи його зараз
+              {t('settings.secretShownOnce')}
             </div>
-            <Row label="API-ключ" value={<span className="mono">{justCreated.apiKey}</span>} />
+            <Row label={t('settings.apiKey')} value={<span className="mono">{justCreated.apiKey}</span>} />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
               <span className="mono" style={{ flex: 1, fontSize: 12, wordBreak: 'break-all' }}>
                 {justCreated.apiSecret}
               </span>
               <button type="button" onClick={handleCopySecret} style={styles.copyBtn}>
-                {copied ? 'Скопійовано' : 'Копіювати'}
+                {copied ? t('deposit.copied') : t('deposit.copy')}
               </button>
             </div>
           </div>
@@ -363,10 +371,10 @@ function ApiKeysTab() {
         <table style={styles.keyTable}>
           <thead>
             <tr>
-              <th style={styles.th}>Назва</th>
-              <th style={styles.th}>Ключ</th>
-              <th style={styles.th}>Права</th>
-              <th style={styles.th}>Останнє використання</th>
+              <th style={styles.th}>{t('settings.keyName')}</th>
+              <th style={styles.th}>{t('settings.keyValue')}</th>
+              <th style={styles.th}>{t('settings.keyRights')}</th>
+              <th style={styles.th}>{t('settings.keyLastUsed')}</th>
               <th style={styles.th}></th>
             </tr>
           </thead>
@@ -379,30 +387,30 @@ function ApiKeysTab() {
                 </td>
                 <td style={styles.td}>
                   {k.canTrade ? (
-                    <span style={{ color: 'var(--buy)' }}>Читання + торгівля</span>
+                    <span style={{ color: 'var(--buy)' }}>{t('settings.readWrite')}</span>
                   ) : (
-                    <span style={{ color: 'var(--text-secondary)' }}>Тільки читання</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{t('settings.readOnly')}</span>
                   )}
                 </td>
-                <td style={styles.td}>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('uk-UA') : 'Ще не використовувався'}</td>
+                <td style={styles.td}>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : t('settings.neverUsed')}</td>
                 <td style={styles.td}>
                   <button onClick={() => handleRevoke(k.id)} style={styles.revokeBtn}>
-                    Відкликати
+                    {t('settings.revoke')}
                   </button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {keys.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Ще немає жодного ключа.</p>}
+        {keys.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.noKeysYet')}</p>}
 
         <form onSubmit={handleCreate} style={{ ...styles.form, marginTop: 20 }}>
           <label style={styles.label}>
-            Назва ключа
+            {t('settings.keyNameLabel')}
             <input
               type="text"
               required
-              placeholder="напр. Мій торговий бот"
+              placeholder={t('settings.keyNamePlaceholder')}
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               style={styles.input}
@@ -410,25 +418,25 @@ function ApiKeysTab() {
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
             <input type="checkbox" checked={canTrade} onChange={(e) => setCanTrade(e.target.checked)} />
-            Дозволити торгівлю (розміщення/скасування ордерів), не тільки читання
+            {t('settings.allowTrading')}
           </label>
 
           {error && <div style={styles.errorBox}>{error}</div>}
 
           <button type="submit" disabled={creating} style={{ ...styles.submitBtn, alignSelf: 'flex-start', padding: '10px 20px' }}>
-            {creating ? 'Створюємо...' : 'Створити ключ'}
+            {creating ? t('settings.creating') : t('settings.createKey')}
           </button>
         </form>
       </div>
 
       <div style={styles.card}>
-        <h3 style={styles.cardTitle}>Як підключити бота</h3>
+        <h3 style={styles.cardTitle}>{t('settings.howToConnectBot')}</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Кожен запит підписується HMAC-SHA256: до заголовків додається{' '}
-          <code style={styles.code}>X-API-KEY</code>, <code style={styles.code}>X-API-TIMESTAMP</code> (мілісекунди
-          від epoch) і <code style={styles.code}>X-API-SIGNATURE</code> — hex-підпис від рядка{' '}
-          <code style={styles.code}>timestamp + method + шлях + JSON-тіло</code> (тіло — <code style={styles.code}>{'{}'}</code>{' '}
-          для запиту без тіла), за секретним ключем.
+          {t('settings.hmacExplainer1')}{' '}
+          <code style={styles.code}>X-API-KEY</code>, <code style={styles.code}>X-API-TIMESTAMP</code> {t('settings.hmacExplainer2')}{' '}
+          <code style={styles.code}>X-API-SIGNATURE</code> {t('settings.hmacExplainer3')}{' '}
+          <code style={styles.code}>timestamp + method + path + JSON body</code> {t('settings.hmacExplainer4')} <code style={styles.code}>{'{}'}</code>{' '}
+          {t('settings.hmacExplainer5')}
         </p>
         <pre style={styles.codeBlock}>
 {`import hmac, hashlib, time, json, requests
@@ -444,7 +452,7 @@ message = timestamp + method + path + json.dumps(body)
 signature = hmac.new(api_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
 
 requests.post(
-    "https://твійдомен.com" + path,
+    "https://yourdomain.com" + path,
     json=body,
     headers={
         "X-API-KEY": api_key,
@@ -459,6 +467,9 @@ requests.post(
 }
 
 function ClientsTab() {
+  const { t, lang } = useLanguage();
+  const KYC_STATUS_LABEL = kycStatusLabel(t);
+  const DOC_TYPE_LABEL = docTypeLabel(t);
   const [clients, setClients] = useState<Awaited<ReturnType<typeof api.getAllClients>>>([]);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -504,7 +515,7 @@ function ClientsTab() {
       setReason('');
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось обробити заявку');
+      setError(err instanceof ApiError ? err.message : t('settings.reviewKycError'));
     } finally {
       setBusy(false);
     }
@@ -516,7 +527,7 @@ function ClientsTab() {
     <div style={styles.clientsGrid}>
       <div style={styles.clientsList}>
         <input
-          placeholder="Пошук за email"
+          placeholder={t('settings.searchByEmail')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ ...styles.input, margin: 10, width: 'calc(100% - 20px)' }}
@@ -534,19 +545,19 @@ function ClientsTab() {
             </button>
           );
         })}
-        {filtered.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Нікого не знайдено.</p>}
+        {filtered.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.noOneFound')}</p>}
       </div>
 
       <div style={styles.card}>
         {!selected ? (
-          <p style={{ color: 'var(--text-tertiary)' }}>Обери клієнта зі списку зліва</p>
+          <p style={{ color: 'var(--text-tertiary)' }}>{t('settings.selectClient')}</p>
         ) : (
           <>
-            <Row label="Email" value={selected.email} />
-            <Row label="Роль" value={selected.isAdmin ? 'Адміністратор' : 'Користувач'} />
-            <Row label="Учасник з" value={new Date(selected.createdAt).toLocaleDateString('uk-UA')} />
+            <Row label={t('settings.email')} value={selected.email} />
+            <Row label={t('settings.role')} value={selected.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
+            <Row label={t('settings.memberSince')} value={new Date(selected.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
             <Row
-              label="Верифікація"
+              label={t('settings.verification')}
               value={
                 <span style={{ color: (KYC_STATUS_LABEL[selected.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED).color, fontWeight: 600 }}>
                   {(KYC_STATUS_LABEL[selected.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED).text}
@@ -556,42 +567,42 @@ function ClientsTab() {
 
             {selected.latestKyc ? (
               <>
-                <Row label="ПІБ" value={selected.latestKyc.fullName} />
-                <Row label="Країна" value={countryName(selected.latestKyc.country)} />
-                <Row label="Дата народження" value={new Date(selected.latestKyc.dateOfBirth).toLocaleDateString('uk-UA')} />
+                <Row label={t('settings.fullNameLabel')} value={selected.latestKyc.fullName} />
+                <Row label={t('settings.country')} value={getCountryName(selected.latestKyc.country, lang)} />
+                <Row label={t('settings.dateOfBirth')} value={new Date(selected.latestKyc.dateOfBirth).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
                 <Row
-                  label="Документ"
+                  label={t('settings.document')}
                   value={`${DOC_TYPE_LABEL[selected.latestKyc.documentType] ?? selected.latestKyc.documentType} №${selected.latestKyc.documentNumber}`}
                 />
-                <Row label="Надіслано" value={new Date(selected.latestKyc.createdAt).toLocaleString('uk-UA')} />
+                <Row label={t('settings.sent')} value={new Date(selected.latestKyc.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
                 {selected.latestKyc.status === 'REJECTED' && selected.latestKyc.rejectionReason && (
-                  <Row label="Причина відхилення" value={selected.latestKyc.rejectionReason} />
+                  <Row label={t('settings.rejectionReasonLabel')} value={selected.latestKyc.rejectionReason} />
                 )}
 
                 <div style={styles.docPreview}>
                   {documentUrl ? (
                     documentIsPdf ? (
                       <a href={documentUrl} target="_blank" rel="noreferrer">
-                        Відкрити PDF-документ
+                        {t('settings.openPdf')}
                       </a>
                     ) : (
-                      <img src={documentUrl} alt="Документ" style={styles.docImage} />
+                      <img src={documentUrl} alt={t('settings.document')} style={styles.docImage} />
                     )
                   ) : (
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Завантаження документа...</span>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.loadingDocument')}</span>
                   )}
                 </div>
 
                 {selected.latestKyc.status === 'PENDING' && (
                   <>
                     <label style={styles.label}>
-                      Причина відхилення (опційно)
+                      {t('settings.rejectionReasonOptional')}
                       <input
                         type="text"
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         style={styles.input}
-                        placeholder="напр. Розмите фото документа"
+                        placeholder={t('settings.rejectionPlaceholder')}
                       />
                     </label>
 
@@ -599,17 +610,17 @@ function ClientsTab() {
 
                     <div style={styles.actions}>
                       <button disabled={busy} onClick={() => handleReview(true)} style={styles.approveBtn}>
-                        Підтвердити
+                        {t('settings.approve')}
                       </button>
                       <button disabled={busy} onClick={() => handleReview(false)} style={styles.rejectBtn}>
-                        Відхилити
+                        {t('settings.reject')}
                       </button>
                     </div>
                   </>
                 )}
               </>
             ) : (
-              <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>Цей клієнт ще не подавав заявку на верифікацію.</p>
+              <p style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>{t('settings.noKycYet')}</p>
             )}
           </>
         )}

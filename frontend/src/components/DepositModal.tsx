@@ -1,12 +1,13 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-
-const CHAIN_LABEL: Record<string, string> = {
-  bitcoin: 'Bitcoin',
-  tron: 'Tron (TRC20)',
-};
+import { useLanguage } from '../lib/i18n';
 
 export function DepositModal({ onClose }: { onClose: () => void }) {
+  const { t } = useLanguage();
+  const CHAIN_LABEL: Record<string, string> = {
+    bitcoin: t('deposit.chain.bitcoin'),
+    tron: t('deposit.chain.tron'),
+  };
   const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
   const [chainsLoaded, setChainsLoaded] = useState(false);
   const [chain, setChain] = useState<string | null>(null);
@@ -29,7 +30,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         setChains(res);
         if (res.length > 0) setChain(res[0].chain);
       })
-      .catch(() => setError('Не вдалось завантажити список підтримуваних мереж'))
+      .catch(() => setError(t('deposit.loadChainsError')))
       .finally(() => setChainsLoaded(true));
   }, []);
 
@@ -45,7 +46,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         setAssets(res.supportedAssets);
         setAsset(res.supportedAssets[0] ?? '');
       })
-      .catch(() => setError('Не вдалось завантажити адресу для депозиту'));
+      .catch(() => setError(t('deposit.loadAddressError')));
   }, [chain]);
 
   async function handleCopy() {
@@ -64,7 +65,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
       const res = await api.claimDeposit(chain, txHash, asset);
       setResult(res);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось перевірити депозит');
+      setError(err instanceof ApiError ? err.message : t('deposit.claimError'));
     } finally {
       setSubmitting(false);
     }
@@ -74,32 +75,26 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     <div style={styles.overlay} onClick={onClose}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.headerRow}>
-          <h2 style={styles.title}>Поповнення</h2>
-          <button onClick={onClose} style={styles.closeBtn} aria-label="Закрити">
+          <h2 style={styles.title}>{t('deposit.title')}</h2>
+          <button onClick={onClose} style={styles.closeBtn} aria-label={t('deposit.close')}>
             ✕
           </button>
         </div>
 
-        <p style={styles.hint}>
-          Надішли крипту на адресу нижче зі свого гаманця, потім встав хеш транзакції — баланс зарахується
-          автоматично, після перевірки в мережі.
-        </p>
+        <p style={styles.hint}>{t('deposit.hint')}</p>
 
         {!chainsLoaded && !error && (
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Завантаження мереж...</p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('deposit.loadingNetworks')}</p>
         )}
 
         {chainsLoaded && chains.length === 0 && !error && (
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }}>
-            Поповнення поки недоступне — власник біржі ще не вказав адресу гаманця для жодної мережі
-            (BITCOIN_TREASURY_ADDRESS / TRON_TREASURY_ADDRESS в налаштуваннях сервера).
-          </p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }}>{t('deposit.noneConfigured')}</p>
         )}
 
         {chains.length > 0 && (
           <>
             <label style={styles.label}>
-              Мережа
+              {t('deposit.network')}
               <select value={chain ?? ''} onChange={(e) => setChain(e.target.value)} style={styles.input}>
                 {chains.map((c) => (
                   <option key={c.chain} value={c.chain}>
@@ -111,22 +106,23 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
 
             <div style={styles.addressBox}>
               <span className="mono" style={styles.address}>
-                {address ?? 'Завантаження...'}
+                {address ?? t('trade.loading')}
               </span>
               <button onClick={handleCopy} style={styles.copyBtn} type="button" disabled={!address}>
-                {copied ? 'Скопійовано' : 'Копіювати'}
+                {copied ? t('deposit.copied') : t('deposit.copy')}
               </button>
             </div>
 
             <div style={styles.warning}>
-              ⚠ Надсилай лише {assets.join(' / ') || 'підтримувані активи'} в мережі{' '}
-              {CHAIN_LABEL[chain ?? ''] ?? chain}. Кошти, надіслані в іншій мережі або іншим активом, буде втрачено
-              безповоротно.
+              {t('deposit.warning', {
+                assets: assets.join(' / ') || t('deposit.supportedAssets'),
+                chain: CHAIN_LABEL[chain ?? ''] ?? chain ?? '',
+              })}
             </div>
 
             <form onSubmit={handleClaim} style={styles.form}>
               <label style={styles.label}>
-                Актив
+                {t('deposit.asset')}
                 <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
                   {assets.map((a) => (
                     <option key={a} value={a}>
@@ -136,12 +132,12 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                 </select>
               </label>
               <label style={styles.label}>
-                Хеш транзакції
+                {t('deposit.txHash')}
                 <input
                   className="mono"
                   type="text"
                   required
-                  placeholder="хеш транзакції"
+                  placeholder={t('deposit.txHashPlaceholder')}
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   style={styles.input}
@@ -152,13 +148,13 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
               {result && (
                 <div style={styles.success}>
                   {result.status === 'CREDITED'
-                    ? `Зараховано ${result.amount} ${asset}`
-                    : `Знайдено, очікує підтверджень (${result.confirmations})`}
+                    ? t('deposit.credited', { amount: result.amount, asset })
+                    : t('deposit.pending', { confirmations: result.confirmations })}
                 </div>
               )}
 
               <button type="submit" disabled={submitting || !address} style={styles.submit}>
-                {submitting ? 'Перевіряємо...' : 'Перевірити і зарахувати'}
+                {submitting ? t('deposit.checking') : t('deposit.checkAndCredit')}
               </button>
             </form>
           </>

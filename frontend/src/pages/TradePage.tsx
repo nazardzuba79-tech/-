@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
 import { PairSelector } from '../components/PairSelector';
@@ -7,17 +8,18 @@ import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
-import { PriceChart } from '../components/PriceChart';
+import { TradingViewChart } from '../components/TradingViewChart';
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 
 export function TradePage() {
+  const { t, lang } = useLanguage();
   const [pair, setPair] = useState('BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [showDeposit, setShowDeposit] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
-  // The visible order book mirrors Bybit's real depth for a live, populated
+  // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
@@ -45,7 +47,7 @@ export function TradePage() {
         middle={<PairSelector pair={pair} onChange={setPair} />}
         rightExtra={
           <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
-            Поповнити
+            {t('nav.deposit')}
           </button>
         }
       />
@@ -58,13 +60,13 @@ export function TradePage() {
               onClick={() => setBookTab('book')}
               style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
             >
-              Стакан
+              {t('trade.orderBook')}
             </button>
             <button
               onClick={() => setBookTab('trades')}
               style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
             >
-              Угоди
+              {t('trade.trades')}
             </button>
           </div>
           {bookTab === 'book' ? (
@@ -75,7 +77,7 @@ export function TradePage() {
         </div>
 
         <div style={styles.chartColumn}>
-          <PriceChart pair={pair} />
+          <TradingViewChart pair={pair} locale={lang} />
         </div>
 
         <div style={styles.formColumn}>

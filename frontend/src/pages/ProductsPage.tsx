@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 
 interface Product {
@@ -11,6 +12,7 @@ interface Product {
 }
 
 export function ProductsPage() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -24,9 +26,9 @@ export function ProductsPage() {
     setMessage(null);
     try {
       await api.purchaseProduct(product.id);
-      setMessage({ type: 'success', text: `Оплачено: ${product.name}. Очікуй на надання доступу/товару.` });
+      setMessage({ type: 'success', text: t('products.paid', { name: product.name }) });
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof ApiError ? err.message : 'Не вдалось оплатити' });
+      setMessage({ type: 'error', text: err instanceof ApiError ? err.message : t('products.buyError') });
     } finally {
       setPurchasingId(null);
     }
@@ -37,7 +39,7 @@ export function ProductsPage() {
       <Nav active="/products" />
 
       <main style={styles.main}>
-        <h1 style={styles.title}>Товари та послуги</h1>
+        <h1 style={styles.title}>{t('products.title')}</h1>
 
         {message && (
           <div style={{ ...styles.banner, ...(message.type === 'error' ? styles.bannerError : styles.bannerSuccess) }}>
@@ -59,13 +61,13 @@ export function ProductsPage() {
                   disabled={purchasingId === p.id}
                   style={styles.buyBtn}
                 >
-                  {purchasingId === p.id ? 'Зачекай...' : 'Купити'}
+                  {purchasingId === p.id ? t('products.wait') : t('products.buy')}
                 </button>
               </div>
             </div>
           ))}
           {products.length === 0 && (
-            <p style={{ color: 'var(--text-tertiary)' }}>Товарів ще немає.</p>
+            <p style={{ color: 'var(--text-tertiary)' }}>{t('products.none')}</p>
           )}
         </div>
       </main>

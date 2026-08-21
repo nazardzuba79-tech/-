@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 
-const FEATURES = [
-  { title: 'Apple Pay та Google Pay', text: 'Прив’яжи картку і плати в супермаркетах, на заправках та в інтернеті — всюди, де приймають Apple Pay/Google Pay.' },
-  { title: 'Без комісій на обслуговування', text: 'Безкоштовне відкриття і ведення картки — жодної щомісячної чи щорічної плати.' },
-  { title: 'Без комісії за конвертацію', text: 'Оплата списується напряму з криптобалансу за курсом ринку, без прихованої націнки на конвертацію.' },
-  { title: 'Зняття готівки без комісій', text: 'Зняття в банкоматах без додаткової комісії від нас (ліміти банкомата й партнера можуть застосовуватись).' },
-  { title: '8% кешбеку', text: 'На всі оплати карткою — нараховується автоматично на внутрішній баланс.' },
-];
-
 export function CardPage() {
+  const { t, lang } = useLanguage();
+  const FEATURES = [
+    { title: t('card.feature1.title'), text: t('card.feature1.text') },
+    { title: t('card.feature2.title'), text: t('card.feature2.text') },
+    { title: t('card.feature3.title'), text: t('card.feature3.text') },
+    { title: t('card.feature4.title'), text: t('card.feature4.text') },
+    { title: t('card.feature5.title'), text: t('card.feature5.text') },
+  ];
   const [waitlist, setWaitlist] = useState<Awaited<ReturnType<typeof api.getCardWaitlist>> | null>(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +30,7 @@ export function CardPage() {
       await api.joinCardWaitlist();
       reload();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не вдалось приєднатись до списку очікування');
+      setError(err instanceof ApiError ? err.message : t('card.joinError'));
     } finally {
       setJoining(false);
     }
@@ -40,13 +41,10 @@ export function CardPage() {
       <Nav active="/card" />
       <main style={styles.main}>
         <div style={styles.headerRow}>
-          <h1 style={styles.title}>Криптокартка</h1>
-          <span style={styles.badge}>Скоро</span>
+          <h1 style={styles.title}>{t('card.title')}</h1>
+          <span style={styles.badge}>{t('card.soon')}</span>
         </div>
-        <p style={styles.lead}>
-          Картка, прив'язана до твого внутрішнього балансу — картки ще немає в випуску, але вже можна записатись у
-          список очікування.
-        </p>
+        <p style={styles.lead}>{t('card.lead')}</p>
 
         <div style={styles.grid}>
           {FEATURES.map((f) => (
@@ -58,40 +56,36 @@ export function CardPage() {
         </div>
 
         <div style={styles.kycNotice}>
-          <h3 style={styles.noticeTitle}>Чому для картки потрібна верифікація</h3>
-          <p style={styles.noticeText}>
-            Торгувати на біржі можна без верифікації (KYC). Але саму картку випускає партнерський банк разом з
-            платіжною системою (Visa/Mastercard) — вони за законом вимагають повну верифікацію власника картки для
-            будь-якого емітента, незалежно від країни реєстрації компанії. Тому верифікація обов'язкова лише для
-            картки та операцій з фіатом, а не для звичайної криптоторгівлі.
-          </p>
+          <h3 style={styles.noticeTitle}>{t('card.whyKycTitle')}</h3>
+          <p style={styles.noticeText}>{t('card.whyKycText')}</p>
         </div>
 
         <div style={styles.waitlistBox}>
           {!waitlist ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>Завантаження...</p>
+            <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>
           ) : waitlist.joined ? (
             <div style={styles.joinedRow}>
-              <span style={{ color: 'var(--buy)', fontWeight: 700 }}>Ви в списку очікування</span>
+              <span style={{ color: 'var(--buy)', fontWeight: 700 }}>{t('card.joinedPrefix')}</span>
               <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
-                з {waitlist.joinedAt ? new Date(waitlist.joinedAt).toLocaleDateString('uk-UA') : ''} — повідомимо,
-                коли картка стане доступна.
+                {t('card.joinedSince', {
+                  date: waitlist.joinedAt
+                    ? new Date(waitlist.joinedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')
+                    : '',
+                })}
               </span>
             </div>
           ) : waitlist.kycStatus === 'APPROVED' ? (
             <>
               {error && <div style={styles.errorBox}>{error}</div>}
               <button onClick={handleJoin} disabled={joining} style={styles.joinBtn}>
-                {joining ? 'Зачекай...' : 'Приєднатися до списку очікування'}
+                {joining ? t('auth.wait') : t('card.joinBtn')}
               </button>
             </>
           ) : (
             <div style={styles.joinedRow}>
-              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-                Щоб приєднатись до списку очікування, спочатку пройди верифікацію.
-              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{t('card.needVerification')}</span>
               <Link to="/settings" style={styles.verifyLink}>
-                Пройти верифікацію →
+                {t('card.goVerify')}
               </Link>
             </div>
           )}
