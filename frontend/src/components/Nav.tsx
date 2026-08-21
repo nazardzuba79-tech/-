@@ -135,10 +135,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   link: {
     fontSize: 13,
+    fontWeight: 600,
     color: 'var(--text-secondary)',
   },
   linkActive: {
-    color: 'var(--text-primary)',
+    color: 'var(--accent)',
   },
   cardLink: {
     display: 'flex',

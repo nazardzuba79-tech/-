@@ -1,16 +1,18 @@
 :root {
-  /* Color tokens */
-  --bg: #0b0e11;
-  --panel: #14171c;
-  --panel-alt: #191c22;
-  --border: #23262d;
-  --text-primary: #eaecef;
-  --text-secondary: #848e9c;
-  --text-tertiary: #5e6673;
-  --buy: #00c076;
-  --buy-dim: rgba(0, 192, 118, 0.12);
-  --sell: #f6465d;
-  --sell-dim: rgba(246, 70, 93, 0.12);
+  /* Color tokens — brighter/higher-contrast than a flat gray dashboard on
+     purpose: real exchange UIs (Bybit included) lean on strong accent
+     color and crisp white text rather than muted grays everywhere. */
+  --bg: #0a0c10;
+  --panel: #14171d;
+  --panel-alt: #1b1f27;
+  --border: #2b303a;
+  --text-primary: #f5f6f8;
+  --text-secondary: #a3adba;
+  --text-tertiary: #6b7480;
+  --buy: #00d68f;
+  --buy-dim: rgba(0, 214, 143, 0.14);
+  --sell: #ff4d6a;
+  --sell-dim: rgba(255, 77, 106, 0.14);
   --accent: #f7a600;
   --accent-hover: #ffb524;
 

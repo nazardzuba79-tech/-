@@ -38,6 +38,17 @@ export function TradingViewChart({ pair, locale }: { pair: string; locale: 'ru' 
       hide_top_toolbar: false,
       allow_symbol_change: false,
       support_host: 'https://www.tradingview.com',
+      // White/orange candles instead of TradingView's default green/red —
+      // matches VOLTEX's own brand accent (--accent) rather than a generic
+      // theme, same idea as Bybit running its own custom color scheme.
+      overrides: {
+        'mainSeriesProperties.candleStyle.upColor': '#eaecef',
+        'mainSeriesProperties.candleStyle.downColor': '#f7a600',
+        'mainSeriesProperties.candleStyle.borderUpColor': '#eaecef',
+        'mainSeriesProperties.candleStyle.borderDownColor': '#f7a600',
+        'mainSeriesProperties.candleStyle.wickUpColor': '#eaecef',
+        'mainSeriesProperties.candleStyle.wickDownColor': '#f7a600',
+      },
     });
 
     container.appendChild(widgetDiv);
