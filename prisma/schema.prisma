@@ -1,0 +1,190 @@
+// Prisma schema — the source of truth for exchange data.
+// Run `npm run prisma:migrate` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  isAdmin       Boolean   @default(false)
+  kycStatus     KycStatus @default(NOT_STARTED)
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  balances      Balance[]
+  orders        Order[]
+  deposits      Deposit[]
+  withdrawals   Withdrawal[]
+  wallets       Wallet[]
+  purchases     Purchase[]
+
+  @@index([email])
+}
+
+enum KycStatus {
+  NOT_STARTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// One row per (user, asset). `available` can be traded; `locked` is reserved
+/// by open orders or pending withdrawals. available + locked = total owned.
+/// Stored as Decimal (NOT float) — precision loss on money is unacceptable.
+model Balance {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  asset     String   // "BTC", "ETH", "USDT", ...
+  available Decimal  @default(0) @db.Decimal(36, 18)
+  locked    Decimal  @default(0) @db.Decimal(36, 18)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, asset])
+  @@index([userId])
+}
+
+model Order {
+  id                String      @id @default(uuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  pair              String
+  side              String      // BUY | SELL
+  type              String      // LIMIT | MARKET
+  price             Decimal?    @db.Decimal(36, 18)
+  originalQuantity  Decimal     @db.Decimal(36, 18)
+  remainingQuantity Decimal     @db.Decimal(36, 18)
+  status            String      // OPEN | PARTIALLY_FILLED | FILLED | CANCELLED
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([pair, status])
+}
+
+model Trade {
+  id            String   @id @default(uuid())
+  pair          String
+  takerOrderId  String
+  makerOrderId  String
+  takerUserId   String
+  makerUserId   String
+  price         Decimal  @db.Decimal(36, 18)
+  quantity      Decimal  @db.Decimal(36, 18)
+  side          String
+  executedAt    DateTime @default(now())
+
+  @@index([pair, executedAt])
+}
+
+/// Custodial deposit address assigned to a user for a given asset/chain.
+/// Private keys are NEVER stored in this DB — see WalletService / README
+/// for the HSM/KMS-backed key custody model.
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  asset     String
+  chain     String   // "ETH", "BTC", "TRON", ...
+  address   String
+  derivationPath String // path used in the HSM/KMS to derive this address' key — NOT the key itself
+  createdAt DateTime @default(now())
+
+  @@unique([asset, chain, address])
+  @@index([userId])
+}
+
+model Deposit {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  asset         String
+  chain         String
+  txHash        String
+  amount        Decimal  @db.Decimal(36, 18)
+  confirmations Int      @default(0)
+  status        String   // PENDING | CONFIRMED | CREDITED
+  createdAt     DateTime @default(now())
+
+  @@unique([chain, txHash])
+  @@index([userId])
+}
+
+model Withdrawal {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  asset          String
+  chain          String
+  toAddress      String
+  amount         Decimal  @db.Decimal(36, 18)
+  fee            Decimal  @db.Decimal(36, 18)
+  status         String   // PENDING_REVIEW | APPROVED | BROADCAST | CONFIRMED | REJECTED
+  approvedBy     String?  // admin/ops user id — withdrawals need multi-party approval, see README
+  txHash         String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+/// Immutable audit log — every balance-affecting action gets a row.
+/// This is what you reconcile against in a security incident.
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  metadata  Json
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+}
+
+/// A product or service you sell through the exchange. Only an admin
+/// (User.isAdmin) can create/edit these — see requireAdmin middleware.
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  priceAmount Decimal  @db.Decimal(36, 18)
+  priceAsset  String   // e.g. "USDT" — must match an asset users hold a Balance in
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases   Purchase[]
+
+  @@index([active])
+}
+
+/// A record of a user "paying" for a product with their internal balance.
+/// The balance was funded by a real on-chain deposit earlier (see Deposit) —
+/// this model never touches the blockchain itself, it just moves the
+/// internal ledger number and marks what still needs to be delivered.
+model Purchase {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  amount     Decimal  @db.Decimal(36, 18) // snapshot of price at purchase time
+  asset      String
+  status     String   // PENDING_FULFILLMENT | FULFILLED | REFUNDED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}

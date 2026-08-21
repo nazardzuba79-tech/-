@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/BalanceStrip.tsx","./src/components/DepositModal.tsx","./src/components/OrderBookPanel.tsx","./src/components/OrderForm.tsx","./src/components/PriceChart.tsx","./src/lib/api.ts","./src/pages/AuthPage.tsx","./src/pages/ProductsPage.tsx","./src/pages/TradePage.tsx"],"version":"5.9.3"}

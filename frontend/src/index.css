@@ -1,0 +1,86 @@
+:root {
+  /* Color tokens */
+  --bg: #0b0e11;
+  --panel: #14171c;
+  --panel-alt: #191c22;
+  --border: #23262d;
+  --text-primary: #eaecef;
+  --text-secondary: #848e9c;
+  --text-tertiary: #5e6673;
+  --buy: #00c076;
+  --buy-dim: rgba(0, 192, 118, 0.12);
+  --sell: #f6465d;
+  --sell-dim: rgba(246, 70, 93, 0.12);
+  --accent: #f7a600;
+  --accent-hover: #ffb524;
+
+  /* Type */
+  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input {
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--accent);
+  color: #0b0e11;
+}
+
+/* Numeric/tabular data always uses the mono face — this is the one signature
+   move that reads as "real trading terminal" rather than a generic dashboard:
+   every price, quantity, and balance locks to a fixed-width grid so digits
+   don't jitter as values tick. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.text-buy {
+  color: var(--buy);
+}
+.text-sell {
+  color: var(--sell);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
