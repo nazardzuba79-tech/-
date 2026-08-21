@@ -3,17 +3,18 @@ import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { SearchInput } from '../components/SearchInput';
+import { Badge } from '../components/Badge';
 import { getCountries, getCountryName } from '../lib/countries';
 
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
 type T = ReturnType<typeof useLanguage>['t'];
 
-function kycStatusLabel(t: T): Record<string, { text: string; color: string }> {
+function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
   return {
-    NOT_STARTED: { text: t('settings.kyc.NOT_STARTED'), color: 'var(--text-secondary)' },
-    PENDING: { text: t('settings.kyc.PENDING'), color: 'var(--accent)' },
-    APPROVED: { text: t('settings.kyc.APPROVED'), color: 'var(--buy)' },
-    REJECTED: { text: t('settings.kyc.REJECTED'), color: 'var(--sell)' },
+    NOT_STARTED: { text: t('settings.kyc.NOT_STARTED'), color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' },
+    PENDING: { text: t('settings.kyc.PENDING'), color: 'var(--accent)', bg: 'var(--accent-dim)' },
+    APPROVED: { text: t('settings.kyc.APPROVED'), color: 'var(--buy)', bg: 'var(--buy-dim)' },
+    REJECTED: { text: t('settings.kyc.REJECTED'), color: 'var(--sell)', bg: 'var(--sell-dim)' },
   };
 }
 
@@ -66,7 +67,7 @@ export function SettingsPage() {
 
 function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ ...styles.tabBtn, ...(active ? styles.tabBtnActive : {}) }}>
+    <button onClick={onClick} className="row-hover" style={{ ...styles.tabBtn, ...(active ? styles.tabBtnActive : {}) }}>
       {label}
     </button>
   );
@@ -91,7 +92,7 @@ function ProfileTab() {
       <Row label={t('settings.email')} value={me.email} />
       <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
       <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
-      <Row label={t('settings.verification')} value={<span style={{ color: kyc.color, fontWeight: 600 }}>{kyc.text}</span>} />
+      <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
       <Row label={t('settings.twoFactor')} value={<span style={{ color: 'var(--text-tertiary)' }}>{t('settings.comingSoon')}</span>} />
     </div>
   );
@@ -213,7 +214,7 @@ function VerificationTab() {
     <div style={styles.card}>
       <div style={styles.kycStatusRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('settings.verificationStatus')}</span>
-        <span style={{ color: badge.color, fontWeight: 700 }}>{badge.text}</span>
+        <Badge text={badge.text} color={badge.color} bg={badge.bg} />
       </div>
 
       {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (
@@ -388,9 +389,9 @@ function ApiKeysTab() {
                 </td>
                 <td style={styles.td}>
                   {k.canTrade ? (
-                    <span style={{ color: 'var(--buy)' }}>{t('settings.readWrite')}</span>
+                    <Badge text={t('settings.readWrite')} color="var(--buy)" bg="var(--buy-dim)" />
                   ) : (
-                    <span style={{ color: 'var(--text-secondary)' }}>{t('settings.readOnly')}</span>
+                    <Badge text={t('settings.readOnly')} color="var(--text-secondary)" bg="var(--neutral-dim)" />
                   )}
                 </td>
                 <td style={styles.td}>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : t('settings.neverUsed')}</td>
@@ -539,10 +540,11 @@ function ClientsTab() {
             <button
               key={c.id}
               onClick={() => setSelectedId(c.id)}
+              className="row-hover"
               style={{ ...styles.clientRow, ...(c.id === selectedId ? styles.clientRowActive : {}) }}
             >
               <span style={{ fontWeight: 600, fontSize: 13 }}>{c.email}</span>
-              <span style={{ color: badge.color, fontSize: 11 }}>{badge.text}</span>
+              <Badge text={badge.text} color={badge.color} bg={badge.bg} />
             </button>
           );
         })}
@@ -559,11 +561,10 @@ function ClientsTab() {
             <Row label={t('settings.memberSince')} value={new Date(selected.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
             <Row
               label={t('settings.verification')}
-              value={
-                <span style={{ color: (KYC_STATUS_LABEL[selected.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED).color, fontWeight: 600 }}>
-                  {(KYC_STATUS_LABEL[selected.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED).text}
-                </span>
-              }
+              value={(() => {
+                const b = KYC_STATUS_LABEL[selected.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
+                return <Badge text={b.text} color={b.color} bg={b.bg} />;
+              })()}
             />
 
             {selected.latestKyc ? (

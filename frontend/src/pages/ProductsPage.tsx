@@ -49,7 +49,7 @@ export function ProductsPage() {
 
         <div style={styles.grid}>
           {products.map((p) => (
-            <div key={p.id} style={styles.card}>
+            <div key={p.id} className="card-hover" style={styles.card}>
               <h3 style={styles.cardTitle}>{p.name}</h3>
               <p style={styles.cardDesc}>{p.description}</p>
               <div style={styles.cardFooter}>

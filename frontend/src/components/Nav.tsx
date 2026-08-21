@@ -126,6 +126,9 @@ const styles: Record<string, React.CSSProperties> = {
     height: 56,
     borderBottom: '1px solid var(--border)',
     background: 'var(--panel)',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+    position: 'relative',
+    zIndex: 10,
     flexShrink: 0,
   },
   logo: {

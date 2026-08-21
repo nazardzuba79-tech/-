@@ -48,7 +48,7 @@ export function CardPage() {
 
         <div style={styles.grid}>
           {FEATURES.map((f) => (
-            <div key={f.title} style={styles.card}>
+            <div key={f.title} className="card-hover" style={styles.card}>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardText}>{f.text}</p>
             </div>

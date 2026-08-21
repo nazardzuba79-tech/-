@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { Badge } from './Badge';
 
 interface Order {
   id: string;
@@ -46,9 +47,11 @@ export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
             </span>
             <span className="mono">{o.price ? parseFloat(o.price).toFixed(2) : t('trade.market')}</span>
             <span className="mono">{parseFloat(o.originalQuantity).toFixed(5)}</span>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {o.status === 'FILLED' ? t('trade.status.FILLED') : t('trade.status.CANCELLED')}
-            </span>
+            {o.status === 'FILLED' ? (
+              <Badge text={t('trade.status.FILLED')} color="var(--buy)" bg="var(--buy-dim)" />
+            ) : (
+              <Badge text={t('trade.status.CANCELLED')} color="var(--text-secondary)" bg="var(--neutral-dim)" />
+            )}
             <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
               {new Date(o.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')}
             </span>

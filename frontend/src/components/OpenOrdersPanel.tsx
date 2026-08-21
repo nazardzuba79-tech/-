@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { Badge } from './Badge';
 
 interface Order {
   id: string;
@@ -65,9 +66,11 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
             <span className="mono">
               {parseFloat(o.remainingQuantity).toFixed(5)} / {parseFloat(o.originalQuantity).toFixed(5)}
             </span>
-            <span style={{ color: 'var(--text-secondary)' }}>
-              {o.status === 'OPEN' ? t('trade.status.OPEN') : t('trade.status.PARTIALLY_FILLED')}
-            </span>
+            {o.status === 'OPEN' ? (
+              <Badge text={t('trade.status.OPEN')} color="var(--accent)" bg="var(--accent-dim)" />
+            ) : (
+              <Badge text={t('trade.status.PARTIALLY_FILLED')} color="var(--text-secondary)" bg="var(--neutral-dim)" />
+            )}
             <button onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id} style={styles.cancelBtn}>
               {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
             </button>

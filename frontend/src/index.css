@@ -15,6 +15,8 @@
   --sell-dim: rgba(255, 77, 106, 0.14);
   --accent: #f7a600;
   --accent-hover: #ffb524;
+  --accent-dim: rgba(247, 166, 0, 0.14);
+  --neutral-dim: rgba(163, 173, 186, 0.12);
 
   /* Type — Inter reads noticeably crisper than the plain system-font stack
      at small trading-UI sizes, which is the whole point (real exchanges
@@ -132,6 +134,72 @@ a {
    inline styles can't express :hover, hence the shared class. */
 .row-hover:hover {
   background: var(--panel-alt) !important;
+}
+
+/* Card hover-lift for clickable/tappable cards (products, card-page
+   features, settings tabs) — subtle, not a gimmick: a soft rise + glow
+   instead of a flat rectangle with zero feedback. */
+.card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: #3a4050 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Buttons get a small interactive nudge everywhere by default — flat,
+   static buttons are a big part of why the UI read as lifeless. */
+button:not(:disabled) {
+  transition: filter 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease;
+}
+button:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+button:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+/* Thin, dark, accent-on-hover scrollbars instead of the browser's chunky
+   light-gray default — small detail, but it's everywhere on a trading
+   screen (order book, dropdowns, tables) so it reads immediately. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Pill status badge — replaces plain colored text for KYC/order/key
+   status everywhere so state reads as a distinct chip, not just a color. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 @media (prefers-reduced-motion: reduce) {
