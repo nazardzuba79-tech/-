@@ -154,11 +154,14 @@ describe('GET /kyc/me', () => {
 });
 
 describe('admin-only KYC routes', () => {
-  it('GET /kyc/pending requires an admin account', async () => {
+  it('POST /kyc/:id/review requires an admin account', async () => {
     const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } } as any;
     const app = buildApp(prisma);
 
-    const res = await request(app).get('/api/v1/kyc/pending').set('Authorization', authHeader('user-1'));
+    const res = await request(app)
+      .post('/api/v1/kyc/sub-1/review')
+      .set('Authorization', authHeader('user-1'))
+      .send({ approve: true });
 
     expect(res.status).toBe(403);
   });

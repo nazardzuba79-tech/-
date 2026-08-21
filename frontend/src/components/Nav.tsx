@@ -17,12 +17,10 @@ const LINKS = [
  */
 export function Nav({
   active,
-  isAdmin,
   middle,
   rightExtra,
 }: {
   active: string;
-  isAdmin?: boolean;
   middle?: ReactNode;
   rightExtra?: ReactNode;
 }) {
@@ -43,14 +41,6 @@ export function Nav({
           {l.label}
         </Link>
       ))}
-      {isAdmin && (
-        <Link
-          to="/admin/kyc"
-          style={{ ...styles.link, ...(active === '/admin/kyc' ? styles.linkActive : {}) }}
-        >
-          Верифікації
-        </Link>
-      )}
       {middle}
       <div style={styles.right}>
         <BalanceStrip />

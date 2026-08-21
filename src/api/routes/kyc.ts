@@ -132,29 +132,6 @@ export function kycRouter(prisma: PrismaClient): Router {
     });
   });
 
-  // Admin-only: the review queue.
-  router.get('/kyc/pending', requireAuth, requireAdmin(prisma), async (_req, res) => {
-    const pending = await prisma.kycSubmission.findMany({
-      where: { status: 'PENDING' },
-      include: { user: { select: { email: true } } },
-      orderBy: { createdAt: 'asc' },
-    });
-    res.json(
-      pending.map(
-        (s: (typeof pending)[number]) => ({
-          id: s.id,
-          userEmail: s.user.email,
-          country: s.country,
-          fullName: s.fullName,
-          dateOfBirth: s.dateOfBirth,
-          documentType: s.documentType,
-          documentNumber: s.documentNumber,
-          createdAt: s.createdAt,
-        })
-      )
-    );
-  });
-
   // Admin-only: stream the uploaded document image/PDF for review.
   router.get('/kyc/:id/document', requireAuth, requireAdmin(prisma), async (req, res) => {
     const submission = await prisma.kycSubmission.findUnique({ where: { id: req.params.id } });

@@ -4,7 +4,6 @@ import { TradePage } from './pages/TradePage';
 import { ProductsPage } from './pages/ProductsPage';
 import { MarketsPage } from './pages/MarketsPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { AdminKycPage } from './pages/AdminKycPage';
 import { getToken } from './lib/api';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -45,14 +44,6 @@ export function App() {
           element={
             <RequireAuth>
               <SettingsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin/kyc"
-          element={
-            <RequireAuth>
-              <AdminKycPage />
             </RequireAuth>
           }
         />

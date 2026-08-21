@@ -224,20 +224,28 @@ export const api = {
       } | null;
     }>('/kyc/me'),
 
-  // Admin: KYC review queue
-  getPendingKyc: () =>
+  // Admin: every client with their latest KYC submission (if any)
+  getAllClients: () =>
     request<
       {
         id: string;
-        userEmail: string;
-        country: string;
-        fullName: string;
-        dateOfBirth: string;
-        documentType: string;
-        documentNumber: string;
+        email: string;
+        isAdmin: boolean;
+        kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
         createdAt: string;
+        latestKyc: {
+          id: string;
+          country: string;
+          fullName: string;
+          dateOfBirth: string;
+          documentType: string;
+          documentNumber: string;
+          status: string;
+          rejectionReason: string | null;
+          createdAt: string;
+        } | null;
       }[]
-    >('/kyc/pending'),
+    >('/admin/clients'),
 
   getKycDocument: (submissionId: string) => requestBlobUrl(`/kyc/${submissionId}/document`),
 

@@ -13,7 +13,6 @@ const PAIR = 'BTC/USDT';
 export function TradePage() {
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [showDeposit, setShowDeposit] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   const refreshBook = useCallback(() => {
@@ -29,10 +28,6 @@ export function TradePage() {
     return () => clearInterval(interval);
   }, [refreshBook]);
 
-  useEffect(() => {
-    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
-  }, []);
-
   function handleOrderPlaced() {
     refreshBook();
     setOrdersRefreshKey((k) => k + 1);
@@ -42,7 +37,6 @@ export function TradePage() {
     <div style={styles.page}>
       <Nav
         active="/trade"
-        isAdmin={isAdmin}
         rightExtra={
           <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
             Поповнити

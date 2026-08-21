@@ -26,11 +26,6 @@ export function MarketsPage() {
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [error, setError] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
-  }, []);
 
   useEffect(() => {
     function refreshTickers() {
@@ -73,7 +68,7 @@ export function MarketsPage() {
 
   return (
     <div style={styles.page}>
-      <Nav active="/markets" isAdmin={isAdmin} />
+      <Nav active="/markets" />
 
       <main style={styles.main}>
         <div style={styles.headerRow}>

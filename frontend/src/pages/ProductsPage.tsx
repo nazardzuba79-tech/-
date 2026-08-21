@@ -14,11 +14,9 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     api.getProducts().then(setProducts).catch(() => {});
-    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
   }, []);
 
   async function handleBuy(product: Product) {
@@ -36,7 +34,7 @@ export function ProductsPage() {
 
   return (
     <div style={styles.page}>
-      <Nav active="/products" isAdmin={isAdmin} />
+      <Nav active="/products" />
 
       <main style={styles.main}>
         <h1 style={styles.title}>Товари та послуги</h1>
