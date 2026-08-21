@@ -14,9 +14,12 @@
   --accent: #f7a600;
   --accent-hover: #ffb524;
 
-  /* Type */
-  --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  /* Type — Inter reads noticeably crisper than the plain system-font stack
+     at small trading-UI sizes, which is the whole point (real exchanges
+     like Bybit use a dedicated UI face for exactly this reason). Falls
+     back to the system stack if the Google Fonts request is ever blocked. */
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 * {
@@ -34,8 +37,11 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 button {
