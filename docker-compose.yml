@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: exchange
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: exchange
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exchange"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://exchange:${DB_PASSWORD}@db:5432/exchange
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3000
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      ETHEREUM_RPC_URL: ${ETHEREUM_RPC_URL}
+      ETHEREUM_TREASURY_ADDRESS: ${ETHEREUM_TREASURY_ADDRESS}
+      ETHEREUM_MIN_CONFIRMATIONS: ${ETHEREUM_MIN_CONFIRMATIONS:-12}
+      ETHEREUM_NATIVE_ASSET: ETH
+      ETHEREUM_TOKENS: ${ETHEREUM_TOKENS:-}
+    expose:
+      - "3000"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  # Caddy = reverse proxy that gets you a real HTTPS certificate for your
+  # domain automatically (Let's Encrypt), no manual cert setup needed.
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
