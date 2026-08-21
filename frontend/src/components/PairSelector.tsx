@@ -2,11 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { SearchInput } from './SearchInput';
+import { CryptoIcon } from './CryptoIcon';
+
+interface TickerRow {
+  pair: string;
+  lastPrice: string;
+  changePercent24h: string;
+}
 
 /**
  * Trade-page pair picker — button showing the current pair, opens a
- * searchable dropdown of pairs. Reuses the Kraken symbol mirror
- * (/market/external/symbols) as the pair list, since that's already a
+ * searchable dropdown of pairs with logos, live price, and 24h change
+ * (Bybit-style). Reuses the Kraken symbol mirror
+ * (/market/external/tickers) as the pair list, since that's already a
  * real, maintained list of tradeable assets — but trading itself only
  * ever happens on our OWN internal order book for that pair name, not on
  * Kraken. A pair nobody has traded here yet just starts with an empty book.
@@ -14,17 +22,17 @@ import { SearchInput } from './SearchInput';
 export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair: string) => void }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [pairs, setPairs] = useState<string[]>([]);
+  const [tickers, setTickers] = useState<TickerRow[]>([]);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!open || pairs.length > 0) return;
+    if (!open || tickers.length > 0) return;
     api
-      .getExternalSymbols()
-      .then((res) => setPairs(res.symbols.map((s) => s.pair)))
+      .getExternalTickers()
+      .then((res) => setTickers(res.tickers))
       .catch(() => {});
-  }, [open, pairs.length]);
+  }, [open, tickers.length]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -34,11 +42,14 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filtered = pairs.filter((p) => p.toLowerCase().includes(search.toLowerCase())).slice(0, 200);
+  const filtered = tickers
+    .filter((tk) => tk.pair.toLowerCase().includes(search.toLowerCase()))
+    .slice(0, 200);
 
   return (
     <div ref={containerRef} style={styles.container}>
       <button onClick={() => setOpen((o) => !o)} style={styles.button}>
+        <CryptoIcon symbol={pair.split('/')[0]} size={18} />
         <span className="mono" style={{ fontWeight: 700 }}>
           {pair}
         </span>
@@ -54,23 +65,44 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
             placeholder={t('trade.searchPair')}
             style={styles.search}
           />
+          <div style={styles.columns}>
+            <span>{t('markets.pair')}</span>
+            <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
+            <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+          </div>
           <div style={styles.list}>
-            {filtered.map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  onChange(p);
-                  setOpen(false);
-                  setSearch('');
-                }}
-                style={{ ...styles.option, ...(p === pair ? styles.optionActive : {}) }}
-                className="mono"
-              >
-                {p}
-              </button>
-            ))}
-            {pairs.length === 0 && <p style={styles.hint}>{t('trade.loading')}</p>}
-            {pairs.length > 0 && filtered.length === 0 && <p style={styles.hint}>{t('trade.nothingFound')}</p>}
+            {filtered.map((tk) => {
+              const change = parseFloat(tk.changePercent24h) * 100;
+              const positive = change >= 0;
+              return (
+                <button
+                  key={tk.pair}
+                  onClick={() => {
+                    onChange(tk.pair);
+                    setOpen(false);
+                    setSearch('');
+                  }}
+                  className="row-hover"
+                  style={{ ...styles.option, ...(tk.pair === pair ? styles.optionActive : {}) }}
+                >
+                  <span style={styles.optionLeft}>
+                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} />
+                    <span className="mono" style={{ fontWeight: 600 }}>
+                      {tk.pair}
+                    </span>
+                  </span>
+                  <span className="mono" style={{ textAlign: 'right' }}>
+                    {parseFloat(tk.lastPrice)}
+                  </span>
+                  <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ textAlign: 'right' }}>
+                    {positive ? '+' : ''}
+                    {change.toFixed(2)}%
+                  </span>
+                </button>
+              );
+            })}
+            {tickers.length === 0 && <p style={styles.hint}>{t('trade.loading')}</p>}
+            {tickers.length > 0 && filtered.length === 0 && <p style={styles.hint}>{t('trade.nothingFound')}</p>}
           </div>
         </div>
       )}
@@ -83,7 +115,7 @@ const styles: Record<string, React.CSSProperties> = {
   button: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 4,
@@ -94,31 +126,37 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 'calc(100% + 6px)',
     left: 0,
-    width: 260,
+    width: 340,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 6,
-    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+    borderRadius: 8,
+    boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
     zIndex: 50,
     overflow: 'hidden',
   },
-  search: {
-    borderRadius: 0,
-    border: 'none',
+  search: { borderRadius: 0, border: 'none', borderBottom: '1px solid var(--border)', padding: '0 12px' },
+  columns: {
+    display: 'grid',
+    gridTemplateColumns: '1.6fr 1fr 1fr',
+    padding: '8px 14px',
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
     borderBottom: '1px solid var(--border)',
-    padding: '0 12px',
   },
-  list: { maxHeight: 280, overflowY: 'auto' },
+  list: { maxHeight: 340, overflowY: 'auto' },
   option: {
-    display: 'block',
+    display: 'grid',
+    gridTemplateColumns: '1.6fr 1fr 1fr',
+    alignItems: 'center',
     width: '100%',
     textAlign: 'left',
     background: 'transparent',
     border: 'none',
-    padding: '8px 12px',
-    fontSize: 12,
+    padding: '9px 14px',
+    fontSize: 13,
     color: 'var(--text-primary)',
   },
-  optionActive: { background: 'var(--panel-alt)', color: 'var(--accent)' },
+  optionLeft: { display: 'flex', alignItems: 'center', gap: 8 },
+  optionActive: { background: 'var(--panel-alt)' },
   hint: { padding: 14, color: 'var(--text-tertiary)', fontSize: 12 },
 };

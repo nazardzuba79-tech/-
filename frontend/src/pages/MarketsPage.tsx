@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
+import { CryptoIcon } from '../components/CryptoIcon';
 
 interface Ticker {
   pair: string;
@@ -99,12 +100,16 @@ export function MarketsPage() {
                   <div
                     key={tk.pair}
                     onClick={() => setSelectedPair(tk.pair)}
+                    className="row-hover"
                     style={{
                       ...styles.listRow,
                       background: tk.pair === selectedPair ? 'var(--panel-alt)' : 'transparent',
                     }}
                   >
-                    <span>{tk.pair}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} />
+                      {tk.pair}
+                    </span>
                     <span className="mono" style={{ textAlign: 'right' }}>
                       {parseFloat(tk.lastPrice)}
                     </span>

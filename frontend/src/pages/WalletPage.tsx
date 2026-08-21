@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { DepositModal } from '../components/DepositModal';
 import { SearchInput } from '../components/SearchInput';
+import { CryptoIcon } from '../components/CryptoIcon';
 
 interface Balance {
   asset: string;
@@ -103,7 +104,8 @@ export function WalletPage() {
           <div style={styles.rows}>
             {filteredRows.map((r) => (
               <div key={r.asset} style={styles.row}>
-                <span style={{ fontWeight: 700 }} className="mono">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }} className="mono">
+                  <CryptoIcon symbol={r.asset} size={22} />
                   {r.asset}
                 </span>
                 <span className="mono" style={{ textAlign: 'right' }}>
