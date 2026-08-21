@@ -141,10 +141,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     color: '#0b0e11',
     border: 'none',
-    borderRadius: 4,
+    borderRadius: 18,
     padding: '8px 16px',
-    fontWeight: 700,
+    fontWeight: 800,
     fontSize: 12,
+    boxShadow: '0 2px 10px rgba(247,166,0,0.3)',
   },
   grid: {
     flex: 1,

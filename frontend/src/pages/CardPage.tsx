@@ -147,9 +147,10 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     color: '#0b0e11',
     border: 'none',
-    borderRadius: 4,
-    padding: '11px 20px',
-    fontWeight: 700,
+    borderRadius: 24,
+    padding: '12px 22px',
+    fontWeight: 800,
     fontSize: 14,
+    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
   },
 };
