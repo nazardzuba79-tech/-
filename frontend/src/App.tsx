@@ -5,6 +5,7 @@ import { ProductsPage } from './pages/ProductsPage';
 import { MarketsPage } from './pages/MarketsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
+import { WalletPage } from './pages/WalletPage';
 import { getToken } from './lib/api';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -53,6 +54,14 @@ export function App() {
           element={
             <RequireAuth>
               <CardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/wallet"
+          element={
+            <RequireAuth>
+              <WalletPage />
             </RequireAuth>
           }
         />

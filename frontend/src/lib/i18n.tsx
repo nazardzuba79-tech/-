@@ -9,6 +9,7 @@ const LANG_KEY = 'exchange_lang';
 // UI (including the KYC country list, see countries.ts).
 const RU = {
   'nav.trade': 'Торговля',
+  'nav.wallet': 'Кошелёк',
   'nav.markets': 'Рынки',
   'nav.products': 'Товары',
   'nav.card': 'Карта',
@@ -219,12 +220,24 @@ const RU = {
   'markets.selectPair': 'Выбери пару из списка',
 
   'balance.zero': 'Баланс: 0',
+
+  'wallet.title': 'Обзор активов',
+  'wallet.approxBtc': '≈ {amount} BTC',
+  'wallet.asset': 'Актив',
+  'wallet.available': 'Доступно',
+  'wallet.locked': 'Заблокировано',
+  'wallet.price': 'Цена',
+  'wallet.value': 'Стоимость',
+  'wallet.noAssets': 'Пока нет активов — пополни баланс, чтобы увидеть его здесь.',
+  'wallet.deposit': 'Пополнить',
+  'wallet.priceUnavailable': 'Нет цены с Kraken для этого актива — не учтён в общей сумме.',
 } as const;
 
 type Key = keyof typeof RU;
 
 const EN: Record<Key, string> = {
   'nav.trade': 'Trade',
+  'nav.wallet': 'Wallet',
   'nav.markets': 'Markets',
   'nav.products': 'Products',
   'nav.card': 'Card',
@@ -435,6 +448,17 @@ const EN: Record<Key, string> = {
   'markets.selectPair': 'Select a pair from the list',
 
   'balance.zero': 'Balance: 0',
+
+  'wallet.title': 'Assets Overview',
+  'wallet.approxBtc': '≈ {amount} BTC',
+  'wallet.asset': 'Asset',
+  'wallet.available': 'Available',
+  'wallet.locked': 'Locked',
+  'wallet.price': 'Price',
+  'wallet.value': 'Value',
+  'wallet.noAssets': 'No assets yet — deposit to see it here.',
+  'wallet.deposit': 'Deposit',
+  'wallet.priceUnavailable': 'No Kraken price for this asset — excluded from the total.',
 };
 
 const DICTS: Record<Lang, Record<Key, string>> = { ru: RU, en: EN };
