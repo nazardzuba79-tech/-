@@ -54,6 +54,10 @@ export function TradePage() {
       <TickerBar pair={pair} />
 
       <main style={styles.grid}>
+        <div style={styles.chartColumn}>
+          <TradingViewChart pair={pair} locale={lang} />
+        </div>
+
         <div style={styles.bookColumn}>
           <div style={styles.bookTabs}>
             <button
@@ -76,10 +80,6 @@ export function TradePage() {
           )}
         </div>
 
-        <div style={styles.chartColumn}>
-          <TradingViewChart pair={pair} locale={lang} />
-        </div>
-
         <div style={styles.formColumn}>
           <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
         </div>
@@ -96,10 +96,11 @@ export function TradePage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
-    minHeight: '100vh',
+    height: '100vh',
     background: 'var(--bg)',
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
   },
   depositBtn: {
     background: 'var(--accent)',
@@ -112,23 +113,30 @@ const styles: Record<string, React.CSSProperties> = {
   },
   grid: {
     flex: 1,
-    display: 'grid',
-    gridTemplateColumns: '300px 1fr 300px',
+    display: 'flex',
     gap: 1,
     background: 'var(--border)',
     padding: 1,
     minHeight: 0,
   },
+  chartColumn: {
+    background: 'var(--bg)',
+    display: 'flex',
+    flex: '1 1 auto',
+    minWidth: 0,
+  },
   bookColumn: {
     background: 'var(--bg)',
     display: 'flex',
     flexDirection: 'column',
+    flex: '0 0 300px',
     minHeight: 0,
     overflow: 'hidden',
   },
   bookTabs: {
     display: 'flex',
     borderBottom: '1px solid var(--border)',
+    flexShrink: 0,
   },
   bookTab: {
     flex: 1,
@@ -142,15 +150,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     boxShadow: 'inset 0 -2px 0 var(--accent)',
   },
-  chartColumn: {
-    background: 'var(--bg)',
-    display: 'flex',
-  },
   formColumn: {
     background: 'var(--bg)',
+    flex: '0 0 300px',
+    overflowY: 'auto',
   },
   ordersRow: {
-    padding: '1px 1px 16px',
+    flex: '0 0 220px',
+    padding: '1px 1px 1px',
     background: 'var(--bg)',
+    minHeight: 0,
   },
 };

@@ -97,13 +97,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     display: 'flex',
     flexDirection: 'column',
+    height: '100%',
     minHeight: 0,
+    overflow: 'hidden',
   },
   header: {
     padding: '12px 14px',
     fontSize: 13,
     fontWeight: 600,
     borderBottom: '1px solid var(--border)',
+    flexShrink: 0,
   },
   error: {
     margin: '10px 14px 0',
@@ -112,6 +115,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 10px',
     borderRadius: 4,
     fontSize: 11,
+    flexShrink: 0,
   },
   columns: {
     display: 'grid',
@@ -119,8 +123,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 14px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
+    flexShrink: 0,
   },
-  rows: { display: 'flex', flexDirection: 'column' },
+  rows: { display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 },
   row: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr 1.4fr 1.2fr 0.8fr',
