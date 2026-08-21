@@ -41,6 +41,13 @@ export function Nav({
           {l.label}
         </Link>
       ))}
+      <Link
+        to="/card"
+        style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
+      >
+        <CardIcon active={active === '/card'} />
+        Картка
+      </Link>
       {middle}
       <div style={styles.right}>
         <BalanceStrip />
@@ -53,6 +60,24 @@ export function Nav({
         </button>
       </div>
     </nav>
+  );
+}
+
+function CardIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
   );
 }
 
@@ -97,6 +122,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   linkActive: {
     color: 'var(--text-primary)',
+  },
+  cardLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
   },
   right: {
     marginLeft: 'auto',

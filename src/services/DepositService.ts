@@ -1,19 +1,17 @@
-import { ethers } from 'ethers';
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
+import { createVerifier } from './deposit-verifiers';
 
-const ERC20_TRANSFER_TOPIC = ethers.id('Transfer(address,address,uint256)');
-
-export class DepositVerificationError extends Error {}
+export { DepositVerificationError } from './deposit-verifiers';
 
 /**
  * Flow:
- *   1. User sends crypto from their own wallet (MetaMask etc.) to your
- *      treasury address, shown via GET /api/v1/deposit-address/:chain.
+ *   1. User sends crypto from their own wallet (Trust Wallet, MetaMask, ...)
+ *      to your treasury address, shown via GET /api/v1/deposit-address/:chain.
  *   2. User submits the resulting tx hash to POST /api/v1/deposits/claim.
- *   3. This service independently verifies ON-CHAIN (never trusts client
- *      input) that:
+ *   3. A chain-specific verifier (see deposit-verifiers/) independently
+ *      checks ON-CHAIN (never trusts client input) that:
  *        - the transaction exists and is confirmed
  *        - it actually paid the configured treasury address
  *        - the asset/amount match what's claimed
@@ -28,6 +26,8 @@ export class DepositVerificationError extends Error {}
  * "claim".
  */
 export class DepositService {
+  private verifier = createVerifier(this.chainConfig);
+
   constructor(private prisma: PrismaClient, private chainConfig: ChainConfig) {}
 
   async claimDeposit(params: {
@@ -49,16 +49,7 @@ export class DepositService {
       };
     }
 
-    const provider = new ethers.JsonRpcProvider(this.chainConfig.rpcUrl);
-    const receipt = await provider.getTransactionReceipt(txHash);
-    if (!receipt) throw new DepositVerificationError('Transaction not found or not yet mined');
-    if (receipt.status !== 1) throw new DepositVerificationError('Transaction failed on-chain');
-
-    const latestBlock = await provider.getBlockNumber();
-    const confirmations = latestBlock - receipt.blockNumber + 1;
-
-    const amount = await this.extractAndVerifyAmount(receipt, asset, provider, txHash);
-
+    const { amount, confirmations } = await this.verifier.verify(txHash, asset);
     const isConfirmed = confirmations >= this.chainConfig.minConfirmations;
     const status = isConfirmed ? 'CREDITED' : 'PENDING';
 
@@ -92,46 +83,5 @@ export class DepositService {
     });
 
     return { status, amount: amount.toString(), confirmations };
-  }
-
-  /**
-   * Verifies the transaction actually paid the treasury address, and returns
-   * the amount — for native currency (ETH/MATIC/BNB) via tx.value, or for an
-   * ERC-20 token via the Transfer event log. Throws if the claimed asset
-   * doesn't match what the transaction actually did.
-   */
-  private async extractAndVerifyAmount(
-    receipt: ethers.TransactionReceipt,
-    asset: string,
-    provider: ethers.JsonRpcProvider,
-    txHash: string
-  ): Promise<BigNumber> {
-    const treasury = this.chainConfig.treasuryAddress.toLowerCase();
-
-    if (asset.toUpperCase() === this.chainConfig.nativeAsset.toUpperCase()) {
-      const tx = await provider.getTransaction(txHash);
-      if (!tx) throw new DepositVerificationError('Transaction not found');
-      if (tx.to?.toLowerCase() !== treasury) {
-        throw new DepositVerificationError('Transaction does not pay the treasury address');
-      }
-      return new BigNumber(ethers.formatEther(tx.value));
-    }
-
-    const tokenConfig = this.chainConfig.tokens[asset.toUpperCase()];
-    if (!tokenConfig) throw new DepositVerificationError(`Unsupported asset: ${asset}`);
-
-    const matchingLog = receipt.logs.find(
-      (log) =>
-        log.address.toLowerCase() === tokenConfig.contractAddress.toLowerCase() &&
-        log.topics[0] === ERC20_TRANSFER_TOPIC &&
-        log.topics.length === 3 &&
-        ethers.getAddress('0x' + log.topics[2].slice(26)).toLowerCase() === treasury
-    );
-    if (!matchingLog) {
-      throw new DepositVerificationError('No matching token transfer to treasury address found in this transaction');
-    }
-
-    const rawAmount = BigInt(matchingLog.data);
-    return new BigNumber(rawAmount.toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals));
   }
 }

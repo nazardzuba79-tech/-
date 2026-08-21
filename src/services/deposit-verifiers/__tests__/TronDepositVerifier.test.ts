@@ -1,0 +1,100 @@
+import { TronDepositVerifier } from '../TronDepositVerifier';
+import { DepositVerificationError } from '../errors';
+import { ChainConfig } from '../../../config/chains';
+
+const TREASURY = 'TTreasuryAddressXXXXXXXXXXXXXXXXXX';
+const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+
+const chainConfig: ChainConfig = {
+  chain: 'tron',
+  type: 'tron',
+  treasuryAddress: TREASURY,
+  minConfirmations: 19,
+  nativeAsset: 'TRX',
+  tokens: { USDT: { contractAddress: USDT_CONTRACT, decimals: 6 } },
+  apiUrl: 'https://mock-trongrid',
+};
+
+function jsonResponse(body: any, ok = true, status = 200) {
+  return { ok, status, json: () => Promise.resolve(body) } as Response;
+}
+
+describe('TronDepositVerifier', () => {
+  it('rejects an asset with no configured TRC-20 contract (including the native asset)', async () => {
+    const verifier = new TronDepositVerifier(chainConfig, jest.fn());
+    await expect(verifier.verify('tx1', 'TRX')).rejects.toThrow('Unsupported asset on Tron');
+  });
+
+  it('credits a matching Transfer event and computes confirmations from the current block', async () => {
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          success: true,
+          data: [
+            {
+              block_number: 1000,
+              contract_address: USDT_CONTRACT,
+              event_name: 'Transfer',
+              result: { from: 'TSender', to: TREASURY, value: '5000000' },
+            },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse({ block_header: { raw_data: { number: 1018 } } }));
+
+    const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+    const result = await verifier.verify('tx1', 'USDT');
+
+    expect(result.amount.toString()).toBe('5'); // 5,000,000 / 1e6
+    expect(result.confirmations).toBe(19); // 1018 - 1000 + 1
+  });
+
+  it('ignores Transfer events for a different contract or recipient', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(
+      jsonResponse({
+        success: true,
+        data: [
+          { block_number: 1000, contract_address: 'TOtherContract', event_name: 'Transfer', result: { from: 'a', to: TREASURY, value: '1' } },
+          { block_number: 1000, contract_address: USDT_CONTRACT, event_name: 'Transfer', result: { from: 'a', to: 'TSomeoneElse', value: '1' } },
+        ],
+      })
+    );
+
+    const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+    await expect(verifier.verify('tx1', 'USDT')).rejects.toThrow(DepositVerificationError);
+  });
+
+  it('throws when the transaction has no events at all', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse({ success: true, data: [] }));
+    const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+    await expect(verifier.verify('tx1', 'USDT')).rejects.toThrow('not found, not yet mined');
+  });
+
+  it('sends the TRON-PRO-API-KEY header when configured', async () => {
+    const withKey: ChainConfig = { ...chainConfig, apiKey: 'secret' };
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          success: true,
+          data: [{ block_number: 1, contract_address: USDT_CONTRACT, event_name: 'Transfer', result: { from: 'a', to: TREASURY, value: '1' } }],
+        })
+      )
+      .mockResolvedValueOnce(jsonResponse({ block_header: { raw_data: { number: 1 } } }));
+
+    const verifier = new TronDepositVerifier(withKey, fetchFn);
+    await verifier.verify('tx1', 'USDT');
+
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.stringContaining('/v1/transactions/'),
+      expect.objectContaining({ headers: { 'TRON-PRO-API-KEY': 'secret' } })
+    );
+  });
+
+  it('wraps a network failure in DepositVerificationError', async () => {
+    const fetchFn = jest.fn().mockRejectedValue(new Error('timeout'));
+    const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+    await expect(verifier.verify('tx1', 'USDT')).rejects.toThrow('Failed to reach TronGrid API');
+  });
+});

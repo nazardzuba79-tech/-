@@ -18,6 +18,11 @@ model User {
   kycStatus     KycStatus @default(NOT_STARTED)
   twoFactorSecret String?
   twoFactorEnabled Boolean @default(false)
+  /// Set when the user joins the crypto card waitlist (see src/api/routes/card.ts).
+  /// Requires kycStatus == APPROVED — the card program needs full KYC same
+  /// as any real card issuer (Visa/Mastercard + the issuing bank require it
+  /// regardless of where the operating company is registered).
+  cardWaitlistJoinedAt DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

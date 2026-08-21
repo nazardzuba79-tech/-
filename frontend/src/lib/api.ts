@@ -119,6 +119,9 @@ export const api = {
       '/purchases/me'
     ),
 
+  getDepositChains: () =>
+    request<{ chain: string; nativeAsset: string; tokens: string[] }[]>('/deposit-chains'),
+
   getDepositAddress: (chain: string) =>
     request<{ chain: string; address: string; supportedAssets: string[]; note: string }>(
       `/deposit-address/${chain}`
@@ -254,6 +257,17 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ approve, reason }),
     }),
+
+  // Crypto card waitlist (card doesn't exist yet — see CardPage)
+  getCardWaitlist: () =>
+    request<{
+      joined: boolean;
+      joinedAt: string | null;
+      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+    }>('/card/waitlist/me'),
+
+  joinCardWaitlist: () =>
+    request<{ joined: boolean; joinedAt: string }>('/card/waitlist/join', { method: 'POST' }),
 };
 
 function pairToSlug(pair: string): string {

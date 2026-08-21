@@ -1,20 +1,48 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { loadChainConfig } from '../../config/chains';
+import { loadChainConfig, ChainConfig } from '../../config/chains';
 import { DepositService, DepositVerificationError } from '../../services/DepositService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
-const claimSchema = z.object({
-  txHash: z.string().regex(/^0x[a-fA-F0-9]{64}$/, 'invalid tx hash'),
-  asset: z.string().min(1),
-});
+// The only chains this deployment knows how to verify deposits on — see
+// deposit-verifiers/. A chain only actually appears to users (via
+// /deposit-chains) once its required env vars are set; listing every
+// UNCONFIGURED chain here too would be harmless (loadChainConfig throws
+// and it's filtered out below), but keeping the list exactly this narrow
+// is what stops the deposit UI from ever inventing a chain/asset combo
+// nobody configured a treasury address for.
+const KNOWN_CHAINS = ['ethereum', 'bitcoin', 'tron'];
+
+// Bitcoin/Tron tx hashes are plain 64 hex chars (as shown by their block
+// explorers); EVM chains prefix the same 64 hex chars with "0x".
+const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
+  evm: /^0x[a-fA-F0-9]{64}$/,
+  bitcoin: /^[a-fA-F0-9]{64}$/,
+  tron: /^[a-fA-F0-9]{64}$/,
+};
 
 export function depositsRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  // Shows YOUR treasury wallet address (e.g. MetaMask) — same address for
-  // every user, on every chain you've configured via env vars.
+  // Every chain this deployment actually accepts deposits on (i.e. has a
+  // treasury address configured for), with the exact assets supported on
+  // each — the deposit UI should only ever offer these, so a user can't
+  // send something the backend has no way to credit.
+  router.get('/deposit-chains', requireAuth, (_req, res) => {
+    const chains = KNOWN_CHAINS.flatMap((chain) => {
+      try {
+        const config = loadChainConfig(chain);
+        return [{ chain: config.chain, nativeAsset: config.nativeAsset, tokens: Object.keys(config.tokens) }];
+      } catch {
+        return []; // not configured on this deployment — omit it
+      }
+    });
+    res.json(chains);
+  });
+
+  // Shows YOUR treasury wallet address (e.g. Trust Wallet) — same address
+  // for every user, on every chain you've configured via env vars.
   router.get('/deposit-address/:chain', requireAuth, (req, res) => {
     try {
       const config = loadChainConfig(req.params.chain);
@@ -30,11 +58,21 @@ export function depositsRouter(prisma: PrismaClient): Router {
   });
 
   router.post('/deposits/claim/:chain', requireAuth, async (req: AuthedRequest, res) => {
+    let config: ChainConfig;
+    try {
+      config = loadChainConfig(req.params.chain);
+    } catch {
+      return res.status(404).json({ error: `Unknown or unconfigured chain: ${req.params.chain}` });
+    }
+
+    const claimSchema = z.object({
+      txHash: z.string().regex(TX_HASH_PATTERN[config.type], 'invalid transaction hash for this network'),
+      asset: z.string().min(1),
+    });
     const parsed = claimSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     try {
-      const config = loadChainConfig(req.params.chain);
       const service = new DepositService(prisma, config);
       const result = await service.claimDeposit({
         userId: req.userId!,

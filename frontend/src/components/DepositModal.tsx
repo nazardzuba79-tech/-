@@ -1,8 +1,15 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 
+const CHAIN_LABEL: Record<string, string> = {
+  ethereum: 'Ethereum (ERC20)',
+  bitcoin: 'Bitcoin',
+  tron: 'Tron (TRC20)',
+};
+
 export function DepositModal({ onClose }: { onClose: () => void }) {
-  const [chain] = useState('ethereum');
+  const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
+  const [chain, setChain] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
   const [asset, setAsset] = useState('');
@@ -12,7 +19,24 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  // Only ever offer chains the backend has a treasury address configured
+  // for — this is what stops someone from being shown a network/address
+  // this deployment can't actually verify a deposit on.
   useEffect(() => {
+    api
+      .getDepositChains()
+      .then((res) => {
+        setChains(res);
+        if (res.length > 0) setChain(res[0].chain);
+      })
+      .catch(() => setError('Не вдалось завантажити список підтримуваних мереж'));
+  }, []);
+
+  useEffect(() => {
+    if (!chain) return;
+    setAddress(null);
+    setTxHash('');
+    setResult(null);
     api
       .getDepositAddress(chain)
       .then((res) => {
@@ -32,6 +56,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
 
   async function handleClaim(e: FormEvent) {
     e.preventDefault();
+    if (!chain) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -55,56 +80,83 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <p style={styles.hint}>
-          Надішли крипту на адресу нижче зі свого гаманця (MetaMask тощо), потім встав хеш транзакції — баланс
-          зарахується автоматично, після перевірки в мережі.
+          Надішли крипту на адресу нижче зі свого гаманця, потім встав хеш транзакції — баланс зарахується
+          автоматично, після перевірки в мережі.
         </p>
 
-        <div style={styles.addressBox}>
-          <span className="mono" style={styles.address}>
-            {address ?? 'Завантаження...'}
-          </span>
-          <button onClick={handleCopy} style={styles.copyBtn} type="button" disabled={!address}>
-            {copied ? 'Скопійовано' : 'Копіювати'}
-          </button>
-        </div>
+        {chains.length === 0 && !error && (
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Завантаження мереж...</p>
+        )}
 
-        <form onSubmit={handleClaim} style={styles.form}>
-          <label style={styles.label}>
-            Актив
-            <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
-              {assets.map((a) => (
-                <option key={a} value={a}>
-                  {a}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label style={styles.label}>
-            Хеш транзакції
-            <input
-              className="mono"
-              type="text"
-              required
-              placeholder="0x..."
-              value={txHash}
-              onChange={(e) => setTxHash(e.target.value)}
-              style={styles.input}
-            />
-          </label>
+        {chains.length > 0 && (
+          <>
+            <label style={styles.label}>
+              Мережа
+              <select value={chain ?? ''} onChange={(e) => setChain(e.target.value)} style={styles.input}>
+                {chains.map((c) => (
+                  <option key={c.chain} value={c.chain}>
+                    {CHAIN_LABEL[c.chain] ?? c.chain}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          {error && <div style={styles.error}>{error}</div>}
-          {result && (
-            <div style={styles.success}>
-              {result.status === 'CREDITED'
-                ? `Зараховано ${result.amount} ${asset}`
-                : `Знайдено, очікує підтверджень (${result.confirmations})`}
+            <div style={styles.addressBox}>
+              <span className="mono" style={styles.address}>
+                {address ?? 'Завантаження...'}
+              </span>
+              <button onClick={handleCopy} style={styles.copyBtn} type="button" disabled={!address}>
+                {copied ? 'Скопійовано' : 'Копіювати'}
+              </button>
             </div>
-          )}
 
-          <button type="submit" disabled={submitting || !address} style={styles.submit}>
-            {submitting ? 'Перевіряємо...' : 'Перевірити і зарахувати'}
-          </button>
-        </form>
+            <div style={styles.warning}>
+              ⚠ Надсилай лише {assets.join(' / ') || 'підтримувані активи'} в мережі{' '}
+              {CHAIN_LABEL[chain ?? ''] ?? chain}. Кошти, надіслані в іншій мережі або іншим активом, буде втрачено
+              безповоротно.
+            </div>
+
+            <form onSubmit={handleClaim} style={styles.form}>
+              <label style={styles.label}>
+                Актив
+                <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
+                  {assets.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label style={styles.label}>
+                Хеш транзакції
+                <input
+                  className="mono"
+                  type="text"
+                  required
+                  placeholder={chain === 'ethereum' ? '0x...' : 'хеш транзакції'}
+                  value={txHash}
+                  onChange={(e) => setTxHash(e.target.value)}
+                  style={styles.input}
+                />
+              </label>
+
+              {error && <div style={styles.error}>{error}</div>}
+              {result && (
+                <div style={styles.success}>
+                  {result.status === 'CREDITED'
+                    ? `Зараховано ${result.amount} ${asset}`
+                    : `Знайдено, очікує підтверджень (${result.confirmations})`}
+                </div>
+              )}
+
+              <button type="submit" disabled={submitting || !address} style={styles.submit}>
+                {submitting ? 'Перевіряємо...' : 'Перевірити і зарахувати'}
+              </button>
+            </form>
+          </>
+        )}
+
+        {chains.length === 0 && error && <div style={styles.error}>{error}</div>}
       </div>
     </div>
   );
@@ -121,11 +173,13 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 100,
   },
   modal: {
-    width: 420,
+    width: 440,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 8,
     padding: 24,
+    maxHeight: '90vh',
+    overflowY: 'auto',
   },
   headerRow: {
     display: 'flex',
@@ -157,7 +211,8 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 4,
     padding: '10px 12px',
-    marginBottom: 20,
+    marginTop: 14,
+    marginBottom: 12,
   },
   address: {
     flex: 1,
@@ -173,6 +228,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 700,
     whiteSpace: 'nowrap',
+  },
+  warning: {
+    background: 'var(--sell-dim)',
+    color: 'var(--sell)',
+    padding: '8px 10px',
+    borderRadius: 4,
+    fontSize: 11,
+    lineHeight: 1.5,
+    marginBottom: 16,
   },
   form: {
     display: 'flex',

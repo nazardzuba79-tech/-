@@ -15,6 +15,7 @@ import { marketRouter } from './api/routes/market';
 import { accountRouter } from './api/routes/account';
 import { kycRouter } from './api/routes/kyc';
 import { adminRouter } from './api/routes/admin';
+import { cardRouter } from './api/routes/card';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { BybitMarketDataService } from './services/BybitMarketDataService';
 
@@ -48,6 +49,7 @@ app.use('/api/v1', marketRouter(marketDataService));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma));
 app.use('/api/v1', adminRouter(prisma));
+app.use('/api/v1', cardRouter(prisma));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

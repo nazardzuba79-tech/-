@@ -27,6 +27,7 @@ beforeEach(() => {
 const TREASURY = '0x000000000000000000000000000000000000aa';
 const chainConfig: ChainConfig = {
   chain: 'ethereum',
+  type: 'evm',
   rpcUrl: 'http://mock',
   treasuryAddress: TREASURY,
   minConfirmations: 3,
