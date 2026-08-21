@@ -229,6 +229,7 @@ const RU = {
   'wallet.price': 'Цена',
   'wallet.value': 'Стоимость',
   'wallet.noAssets': 'Пока нет активов — пополни баланс, чтобы увидеть его здесь.',
+  'wallet.searchAsset': 'Поиск актива, напр. BTC',
   'wallet.deposit': 'Пополнить',
   'wallet.priceUnavailable': 'Нет цены с Kraken для этого актива — не учтён в общей сумме.',
 } as const;
@@ -457,6 +458,7 @@ const EN: Record<Key, string> = {
   'wallet.price': 'Price',
   'wallet.value': 'Value',
   'wallet.noAssets': 'No assets yet — deposit to see it here.',
+  'wallet.searchAsset': 'Search asset, e.g. BTC',
   'wallet.deposit': 'Deposit',
   'wallet.priceUnavailable': 'No Kraken price for this asset — excluded from the total.',
 };

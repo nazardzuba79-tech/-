@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { DepositModal } from '../components/DepositModal';
+import { SearchInput } from '../components/SearchInput';
 
 interface Balance {
   asset: string;
@@ -25,6 +26,7 @@ export function WalletPage() {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
   const [showDeposit, setShowDeposit] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     function load() {
@@ -61,6 +63,7 @@ export function WalletPage() {
   const totalUsd = rows.reduce((sum, r) => sum + (r.value ?? 0), 0);
   const btcPrice = priceOf('BTC');
   const btcEquivalent = btcPrice ? totalUsd / btcPrice : null;
+  const filteredRows = rows.filter((r) => r.asset.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div style={styles.page}>
@@ -82,6 +85,13 @@ export function WalletPage() {
           </button>
         </div>
 
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder={t('wallet.searchAsset')}
+          style={styles.search}
+        />
+
         <div style={styles.table}>
           <div style={styles.columns}>
             <span>{t('wallet.asset')}</span>
@@ -91,7 +101,7 @@ export function WalletPage() {
             <span style={{ textAlign: 'right' }}>{t('wallet.value')}</span>
           </div>
           <div style={styles.rows}>
-            {rows.map((r) => (
+            {filteredRows.map((r) => (
               <div key={r.asset} style={styles.row}>
                 <span style={{ fontWeight: 700 }} className="mono">
                   {r.asset}
@@ -113,6 +123,7 @@ export function WalletPage() {
               </div>
             ))}
             {rows.length === 0 && <p style={styles.hint}>{t('wallet.noAssets')}</p>}
+            {rows.length > 0 && filteredRows.length === 0 && <p style={styles.hint}>{t('markets.nothingFound')}</p>}
           </div>
         </div>
       </main>
@@ -136,6 +147,7 @@ const styles: Record<string, React.CSSProperties> = {
   totalValue: { fontSize: 34, fontWeight: 800, fontFamily: 'var(--font-mono)' },
   totalCurrency: { fontSize: 16, color: 'var(--text-secondary)', fontWeight: 600 },
   btcLine: { fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, fontFamily: 'var(--font-mono)' },
+  search: { width: 260, marginBottom: 14 },
   depositBtn: {
     background: 'var(--accent)',
     color: '#0b0e11',

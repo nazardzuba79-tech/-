@@ -2,6 +2,7 @@ import { useEffect, useState, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
+import { SearchInput } from '../components/SearchInput';
 import { getCountries, getCountryName } from '../lib/countries';
 
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
@@ -526,11 +527,11 @@ function ClientsTab() {
   return (
     <div style={styles.clientsGrid}>
       <div style={styles.clientsList}>
-        <input
-          placeholder={t('settings.searchByEmail')}
+        <SearchInput
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ ...styles.input, margin: 10, width: 'calc(100% - 20px)' }}
+          onChange={setSearch}
+          placeholder={t('settings.searchByEmail')}
+          style={{ margin: 10, width: 'calc(100% - 20px)' }}
         />
         {filtered.map((c) => {
           const badge = KYC_STATUS_LABEL[c.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;

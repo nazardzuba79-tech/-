@@ -86,6 +86,48 @@ a {
   outline-offset: 1px;
 }
 
+/* Placeholder text had no color rule anywhere, so it fell back to the
+   browser default — nearly invisible against our dark background. This is
+   the actual cause of search boxes looking empty/gray. */
+::placeholder {
+  color: var(--text-tertiary);
+  opacity: 1;
+}
+
+/* Shared "bright" search box look (icon + input) used anywhere someone can
+   filter a list — deliberately higher-contrast than a plain input so it
+   doesn't blend into the panel background. */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.search-box:hover {
+  border-color: #3a4050;
+}
+.search-box:focus-within {
+  border-color: var(--accent);
+  background: #20242e;
+}
+.search-box svg {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+.search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  padding: 10px 0;
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;

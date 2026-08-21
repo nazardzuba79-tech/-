@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
+import { SearchInput } from '../components/SearchInput';
 
 interface Ticker {
   pair: string;
@@ -75,12 +76,7 @@ export function MarketsPage() {
       <main style={styles.main}>
         <div style={styles.headerRow}>
           <h1 style={styles.title}>{t('markets.title')}</h1>
-          <input
-            placeholder={t('markets.searchPair')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={styles.search}
-          />
+          <SearchInput value={search} onChange={setSearch} placeholder={t('markets.searchPair')} style={{ width: 220 }} />
         </div>
 
         {error && <div style={styles.banner}>{error}</div>}
@@ -163,15 +159,6 @@ const styles: Record<string, React.CSSProperties> = {
   main: { padding: 32, maxWidth: 1100, margin: '0 auto', width: '100%' },
   headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
   title: { fontSize: 20, margin: 0 },
-  search: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 4,
-    padding: '8px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
-    width: 220,
-  },
   banner: {
     padding: '10px 14px',
     borderRadius: 4,

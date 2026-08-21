@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { SearchInput } from './SearchInput';
 
 /**
  * Trade-page pair picker — button showing the current pair, opens a
@@ -46,11 +47,11 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
 
       {open && (
         <div style={styles.dropdown}>
-          <input
+          <SearchInput
             autoFocus
-            placeholder={t('trade.searchPair')}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={setSearch}
+            placeholder={t('trade.searchPair')}
             style={styles.search}
           />
           <div style={styles.list}>
@@ -102,13 +103,10 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
   },
   search: {
-    width: '100%',
-    background: 'var(--panel-alt)',
+    borderRadius: 0,
     border: 'none',
     borderBottom: '1px solid var(--border)',
-    padding: '10px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
+    padding: '0 12px',
   },
   list: { maxHeight: 280, overflowY: 'auto' },
   option: {
