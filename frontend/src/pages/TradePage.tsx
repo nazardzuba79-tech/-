@@ -43,6 +43,9 @@ export function TradePage() {
             {PAIR}
           </span>
         </div>
+        <Link to="/markets" style={styles.navLink}>
+          Ринки
+        </Link>
         <Link to="/products" style={styles.navLink}>
           Товари
         </Link>

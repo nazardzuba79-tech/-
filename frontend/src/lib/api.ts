@@ -100,6 +100,39 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ txHash, asset }),
     }),
+
+  // Read-only mirror of Bybit market data — coin list, price, order book.
+  getExternalSymbols: () =>
+    request<{ source: string; symbols: { pair: string; baseAsset: string; quoteAsset: string }[] }>(
+      '/market/external/symbols'
+    ),
+
+  getExternalTickers: () =>
+    request<{
+      source: string;
+      tickers: {
+        pair: string;
+        lastPrice: string;
+        bidPrice: string;
+        askPrice: string;
+        high24h: string;
+        low24h: string;
+        volume24h: string;
+        changePercent24h: string;
+      }[];
+    }>('/market/external/tickers'),
+
+  getExternalOrderBook: (pair: string) =>
+    request<{
+      pair: string;
+      bids: { price: string; quantity: string }[];
+      asks: { price: string; quantity: string }[];
+      timestamp: number;
+    }>(`/market/external/orderbook/${pairToSlug(pair)}`),
 };
+
+function pairToSlug(pair: string): string {
+  return pair.replace('/', '-');
+}
 
 export { ApiError };

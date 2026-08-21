@@ -42,6 +42,9 @@ export function ProductsPage() {
         <Link to="/trade" style={styles.navLink}>
           Торгівля
         </Link>
+        <Link to="/markets" style={styles.navLink}>
+          Ринки
+        </Link>
         <Link to="/products" style={{ ...styles.navLink, color: 'var(--text-primary)' }}>
           Товари
         </Link>

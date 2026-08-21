@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { TradePage } from './pages/TradePage';
 import { ProductsPage } from './pages/ProductsPage';
+import { MarketsPage } from './pages/MarketsPage';
 import { getToken } from './lib/api';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -26,6 +27,14 @@ export function App() {
           element={
             <RequireAuth>
               <ProductsPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/markets"
+          element={
+            <RequireAuth>
+              <MarketsPage />
             </RequireAuth>
           }
         />
