@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { clearToken } from '../lib/api';
 import { BalanceStrip } from './BalanceStrip';
+import { Logo } from './Logo';
 
 const LINKS = [
   { to: '/trade', label: 'Торгівля' },
@@ -34,7 +35,7 @@ export function Nav({
   return (
     <nav style={styles.nav}>
       <Link to="/trade" style={styles.logo}>
-        EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
+        <Logo />
       </Link>
       {LINKS.map((l) => (
         <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>

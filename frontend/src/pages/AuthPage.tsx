@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
+import { Logo } from '../components/Logo';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -29,7 +30,7 @@ export function AuthPage() {
     <div style={styles.page}>
       <div style={styles.card}>
         <div style={styles.logo}>
-          EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
+          <Logo size="large" />
         </div>
 
         <div style={styles.tabs}>
