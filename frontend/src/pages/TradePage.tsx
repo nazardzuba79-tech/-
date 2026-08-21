@@ -10,12 +10,18 @@ import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
 import { TradingViewChart } from '../components/TradingViewChart';
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
+import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
+import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
+import { AssetsPanel } from '../components/AssetsPanel';
+
+type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 
 export function TradePage() {
   const { t, lang } = useLanguage();
   const [pair, setPair] = useState('BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
+  const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [showDeposit, setShowDeposit] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
@@ -86,7 +92,36 @@ export function TradePage() {
       </main>
 
       <div style={styles.ordersRow}>
-        <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />
+        <div style={styles.bottomTabs}>
+          <button
+            onClick={() => setBottomTab('open')}
+            style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
+          >
+            {t('trade.tabOpenOrders')}
+          </button>
+          <button
+            onClick={() => setBottomTab('orderHistory')}
+            style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
+          >
+            {t('trade.tabOrderHistory')}
+          </button>
+          <button
+            onClick={() => setBottomTab('tradeHistory')}
+            style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
+          >
+            {t('trade.tabTradeHistory')}
+          </button>
+          <button
+            onClick={() => setBottomTab('assets')}
+            style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
+          >
+            {t('trade.tabAssets')}
+          </button>
+        </div>
+        {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
+        {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+        {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+        {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
       </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
@@ -156,9 +191,30 @@ const styles: Record<string, React.CSSProperties> = {
     overflowY: 'auto',
   },
   ordersRow: {
-    flex: '0 0 220px',
-    padding: '1px 1px 1px',
-    background: 'var(--bg)',
+    flex: '0 0 260px',
+    display: 'flex',
+    flexDirection: 'column',
+    background: 'var(--panel)',
+    borderTop: '1px solid var(--border)',
     minHeight: 0,
+  },
+  bottomTabs: {
+    display: 'flex',
+    gap: 4,
+    padding: '0 14px',
+    borderBottom: '1px solid var(--border)',
+    flexShrink: 0,
+  },
+  bottomTab: {
+    background: 'transparent',
+    border: 'none',
+    padding: '12px 6px',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+  },
+  bottomTabActive: {
+    color: 'var(--text-primary)',
+    boxShadow: 'inset 0 -2px 0 var(--accent)',
   },
 };

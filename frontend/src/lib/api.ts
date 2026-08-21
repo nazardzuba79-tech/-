@@ -207,6 +207,11 @@ export const api = {
       }[]
     >(`/orders/me${status ? `?status=${status}` : ''}`),
 
+  getMyTrades: (pair?: string) =>
+    request<
+      { id: string; pair: string; side: 'BUY' | 'SELL'; price: string; quantity: string; executedAt: string }[]
+    >(`/trades/me${pair ? `?pair=${encodeURIComponent(pair)}` : ''}`),
+
   // KYC verification
   submitKyc: (fields: {
     country: string;

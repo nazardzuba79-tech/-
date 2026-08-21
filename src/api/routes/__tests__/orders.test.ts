@@ -50,14 +50,27 @@ describe('GET /orders/me', () => {
     );
   });
 
-  it('filters by status when provided', async () => {
+  it('filters by a single status when provided', async () => {
     const prisma = { order: { findMany: jest.fn().mockResolvedValue([]) } } as any;
     const app = buildApp(prisma);
 
     await request(app).get('/api/v1/orders/me?status=OPEN').set('Authorization', authHeader('user-1'));
 
     expect(prisma.order.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: 'user-1', status: 'OPEN' } })
+      expect.objectContaining({ where: { userId: 'user-1', status: { in: ['OPEN'] } } })
+    );
+  });
+
+  it('filters by a comma-separated list of statuses', async () => {
+    const prisma = { order: { findMany: jest.fn().mockResolvedValue([]) } } as any;
+    const app = buildApp(prisma);
+
+    await request(app)
+      .get('/api/v1/orders/me?status=OPEN,PARTIALLY_FILLED')
+      .set('Authorization', authHeader('user-1'));
+
+    expect(prisma.order.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'user-1', status: { in: ['OPEN', 'PARTIALLY_FILLED'] } } })
     );
   });
 

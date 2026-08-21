@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from './matching-engine/MatchingEngine';
 import { ordersRouter } from './api/routes/orders';
+import { tradesRouter } from './api/routes/trades';
 import { depositsRouter } from './api/routes/deposits';
 import { authRouter } from './api/routes/auth';
 import { candlesRouter } from './api/routes/candles';
@@ -41,6 +42,7 @@ app.use(
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/v1', ordersRouter(prisma, engine));
+app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma));
 app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));

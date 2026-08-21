@@ -16,18 +16,12 @@ interface Order {
 
 export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
   const { t } = useLanguage();
-  const STATUS_LABEL: Record<string, string> = {
-    OPEN: t('trade.status.OPEN'),
-    PARTIALLY_FILLED: t('trade.status.PARTIALLY_FILLED'),
-    FILLED: t('trade.status.FILLED'),
-    CANCELLED: t('trade.status.CANCELLED'),
-  };
   const [orders, setOrders] = useState<Order[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api.getMyOrders().then(setOrders).catch(() => {});
+    api.getMyOrders('OPEN,PARTIALLY_FILLED').then(setOrders).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -53,7 +47,6 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
 
   return (
     <div style={styles.panel}>
-      <div style={styles.header}>{t('trade.myOrders')} ({pair})</div>
       {error && <div style={styles.error}>{error}</div>}
       <div style={styles.columns}>
         <span>{t('trade.side')}</span>
@@ -72,14 +65,12 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
             <span className="mono">
               {parseFloat(o.remainingQuantity).toFixed(5)} / {parseFloat(o.originalQuantity).toFixed(5)}
             </span>
-            <span style={{ color: 'var(--text-secondary)' }}>{STATUS_LABEL[o.status] ?? o.status}</span>
-            {(o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED') ? (
-              <button onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id} style={styles.cancelBtn}>
-                {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
-              </button>
-            ) : (
-              <span />
-            )}
+            <span style={{ color: 'var(--text-secondary)' }}>
+              {o.status === 'OPEN' ? t('trade.status.OPEN') : t('trade.status.PARTIALLY_FILLED')}
+            </span>
+            <button onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id} style={styles.cancelBtn}>
+              {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
+            </button>
           </div>
         ))}
         {pairOrders.length === 0 && (
@@ -92,21 +83,11 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
 
 const styles: Record<string, React.CSSProperties> = {
   panel: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
+    flex: 1,
     minHeight: 0,
     overflow: 'hidden',
-  },
-  header: {
-    padding: '12px 14px',
-    fontSize: 13,
-    fontWeight: 600,
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
   },
   error: {
     margin: '10px 14px 0',

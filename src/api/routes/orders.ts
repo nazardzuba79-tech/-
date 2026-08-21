@@ -54,9 +54,17 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
   // page. Not paginated: fine for a single user's order history on an
   // internal team exchange, revisit if that stops being true.
   router.get('/orders/me', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
-    const status = req.query.status as string | undefined;
+    // Accepts a single status ("OPEN") or a comma-separated list
+    // ("OPEN,PARTIALLY_FILLED") so the trade page can ask for "open orders"
+    // and "order history" as two distinct queries instead of filtering
+    // client-side.
+    const statusParam = req.query.status as string | undefined;
+    const statuses = statusParam?.split(',').map((s) => s.trim()).filter(Boolean);
     const orders = await prisma.order.findMany({
-      where: { userId: req.userId, ...(status ? { status } : {}) },
+      where: {
+        userId: req.userId,
+        ...(statuses && statuses.length > 0 ? { status: { in: statuses } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
