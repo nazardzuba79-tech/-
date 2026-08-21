@@ -45,6 +45,35 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+// Like request(), but for multipart/form-data (file uploads) — the browser
+// sets the Content-Type boundary itself, so it must NOT be set manually.
+async function requestForm<T>(path: string, formData: FormData): Promise<T> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: formData,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(body.error?.toString?.() ?? `Request failed (${res.status})`, res.status);
+  }
+  return res.json();
+}
+
+// Fetches an authenticated binary resource (KYC document image) and hands
+// back an object URL the caller must revoke when done with it, plus its
+// content type (object URLs don't carry a file extension to sniff).
+async function requestBlobUrl(path: string): Promise<{ url: string; contentType: string }> {
+  const token = getToken();
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+  const blob = await res.blob();
+  return { url: URL.createObjectURL(blob), contentType: blob.type };
+}
+
 export const api = {
   register: (email: string, password: string) =>
     request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -129,6 +158,94 @@ export const api = {
       asks: { price: string; quantity: string }[];
       timestamp: number;
     }>(`/market/external/orderbook/${pairToSlug(pair)}`),
+
+  // Account
+  getMe: () =>
+    request<{
+      id: string;
+      email: string;
+      isAdmin: boolean;
+      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      twoFactorEnabled: boolean;
+      createdAt: string;
+    }>('/me'),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ status: string }>('/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  getMyOrders: (status?: string) =>
+    request<
+      {
+        id: string;
+        pair: string;
+        side: 'BUY' | 'SELL';
+        type: string;
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        createdAt: string;
+      }[]
+    >(`/orders/me${status ? `?status=${status}` : ''}`),
+
+  // KYC verification
+  submitKyc: (fields: {
+    country: string;
+    fullName: string;
+    dateOfBirth: string;
+    documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';
+    documentNumber: string;
+    document: File;
+  }) => {
+    const form = new FormData();
+    form.append('country', fields.country);
+    form.append('fullName', fields.fullName);
+    form.append('dateOfBirth', fields.dateOfBirth);
+    form.append('documentType', fields.documentType);
+    form.append('documentNumber', fields.documentNumber);
+    form.append('document', fields.document);
+    return requestForm<{ id: string; status: string }>('/kyc/submit', form);
+  },
+
+  getMyKyc: () =>
+    request<{
+      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      latestSubmission: {
+        id: string;
+        country: string;
+        fullName: string;
+        documentType: string;
+        status: string;
+        rejectionReason: string | null;
+        createdAt: string;
+      } | null;
+    }>('/kyc/me'),
+
+  // Admin: KYC review queue
+  getPendingKyc: () =>
+    request<
+      {
+        id: string;
+        userEmail: string;
+        country: string;
+        fullName: string;
+        dateOfBirth: string;
+        documentType: string;
+        documentNumber: string;
+        createdAt: string;
+      }[]
+    >('/kyc/pending'),
+
+  getKycDocument: (submissionId: string) => requestBlobUrl(`/kyc/${submissionId}/document`),
+
+  reviewKyc: (submissionId: string, approve: boolean, reason?: string) =>
+    request<{ status: string }>(`/kyc/${submissionId}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ approve, reason }),
+    }),
 };
 
 function pairToSlug(pair: string): string {

@@ -27,6 +27,7 @@ model User {
   withdrawals   Withdrawal[]
   wallets       Wallet[]
   purchases     Purchase[]
+  kycSubmissions KycSubmission[]
 
   @@index([email])
 }
@@ -167,6 +168,41 @@ model Product {
   purchases   Purchase[]
 
   @@index([active])
+}
+
+/// A user's submission of identity documents for KYC review — country,
+/// legal name, date of birth, and a photo of a passport/ID/driver's
+/// license. `documentImagePath` points at a file on local disk
+/// (`uploads/kyc/`), NOT committed to the repo (see .gitignore).
+///
+/// IMPORTANT: this is a submission + manual-review scaffold, not real
+/// identity verification. Nothing here checks that the document is
+/// genuine, matches the photo, or passes sanctions/PEP screening — an
+/// admin just looks at the image and clicks approve/reject (same manual
+/// pattern as Purchase fulfillment). Storing raw passport scans on local
+/// disk, unencrypted, is not compliant with real KYC/AML regulation
+/// (GDPR "special category data" in the EU, MiCA, FINMA VASP, etc. — see
+/// README). Before this holds real users' documents, replace it with a
+/// licensed provider (Sumsub, Onfido, Jumio) that does real document +
+/// liveness verification and sanctions screening.
+model KycSubmission {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  country           String    // ISO 3166-1 alpha-2, e.g. "UA"
+  fullName          String
+  dateOfBirth       DateTime
+  documentType      String    // PASSPORT | ID_CARD | DRIVERS_LICENSE
+  documentNumber    String
+  documentImagePath String
+  status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  rejectionReason   String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@index([userId])
+  @@index([status])
 }
 
 /// A record of a user "paying" for a product with their internal balance.

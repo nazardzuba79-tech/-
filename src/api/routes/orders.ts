@@ -50,6 +50,31 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
     }
   });
 
+  // Own orders, newest first — powers the "Open Orders" panel on the trade
+  // page. Not paginated: fine for a single user's order history on an
+  // internal team exchange, revisit if that stops being true.
+  router.get('/orders/me', requireAuth, async (req: AuthedRequest, res) => {
+    const status = req.query.status as string | undefined;
+    const orders = await prisma.order.findMany({
+      where: { userId: req.userId, ...(status ? { status } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    res.json(
+      orders.map((o: (typeof orders)[number]) => ({
+        id: o.id,
+        pair: o.pair,
+        side: o.side,
+        type: o.type,
+        price: o.price?.toString() ?? null,
+        originalQuantity: o.originalQuantity.toString(),
+        remainingQuantity: o.remainingQuantity.toString(),
+        status: o.status,
+        createdAt: o.createdAt,
+      }))
+    );
+  });
+
   router.get('/orderbook/:pair', async (req, res) => {
     const snapshot = engine.getBook(req.params.pair.toUpperCase()).snapshot();
     res.json({

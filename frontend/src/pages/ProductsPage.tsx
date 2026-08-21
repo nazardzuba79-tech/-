@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
-import { BalanceStrip } from '../components/BalanceStrip';
+import { Nav } from '../components/Nav';
 
 interface Product {
   id: string;
@@ -15,9 +14,11 @@ export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     api.getProducts().then(setProducts).catch(() => {});
+    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
   }, []);
 
   async function handleBuy(product: Product) {
@@ -35,23 +36,7 @@ export function ProductsPage() {
 
   return (
     <div style={styles.page}>
-      <nav style={styles.nav}>
-        <div style={styles.logo}>
-          EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
-        </div>
-        <Link to="/trade" style={styles.navLink}>
-          Торгівля
-        </Link>
-        <Link to="/markets" style={styles.navLink}>
-          Ринки
-        </Link>
-        <Link to="/products" style={{ ...styles.navLink, color: 'var(--text-primary)' }}>
-          Товари
-        </Link>
-        <div style={{ marginLeft: 'auto' }}>
-          <BalanceStrip />
-        </div>
-      </nav>
+      <Nav active="/products" isAdmin={isAdmin} />
 
       <main style={styles.main}>
         <h1 style={styles.title}>Товари та послуги</h1>
@@ -92,17 +77,6 @@ export function ProductsPage() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)' },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 24,
-    padding: '0 20px',
-    height: 56,
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--panel)',
-  },
-  logo: { fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, letterSpacing: '0.05em' },
-  navLink: { fontSize: 13, color: 'var(--text-secondary)' },
   main: { padding: 32, maxWidth: 900, margin: '0 auto' },
   title: { fontSize: 20, marginBottom: 20 },
   banner: { padding: '10px 14px', borderRadius: 4, fontSize: 13, marginBottom: 20 },

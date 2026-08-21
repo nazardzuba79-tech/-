@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { BalanceStrip } from '../components/BalanceStrip';
+import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 
 interface Ticker {
@@ -27,6 +26,11 @@ export function MarketsPage() {
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [error, setError] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     function refreshTickers() {
@@ -69,23 +73,7 @@ export function MarketsPage() {
 
   return (
     <div style={styles.page}>
-      <nav style={styles.nav}>
-        <div style={styles.logo}>
-          EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
-        </div>
-        <Link to="/trade" style={styles.navLink}>
-          Торгівля
-        </Link>
-        <Link to="/markets" style={{ ...styles.navLink, color: 'var(--text-primary)' }}>
-          Ринки
-        </Link>
-        <Link to="/products" style={styles.navLink}>
-          Товари
-        </Link>
-        <div style={{ marginLeft: 'auto' }}>
-          <BalanceStrip />
-        </div>
-      </nav>
+      <Nav active="/markets" isAdmin={isAdmin} />
 
       <main style={styles.main}>
         <div style={styles.headerRow}>
@@ -106,6 +94,9 @@ export function MarketsPage() {
               <span>Пара</span>
               <span style={{ textAlign: 'right' }}>Ціна</span>
               <span style={{ textAlign: 'right' }}>24г %</span>
+              <span style={{ textAlign: 'right' }}>24г максимум</span>
+              <span style={{ textAlign: 'right' }}>24г мінімум</span>
+              <span style={{ textAlign: 'right' }}>Обсяг (24г)</span>
             </div>
             <div style={styles.listBody}>
               {filtered.map((t) => {
@@ -130,6 +121,15 @@ export function MarketsPage() {
                     >
                       {positive ? '+' : ''}
                       {change.toFixed(2)}%
+                    </span>
+                    <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      {parseFloat(t.high24h)}
+                    </span>
+                    <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      {parseFloat(t.low24h)}
+                    </span>
+                    <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                      {parseFloat(t.volume24h).toLocaleString('uk-UA', { maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 );
@@ -162,19 +162,8 @@ export function MarketsPage() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: 'var(--bg)' },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 24,
-    padding: '0 20px',
-    height: 56,
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--panel)',
-  },
-  logo: { fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, letterSpacing: '0.05em' },
-  navLink: { fontSize: 13, color: 'var(--text-secondary)' },
-  main: { padding: 32, maxWidth: 1100, margin: '0 auto' },
+  page: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' },
+  main: { padding: 32, maxWidth: 1100, margin: '0 auto', width: '100%' },
   headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
   title: { fontSize: 20, margin: 0 },
   search: {
@@ -203,20 +192,22 @@ const styles: Record<string, React.CSSProperties> = {
   },
   listHeader: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: '1fr 1fr 0.8fr 1fr 1fr 1fr',
     padding: '10px 14px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
     borderBottom: '1px solid var(--border)',
+    gap: 8,
   },
   listBody: { maxHeight: 560, overflowY: 'auto' },
   listRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
+    gridTemplateColumns: '1fr 1fr 0.8fr 1fr 1fr 1fr',
     padding: '10px 14px',
     fontSize: 13,
     cursor: 'pointer',
     borderBottom: '1px solid var(--border)',
+    gap: 8,
   },
   bookColumn: { display: 'flex', flexDirection: 'column', gap: 8 },
   selectedPair: { fontSize: 14, fontWeight: 700, padding: '0 4px' },

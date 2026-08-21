@@ -1,0 +1,129 @@
+import { ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { clearToken } from '../lib/api';
+import { BalanceStrip } from './BalanceStrip';
+
+const LINKS = [
+  { to: '/trade', label: 'Торгівля' },
+  { to: '/markets', label: 'Ринки' },
+  { to: '/products', label: 'Товари' },
+];
+
+/**
+ * Shared top navigation, used on every page after login. `middle` renders
+ * extra content right after the nav links (e.g. the trade page's pair
+ * label); `rightExtra` renders a button before the balance/settings/logout
+ * cluster (e.g. the trade page's "Поповнити" button).
+ */
+export function Nav({
+  active,
+  isAdmin,
+  middle,
+  rightExtra,
+}: {
+  active: string;
+  isAdmin?: boolean;
+  middle?: ReactNode;
+  rightExtra?: ReactNode;
+}) {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    clearToken();
+    navigate('/');
+  }
+
+  return (
+    <nav style={styles.nav}>
+      <Link to="/trade" style={styles.logo}>
+        EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
+      </Link>
+      {LINKS.map((l) => (
+        <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+          {l.label}
+        </Link>
+      ))}
+      {isAdmin && (
+        <Link
+          to="/admin/kyc"
+          style={{ ...styles.link, ...(active === '/admin/kyc' ? styles.linkActive : {}) }}
+        >
+          Верифікації
+        </Link>
+      )}
+      {middle}
+      <div style={styles.right}>
+        <BalanceStrip />
+        {rightExtra}
+        <Link to="/settings" style={styles.settingsLink} title="Налаштування" aria-label="Налаштування">
+          <GearIcon active={active === '/settings'} />
+        </Link>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          Вийти
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function GearIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+const styles: Record<string, React.CSSProperties> = {
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 24,
+    padding: '0 20px',
+    height: 56,
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--panel)',
+    flexShrink: 0,
+  },
+  logo: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: '0.05em',
+  },
+  link: {
+    fontSize: 13,
+    color: 'var(--text-secondary)',
+  },
+  linkActive: {
+    color: 'var(--text-primary)',
+  },
+  right: {
+    marginLeft: 'auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 18,
+  },
+  settingsLink: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  logoutBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-secondary)',
+    borderRadius: 4,
+    padding: '8px 16px',
+    fontSize: 12,
+  },
+};

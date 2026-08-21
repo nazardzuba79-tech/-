@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType, CandlestickSeries, IChartApi, ISeriesApi } from 'lightweight-charts';
+import { createChart, ColorType, CandlestickSeries, HistogramSeries, IChartApi, ISeriesApi } from 'lightweight-charts';
 import { api } from '../lib/api';
 
 const INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
@@ -9,6 +9,7 @@ export function PriceChart({ pair }: { pair: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const [interval, setInterval_] = useState<Interval>('1m');
   const [empty, setEmpty] = useState(false);
 
@@ -39,9 +40,17 @@ export function PriceChart({ pair }: { pair: string }) {
       wickUpColor: '#00c076',
       wickDownColor: '#f6465d',
     });
+    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: 0.3 } });
+
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'volume',
+    });
+    volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     chartRef.current = chart;
     seriesRef.current = series;
+    volumeSeriesRef.current = volumeSeries;
 
     const resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
@@ -62,10 +71,17 @@ export function PriceChart({ pair }: { pair: string }) {
     async function load() {
       try {
         const res = await api.getCandles(pair, interval, 300);
-        if (cancelled || !seriesRef.current) return;
+        if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         seriesRef.current.setData(
           res.candles.map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
+        );
+        volumeSeriesRef.current.setData(
+          res.candles.map((c) => ({
+            time: c.time as any,
+            value: c.volume,
+            color: c.close >= c.open ? 'rgba(0,192,118,0.5)' : 'rgba(246,70,93,0.5)',
+          }))
         );
       } catch {
         // Chart just stays empty on failure — not worth a full error state

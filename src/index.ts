@@ -12,6 +12,8 @@ import { candlesRouter } from './api/routes/candles';
 import { productsRouter } from './api/routes/products';
 import { balancesRouter } from './api/routes/balances';
 import { marketRouter } from './api/routes/market';
+import { accountRouter } from './api/routes/account';
+import { kycRouter } from './api/routes/kyc';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { BybitMarketDataService } from './services/BybitMarketDataService';
 
@@ -42,6 +44,8 @@ app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService));
+app.use('/api/v1', accountRouter(prisma));
+app.use('/api/v1', kycRouter(prisma));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

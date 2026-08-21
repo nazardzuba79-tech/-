@@ -1,18 +1,20 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { api, clearToken } from '../lib/api';
+import { api } from '../lib/api';
+import { Nav } from '../components/Nav';
+import { TickerBar } from '../components/TickerBar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
 import { PriceChart } from '../components/PriceChart';
-import { BalanceStrip } from '../components/BalanceStrip';
+import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 
 const PAIR = 'BTC/USDT';
 
 export function TradePage() {
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [showDeposit, setShowDeposit] = useState(false);
-  const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   const refreshBook = useCallback(() => {
     api
@@ -27,38 +29,27 @@ export function TradePage() {
     return () => clearInterval(interval);
   }, [refreshBook]);
 
-  function handleLogout() {
-    clearToken();
-    navigate('/');
+  useEffect(() => {
+    api.getMe().then((me) => setIsAdmin(me.isAdmin)).catch(() => {});
+  }, []);
+
+  function handleOrderPlaced() {
+    refreshBook();
+    setOrdersRefreshKey((k) => k + 1);
   }
 
   return (
     <div style={styles.page}>
-      <nav style={styles.nav}>
-        <div style={styles.logo}>
-          EXCHANGE<span style={{ color: 'var(--accent)' }}>.</span>
-        </div>
-        <div style={styles.pair}>
-          <span className="mono" style={{ fontWeight: 700 }}>
-            {PAIR}
-          </span>
-        </div>
-        <Link to="/markets" style={styles.navLink}>
-          Ринки
-        </Link>
-        <Link to="/products" style={styles.navLink}>
-          Товари
-        </Link>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 20 }}>
-          <BalanceStrip />
+      <Nav
+        active="/trade"
+        isAdmin={isAdmin}
+        rightExtra={
           <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
             Поповнити
           </button>
-          <button onClick={handleLogout} style={styles.logoutBtn}>
-            Вийти
-          </button>
-        </div>
-      </nav>
+        }
+      />
+      <TickerBar pair={PAIR} />
 
       <main style={styles.grid}>
         <div style={styles.bookColumn}>
@@ -70,9 +61,13 @@ export function TradePage() {
         </div>
 
         <div style={styles.formColumn}>
-          <OrderForm pair={PAIR} onPlaced={refreshBook} />
+          <OrderForm pair={PAIR} onPlaced={handleOrderPlaced} />
         </div>
       </main>
+
+      <div style={styles.ordersRow}>
+        <OpenOrdersPanel pair={PAIR} refreshKey={ordersRefreshKey} />
+      </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     </div>
@@ -86,33 +81,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
   },
-  nav: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 24,
-    padding: '0 20px',
-    height: 56,
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--panel)',
-  },
-  logo: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 16,
-    fontWeight: 700,
-    letterSpacing: '0.05em',
-  },
-  pair: {
-    fontSize: 14,
-  },
-  navLink: {
-    fontSize: 13,
-    color: 'var(--text-secondary)',
-  },
-  navRight: {
-    marginLeft: 'auto',
-    display: 'flex',
-    gap: 10,
-  },
   depositBtn: {
     background: 'var(--accent)',
     color: '#0b0e11',
@@ -120,14 +88,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     padding: '8px 16px',
     fontWeight: 700,
-    fontSize: 12,
-  },
-  logoutBtn: {
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-secondary)',
-    borderRadius: 4,
-    padding: '8px 16px',
     fontSize: 12,
   },
   grid: {
@@ -147,19 +107,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--bg)',
     display: 'flex',
   },
-  chartPlaceholder: {
-    flex: 1,
-    margin: 0,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-    textAlign: 'center',
-  },
   formColumn: {
+    background: 'var(--bg)',
+  },
+  ordersRow: {
+    padding: '1px 1px 16px',
     background: 'var(--bg)',
   },
 };
