@@ -89,7 +89,7 @@ export const api = {
       timestamp: number;
     }>(`/orderbook/${pair}`),
 
-  placeOrder: (params: { pair: string; side: 'BUY' | 'SELL'; price: string; quantity: string }) =>
+  placeOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string }) =>
     request('/orders', { method: 'POST', body: JSON.stringify(params) }),
 
   cancelOrder: (orderId: string) => request(`/orders/${orderId}`, { method: 'DELETE' }),
@@ -153,6 +153,21 @@ export const api = {
         changePercent24h: string;
       }[];
     }>('/market/external/tickers'),
+
+  getExternalTicker: (pair: string) =>
+    request<{
+      source: string;
+      ticker: {
+        pair: string;
+        lastPrice: string;
+        bidPrice: string;
+        askPrice: string;
+        high24h: string;
+        low24h: string;
+        volume24h: string;
+        changePercent24h: string;
+      };
+    }>(`/market/external/tickers/${pairToSlug(pair)}`),
 
   getExternalOrderBook: (pair: string) =>
     request<{

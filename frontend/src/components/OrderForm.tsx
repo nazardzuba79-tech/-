@@ -8,10 +8,12 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
+  const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
   const [price, setPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
   const [available, setAvailable] = useState<{ base: number; quote: number }>({ base: 0, quote: 0 });
+  const [marketPrice, setMarketPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,7 +28,29 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       .catch(() => {});
   }, [baseAsset, quoteAsset, side]);
 
-  const total = price && quantity ? (parseFloat(price) * parseFloat(quantity)).toFixed(2) : '0.00';
+  // MARKET orders don't take a price from the user — a reference price
+  // (from the same Kraken mirror the trade page already uses) is only for
+  // sizing the % slider and showing an estimated total, not for what the
+  // order actually executes at.
+  useEffect(() => {
+    if (type !== 'MARKET') return;
+    let cancelled = false;
+    function load() {
+      api
+        .getExternalTicker(pair)
+        .then((res) => !cancelled && setMarketPrice(parseFloat(res.ticker.lastPrice)))
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [type, pair]);
+
+  const effectivePrice = type === 'LIMIT' ? parseFloat(price) : marketPrice ?? 0;
+  const total = effectivePrice && quantity ? (effectivePrice * parseFloat(quantity)).toFixed(2) : '0.00';
 
   // % slider spends a share of whichever balance funds this side of the
   // trade — quote balance (e.g. USDT) for a buy, base balance (e.g. BTC)
@@ -35,9 +59,8 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
   function applyPercent(pct: number) {
     setPercent(pct);
     if (side === 'BUY') {
-      const p = parseFloat(price);
-      if (!p || p <= 0) return;
-      setQuantity(((available.quote * (pct / 100)) / p).toFixed(8));
+      if (!effectivePrice || effectivePrice <= 0) return;
+      setQuantity(((available.quote * (pct / 100)) / effectivePrice).toFixed(8));
     } else {
       setQuantity((available.base * (pct / 100)).toFixed(8));
     }
@@ -48,7 +71,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
     setError(null);
     setSubmitting(true);
     try {
-      await api.placeOrder({ pair, side, price, quantity });
+      await api.placeOrder({ pair, side, type, price: type === 'LIMIT' ? price : undefined, quantity });
       setPrice('');
       setQuantity('');
       setPercent(0);
@@ -79,20 +102,46 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
         </button>
       </div>
 
+      <div style={styles.typeTabs}>
+        <button
+          type="button"
+          onClick={() => setType('LIMIT')}
+          style={{ ...styles.typeTab, ...(type === 'LIMIT' ? styles.typeTabActive : {}) }}
+        >
+          {t('trade.limitOrder')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setType('MARKET')}
+          style={{ ...styles.typeTab, ...(type === 'MARKET' ? styles.typeTabActive : {}) }}
+        >
+          {t('trade.marketOrder')}
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>
-          {t('trade.price')}
-          <input
-            className="mono"
-            type="number"
-            step="any"
-            required
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            style={styles.input}
-            placeholder="0.00"
-          />
-        </label>
+        {type === 'LIMIT' ? (
+          <label style={styles.label}>
+            {t('trade.price')}
+            <input
+              className="mono"
+              type="number"
+              step="any"
+              required
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              style={styles.input}
+              placeholder="0.00"
+            />
+          </label>
+        ) : (
+          <label style={styles.label}>
+            {t('trade.price')}
+            <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
+              {marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} {quoteAsset}
+            </div>
+          </label>
+        )}
         <label style={styles.label}>
           <span style={styles.qtyLabelRow}>
             {t('trade.quantity')}
@@ -189,8 +238,25 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#0b0e11',
     background: 'var(--sell)',
   },
+  typeTabs: {
+    display: 'flex',
+    gap: 14,
+    padding: '0 14px 10px',
+    borderBottom: '1px solid var(--border)',
+  },
+  typeTab: {
+    background: 'transparent',
+    border: 'none',
+    padding: '2px 0',
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-tertiary)',
+  },
+  typeTabActive: {
+    color: 'var(--accent)',
+  },
   form: {
-    padding: '4px 14px 14px',
+    padding: '14px 14px 14px',
     display: 'flex',
     flexDirection: 'column',
     gap: 12,

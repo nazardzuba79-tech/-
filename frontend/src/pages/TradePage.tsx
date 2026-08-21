@@ -13,8 +13,10 @@ import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
+import { krakenSocket } from '../lib/krakenSocket';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
+const WS_FALLBACK_TIMEOUT_MS = 4000;
 
 export function TradePage() {
   const { t, lang } = useLanguage();
@@ -35,11 +37,34 @@ export function TradePage() {
       .catch(() => {});
   }, [pair]);
 
+  // Primary source is Kraken's WebSocket for real live updates (see
+  // krakenSocket.ts). If it hasn't delivered anything within a few
+  // seconds — connection blocked, schema drift, whatever — fall back to
+  // the old 2s REST poll instead of leaving the book frozen.
   useEffect(() => {
+    let gotWsData = false;
+    let restInterval: number | null = null;
+
+    const unsubscribe = krakenSocket.subscribeBook(pair, (snapshot) => {
+      gotWsData = true;
+      if (restInterval !== null) {
+        clearInterval(restInterval);
+        restInterval = null;
+      }
+      setBook(snapshot);
+    });
+
     refreshBook();
-    const interval = setInterval(refreshBook, 2000);
-    return () => clearInterval(interval);
-  }, [refreshBook]);
+    const fallbackTimer = window.setTimeout(() => {
+      if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
+    }, WS_FALLBACK_TIMEOUT_MS);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(fallbackTimer);
+      if (restInterval !== null) clearInterval(restInterval);
+    };
+  }, [pair, refreshBook]);
 
   function handleOrderPlaced() {
     refreshBook();

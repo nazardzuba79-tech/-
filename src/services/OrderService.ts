@@ -17,16 +17,36 @@ import { Order, OrderSide, OrderType } from '../matching-engine/types';
 export class OrderService {
   constructor(private prisma: PrismaClient, private engine: MatchingEngine) {}
 
-  async placeLimitOrder(params: {
+  async placeOrder(params: {
     userId: string;
     pair: string;
     side: OrderSide;
-    price: BigNumber;
+    type: OrderType;
+    price?: BigNumber; // required for LIMIT, ignored for MARKET
     quantity: BigNumber;
   }) {
     const [base, quote] = params.pair.split('/'); // e.g. BTC/USDT
+
+    if (params.type === 'LIMIT' && !params.price) {
+      throw new Error('price is required for a LIMIT order');
+    }
+
     const lockAsset = params.side === 'BUY' ? quote : base;
-    const lockAmount = params.side === 'BUY' ? params.price.times(params.quantity) : params.quantity;
+    // LIMIT: lock exactly what the order can spend/sell at its own price.
+    // MARKET BUY: we don't know the fill price yet, so lock against the
+    // current best ask plus a slippage buffer, then refund whatever wasn't
+    // actually spent once the trades settle (see step 6 below). MARKET
+    // SELL locks the exact base quantity, same as a limit sell.
+    let lockAmount: BigNumber;
+    if (params.type === 'LIMIT') {
+      lockAmount = params.side === 'BUY' ? params.price!.times(params.quantity) : params.quantity;
+    } else if (params.side === 'SELL') {
+      lockAmount = params.quantity;
+    } else {
+      const bestAsk = this.engine.getBook(params.pair).bestAsk()?.price;
+      if (!bestAsk) throw new Error('No liquidity available for this market order');
+      lockAmount = params.quantity.times(bestAsk).times(1.02); // 2% slippage buffer
+    }
 
     return this.prisma.$transaction(async (tx: TxClient) => {
       // 1. Lock funds atomically — fails if insufficient available balance.
@@ -52,8 +72,8 @@ export class OrderService {
         userId: params.userId,
         pair: params.pair,
         side: params.side,
-        type: 'LIMIT',
-        price: params.price,
+        type: params.type,
+        price: params.type === 'LIMIT' ? params.price! : null,
         originalQuantity: params.quantity,
         remainingQuantity: params.quantity,
         status: 'OPEN',
@@ -67,7 +87,7 @@ export class OrderService {
           pair: order.pair,
           side: order.side,
           type: order.type,
-          price: params.price.toString(),
+          price: order.price?.toString() ?? null,
           originalQuantity: params.quantity.toString(),
           remainingQuantity: params.quantity.toString(),
           status: order.status,
@@ -104,10 +124,57 @@ export class OrderService {
         },
       });
 
-      // 6. If order didn't fully fill, unlock the now-unneeded locked portion
-      //    ...(left as an exercise: mirrors step 1 in reverse for the delta)
+      // 6. Refund whatever of the initial lock wasn't actually consumed AND
+      // isn't still backing a resting order. A LIMIT order that's still
+      // (partially) OPEN must keep remainingQuantity locked at its limit
+      // price/quantity — only the "price improvement" on the filled slice
+      // (trade price better than the limit) is refundable now. A MARKET
+      // order never rests, so everything beyond what actually filled —
+      // including the slippage buffer — is refundable.
+      const stillResting = params.type === 'LIMIT' && finalOrder.remainingQuantity.isGreaterThan(0);
+      const shouldRemainLocked = stillResting
+        ? params.side === 'BUY'
+          ? finalOrder.remainingQuantity.times(params.price!)
+          : finalOrder.remainingQuantity
+        : new BigNumber(0);
+      const consumedOrFilled =
+        params.side === 'BUY'
+          ? trades.reduce((sum: BigNumber, t: (typeof trades)[number]) => sum.plus(t.price.times(t.quantity)), new BigNumber(0))
+          : params.quantity.minus(finalOrder.remainingQuantity);
+      const refund = lockAmount.minus(consumedOrFilled).minus(shouldRemainLocked);
+      if (refund.isGreaterThan(0)) {
+        await this.adjustBalance(tx, params.userId, lockAsset, { available: refund, locked: refund.negated() });
+      }
 
       return { order: finalOrder, trades };
+    });
+  }
+
+  /**
+   * Cancels a resting order and releases whatever of it was still locked.
+   * Returns null if the order doesn't exist, isn't the caller's, or is no
+   * longer cancellable (already FILLED/CANCELLED) — the route maps that to
+   * a 404/409 as appropriate.
+   */
+  async cancelOrder(userId: string, orderId: string) {
+    return this.prisma.$transaction(async (tx: TxClient) => {
+      const order = await tx.order.findUnique({ where: { id: orderId } });
+      if (!order || order.userId !== userId) return null;
+      if (order.status !== 'OPEN' && order.status !== 'PARTIALLY_FILLED') return null;
+
+      this.engine.cancelOrder(order.pair, order.id);
+      await tx.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+
+      const [base, quote] = order.pair.split('/');
+      const remaining = new BigNumber(order.remainingQuantity.toString());
+      if (order.side === 'BUY') {
+        const amount = remaining.times(new BigNumber(order.price!.toString()));
+        await this.adjustBalance(tx, userId, quote, { available: amount, locked: amount.negated() });
+      } else {
+        await this.adjustBalance(tx, userId, base, { available: remaining, locked: remaining.negated() });
+      }
+
+      return order;
     });
   }
 

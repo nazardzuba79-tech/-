@@ -6,12 +6,21 @@ import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { OrderService } from '../../services/OrderService';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
-const placeOrderSchema = z.object({
-  pair: z.string().regex(/^[A-Z0-9]+\/[A-Z0-9]+$/),
-  side: z.enum(['BUY', 'SELL']),
-  price: z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'price must be > 0'),
-  quantity: z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'quantity must be > 0'),
-});
+const placeOrderSchema = z
+  .object({
+    pair: z.string().regex(/^[A-Z0-9]+\/[A-Z0-9]+$/),
+    side: z.enum(['BUY', 'SELL']),
+    type: z.enum(['LIMIT', 'MARKET']).default('LIMIT'),
+    price: z
+      .string()
+      .refine((v) => new BigNumber(v).isGreaterThan(0), 'price must be > 0')
+      .optional(),
+    quantity: z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'quantity must be > 0'),
+  })
+  .refine((v) => v.type !== 'LIMIT' || v.price !== undefined, {
+    message: 'price is required for a LIMIT order',
+    path: ['price'],
+  });
 
 export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Router {
   const router = Router();
@@ -22,14 +31,15 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const { pair, side, price, quantity } = parsed.data;
+    const { pair, side, type, price, quantity } = parsed.data;
 
     try {
-      const result = await orderService.placeLimitOrder({
+      const result = await orderService.placeOrder({
         userId: req.userId!,
         pair,
         side,
-        price: new BigNumber(price),
+        type,
+        price: price ? new BigNumber(price) : undefined,
         quantity: new BigNumber(quantity),
       });
       res.status(201).json({
@@ -94,14 +104,10 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
   });
 
   router.delete('/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
-    const order = await prisma.order.findUnique({ where: { id: req.params.orderId } });
-    if (!order || order.userId !== req.userId) {
-      return res.status(404).json({ error: 'Order not found' });
+    const cancelled = await orderService.cancelOrder(req.userId!, req.params.orderId);
+    if (!cancelled) {
+      return res.status(404).json({ error: 'Order not found or not cancellable' });
     }
-    engine.cancelOrder(order.pair, order.id);
-    await prisma.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
-    // NOTE: unlocking the corresponding locked balance on cancel is omitted
-    // here for brevity — mirror the lock logic in OrderService in reverse.
     res.status(204).send();
   });
 

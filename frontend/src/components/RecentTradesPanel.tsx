@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { krakenSocket } from '../lib/krakenSocket';
 
 interface Trade {
   id: string;
@@ -10,34 +11,49 @@ interface Trade {
   time: number;
 }
 
-// Live-scrolling trade tape, mirrored from Kraken — same "market is moving"
-// feel as a real exchange's own trades tab, purely for display next to the order book.
+const MAX_TRADES = 60;
+const WS_FALLBACK_TIMEOUT_MS = 4000;
+
+// Live-scrolling trade tape, streamed from Kraken's public WebSocket — real
+// prints arriving as they happen, not a 2s poll. Falls back to REST polling
+// (the previous behavior) if the socket doesn't deliver anything within a
+// few seconds, so a blocked/failed connection degrades instead of freezing.
 export function RecentTradesPanel({ pair }: { pair: string }) {
   const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
-  const seenIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    let cancelled = false;
-    seenIds.current = new Set();
     setTrades([]);
+    let gotWsData = false;
+    let restInterval: number | null = null;
 
-    async function load() {
+    async function loadRest() {
       try {
-        const res = await api.getExternalTrades(pair, 60);
-        if (cancelled) return;
-        seenIds.current = new Set(res.trades.map((t) => t.id));
-        setTrades(res.trades);
+        const res = await api.getExternalTrades(pair, MAX_TRADES);
+        if (!gotWsData) setTrades(res.trades);
       } catch {
-        // stays empty on failure — background poll, not worth an error state
+        // stays whatever it was — background poll, not worth an error state
       }
     }
 
-    load();
-    const poll = window.setInterval(load, 2000);
+    const unsubscribe = krakenSocket.subscribeTrades(pair, (trade) => {
+      gotWsData = true;
+      if (restInterval !== null) {
+        clearInterval(restInterval);
+        restInterval = null;
+      }
+      setTrades((prev) => [trade, ...prev].slice(0, MAX_TRADES));
+    });
+
+    loadRest();
+    const fallbackTimer = window.setTimeout(() => {
+      if (!gotWsData) restInterval = window.setInterval(loadRest, 2000);
+    }, WS_FALLBACK_TIMEOUT_MS);
+
     return () => {
-      cancelled = true;
-      window.clearInterval(poll);
+      unsubscribe();
+      clearTimeout(fallbackTimer);
+      if (restInterval !== null) clearInterval(restInterval);
     };
   }, [pair]);
 
