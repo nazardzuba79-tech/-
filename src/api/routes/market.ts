@@ -53,6 +53,29 @@ export function marketRouter(marketDataService: BybitMarketDataService): Router 
     }
   });
 
+  router.get('/market/external/candles/:pair', async (req, res) => {
+    try {
+      const pair = pairFromSlug(req.params.pair);
+      const interval = typeof req.query.interval === 'string' ? req.query.interval : '1m';
+      const limit = Math.min(Number(req.query.limit) || 300, 1000);
+      const candles = await marketDataService.getCandles(pair, interval, limit);
+      res.json({ source: 'bybit', pair, interval, candles });
+    } catch (err) {
+      handleError(err, res);
+    }
+  });
+
+  router.get('/market/external/trades/:pair', async (req, res) => {
+    try {
+      const pair = pairFromSlug(req.params.pair);
+      const limit = Math.min(Number(req.query.limit) || 60, 200);
+      const trades = await marketDataService.getRecentTrades(pair, limit);
+      res.json({ source: 'bybit', pair, trades });
+    } catch (err) {
+      handleError(err, res);
+    }
+  });
+
   return router;
 }
 

@@ -1,7 +1,7 @@
 interface Level {
   price: string;
   quantity: string;
-  orders: number;
+  orders?: number;
 }
 
 export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] }) {
@@ -13,7 +13,6 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
 
   return (
     <div style={styles.panel}>
-      <div style={styles.header}>Ордербук</div>
       <div style={styles.columnLabels}>
         <span>Ціна</span>
         <span style={{ textAlign: 'right' }}>Кількість</span>
@@ -64,17 +63,11 @@ function Row({ level, side, maxQty }: { level: Level; side: 'BUY' | 'SELL'; maxQ
 const styles: Record<string, React.CSSProperties> = {
   panel: {
     background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,
-  },
-  header: {
-    padding: '12px 14px',
-    fontSize: 13,
-    fontWeight: 600,
-    borderBottom: '1px solid var(--border)',
+    flex: 1,
+    overflow: 'auto',
   },
   columnLabels: {
     display: 'grid',

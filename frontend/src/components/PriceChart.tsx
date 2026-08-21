@@ -70,7 +70,7 @@ export function PriceChart({ pair }: { pair: string }) {
 
     async function load() {
       try {
-        const res = await api.getCandles(pair, interval, 300);
+        const res = await api.getExternalCandles(pair, interval, 300);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         seriesRef.current.setData(
@@ -114,7 +114,7 @@ export function PriceChart({ pair }: { pair: string }) {
       {empty && (
         <div style={styles.emptyOverlay}>
           <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>
-            Ще немає угод по {pair} за цей інтервал — графік з'явиться після перших ордерів
+            Немає даних графіка для {pair}
           </span>
         </div>
       )}

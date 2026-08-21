@@ -2,25 +2,30 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
+import { PairSelector } from '../components/PairSelector';
 import { OrderBookPanel } from '../components/OrderBookPanel';
+import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
 import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 
-const PAIR = 'BTC/USDT';
-
 export function TradePage() {
+  const [pair, setPair] = useState('BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
+  const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [showDeposit, setShowDeposit] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
+  // The visible order book mirrors Bybit's real depth for a live, populated
+  // look — actual order matching always happens on our own internal book
+  // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
     api
-      .getOrderBook(PAIR)
+      .getExternalOrderBook(pair)
       .then((res) => setBook({ bids: res.bids, asks: res.asks }))
       .catch(() => {});
-  }, []);
+  }, [pair]);
 
   useEffect(() => {
     refreshBook();
@@ -37,30 +42,49 @@ export function TradePage() {
     <div style={styles.page}>
       <Nav
         active="/trade"
+        middle={<PairSelector pair={pair} onChange={setPair} />}
         rightExtra={
           <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
             Поповнити
           </button>
         }
       />
-      <TickerBar pair={PAIR} />
+      <TickerBar pair={pair} />
 
       <main style={styles.grid}>
         <div style={styles.bookColumn}>
-          <OrderBookPanel bids={book.bids} asks={book.asks} />
+          <div style={styles.bookTabs}>
+            <button
+              onClick={() => setBookTab('book')}
+              style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
+            >
+              Стакан
+            </button>
+            <button
+              onClick={() => setBookTab('trades')}
+              style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
+            >
+              Угоди
+            </button>
+          </div>
+          {bookTab === 'book' ? (
+            <OrderBookPanel bids={book.bids} asks={book.asks} />
+          ) : (
+            <RecentTradesPanel pair={pair} />
+          )}
         </div>
 
         <div style={styles.chartColumn}>
-          <PriceChart pair={PAIR} />
+          <PriceChart pair={pair} />
         </div>
 
         <div style={styles.formColumn}>
-          <OrderForm pair={PAIR} onPlaced={handleOrderPlaced} />
+          <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
         </div>
       </main>
 
       <div style={styles.ordersRow}>
-        <OpenOrdersPanel pair={PAIR} refreshKey={ordersRefreshKey} />
+        <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />
       </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
@@ -95,7 +119,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   bookColumn: {
     background: 'var(--bg)',
-    overflow: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+  bookTabs: {
+    display: 'flex',
+    borderBottom: '1px solid var(--border)',
+  },
+  bookTab: {
+    flex: 1,
+    background: 'transparent',
+    border: 'none',
+    padding: '10px 0',
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+  },
+  bookTabActive: {
+    color: 'var(--text-primary)',
+    boxShadow: 'inset 0 -2px 0 var(--accent)',
   },
   chartColumn: {
     background: 'var(--bg)',

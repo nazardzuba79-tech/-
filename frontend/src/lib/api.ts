@@ -162,6 +162,19 @@ export const api = {
       timestamp: number;
     }>(`/market/external/orderbook/${pairToSlug(pair)}`),
 
+  getExternalCandles: (pair: string, interval: string, limit = 300) =>
+    request<{
+      pair: string;
+      interval: string;
+      candles: { time: number; open: number; high: number; low: number; close: number; volume: number }[];
+    }>(`/market/external/candles/${pairToSlug(pair)}?interval=${interval}&limit=${limit}`),
+
+  getExternalTrades: (pair: string, limit = 60) =>
+    request<{
+      pair: string;
+      trades: { id: string; price: string; quantity: string; side: 'BUY' | 'SELL'; time: number }[];
+    }>(`/market/external/trades/${pairToSlug(pair)}?limit=${limit}`),
+
   // Account
   getMe: () =>
     request<{

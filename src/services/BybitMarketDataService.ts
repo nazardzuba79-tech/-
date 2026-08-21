@@ -73,10 +73,42 @@ interface BybitOrderBookResult {
   ts: number;
 }
 
+export interface MarketCandle {
+  time: number; // unix seconds, for lightweight-charts
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface MarketTrade {
+  id: string;
+  price: string;
+  quantity: string;
+  side: 'BUY' | 'SELL';
+  time: number; // unix ms
+}
+
+// Our interval labels -> Bybit's kline interval codes.
+const INTERVAL_MAP: Record<string, string> = {
+  '1m': '1',
+  '5m': '5',
+  '15m': '15',
+  '1h': '60',
+  '4h': '240',
+  '1d': 'D',
+};
+
+const CANDLES_TTL_MS = 5_000;
+const TRADES_TTL_MS = 2_000;
+
 export class BybitMarketDataService {
   private symbolsCache: { bySymbol: Map<string, MarketSymbol>; expiresAt: number } | null = null;
   private tickersCache: { byPair: Map<string, MarketTicker>; expiresAt: number } | null = null;
   private readonly orderBookCache = new Map<string, { data: MarketOrderBookSnapshot; expiresAt: number }>();
+  private readonly candlesCache = new Map<string, { data: MarketCandle[]; expiresAt: number }>();
+  private readonly tradesCache = new Map<string, { data: MarketTrade[]; expiresAt: number }>();
 
   constructor(
     private readonly baseUrl = 'https://api.bybit.com',
@@ -115,6 +147,52 @@ export class BybitMarketDataService {
     };
     this.orderBookCache.set(normalizedPair, { data: snapshot, expiresAt: Date.now() + ORDERBOOK_TTL_MS });
     return snapshot;
+  }
+
+  async getCandles(pair: string, interval: string, limit = 300): Promise<MarketCandle[]> {
+    const bybitInterval = INTERVAL_MAP[interval];
+    if (!bybitInterval) throw new ExternalMarketDataError(`Unsupported interval: ${interval}`);
+
+    const normalizedPair = pair.toUpperCase();
+    const cacheKey = `${normalizedPair}:${interval}:${limit}`;
+    const cached = this.candlesCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+    const symbol = pairToBybitSymbol(normalizedPair);
+    const body = await this.request(
+      `/v5/market/kline?category=spot&symbol=${symbol}&interval=${bybitInterval}&limit=${Math.min(limit, 1000)}`
+    );
+    // Bybit returns candles newest-first; charts need oldest-first.
+    const rows = (body.result.list as [string, string, string, string, string, string, string][]).slice().reverse();
+    const candles: MarketCandle[] = rows.map(([start, open, high, low, close, volume]) => ({
+      time: Math.floor(Number(start) / 1000),
+      open: Number(open),
+      high: Number(high),
+      low: Number(low),
+      close: Number(close),
+      volume: Number(volume),
+    }));
+    this.candlesCache.set(cacheKey, { data: candles, expiresAt: Date.now() + CANDLES_TTL_MS });
+    return candles;
+  }
+
+  async getRecentTrades(pair: string, limit = 60): Promise<MarketTrade[]> {
+    const normalizedPair = pair.toUpperCase();
+    const cached = this.tradesCache.get(normalizedPair);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+    const symbol = pairToBybitSymbol(normalizedPair);
+    const body = await this.request(`/v5/market/recent-trade?category=spot&symbol=${symbol}&limit=${Math.min(limit, 1000)}`);
+    const rows = body.result.list as { execId: string; price: string; size: string; side: string; time: string }[];
+    const trades: MarketTrade[] = rows.map((t) => ({
+      id: t.execId,
+      price: t.price,
+      quantity: t.size,
+      side: t.side === 'Buy' ? 'BUY' : 'SELL',
+      time: Number(t.time),
+    }));
+    this.tradesCache.set(normalizedPair, { data: trades, expiresAt: Date.now() + TRADES_TTL_MS });
+    return trades;
   }
 
   private async getSymbolsMap(): Promise<Map<string, MarketSymbol>> {

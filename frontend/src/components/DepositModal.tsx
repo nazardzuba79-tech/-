@@ -8,6 +8,7 @@ const CHAIN_LABEL: Record<string, string> = {
 
 export function DepositModal({ onClose }: { onClose: () => void }) {
   const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
+  const [chainsLoaded, setChainsLoaded] = useState(false);
   const [chain, setChain] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
@@ -28,7 +29,8 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         setChains(res);
         if (res.length > 0) setChain(res[0].chain);
       })
-      .catch(() => setError('Не вдалось завантажити список підтримуваних мереж'));
+      .catch(() => setError('Не вдалось завантажити список підтримуваних мереж'))
+      .finally(() => setChainsLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -83,8 +85,15 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
           автоматично, після перевірки в мережі.
         </p>
 
-        {chains.length === 0 && !error && (
+        {!chainsLoaded && !error && (
           <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Завантаження мереж...</p>
+        )}
+
+        {chainsLoaded && chains.length === 0 && !error && (
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }}>
+            Поповнення поки недоступне — власник біржі ще не вказав адресу гаманця для жодної мережі
+            (BITCOIN_TREASURY_ADDRESS / TRON_TREASURY_ADDRESS в налаштуваннях сервера).
+          </p>
         )}
 
         {chains.length > 0 && (
