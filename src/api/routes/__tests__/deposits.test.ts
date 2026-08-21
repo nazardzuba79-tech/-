@@ -27,10 +27,7 @@ describe('deposits routes', () => {
   });
 
   describe('GET /deposit-chains', () => {
-    it('lists only the chains that have a treasury address configured', async () => {
-      process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
-      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
-      process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+    it('lists only the known chains that have a treasury address configured', async () => {
       process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
       delete process.env.TRON_TREASURY_ADDRESS;
@@ -40,8 +37,19 @@ describe('deposits routes', () => {
 
       expect(res.status).toBe(200);
       const chainNames = res.body.map((c: any) => c.chain);
-      expect(chainNames).toEqual(expect.arrayContaining(['ethereum', 'bitcoin']));
+      expect(chainNames).toEqual(['bitcoin']);
       expect(chainNames).not.toContain('tron');
+    });
+
+    it('never lists ethereum, even if its env vars happen to be set', async () => {
+      process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-chains').set('Authorization', authHeader('user-1'));
+
+      expect(res.body.map((c: any) => c.chain)).not.toContain('ethereum');
     });
 
     it('requires authentication', async () => {

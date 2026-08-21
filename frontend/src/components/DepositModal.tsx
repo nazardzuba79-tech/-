@@ -2,7 +2,6 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 
 const CHAIN_LABEL: Record<string, string> = {
-  ethereum: 'Ethereum (ERC20)',
   bitcoin: 'Bitcoin',
   tron: 'Tron (TRC20)',
 };
@@ -133,7 +132,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                   className="mono"
                   type="text"
                   required
-                  placeholder={chain === 'ethereum' ? '0x...' : 'хеш транзакції'}
+                  placeholder="хеш транзакції"
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   style={styles.input}

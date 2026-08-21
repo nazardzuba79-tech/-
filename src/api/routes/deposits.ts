@@ -12,7 +12,12 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 // and it's filtered out below), but keeping the list exactly this narrow
 // is what stops the deposit UI from ever inventing a chain/asset combo
 // nobody configured a treasury address for.
-const KNOWN_CHAINS = ['ethereum', 'bitcoin', 'tron'];
+//
+// Deliberately Bitcoin/Tron only, no EVM chain (Ethereum, Polygon, ...) —
+// those need a paid/registered RPC provider (Alchemy/Infura) to verify,
+// which is exactly the setup friction this list avoids. EvmDepositVerifier
+// still exists if you want to add one back later: add its chain name here.
+const KNOWN_CHAINS = ['bitcoin', 'tron'];
 
 // Bitcoin/Tron tx hashes are plain 64 hex chars (as shown by their block
 // explorers); EVM chains prefix the same 64 hex chars with "0x".
