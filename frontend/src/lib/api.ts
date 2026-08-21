@@ -268,6 +268,20 @@ export const api = {
 
   joinCardWaitlist: () =>
     request<{ joined: boolean; joinedAt: string }>('/card/waitlist/join', { method: 'POST' }),
+
+  // API keys for connecting a trading bot/script
+  getApiKeys: () =>
+    request<
+      { id: string; label: string; apiKey: string; canTrade: boolean; lastUsedAt: string | null; createdAt: string }[]
+    >('/api-keys'),
+
+  createApiKey: (label: string, canTrade: boolean) =>
+    request<{ id: string; label: string; apiKey: string; apiSecret: string; canTrade: boolean; createdAt: string }>(
+      '/api-keys',
+      { method: 'POST', body: JSON.stringify({ label, canTrade }) }
+    ),
+
+  revokeApiKey: (id: string) => request<void>(`/api-keys/${id}`, { method: 'DELETE' }),
 };
 
 function pairToSlug(pair: string): string {

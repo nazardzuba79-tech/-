@@ -33,6 +33,7 @@ model User {
   wallets       Wallet[]
   purchases     Purchase[]
   kycSubmissions KycSubmission[]
+  apiKeys       ApiKey[]
 
   @@index([email])
 }
@@ -208,6 +209,28 @@ model KycSubmission {
 
   @@index([userId])
   @@index([status])
+}
+
+/// A programmatic API key for connecting a trading bot/script (see
+/// src/api/middleware/apiKeyAuth.ts). `apiKey` is the public identifier;
+/// the actual secret is shown to the user ONCE at creation and stored here
+/// only encrypted (AES-256-GCM, API_KEY_ENCRYPTION_SECRET) — not hashed,
+/// because HMAC request signing needs the raw secret back, unlike a login
+/// password. `canTrade=false` keys can only read balances/orders, never
+/// place or cancel one.
+model ApiKey {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  label            String
+  apiKey           String    @unique
+  encryptedSecret  String
+  canTrade         Boolean   @default(false)
+  lastUsedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  revokedAt        DateTime?
+
+  @@index([userId])
 }
 
 /// A record of a user "paying" for a product with their internal balance.

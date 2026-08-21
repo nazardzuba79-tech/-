@@ -3,7 +3,7 @@ import { api, ApiError } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { COUNTRIES } from '../lib/countries';
 
-type Tab = 'profile' | 'security' | 'verification' | 'clients';
+type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   PASSPORT: 'Паспорт',
@@ -29,7 +29,7 @@ export function SettingsPage() {
   return (
     <div style={styles.page}>
       <Nav active="/settings" />
-      <main style={{ ...styles.main, maxWidth: tab === 'clients' ? 1080 : 760 }}>
+      <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' ? 1080 : 760 }}>
         <h1 style={styles.title}>Налаштування</h1>
 
         <div style={styles.layout}>
@@ -37,6 +37,7 @@ export function SettingsPage() {
             <TabButton label="Профіль" active={tab === 'profile'} onClick={() => setTab('profile')} />
             <TabButton label="Безпека" active={tab === 'security'} onClick={() => setTab('security')} />
             <TabButton label="Верифікація" active={tab === 'verification'} onClick={() => setTab('verification')} />
+            <TabButton label="API" active={tab === 'api'} onClick={() => setTab('api')} />
             {isAdmin && (
               <TabButton label="Клієнти" active={tab === 'clients'} onClick={() => setTab('clients')} />
             )}
@@ -46,6 +47,7 @@ export function SettingsPage() {
             {tab === 'profile' && <ProfileTab />}
             {tab === 'security' && <SecurityTab />}
             {tab === 'verification' && <VerificationTab />}
+            {tab === 'api' && <ApiKeysTab />}
             {tab === 'clients' && isAdmin && <ClientsTab />}
           </div>
         </div>
@@ -286,6 +288,176 @@ function countryName(code: string) {
 }
 
 /** Admin-only: every registered client and their KYC data — approve/reject pending submissions. */
+/** API keys for connecting a trading bot/script to this account — HMAC-signed requests, see the code example below. */
+function ApiKeysTab() {
+  const [keys, setKeys] = useState<Awaited<ReturnType<typeof api.getApiKeys>>>([]);
+  const [label, setLabel] = useState('');
+  const [canTrade, setCanTrade] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [justCreated, setJustCreated] = useState<Awaited<ReturnType<typeof api.createApiKey>> | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function reload() {
+    api.getApiKeys().then(setKeys).catch(() => {});
+  }
+
+  useEffect(reload, []);
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setCreating(true);
+    try {
+      const created = await api.createApiKey(label, canTrade);
+      setJustCreated(created);
+      setLabel('');
+      setCanTrade(false);
+      reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не вдалось створити ключ');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    if (!confirm('Відкликати цей ключ? Будь-який бот, підключений через нього, одразу втратить доступ.')) return;
+    await api.revokeApiKey(id).catch(() => {});
+    reload();
+  }
+
+  async function handleCopySecret() {
+    if (!justCreated) return;
+    await navigator.clipboard.writeText(justCreated.apiSecret);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={styles.card}>
+        <h3 style={styles.cardTitle}>API-ключі</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
+          Дозволяють підключити торгового бота чи власний скрипт до цього акаунта — той самий баланс і ордери, що й
+          у браузері, без пароля. Ключ без "Дозволити торгівлю" може тільки читати баланс і ордери.
+        </p>
+
+        {justCreated && (
+          <div style={styles.secretBox}>
+            <div style={{ fontSize: 12, color: 'var(--sell)', fontWeight: 700, marginBottom: 8 }}>
+              ⚠ Секретний ключ показується лише один раз — збережи його зараз
+            </div>
+            <Row label="API-ключ" value={<span className="mono">{justCreated.apiKey}</span>} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <span className="mono" style={{ flex: 1, fontSize: 12, wordBreak: 'break-all' }}>
+                {justCreated.apiSecret}
+              </span>
+              <button type="button" onClick={handleCopySecret} style={styles.copyBtn}>
+                {copied ? 'Скопійовано' : 'Копіювати'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <table style={styles.keyTable}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Назва</th>
+              <th style={styles.th}>Ключ</th>
+              <th style={styles.th}>Права</th>
+              <th style={styles.th}>Останнє використання</th>
+              <th style={styles.th}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {keys.map((k) => (
+              <tr key={k.id}>
+                <td style={styles.td}>{k.label}</td>
+                <td style={styles.td} className="mono">
+                  {k.apiKey}
+                </td>
+                <td style={styles.td}>
+                  {k.canTrade ? (
+                    <span style={{ color: 'var(--buy)' }}>Читання + торгівля</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-secondary)' }}>Тільки читання</span>
+                  )}
+                </td>
+                <td style={styles.td}>{k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString('uk-UA') : 'Ще не використовувався'}</td>
+                <td style={styles.td}>
+                  <button onClick={() => handleRevoke(k.id)} style={styles.revokeBtn}>
+                    Відкликати
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {keys.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Ще немає жодного ключа.</p>}
+
+        <form onSubmit={handleCreate} style={{ ...styles.form, marginTop: 20 }}>
+          <label style={styles.label}>
+            Назва ключа
+            <input
+              type="text"
+              required
+              placeholder="напр. Мій торговий бот"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              style={styles.input}
+            />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+            <input type="checkbox" checked={canTrade} onChange={(e) => setCanTrade(e.target.checked)} />
+            Дозволити торгівлю (розміщення/скасування ордерів), не тільки читання
+          </label>
+
+          {error && <div style={styles.errorBox}>{error}</div>}
+
+          <button type="submit" disabled={creating} style={{ ...styles.submitBtn, alignSelf: 'flex-start', padding: '10px 20px' }}>
+            {creating ? 'Створюємо...' : 'Створити ключ'}
+          </button>
+        </form>
+      </div>
+
+      <div style={styles.card}>
+        <h3 style={styles.cardTitle}>Як підключити бота</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+          Кожен запит підписується HMAC-SHA256: до заголовків додається{' '}
+          <code style={styles.code}>X-API-KEY</code>, <code style={styles.code}>X-API-TIMESTAMP</code> (мілісекунди
+          від epoch) і <code style={styles.code}>X-API-SIGNATURE</code> — hex-підпис від рядка{' '}
+          <code style={styles.code}>timestamp + method + шлях + JSON-тіло</code> (тіло — <code style={styles.code}>{'{}'}</code>{' '}
+          для запиту без тіла), за секретним ключем.
+        </p>
+        <pre style={styles.codeBlock}>
+{`import hmac, hashlib, time, json, requests
+
+api_key = "ak_..."
+api_secret = "..."
+timestamp = str(int(time.time() * 1000))
+method = "POST"
+path = "/api/v1/orders"
+body = {"pair": "BTC/USDT", "side": "BUY", "price": "60000", "quantity": "0.01"}
+
+message = timestamp + method + path + json.dumps(body)
+signature = hmac.new(api_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+requests.post(
+    "https://твійдомен.com" + path,
+    json=body,
+    headers={
+        "X-API-KEY": api_key,
+        "X-API-TIMESTAMP": timestamp,
+        "X-API-SIGNATURE": signature,
+    },
+)`}
+        </pre>
+      </div>
+    </div>
+  );
+}
+
 function ClientsTab() {
   const [clients, setClients] = useState<Awaited<ReturnType<typeof api.getAllClients>>>([]);
   const [search, setSearch] = useState('');
@@ -458,6 +630,48 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)' },
   main: { padding: 32, maxWidth: 760, margin: '0 auto' },
+  secretBox: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--sell)',
+    borderRadius: 6,
+    padding: 14,
+    marginBottom: 20,
+  },
+  keyTable: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
+  th: {
+    textAlign: 'left',
+    color: 'var(--text-tertiary)',
+    fontWeight: 500,
+    padding: '6px 8px',
+    borderBottom: '1px solid var(--border)',
+  },
+  td: { padding: '8px', borderBottom: '1px solid var(--border)' },
+  revokeBtn: {
+    background: 'transparent',
+    border: '1px solid var(--sell)',
+    color: 'var(--sell)',
+    borderRadius: 4,
+    padding: '4px 10px',
+    fontSize: 11,
+  },
+  code: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 3,
+    padding: '1px 5px',
+    fontFamily: 'var(--font-mono)',
+    fontSize: 11,
+  },
+  codeBlock: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 6,
+    padding: 14,
+    fontSize: 11,
+    fontFamily: 'var(--font-mono)',
+    overflowX: 'auto',
+    lineHeight: 1.6,
+  },
   title: { fontSize: 20, marginBottom: 20 },
   layout: { display: 'grid', gridTemplateColumns: '180px 1fr', gap: 24, alignItems: 'start' },
   tabs: { display: 'flex', flexDirection: 'column', gap: 4 },

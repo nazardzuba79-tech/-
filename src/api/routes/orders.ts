@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { OrderService } from '../../services/OrderService';
-import { requireAuth, AuthedRequest } from '../middleware/auth';
+import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
 const placeOrderSchema = z.object({
   pair: z.string().regex(/^[A-Z0-9]+\/[A-Z0-9]+$/),
@@ -17,7 +17,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
   const router = Router();
   const orderService = new OrderService(prisma, engine);
 
-  router.post('/orders', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
@@ -53,7 +53,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
   // Own orders, newest first — powers the "Open Orders" panel on the trade
   // page. Not paginated: fine for a single user's order history on an
   // internal team exchange, revisit if that stops being true.
-  router.get('/orders/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/orders/me', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
     const status = req.query.status as string | undefined;
     const orders = await prisma.order.findMany({
       where: { userId: req.userId, ...(status ? { status } : {}) },
@@ -85,7 +85,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
     });
   });
 
-  router.delete('/orders/:orderId', requireAuth, async (req: AuthedRequest, res) => {
+  router.delete('/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const order = await prisma.order.findUnique({ where: { id: req.params.orderId } });
     if (!order || order.userId !== req.userId) {
       return res.status(404).json({ error: 'Order not found' });
