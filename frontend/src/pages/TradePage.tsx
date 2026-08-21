@@ -8,7 +8,7 @@ import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
-import { TradingViewChart } from '../components/TradingViewChart';
+import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
@@ -19,7 +19,7 @@ type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
 export function TradePage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [pair, setPair] = useState('BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
@@ -86,7 +86,7 @@ export function TradePage() {
 
       <main style={styles.grid}>
         <div style={styles.chartColumn}>
-          <TradingViewChart pair={pair} locale={lang} />
+          <PriceChart pair={pair} />
         </div>
 
         <div style={styles.bookColumn}>
