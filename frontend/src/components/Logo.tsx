@@ -26,7 +26,8 @@ export function LogoMark({ size = 22, variant = 'bolt' }: { size?: number; varia
 export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
   const iconSize = size === 'large' ? 40 : 20;
   const fontSize = size === 'large' ? 34 : 16;
-  return (
+
+  const lockup = (
     <span
       style={{
         display: 'inline-flex',
@@ -41,6 +42,33 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
     >
       <LogoMark size={iconSize} />
       VOLTEX
+    </span>
+  );
+
+  if (size !== 'large') return lockup;
+
+  return (
+    <span style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      {lockup}
+      <span
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontFamily: 'var(--font-mono)',
+          fontSize: 11,
+          letterSpacing: '0.08em',
+          color: 'var(--text-secondary)',
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="11" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <text x="12" y="16.5" fontSize="13" fontWeight="700" textAnchor="middle" fill="currentColor" fontFamily="ui-monospace">
+            ₿
+          </text>
+        </svg>
+        CRYPTO EXCHANGE
+      </span>
     </span>
   );
 }
