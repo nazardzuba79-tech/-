@@ -49,6 +49,14 @@ export function TradingViewChart({ pair, locale }: { pair: string; locale: 'ru' 
         'mainSeriesProperties.candleStyle.wickUpColor': '#eaecef',
         'mainSeriesProperties.candleStyle.wickDownColor': '#f7a600',
       },
+      // The Volume histogram is a separate built-in study, not part of the
+      // main series — its colors are set via studies_overrides instead of
+      // overrides, using the same white/orange pair.
+      studies_overrides: {
+        'volume.volume.color.0': '#f7a600',
+        'volume.volume.color.1': '#eaecef',
+        'volume.volume.transparency': 50,
+      },
     });
 
     container.appendChild(widgetDiv);
