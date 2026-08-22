@@ -28,7 +28,6 @@ export function Nav({
     { to: '/trade', label: t('nav.trade') },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/markets', label: t('nav.markets') },
-    { to: '/products', label: t('nav.products') },
   ];
 
   function handleLogout() {
@@ -53,14 +52,18 @@ export function Nav({
         <CardIcon active={active === '/card'} />
         {t('nav.card')}
       </Link>
+      <Link
+        to="/settings"
+        style={{ ...styles.link, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
+      >
+        <GearIcon active={active === '/settings'} />
+        {t('nav.settings')}
+      </Link>
       {middle}
       <div style={styles.right}>
         <BalanceStrip />
         {rightExtra}
         <LanguageSwitcher />
-        <Link to="/settings" style={styles.settingsLink} title={t('nav.settings')} aria-label={t('nav.settings')}>
-          <GearIcon active={active === '/settings'} />
-        </Link>
         <button onClick={handleLogout} style={styles.logoutBtn}>
           {t('nav.logout')}
         </button>
@@ -143,10 +146,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 16,
-  },
-  settingsLink: {
-    display: 'flex',
-    alignItems: 'center',
   },
   logoutBtn: {
     background: 'transparent',

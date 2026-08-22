@@ -112,8 +112,38 @@ button {
   letter-spacing: 0.01em;
 }
 
-input {
+input,
+textarea,
+select {
   font-family: inherit;
+  /* Safari/iOS applies its own system chrome to form controls unless
+     explicitly opted out, and can ignore a plain `color` on an <input>
+     in favor of that system text color — on a dark background that
+     reads as "gray text I can barely see" even though the same input
+     looks perfectly fine in Chromium. -webkit-text-fill-color is the
+     property Safari actually honors for the typed text color. */
+  -webkit-appearance: none;
+  appearance: none;
+}
+input,
+textarea {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+/* appearance: none above strips the native dropdown arrow along with the
+   system chrome we don't want — draw a plain chevron back in so a
+   <select> still visually reads as "click to choose" rather than a
+   dead-looking text field. */
+select {
+  color: var(--text-primary);
+  /* !important because components set their own inline `background`
+     shorthand for the panel color — that wins over a plain background-image
+     here (inline beats stylesheet), silently dropping the chevron. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23a3adba' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding-right: 32px !important;
 }
 
 /* Native <select> dropdowns render their OPEN option list using the OS/
@@ -187,6 +217,7 @@ textarea:focus-visible {
    the actual cause of search boxes looking empty/gray. */
 ::placeholder {
   color: var(--text-tertiary);
+  -webkit-text-fill-color: var(--text-tertiary);
   opacity: 1;
 }
 
