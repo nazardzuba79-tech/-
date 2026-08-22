@@ -147,6 +147,24 @@ input[type='radio'] {
   flex-shrink: 0;
 }
 
+/* Chrome/Edge paint autofilled inputs with their OWN light background +
+   text color (that pale blue box with barely-readable text on a saved
+   login) and ignore a plain `background`/`color` entirely — the only way
+   to override it is this box-shadow-as-fake-background trick, plus a
+   absurdly long transition delay so Chrome's own autofill style never
+   gets a chance to paint first. Applies to every text input across the
+   app (login/register email+password included), not just one page. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--panel-alt) inset !important;
+  box-shadow: 0 0 0 1000px var(--panel-alt) inset !important;
+  caret-color: var(--text-primary);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
 /* appearance: none above strips the native dropdown arrow along with the
    system chrome we don't want — draw a plain chevron back in so a
    <select> still visually reads as "click to choose" rather than a
