@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 
 /** Mandatory risk disclaimer shown the first time a user enters the futures
@@ -10,12 +10,16 @@ export function FuturesRiskDisclaimerModal({ onAccepted }: { onAccepted: () => v
   const { t } = useLanguage();
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleAccept() {
+    setError(null);
     setSubmitting(true);
     try {
       await api.acknowledgeFuturesRisk();
       onAccepted();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('futures.riskAckError'));
     } finally {
       setSubmitting(false);
     }
@@ -30,8 +34,9 @@ export function FuturesRiskDisclaimerModal({ onAccepted }: { onAccepted: () => v
           <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
           {t('futures.riskDisclaimerCheckbox')}
         </label>
+        {error && <div style={styles.error}>{error}</div>}
         <button type="button" disabled={!checked || submitting} onClick={handleAccept} style={styles.accept}>
-          {t('futures.riskDisclaimerAccept')}
+          {submitting ? t('auth.wait') : t('futures.riskDisclaimerAccept')}
         </button>
       </div>
     </div>
@@ -58,6 +63,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   title: { fontSize: 17, margin: '0 0 12px', color: 'var(--sell)' },
   body: { fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '0 0 18px' },
+  error: {
+    background: 'var(--sell-dim)',
+    color: 'var(--sell)',
+    padding: '8px 12px',
+    borderRadius: 6,
+    fontSize: 12,
+    marginBottom: 14,
+  },
   checkboxRow: {
     display: 'flex',
     alignItems: 'flex-start',
