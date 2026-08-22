@@ -42,6 +42,25 @@ function handleUnauthorized(status: number, hadToken: boolean) {
   }
 }
 
+// Validation failures come back as Zod's error.flatten() shape
+// ({formErrors, fieldErrors}), not a plain string — a bare `.toString()`
+// on that object collapses to the useless "[object Object]". Pull the
+// actual issue text out instead; a plain string error still passes through.
+function extractErrorMessage(body: any, status: number): string {
+  const err = body?.error;
+  if (typeof err === 'string' && err) return err;
+  if (err && typeof err === 'object') {
+    const messages: string[] = [
+      ...(Array.isArray(err.formErrors) ? err.formErrors : []),
+      ...(err.fieldErrors && typeof err.fieldErrors === 'object'
+        ? Object.values(err.fieldErrors).flatMap((v) => (Array.isArray(v) ? (v as string[]) : []))
+        : []),
+    ];
+    if (messages.length > 0) return messages.join('; ');
+  }
+  return `Request failed (${status})`;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -56,7 +75,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error?.toString?.() ?? `Request failed (${res.status})`, res.status);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -74,7 +93,7 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
   if (!res.ok) {
     handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(body.error?.toString?.() ?? `Request failed (${res.status})`, res.status);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status);
   }
   return res.json();
 }

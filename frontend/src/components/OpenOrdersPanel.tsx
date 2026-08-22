@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useToast } from '../lib/toast';
 import { Badge } from './Badge';
 
 interface Order {
@@ -43,6 +44,7 @@ function OrderStatusBadge({ status }: { status: string }) {
 
 export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
   const { t } = useLanguage();
+  const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -63,8 +65,11 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
     try {
       await api.cancelOrder(orderId);
       load();
+      toast.success(t('trade.orderCancelled'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('trade.cancelOrderError'));
+      const message = err instanceof ApiError ? err.message : t('trade.cancelOrderError');
+      setError(message);
+      toast.error(message);
     } finally {
       setCancellingId(null);
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
+import { useToast } from '../lib/toast';
 
 const MIN_DEPOSIT_USD = 1000;
 // Mirrors the backend's STABLECOINS set (src/services/DepositService.ts) —
@@ -9,6 +10,7 @@ const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
 
 export function DepositModal({ onClose }: { onClose: () => void }) {
   const { t, lang } = useLanguage();
+  const toast = useToast();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
@@ -100,8 +102,13 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await api.claimDeposit(chain, txHash, asset);
       setResult(res);
+      if (res.status === 'CREDITED') {
+        toast.success(t('deposit.creditedToast', { amount: res.amount, asset }));
+      }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('deposit.claimError'));
+      const message = err instanceof ApiError ? err.message : t('deposit.claimError');
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

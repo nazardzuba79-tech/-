@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useToast } from '../lib/toast';
 
 const PERCENT_STOPS = [0, 25, 50, 75, 100];
 // The exchange charges no trading fee anywhere in this codebase (see the
@@ -13,6 +14,7 @@ type Execution = 'LIMIT' | 'MARKET';
 
 export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => void }) {
   const { t } = useLanguage();
+  const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [family, setFamily] = useState<OrderFamily>('LIMIT');
@@ -138,8 +140,11 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       }
       resetFields();
       onPlaced();
+      toast.success(t('trade.orderPlaced'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('trade.placeOrderError'));
+      const message = err instanceof ApiError ? err.message : t('trade.placeOrderError');
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }

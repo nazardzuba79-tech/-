@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useToast } from '../lib/toast';
 import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
 import { HighLeverageConfirmModal } from './HighLeverageConfirmModal';
@@ -10,6 +11,7 @@ const PERCENT_STOPS = [0, 25, 50, 75, 100];
 
 export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlaced: () => void }) {
   const { t } = useLanguage();
+  const toast = useToast();
   const [, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
@@ -106,8 +108,11 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
       setQuantity('');
       setPercent(0);
       onPlaced();
+      toast.success(t('trade.orderPlaced'));
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('futures.placeOrderError'));
+      const message = err instanceof ApiError ? err.message : t('futures.placeOrderError');
+      setError(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
