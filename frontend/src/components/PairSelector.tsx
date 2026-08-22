@@ -45,6 +45,7 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [tickers, setTickers] = useState<TickerRow[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   // Defaults to USDT (the most-traded quote asset here) rather than "all",
   // so the list opens on liquid, familiar pairs instead of a flat
@@ -54,12 +55,18 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open || tickers.length > 0) return;
+  function loadTickers() {
+    setLoadError(false);
     api
       .getExternalTickers()
       .then((res) => setTickers(res.tickers))
-      .catch(() => {});
+      .catch(() => setLoadError(true));
+  }
+
+  useEffect(() => {
+    if (!open || tickers.length > 0) return;
+    loadTickers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, tickers.length]);
 
   useEffect(() => {
@@ -183,7 +190,12 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
                 </button>
               );
             })}
-            {tickers.length === 0 && <p style={styles.hint}>{t('trade.loading')}</p>}
+            {tickers.length === 0 && loadError && (
+              <button onClick={loadTickers} style={styles.retryButton}>
+                {t('trade.loadPairsError')}
+              </button>
+            )}
+            {tickers.length === 0 && !loadError && <p style={styles.hint}>{t('trade.loading')}</p>}
             {tickers.length > 0 && filtered.length === 0 && <p style={styles.hint}>{t('trade.nothingFound')}</p>}
           </div>
         </div>
@@ -262,5 +274,18 @@ const styles: Record<string, React.CSSProperties> = {
   },
   optionLeft: { display: 'flex', alignItems: 'center', gap: 8 },
   optionActive: { background: 'var(--panel-alt)' },
-  hint: { padding: 14, color: 'var(--text-tertiary)', fontSize: 12 },
+  hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
+  retryButton: {
+    display: 'block',
+    width: 'calc(100% - 28px)',
+    margin: 14,
+    padding: '10px 12px',
+    background: 'var(--sell-dim)',
+    color: 'var(--sell)',
+    border: '1px solid var(--sell)',
+    borderRadius: 8,
+    fontSize: 12,
+    fontWeight: 700,
+    textAlign: 'center',
+  },
 };
