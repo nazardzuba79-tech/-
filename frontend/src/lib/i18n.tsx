@@ -62,6 +62,7 @@ const RU = {
   'trade.high24h': 'Максимум 24ч',
   'trade.low24h': 'Минимум 24ч',
   'trade.volume24h': 'Объём 24ч',
+  'trade.turnover24h': 'Оборот 24ч',
   'trade.tabOpenOrders': 'Открытые ордера',
   'trade.tabOrderHistory': 'История ордеров',
   'trade.tabTradeHistory': 'История сделок',
@@ -180,7 +181,7 @@ const RU = {
   'settings.noKycYet': 'Этот клиент ещё не подавал заявку на верификацию.',
   'settings.reviewKycError': 'Не удалось обработать заявку',
 
-  'card.title': 'Криптокарта',
+  'card.title': 'Крипто карта VOLTEX',
   'card.soon': 'Скоро',
   'card.lead': "Карта, привязанная к твоему внутреннему балансу — карты ещё нет в выпуске, но уже можно записаться в лист ожидания.",
   'card.whyKycTitle': 'Почему для карты нужна верификация',
@@ -294,6 +295,7 @@ const EN: Record<Key, string> = {
   'trade.high24h': '24h High',
   'trade.low24h': '24h Low',
   'trade.volume24h': '24h Volume',
+  'trade.turnover24h': '24h Turnover',
   'trade.tabOpenOrders': 'Open Orders',
   'trade.tabOrderHistory': 'Order History',
   'trade.tabTradeHistory': 'Trade History',
@@ -412,7 +414,7 @@ const EN: Record<Key, string> = {
   'settings.noKycYet': "This client hasn't submitted a verification application yet.",
   'settings.reviewKycError': 'Could not process the application',
 
-  'card.title': 'Crypto Card',
+  'card.title': 'VOLTEX Crypto Card',
   'card.soon': 'Coming soon',
   'card.lead': "A card tied to your internal balance — the card hasn't launched yet, but you can already join the waitlist.",
   'card.whyKycTitle': 'Why the card requires verification',

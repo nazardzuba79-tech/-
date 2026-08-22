@@ -150,6 +150,7 @@ export const api = {
         high24h: string;
         low24h: string;
         volume24h: string;
+        quoteVolume24h: string;
         changePercent24h: string;
       }[];
     }>('/market/external/tickers'),
@@ -165,6 +166,7 @@ export const api = {
         high24h: string;
         low24h: string;
         volume24h: string;
+        quoteVolume24h: string;
         changePercent24h: string;
       };
     }>(`/market/external/tickers/${pairToSlug(pair)}`),

@@ -28,7 +28,8 @@ export interface MarketTicker {
   askPrice: string;
   high24h: string;
   low24h: string;
-  volume24h: string;
+  volume24h: string; // in the base asset (e.g. BTC)
+  quoteVolume24h: string; // in the quote asset (e.g. USDT) — volume24h * 24h VWAP
   changePercent24h: string;
 }
 
@@ -246,7 +247,16 @@ export class KrakenMarketDataService {
       const body = await this.request(`/0/public/Ticker?pair=${batch.map((b) => b.krakenName).join(',')}`);
       const resultByKrakenName = new Map(Object.entries(body.result)) as Map<
         string,
-        { c: [string, string]; b: [string, string, string]; a: [string, string, string]; h: [string, string]; l: [string, string]; v: [string, string]; o: string }
+        {
+          c: [string, string];
+          b: [string, string, string];
+          a: [string, string, string];
+          h: [string, string];
+          l: [string, string];
+          v: [string, string];
+          p: [string, string]; // volume-weighted average price: [today, last 24h]
+          o: string;
+        }
       >;
       for (const info of batch) {
         const raw = resultByKrakenName.get(info.krakenName);
@@ -254,6 +264,7 @@ export class KrakenMarketDataService {
         const lastPrice = Number(raw.c[0]);
         const openPrice = Number(raw.o);
         const changePercent24h = openPrice === 0 ? '0' : (((lastPrice - openPrice) / openPrice) * 100).toFixed(4);
+        const quoteVolume24h = (Number(raw.v[1]) * Number(raw.p[1])).toFixed(2);
         byPair.set(info.pair, {
           pair: info.pair,
           lastPrice: raw.c[0],
@@ -262,6 +273,7 @@ export class KrakenMarketDataService {
           high24h: raw.h[1],
           low24h: raw.l[1],
           volume24h: raw.v[1],
+          quoteVolume24h,
           changePercent24h,
         });
       }

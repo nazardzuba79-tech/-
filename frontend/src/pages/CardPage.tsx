@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
+import { LogoMark } from '../components/Logo';
 
 export function CardPage() {
   const { t, lang } = useLanguage();
@@ -40,6 +41,20 @@ export function CardPage() {
     <div style={styles.page}>
       <Nav active="/card" />
       <main style={styles.main}>
+        <div style={styles.cardVisual}>
+          <div style={styles.cardVisualTop}>
+            <LogoMark size={26} variant="badge" />
+            <span style={styles.cardVisualSoon}>{t('card.soon')}</span>
+          </div>
+          <div style={styles.cardVisualNumber} className="mono">
+            •••• •••• •••• ••••
+          </div>
+          <div style={styles.cardVisualBottom}>
+            <span style={styles.cardVisualWordmark}>VOLTEX</span>
+            <ContactlessIcon />
+          </div>
+        </div>
+
         <div style={styles.headerRow}>
           <h1 style={styles.title}>{t('card.title')}</h1>
           <span style={styles.badge}>{t('card.soon')}</span>
@@ -95,9 +110,44 @@ export function CardPage() {
   );
 }
 
+function ContactlessIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0b0e11" strokeWidth="2.2" strokeLinecap="round">
+      <path d="M8 10a4 4 0 0 1 0 4" />
+      <path d="M11 7a8 8 0 0 1 0 10" />
+      <path d="M14 4a12 12 0 0 1 0 16" />
+    </svg>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)' },
   main: { padding: 32, maxWidth: 900, margin: '0 auto' },
+  cardVisual: {
+    width: 340,
+    aspectRatio: '1.586',
+    borderRadius: 18,
+    padding: 22,
+    background: 'linear-gradient(135deg, #f7a600 0%, #ffb524 45%, #b97300 100%)',
+    boxShadow: '0 16px 40px rgba(247,166,0,0.25)',
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
+  cardVisualSoon: {
+    background: 'rgba(11,14,17,0.85)',
+    color: '#f7a600',
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.04em',
+    padding: '4px 10px',
+    borderRadius: 999,
+  },
+  cardVisualNumber: { color: 'rgba(11,14,17,0.75)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
+  cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  cardVisualWordmark: { color: '#0b0e11', fontWeight: 800, fontSize: 18, fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' },
   headerRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 },
   title: { fontSize: 22, margin: 0 },
   badge: {

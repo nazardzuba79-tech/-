@@ -23,6 +23,7 @@ const TICKER_BODY = {
       h: ['60500', '61000'],
       l: ['59500', '59000'],
       v: ['100', '1234.5'],
+      p: ['59900', '59700'],
       o: '58800',
     },
   },
@@ -107,6 +108,7 @@ describe('KrakenMarketDataService', () => {
       high24h: '61000',
       low24h: '59000',
       volume24h: '1234.5',
+      quoteVolume24h: '73699650.00',
       changePercent24h: '2.0408',
     });
   });
