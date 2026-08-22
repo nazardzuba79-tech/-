@@ -29,6 +29,8 @@ export interface LiveTrade {
 
 type BookListener = (snapshot: BookSnapshot) => void;
 type TradeListener = (trade: LiveTrade) => void;
+export type SocketStatus = 'connecting' | 'connected' | 'disconnected';
+type StatusListener = (status: SocketStatus) => void;
 
 interface BookState {
   bids: Map<string, string>;
@@ -47,6 +49,30 @@ class KrakenSocket {
   private bookState = new Map<string, BookState>();
   private bookListeners = new Map<string, Set<BookListener>>();
   private tradeListeners = new Map<string, Set<TradeListener>>();
+
+  // Real connection state, not a guess — flips on the socket's own
+  // open/close events so UI can honestly show "reconnecting" instead of
+  // silently sitting on stale data during an outage.
+  private status: SocketStatus = 'disconnected';
+  private statusListeners = new Set<StatusListener>();
+
+  getStatus(): SocketStatus {
+    return this.status;
+  }
+
+  subscribeStatus(listener: StatusListener): () => void {
+    this.statusListeners.add(listener);
+    listener(this.status);
+    return () => {
+      this.statusListeners.delete(listener);
+    };
+  }
+
+  private setStatus(status: SocketStatus) {
+    if (this.status === status) return;
+    this.status = status;
+    this.statusListeners.forEach((listener) => listener(status));
+  }
 
   subscribeBook(pair: string, listener: BookListener): () => void {
     this.ensureConnected();
@@ -89,12 +115,14 @@ class KrakenSocket {
     if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return;
     if (this.connecting) return;
     this.connecting = true;
+    this.setStatus('connecting');
 
     let socket: WebSocket;
     try {
       socket = new WebSocket(WS_URL);
     } catch {
       this.connecting = false;
+      this.setStatus('disconnected');
       this.scheduleReconnect();
       return;
     }
@@ -103,6 +131,7 @@ class KrakenSocket {
     socket.onopen = () => {
       this.connecting = false;
       this.reconnectDelay = 1000;
+      this.setStatus('connected');
       for (const pair of this.bookListeners.keys()) {
         this.send({ method: 'subscribe', params: { channel: 'book', symbol: [pair], depth: 25 } });
       }
@@ -114,6 +143,7 @@ class KrakenSocket {
     socket.onclose = () => {
       this.ws = null;
       this.connecting = false;
+      this.setStatus('disconnected');
       this.scheduleReconnect();
     };
     socket.onerror = () => socket.close();
