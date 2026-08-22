@@ -14,6 +14,7 @@ import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
+import { TopGainersTicker } from '../components/TopGainersTicker';
 import { krakenSocket } from '../lib/krakenSocket';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
@@ -83,6 +84,7 @@ export function TradePage() {
           </button>
         }
       />
+      <TopGainersTicker />
       <TickerBar pair={pair} />
 
       <main style={styles.grid}>
