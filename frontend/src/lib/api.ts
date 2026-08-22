@@ -79,7 +79,16 @@ export const api = {
     request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
   login: (email: string, password: string) =>
-    request<{ token: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+
+  loginWith2FA: (pendingToken: string, code: string) =>
+    request<{ token: string }>('/auth/login/2fa', {
+      method: 'POST',
+      body: JSON.stringify({ pendingToken, code }),
+    }),
 
   getOrderBook: (pair: string) =>
     request<{
@@ -208,6 +217,18 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
+
+  setup2FA: () =>
+    request<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>('/account/2fa/setup', { method: 'POST' }),
+
+  verify2FA: (code: string) =>
+    request<{ status: string; backupCodes: string[] }>('/account/2fa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
+
+  disable2FA: (code: string) =>
+    request<{ status: string }>('/account/2fa/disable', { method: 'POST', body: JSON.stringify({ code }) }),
 
   getMyOrders: (status?: string) =>
     request<

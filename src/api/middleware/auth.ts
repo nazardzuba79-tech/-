@@ -17,7 +17,12 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     return res.status(401).json({ error: 'Missing bearer token' });
   }
   try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET!) as { sub: string };
+    const payload = jwt.verify(header.slice(7), JWT_SECRET!) as { sub: string; purpose?: string };
+    // A pending-2FA token (issued mid-login, before the code is verified) is
+    // only ever valid against /auth/login/2fa — never as a real session.
+    if (payload.purpose) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
     req.userId = payload.sub;
     next();
   } catch {

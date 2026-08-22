@@ -4,12 +4,19 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
+import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
 const JWT_EXPIRES_IN = '12h';
 const BCRYPT_ROUNDS = 12;
+
+// Short-lived, narrowly-scoped token issued after a correct password but
+// before the 2FA step completes. Carries a `purpose` claim so requireAuth
+// (which only accepts claim-less session tokens) can never mistake it for
+// a full session — it's only good for POSTing to /auth/login/2fa.
+const PENDING_2FA_EXPIRES_IN = '5m';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -23,8 +30,14 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+const login2faSchema = z.object({
+  pendingToken: z.string(),
+  code: z.string().min(6).max(64),
+});
+
 // Login attempts are the classic brute-force target — much tighter limit
-// than the general API rate limit in index.ts.
+// than the general API rate limit in index.ts. The 2FA step gets the same
+// treatment: a 6-digit TOTP code is only ~1M possibilities.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 10,
@@ -33,8 +46,20 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts, try again later' },
 });
 
+const twoFactorLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts, try again later' },
+});
+
 function issueToken(userId: string): string {
   return jwt.sign({ sub: userId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
+}
+
+function issuePendingToken(userId: string): string {
+  return jwt.sign({ sub: userId, purpose: 'pending_2fa' }, JWT_SECRET!, { expiresIn: PENDING_2FA_EXPIRES_IN });
 }
 
 export function authRouter(prisma: PrismaClient): Router {
@@ -85,6 +110,47 @@ export function authRouter(prisma: PrismaClient): Router {
 
     if (!user || !valid) {
       return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (user.twoFactorEnabled) {
+      return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
+    }
+
+    res.json({ token: issueToken(user.id) });
+  });
+
+  router.post('/auth/login/2fa', twoFactorLimiter, async (req, res) => {
+    const parsed = login2faSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const { pendingToken, code } = parsed.data;
+
+    let userId: string;
+    try {
+      const payload = jwt.verify(pendingToken, JWT_SECRET!) as { sub: string; purpose?: string };
+      if (payload.purpose !== 'pending_2fa') throw new Error('wrong token type');
+      userId = payload.sub;
+    } catch {
+      return res.status(401).json({ error: 'Login session expired, please sign in again' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.twoFactorEnabled) {
+      return res.status(401).json({ error: 'Login session expired, please sign in again' });
+    }
+
+    const result = await verifyAndConsume2FACode(user, code);
+    if (!result.ok) {
+      return res.status(401).json({ error: 'Invalid authentication code' });
+    }
+
+    if (result.remainingBackupCodes) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { twoFactorBackupCodes: result.remainingBackupCodes },
+      });
+      await prisma.auditLog.create({
+        data: { userId: user.id, action: 'TWO_FACTOR_BACKUP_CODE_USED', metadata: {} },
+      });
     }
 
     res.json({ token: issueToken(user.id) });

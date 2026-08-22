@@ -18,6 +18,8 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tickers, setTickers] = useState<HeroTicker[]>([]);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
+  const [twoFaCode, setTwoFaCode] = useState('');
   const navigate = useNavigate();
 
   // Live public prices behind the login card — no auth needed for this,
@@ -43,7 +45,27 @@ export function AuthPage() {
     setError(null);
     setLoading(true);
     try {
-      const { token } = mode === 'login' ? await api.login(email, password) : await api.register(email, password);
+      const result = mode === 'login' ? await api.login(email, password) : await api.register(email, password);
+      if ('requires2fa' in result) {
+        setPendingToken(result.pendingToken);
+      } else {
+        setToken(result.token);
+        navigate('/trade');
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('auth.genericError'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTwoFaSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!pendingToken) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const { token } = await api.loginWith2FA(pendingToken, twoFaCode);
       setToken(token);
       navigate('/trade');
     } catch (err) {
@@ -91,55 +113,97 @@ export function AuthPage() {
         </div>
 
         <div style={styles.card}>
-          <div style={styles.tabs}>
-            <button
-              style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
-              onClick={() => setMode('login')}
-              type="button"
-            >
-              {t('auth.login')}
-            </button>
-            <button
-              style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
-              onClick={() => setMode('register')}
-              type="button"
-            >
-              {t('auth.register')}
-            </button>
-          </div>
+          {pendingToken ? (
+            <>
+              <div style={styles.twoFaTitle}>{t('auth.twoFaTitle')}</div>
+              <p style={styles.twoFaHint}>{t('auth.twoFaHint')}</p>
+              <form onSubmit={handleTwoFaSubmit} style={styles.form}>
+                <label style={styles.label}>
+                  {t('auth.twoFaCode')}
+                  <input
+                    type="text"
+                    required
+                    autoFocus
+                    inputMode="text"
+                    autoComplete="one-time-code"
+                    value={twoFaCode}
+                    onChange={(e) => setTwoFaCode(e.target.value)}
+                    style={{ ...styles.input, ...styles.twoFaInput }}
+                    placeholder="123456"
+                  />
+                </label>
 
-          <form onSubmit={handleSubmit} style={styles.form}>
-            <label style={styles.label}>
-              {t('auth.email')}
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={styles.input}
-                autoComplete="email"
-              />
-            </label>
-            <label style={styles.label}>
-              {t('auth.password')}
-              <input
-                type="password"
-                required
-                minLength={mode === 'register' ? 10 : undefined}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={styles.input}
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              />
-              {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
-            </label>
+                {error && <div style={styles.error}>{error}</div>}
 
-            {error && <div style={styles.error}>{error}</div>}
+                <button type="submit" disabled={loading} style={styles.submit}>
+                  {loading ? t('auth.wait') : t('auth.confirm')}
+                </button>
+                <button
+                  type="button"
+                  style={styles.backLink}
+                  onClick={() => {
+                    setPendingToken(null);
+                    setTwoFaCode('');
+                    setError(null);
+                  }}
+                >
+                  {t('auth.backToLogin')}
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <div style={styles.tabs}>
+                <button
+                  style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
+                  onClick={() => setMode('login')}
+                  type="button"
+                >
+                  {t('auth.login')}
+                </button>
+                <button
+                  style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
+                  onClick={() => setMode('register')}
+                  type="button"
+                >
+                  {t('auth.register')}
+                </button>
+              </div>
 
-            <button type="submit" disabled={loading} style={styles.submit}>
-              {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
-            </button>
-          </form>
+              <form onSubmit={handleSubmit} style={styles.form}>
+                <label style={styles.label}>
+                  {t('auth.email')}
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    style={styles.input}
+                    autoComplete="email"
+                  />
+                </label>
+                <label style={styles.label}>
+                  {t('auth.password')}
+                  <input
+                    type="password"
+                    required
+                    minLength={mode === 'register' ? 10 : undefined}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={styles.input}
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  />
+                  {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
+                </label>
+
+                {error && <div style={styles.error}>{error}</div>}
+
+                <button type="submit" disabled={loading} style={styles.submit}>
+                  {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
+                </button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -240,6 +304,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     color: 'var(--text-primary)',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  },
+  twoFaTitle: { fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, marginBottom: 8 },
+  twoFaHint: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 20 },
+  twoFaInput: { fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.3em', textAlign: 'center' },
+  backLink: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-secondary)',
+    fontSize: 12,
+    padding: '4px 0',
   },
   form: {
     display: 'flex',

@@ -93,7 +93,16 @@ function ProfileTab() {
       <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
       <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
       <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
-      <Row label={t('settings.twoFactor')} value={<span style={{ color: 'var(--text-tertiary)' }}>{t('settings.comingSoon')}</span>} />
+      <Row
+        label={t('settings.twoFactor')}
+        value={
+          me.twoFactorEnabled ? (
+            <Badge text={t('settings.enabled')} color="var(--buy)" bg="var(--buy-dim)" />
+          ) : (
+            <Badge text={t('settings.disabled')} color="var(--text-tertiary)" bg="var(--neutral-dim)" />
+          )
+        }
+      />
     </div>
   );
 }
@@ -159,6 +168,187 @@ function SecurityTab() {
           {submitting ? t('auth.wait') : t('settings.save')}
         </button>
       </form>
+
+      <TwoFactorSection />
+    </div>
+  );
+}
+
+type SetupState = { secret: string; otpauthUrl: string; qrCodeDataUrl: string };
+
+function TwoFactorSection() {
+  const { t } = useLanguage();
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const [setup, setSetup] = useState<SetupState | null>(null);
+  const [code, setCode] = useState('');
+  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+  const [disabling, setDisabling] = useState(false);
+  const [disableCode, setDisableCode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  function reload() {
+    api.getMe().then((me) => setEnabled(me.twoFactorEnabled)).catch(() => {});
+  }
+
+  useEffect(reload, []);
+
+  async function startSetup() {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await api.setup2FA();
+      setSetup(res);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmSetup(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await api.verify2FA(code);
+      setBackupCodes(res.backupCodes);
+      setSetup(null);
+      setCode('');
+      setEnabled(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmDisable(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      await api.disable2FA(disableCode);
+      setEnabled(false);
+      setDisabling(false);
+      setDisableCode('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (enabled === null) return null;
+
+  // Just finished enabling — show the one-time backup codes and nothing else
+  // until the user acknowledges saving them (they're never shown again).
+  if (backupCodes) {
+    return (
+      <div style={styles.twoFaBlock}>
+        <h3 style={styles.cardTitle}>{t('settings.backupCodesTitle')}</h3>
+        <p style={styles.twoFaLead}>{t('settings.backupCodesHint')}</p>
+        <div style={styles.backupCodesGrid} className="mono">
+          {backupCodes.map((c) => (
+            <span key={c} style={styles.backupCode}>
+              {c}
+            </span>
+          ))}
+        </div>
+        <button style={styles.submitBtn} onClick={() => setBackupCodes(null)}>
+          {t('settings.backupCodesSaved')}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={styles.twoFaBlock}>
+      <div style={styles.twoFaHeader}>
+        <h3 style={styles.cardTitle}>{t('settings.twoFactor')}</h3>
+        {enabled ? (
+          <Badge text={t('settings.enabled')} color="var(--buy)" bg="var(--buy-dim)" />
+        ) : (
+          <Badge text={t('settings.disabled')} color="var(--text-tertiary)" bg="var(--neutral-dim)" />
+        )}
+      </div>
+      <p style={styles.twoFaLead}>{t('settings.twoFaLead')}</p>
+
+      {!enabled && !setup && (
+        <button style={styles.submitBtn} onClick={startSetup} disabled={busy}>
+          {busy ? t('auth.wait') : t('settings.enable2fa')}
+        </button>
+      )}
+
+      {!enabled && setup && (
+        <form onSubmit={confirmSetup} style={styles.form}>
+          <div style={styles.qrRow}>
+            <img src={setup.qrCodeDataUrl} alt="QR" style={styles.qrImage} />
+            <div style={styles.qrInfo}>
+              <p style={styles.twoFaHint}>{t('settings.scanQr')}</p>
+              <div style={styles.twoFaSecretBox} className="mono">
+                {setup.secret}
+              </div>
+              <p style={styles.twoFaHint}>{t('settings.orEnterManually')}</p>
+            </div>
+          </div>
+          <label style={styles.label}>
+            {t('auth.twoFaCode')}
+            <input
+              type="text"
+              required
+              autoFocus
+              autoComplete="one-time-code"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              style={{ ...styles.input, fontFamily: 'var(--font-mono)', letterSpacing: '0.2em' }}
+              placeholder="123456"
+            />
+          </label>
+          {error && <div style={styles.errorBox}>{error}</div>}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="submit" disabled={busy} style={{ ...styles.submitBtn, flex: 1 }}>
+              {busy ? t('auth.wait') : t('auth.confirm')}
+            </button>
+            <button type="button" style={{ ...styles.cancelBtn, flex: 1 }} onClick={() => setSetup(null)}>
+              {t('settings.cancel')}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {enabled && !disabling && (
+        <button style={styles.dangerBtn} onClick={() => setDisabling(true)}>
+          {t('settings.disable2fa')}
+        </button>
+      )}
+
+      {enabled && disabling && (
+        <form onSubmit={confirmDisable} style={styles.form}>
+          <label style={styles.label}>
+            {t('auth.twoFaCode')}
+            <input
+              type="text"
+              required
+              autoFocus
+              autoComplete="one-time-code"
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value)}
+              style={{ ...styles.input, fontFamily: 'var(--font-mono)', letterSpacing: '0.2em' }}
+              placeholder="123456"
+            />
+          </label>
+          {error && <div style={styles.errorBox}>{error}</div>}
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button type="submit" disabled={busy} style={{ ...styles.dangerBtn, flex: 1 }}>
+              {busy ? t('auth.wait') : t('settings.disable2fa')}
+            </button>
+            <button type="button" style={{ ...styles.cancelBtn, flex: 1 }} onClick={() => setDisabling(false)}>
+              {t('settings.cancel')}
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
@@ -767,6 +957,64 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
   },
+  cancelBtn: {
+    background: 'transparent',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '11px 0',
+    fontWeight: 700,
+    fontSize: 14,
+  },
+  dangerBtn: {
+    background: 'transparent',
+    color: 'var(--sell)',
+    border: '1px solid var(--sell)',
+    borderRadius: 24,
+    padding: '11px 22px',
+    fontWeight: 800,
+    fontSize: 13,
+  },
+  twoFaBlock: {
+    borderTop: '1px solid var(--border)',
+    marginTop: 20,
+    paddingTop: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+  },
+  twoFaHeader: { display: 'flex', alignItems: 'center', gap: 10 },
+  twoFaLead: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 },
+  twoFaHint: { fontSize: 12, color: 'var(--text-tertiary)', margin: 0 },
+  qrRow: { display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' },
+  qrImage: {
+    width: 160,
+    height: 160,
+    borderRadius: 8,
+    border: '1px solid var(--border)',
+    background: '#fff',
+    padding: 8,
+    flexShrink: 0,
+  },
+  qrInfo: { display: 'flex', flexDirection: 'column', gap: 8, minWidth: 180 },
+  twoFaSecretBox: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: '8px 10px',
+    fontSize: 13,
+    wordBreak: 'break-all',
+  },
+  backupCodesGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 10,
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: 16,
+  },
+  backupCode: { fontSize: 14, letterSpacing: '0.05em', textAlign: 'center', padding: '4px 0' },
   clientsGrid: { display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16, alignItems: 'start' },
   clientsList: {
     background: 'var(--panel)',

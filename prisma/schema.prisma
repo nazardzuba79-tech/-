@@ -18,6 +18,10 @@ model User {
   kycStatus     KycStatus @default(NOT_STARTED)
   twoFactorSecret String?
   twoFactorEnabled Boolean @default(false)
+  /// Bcrypt hashes of one-time recovery codes, issued once when 2FA is
+  /// enabled and consumed (removed from the array) as they're used to log
+  /// in without an authenticator app. Never store these in plaintext.
+  twoFactorBackupCodes String[] @default([])
   /// Set when the user joins the crypto card waitlist (see src/api/routes/card.ts).
   /// Requires kycStatus == APPROVED — the card program needs full KYC same
   /// as any real card issuer (Visa/Mastercard + the issuing bank require it
