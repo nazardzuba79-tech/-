@@ -119,10 +119,37 @@ export const api = {
       timestamp: number;
     }>(`/orderbook/${pair}`),
 
-  placeOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string }) =>
-    request('/orders', { method: 'POST', body: JSON.stringify(params) }),
+  placeOrder: (params: {
+    pair: string;
+    side: 'BUY' | 'SELL';
+    type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET';
+    price?: string;
+    triggerPrice?: string;
+    quantity: string;
+  }) => request('/orders', { method: 'POST', body: JSON.stringify(params) }),
+
+  placeOcoOrder: (params: {
+    pair: string;
+    side: 'BUY' | 'SELL';
+    quantity: string;
+    takeProfitPrice: string;
+    stopTriggerPrice: string;
+    stopLimitPrice: string;
+  }) =>
+    request<{ ocoGroupId: string; takeProfitOrderId: string; stopOrderId: string }>('/orders/oco', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
 
   cancelOrder: (orderId: string) => request(`/orders/${orderId}`, { method: 'DELETE' }),
+
+  // Moves a still-pending SL/TP order's trigger (and execution) price —
+  // powers dragging its line on the chart.
+  updateOrderTrigger: (orderId: string, params: { triggerPrice?: string; price?: string }) =>
+    request<{ id: string; triggerPrice: string; price: string | null }>(`/orders/${orderId}/trigger`, {
+      method: 'PATCH',
+      body: JSON.stringify(params),
+    }),
 
   getCandles: (pair: string, interval: string, limit = 200) =>
     request<{
@@ -259,6 +286,8 @@ export const api = {
         side: 'BUY' | 'SELL';
         type: string;
         price: string | null;
+        triggerPrice: string | null;
+        ocoGroupId: string | null;
         originalQuantity: string;
         remainingQuantity: string;
         status: string;

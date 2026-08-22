@@ -3,19 +3,45 @@ import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 
 const PERCENT_STOPS = [0, 25, 50, 75, 100];
+// The exchange charges no trading fee anywhere in this codebase (see the
+// "0% fee" claim already on the registration page) — shown here as an
+// honest 0.00, not a fabricated rate.
+const FEE_RATE = 0;
+
+type OrderFamily = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'OCO';
+type Execution = 'LIMIT' | 'MARKET';
 
 export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => void }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
-  const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
+  const [family, setFamily] = useState<OrderFamily>('LIMIT');
+  const [execution, setExecution] = useState<Execution>('LIMIT');
   const [price, setPrice] = useState('');
+  const [triggerPrice, setTriggerPrice] = useState('');
+  const [ocoTakeProfitPrice, setOcoTakeProfitPrice] = useState('');
+  const [ocoStopTriggerPrice, setOcoStopTriggerPrice] = useState('');
+  const [ocoStopLimitPrice, setOcoStopLimitPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
   const [available, setAvailable] = useState<{ base: number; quote: number }>({ base: 0, quote: 0 });
   const [marketPrice, setMarketPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
+  const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
+    family === 'LIMIT'
+      ? 'LIMIT'
+      : family === 'MARKET'
+      ? 'MARKET'
+      : family === 'STOP'
+      ? execution === 'LIMIT'
+        ? 'STOP_LIMIT'
+        : 'STOP_MARKET'
+      : execution === 'LIMIT'
+      ? 'TAKE_PROFIT_LIMIT'
+      : 'TAKE_PROFIT_MARKET';
 
   useEffect(() => {
     api
@@ -28,12 +54,11 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       .catch(() => {});
   }, [baseAsset, quoteAsset, side]);
 
-  // MARKET orders don't take a price from the user — a reference price
-  // (from the same Kraken mirror the trade page already uses) is only for
-  // sizing the % slider and showing an estimated total, not for what the
-  // order actually executes at.
+  // A live reference price is needed for more than just MARKET orders now:
+  // the % slider/total estimate for conditional orders, and the inline
+  // "must be above/below current price" hint that mirrors the server's
+  // own trigger-direction validation.
   useEffect(() => {
-    if (type !== 'MARKET') return;
     let cancelled = false;
     function load() {
       api
@@ -47,15 +72,16 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       cancelled = true;
       clearInterval(interval);
     };
-  }, [type, pair]);
+  }, [pair]);
 
-  const effectivePrice = type === 'LIMIT' ? parseFloat(price) : marketPrice ?? 0;
+  const effectivePrice =
+    family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? parseFloat(price) || 0 : marketPrice ?? 0;
   const total = effectivePrice && quantity ? (effectivePrice * parseFloat(quantity)).toFixed(2) : '0.00';
+  const feeAmount = (parseFloat(total) * FEE_RATE).toFixed(2);
 
-  // % slider spends a share of whichever balance funds this side of the
-  // trade — quote balance (e.g. USDT) for a buy, base balance (e.g. BTC)
-  // for a sell — same idea as the slider on a real exchange's order form,
-  // just driven by our own real balances instead of a fake number.
+  // % slider / drag both spend a share of whichever balance funds this
+  // side of the trade — quote balance (e.g. USDT) for a buy, base balance
+  // (e.g. BTC) for a sell — driven by real balances, not a fake number.
   function applyPercent(pct: number) {
     setPercent(pct);
     if (side === 'BUY') {
@@ -66,15 +92,51 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
     }
   }
 
+  // Same direction rule the backend enforces (OrderService.validateTriggerDirection):
+  // a SELL stop/BUY take-profit must sit below the current price, the reverse above.
+  function triggerHint(kind: 'STOP' | 'TAKE_PROFIT'): string | null {
+    if (!marketPrice) return null;
+    const mustBeBelow = (kind === 'STOP' && side === 'SELL') || (kind === 'TAKE_PROFIT' && side === 'BUY');
+    return mustBeBelow
+      ? t('trade.triggerMustBeBelow', { price: marketPrice })
+      : t('trade.triggerMustBeAbove', { price: marketPrice });
+  }
+
+  function resetFields() {
+    setPrice('');
+    setTriggerPrice('');
+    setOcoTakeProfitPrice('');
+    setOcoStopTriggerPrice('');
+    setOcoStopLimitPrice('');
+    setQuantity('');
+    setPercent(0);
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await api.placeOrder({ pair, side, type, price: type === 'LIMIT' ? price : undefined, quantity });
-      setPrice('');
-      setQuantity('');
-      setPercent(0);
+      if (family === 'OCO') {
+        await api.placeOcoOrder({
+          pair,
+          side,
+          quantity,
+          takeProfitPrice: ocoTakeProfitPrice,
+          stopTriggerPrice: ocoStopTriggerPrice,
+          stopLimitPrice: ocoStopLimitPrice,
+        });
+      } else {
+        await api.placeOrder({
+          pair,
+          side,
+          type,
+          price: type === 'LIMIT' || type === 'STOP_LIMIT' || type === 'TAKE_PROFIT_LIMIT' ? price : undefined,
+          triggerPrice: isConditional ? triggerPrice : undefined,
+          quantity,
+        });
+      }
+      resetFields();
       onPlaced();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('trade.placeOrderError'));
@@ -82,6 +144,14 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       setSubmitting(false);
     }
   }
+
+  const FAMILY_TABS: { id: OrderFamily; label: string }[] = [
+    { id: 'LIMIT', label: t('trade.limitOrder') },
+    { id: 'MARKET', label: t('trade.marketOrder') },
+    { id: 'STOP', label: t('trade.stopOrder') },
+    { id: 'TAKE_PROFIT', label: t('trade.takeProfitOrder') },
+    { id: 'OCO', label: t('trade.ocoOrder') },
+  ];
 
   return (
     <div style={styles.panel}>
@@ -103,45 +173,127 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       </div>
 
       <div style={styles.typeTabs}>
-        <button
-          type="button"
-          onClick={() => setType('LIMIT')}
-          style={{ ...styles.typeTab, ...(type === 'LIMIT' ? styles.typeTabActive : {}) }}
-        >
-          {t('trade.limitOrder')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('MARKET')}
-          style={{ ...styles.typeTab, ...(type === 'MARKET' ? styles.typeTabActive : {}) }}
-        >
-          {t('trade.marketOrder')}
-        </button>
+        {FAMILY_TABS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => setFamily(f.id)}
+            style={{ ...styles.typeTab, ...(family === f.id ? styles.typeTabActive : {}) }}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <form onSubmit={handleSubmit} style={styles.form}>
-        {type === 'LIMIT' ? (
-          <label style={styles.label}>
-            {t('trade.price')}
-            <input
-              className="mono"
-              type="number"
-              step="any"
-              required
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              style={styles.input}
-              placeholder="0.00"
-            />
-          </label>
-        ) : (
-          <label style={styles.label}>
-            {t('trade.price')}
-            <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
-              {marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} {quoteAsset}
-            </div>
-          </label>
+        {isConditional && (
+          <div style={styles.executionToggle}>
+            <button
+              type="button"
+              onClick={() => setExecution('LIMIT')}
+              style={{ ...styles.execBtn, ...(execution === 'LIMIT' ? styles.execBtnActive : {}) }}
+            >
+              {t('trade.limitOrder')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setExecution('MARKET')}
+              style={{ ...styles.execBtn, ...(execution === 'MARKET' ? styles.execBtnActive : {}) }}
+            >
+              {t('trade.marketOrder')}
+            </button>
+          </div>
         )}
+
+        {family === 'OCO' ? (
+          <>
+            <label style={styles.label}>
+              {t('trade.takeProfitPrice')}
+              <input
+                className="mono"
+                type="number"
+                step="any"
+                required
+                value={ocoTakeProfitPrice}
+                onChange={(e) => setOcoTakeProfitPrice(e.target.value)}
+                style={styles.input}
+                placeholder="0.00"
+              />
+              {triggerHint('TAKE_PROFIT') && <span style={styles.hint}>{triggerHint('TAKE_PROFIT')}</span>}
+            </label>
+            <label style={styles.label}>
+              {t('trade.stopTriggerPrice')}
+              <input
+                className="mono"
+                type="number"
+                step="any"
+                required
+                value={ocoStopTriggerPrice}
+                onChange={(e) => setOcoStopTriggerPrice(e.target.value)}
+                style={styles.input}
+                placeholder="0.00"
+              />
+              {triggerHint('STOP') && <span style={styles.hint}>{triggerHint('STOP')}</span>}
+            </label>
+            <label style={styles.label}>
+              {t('trade.stopLimitPrice')}
+              <input
+                className="mono"
+                type="number"
+                step="any"
+                required
+                value={ocoStopLimitPrice}
+                onChange={(e) => setOcoStopLimitPrice(e.target.value)}
+                style={styles.input}
+                placeholder="0.00"
+              />
+            </label>
+          </>
+        ) : (
+          <>
+            {isConditional && (
+              <label style={styles.label}>
+                {t('trade.triggerPrice')}
+                <input
+                  className="mono"
+                  type="number"
+                  step="any"
+                  required
+                  value={triggerPrice}
+                  onChange={(e) => setTriggerPrice(e.target.value)}
+                  style={styles.input}
+                  placeholder="0.00"
+                />
+                {triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT') && (
+                  <span style={styles.hint}>{triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT')}</span>
+                )}
+              </label>
+            )}
+            {family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? (
+              <label style={styles.label}>
+                {isConditional ? t('trade.limitExecutionPrice') : t('trade.price')}
+                <input
+                  className="mono"
+                  type="number"
+                  step="any"
+                  required
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  style={styles.input}
+                  placeholder="0.00"
+                />
+              </label>
+            ) : (
+              <label style={styles.label}>
+                {t('trade.price')}
+                <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
+                  {marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} {quoteAsset}
+                </div>
+              </label>
+            )}
+          </>
+        )}
+
         <label style={styles.label}>
           <span style={styles.qtyLabelRow}>
             {t('trade.quantity')}
@@ -168,6 +320,16 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
           </div>
         </label>
 
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={percent}
+          onChange={(e) => applyPercent(Number(e.target.value))}
+          style={styles.slider}
+        />
+
         <div style={styles.percentRow}>
           {PERCENT_STOPS.map((pct) => (
             <button
@@ -181,11 +343,19 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
           ))}
         </div>
 
-        <div style={styles.total}>
-          <span style={{ color: 'var(--text-secondary)' }}>{t('trade.total')}</span>
-          <span className="mono">
-            {total} {quoteAsset}
-          </span>
+        <div style={styles.totalsBox}>
+          <div style={styles.total}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.total')}</span>
+            <span className="mono">
+              {total} {quoteAsset}
+            </span>
+          </div>
+          <div style={styles.total}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
+            <span className="mono">
+              {feeAmount} {quoteAsset} (0%)
+            </span>
+          </div>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -240,9 +410,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   typeTabs: {
     display: 'flex',
-    gap: 16,
+    gap: 12,
     padding: '0 14px 10px',
     borderBottom: '1px solid var(--border)',
+    overflowX: 'auto',
   },
   typeTab: {
     background: 'transparent',
@@ -251,6 +422,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     color: 'var(--text-tertiary)',
+    whiteSpace: 'nowrap',
   },
   typeTabActive: {
     color: 'var(--accent)',
@@ -261,12 +433,39 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 12,
   },
+  executionToggle: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 6,
+    background: 'var(--panel-alt)',
+    borderRadius: 8,
+    padding: 3,
+  },
+  execBtn: {
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 6,
+    padding: '7px 0',
+    color: 'var(--text-secondary)',
+    fontSize: 11,
+    fontWeight: 700,
+  },
+  execBtnActive: {
+    background: 'var(--panel)',
+    color: 'var(--text-primary)',
+    boxShadow: 'var(--shadow-sm)',
+  },
   label: {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
     fontSize: 11,
     color: 'var(--text-secondary)',
+  },
+  hint: {
+    fontSize: 10,
+    color: 'var(--text-tertiary)',
+    fontWeight: 400,
   },
   qtyLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
   qtyInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
@@ -284,6 +483,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontSize: 13,
   },
+  slider: { width: '100%', cursor: 'pointer', margin: '2px 0' },
   percentRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
@@ -303,11 +503,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderColor: 'var(--accent)',
     color: 'var(--on-accent)',
   },
+  totalsBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
   total: {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: 12,
-    padding: '6px 0',
+    padding: '4px 0',
   },
   error: {
     background: 'var(--sell-dim)',

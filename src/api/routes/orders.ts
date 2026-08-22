@@ -148,6 +148,29 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, price
     });
   });
 
+  // Moves a still-pending conditional order's trigger (and, for a
+  // LIMIT-family one, execution) price — powers dragging a SL/TP line on
+  // the chart.
+  router.patch('/orders/:orderId/trigger', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    const parsed = z
+      .object({ triggerPrice: priceString.optional(), price: priceString.optional() })
+      .refine((v) => v.triggerPrice !== undefined || v.price !== undefined, 'at least one of triggerPrice/price is required')
+      .safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten?.() ?? parsed.error.message });
+    }
+    try {
+      const result = await orderService.updateConditionalOrder(req.userId!, req.params.orderId, {
+        triggerPrice: parsed.data.triggerPrice ? new BigNumber(parsed.data.triggerPrice) : undefined,
+        price: parsed.data.price ? new BigNumber(parsed.data.price) : undefined,
+      });
+      if (!result) return res.status(404).json({ error: 'Order not found or no longer pending' });
+      res.json(result);
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
   router.delete('/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const cancelled = await orderService.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) {

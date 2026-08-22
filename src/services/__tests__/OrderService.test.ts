@@ -433,3 +433,117 @@ describe('OrderService conditional orders (STOP/TAKE_PROFIT)', () => {
     expect(bal(balances, 'trader', 'BTC').available.toString()).toBe('1');
   });
 });
+
+describe('OrderService.updateConditionalOrder (drag-to-edit a SL/TP line)', () => {
+  it('moves a SELL stop trigger price without changing the locked amount (SELL locks base qty regardless of price)', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, balances, orders } = makeFakePrisma({ 'trader:BTC': { available: '1', locked: '0' } });
+    const service = new OrderService(prisma, engine, makePriceSource('60000'));
+
+    const { order } = await service.placeOrder({
+      userId: 'trader',
+      pair: 'BTC/USDT',
+      side: 'SELL',
+      type: 'STOP_LIMIT',
+      triggerPrice: new BigNumber(55000),
+      price: new BigNumber(54900),
+      quantity: new BigNumber(1),
+    });
+
+    const result = await service.updateConditionalOrder('trader', order.id, {
+      triggerPrice: new BigNumber(56000),
+      price: new BigNumber(55900),
+    });
+
+    expect(result).not.toBeNull();
+    expect(orders.get(order.id).triggerPrice).toBe('56000');
+    expect(orders.get(order.id).price).toBe('55900');
+    expect(bal(balances, 'trader', 'BTC').locked.toString()).toBe('1'); // unchanged
+  });
+
+  it('adjusts the lock by the delta for a BUY-side conditional order', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, balances } = makeFakePrisma({ 'trader:USDT': { available: '100000', locked: '0' } });
+    const service = new OrderService(prisma, engine, makePriceSource('60000'));
+
+    const { order } = await service.placeOrder({
+      userId: 'trader',
+      pair: 'BTC/USDT',
+      side: 'BUY',
+      type: 'STOP_LIMIT',
+      triggerPrice: new BigNumber(65000),
+      price: new BigNumber(65100),
+      quantity: new BigNumber(1),
+    });
+    expect(bal(balances, 'trader', 'USDT').locked.toString()).toBe('65100');
+
+    await service.updateConditionalOrder('trader', order.id, {
+      triggerPrice: new BigNumber(70000),
+      price: new BigNumber(70200),
+    });
+
+    expect(bal(balances, 'trader', 'USDT').locked.toString()).toBe('70200');
+    expect(bal(balances, 'trader', 'USDT').available.toString()).toBe('29800'); // 100000 - 70200
+  });
+
+  it('rejects moving the trigger price to the wrong side of the current price', async () => {
+    const engine = new MatchingEngine();
+    const { prisma } = makeFakePrisma({ 'trader:BTC': { available: '1', locked: '0' } });
+    const service = new OrderService(prisma, engine, makePriceSource('60000'));
+
+    const { order } = await service.placeOrder({
+      userId: 'trader',
+      pair: 'BTC/USDT',
+      side: 'SELL',
+      type: 'STOP_LIMIT',
+      triggerPrice: new BigNumber(55000),
+      price: new BigNumber(54900),
+      quantity: new BigNumber(1),
+    });
+
+    await expect(
+      service.updateConditionalOrder('trader', order.id, { triggerPrice: new BigNumber(65000) })
+    ).rejects.toThrow(/Trigger price must be below/);
+  });
+
+  it('rejects an insufficient-balance move and leaves the order untouched', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, balances, orders } = makeFakePrisma({ 'trader:USDT': { available: '65100', locked: '0' } });
+    const service = new OrderService(prisma, engine, makePriceSource('60000'));
+
+    const { order } = await service.placeOrder({
+      userId: 'trader',
+      pair: 'BTC/USDT',
+      side: 'BUY',
+      type: 'STOP_LIMIT',
+      triggerPrice: new BigNumber(65000),
+      price: new BigNumber(65100),
+      quantity: new BigNumber(1),
+    });
+
+    await expect(
+      service.updateConditionalOrder('trader', order.id, { triggerPrice: new BigNumber(90000), price: new BigNumber(90100) })
+    ).rejects.toThrow(/Insufficient/);
+
+    expect(orders.get(order.id).triggerPrice).toBe('65000'); // unchanged
+    expect(bal(balances, 'trader', 'USDT').locked.toString()).toBe('65100'); // unchanged
+  });
+
+  it('returns null for another user\'s order', async () => {
+    const engine = new MatchingEngine();
+    const { prisma } = makeFakePrisma({ 'trader:BTC': { available: '1', locked: '0' } });
+    const service = new OrderService(prisma, engine, makePriceSource('60000'));
+
+    const { order } = await service.placeOrder({
+      userId: 'trader',
+      pair: 'BTC/USDT',
+      side: 'SELL',
+      type: 'STOP_LIMIT',
+      triggerPrice: new BigNumber(55000),
+      price: new BigNumber(54900),
+      quantity: new BigNumber(1),
+    });
+
+    expect(await service.updateConditionalOrder('someone-else', order.id, { triggerPrice: new BigNumber(56000) })).toBeNull();
+  });
+});

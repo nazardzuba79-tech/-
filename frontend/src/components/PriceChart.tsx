@@ -37,6 +37,15 @@ function computeSMA(candles: { time: number; close: number }[], period: number) 
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 
+interface ConditionalOrder {
+  id: string;
+  side: 'BUY' | 'SELL';
+  type: string;
+  triggerPrice: string | null;
+  price: string | null;
+  ocoGroupId: string | null;
+}
+
 const INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
 type Interval = (typeof INTERVALS)[number];
 
@@ -100,6 +109,16 @@ export function PriceChart({ pair }: { pair: string }) {
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
   // screen coordinates from the stored (time, price) points.
   const [, forceRedraw] = useState(0);
+
+  // Pending SL/TP orders for this pair, drawn as draggable horizontal
+  // lines — real orders, not decoration: dragging one calls
+  // api.updateOrderTrigger and the backend re-validates/re-locks funds.
+  const [conditionalOrders, setConditionalOrders] = useState<ConditionalOrder[]>([]);
+  const [draggingOrderId, setDraggingOrderId] = useState<string | null>(null);
+  const [dragPrice, setDragPrice] = useState<number | null>(null);
+  const draggingRef = useRef<{ id: string; startPrice: number; startTriggerPrice: number; startExecPrice: number | null } | null>(
+    null
+  );
 
   const toolRef = useRef(tool);
   toolRef.current = tool;
@@ -328,6 +347,104 @@ export function PriceChart({ pair }: { pair: string }) {
     };
   }, [pair, interval]);
 
+  // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
+  // cadence OpenOrdersPanel already polls at.
+  useEffect(() => {
+    let cancelled = false;
+    function load() {
+      api
+        .getMyOrders('PENDING_TRIGGER')
+        .then((orders) => {
+          if (cancelled) return;
+          setConditionalOrders(
+            orders
+              .filter((o) => o.pair === pair)
+              .map((o) => ({ id: o.id, side: o.side, type: o.type, triggerPrice: o.triggerPrice, price: o.price, ocoGroupId: o.ocoGroupId }))
+          );
+        })
+        .catch(() => {});
+    }
+    load();
+    const poll = window.setInterval(load, 4000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+    };
+  }, [pair]);
+
+  const priceToY = useCallback((price: number): number | null => {
+    const y = seriesRef.current?.priceToCoordinate(price);
+    return y === null || y === undefined ? null : y;
+  }, []);
+
+  const yToPrice = useCallback((y: number): number | null => {
+    const price = seriesRef.current?.coordinateToPrice(y);
+    return price === null || price === undefined ? null : price;
+  }, []);
+
+  const startDrag = useCallback(
+    (order: ConditionalOrder, e: React.MouseEvent) => {
+      e.preventDefault();
+      const triggerPrice = parseFloat(order.triggerPrice ?? order.price ?? '0');
+      draggingRef.current = {
+        id: order.id,
+        startPrice: triggerPrice,
+        startTriggerPrice: triggerPrice,
+        startExecPrice: order.price ? parseFloat(order.price) : null,
+      };
+      setDraggingOrderId(order.id);
+      setDragPrice(triggerPrice);
+
+      const container = containerRef.current;
+      function handleMove(ev: MouseEvent) {
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const price = yToPrice(ev.clientY - rect.top);
+        if (price !== null) setDragPrice(price);
+      }
+      async function handleUp(ev: MouseEvent) {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        const drag = draggingRef.current;
+        draggingRef.current = null;
+        setDraggingOrderId(null);
+        setDragPrice(null);
+        if (!drag || !container) return;
+        const rect = container.getBoundingClientRect();
+        const newTriggerPrice = yToPrice(ev.clientY - rect.top);
+        if (newTriggerPrice === null) return;
+        try {
+          const payload: { triggerPrice: string; price?: string } = { triggerPrice: newTriggerPrice.toFixed(8) };
+          // Keep the trigger-to-execution gap constant (same slippage
+          // protection the trader originally set) rather than snapping the
+          // limit price to match the new trigger exactly.
+          if (drag.startExecPrice !== null) {
+            const gap = drag.startExecPrice - drag.startTriggerPrice;
+            payload.price = (newTriggerPrice + gap).toFixed(8);
+          }
+          await api.updateOrderTrigger(drag.id, payload);
+        } catch {
+          // Refetch either way below — on failure this just snaps the line
+          // back to its last confirmed server position instead of a stale
+          // optimistic one.
+        }
+        api
+          .getMyOrders('PENDING_TRIGGER')
+          .then((orders) =>
+            setConditionalOrders(
+              orders
+                .filter((o) => o.pair === pair)
+                .map((o) => ({ id: o.id, side: o.side, type: o.type, triggerPrice: o.triggerPrice, price: o.price, ocoGroupId: o.ocoGroupId }))
+            )
+          )
+          .catch(() => {});
+      }
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    },
+    [pair, yToPrice]
+  );
+
   function toScreen(p: Point): { x: number; y: number } | null {
     const chart = chartRef.current;
     const series = seriesRef.current;
@@ -398,6 +515,31 @@ export function PriceChart({ pair }: { pair: string }) {
                   />
                 );
               })()}
+
+            {conditionalOrders.map((o) => {
+              const isDragging = draggingOrderId === o.id;
+              const price = isDragging && dragPrice !== null ? dragPrice : parseFloat(o.triggerPrice ?? o.price ?? '0');
+              const y = priceToY(price);
+              if (y === null) return null;
+              const isStop = o.type === 'STOP_LIMIT' || o.type === 'STOP_MARKET';
+              const color = isStop ? '#ff4d6a' : '#00d68f';
+              const label = `${isStop ? t('trade.orderType.STOP_LIMIT') : t('trade.orderType.TAKE_PROFIT_LIMIT')} ${price.toFixed(2)}`;
+              return (
+                <g key={o.id}>
+                  <line x1={0} y1={y} x2="100%" y2={y} stroke={color} strokeWidth={1} strokeDasharray="6 4" opacity={isDragging ? 1 : 0.7} />
+                  <g
+                    transform={`translate(4, ${y - 10})`}
+                    style={{ pointerEvents: 'auto', cursor: 'ns-resize' }}
+                    onMouseDown={(e) => startDrag(o, e)}
+                  >
+                    <rect width={label.length * 6.2 + 14} height={20} rx={4} fill={color} />
+                    <text x={7} y={14} fontSize={11} fontWeight={700} fill="#0b0e11">
+                      {label}
+                    </text>
+                  </g>
+                </g>
+              );
+            })}
           </svg>
 
           {labels.map((l) => {

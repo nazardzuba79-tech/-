@@ -289,6 +289,91 @@ export class OrderService {
     });
   }
 
+  /**
+   * Moves a still-PENDING_TRIGGER order's trigger price (and, for a
+   * LIMIT-family conditional order, its execution price too) — what
+   * powers dragging a SL/TP line on the chart. Re-validates direction
+   * against the current market price exactly like placement does, and
+   * adjusts the fund lock by the delta rather than releasing and
+   * re-locking (so a balance dip between the two steps can never leave
+   * the order under-margined). Returns null if the order doesn't exist,
+   * isn't the caller's, or is no longer pending (already triggered/
+   * cancelled) — a normal race, not an error.
+   */
+  async updateConditionalOrder(
+    userId: string,
+    orderId: string,
+    updates: { triggerPrice?: BigNumber; price?: BigNumber }
+  ) {
+    return this.prisma.$transaction(async (tx: TxClient) => {
+      const row = await tx.order.findUnique({ where: { id: orderId } });
+      if (!row || row.userId !== userId || row.status !== 'PENDING_TRIGGER') return null;
+
+      const effType = effectiveOrderType(row.type as ExtendedOrderType);
+      const newTriggerPrice = updates.triggerPrice ?? new BigNumber(row.triggerPrice!.toString());
+      const newPrice = effType === 'LIMIT' ? updates.price ?? new BigNumber(row.price!.toString()) : null;
+
+      const ticker = await this.priceSource.getTicker(row.pair);
+      if (!ticker) throw new Error('Unable to fetch the current market price to validate the trigger price');
+      const currentPrice = new BigNumber(ticker.lastPrice);
+      this.validateTriggerDirection(row.type as ExtendedOrderType, row.side as OrderSide, newTriggerPrice, currentPrice);
+
+      const lockAsset = row.lockedAsset!;
+      const oldLockAmount = new BigNumber(row.lockedAmount!.toString());
+      const quantity = new BigNumber(row.remainingQuantity.toString());
+      const refPrice = effType === 'LIMIT' ? newPrice! : newTriggerPrice;
+      // SELL locks the base quantity outright, unaffected by price — only
+      // a BUY-side lock (quote-denominated) actually moves with the price.
+      let newLockAmount = row.side === 'BUY' ? refPrice.times(quantity).times(effType === 'MARKET' ? 1.02 : 1) : quantity;
+
+      // An OCO pair's shared lock must stay at least as large as whatever
+      // the untouched sibling leg alone would need — never shrink below that.
+      if (row.ocoGroupId && row.side === 'BUY') {
+        const sibling = await tx.order.findFirst({
+          where: { ocoGroupId: row.ocoGroupId, id: { not: row.id }, status: 'PENDING_TRIGGER' },
+        });
+        if (sibling) {
+          const siblingRefPrice = sibling.price
+            ? new BigNumber(sibling.price.toString())
+            : new BigNumber(sibling.triggerPrice!.toString());
+          newLockAmount = BigNumber.maximum(newLockAmount, siblingRefPrice.times(quantity));
+        }
+      }
+
+      const delta = newLockAmount.minus(oldLockAmount);
+      if (delta.isGreaterThan(0)) {
+        const balance = await tx.balance.findUnique({ where: { userId_asset: { userId, asset: lockAsset } } });
+        const available = new BigNumber(balance?.available.toString() ?? '0');
+        if (available.isLessThan(delta)) {
+          throw new Error(`Insufficient ${lockAsset} balance to move the trigger price that far`);
+        }
+      }
+      if (!delta.isZero()) {
+        await this.adjustBalance(tx, userId, lockAsset, { available: delta.negated(), locked: delta });
+      }
+
+      await tx.order.update({
+        where: { id: row.id },
+        data: {
+          triggerPrice: newTriggerPrice.toString(),
+          price: newPrice ? newPrice.toString() : row.price,
+          lockedAmount: newLockAmount.toString(),
+        },
+      });
+
+      if (row.ocoGroupId) {
+        const sibling = await tx.order.findFirst({
+          where: { ocoGroupId: row.ocoGroupId, id: { not: row.id }, status: 'PENDING_TRIGGER' },
+        });
+        if (sibling && new BigNumber(sibling.lockedAmount!.toString()).isLessThan(newLockAmount)) {
+          await tx.order.update({ where: { id: sibling.id }, data: { lockedAmount: newLockAmount.toString() } });
+        }
+      }
+
+      return { id: row.id, triggerPrice: newTriggerPrice.toString(), price: newPrice?.toString() ?? row.price };
+    });
+  }
+
   /** Shared core of placeOrder's immediate path and triggerOrder: run the
    * order through the matching engine, persist trades, settle both sides,
    * update the order row, and refund whatever of the lock wasn't consumed
