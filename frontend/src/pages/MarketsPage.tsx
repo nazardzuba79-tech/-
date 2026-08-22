@@ -7,6 +7,7 @@ import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
+import { parseChangePercent } from '../lib/priceChange';
 
 interface Ticker {
   pair: string;
@@ -108,7 +109,7 @@ export function MarketsPage() {
             </div>
             <div style={styles.listBody}>
               {filtered.map((tk) => {
-                const change = parseFloat(tk.changePercent24h) * 100;
+                const change = parseChangePercent(tk.changePercent24h, tk.pair);
                 const positive = change >= 0;
                 return (
                   <div

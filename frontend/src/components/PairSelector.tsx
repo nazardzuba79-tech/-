@@ -5,6 +5,7 @@ import { SearchInput } from './SearchInput';
 import { CryptoIcon } from './CryptoIcon';
 import { SkeletonRow } from './Skeleton';
 import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
+import { parseChangePercent } from '../lib/priceChange';
 
 /**
  * Trade-page pair picker — button showing the current pair, opens a
@@ -121,7 +122,7 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
           </div>
           <div style={styles.list}>
             {filtered.map((tk) => {
-              const change = parseFloat(tk.changePercent24h) * 100;
+              const change = parseChangePercent(tk.changePercent24h, tk.pair);
               const positive = change >= 0;
               return (
                 <button

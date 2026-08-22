@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf, Lang } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { Badge } from './Badge';
+import { parseChangePercent } from '../lib/priceChange';
 
 interface Stats {
   lastPrice: number;
@@ -29,7 +30,7 @@ export function TickerBar({ pair }: { pair: string }) {
           const tk = res.ticker;
           setStats({
             lastPrice: parseFloat(tk.lastPrice),
-            changePercent: parseFloat(tk.changePercent24h),
+            changePercent: parseChangePercent(tk.changePercent24h, pair),
             high24h: parseFloat(tk.high24h),
             low24h: parseFloat(tk.low24h),
             volume24h: parseFloat(tk.volume24h),

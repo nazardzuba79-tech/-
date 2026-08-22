@@ -30,6 +30,12 @@ export interface MarketTicker {
   low24h: string;
   volume24h: string; // in the base asset (e.g. BTC)
   quoteVolume24h: string; // in the quote asset (e.g. USDT) — volume24h * 24h VWAP
+  // Already a percentage value (e.g. "2.10" means +2.10%), NOT a fraction
+  // — every frontend call site must parse this directly. Re-multiplying
+  // by 100 turns a real +2.1% move into a displayed +210% (this exact bug
+  // shipped in several components before being caught — see
+  // frontend/src/lib/priceChange.ts, which every call site now goes
+  // through).
   changePercent24h: string;
 }
 

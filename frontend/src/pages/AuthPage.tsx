@@ -6,6 +6,7 @@ import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Skeleton } from '../components/Skeleton';
+import { parseChangePercent } from '../lib/priceChange';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -89,7 +90,7 @@ export function AuthPage() {
 
           <div style={styles.tickerList}>
             {tickers.map((tk) => {
-              const change = parseFloat(tk.changePercent24h) * 100;
+              const change = parseChangePercent(tk.changePercent24h, tk.pair);
               const positive = change >= 0;
               return (
                 <div key={tk.pair} style={styles.tickerRow}>
