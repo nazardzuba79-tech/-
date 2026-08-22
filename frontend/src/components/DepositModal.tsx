@@ -15,7 +15,9 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   const [assets, setAssets] = useState<string[]>([]);
   const [asset, setAsset] = useState('');
   const [txHash, setTxHash] = useState('');
-  const [result, setResult] = useState<{ status: string; amount: string; confirmations: number } | null>(null);
+  const [result, setResult] = useState<{ status: string; amount: string; confirmations: number; minDepositUsd?: number } | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -119,6 +121,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                 chain: CHAIN_LABEL[chain ?? ''] ?? chain ?? '',
               })}
             </div>
+            <div style={styles.minHint}>{t('deposit.minAmountHint', { amount: '1000' })}</div>
 
             <form onSubmit={handleClaim} style={styles.form}>
               <label style={styles.label}>
@@ -146,9 +149,11 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
 
               {error && <div style={styles.error}>{error}</div>}
               {result && (
-                <div style={styles.success}>
+                <div style={result.status === 'BELOW_MINIMUM' ? styles.error : styles.success}>
                   {result.status === 'CREDITED'
                     ? t('deposit.credited', { amount: result.amount, asset })
+                    : result.status === 'BELOW_MINIMUM'
+                    ? t('deposit.belowMinimum', { amount: result.amount, asset, min: String(result.minDepositUsd ?? 1000) })
                     : t('deposit.pending', { confirmations: result.confirmations })}
                 </div>
               )}
@@ -240,6 +245,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 8,
     fontSize: 11,
     lineHeight: 1.5,
+    marginBottom: 8,
+  },
+  minHint: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
     marginBottom: 16,
   },
   form: {

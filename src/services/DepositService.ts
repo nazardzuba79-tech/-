@@ -2,8 +2,17 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
 import { createVerifier } from './deposit-verifiers';
+import { MIN_DEPOSIT_USD } from '../config/limits';
 
 export { DepositVerificationError } from './deposit-verifiers';
+
+const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
+
+// Only what DepositService needs from KrakenMarketDataService — narrow
+// interface so tests can supply a plain mock instead of the real thing.
+export interface PriceSource {
+  getTicker(pair: string): Promise<{ lastPrice: string } | null>;
+}
 
 /**
  * Flow:
@@ -15,9 +24,14 @@ export { DepositVerificationError } from './deposit-verifiers';
  *        - the transaction exists and is confirmed
  *        - it actually paid the configured treasury address
  *        - the asset/amount match what's claimed
- *   4. On success, credits the user's internal available balance and stores
- *      an immutable Deposit row keyed by (chain, txHash) — the DB unique
- *      constraint makes replaying the same tx hash a no-op, not a double credit.
+ *   4. If the confirmed amount converts to at least MIN_DEPOSIT_USD, credits
+ *      the user's internal available balance and stores an immutable
+ *      Deposit row keyed by (chain, txHash) — the DB unique constraint makes
+ *      replaying the same tx hash a no-op, not a double credit. Below the
+ *      minimum, the deposit is still recorded (so there's a paper trail for
+ *      support) but marked BELOW_MINIMUM and left uncredited — the minimum
+ *      exists specifically to make shuffling dust-sized amounts back and
+ *      forth (airdrop farming, wash-trading bots) not worth the trouble.
  *
  * This does NOT require a chain indexer running 24/7 — verification happens
  * on demand when a user claims a deposit, which is the right tradeoff for a
@@ -28,13 +42,13 @@ export { DepositVerificationError } from './deposit-verifiers';
 export class DepositService {
   private verifier = createVerifier(this.chainConfig);
 
-  constructor(private prisma: PrismaClient, private chainConfig: ChainConfig) {}
+  constructor(private prisma: PrismaClient, private chainConfig: ChainConfig, private priceSource: PriceSource) {}
 
   async claimDeposit(params: {
     userId: string;
     txHash: string;
     asset: string;
-  }): Promise<{ status: 'CREDITED' | 'PENDING'; amount: string; confirmations: number }> {
+  }): Promise<{ status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM'; amount: string; confirmations: number; minDepositUsd?: number }> {
     const { userId, txHash, asset } = params;
 
     // Idempotency: if we've already recorded this tx, don't re-verify or re-credit.
@@ -43,7 +57,7 @@ export class DepositService {
     });
     if (existing) {
       return {
-        status: existing.status === 'CREDITED' ? 'CREDITED' : 'PENDING',
+        status: existing.status as 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM',
         amount: existing.amount.toString(),
         confirmations: existing.confirmations,
       };
@@ -51,7 +65,17 @@ export class DepositService {
 
     const { amount, confirmations } = await this.verifier.verify(txHash, asset);
     const isConfirmed = confirmations >= this.chainConfig.minConfirmations;
-    const status = isConfirmed ? 'CREDITED' : 'PENDING';
+
+    let status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM' = isConfirmed ? 'CREDITED' : 'PENDING';
+    if (isConfirmed) {
+      const usdValue = await this.usdValueOf(asset, amount);
+      // A price lookup failure (feed down) does NOT block a legitimate
+      // deposit — we only ever withhold credit when we positively know the
+      // value is below the threshold, never on "couldn't tell".
+      if (usdValue !== null && usdValue.isLessThan(MIN_DEPOSIT_USD)) {
+        status = 'BELOW_MINIMUM';
+      }
+    }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.deposit.create({
@@ -66,7 +90,7 @@ export class DepositService {
         },
       });
 
-      if (isConfirmed) {
+      if (status === 'CREDITED') {
         const balance = await tx.balance.upsert({
           where: { userId_asset: { userId, asset } },
           create: { userId, asset, available: '0', locked: '0' },
@@ -79,9 +103,31 @@ export class DepositService {
         await tx.auditLog.create({
           data: { userId, action: 'DEPOSIT_CREDITED', metadata: { txHash, asset, amount: amount.toString() } },
         });
+      } else if (status === 'BELOW_MINIMUM') {
+        await tx.auditLog.create({
+          data: { userId, action: 'DEPOSIT_BELOW_MINIMUM', metadata: { txHash, asset, amount: amount.toString() } },
+        });
       }
     });
 
-    return { status, amount: amount.toString(), confirmations };
+    return {
+      status,
+      amount: amount.toString(),
+      confirmations,
+      ...(status === 'BELOW_MINIMUM' ? { minDepositUsd: MIN_DEPOSIT_USD } : {}),
+    };
+  }
+
+  private async usdValueOf(asset: string, amount: BigNumber): Promise<BigNumber | null> {
+    if (STABLECOINS.has(asset)) return amount;
+    try {
+      const ticker = await this.priceSource.getTicker(`${asset}/USDT`);
+      if (!ticker) return null;
+      const price = new BigNumber(ticker.lastPrice);
+      if (!price.isFinite() || price.isLessThanOrEqualTo(0)) return null;
+      return amount.times(price);
+    } catch {
+      return null;
+    }
   }
 }

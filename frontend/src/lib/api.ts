@@ -137,10 +137,10 @@ export const api = {
     ),
 
   claimDeposit: (chain: string, txHash: string, asset: string) =>
-    request<{ status: string; amount: string; confirmations: number }>(`/deposits/claim/${chain}`, {
-      method: 'POST',
-      body: JSON.stringify({ txHash, asset }),
-    }),
+    request<{ status: string; amount: string; confirmations: number; minDepositUsd?: number }>(
+      `/deposits/claim/${chain}`,
+      { method: 'POST', body: JSON.stringify({ txHash, asset }) }
+    ),
 
   // Read-only mirror of Kraken market data — coin list, price, order book.
   getExternalSymbols: () =>

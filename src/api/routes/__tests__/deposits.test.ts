@@ -9,10 +9,10 @@ function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 }
 
-function buildApp(prisma: any = {}) {
+function buildApp(prisma: any = {}, priceSource: any = { getTicker: jest.fn().mockResolvedValue(null) }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', depositsRouter(prisma));
+  app.use('/api/v1', depositsRouter(prisma, priceSource));
   return app;
 }
 

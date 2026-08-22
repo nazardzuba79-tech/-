@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { loadChainConfig, ChainConfig } from '../../config/chains';
-import { DepositService, DepositVerificationError } from '../../services/DepositService';
+import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
 // The only chains this deployment knows how to verify deposits on — see
@@ -27,7 +27,7 @@ const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
   tron: /^[a-fA-F0-9]{64}$/,
 };
 
-export function depositsRouter(prisma: PrismaClient): Router {
+export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): Router {
   const router = Router();
 
   // Every chain this deployment actually accepts deposits on (i.e. has a
@@ -78,7 +78,7 @@ export function depositsRouter(prisma: PrismaClient): Router {
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     try {
-      const service = new DepositService(prisma, config);
+      const service = new DepositService(prisma, config, priceSource);
       const result = await service.claimDeposit({
         userId: req.userId!,
         txHash: parsed.data.txHash,

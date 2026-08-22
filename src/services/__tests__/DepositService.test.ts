@@ -54,6 +54,15 @@ function makePrismaMock(depositExists: any = null) {
   } as any;
 }
 
+// Stablecoin asset (ETH's chainConfig.nativeAsset used across these tests
+// is ETH, not a stablecoin) — a price source is required by the new
+// minimum-deposit check. Defaults to a price well above $1000/ETH so
+// existing tests (written before that check existed) keep passing; tests
+// for the new behavior override it explicitly.
+function makePriceSource(lastPrice = '3000') {
+  return { getTicker: jest.fn().mockResolvedValue({ lastPrice }) };
+}
+
 describe('DepositService', () => {
   it('rejects a transaction that does not pay the treasury address', async () => {
     mockJsonRpcProvider.mockImplementation(() => ({
@@ -65,7 +74,7 @@ describe('DepositService', () => {
       }),
     }));
 
-    const service = new DepositService(makePrismaMock(), chainConfig);
+    const service = new DepositService(makePrismaMock(), chainConfig, makePriceSource());
     await expect(
       service.claimDeposit({ userId: 'u1', txHash: '0x' + '1'.repeat(64), asset: 'ETH' })
     ).rejects.toThrow(DepositVerificationError);
@@ -82,7 +91,7 @@ describe('DepositService', () => {
     }));
 
     const prisma = makePrismaMock();
-    const service = new DepositService(prisma, chainConfig);
+    const service = new DepositService(prisma, chainConfig, makePriceSource());
     const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '2'.repeat(64), asset: 'ETH' });
 
     expect(result.status).toBe('CREDITED');
@@ -91,7 +100,7 @@ describe('DepositService', () => {
 
   it('is idempotent: replaying the same tx hash does not re-verify or double count', async () => {
     const prisma = makePrismaMock({ status: 'CREDITED', amount: '2.5', confirmations: 5 });
-    const service = new DepositService(prisma, chainConfig);
+    const service = new DepositService(prisma, chainConfig, makePriceSource());
     const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '3'.repeat(64), asset: 'ETH' });
 
     expect(result.status).toBe('CREDITED');
@@ -106,8 +115,56 @@ describe('DepositService', () => {
       getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('1') }),
     }));
 
-    const service = new DepositService(makePrismaMock(), chainConfig);
+    const service = new DepositService(makePrismaMock(), chainConfig, makePriceSource());
     const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '4'.repeat(64), asset: 'ETH' });
     expect(result.status).toBe('PENDING');
+  });
+
+  describe('minimum deposit ($1000 USD-equivalent)', () => {
+    it('does not credit a confirmed deposit worth less than $1000', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.1') }), // 0.1 ETH
+      }));
+
+      const prisma = makePrismaMock();
+      // 0.1 ETH @ $3000/ETH = $300, below the $1000 minimum.
+      const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '5'.repeat(64), asset: 'ETH' });
+
+      expect(result.status).toBe('BELOW_MINIMUM');
+      expect(result.minDepositUsd).toBe(1000);
+    });
+
+    it('still credits a confirmed deposit at or above $1000', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('1') }), // 1 ETH
+      }));
+
+      // 1 ETH @ $3000/ETH = $3000, above the minimum.
+      const service = new DepositService(makePrismaMock(), chainConfig, makePriceSource('3000'));
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '6'.repeat(64), asset: 'ETH' });
+
+      expect(result.status).toBe('CREDITED');
+    });
+
+    it('does not block a deposit when the price feed is unavailable', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.001') }),
+      }));
+
+      const priceSource = { getTicker: jest.fn().mockResolvedValue(null) }; // feed down
+      const service = new DepositService(makePrismaMock(), chainConfig, priceSource);
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '7'.repeat(64), asset: 'ETH' });
+
+      // Can't verify the value is below minimum, so it errs toward crediting
+      // rather than silently withholding a possibly-large legitimate deposit.
+      expect(result.status).toBe('CREDITED');
+    });
   });
 });

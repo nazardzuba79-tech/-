@@ -110,6 +110,9 @@ const RU = {
   'deposit.checkAndCredit': 'Проверить и зачислить',
   'deposit.credited': 'Зачислено {amount} {asset}',
   'deposit.pending': 'Найдено, ожидает подтверждений ({confirmations})',
+  'deposit.minAmountHint': 'Минимальная сумма пополнения — от {amount} $ в эквиваленте.',
+  'deposit.belowMinimum':
+    'Транзакция найдена ({amount} {asset}), но это меньше минимальной суммы пополнения (от {min} $). Средства не зачислены на баланс — обратись в поддержку.',
   'deposit.loadChainsError': 'Не удалось загрузить список поддерживаемых сетей',
   'deposit.loadAddressError': 'Не удалось загрузить адрес для депозита',
   'deposit.claimError': 'Не удалось проверить депозит',
@@ -368,6 +371,9 @@ const EN: Record<Key, string> = {
   'deposit.checkAndCredit': 'Verify and credit',
   'deposit.credited': 'Credited {amount} {asset}',
   'deposit.pending': 'Found, awaiting confirmations ({confirmations})',
+  'deposit.minAmountHint': 'Minimum deposit is {amount} USD equivalent.',
+  'deposit.belowMinimum':
+    'Transaction found ({amount} {asset}), but it is below the minimum deposit ({min} USD). Funds were not credited to your balance — contact support.',
   'deposit.loadChainsError': 'Could not load the list of supported networks',
   'deposit.loadAddressError': 'Could not load the deposit address',
   'deposit.claimError': 'Could not verify the deposit',
@@ -624,6 +630,8 @@ const ZH: Record<Key, string> = {
   'deposit.checkAndCredit': '验证并到账',
   'deposit.credited': '已到账 {amount} {asset}',
   'deposit.pending': '已找到，等待确认（{confirmations}）',
+  'deposit.minAmountHint': '最低充值金额为等值 {amount} 美元。',
+  'deposit.belowMinimum': '已找到交易（{amount} {asset}），但低于最低充值金额（{min} 美元）。资金未计入余额——请联系客服。',
   'deposit.loadChainsError': '无法加载支持的网络列表',
   'deposit.loadAddressError': '无法加载充值地址',
   'deposit.claimError': '无法验证充值',
