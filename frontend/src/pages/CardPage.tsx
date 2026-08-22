@@ -5,6 +5,7 @@ import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { LogoMark } from '../components/Logo';
 import { Footer } from '../components/Footer';
+import { Skeleton } from '../components/Skeleton';
 
 export function CardPage() {
   const { t, lang } = useLanguage();
@@ -106,7 +107,7 @@ export function CardPage() {
 
         <div style={styles.waitlistBox}>
           {!waitlist ? (
-            <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>
+            <Skeleton width={200} height={40} radius={24} />
           ) : waitlist.joined ? (
             <div style={styles.joinedRow}>
               <span style={{ color: 'var(--buy)', fontWeight: 700 }}>{t('card.joinedPrefix')}</span>

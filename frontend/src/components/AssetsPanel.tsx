@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { SkeletonRow } from './Skeleton';
 
 interface Balance {
   asset: string;
@@ -11,9 +12,14 @@ interface Balance {
 export function AssetsPanel({ refreshKey }: { refreshKey: number }) {
   const { t } = useLanguage();
   const [balances, setBalances] = useState<Balance[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    api.getBalances().then(setBalances).catch(() => {});
+    api
+      .getBalances()
+      .then(setBalances)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -39,7 +45,8 @@ export function AssetsPanel({ refreshKey }: { refreshKey: number }) {
             </span>
           </div>
         ))}
-        {balances.length === 0 && (
+        {loading && balances.length === 0 && [1, 2, 3].map((i) => <SkeletonRow key={i} columns={[1, 1, 1]} />)}
+        {!loading && balances.length === 0 && (
           <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noAssets')}</p>
         )}
       </div>

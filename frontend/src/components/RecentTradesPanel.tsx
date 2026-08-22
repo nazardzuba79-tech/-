@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { krakenSocket } from '../lib/krakenSocket';
+import { SkeletonRow } from './Skeleton';
 
 interface Trade {
   id: string;
@@ -21,9 +22,14 @@ const WS_FALLBACK_TIMEOUT_MS = 4000;
 export function RecentTradesPanel({ pair }: { pair: string }) {
   const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
+  // trades.length === 0 is ambiguous (still loading vs. genuinely no recent
+  // trades for this pair) — a separate flag is the only honest way to tell
+  // "loading" apart from "loaded, empty" and pick the right placeholder.
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setTrades([]);
+    setLoading(true);
     let gotWsData = false;
     let restInterval: number | null = null;
 
@@ -33,11 +39,14 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
         if (!gotWsData) setTrades(res.trades);
       } catch {
         // stays whatever it was — background poll, not worth an error state
+      } finally {
+        setLoading(false);
       }
     }
 
     const unsubscribe = krakenSocket.subscribeTrades(pair, (trade) => {
       gotWsData = true;
+      setLoading(false);
       if (restInterval !== null) {
         clearInterval(restInterval);
         restInterval = null;
@@ -82,7 +91,14 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
             </span>
           </div>
         ))}
-        {trades.length === 0 && <p style={styles.hint}>{t('trade.loadingTrades')}</p>}
+        {trades.length === 0 && loading && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <SkeletonRow key={i} columns={[1, 1, 1]} />
+            ))}
+          </div>
+        )}
+        {trades.length === 0 && !loading && <p style={styles.hint}>{t('trade.noTrades')}</p>}
       </div>
     </div>
   );

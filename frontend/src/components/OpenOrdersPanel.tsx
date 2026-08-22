@@ -3,6 +3,7 @@ import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { Badge } from './Badge';
+import { SkeletonRow } from './Skeleton';
 
 interface Order {
   id: string;
@@ -46,11 +47,16 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
   const { t } = useLanguage();
   const toast = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    api.getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED').then(setOrders).catch(() => {});
+    api
+      .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')
+      .then(setOrders)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -116,7 +122,10 @@ export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey
             </button>
           </div>
         ))}
-        {pairOrders.length === 0 && (
+        {loading &&
+          pairOrders.length === 0 &&
+          [1, 2, 3].map((i) => <SkeletonRow key={i} columns={[0.7, 0.6, 1.4, 1.4, 1, 0.8]} />)}
+        {!loading && pairOrders.length === 0 && (
           <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noOrdersForPair')}</p>
         )}
       </div>

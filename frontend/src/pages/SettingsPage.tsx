@@ -6,6 +6,7 @@ import { SearchInput } from '../components/SearchInput';
 import { Badge } from '../components/Badge';
 import { getCountries, getCountryName } from '../lib/countries';
 import { Footer } from '../components/Footer';
+import { Skeleton, SkeletonRow } from '../components/Skeleton';
 
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
 type T = ReturnType<typeof useLanguage>['t'];
@@ -86,7 +87,18 @@ function ProfileTab() {
   const { t, lang } = useLanguage();
   const KYC_STATUS_LABEL = kycStatusLabel(t);
 
-  if (!me) return <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>;
+  if (!me) {
+    return (
+      <div className="accent-edge surface-raised" style={styles.card}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} style={styles.row}>
+            <Skeleton width={110} height={12} />
+            <Skeleton width={140} height={12} />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   const kyc = KYC_STATUS_LABEL[me.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
 
@@ -210,7 +222,12 @@ function ReservesSection() {
       </p>
 
       {error && <div style={styles.errorBox}>{error}</div>}
-      {!error && !rows && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.loading')}</p>}
+      {!error && !rows && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <SkeletonRow columns={[1, 1, 2, 2, 1]} />
+          <SkeletonRow columns={[1, 1, 2, 2, 1]} />
+        </div>
+      )}
       {rows && rows.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.reservesEmpty')}</p>}
 
       {rows && rows.length > 0 && (
@@ -302,7 +319,13 @@ function SecurityLogSection() {
       <h3 style={styles.cardTitle}>{t('settings.securityLog')}</h3>
 
       {error && <div style={styles.errorBox}>{error}</div>}
-      {!error && !entries && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.loading')}</p>}
+      {!error && !entries && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <SkeletonRow columns={[1, 1, 1, 1]} />
+          <SkeletonRow columns={[1, 1, 1, 1]} />
+          <SkeletonRow columns={[1, 1, 1, 1]} />
+        </div>
+      )}
       {entries && entries.length === 0 && (
         <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.securityLogEmpty')}</p>
       )}
@@ -555,7 +578,16 @@ function VerificationTab() {
     }
   }
 
-  if (!status) return <p style={{ color: 'var(--text-tertiary)' }}>{t('trade.loading')}</p>;
+  if (!status) {
+    return (
+      <div className="surface-raised" style={styles.card}>
+        <Skeleton width={160} height={24} radius={12} />
+        <Skeleton width="100%" height={40} />
+        <Skeleton width="100%" height={40} />
+        <Skeleton width="60%" height={40} />
+      </div>
+    );
+  }
 
   const badge = KYC_STATUS_LABEL[status.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
   const canSubmit = status.kycStatus === 'NOT_STARTED' || status.kycStatus === 'REJECTED';

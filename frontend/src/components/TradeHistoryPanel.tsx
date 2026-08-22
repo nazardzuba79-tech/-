@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
+import { SkeletonRow } from './Skeleton';
 
 interface Trade {
   id: string;
@@ -14,9 +15,14 @@ interface Trade {
 export function TradeHistoryPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
   const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    api.getMyTrades(pair).then(setTrades).catch(() => {});
+    api
+      .getMyTrades(pair)
+      .then(setTrades)
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [pair]);
 
   useEffect(() => {
@@ -46,7 +52,8 @@ export function TradeHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
             </span>
           </div>
         ))}
-        {trades.length === 0 && (
+        {loading && trades.length === 0 && [1, 2, 3].map((i) => <SkeletonRow key={i} columns={[1, 1, 1, 1.4]} />)}
+        {!loading && trades.length === 0 && (
           <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noTradeHistory')}</p>
         )}
       </div>
