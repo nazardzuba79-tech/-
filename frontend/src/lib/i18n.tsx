@@ -28,6 +28,8 @@ const RU = {
   'nav.settings': 'Настройки',
   'nav.logout': 'Выйти',
   'nav.deposit': 'Пополнить',
+  'nav.bots': 'Крипто-боты',
+  'nav.botsSoon': 'Скоро',
 
   'auth.login': 'Вход',
   'auth.register': 'Регистрация',
@@ -367,6 +369,8 @@ const EN: Record<Key, string> = {
   'nav.settings': 'Settings',
   'nav.logout': 'Log out',
   'nav.deposit': 'Deposit',
+  'nav.bots': 'Crypto Bots',
+  'nav.botsSoon': 'Coming soon',
 
   'auth.login': 'Log in',
   'auth.register': 'Register',
@@ -704,6 +708,8 @@ const ZH: Record<Key, string> = {
   'nav.settings': '设置',
   'nav.logout': '退出登录',
   'nav.deposit': '充值',
+  'nav.bots': '加密机器人',
+  'nav.botsSoon': '即将推出',
 
   'auth.login': '登录',
   'auth.register': '注册',

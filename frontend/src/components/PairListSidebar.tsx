@@ -10,8 +10,8 @@ import { parseChangePercent } from '../lib/priceChange';
 /**
  * Persistent pair list docked to the left of the trade-page chart —
  * Binance/Bybit-style, always visible rather than a dropdown you have to
- * open. Same data/search/favorites/quote-filter logic as PairSelector
- * (the nav dropdown), just always mounted and always fetching.
+ * open. This is the only pair picker on the trade page (the nav used to
+ * also have a dropdown pair selector, but it was redundant with this).
  */
 export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (pair: string) => void }) {
   const { t } = useLanguage();

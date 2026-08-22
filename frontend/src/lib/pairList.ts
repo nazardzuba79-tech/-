@@ -1,7 +1,6 @@
-// Shared between PairSelector (dropdown, in the nav) and PairListSidebar
-// (persistent panel on the trade page) — both browse the same Kraken
-// ticker mirror with the same favorites/quote-filter/liquidity-sort rules,
-// just rendered in different shells.
+// Pair-browsing helpers (favorites/quote-filter/liquidity-sort) shared by
+// whatever component browses the Kraken ticker mirror — currently just
+// PairListSidebar, the persistent panel on the trade page.
 
 export interface TickerRow {
   pair: string;

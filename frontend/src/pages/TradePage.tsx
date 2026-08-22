@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
-import { PairSelector } from '../components/PairSelector';
+import { BotsComingSoon } from '../components/BotsComingSoon';
 import { PairListSidebar } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
@@ -77,7 +77,7 @@ export function TradePage() {
     <div className="page-mesh" style={styles.page}>
       <Nav
         active="/trade"
-        middle={<PairSelector pair={pair} onChange={setPair} />}
+        middle={<BotsComingSoon />}
         rightExtra={
           <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
             {t('nav.deposit')}
