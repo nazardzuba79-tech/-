@@ -13,6 +13,12 @@ import {
 } from 'lightweight-charts';
 
 const MA_PERIOD = 200;
+const VISIBLE_CANDLES = 300;
+// Fetch enough extra history that the MA200 line has a full 200-bar
+// warm-up BEFORE the window we actually show — otherwise the line only
+// starts partway across the visible chart (no average exists yet for the
+// first 200 loaded candles).
+const CANDLE_FETCH_LIMIT = VISIBLE_CANDLES + MA_PERIOD + 20;
 
 /** Simple moving average over `period` closes — only emits a point once a
  * full window is available, same convention every charting platform uses
@@ -143,7 +149,7 @@ export function PriceChart({ pair }: { pair: string }) {
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
     const maSeries = chart.addSeries(LineSeries, {
-      color: '#5b8def',
+      color: '#f7d51d',
       lineWidth: 1,
       priceLineVisible: false,
       lastValueVisible: false,
@@ -271,10 +277,13 @@ export function PriceChart({ pair }: { pair: string }) {
   // Load candles whenever pair/interval changes, and poll for updates.
   useEffect(() => {
     let cancelled = false;
+    // Only set the initial visible range once per pair/interval — every
+    // later poll must leave the user's own pan/zoom alone.
+    let hasSetInitialRange = false;
 
     async function load() {
       try {
-        const res = await api.getExternalCandles(pair, interval, 300);
+        const res = await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         seriesRef.current.setData(
@@ -288,6 +297,22 @@ export function PriceChart({ pair }: { pair: string }) {
           }))
         );
         maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
+
+        if (!hasSetInitialRange && chartRef.current) {
+          hasSetInitialRange = true;
+          if (res.candles.length > VISIBLE_CANDLES) {
+            // Show only the most recent VISIBLE_CANDLES bars — every one
+            // of them sits past the MA's 200-bar warm-up, so the line
+            // spans the full visible width instead of trailing off partway.
+            chartRef.current.timeScale().setVisibleLogicalRange({
+              from: res.candles.length - VISIBLE_CANDLES,
+              to: res.candles.length - 1,
+            });
+          } else {
+            chartRef.current.timeScale().fitContent();
+          }
+        }
+
         forceRedraw((n) => n + 1);
       } catch {
         // Chart just stays empty on failure — not worth a full error state
