@@ -1,9 +1,14 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
+
+const MIN_DEPOSIT_USD = 1000;
+// Mirrors the backend's STABLECOINS set (src/services/DepositService.ts) —
+// for these, $1000 IS the equivalent amount, no price lookup needed.
+const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
 
 export function DepositModal({ onClose }: { onClose: () => void }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
@@ -21,6 +26,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [minEquivalent, setMinEquivalent] = useState<number | null>(null);
 
   // Only ever offer chains the backend has a treasury address configured
   // for — this is what stops someone from being shown a network/address
@@ -50,6 +56,34 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
       })
       .catch(() => setError(t('deposit.loadAddressError')));
   }, [chain]);
+
+  // Live $1000 -> crypto conversion, using the same Kraken mirror the rest
+  // of the app prices pairs from — so the minimum shown here is never a
+  // stale/guessed number, and matches what the backend actually enforces
+  // (see MIN_DEPOSIT_USD in src/config/limits.ts).
+  useEffect(() => {
+    if (!asset) return;
+    setMinEquivalent(null);
+    if (STABLECOINS.has(asset)) {
+      setMinEquivalent(MIN_DEPOSIT_USD);
+      return;
+    }
+    let cancelled = false;
+    api
+      .getExternalTicker(`${asset}/USDT`)
+      .then((res) => {
+        if (cancelled) return;
+        const price = parseFloat(res.ticker.lastPrice);
+        // On failure/bad data, minEquivalent just stays null and the UI
+        // falls back to the plain $-only hint — never show a fabricated
+        // conversion.
+        if (Number.isFinite(price) && price > 0) setMinEquivalent(MIN_DEPOSIT_USD / price);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [asset]);
 
   async function handleCopy() {
     if (!address) return;
@@ -81,6 +115,18 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} style={styles.closeBtn} aria-label={t('deposit.close')}>
             ✕
           </button>
+        </div>
+
+        <div style={styles.minBadge}>
+          {asset && minEquivalent !== null
+            ? t('deposit.minAmountEquivalent', {
+                amount: MIN_DEPOSIT_USD,
+                equivalent: minEquivalent.toLocaleString(localeOf(lang), {
+                  maximumFractionDigits: minEquivalent < 1 ? 8 : 2,
+                }),
+                asset,
+              })
+            : t('deposit.minAmountHint', { amount: MIN_DEPOSIT_USD })}
         </div>
 
         <p style={styles.hint}>{t('deposit.hint')}</p>
@@ -121,7 +167,6 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                 chain: CHAIN_LABEL[chain ?? ''] ?? chain ?? '',
               })}
             </div>
-            <div style={styles.minHint}>{t('deposit.minAmountHint', { amount: '1000' })}</div>
 
             <form onSubmit={handleClaim} style={styles.form}>
               <label style={styles.label}>
@@ -248,10 +293,15 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.5,
     marginBottom: 8,
   },
-  minHint: {
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-    marginBottom: 16,
+  minBadge: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: '8px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--accent)',
+    marginBottom: 12,
   },
   form: {
     display: 'flex',
