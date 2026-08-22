@@ -5,7 +5,7 @@ import { LEGAL_CONTENT, LegalDoc } from '../lib/legalContent';
 import { Nav } from '../components/Nav';
 import { Logo } from '../components/Logo';
 
-const VALID_DOCS: LegalDoc[] = ['terms', 'privacy', 'risk'];
+const VALID_DOCS: LegalDoc[] = ['terms', 'privacy', 'risk', 'about', 'support'];
 
 /** Public legal pages (Terms, Privacy, Risk Disclosure) — reachable both
  * signed-in (via the footer, with the normal nav) and signed-out (via the

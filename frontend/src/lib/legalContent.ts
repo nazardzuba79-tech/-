@@ -1,6 +1,6 @@
 import { Lang } from './i18n';
 
-export type LegalDoc = 'terms' | 'privacy' | 'risk';
+export type LegalDoc = 'terms' | 'privacy' | 'risk' | 'about' | 'support';
 
 export interface LegalSection {
   heading: string;
@@ -129,6 +129,75 @@ const RU_PRIVACY: LegalContent = {
       heading: '8. Связь с нами',
       body: [
         'Вопросы о данных и конфиденциальности можно направить через раздел поддержки в аккаунте.',
+      ],
+    },
+  ],
+};
+
+const RU_ABOUT: LegalContent = {
+  title: 'О нас',
+  updated: 'Последнее обновление: 22 августа 2026 г.',
+  intro:
+    'VOLTEX — платформа для торговли криптовалютами: спот и фьючерсы с маржинальной торговлей, лимитные, рыночные, стоп- и тейк-профит ордера, вывод и депозит в поддерживаемых сетях.',
+  sections: [
+    {
+      heading: 'Торговый движок',
+      body: [
+        'Ордера сопоставляются собственным торговым движком по принципу цена-время. Рыночные данные (цены, свечи, стакан) зеркалируются с реального биржевого API — никаких захардкоженных или сгенерированных котировок.',
+      ],
+    },
+    {
+      heading: 'Безопасность аккаунта',
+      body: [
+        'Пароли хранятся в виде необратимых bcrypt-хешей, секреты API-ключей шифруются при хранении. Двухфакторная аутентификация и журнал входов доступны в разделе «Настройки → Безопасность».',
+      ],
+    },
+    {
+      heading: 'Фьючерсы и риск-менеджмент',
+      body: [
+        'Маржинальная торговля с изолированной и кросс-маржой, многоуровневое плечо, автоматическая ликвидация по реальной mark-price и страховой фонд на случай дефицита при ликвидации.',
+      ],
+    },
+    {
+      heading: 'Прозрачность',
+      body: [
+        'Мы не публикуем непроверяемые обещания о доходности или объёмах торгов. Комиссии, лимиты и условия отображаются в интерфейсе там, где они применяются — до подтверждения действия, а не мелким шрифтом.',
+      ],
+    },
+  ],
+};
+
+const RU_SUPPORT: LegalContent = {
+  title: 'Поддержка',
+  updated: 'Последнее обновление: 22 августа 2026 г.',
+  intro: 'Ответы на частые вопросы. Для вопросов по конкретному аккаунту в первую очередь загляни в «Настройки».',
+  sections: [
+    {
+      heading: 'Как пополнить баланс',
+      body: [
+        'Открой «Пополнить» → выбери сеть → отправь средства на показанный адрес → вставь хеш транзакции для проверки. Минимальная сумма пополнения — 1000 USD в эквиваленте; сумма ниже минимума не будет зачислена.',
+      ],
+    },
+    {
+      heading: 'Ордер не исполняется',
+      body: [
+        'Проверь, что триггерная цена стоп/тейк-профит ордера расположена по правильную сторону от текущей рыночной цены — интерфейс подсказывает нужное направление прямо в форме ордера. Открытые условные ордера ждут срабатывания триггера и отображаются со статусом «Ожидает».',
+      ],
+    },
+    {
+      heading: 'Безопасность аккаунта',
+      body: [
+        'Включи двухфакторную аутентификацию и периодически проверяй журнал входов в «Настройки → Безопасность» — там видно каждый вход в аккаунт.',
+      ],
+    },
+    {
+      heading: 'Верификация (KYC)',
+      body: ['Статус и требуемые документы для верификации отображаются в разделе аккаунта, отвечающем за верификацию.'],
+    },
+    {
+      heading: 'Остались вопросы',
+      body: [
+        'Прямого канала живой поддержки в этой версии платформы пока нет — раздел поддержки ограничен этой страницей с ответами на частые вопросы.',
       ],
     },
   ],
@@ -305,6 +374,73 @@ const EN_PRIVACY: LegalContent = {
   ],
 };
 
+const EN_ABOUT: LegalContent = {
+  title: 'About us',
+  updated: 'Last updated: August 22, 2026',
+  intro:
+    'VOLTEX is a cryptocurrency trading platform: spot and margin futures trading, limit, market, stop, and take-profit orders, deposits and withdrawals on supported networks.',
+  sections: [
+    {
+      heading: 'Matching engine',
+      body: [
+        'Orders are matched by our own price-time matching engine. Market data (prices, candles, order book) mirrors a real exchange API — no hardcoded or generated quotes.',
+      ],
+    },
+    {
+      heading: 'Account security',
+      body: [
+        'Passwords are stored as irreversible bcrypt hashes, and API key secrets are encrypted at rest. Two-factor authentication and a login history are available under Settings → Security.',
+      ],
+    },
+    {
+      heading: 'Futures and risk management',
+      body: [
+        'Margin trading with isolated and cross margin, tiered leverage, automatic liquidation against a real mark price, and an insurance fund for shortfalls at liquidation.',
+      ],
+    },
+    {
+      heading: 'Transparency',
+      body: [
+        "We don't publish unverifiable claims about returns or trading volume. Fees, limits, and terms are shown in the interface where they apply — before you confirm an action, not in fine print.",
+      ],
+    },
+  ],
+};
+
+const EN_SUPPORT: LegalContent = {
+  title: 'Support',
+  updated: 'Last updated: August 22, 2026',
+  intro: 'Answers to common questions. For anything account-specific, check Settings first.',
+  sections: [
+    {
+      heading: 'How to deposit',
+      body: [
+        'Open "Deposit" → pick a network → send funds to the address shown → paste the transaction hash to verify it. The minimum deposit is the equivalent of $1000 USD; anything below that will not be credited.',
+      ],
+    },
+    {
+      heading: 'My order isn’t executing',
+      body: [
+        'Check that a stop/take-profit trigger price sits on the correct side of the current market price — the order form shows the required direction inline. Pending conditional orders wait for their trigger and show a "Pending" status.',
+      ],
+    },
+    {
+      heading: 'Account security',
+      body: [
+        'Turn on two-factor authentication and periodically review the login history under Settings → Security — every sign-in to your account shows up there.',
+      ],
+    },
+    {
+      heading: 'Verification (KYC)',
+      body: ['Your verification status and the documents required are shown in the account’s verification section.'],
+    },
+    {
+      heading: 'Still have questions',
+      body: ["This version of the platform doesn't have a live support channel yet — the support section is limited to this FAQ page."],
+    },
+  ],
+};
+
 const EN_RISK: LegalContent = {
   title: 'Risk Disclosure',
   updated: 'Last updated: August 22, 2026',
@@ -434,6 +570,58 @@ const ZH_PRIVACY: LegalContent = {
   ],
 };
 
+const ZH_ABOUT: LegalContent = {
+  title: '关于我们',
+  updated: '最后更新:2026年8月22日',
+  intro: 'VOLTEX 是一个加密货币交易平台:现货与保证金合约交易、限价/市价/止损/止盈订单,以及在支持的网络上充值和提现。',
+  sections: [
+    {
+      heading: '撮合引擎',
+      body: ['订单由我们自有的价格-时间优先撮合引擎处理。行情数据(价格、K线、订单簿)镜像自真实交易所接口,不使用硬编码或生成的报价。'],
+    },
+    {
+      heading: '账户安全',
+      body: ['密码以不可逆的 bcrypt 哈希存储,API 密钥密文加密保存。双重验证与登录历史可在"设置 → 安全"中查看。'],
+    },
+    {
+      heading: '合约与风险管理',
+      body: ['支持逐仓与全仓保证金、分层杠杆、基于真实标记价格的自动强平,以及用于覆盖强平缺口的风险准备金。'],
+    },
+    {
+      heading: '透明度',
+      body: ['我们不会发布无法验证的收益或交易量承诺。手续费、限额和条款会在实际适用的界面位置展示——在你确认操作之前,而不是藏在细则里。'],
+    },
+  ],
+};
+
+const ZH_SUPPORT: LegalContent = {
+  title: '帮助与支持',
+  updated: '最后更新:2026年8月22日',
+  intro: '常见问题解答。与账户相关的问题请先查看"设置"。',
+  sections: [
+    {
+      heading: '如何充值',
+      body: ['打开"充值" → 选择网络 → 将资金发送到显示的地址 → 粘贴交易哈希进行验证。最低充值金额为等值 1000 美元,低于该金额的充值不会入账。'],
+    },
+    {
+      heading: '订单未成交',
+      body: ['请检查止损/止盈触发价格是否位于当前市场价格的正确一侧——下单表单会直接提示所需方向。待触发的条件订单会显示"等待"状态。'],
+    },
+    {
+      heading: '账户安全',
+      body: ['在"设置 → 安全"中开启双重验证,并定期查看登录历史——每一次登录都会记录在那里。'],
+    },
+    {
+      heading: '身份验证(KYC)',
+      body: ['你的验证状态和所需文件会在账户的验证板块中显示。'],
+    },
+    {
+      heading: '仍有疑问',
+      body: ['当前版本的平台暂未提供实时人工支持渠道——支持板块目前仅限于本常见问题页面。'],
+    },
+  ],
+};
+
 const ZH_RISK: LegalContent = {
   title: '风险披露',
   updated: '最后更新:2026年8月22日',
@@ -454,7 +642,7 @@ const ZH_RISK: LegalContent = {
 };
 
 export const LEGAL_CONTENT: Record<Lang, Record<LegalDoc, LegalContent>> = {
-  ru: { terms: RU_TERMS, privacy: RU_PRIVACY, risk: RU_RISK },
-  en: { terms: EN_TERMS, privacy: EN_PRIVACY, risk: EN_RISK },
-  zh: { terms: ZH_TERMS, privacy: ZH_PRIVACY, risk: ZH_RISK },
+  ru: { terms: RU_TERMS, privacy: RU_PRIVACY, risk: RU_RISK, about: RU_ABOUT, support: RU_SUPPORT },
+  en: { terms: EN_TERMS, privacy: EN_PRIVACY, risk: EN_RISK, about: EN_ABOUT, support: EN_SUPPORT },
+  zh: { terms: ZH_TERMS, privacy: ZH_PRIVACY, risk: ZH_RISK, about: ZH_ABOUT, support: ZH_SUPPORT },
 };

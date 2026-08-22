@@ -319,9 +319,12 @@ const RU = {
   'wallet.deposit': 'Пополнить',
   'wallet.priceUnavailable': 'Нет цены с Kraken для этого актива — не учтён в общей сумме.',
 
+  'footer.about': 'О нас',
   'footer.terms': 'Условия использования',
   'footer.privacy': 'Конфиденциальность',
   'footer.risk': 'Раскрытие рисков',
+  'footer.support': 'Поддержка',
+  'footer.social': 'Соцсети',
   'footer.rights': '© 2026 VOLTEX. Все права защищены.',
   'footer.riskWarning':
     'Торговля криптовалютами сопряжена с высоким риском и подходит не всем инвесторам. Стоимость активов может значительно колебаться. Торгуй только теми средствами, потерю которых можешь себе позволить.',
@@ -689,9 +692,12 @@ const EN: Record<Key, string> = {
   'wallet.deposit': 'Deposit',
   'wallet.priceUnavailable': 'No Kraken price for this asset — excluded from the total.',
 
+  'footer.about': 'About us',
   'footer.terms': 'Terms of Service',
   'footer.privacy': 'Privacy',
   'footer.risk': 'Risk Disclosure',
+  'footer.support': 'Support',
+  'footer.social': 'Social',
   'footer.rights': '© 2026 VOLTEX. All rights reserved.',
   'footer.riskWarning':
     'Cryptocurrency trading carries a high level of risk and may not be suitable for all investors. Asset values can fluctuate significantly. Only trade with funds you can afford to lose.',
@@ -1056,9 +1062,12 @@ const ZH: Record<Key, string> = {
   'wallet.deposit': '充值',
   'wallet.priceUnavailable': 'Kraken 暂无此资产的价格——未计入总额。',
 
+  'footer.about': '关于我们',
   'footer.terms': '服务条款',
   'footer.privacy': '隐私政策',
   'footer.risk': '风险披露',
+  'footer.support': '帮助与支持',
+  'footer.social': '社交媒体',
   'footer.rights': '© 2026 VOLTEX. 保留所有权利。',
   'footer.riskWarning': '加密货币交易存在高风险,并非适合所有投资者。资产价值可能大幅波动。请仅使用你能承受损失的资金进行交易。',
 
