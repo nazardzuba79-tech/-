@@ -18,6 +18,7 @@ import { kycRouter } from './api/routes/kyc';
 import { adminRouter } from './api/routes/admin';
 import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
+import { reservesRouter } from './api/routes/reserves';
 import { futuresRouter } from './api/routes/futures';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
@@ -50,6 +51,12 @@ const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 const spotOrderService = new OrderService(prisma, engine, marketDataService);
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
+// Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
+// req.ip is always the proxy's own address, which would both defeat the
+// per-IP login rate limiter below (every user looks like the same caller)
+// and make the account security log's IP column useless.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
 app.use(express.json({ limit: '100kb' }));
@@ -78,6 +85,7 @@ app.use('/api/v1', kycRouter(prisma));
 app.use('/api/v1', adminRouter(prisma));
 app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
+app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService));
 
 // Centralized error handler — never leak stack traces to clients.

@@ -1,10 +1,17 @@
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
+
+// Real login metadata for the account's Security Log — never a placeholder.
+// req.ip depends on `trust proxy` being set (see index.ts) to reflect the
+// actual client rather than the reverse proxy's own address.
+function loginMetadata(req: Request) {
+  return { ip: req.ip ?? null, userAgent: req.get('user-agent') ?? null };
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
@@ -116,6 +123,10 @@ export function authRouter(prisma: PrismaClient): Router {
       return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }
 
+    await prisma.auditLog.create({
+      data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
+    });
+
     res.json({ token: issueToken(user.id) });
   });
 
@@ -152,6 +163,10 @@ export function authRouter(prisma: PrismaClient): Router {
         data: { userId: user.id, action: 'TWO_FACTOR_BACKUP_CODE_USED', metadata: {} },
       });
     }
+
+    await prisma.auditLog.create({
+      data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
+    });
 
     res.json({ token: issueToken(user.id) });
   });

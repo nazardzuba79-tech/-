@@ -17,6 +17,18 @@ const twoFactorCodeSchema = z.object({
   code: z.string().min(6).max(64),
 });
 
+// Only the account-security-relevant subset of AuditLog actions — not every
+// audit event (order placement, deposits, ...) belongs on a "Security Log".
+const SECURITY_LOG_ACTIONS = [
+  'USER_LOGGED_IN',
+  'USER_REGISTERED',
+  'PASSWORD_CHANGED',
+  'TWO_FACTOR_ENABLED',
+  'TWO_FACTOR_DISABLED',
+  'TWO_FACTOR_BACKUP_CODE_USED',
+];
+const SECURITY_LOG_LIMIT = 50;
+
 export function accountRouter(prisma: PrismaClient): Router {
   const router = Router();
 
@@ -52,6 +64,24 @@ export function accountRouter(prisma: PrismaClient): Router {
     });
 
     res.json({ status: 'ok' });
+  });
+
+  // The account's own login/security event history — real AuditLog rows,
+  // scoped to req.userId so no one can read another account's log.
+  router.get('/account/security-log', requireAuth, async (req: AuthedRequest, res) => {
+    const entries = await prisma.auditLog.findMany({
+      where: { userId: req.userId, action: { in: SECURITY_LOG_ACTIONS } },
+      orderBy: { createdAt: 'desc' },
+      take: SECURITY_LOG_LIMIT,
+    });
+    res.json(
+      entries.map((e) => ({
+        id: e.id,
+        action: e.action,
+        createdAt: e.createdAt,
+        metadata: e.metadata,
+      }))
+    );
   });
 
   // Step 1 of enabling 2FA: mint a new TOTP secret and hand back a QR code

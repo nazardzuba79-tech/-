@@ -136,43 +136,201 @@ function SecurityTab() {
   }
 
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className="surface-raised" style={styles.card}>
+        <h3 style={styles.cardTitle}>{t('settings.changePassword')}</h3>
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <label style={styles.label}>
+            {t('settings.currentPassword')}
+            <input
+              type="password"
+              required
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              style={styles.input}
+              autoComplete="current-password"
+            />
+          </label>
+          <label style={styles.label}>
+            {t('settings.newPassword')}
+            <input
+              type="password"
+              required
+              minLength={10}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              style={styles.input}
+              autoComplete="new-password"
+            />
+            <span style={styles.hint}>{t('auth.minChars')}</span>
+          </label>
+
+          {error && <div style={styles.errorBox}>{error}</div>}
+          {success && <div style={styles.successBox}>{t('settings.passwordChanged')}</div>}
+
+          <button type="submit" disabled={submitting} style={styles.submitBtn}>
+            {submitting ? t('auth.wait') : t('settings.save')}
+          </button>
+        </form>
+
+        <TwoFactorSection />
+      </div>
+
+      <ReservesSection />
+      <SecurityLogSection />
+    </div>
+  );
+}
+
+function coverageColor(ratio: number | null): { color: string; bg: string } {
+  if (ratio === null) return { color: 'var(--text-tertiary)', bg: 'var(--neutral-dim)' };
+  if (ratio >= 1) return { color: 'var(--buy)', bg: 'var(--buy-dim)' };
+  if (ratio >= 0.9) return { color: 'var(--accent)', bg: 'var(--accent-dim)' };
+  return { color: 'var(--sell)', bg: 'var(--sell-dim)' };
+}
+
+function ReservesSection() {
+  const { t } = useLanguage();
+  const [rows, setRows] = useState<Awaited<ReturnType<typeof api.getReserves>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api
+      .getReserves()
+      .then(setRows)
+      .catch(() => setError(t('settings.reservesLoadError')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
     <div className="surface-raised" style={styles.card}>
-      <h3 style={styles.cardTitle}>{t('settings.changePassword')}</h3>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <label style={styles.label}>
-          {t('settings.currentPassword')}
-          <input
-            type="password"
-            required
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
-            style={styles.input}
-            autoComplete="current-password"
-          />
-        </label>
-        <label style={styles.label}>
-          {t('settings.newPassword')}
-          <input
-            type="password"
-            required
-            minLength={10}
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            style={styles.input}
-            autoComplete="new-password"
-          />
-          <span style={styles.hint}>{t('auth.minChars')}</span>
-        </label>
+      <h3 style={styles.cardTitle}>{t('settings.reserves')}</h3>
+      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.6, margin: 0 }}>
+        {t('settings.reservesDisclaimer')}
+      </p>
 
-        {error && <div style={styles.errorBox}>{error}</div>}
-        {success && <div style={styles.successBox}>{t('settings.passwordChanged')}</div>}
+      {error && <div style={styles.errorBox}>{error}</div>}
+      {!error && !rows && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.loading')}</p>}
+      {rows && rows.length === 0 && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.reservesEmpty')}</p>}
 
-        <button type="submit" disabled={submitting} style={styles.submitBtn}>
-          {submitting ? t('auth.wait') : t('settings.save')}
-        </button>
-      </form>
+      {rows && rows.length > 0 && (
+        <table style={styles.keyTable}>
+          <thead>
+            <tr>
+              <th style={styles.th}>{t('settings.reserves.chain')}</th>
+              <th style={styles.th}>{t('settings.reserves.asset')}</th>
+              <th style={styles.th}>{t('settings.reserves.liabilities')}</th>
+              <th style={styles.th}>{t('settings.reserves.onChain')}</th>
+              <th style={styles.th}>{t('settings.reserves.coverage')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const c = coverageColor(r.coverageRatio);
+              return (
+                <tr key={`${r.chain}-${r.asset}`}>
+                  <td style={styles.td}>{r.chain}</td>
+                  <td style={styles.td}>{r.asset}</td>
+                  <td style={styles.td} className="mono">
+                    {parseFloat(r.internalLiabilities).toFixed(8)}
+                  </td>
+                  <td style={styles.td} className="mono">
+                    {r.onChainBalance !== null ? parseFloat(r.onChainBalance).toFixed(8) : t('settings.reserves.unavailable')}
+                  </td>
+                  <td style={styles.td}>
+                    <Badge
+                      text={r.coverageRatio !== null ? `${(r.coverageRatio * 100).toFixed(1)}%` : t('settings.reserves.unavailable')}
+                      color={c.color}
+                      bg={c.bg}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
 
-      <TwoFactorSection />
+// Parses the browser's own User-Agent string down to a short, readable
+// "Browser · OS" label — good enough for a security log to be scannable
+// without pulling in a full UA-parsing dependency for this one field.
+function summarizeUserAgent(ua: string | null | undefined): string | null {
+  if (!ua) return null;
+  let browser = 'Unknown';
+  if (/Edg\//.test(ua)) browser = 'Edge';
+  else if (/OPR\//.test(ua)) browser = 'Opera';
+  else if (/Chrome\//.test(ua)) browser = 'Chrome';
+  else if (/Firefox\//.test(ua)) browser = 'Firefox';
+  else if (/Safari\//.test(ua)) browser = 'Safari';
+
+  let os = 'Unknown OS';
+  if (/Windows/.test(ua)) os = 'Windows';
+  else if (/Mac OS X/.test(ua)) os = 'macOS';
+  else if (/Android/.test(ua)) os = 'Android';
+  else if (/iPhone|iPad/.test(ua)) os = 'iOS';
+  else if (/Linux/.test(ua)) os = 'Linux';
+
+  return `${browser} · ${os}`;
+}
+
+function SecurityLogSection() {
+  const { t, lang } = useLanguage();
+  const [entries, setEntries] = useState<Awaited<ReturnType<typeof api.getSecurityLog>> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const EVENT_LABEL: Record<string, string> = {
+    USER_LOGGED_IN: t('settings.securityLog.USER_LOGGED_IN'),
+    USER_REGISTERED: t('settings.securityLog.USER_REGISTERED'),
+    PASSWORD_CHANGED: t('settings.securityLog.PASSWORD_CHANGED'),
+    TWO_FACTOR_ENABLED: t('settings.securityLog.TWO_FACTOR_ENABLED'),
+    TWO_FACTOR_DISABLED: t('settings.securityLog.TWO_FACTOR_DISABLED'),
+    TWO_FACTOR_BACKUP_CODE_USED: t('settings.securityLog.TWO_FACTOR_BACKUP_CODE_USED'),
+  };
+
+  useEffect(() => {
+    api
+      .getSecurityLog()
+      .then(setEntries)
+      .catch(() => setError(t('settings.securityLogLoadError')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="surface-raised" style={styles.card}>
+      <h3 style={styles.cardTitle}>{t('settings.securityLog')}</h3>
+
+      {error && <div style={styles.errorBox}>{error}</div>}
+      {!error && !entries && <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.loading')}</p>}
+      {entries && entries.length === 0 && (
+        <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.securityLogEmpty')}</p>
+      )}
+
+      {entries && entries.length > 0 && (
+        <table style={styles.keyTable}>
+          <thead>
+            <tr>
+              <th style={styles.th}>{t('settings.securityLog.event')}</th>
+              <th style={styles.th}>{t('settings.securityLog.time')}</th>
+              <th style={styles.th}>{t('settings.securityLog.ip')}</th>
+              <th style={styles.th}>{t('settings.securityLog.device')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              <tr key={e.id}>
+                <td style={styles.td}>{EVENT_LABEL[e.action] ?? e.action}</td>
+                <td style={styles.td}>{new Date(e.createdAt).toLocaleString(localeOf(lang))}</td>
+                <td style={styles.td} className="mono">
+                  {e.metadata?.ip || t('settings.securityLog.unknown')}
+                </td>
+                <td style={styles.td}>{summarizeUserAgent(e.metadata?.userAgent) ?? t('settings.securityLog.unknown')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

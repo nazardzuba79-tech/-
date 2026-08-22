@@ -102,6 +102,37 @@ describe('account routes', () => {
     });
   });
 
+  describe('GET /account/security-log', () => {
+    it('returns only this account\'s security-relevant audit entries, newest first', async () => {
+      const entries = [
+        { id: 'log-2', userId: 'user-1', action: 'USER_LOGGED_IN', metadata: { ip: '1.2.3.4', userAgent: 'Chrome' }, createdAt: new Date('2026-02-01') },
+        { id: 'log-1', userId: 'user-1', action: 'PASSWORD_CHANGED', metadata: {}, createdAt: new Date('2026-01-01') },
+      ];
+      const findManyMock = jest.fn().mockResolvedValue(entries);
+      const prisma = { auditLog: { findMany: findManyMock } } as any;
+      const app = buildApp(prisma);
+
+      const res = await request(app).get('/api/v1/account/security-log').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(2);
+      expect(res.body[0].action).toBe('USER_LOGGED_IN');
+      expect(res.body[0].metadata).toEqual({ ip: '1.2.3.4', userAgent: 'Chrome' });
+      expect(findManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ userId: 'user-1' }),
+          orderBy: { createdAt: 'desc' },
+        })
+      );
+    });
+
+    it('requires authentication', async () => {
+      const app = buildApp({ auditLog: { findMany: jest.fn() } } as any);
+      const res = await request(app).get('/api/v1/account/security-log');
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('POST /account/2fa/setup', () => {
     it('generates a secret, stores it, and returns a QR code', async () => {
       const updateMock = jest.fn().mockResolvedValue({});

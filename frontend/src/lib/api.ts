@@ -285,6 +285,24 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
+  getSecurityLog: () =>
+    request<
+      { id: string; action: string; createdAt: string; metadata: { ip?: string | null; userAgent?: string | null } }[]
+    >('/account/security-log'),
+
+  getReserves: () =>
+    request<
+      {
+        chain: string;
+        asset: string;
+        treasuryAddress: string;
+        internalLiabilities: string;
+        onChainBalance: string | null;
+        coverageRatio: number | null;
+        error?: string;
+      }[]
+    >('/reserves'),
+
   setup2FA: () =>
     request<{ secret: string; otpauthUrl: string; qrCodeDataUrl: string }>('/account/2fa/setup', { method: 'POST' }),
 

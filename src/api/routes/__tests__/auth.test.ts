@@ -99,6 +99,9 @@ describe('auth routes', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.token).toEqual(expect.any(String));
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1', action: 'USER_LOGGED_IN' }) })
+    );
   });
 
   it('rejects login with wrong password', async () => {
@@ -175,6 +178,9 @@ describe('auth routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.token).toEqual(expect.any(String));
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1', action: 'USER_LOGGED_IN' }) })
+      );
     });
 
     it('rejects a wrong 2FA code', async () => {
