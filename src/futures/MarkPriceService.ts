@@ -38,7 +38,19 @@ export class MarkPriceService {
   }
 
   async getIndexPrice(symbol: string): Promise<BigNumber | null> {
-    const ticker = await this.marketData.getTicker(symbol);
+    // Must never let an upstream failure (Kraken down/rate-limited/blocked)
+    // propagate as a thrown rejection: this is called from background
+    // schedulers (LiquidationEngine, FundingRateService) with no caller-side
+    // try/catch, so an uncaught rejection here would crash the whole
+    // process. An honest "no data" null is the same fallback the class's
+    // own doc comment already promises for an untraded contract.
+    let ticker;
+    try {
+      ticker = await this.marketData.getTicker(symbol);
+    } catch (err) {
+      console.error(`[MarkPriceService] Failed to fetch index price for ${symbol}:`, err);
+      return null;
+    }
     if (!ticker) return null;
     const price = new BigNumber(ticker.lastPrice);
     if (!price.isFinite() || price.isLessThanOrEqualTo(0)) return null;

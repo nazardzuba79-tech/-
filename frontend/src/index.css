@@ -116,19 +116,35 @@ input,
 textarea,
 select {
   font-family: inherit;
-  /* Safari/iOS applies its own system chrome to form controls unless
-     explicitly opted out, and can ignore a plain `color` on an <input>
-     in favor of that system text color — on a dark background that
-     reads as "gray text I can barely see" even though the same input
-     looks perfectly fine in Chromium. -webkit-text-fill-color is the
-     property Safari actually honors for the typed text color. */
+}
+/* Safari/iOS applies its own system chrome to text-like form controls
+   unless explicitly opted out, and can ignore a plain `color` on an
+   <input> in favor of that system text color — on a dark background that
+   reads as "gray text I can barely see" even though the same input looks
+   perfectly fine in Chromium. -webkit-text-fill-color is the property
+   Safari actually honors for the typed text color.
+   Deliberately excludes checkbox/radio: stripping THEIR native appearance
+   with nothing drawn back in makes them render with zero visible size —
+   an invisible, unclickable-looking control (caught via a Playwright
+   screenshot of the futures risk-disclaimer checkbox never rendering a
+   box at all). */
+input:not([type='checkbox']):not([type='radio']),
+textarea,
+select {
   -webkit-appearance: none;
   appearance: none;
 }
-input,
+input:not([type='checkbox']):not([type='radio']),
 textarea {
   color: var(--text-primary);
   -webkit-text-fill-color: var(--text-primary);
+}
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 /* appearance: none above strips the native dropdown arrow along with the

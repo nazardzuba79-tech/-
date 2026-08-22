@@ -338,6 +338,115 @@ export const api = {
     ),
 
   revokeApiKey: (id: string) => request<void>(`/api-keys/${id}`, { method: 'DELETE' }),
+
+  // Perpetual futures — fully separate wallet/orders/positions from spot
+  // (see the backend's FuturesBalance/FuturesOrder schema comments).
+  getFuturesConfig: () =>
+    request<{
+      symbols: string[];
+      minLeverage: number;
+      maxLeverage: number;
+      newAccountMaxLeverage: number;
+      newAccountPeriodDays: number;
+      highLeverageWarningThreshold: number;
+      leverageTiers: { notionalCap: number; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
+    }>('/futures/config'),
+
+  getFuturesRiskAck: () =>
+    request<{ acknowledged: boolean; acknowledgedAt: string | null }>('/futures/risk-ack'),
+
+  acknowledgeFuturesRisk: () =>
+    request<{ acknowledged: boolean; acknowledgedAt: string }>('/futures/risk-ack', { method: 'POST' }),
+
+  placeFuturesOrder: (params: {
+    symbol: string;
+    side: 'BUY' | 'SELL';
+    type: 'LIMIT' | 'MARKET';
+    price?: string;
+    quantity: string;
+    leverage: number;
+    marginType: 'ISOLATED' | 'CROSS';
+    reduceOnly?: boolean;
+  }) => request('/futures/orders', { method: 'POST', body: JSON.stringify(params) }),
+
+  cancelFuturesOrder: (orderId: string) => request(`/futures/orders/${orderId}`, { method: 'DELETE' }),
+
+  getMyFuturesOrders: (status?: string) =>
+    request<
+      {
+        id: string;
+        symbol: string;
+        side: 'BUY' | 'SELL';
+        type: string;
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        reduceOnly: boolean;
+        leverage: number;
+        marginType: 'ISOLATED' | 'CROSS';
+        createdAt: string;
+      }[]
+    >(`/futures/orders/me${status ? `?status=${status}` : ''}`),
+
+  getFuturesPositions: () =>
+    request<
+      {
+        id: string;
+        symbol: string;
+        side: 'LONG' | 'SHORT';
+        size: string;
+        entryPrice: string;
+        leverage: number;
+        marginType: 'ISOLATED' | 'CROSS';
+        initialMargin: string;
+        liquidationPrice: string;
+        markPrice: string | null;
+        unrealizedPnl: string | null;
+        roe: string | null;
+        openedAt: string;
+      }[]
+    >('/futures/positions'),
+
+  getFuturesPositionHistory: () =>
+    request<
+      {
+        id: string;
+        symbol: string;
+        side: 'LONG' | 'SHORT';
+        leverage: number;
+        marginType: 'ISOLATED' | 'CROSS';
+        entryPrice: string;
+        realizedPnl: string;
+        status: string;
+        openedAt: string;
+        closedAt: string | null;
+      }[]
+    >('/futures/positions/history'),
+
+  closeFuturesPosition: (positionId: string) => request(`/futures/positions/${positionId}/close`, { method: 'POST' }),
+
+  getFuturesBalances: () => request<{ asset: string; available: string; locked: string }[]>('/futures/balances'),
+
+  transferFuturesFunds: (asset: string, amount: string, direction: 'TO_FUTURES' | 'TO_SPOT') =>
+    request<{ status: string }>('/futures/transfer', { method: 'POST', body: JSON.stringify({ asset, amount, direction }) }),
+
+  getFuturesMarkPrice: (symbol: string) =>
+    request<{ symbol: string; markPrice: string; indexPrice: string }>(`/futures/mark-price/${pairToSlug(symbol)}`),
+
+  getFuturesFundingRate: (symbol: string, limit = 10) =>
+    request<{
+      symbol: string;
+      history: { rate: string; markPrice: string; indexPrice: string; appliedAt: string }[];
+    }>(`/futures/funding-rate/${pairToSlug(symbol)}?limit=${limit}`),
+
+  getFuturesOrderBook: (symbol: string) =>
+    request<{
+      pair: string;
+      bids: { price: string; quantity: string; orders: number }[];
+      asks: { price: string; quantity: string; orders: number }[];
+      timestamp: number;
+    }>(`/futures/orderbook/${pairToSlug(symbol)}`),
 };
 
 function pairToSlug(pair: string): string {

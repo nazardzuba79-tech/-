@@ -26,6 +26,7 @@ export function Nav({
 
   const LINKS = [
     { to: '/trade', label: t('nav.trade') },
+    { to: '/futures', label: t('nav.futures') },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/markets', label: t('nav.markets') },
   ];

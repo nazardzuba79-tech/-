@@ -44,6 +44,18 @@ describe('MarkPriceService', () => {
     expect(mark!.isLessThan(55000)).toBe(true);
   });
 
+  it('returns null instead of throwing when the upstream market-data call fails', async () => {
+    // Regression test: getIndexPrice/getMarkPrice are awaited from
+    // background schedulers (LiquidationEngine, FundingRateService) with
+    // no try/catch at the call site — an uncaught rejection here used to
+    // crash the whole process the moment Kraken was unreachable.
+    const marketData = { getTicker: jest.fn().mockRejectedValue(new Error('Kraken responded with HTTP 403')) } as any;
+    const svc = new MarkPriceService(marketData);
+
+    await expect(svc.getIndexPrice('BTC/USDT')).resolves.toBeNull();
+    await expect(svc.getMarkPrice('BTC/USDT')).resolves.toBeNull();
+  });
+
   it('keeps separate basis state per symbol', async () => {
     const marketData = {
       getTicker: jest.fn((symbol: string) =>

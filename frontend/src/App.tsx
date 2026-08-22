@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { TradePage } from './pages/TradePage';
+import { FuturesPage } from './pages/FuturesPage';
 import { MarketsPage } from './pages/MarketsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
@@ -22,6 +23,14 @@ export function App() {
           element={
             <RequireAuth>
               <TradePage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/futures"
+          element={
+            <RequireAuth>
+              <FuturesPage />
             </RequireAuth>
           }
         />
