@@ -166,7 +166,7 @@ const styles: Record<string, React.CSSProperties> = {
   title: { fontSize: 22, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   banner: {
     padding: '10px 14px',
-    borderRadius: 4,
+    borderRadius: 8,
     fontSize: 13,
     marginBottom: 20,
     background: 'var(--sell-dim)',

@@ -192,7 +192,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
-    borderRadius: 4,
+    borderRadius: 8,
     padding: '7px 10px',
     fontSize: 14,
   },

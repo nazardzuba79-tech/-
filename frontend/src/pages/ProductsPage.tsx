@@ -79,7 +79,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)' },
   main: { padding: 32, maxWidth: 900, margin: '0 auto' },
   title: { fontSize: 22, marginBottom: 20, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
-  banner: { padding: '10px 14px', borderRadius: 4, fontSize: 13, marginBottom: 20 },
+  banner: { padding: '10px 14px', borderRadius: 8, fontSize: 13, marginBottom: 20 },
   bannerSuccess: { background: 'var(--buy-dim)', color: 'var(--buy)' },
   bannerError: { background: 'var(--sell-dim)', color: 'var(--sell)' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 },

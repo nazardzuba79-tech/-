@@ -189,7 +189,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--sell-dim)',
     color: 'var(--sell)',
     padding: '8px 10px',
-    borderRadius: 4,
+    borderRadius: 8,
     fontSize: 12,
     marginBottom: 12,
   },
