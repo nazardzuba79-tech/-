@@ -6,6 +6,7 @@ import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Footer } from '../components/Footer';
+import { SkeletonRow } from '../components/Skeleton';
 
 interface Ticker {
   pair: string;
@@ -96,7 +97,7 @@ export function MarketsPage() {
         {error && <div style={styles.banner}>{error}</div>}
 
         <div style={styles.grid}>
-          <div style={styles.listPanel}>
+          <div className="surface-raised" style={styles.listPanel}>
             <div style={styles.listHeader}>
               <span>{t('markets.pair')}</span>
               <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
@@ -148,9 +149,9 @@ export function MarketsPage() {
               {filtered.length === 0 && tickers.length > 0 && (
                 <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>{t('markets.nothingFound')}</p>
               )}
-              {tickers.length === 0 && !error && (
-                <p style={{ padding: 14, color: 'var(--text-tertiary)' }}>{t('markets.loading')}</p>
-              )}
+              {tickers.length === 0 &&
+                !error &&
+                Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 0.8, 1, 1, 1]} />)}
             </div>
           </div>
 
@@ -213,6 +214,15 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottom: '1px solid var(--border)',
     gap: 8,
   },
-  bookColumn: { display: 'flex', flexDirection: 'column', gap: 8 },
-  selectedPair: { fontSize: 14, fontWeight: 700, padding: '0 4px' },
+  bookColumn: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: 12,
+    boxShadow: 'var(--shadow-sm)',
+  },
+  selectedPair: { fontSize: 14, fontWeight: 700, padding: '0 4px', fontFamily: 'var(--font-display)', letterSpacing: '0.01em' },
 };

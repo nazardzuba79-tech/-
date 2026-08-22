@@ -115,7 +115,7 @@ export function CardPage() {
 
 function ContactlessIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0b0e11" strokeWidth="2.2" strokeLinecap="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" strokeWidth="2.2" strokeLinecap="round">
       <path d="M8 10a4 4 0 0 1 0 4" />
       <path d="M11 7a8 8 0 0 1 0 10" />
       <path d="M14 4a12 12 0 0 1 0 16" />
@@ -130,7 +130,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 340,
     aspectRatio: '1.586',
     borderRadius: 18,
-    padding: 22,
+    padding: 24,
     background: 'linear-gradient(135deg, #f7a600 0%, #ffb524 45%, #b97300 100%)',
     boxShadow: '0 16px 40px rgba(247,166,0,0.25)',
     display: 'flex',
@@ -150,12 +150,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardVisualNumber: { color: 'rgba(11,14,17,0.75)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
   cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  cardVisualWordmark: { color: '#0b0e11', fontWeight: 800, fontSize: 18, fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' },
+  cardVisualWordmark: { color: 'var(--on-accent)', fontWeight: 800, fontSize: 18, fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' },
   headerRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 },
   title: { fontSize: 24, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   badge: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     fontSize: 11,
     fontWeight: 700,
     padding: '3px 10px',
@@ -167,9 +167,15 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 8,
-    padding: 18,
+    padding: 20,
   },
-  cardTitle: { fontSize: 14, margin: '0 0 8px' },
+  cardTitle: {
+    fontSize: 14,
+    margin: '0 0 8px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+    letterSpacing: '0.01em',
+  },
   cardText: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
   kycNotice: {
     background: 'var(--panel)',
@@ -198,7 +204,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   joinBtn: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 24,
     padding: '12px 22px',

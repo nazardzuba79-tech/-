@@ -91,7 +91,7 @@ function ProfileTab() {
   const kyc = KYC_STATUS_LABEL[me.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
 
   return (
-    <div className="accent-edge" style={styles.card}>
+    <div className="accent-edge surface-raised" style={styles.card}>
       <Row label={t('settings.email')} value={me.email} />
       <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
       <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
@@ -136,7 +136,7 @@ function SecurityTab() {
   }
 
   return (
-    <div style={styles.card}>
+    <div className="surface-raised" style={styles.card}>
       <h3 style={styles.cardTitle}>{t('settings.changePassword')}</h3>
       <form onSubmit={handleSubmit} style={styles.form}>
         <label style={styles.label}>
@@ -404,7 +404,7 @@ function VerificationTab() {
   const DOC_TYPE_LABEL = docTypeLabel(t);
 
   return (
-    <div style={styles.card}>
+    <div className="surface-raised" style={styles.card}>
       <div style={styles.kycStatusRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('settings.verificationStatus')}</span>
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
@@ -540,7 +540,7 @@ function ApiKeysTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div style={styles.card}>
+      <div className="surface-raised" style={styles.card}>
         <h3 style={styles.cardTitle}>{t('settings.apiKeys')}</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
           {t('settings.apiKeysDesc')}
@@ -624,7 +624,7 @@ function ApiKeysTab() {
         </form>
       </div>
 
-      <div style={styles.card}>
+      <div className="surface-raised" style={styles.card}>
         <h3 style={styles.cardTitle}>{t('settings.howToConnectBot')}</h3>
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {t('settings.hmacExplainer1')}{' '}
@@ -744,7 +744,7 @@ function ClientsTab() {
         {filtered.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.noOneFound')}</p>}
       </div>
 
-      <div style={styles.card}>
+      <div className="surface-raised" style={styles.card}>
         {!selected ? (
           <p style={{ color: 'var(--text-tertiary)' }}>{t('settings.selectClient')}</p>
         ) : (
@@ -840,7 +840,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel-alt)',
     border: '1px solid var(--sell)',
     borderRadius: 6,
-    padding: 14,
+    padding: 16,
     marginBottom: 20,
   },
   keyTable: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
@@ -872,7 +872,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 6,
-    padding: 14,
+    padding: 16,
     fontSize: 11,
     fontFamily: 'var(--font-mono)',
     overflowX: 'auto',
@@ -905,7 +905,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 16,
   },
-  cardTitle: { fontSize: 14, margin: 0 },
+  cardTitle: { fontSize: 14, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.01em' },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -952,7 +952,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   submitBtn: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 24,
     padding: '11px 0',
@@ -984,7 +984,7 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: 20,
     display: 'flex',
     flexDirection: 'column',
-    gap: 14,
+    gap: 16,
   },
   twoFaHeader: { display: 'flex', alignItems: 'center', gap: 10 },
   twoFaLead: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 },
@@ -1011,7 +1011,7 @@ const styles: Record<string, React.CSSProperties> = {
   backupCodesGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 10,
+    gap: 8,
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 8,
@@ -1045,7 +1045,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 6,
-    padding: 10,
+    padding: 8,
     display: 'flex',
     justifyContent: 'center',
     minHeight: 120,
@@ -1056,7 +1056,7 @@ const styles: Record<string, React.CSSProperties> = {
   approveBtn: {
     flex: 1,
     background: 'var(--buy)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 20,
     padding: '10px 0',

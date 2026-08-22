@@ -115,7 +115,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
   },
   hint: {
-    padding: 14,
+    padding: 16,
     color: 'var(--text-tertiary)',
     fontSize: 12,
   },

@@ -5,6 +5,7 @@ import { useLanguage, localeOf } from '../lib/i18n';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
+import { Skeleton } from '../components/Skeleton';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -108,7 +109,17 @@ export function AuthPage() {
                 </div>
               );
             })}
-            {tickers.length === 0 && <div style={styles.tickerHint}>{t('trade.loading')}</div>}
+            {tickers.length === 0 &&
+              HERO_PAIRS.map((p) => (
+                <div key={p} style={styles.tickerRow}>
+                  <span style={styles.tickerLeft}>
+                    <Skeleton width={22} height={22} radius={999} />
+                    <Skeleton width={70} height={13} />
+                  </span>
+                  <Skeleton width={60} height={13} />
+                  <Skeleton width={50} height={13} />
+                </div>
+              ))}
           </div>
         </div>
 
@@ -246,7 +257,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   legalLink: { fontSize: 11, color: 'var(--text-tertiary)' },
   legalDot: { fontSize: 11, color: 'var(--text-tertiary)' },
@@ -261,7 +272,7 @@ const styles: Record<string, React.CSSProperties> = {
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: 18,
+    gap: 16,
     minWidth: 0,
   },
   heroTagline: {
@@ -298,7 +309,6 @@ const styles: Record<string, React.CSSProperties> = {
   tickerPair: { fontSize: 13, fontWeight: 700 },
   tickerPrice: { fontSize: 13, color: 'var(--text-secondary)', flex: 1, textAlign: 'right', paddingRight: 16 },
   tickerChange: { fontSize: 13, fontWeight: 700, width: 70, textAlign: 'right' },
-  tickerHint: { padding: 14, color: 'var(--text-tertiary)', fontSize: 12 },
   card: {
     width: 380,
     flexShrink: 0,
@@ -349,7 +359,7 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 6,
+    gap: 8,
     fontSize: 12,
     color: 'var(--text-secondary)',
   },
@@ -374,7 +384,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   submit: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 24,
     padding: '12px 0',

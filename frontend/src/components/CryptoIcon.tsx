@@ -28,7 +28,7 @@ export function CryptoIcon({ symbol, size = 20 }: { symbol: string; size?: numbe
           height: size,
           borderRadius: '50%',
           background: avatarColor(symbol),
-          color: '#0b0e11',
+          color: 'var(--on-accent)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { SearchInput } from './SearchInput';
 import { CryptoIcon } from './CryptoIcon';
+import { SkeletonRow } from './Skeleton';
 
 interface TickerRow {
   pair: string;
@@ -195,7 +196,9 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
                 {t('trade.loadPairsError')}
               </button>
             )}
-            {tickers.length === 0 && !loadError && <p style={styles.hint}>{t('trade.loading')}</p>}
+            {tickers.length === 0 &&
+              !loadError &&
+              Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} columns={[3, 1, 1]} />)}
             {tickers.length > 0 && filtered.length === 0 && <p style={styles.hint}>{t('trade.nothingFound')}</p>}
           </div>
         </div>
@@ -231,7 +234,7 @@ const styles: Record<string, React.CSSProperties> = {
   search: { borderRadius: 0, border: 'none', borderBottom: '1px solid var(--border)', padding: '0 12px' },
   chipsRow: {
     display: 'flex',
-    gap: 6,
+    gap: 8,
     padding: '10px 12px',
     borderBottom: '1px solid var(--border)',
     overflowX: 'auto',
@@ -249,7 +252,7 @@ const styles: Record<string, React.CSSProperties> = {
   chipActive: {
     background: 'var(--accent)',
     borderColor: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
   },
   columns: {
     display: 'grid',
@@ -278,7 +281,7 @@ const styles: Record<string, React.CSSProperties> = {
   retryButton: {
     display: 'block',
     width: 'calc(100% - 28px)',
-    margin: 14,
+    margin: 16,
     padding: '10px 12px',
     background: 'var(--sell-dim)',
     color: 'var(--sell)',

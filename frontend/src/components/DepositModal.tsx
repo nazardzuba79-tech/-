@@ -189,6 +189,7 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
     maxHeight: '90vh',
     overflowY: 'auto',
+    boxShadow: 'var(--shadow-lg)',
   },
   headerRow: {
     display: 'flex',
@@ -220,7 +221,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 8,
     padding: '10px 12px',
-    marginTop: 14,
+    marginTop: 16,
     marginBottom: 12,
   },
   address: {
@@ -230,7 +231,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   copyBtn: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 16,
     padding: '6px 12px',
@@ -255,12 +256,12 @@ const styles: Record<string, React.CSSProperties> = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 14,
+    gap: 16,
   },
   label: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 5,
+    gap: 4,
     fontSize: 11,
     color: 'var(--text-secondary)',
   },
@@ -288,7 +289,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   submit: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 24,
     padding: '12px 0',

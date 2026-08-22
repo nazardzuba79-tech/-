@@ -6,6 +6,7 @@ import { DepositModal } from '../components/DepositModal';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Footer } from '../components/Footer';
+import { SkeletonRow } from '../components/Skeleton';
 
 interface Balance {
   asset: string;
@@ -26,13 +27,18 @@ const STABLE_ASSETS = new Set(['USDT', 'USDC', 'USD']);
 export function WalletPage() {
   const { t, lang } = useLanguage();
   const [balances, setBalances] = useState<Balance[]>([]);
+  const [balancesLoaded, setBalancesLoaded] = useState(false);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
   const [showDeposit, setShowDeposit] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     function load() {
-      api.getBalances().then(setBalances).catch(() => {});
+      api
+        .getBalances()
+        .then(setBalances)
+        .catch(() => {})
+        .finally(() => setBalancesLoaded(true));
       api
         .getExternalTickers()
         .then((res) => {
@@ -94,7 +100,7 @@ export function WalletPage() {
           style={styles.search}
         />
 
-        <div className="accent-edge" style={styles.table}>
+        <div className="accent-edge surface-raised" style={styles.table}>
           <div style={styles.columns}>
             <span>{t('wallet.asset')}</span>
             <span style={{ textAlign: 'right' }}>{t('wallet.available')}</span>
@@ -125,7 +131,9 @@ export function WalletPage() {
                 </span>
               </div>
             ))}
-            {rows.length === 0 && <p style={styles.hint}>{t('wallet.noAssets')}</p>}
+            {!balancesLoaded &&
+              Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 1, 1, 1]} />)}
+            {balancesLoaded && rows.length === 0 && <p style={styles.hint}>{t('wallet.noAssets')}</p>}
             {rows.length > 0 && filteredRows.length === 0 && <p style={styles.hint}>{t('markets.nothingFound')}</p>}
           </div>
         </div>
@@ -163,7 +171,7 @@ const styles: Record<string, React.CSSProperties> = {
   search: { width: 260, marginBottom: 14 },
   depositBtn: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 24,
     padding: '11px 22px',

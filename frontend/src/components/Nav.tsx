@@ -136,13 +136,13 @@ const styles: Record<string, React.CSSProperties> = {
   cardLink: {
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   right: {
     marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
-    gap: 18,
+    gap: 16,
   },
   settingsLink: {
     display: 'flex',

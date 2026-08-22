@@ -72,7 +72,7 @@ export function TradePage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav
         active="/trade"
         middle={<PairSelector pair={pair} onChange={setPair} />}
@@ -164,7 +164,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   depositBtn: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     border: 'none',
     borderRadius: 18,
     padding: '8px 16px',

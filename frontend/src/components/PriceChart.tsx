@@ -163,7 +163,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   intervalBtnActive: {
     background: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
   },
   chart: {
     flex: 1,

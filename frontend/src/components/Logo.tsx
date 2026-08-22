@@ -13,7 +13,7 @@ export function LogoMark({ size = 22, variant = 'bolt' }: { size?: number; varia
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <rect width="24" height="24" rx="6" fill="var(--accent)" />
-        <path d={BOLT_PATH} fill="#0b0e11" />
+        <path d={BOLT_PATH} fill="var(--on-accent)" />
       </svg>
     );
   }
@@ -61,7 +61,7 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
+          gap: 8,
           fontFamily: 'var(--font-mono)',
           fontSize: 11,
           letterSpacing: '0.08em',

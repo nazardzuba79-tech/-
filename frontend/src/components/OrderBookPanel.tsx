@@ -51,7 +51,7 @@ function Row({ level, side, maxQty }: { level: Level; side: 'BUY' | 'SELL'; maxQ
   const bg = side === 'BUY' ? 'var(--buy-dim)' : 'var(--sell-dim)';
 
   return (
-    <div style={styles.row}>
+    <div className="row-hover" style={styles.row}>
       <div style={{ ...styles.depthBar, width: `${pct}%`, background: bg }} />
       <span className="mono" style={{ color, position: 'relative' }}>
         {parseFloat(level.price).toFixed(2)}

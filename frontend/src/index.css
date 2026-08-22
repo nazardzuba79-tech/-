@@ -4,11 +4,15 @@
      color and crisp white text rather than muted grays everywhere. */
   --bg: #0a0c10;
   --panel: #14171d;
-  --panel-alt: #1b1f27;
+  /* One clear step lighter than --panel (was a near-imperceptible #1b1f27)
+     so "control sitting inside a card" actually reads as a distinct layer
+     instead of the same flat gray repeated three times. */
+  --panel-alt: #20242e;
+  --panel-alt-hover: #262b37;
   --border: #2b303a;
   --text-primary: #f5f6f8;
   --text-secondary: #a3adba;
-  --text-tertiary: #6b7480;
+  --text-tertiary: #7d8794;
   --buy: #00d68f;
   --buy-dim: rgba(0, 214, 143, 0.14);
   --sell: #ff4d6a;
@@ -17,6 +21,18 @@
   --accent-hover: #ffb524;
   --accent-dim: rgba(247, 166, 0, 0.14);
   --neutral-dim: rgba(163, 173, 186, 0.12);
+  /* Text/icon color for anything sitting ON TOP of an accent/buy/sell
+     filled surface (CTA buttons, active chips, badges) — was repeated as
+     the raw hex #0b0e11 in a dozen components. */
+  --on-accent: #0b0e11;
+
+  /* Elevation scale — a resting card gets -sm so it reads as a raised
+     surface even before interaction; floating/absolute layers (dropdowns,
+     modals, the sticky nav) get -md/-lg so they clearly sit above
+     everything else instead of just being "another gray rectangle". */
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
 
   /* Type — Inter reads noticeably crisper than the plain system-font stack
      at small trading-UI sizes, which is the whole point (real exchanges
@@ -91,6 +107,9 @@ body {
 button {
   font-family: inherit;
   cursor: pointer;
+  /* A hair of tracking on button labels reads as considered/premium rather
+     than a raw browser default — same move used on page titles/logo. */
+  letter-spacing: 0.01em;
 }
 
 input {
@@ -139,6 +158,30 @@ a {
   outline-offset: 1px;
 }
 
+/* Plain text/number/password inputs and <select>s (order form, deposit
+   modal, auth, settings) get a proper focus treatment instead of the
+   generic outline above: an accent border plus a soft glow, which is what
+   actually reads as "designed" rather than a browser default ring sitting
+   awkwardly outside an already-bordered box. */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+select,
+textarea {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+input[type='text']:focus-visible,
+input[type='email']:focus-visible,
+input[type='password']:focus-visible,
+input[type='number']:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
 /* Placeholder text had no color rule anywhere, so it fell back to the
    browser default — nearly invisible against our dark background. This is
    the actual cause of search boxes looking empty/gray. */
@@ -165,7 +208,8 @@ a {
 }
 .search-box:focus-within {
   border-color: var(--accent);
-  background: #20242e;
+  background: var(--panel-alt-hover);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 .search-box svg {
   flex-shrink: 0;
@@ -181,22 +225,33 @@ a {
   width: 100%;
 }
 
-/* Row hover for clickable lists (pair picker, markets table, etc.) —
-   inline styles can't express :hover, hence the shared class. */
+/* Row hover for clickable lists (pair picker, markets table, order book,
+   etc.) — inline styles can't express :hover, hence the shared class. */
+.row-hover {
+  transition: background-color 0.12s ease;
+}
 .row-hover:hover {
-  background: var(--panel-alt) !important;
+  background-color: var(--panel-alt) !important;
 }
 
 /* Card hover-lift for clickable/tappable cards (products, card-page
    features, settings tabs) — subtle, not a gimmick: a soft rise + glow
    instead of a flat rectangle with zero feedback. */
 .card-hover {
+  box-shadow: var(--shadow-sm);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .card-hover:hover {
   transform: translateY(-2px);
   border-color: #3a4050 !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-md);
+}
+
+/* Static (non-interactive) elevated surface — tables, list panels, form
+   cards that don't lift on hover but still need to read as raised above
+   the page instead of blending into it. */
+.surface-raised {
+  box-shadow: var(--shadow-sm);
 }
 
 /* Buttons get a small interactive nudge everywhere by default — flat,
@@ -268,6 +323,29 @@ button:not(:disabled):active {
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+
+/* Skeleton loading placeholder — a softly shimmering block standing in for
+   content that hasn't arrived yet, instead of bare "Загрузка..." text that
+   reads as an empty/broken panel while a request is in flight. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-alt);
+  border-radius: 6px;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @media (max-width: 820px) {

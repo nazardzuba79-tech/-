@@ -218,8 +218,8 @@ const styles: Record<string, React.CSSProperties> = {
   sideTabs: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    padding: 6,
-    gap: 6,
+    padding: 8,
+    gap: 8,
   },
   sideTab: {
     padding: '10px 0',
@@ -231,16 +231,16 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
   },
   sideTabBuy: {
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     background: 'var(--buy)',
   },
   sideTabSell: {
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     background: 'var(--sell)',
   },
   typeTabs: {
     display: 'flex',
-    gap: 14,
+    gap: 16,
     padding: '0 14px 10px',
     borderBottom: '1px solid var(--border)',
   },
@@ -264,7 +264,7 @@ const styles: Record<string, React.CSSProperties> = {
   label: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 6,
+    gap: 8,
     fontSize: 11,
     color: 'var(--text-secondary)',
   },
@@ -287,7 +287,7 @@ const styles: Record<string, React.CSSProperties> = {
   percentRow: {
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: 6,
+    gap: 8,
   },
   percentBtn: {
     background: 'var(--panel-alt)',
@@ -301,7 +301,7 @@ const styles: Record<string, React.CSSProperties> = {
   percentBtnActive: {
     background: 'var(--accent)',
     borderColor: 'var(--accent)',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
   },
   total: {
     display: 'flex',
@@ -320,7 +320,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 24,
     padding: '14px 0',
-    color: '#0b0e11',
+    color: 'var(--on-accent)',
     fontWeight: 800,
     fontSize: 14,
     letterSpacing: '0.01em',
