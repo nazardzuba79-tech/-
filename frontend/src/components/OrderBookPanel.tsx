@@ -6,13 +6,33 @@ interface Level {
   orders?: number;
 }
 
+// True order-book "depth" — cumulative quantity from the best price
+// outward, same convention every real exchange DOM uses: a level right
+// next to the spread shows just its own size, a level far from it shows
+// everything resting ahead of it too, so the bars visibly grow with
+// distance from the mid price rather than jumping around independently.
+function withDepth(levels: Level[]): (Level & { cumulative: number })[] {
+  let running = 0;
+  return levels.map((l) => {
+    running += parseFloat(l.quantity);
+    return { ...l, cumulative: running };
+  });
+}
+
 export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] }) {
   const { t } = useLanguage();
-  const maxQty = Math.max(
-    ...bids.map((b) => parseFloat(b.quantity)),
-    ...asks.map((a) => parseFloat(a.quantity)),
+  const asksDepth = withDepth(asks);
+  const bidsDepth = withDepth(bids);
+  const maxDepth = Math.max(
+    asksDepth.length ? asksDepth[asksDepth.length - 1].cumulative : 0,
+    bidsDepth.length ? bidsDepth[bidsDepth.length - 1].cumulative : 0,
     0.0001
   );
+
+  const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
+  const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
+  const spread = bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
+  const spreadPct = spread !== null && bestBid ? (spread / bestBid) * 100 : null;
 
   return (
     <div style={styles.panel}>
@@ -22,37 +42,51 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
       </div>
 
       <div style={styles.rows}>
-        {asks
+        {asksDepth
           .slice()
           .reverse()
           .map((level) => (
-            <Row key={level.price} level={level} side="SELL" maxQty={maxQty} />
+            <Row key={level.price} level={level} side="SELL" maxDepth={maxDepth} />
           ))}
       </div>
 
       <div style={styles.spread}>
-        {asks[0] && bids[0]
-          ? `${t('trade.spread')}: ${(parseFloat(asks[0].price) - parseFloat(bids[0].price)).toFixed(2)}`
+        {spread !== null && spreadPct !== null
+          ? `${t('trade.spread')}: ${spread.toFixed(2)} (${spreadPct.toFixed(3)}%)`
           : '—'}
       </div>
 
       <div style={styles.rows}>
-        {bids.map((level) => (
-          <Row key={level.price} level={level} side="BUY" maxQty={maxQty} />
+        {bidsDepth.map((level) => (
+          <Row key={level.price} level={level} side="BUY" maxDepth={maxDepth} />
         ))}
       </div>
     </div>
   );
 }
 
-function Row({ level, side, maxQty }: { level: Level; side: 'BUY' | 'SELL'; maxQty: number }) {
-  const pct = Math.min(100, (parseFloat(level.quantity) / maxQty) * 100);
+function Row({
+  level,
+  side,
+  maxDepth,
+}: {
+  level: Level & { cumulative: number };
+  side: 'BUY' | 'SELL';
+  maxDepth: number;
+}) {
+  const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
   const color = side === 'BUY' ? 'var(--buy)' : 'var(--sell)';
-  const bg = side === 'BUY' ? 'var(--buy-dim)' : 'var(--sell-dim)';
+  const gradientColor = side === 'BUY' ? 'rgba(0,214,143,0.28)' : 'rgba(255,77,106,0.28)';
 
   return (
     <div className="row-hover" style={styles.row}>
-      <div style={{ ...styles.depthBar, width: `${pct}%`, background: bg }} />
+      <div
+        style={{
+          ...styles.depthBar,
+          width: `${pct}%`,
+          background: `linear-gradient(to left, ${gradientColor}, transparent)`,
+        }}
+      />
       <span className="mono" style={{ color, position: 'relative' }}>
         {parseFloat(level.price).toFixed(2)}
       </span>
