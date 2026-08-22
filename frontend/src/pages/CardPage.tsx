@@ -62,6 +62,34 @@ export function CardPage() {
         </div>
         <p style={styles.lead}>{t('card.lead')}</p>
 
+        <div style={styles.vipBox}>
+          <div style={styles.vipHeaderRow}>
+            <h3 style={styles.vipTitle}>{t('card.vipTitle')}</h3>
+            <span style={styles.vipRate}>8%</span>
+          </div>
+          <p style={styles.vipLead}>{t('card.vipLead')}</p>
+
+          <div style={styles.vipCashbackRow}>
+            <div style={styles.vipCashbackItem}>
+              <CashbackIcon />
+              <span>{t('card.vipCashbackPurchases')}</span>
+            </div>
+            <div style={styles.vipCashbackItem}>
+              <CashbackIcon />
+              <span>{t('card.vipCashbackDeposits')}</span>
+            </div>
+          </div>
+
+          <div style={styles.vipEligibility}>
+            <span style={styles.vipEligibilityTitle}>{t('card.vipEligibilityTitle')}</span>
+            <div style={styles.vipEligibilityRow}>
+              <span style={styles.vipChip}>{t('card.vipEligibilityDeposit')}</span>
+              <span style={styles.vipOr}>{t('card.vipOr')}</span>
+              <span style={styles.vipChip}>{t('card.vipEligibilityVolume')}</span>
+            </div>
+          </div>
+        </div>
+
         <div style={styles.grid}>
           {FEATURES.map((f) => (
             <div key={f.title} className="card-hover" style={styles.card}>
@@ -110,6 +138,15 @@ export function CardPage() {
         <Footer />
       </main>
     </div>
+  );
+}
+
+function CashbackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
   );
 }
 
@@ -162,6 +199,52 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
   },
   lead: { color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, marginBottom: 28, maxWidth: 620 },
+  vipBox: {
+    background: 'linear-gradient(135deg, rgba(247,166,0,0.12) 0%, rgba(247,166,0,0.03) 100%)',
+    border: '1px solid var(--accent)',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 28,
+  },
+  vipHeaderRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 },
+  vipTitle: { fontSize: 17, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800 },
+  vipRate: {
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    fontSize: 13,
+    fontWeight: 800,
+    padding: '3px 12px',
+    borderRadius: 999,
+  },
+  vipLead: { color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: '0 0 18px', maxWidth: 640 },
+  vipCashbackRow: { display: 'flex', gap: 24, marginBottom: 18, flexWrap: 'wrap' },
+  vipCashbackItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  vipEligibility: {
+    borderTop: '1px solid var(--border)',
+    paddingTop: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  vipEligibilityTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' },
+  vipEligibilityRow: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  vipChip: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 999,
+    padding: '8px 16px',
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+  },
+  vipOr: { fontSize: 11, color: 'var(--text-tertiary)', fontStyle: 'italic' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 28 },
   card: {
     background: 'var(--panel)',

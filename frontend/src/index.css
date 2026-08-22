@@ -413,6 +413,23 @@ button:not(:disabled):active {
   }
 }
 
+.ticker-track {
+  animation: ticker-scroll 60s linear infinite;
+}
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Track is the item list duplicated once, so -50% is exactly one full
+       loop — the seam is invisible since it lands on an identical copy. */
+    transform: translateX(-50%);
+  }
+}
+
 @media (max-width: 820px) {
   .auth-hero {
     display: none !important;

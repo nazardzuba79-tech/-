@@ -8,6 +8,7 @@ import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesRiskDisclaimerModal } from '../components/FuturesRiskDisclaimerModal';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
+import { TopGainersTicker } from '../components/TopGainersTicker';
 
 const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
@@ -53,6 +54,7 @@ export function FuturesPage() {
           </button>
         }
       />
+      <TopGainersTicker />
       <FuturesTickerBar symbol={symbol} />
 
       <div style={styles.symbolTabs}>

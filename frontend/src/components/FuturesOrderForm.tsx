@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
 import { HighLeverageConfirmModal } from './HighLeverageConfirmModal';
+import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 
 const PERCENT_STOPS = [0, 25, 50, 75, 100];
 
@@ -20,9 +21,7 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
   const [reduceOnly, setReduceOnly] = useState(false);
   const [availableMargin, setAvailableMargin] = useState(0);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
-  const [config, setConfig] = useState<{ minLeverage: number; maxLeverage: number; highLeverageWarningThreshold: number } | null>(
-    null
-  );
+  const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showLeverageConfirm, setShowLeverageConfirm] = useState(false);
@@ -60,6 +59,24 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
   const effectivePrice = type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
+
+  // Live liquidation-price preview — same formula the backend uses
+  // (src/futures/marginMath.ts) to actually set it at fill time. Purely
+  // informational here: nothing about submitting the order depends on
+  // this number, it just shows the trader what to expect before they commit.
+  const tier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
+  const liqPreview =
+    tier && effectivePrice > 0 && quantity
+      ? previewLiquidationPrice({
+          entryPrice: effectivePrice,
+          side: side === 'BUY' ? 'LONG' : 'SHORT',
+          leverage,
+          marginType,
+          maintenanceMarginRate: tier.maintenanceMarginRate,
+          notional,
+          freeBalance: availableMargin,
+        })
+      : null;
 
   // % slider spends a share of available margin, scaled up by leverage —
   // spending 100% of margin at 10x opens a 10x-larger notional than at 1x,
@@ -217,11 +234,25 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
           {t('futures.reduceOnly')}
         </label>
 
-        <div style={styles.total}>
-          <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
-          <span className="mono">
-            {requiredMargin.toFixed(2)} {quoteAsset}
-          </span>
+        <div style={styles.infoBox}>
+          <div style={styles.infoRow}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.orderValue')}</span>
+            <span className="mono">
+              {notional.toFixed(2)} {quoteAsset}
+            </span>
+          </div>
+          <div style={styles.infoRow}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
+            <span className="mono">
+              {requiredMargin.toFixed(2)} {quoteAsset}
+            </span>
+          </div>
+          <div style={styles.infoRow}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
+            <span className="mono" style={{ color: liqPreview ? 'var(--sell)' : 'var(--text-tertiary)' }}>
+              {liqPreview ? liqPreview.toFixed(2) : '—'}
+            </span>
+          </div>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -238,6 +269,36 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
         </button>
       </form>
+
+      {config && (
+        <div style={styles.tiersBox}>
+          <div style={styles.tiersTitle}>{t('futures.leverageTiersTitle')}</div>
+          <table style={styles.tiersTable}>
+            <thead>
+              <tr>
+                <th style={styles.tiersTh}>{t('futures.tierNotional')}</th>
+                <th style={styles.tiersTh}>{t('futures.tierMaxLeverage')}</th>
+                <th style={styles.tiersTh}>{t('futures.tierMmr')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {config.leverageTiers.map((tr, i) => (
+                <tr key={i} style={tier === tr ? styles.tiersRowActive : undefined}>
+                  <td style={styles.tiersTd} className="mono">
+                    {tr.notionalCap === null ? '∞' : tr.notionalCap.toLocaleString('en-US')}
+                  </td>
+                  <td style={styles.tiersTd} className="mono">
+                    {tr.maxLeverage}x
+                  </td>
+                  <td style={styles.tiersTd} className="mono">
+                    {(tr.maintenanceMarginRate * 100).toFixed(2)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {showLeverageConfirm && (
         <HighLeverageConfirmModal
@@ -340,11 +401,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     color: 'var(--text-secondary)',
   },
-  total: {
+  infoBox: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: '10px 12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  infoRow: {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: 12,
-    padding: '6px 0',
   },
   error: {
     background: 'var(--sell-dim)',
@@ -361,5 +430,36 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     fontSize: 14,
     letterSpacing: '0.01em',
+  },
+  tiersBox: {
+    borderTop: '1px solid var(--border)',
+    padding: '12px 14px 16px',
+  },
+  tiersTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.03em',
+    marginBottom: 8,
+  },
+  tiersTable: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: 11,
+  },
+  tiersTh: {
+    textAlign: 'right',
+    padding: '4px 0',
+    color: 'var(--text-tertiary)',
+    fontWeight: 600,
+  },
+  tiersTd: {
+    textAlign: 'right',
+    padding: '4px 0',
+    color: 'var(--text-secondary)',
+  },
+  tiersRowActive: {
+    color: 'var(--accent)',
   },
 };

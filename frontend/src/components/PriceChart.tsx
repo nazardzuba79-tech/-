@@ -4,12 +4,30 @@ import {
   ColorType,
   CandlestickSeries,
   HistogramSeries,
+  LineSeries,
   IChartApi,
   ISeriesApi,
   IPriceLine,
   MouseEventParams,
   Time,
 } from 'lightweight-charts';
+
+const MA_PERIOD = 200;
+
+/** Simple moving average over `period` closes — only emits a point once a
+ * full window is available, same convention every charting platform uses
+ * (a partial-window "average" at the start of the series would be
+ * misleading, not just visually shorter). */
+function computeSMA(candles: { time: number; close: number }[], period: number) {
+  const points: { time: number; value: number }[] = [];
+  let sum = 0;
+  for (let i = 0; i < candles.length; i++) {
+    sum += candles[i].close;
+    if (i >= period) sum -= candles[i - period].close;
+    if (i >= period - 1) points.push({ time: candles[i].time as unknown as number, value: sum / period });
+  }
+  return points;
+}
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 
@@ -62,6 +80,7 @@ export function PriceChart({ pair }: { pair: string }) {
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
+  const maSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const [interval, setInterval_] = useState<Interval>('15m');
   const [empty, setEmpty] = useState(false);
@@ -87,14 +106,17 @@ export function PriceChart({ pair }: { pair: string }) {
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
+        // Pure black, not the panel's dark-gray — the chart is meant to
+        // read as its own "screen" rather than blend into the surrounding
+        // panel chrome.
+        background: { type: ColorType.Solid, color: '#000000' },
         textColor: '#a3adba',
         fontFamily: 'var(--font-ui)',
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: '#1c1f26' },
-        horzLines: { color: '#1c1f26' },
+        vertLines: { visible: false },
+        horzLines: { visible: false },
       },
       rightPriceScale: { borderColor: '#2b303a' },
       timeScale: { borderColor: '#2b303a', timeVisible: true },
@@ -120,9 +142,18 @@ export function PriceChart({ pair }: { pair: string }) {
     });
     volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
+    const maSeries = chart.addSeries(LineSeries, {
+      color: '#5b8def',
+      lineWidth: 1,
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+    });
+
     chartRef.current = chart;
     seriesRef.current = series;
     volumeSeriesRef.current = volumeSeries;
+    maSeriesRef.current = maSeries;
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
@@ -256,6 +287,7 @@ export function PriceChart({ pair }: { pair: string }) {
             color: c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',
           }))
         );
+        maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
         forceRedraw((n) => n + 1);
       } catch {
         // Chart just stays empty on failure — not worth a full error state
