@@ -26,6 +26,22 @@ class ApiError extends Error {
   }
 }
 
+// RequireAuth (App.tsx) only checks whether a token is PRESENT in
+// localStorage, not whether it's still valid — that's a cheap, synchronous
+// check made before any network round-trip. So an expired/stale token
+// (session timeout, or the token was issued against a server that's since
+// restarted) leaves the SPA rendering as "logged in" while every API call
+// underneath silently 401s — confusing, since nothing on screen explains
+// why buttons stop doing anything. Only applies when a token was actually
+// attached to THIS request: a wrong-password 401 on /auth/login has no
+// token to invalidate and must surface as a normal form error instead.
+function handleUnauthorized(status: number, hadToken: boolean) {
+  if (status === 401 && hadToken) {
+    clearToken();
+    window.location.href = '/';
+  }
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -38,6 +54,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
+    handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
     throw new ApiError(body.error?.toString?.() ?? `Request failed (${res.status})`, res.status);
   }
@@ -55,6 +72,7 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
     body: formData,
   });
   if (!res.ok) {
+    handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
     throw new ApiError(body.error?.toString?.() ?? `Request failed (${res.status})`, res.status);
   }
@@ -69,7 +87,10 @@ async function requestBlobUrl(path: string): Promise<{ url: string; contentType:
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
-  if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+  if (!res.ok) {
+    handleUnauthorized(res.status, !!token);
+    throw new ApiError(`Request failed (${res.status})`, res.status);
+  }
   const blob = await res.blob();
   return { url: URL.createObjectURL(blob), contentType: blob.type };
 }
