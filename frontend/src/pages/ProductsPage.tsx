@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
+import { Footer } from '../components/Footer';
 
 interface Product {
   id: string;
@@ -70,6 +71,8 @@ export function ProductsPage() {
             <p style={{ color: 'var(--text-tertiary)' }}>{t('products.none')}</p>
           )}
         </div>
+
+        <Footer />
       </main>
     </div>
   );

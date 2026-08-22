@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav';
 import { SearchInput } from '../components/SearchInput';
 import { Badge } from '../components/Badge';
 import { getCountries, getCountryName } from '../lib/countries';
+import { Footer } from '../components/Footer';
 
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
 type T = ReturnType<typeof useLanguage>['t'];
@@ -60,6 +61,8 @@ export function SettingsPage() {
             {tab === 'clients' && isAdmin && <ClientsTab />}
           </div>
         </div>
+
+        <Footer />
       </main>
     </div>
   );

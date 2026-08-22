@@ -266,6 +266,13 @@ const RU = {
   'wallet.searchAsset': 'Поиск актива, напр. BTC',
   'wallet.deposit': 'Пополнить',
   'wallet.priceUnavailable': 'Нет цены с Kraken для этого актива — не учтён в общей сумме.',
+
+  'footer.terms': 'Условия использования',
+  'footer.privacy': 'Конфиденциальность',
+  'footer.risk': 'Раскрытие рисков',
+  'footer.rights': '© 2026 VOLTEX. Все права защищены.',
+  'footer.riskWarning':
+    'Торговля криптовалютами сопряжена с высоким риском и подходит не всем инвесторам. Стоимость активов может значительно колебаться. Торгуй только теми средствами, потерю которых можешь себе позволить.',
 } as const;
 
 type Key = keyof typeof RU;
@@ -517,6 +524,13 @@ const EN: Record<Key, string> = {
   'wallet.searchAsset': 'Search asset, e.g. BTC',
   'wallet.deposit': 'Deposit',
   'wallet.priceUnavailable': 'No Kraken price for this asset — excluded from the total.',
+
+  'footer.terms': 'Terms of Service',
+  'footer.privacy': 'Privacy',
+  'footer.risk': 'Risk Disclosure',
+  'footer.rights': '© 2026 VOLTEX. All rights reserved.',
+  'footer.riskWarning':
+    'Cryptocurrency trading carries a high level of risk and may not be suitable for all investors. Asset values can fluctuate significantly. Only trade with funds you can afford to lose.',
 };
 
 const ZH: Record<Key, string> = {
@@ -766,6 +780,12 @@ const ZH: Record<Key, string> = {
   'wallet.searchAsset': '搜索资产，例如 BTC',
   'wallet.deposit': '充值',
   'wallet.priceUnavailable': 'Kraken 暂无此资产的价格——未计入总额。',
+
+  'footer.terms': '服务条款',
+  'footer.privacy': '隐私政策',
+  'footer.risk': '风险披露',
+  'footer.rights': '© 2026 VOLTEX. 保留所有权利。',
+  'footer.riskWarning': '加密货币交易存在高风险,并非适合所有投资者。资产价值可能大幅波动。请仅使用你能承受损失的资金进行交易。',
 };
 
 const DICTS: Record<Lang, Record<Key, string>> = { ru: RU, en: EN, zh: ZH };

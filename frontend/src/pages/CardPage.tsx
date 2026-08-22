@@ -4,6 +4,7 @@ import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { LogoMark } from '../components/Logo';
+import { Footer } from '../components/Footer';
 
 export function CardPage() {
   const { t, lang } = useLanguage();
@@ -105,6 +106,8 @@ export function CardPage() {
             </div>
           )}
         </div>
+
+        <Footer />
       </main>
     </div>
   );

@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav';
 import { DepositModal } from '../components/DepositModal';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
+import { Footer } from '../components/Footer';
 
 interface Balance {
   asset: string;
@@ -128,6 +129,8 @@ export function WalletPage() {
             {rows.length > 0 && filteredRows.length === 0 && <p style={styles.hint}>{t('markets.nothingFound')}</p>}
           </div>
         </div>
+
+        <Footer />
       </main>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}

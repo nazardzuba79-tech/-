@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { Logo } from '../components/Logo';
@@ -206,6 +206,20 @@ export function AuthPage() {
           )}
         </div>
       </div>
+
+      <div style={styles.legalRow}>
+        <Link to="/legal/terms" style={styles.legalLink}>
+          {t('footer.terms')}
+        </Link>
+        <span style={styles.legalDot}>·</span>
+        <Link to="/legal/privacy" style={styles.legalLink}>
+          {t('footer.privacy')}
+        </Link>
+        <span style={styles.legalDot}>·</span>
+        <Link to="/legal/risk" style={styles.legalLink}>
+          {t('footer.risk')}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -224,6 +238,18 @@ const styles: Record<string, React.CSSProperties> = {
     right: 20,
     zIndex: 2,
   },
+  legalRow: {
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  legalLink: { fontSize: 11, color: 'var(--text-tertiary)' },
+  legalDot: { fontSize: 11, color: 'var(--text-tertiary)' },
   layout: {
     display: 'flex',
     alignItems: 'center',

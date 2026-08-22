@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
+import { Footer } from '../components/Footer';
 
 interface Ticker {
   pair: string;
@@ -154,6 +155,8 @@ export function MarketsPage() {
             )}
           </div>
         </div>
+
+        <Footer />
       </main>
     </div>
   );
