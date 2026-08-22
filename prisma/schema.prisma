@@ -38,6 +38,13 @@ model User {
   purchases     Purchase[]
   kycSubmissions KycSubmission[]
   apiKeys       ApiKey[]
+  futuresPositions FuturesPosition[]
+  futuresBalances  FuturesBalance[]
+  futuresOrders    FuturesOrder[]
+  /// Set the first time this user confirms the futures risk disclaimer
+  /// (see /futures/risk-ack). Must be non-null before any position can be
+  /// opened — enforced server-side, not just hidden behind a frontend gate.
+  futuresRiskAckAt DateTime?
 
   @@index([email])
 }
@@ -255,4 +262,134 @@ model Purchase {
 
   @@index([userId])
   @@index([status])
+}
+
+/// Separate wallet from the spot Balance model on purpose — futures margin
+/// is collateral backing leveraged risk, spot balance is just owned coins.
+/// Keeping them apart means a liquidation or funding payment can never
+/// silently reach into a user's spot holdings, and vice versa. Users move
+/// funds between the two explicitly (see /futures/transfer).
+model FuturesBalance {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  asset     String
+  available Decimal  @default(0) @db.Decimal(36, 18)
+  locked    Decimal  @default(0) @db.Decimal(36, 18) // margin backing open positions
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, asset])
+  @@index([userId])
+}
+
+/// Mirrors the spot Order model, kept as a fully separate table (not just
+/// a namespaced pair on the spot Order table) so futures order flow can
+/// never accidentally share code paths with spot balance-locking — a
+/// futures fill must only ever touch FuturesBalance/FuturesPosition, never
+/// the spot Balance table.
+model FuturesOrder {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  symbol            String
+  side              String   // BUY | SELL — direction of this order, not the resulting position side
+  type              String   // LIMIT | MARKET
+  price             Decimal? @db.Decimal(36, 18)
+  originalQuantity  Decimal  @db.Decimal(36, 18)
+  remainingQuantity Decimal  @db.Decimal(36, 18)
+  status            String   // OPEN | PARTIALLY_FILLED | FILLED | CANCELLED
+  reduceOnly        Boolean  @default(false) // true when closing/reducing a position rather than opening one
+  leverage          Int      // carried on the order so a resting order that fills later still knows what leverage to open/add at
+  marginType        String   // ISOLATED | CROSS — same reason as leverage
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([symbol, status])
+}
+
+/// One row per open or closed perpetual futures position. A user can hold
+/// at most one position per (symbol, marginType) at a time — adding to a
+/// position averages the entry price rather than creating a second row,
+/// same as every real exchange (you can't have two independent longs on
+/// the same isolated-margin symbol).
+model FuturesPosition {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  symbol           String   // "BTC/USDT" — reuses the spot pair naming, priced off the same index
+  side             String   // LONG | SHORT
+  size             Decimal  @db.Decimal(36, 18) // base-asset quantity, always positive
+  entryPrice       Decimal  @db.Decimal(36, 18) // size-weighted average entry
+  leverage         Int
+  marginType       String   // ISOLATED | CROSS
+  initialMargin    Decimal  @db.Decimal(36, 18) // margin currently allocated to this position (isolated); for cross, the margin set aside at open
+  liquidationPrice Decimal  @db.Decimal(36, 18)
+  status           String   @default("OPEN") // OPEN | CLOSED | LIQUIDATED
+  realizedPnl      Decimal  @default(0) @db.Decimal(36, 18)
+  openedAt         DateTime @default(now())
+  closedAt         DateTime?
+  updatedAt        DateTime @updatedAt
+
+  fundingPayments  FundingPayment[]
+
+  @@index([userId, status])
+  @@index([symbol, status])
+}
+
+/// One row per funding interval per symbol — the rate actually applied,
+/// plus the mark/index prices it was computed from, so a payment can
+/// always be reconstructed/audited after the fact.
+model FundingRateRecord {
+  id         String   @id @default(uuid())
+  symbol     String
+  rate       Decimal  @db.Decimal(20, 10) // e.g. 0.0001 = 0.01%
+  markPrice  Decimal  @db.Decimal(36, 18)
+  indexPrice Decimal  @db.Decimal(36, 18)
+  appliedAt  DateTime @default(now())
+
+  @@index([symbol, appliedAt])
+}
+
+/// One row per position per funding interval it was charged/paid for.
+/// amount is signed from the position's point of view: negative = paid
+/// out, positive = received.
+model FundingPayment {
+  id         String          @id @default(uuid())
+  positionId String
+  position   FuturesPosition @relation(fields: [positionId], references: [id])
+  userId     String
+  symbol     String
+  amount     Decimal         @db.Decimal(36, 18)
+  rate       Decimal         @db.Decimal(20, 10)
+  createdAt  DateTime        @default(now())
+
+  @@index([positionId])
+  @@index([userId])
+}
+
+/// Per-asset insurance fund balance — absorbs the shortfall when a
+/// liquidation executes worse than the position's bankruptcy price (so
+/// other users never get auto-deleveraged for it), and absorbs the
+/// surplus when a liquidation executes better than bankruptcy price.
+/// Standard practice on every real derivatives exchange.
+model InsuranceFund {
+  id        String   @id @default(uuid())
+  asset     String   @unique
+  balance   Decimal  @default(0) @db.Decimal(36, 18)
+  updatedAt DateTime @updatedAt
+}
+
+/// Immutable ledger of every insurance-fund movement — mirrors AuditLog's
+/// "never just mutate the number, always leave a record" rule, scoped to
+/// the fund specifically so it can be reconciled on its own.
+model InsuranceFundLedger {
+  id         String   @id @default(uuid())
+  asset      String
+  amount     Decimal  @db.Decimal(36, 18) // positive = contribution, negative = payout
+  reason     String   // LIQUIDATION_SURPLUS | LIQUIDATION_SHORTFALL
+  positionId String?
+  createdAt  DateTime @default(now())
+
+  @@index([asset, createdAt])
 }

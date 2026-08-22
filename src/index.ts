@@ -18,13 +18,28 @@ import { kycRouter } from './api/routes/kyc';
 import { adminRouter } from './api/routes/admin';
 import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
+import { futuresRouter } from './api/routes/futures';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
+import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
+import { MarkPriceService } from './futures/MarkPriceService';
+import { FuturesPositionService } from './futures/FuturesPositionService';
+import { FundingRateService } from './futures/FundingRateService';
+import { LiquidationEngine } from './futures/LiquidationEngine';
 
 const app = express();
 const prisma = new PrismaClient();
 const engine = new MatchingEngine();
 const marketDataService = new KrakenMarketDataService(process.env.KRAKEN_API_BASE_URL || 'https://api.kraken.com');
+
+// Perpetual futures runs on its own matching engine and services,
+// deliberately never sharing state with the spot engine above (see
+// FuturesOrder/FuturesBalance's schema comments).
+const futuresEngine = new MatchingEngine();
+const markPriceService = new MarkPriceService(marketDataService);
+const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
+const fundingRateService = new FundingRateService(prisma, markPriceService);
+const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
@@ -54,6 +69,7 @@ app.use('/api/v1', kycRouter(prisma));
 app.use('/api/v1', adminRouter(prisma));
 app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
+app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -70,6 +86,13 @@ async function start() {
   if (recoveredCount > 0) {
     console.log(`Recovered ${recoveredCount} resting order(s) into the matching engine`);
   }
+  const recoveredFuturesCount = await recoverFuturesOrderBook(prisma, futuresEngine);
+  if (recoveredFuturesCount > 0) {
+    console.log(`Recovered ${recoveredFuturesCount} resting futures order(s) into the futures matching engine`);
+  }
+
+  fundingRateService.startScheduler();
+  liquidationEngine.startScheduler();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
 }
@@ -80,6 +103,8 @@ start().catch((err) => {
 });
 
 process.on('SIGTERM', async () => {
+  fundingRateService.stopScheduler();
+  liquidationEngine.stopScheduler();
   await prisma.$disconnect();
   process.exit(0);
 });
