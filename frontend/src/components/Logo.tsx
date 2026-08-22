@@ -48,7 +48,19 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
       }}
     >
       <LogoMark size={iconSize} />
-      VOLTEX
+      <span>
+        V
+        <span
+          style={{
+            background: 'linear-gradient(135deg, #ffd166, var(--accent))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
+          O
+        </span>
+        LTEX
+      </span>
     </span>
   );
 
