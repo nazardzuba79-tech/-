@@ -15,6 +15,7 @@ interface Ticker {
   high24h: string;
   low24h: string;
   volume24h: string;
+  quoteVolume24h: string;
   changePercent24h: string;
 }
 
@@ -39,7 +40,13 @@ export function MarketsPage() {
         .then((res) => {
           setTickers(res.tickers);
           setError(null);
-          setSelectedPair((current) => current ?? res.tickers[0]?.pair ?? null);
+          setSelectedPair((current) => {
+            if (current) return current;
+            const mostLiquid = [...res.tickers].sort(
+              (a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')
+            )[0];
+            return mostLiquid?.pair ?? null;
+          });
         })
         .catch(() => setError(t('markets.loadError')));
     }
@@ -67,7 +74,12 @@ export function MarketsPage() {
   }, [selectedPair]);
 
   const filtered = useMemo(
-    () => tickers.filter((t) => t.pair.toLowerCase().includes(search.toLowerCase())),
+    () =>
+      tickers
+        .filter((t) => t.pair.toLowerCase().includes(search.toLowerCase()))
+        // Most-traded first — the raw API order is roughly alphabetical,
+        // which otherwise puts thin, barely-liquid pairs at the top.
+        .sort((a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')),
     [tickers, search]
   );
 

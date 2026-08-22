@@ -97,6 +97,17 @@ input {
   font-family: inherit;
 }
 
+/* Native <select> dropdowns render their OPEN option list using the OS/
+   browser's own popup styling, which often ignores the `color` set on the
+   closed <select> itself — on some platforms that leaves near-white text
+   sitting on a near-white system popup background, i.e. invisible until
+   you select something blind. Force both explicitly so the option list is
+   always legible regardless of platform. */
+select option {
+  background: var(--panel-alt);
+  color: var(--text-primary);
+}
+
 a {
   color: inherit;
   text-decoration: none;

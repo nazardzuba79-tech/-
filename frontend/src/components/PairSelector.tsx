@@ -8,6 +8,7 @@ interface TickerRow {
   pair: string;
   lastPrice: string;
   changePercent24h: string;
+  quoteVolume24h: string;
 }
 
 const FAVORITES_KEY = 'exchange_favorite_pairs';
@@ -45,7 +46,10 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
   const [open, setOpen] = useState(false);
   const [tickers, setTickers] = useState<TickerRow[]>([]);
   const [search, setSearch] = useState('');
-  const [quoteFilter, setQuoteFilter] = useState<string | null>(null);
+  // Defaults to USDT (the most-traded quote asset here) rather than "all",
+  // so the list opens on liquid, familiar pairs instead of a flat
+  // alphabetical dump — "Все" is still one tap away via the chip row.
+  const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -86,6 +90,10 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
     .filter((tk) => tk.pair.toLowerCase().includes(search.toLowerCase()))
     .filter((tk) => !quoteFilter || tk.pair.split('/')[1] === quoteFilter)
     .filter((tk) => !favoritesOnly || favorites.has(tk.pair))
+    // Most-traded pairs first — sorting alphabetically (the API's raw
+    // order) put obscure, barely-liquid tickers at the top just because
+    // their symbol starts early in the alphabet.
+    .sort((a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0'))
     .slice(0, 200);
 
   return (
