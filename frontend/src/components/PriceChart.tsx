@@ -5,12 +5,16 @@ import {
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
+  AreaSeries,
   IChartApi,
   ISeriesApi,
   IPriceLine,
   MouseEventParams,
   Time,
 } from 'lightweight-charts';
+import { api } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
+import { computeSMA, computeBollingerBands, computeRSI, computeMACD, Candle } from '../lib/indicators';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -20,22 +24,16 @@ const VISIBLE_CANDLES = 300;
 // first 200 loaded candles).
 const CANDLE_FETCH_LIMIT = VISIBLE_CANDLES + MA_PERIOD + 20;
 
-/** Simple moving average over `period` closes — only emits a point once a
- * full window is available, same convention every charting platform uses
- * (a partial-window "average" at the start of the series would be
- * misleading, not just visually shorter). */
-function computeSMA(candles: { time: number; close: number }[], period: number) {
-  const points: { time: number; value: number }[] = [];
-  let sum = 0;
-  for (let i = 0; i < candles.length; i++) {
-    sum += candles[i].close;
-    if (i >= period) sum -= candles[i - period].close;
-    if (i >= period - 1) points.push({ time: candles[i].time as unknown as number, value: sum / period });
-  }
-  return points;
-}
-import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+type ChartType = 'candles' | 'line' | 'area';
+
+// Kept in sync with the actual series colors set at chart-init time below —
+// used both for the toolbar toggle dots and the on-chart legend.
+const INDICATOR_COLORS = {
+  ma: '#f7d51d',
+  bollinger: 'rgba(91,141,239,0.9)',
+  rsi: '#c084fc',
+  macd: '#5b8def',
+};
 
 interface ConditionalOrder {
   id: string;
@@ -93,12 +91,32 @@ export function PriceChart({ pair }: { pair: string }) {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  // The candlestick series stays the single coordinate-conversion
+  // authority (priceToCoordinate/coordinateToPrice, used throughout the
+  // drawing tools and SL/TP drag logic) regardless of which visual chart
+  // type is active — switching type just toggles which series is visible,
+  // never destroys/recreates the price scale itself.
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const areaSeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const maSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const bollUpperRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const bollMiddleRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const bollLowerRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const rsiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdLineRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdSignalRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const candlesRef = useRef<Candle[]>([]);
   const [interval, setInterval_] = useState<Interval>('15m');
   const [empty, setEmpty] = useState(false);
+  const [chartType, setChartType] = useState<ChartType>('candles');
+  const [showMA, setShowMA] = useState(true);
+  const [showBollinger, setShowBollinger] = useState(false);
+  const [showRSI, setShowRSI] = useState(false);
+  const [showMACD, setShowMACD] = useState(false);
 
   const [tool, setTool] = useState<Tool>('cursor');
   const [trendLines, setTrendLines] = useState<TrendLine[]>([]);
@@ -161,6 +179,21 @@ export function PriceChart({ pair }: { pair: string }) {
     });
     chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: 0.3 } });
 
+    // Line/Area alternatives to the candlesticks — same right price scale,
+    // just hidden by default (see the chartType effect below for the swap).
+    const lineSeries = chart.addSeries(LineSeries, {
+      color: '#eaecef',
+      lineWidth: 2,
+      visible: false,
+    });
+    const areaSeries = chart.addSeries(AreaSeries, {
+      lineColor: '#f7a600',
+      topColor: 'rgba(247,166,0,0.35)',
+      bottomColor: 'rgba(247,166,0,0.02)',
+      lineWidth: 2,
+      visible: false,
+    });
+
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
       priceScaleId: 'volume',
@@ -175,10 +208,65 @@ export function PriceChart({ pair }: { pair: string }) {
       crosshairMarkerVisible: false,
     });
 
+    const bollOpts = { lineWidth: 1 as const, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, visible: false };
+    const bollUpper = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.7)' });
+    const bollMiddle = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.4)', lineStyle: 2 });
+    const bollLower = chart.addSeries(LineSeries, { ...bollOpts, color: 'rgba(91,141,239,0.7)' });
+
+    // RSI and MACD get their own price scale (0-100 / unbounded-around-0
+    // are meaningless on the price axis) squeezed into a thin band near
+    // the bottom — a real second lane, just not a fully separate chart pane
+    // (lightweight-charts doesn't support stacked panes in one instance).
+    const rsiSeries = chart.addSeries(LineSeries, {
+      color: '#c084fc',
+      lineWidth: 1,
+      priceScaleId: 'rsi',
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+      visible: false,
+    });
+    rsiSeries.priceScale().applyOptions({ scaleMargins: { top: 0.75, bottom: 0.02 }, visible: false });
+
+    const macdLine = chart.addSeries(LineSeries, {
+      color: '#5b8def',
+      lineWidth: 1,
+      priceScaleId: 'macd',
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+      visible: false,
+    });
+    const macdSignal = chart.addSeries(LineSeries, {
+      color: '#f7a600',
+      lineWidth: 1,
+      priceScaleId: 'macd',
+      priceLineVisible: false,
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
+      visible: false,
+    });
+    const macdHist = chart.addSeries(HistogramSeries, {
+      priceScaleId: 'macd',
+      priceLineVisible: false,
+      lastValueVisible: false,
+      visible: false,
+    });
+    macdLine.priceScale().applyOptions({ scaleMargins: { top: 0.78, bottom: 0.02 }, visible: false });
+
     chartRef.current = chart;
     seriesRef.current = series;
+    lineSeriesRef.current = lineSeries;
+    areaSeriesRef.current = areaSeries;
     volumeSeriesRef.current = volumeSeries;
     maSeriesRef.current = maSeries;
+    bollUpperRef.current = bollUpper;
+    bollMiddleRef.current = bollMiddle;
+    bollLowerRef.current = bollLower;
+    rsiSeriesRef.current = rsiSeries;
+    macdLineRef.current = macdLine;
+    macdSignalRef.current = macdSignal;
+    macdHistRef.current = macdHist;
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
@@ -317,6 +405,26 @@ export function PriceChart({ pair }: { pair: string }) {
         );
         maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
 
+        // Cache for the line/area chart-type swap and indicator toggles
+        // below — all computed eagerly here (cheap, pure math) so flipping
+        // a toggle is an instant visible-flag flip, not a recompute wait.
+        candlesRef.current = res.candles;
+        const closeLine = res.candles.map((c) => ({ time: c.time as any, value: c.close }));
+        lineSeriesRef.current?.setData(closeLine as any);
+        areaSeriesRef.current?.setData(closeLine as any);
+
+        const boll = computeBollingerBands(res.candles);
+        bollUpperRef.current?.setData(boll.upper as any);
+        bollMiddleRef.current?.setData(boll.middle as any);
+        bollLowerRef.current?.setData(boll.lower as any);
+
+        rsiSeriesRef.current?.setData(computeRSI(res.candles) as any);
+
+        const macd = computeMACD(res.candles);
+        macdLineRef.current?.setData(macd.macd as any);
+        macdSignalRef.current?.setData(macd.signal as any);
+        macdHistRef.current?.setData(macd.histogram as any);
+
         if (!hasSetInitialRange && chartRef.current) {
           hasSetInitialRange = true;
           if (res.candles.length > VISIBLE_CANDLES) {
@@ -371,6 +479,37 @@ export function PriceChart({ pair }: { pair: string }) {
       window.clearInterval(poll);
     };
   }, [pair]);
+
+  // Swap which price series is visible — candlestick stays the permanent
+  // coordinate-conversion authority (see the comment on seriesRef above),
+  // this only flips which one is drawn.
+  useEffect(() => {
+    seriesRef.current?.applyOptions({ visible: chartType === 'candles' });
+    lineSeriesRef.current?.applyOptions({ visible: chartType === 'line' });
+    areaSeriesRef.current?.applyOptions({ visible: chartType === 'area' });
+  }, [chartType]);
+
+  useEffect(() => {
+    maSeriesRef.current?.applyOptions({ visible: showMA });
+  }, [showMA]);
+
+  useEffect(() => {
+    bollUpperRef.current?.applyOptions({ visible: showBollinger });
+    bollMiddleRef.current?.applyOptions({ visible: showBollinger });
+    bollLowerRef.current?.applyOptions({ visible: showBollinger });
+  }, [showBollinger]);
+
+  useEffect(() => {
+    rsiSeriesRef.current?.applyOptions({ visible: showRSI });
+    rsiSeriesRef.current?.priceScale().applyOptions({ visible: showRSI });
+  }, [showRSI]);
+
+  useEffect(() => {
+    macdLineRef.current?.applyOptions({ visible: showMACD });
+    macdSignalRef.current?.applyOptions({ visible: showMACD });
+    macdHistRef.current?.applyOptions({ visible: showMACD });
+    macdLineRef.current?.priceScale().applyOptions({ visible: showMACD });
+  }, [showMACD]);
 
   const priceToY = useCallback((price: number): number | null => {
     const y = seriesRef.current?.priceToCoordinate(price);
@@ -467,6 +606,48 @@ export function PriceChart({ pair }: { pair: string }) {
             {i}
           </button>
         ))}
+
+        <div style={styles.toolbarDivider} />
+
+        {(
+          [
+            ['candles', t('chart.type.candles')],
+            ['line', t('chart.type.line')],
+            ['area', t('chart.type.area')],
+          ] as [ChartType, string][]
+        ).map(([ct, label]) => (
+          <button
+            key={ct}
+            onClick={() => setChartType(ct)}
+            style={{ ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
+          >
+            {label}
+          </button>
+        ))}
+
+        <div style={styles.toolbarDivider} />
+
+        {(
+          [
+            ['ma', showMA, setShowMA, INDICATOR_COLORS.ma, t('chart.indicator.ma')],
+            ['bollinger', showBollinger, setShowBollinger, INDICATOR_COLORS.bollinger, t('chart.indicator.bollinger')],
+            ['rsi', showRSI, setShowRSI, INDICATOR_COLORS.rsi, t('chart.indicator.rsi')],
+            ['macd', showMACD, setShowMACD, INDICATOR_COLORS.macd, t('chart.indicator.macd')],
+          ] as [string, boolean, (v: boolean) => void, string, string][]
+        ).map(([key, active, setter, color, label]) => (
+          <button
+            key={key}
+            onClick={() => setter(!active)}
+            style={{
+              ...styles.indicatorToggle,
+              ...(active ? styles.indicatorToggleActive : {}),
+              color: active ? color : 'var(--text-secondary)',
+            }}
+          >
+            <span style={{ ...styles.indicatorDot, background: color, opacity: active ? 1 : 0.35 }} />
+            {label}
+          </button>
+        ))}
       </div>
 
       <div style={styles.body}>
@@ -557,8 +738,26 @@ export function PriceChart({ pair }: { pair: string }) {
               <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noChartData', { pair })}</span>
             </div>
           )}
+
+          {(showMA || showBollinger || showRSI || showMACD) && (
+            <div style={styles.legend}>
+              {showMA && <LegendItem color={INDICATOR_COLORS.ma} label={t('chart.indicator.ma')} />}
+              {showBollinger && <LegendItem color={INDICATOR_COLORS.bollinger} label={t('chart.indicator.bollinger')} />}
+              {showRSI && <LegendItem color={INDICATOR_COLORS.rsi} label={t('chart.indicator.rsi')} />}
+              {showMACD && <LegendItem color={INDICATOR_COLORS.macd} label={t('chart.indicator.macd')} />}
+            </div>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function LegendItem({ color, label }: { color: string; label: string }) {
+  return (
+    <div style={styles.legendItem}>
+      <span style={{ ...styles.legendDot, background: color }} />
+      {label}
     </div>
   );
 }
@@ -699,10 +898,12 @@ const styles: Record<string, React.CSSProperties> = {
   },
   topToolbar: {
     display: 'flex',
+    alignItems: 'center',
     gap: 4,
     padding: '8px 12px',
     borderBottom: '1px solid var(--border)',
     flexShrink: 0,
+    flexWrap: 'wrap',
   },
   intervalBtn: {
     background: 'transparent',
@@ -717,6 +918,65 @@ const styles: Record<string, React.CSSProperties> = {
   intervalBtnActive: {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
+  },
+  toolbarDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    background: 'var(--border)',
+    margin: '2px 4px',
+  },
+  indicatorToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    background: 'transparent',
+    border: '1px solid transparent',
+    color: 'var(--text-secondary)',
+    fontSize: 11,
+    fontFamily: 'var(--font-mono)',
+    fontWeight: 600,
+    padding: '5px 9px',
+    borderRadius: 6,
+  },
+  indicatorToggleActive: {
+    border: '1px solid var(--border)',
+    background: 'var(--panel-alt)',
+  },
+  indicatorDot: {
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  legend: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    padding: '7px 10px',
+    background: 'rgba(30,34,42,0.85)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 6,
+    pointerEvents: 'none',
+    zIndex: 1,
+  },
+  legendItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: 11,
+    fontFamily: 'var(--font-mono)',
+    fontWeight: 600,
+    color: '#eaecef',
+    whiteSpace: 'nowrap',
+  },
+  legendDot: {
+    width: 10,
+    height: 3,
+    borderRadius: 1.5,
+    flexShrink: 0,
   },
   body: {
     flex: 1,
