@@ -49,7 +49,7 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
     >
       <LogoMark size={iconSize} />
       <span>
-        V
+        VO
         <span
           style={{
             background: 'linear-gradient(135deg, #ffd166, var(--accent))',
@@ -57,9 +57,9 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
             WebkitTextFillColor: 'transparent',
           }}
         >
-          O
+          L
         </span>
-        LTEX
+        TEX
       </span>
     </span>
   );
