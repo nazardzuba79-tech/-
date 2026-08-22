@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { ReactNode, useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { clearToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { BalanceStrip } from './BalanceStrip';
@@ -22,7 +22,9 @@ export function Nav({
   rightExtra?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useLanguage();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const LINKS = [
     { to: '/trade', label: t('nav.trade') },
@@ -30,6 +32,13 @@ export function Nav({
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/markets', label: t('nav.markets') },
   ];
+
+  // A stale open drawer surviving a navigation (tap a link, land on the new
+  // page with the menu still up) would look broken — close it on every route
+  // change instead of trusting each link to remember to do it itself.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   function handleLogout() {
     clearToken();
@@ -41,27 +50,31 @@ export function Nav({
       <Link to="/trade" style={styles.logo}>
         <Logo />
       </Link>
-      {LINKS.map((l) => (
-        <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
-          {l.label}
+
+      <div className="nav-desktop-links" style={styles.desktopLinks}>
+        {LINKS.map((l) => (
+          <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+            {l.label}
+          </Link>
+        ))}
+        <Link
+          to="/card"
+          style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
+        >
+          <CardIcon active={active === '/card'} />
+          {t('nav.card')}
         </Link>
-      ))}
-      <Link
-        to="/card"
-        style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
-      >
-        <CardIcon active={active === '/card'} />
-        {t('nav.card')}
-      </Link>
-      <Link
-        to="/settings"
-        style={{ ...styles.link, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
-      >
-        <GearIcon active={active === '/settings'} />
-        {t('nav.settings')}
-      </Link>
-      {middle}
-      <div style={styles.right}>
+        <Link
+          to="/settings"
+          style={{ ...styles.link, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
+        >
+          <GearIcon active={active === '/settings'} />
+          {t('nav.settings')}
+        </Link>
+        {middle}
+      </div>
+
+      <div className="nav-desktop-right" style={styles.right}>
         <BalanceStrip />
         {rightExtra}
         <LanguageSwitcher />
@@ -69,7 +82,72 @@ export function Nav({
           {t('nav.logout')}
         </button>
       </div>
+
+      <button
+        className="nav-burger"
+        style={styles.burgerBtn}
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-label={t('nav.menu')}
+        aria-expanded={mobileOpen}
+      >
+        <BurgerIcon open={mobileOpen} />
+      </button>
+
+      <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`} style={styles.mobileMenu}>
+        {LINKS.map((l) => (
+          <Link
+            key={l.to}
+            to={l.to}
+            style={{ ...styles.mobileLink, ...(active === l.to ? styles.linkActive : {}) }}
+          >
+            {l.label}
+          </Link>
+        ))}
+        <Link to="/card" style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}>
+          <CardIcon active={active === '/card'} />
+          {t('nav.card')}
+        </Link>
+        <Link
+          to="/settings"
+          style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
+        >
+          <GearIcon active={active === '/settings'} />
+          {t('nav.settings')}
+        </Link>
+
+        <div style={styles.mobileDivider} />
+
+        {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
+        <div style={styles.mobileBalanceRow}>
+          <BalanceStrip />
+        </div>
+        <div style={styles.mobileLangRow}>
+          <LanguageSwitcher />
+        </div>
+        <button onClick={handleLogout} style={{ ...styles.logoutBtn, width: '100%' }}>
+          {t('nav.logout')}
+        </button>
+      </div>
     </nav>
+  );
+}
+
+function BurgerIcon({ open }: { open: boolean }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round">
+      {open ? (
+        <>
+          <line x1="5" y1="5" x2="19" y2="19" />
+          <line x1="19" y1="5" x2="5" y2="19" />
+        </>
+      ) : (
+        <>
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -128,6 +206,57 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 16,
     fontWeight: 800,
     letterSpacing: '0.02em',
+  },
+  desktopLinks: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 24,
+  },
+  burgerBtn: {
+    display: 'none',
+    marginLeft: 'auto',
+    background: 'transparent',
+    border: 'none',
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mobileMenu: {
+    display: 'none',
+    position: 'absolute',
+    top: 56,
+    left: 0,
+    right: 0,
+    flexDirection: 'column',
+    gap: 4,
+    padding: 16,
+    background: 'var(--panel)',
+    borderBottom: '1px solid var(--border)',
+    boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
+    maxHeight: 'calc(100vh - 56px)',
+    overflowY: 'auto',
+  },
+  mobileLink: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+    padding: '12px 6px',
+    borderBottom: '1px solid var(--border)',
+  },
+  mobileDivider: {
+    height: 1,
+    background: 'var(--border)',
+    margin: '4px 0',
+  },
+  mobileRightExtra: {
+    padding: '8px 0',
+  },
+  mobileBalanceRow: {
+    padding: '10px 6px',
+    borderBottom: '1px solid var(--border)',
+  },
+  mobileLangRow: {
+    padding: '10px 6px',
   },
   link: {
     fontSize: 13,

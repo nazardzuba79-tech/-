@@ -450,6 +450,19 @@ button:not(:disabled):active {
   }
 }
 
+@media (max-width: 860px) {
+  .nav-desktop-links,
+  .nav-desktop-right {
+    display: none !important;
+  }
+  .nav-burger {
+    display: flex !important;
+  }
+  .nav-mobile-menu.open {
+    display: flex !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
