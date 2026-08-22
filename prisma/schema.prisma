@@ -78,16 +78,33 @@ model Order {
   user              User        @relation(fields: [userId], references: [id])
   pair              String
   side              String      // BUY | SELL
-  type              String      // LIMIT | MARKET
-  price             Decimal?    @db.Decimal(36, 18)
+  type              String      // LIMIT | MARKET | STOP_LIMIT | STOP_MARKET | TAKE_PROFIT_LIMIT | TAKE_PROFIT_MARKET
+  price             Decimal?    @db.Decimal(36, 18) // execution price for LIMIT-family orders; null for MARKET-family
+  /// Trigger price for the STOP and TAKE_PROFIT families — the order sits
+  /// out of the matching engine entirely (PENDING_TRIGGER) until the real
+  /// market price crosses this, at which point PriceWatcherService submits
+  /// it as a real LIMIT/MARKET order. Null for plain LIMIT/MARKET orders.
+  triggerPrice      Decimal?    @db.Decimal(36, 18)
+  /// Two conditional orders placed as one OCO (One-Cancels-the-Other) pair
+  /// share this id — when either leg triggers or fills, PriceWatcherService
+  /// cancels the sibling. Null for a standalone order.
+  ocoGroupId        String?
+  /// Exact amount actually locked for this order at placement time, and
+  /// the asset it's locked in. Only set for conditional (STOP/TAKE_PROFIT)
+  /// orders — persisted because an OCO pair locks funds ONCE for both legs
+  /// (only one will ever execute), so it can't be recomputed from price/
+  /// quantity alone at trigger time without risking an incorrect refund.
+  lockedAmount      Decimal?    @db.Decimal(36, 18)
+  lockedAsset       String?
   originalQuantity  Decimal     @db.Decimal(36, 18)
   remainingQuantity Decimal     @db.Decimal(36, 18)
-  status            String      // OPEN | PARTIALLY_FILLED | FILLED | CANCELLED
+  status            String      // PENDING_TRIGGER | OPEN | PARTIALLY_FILLED | FILLED | CANCELLED
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   @@index([userId])
   @@index([pair, status])
+  @@index([ocoGroupId])
 }
 
 model Trade {

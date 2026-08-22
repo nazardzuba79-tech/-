@@ -13,7 +13,8 @@ function authHeader(userId: string) {
 function buildApp(prisma: any, engine: any = {}) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', ordersRouter(prisma, engine));
+  const priceSource = { getTicker: async () => ({ lastPrice: '60000' }) };
+  app.use('/api/v1', ordersRouter(prisma, engine, priceSource));
   return app;
 }
 

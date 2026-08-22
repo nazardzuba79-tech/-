@@ -3,35 +3,51 @@ import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
-import { OrderService } from '../../services/OrderService';
+import { OrderService, PriceSource } from '../../services/OrderService';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
+
+const CONDITIONAL_TYPES = ['STOP_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_LIMIT', 'TAKE_PROFIT_MARKET'];
+const LIMIT_FAMILY = ['LIMIT', 'STOP_LIMIT', 'TAKE_PROFIT_LIMIT'];
+
+const priceString = z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'must be > 0');
 
 const placeOrderSchema = z
   .object({
     pair: z.string().regex(/^[A-Z0-9]+\/[A-Z0-9]+$/),
     side: z.enum(['BUY', 'SELL']),
-    type: z.enum(['LIMIT', 'MARKET']).default('LIMIT'),
-    price: z
-      .string()
-      .refine((v) => new BigNumber(v).isGreaterThan(0), 'price must be > 0')
-      .optional(),
-    quantity: z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'quantity must be > 0'),
+    type: z.enum(['LIMIT', 'MARKET', 'STOP_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_LIMIT', 'TAKE_PROFIT_MARKET']).default('LIMIT'),
+    price: priceString.optional(),
+    triggerPrice: priceString.optional(),
+    quantity: priceString,
   })
-  .refine((v) => v.type !== 'LIMIT' || v.price !== undefined, {
-    message: 'price is required for a LIMIT order',
+  .refine((v) => !LIMIT_FAMILY.includes(v.type) || v.price !== undefined, {
+    message: 'price is required for this order type',
     path: ['price'],
+  })
+  .refine((v) => !CONDITIONAL_TYPES.includes(v.type) || v.triggerPrice !== undefined, {
+    message: 'triggerPrice is required for this order type',
+    path: ['triggerPrice'],
   });
 
-export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Router {
+const placeOcoOrderSchema = z.object({
+  pair: z.string().regex(/^[A-Z0-9]+\/[A-Z0-9]+$/),
+  side: z.enum(['BUY', 'SELL']),
+  quantity: priceString,
+  takeProfitPrice: priceString,
+  stopTriggerPrice: priceString,
+  stopLimitPrice: priceString,
+});
+
+export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine, priceSource: PriceSource): Router {
   const router = Router();
-  const orderService = new OrderService(prisma, engine);
+  const orderService = new OrderService(prisma, engine, priceSource);
 
   router.post('/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
-    const { pair, side, type, price, quantity } = parsed.data;
+    const { pair, side, type, price, triggerPrice, quantity } = parsed.data;
 
     try {
       const result = await orderService.placeOrder({
@@ -40,6 +56,7 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
         side,
         type,
         price: price ? new BigNumber(price) : undefined,
+        triggerPrice: triggerPrice ? new BigNumber(triggerPrice) : undefined,
         quantity: new BigNumber(quantity),
       });
       res.status(201).json({
@@ -55,6 +72,32 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
         quantity: t.quantity.toString(),
       })),
       });
+    } catch (err: any) {
+      res.status(400).json({ error: err.message });
+    }
+  });
+
+  // OCO: a take-profit leg and a stop leg placed together, sharing one
+  // fund lock — whichever triggers first cancels the other (see
+  // OrderService.placeOcoOrder / PriceWatcherService).
+  router.post('/orders/oco', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    const parsed = placeOcoOrderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: parsed.error.flatten() });
+    }
+    const { pair, side, quantity, takeProfitPrice, stopTriggerPrice, stopLimitPrice } = parsed.data;
+
+    try {
+      const result = await orderService.placeOcoOrder({
+        userId: req.userId!,
+        pair,
+        side,
+        quantity: new BigNumber(quantity),
+        takeProfitPrice: new BigNumber(takeProfitPrice),
+        stopTriggerPrice: new BigNumber(stopTriggerPrice),
+        stopLimitPrice: new BigNumber(stopLimitPrice),
+      });
+      res.status(201).json(result);
     } catch (err: any) {
       res.status(400).json({ error: err.message });
     }
@@ -85,6 +128,8 @@ export function ordersRouter(prisma: PrismaClient, engine: MatchingEngine): Rout
         side: o.side,
         type: o.type,
         price: o.price?.toString() ?? null,
+        triggerPrice: o.triggerPrice?.toString() ?? null,
+        ocoGroupId: o.ocoGroupId,
         originalQuantity: o.originalQuantity.toString(),
         remainingQuantity: o.remainingQuantity.toString(),
         status: o.status,

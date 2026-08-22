@@ -26,6 +26,9 @@ import { MarkPriceService } from './futures/MarkPriceService';
 import { FuturesPositionService } from './futures/FuturesPositionService';
 import { FundingRateService } from './futures/FundingRateService';
 import { LiquidationEngine } from './futures/LiquidationEngine';
+import { OrderService } from './services/OrderService';
+import { PriceWatcherService } from './services/PriceWatcherService';
+import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -40,6 +43,12 @@ const markPriceService = new MarkPriceService(marketDataService);
 const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
 const fundingRateService = new FundingRateService(prisma, markPriceService);
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
+
+// Shares the spot engine/prisma/priceSource with ordersRouter's own
+// OrderService instance — OrderService holds no in-process state beyond
+// those injected deps, so a second instance here is safe.
+const spotOrderService = new OrderService(prisma, engine, marketDataService);
+const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
 
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
@@ -56,7 +65,7 @@ app.use(
 );
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
-app.use('/api/v1', ordersRouter(prisma, engine));
+app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
 app.use('/api/v1', authRouter(prisma));
@@ -93,6 +102,7 @@ async function start() {
 
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
+  priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
 }
@@ -105,6 +115,7 @@ start().catch((err) => {
 process.on('SIGTERM', async () => {
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();
+  priceWatcherService.stopScheduler();
   await prisma.$disconnect();
   process.exit(0);
 });
