@@ -117,7 +117,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--border)',
     flexShrink: 0,
   },
-  pairName: { fontSize: 16, fontWeight: 800 },
+  pairName: { fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)' },
   lastPrice: { fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' },
   stat: { display: 'flex', flexDirection: 'column', gap: 3, whiteSpace: 'nowrap' },
   statLabel: { fontSize: 10, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 },

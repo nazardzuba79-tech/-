@@ -35,7 +35,7 @@ export function ProductsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav active="/products" />
 
       <main style={styles.main}>
@@ -78,7 +78,7 @@ export function ProductsPage() {
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)' },
   main: { padding: 32, maxWidth: 900, margin: '0 auto' },
-  title: { fontSize: 20, marginBottom: 20 },
+  title: { fontSize: 22, marginBottom: 20, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   banner: { padding: '10px 14px', borderRadius: 4, fontSize: 13, marginBottom: 20 },
   bannerSuccess: { background: 'var(--buy-dim)', color: 'var(--buy)' },
   bannerError: { background: 'var(--sell-dim)', color: 'var(--sell)' },

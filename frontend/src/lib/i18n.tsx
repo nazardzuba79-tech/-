@@ -38,6 +38,7 @@ const RU = {
   'auth.signIn': 'Войти',
   'auth.createAccount': 'Создать аккаунт',
   'auth.genericError': 'Что-то пошло не так. Попробуй ещё раз.',
+  'auth.heroTagline': 'Торгуй криптовалютой быстро, надёжно и без лишних сложностей.',
 
   'trade.orderBook': 'Стакан',
   'trade.trades': 'Сделки',
@@ -271,6 +272,7 @@ const EN: Record<Key, string> = {
   'auth.signIn': 'Sign in',
   'auth.createAccount': 'Create account',
   'auth.genericError': 'Something went wrong. Try again.',
+  'auth.heroTagline': 'Trade crypto fast, securely, and without the hassle.',
 
   'trade.orderBook': 'Order Book',
   'trade.trades': 'Trades',
@@ -502,6 +504,7 @@ const ZH: Record<Key, string> = {
   'auth.signIn': '登录',
   'auth.createAccount': '创建账户',
   'auth.genericError': '出错了，请重试。',
+  'auth.heroTagline': '快速、安全、无繁琐流程地交易加密货币。',
 
   'trade.orderBook': '订单簿',
   'trade.trades': '成交',

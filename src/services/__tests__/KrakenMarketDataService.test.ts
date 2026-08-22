@@ -113,6 +113,26 @@ describe('KrakenMarketDataService', () => {
     });
   });
 
+  it('falls back to last price for turnover when Kraken omits the VWAP', async () => {
+    const tickerBodyNoVwap = {
+      error: [],
+      result: {
+        XBTUSDT: { ...TICKER_BODY.result.XBTUSDT, p: ['0', '0'] },
+      },
+    };
+    const fetchFn = jest
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(jsonResponse(url.includes('AssetPairs') ? ASSET_PAIRS_BODY : tickerBodyNoVwap))
+      );
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const ticker = await service.getTicker('BTC/USDT');
+
+    // last price (60000) * volume (1234.5), not zero.
+    expect(ticker?.quoteVolume24h).toBe('74070000.00');
+  });
+
   it('fetches the order book for a pair, converting it to our symbol format', async () => {
     const fetchFn = jest
       .fn()

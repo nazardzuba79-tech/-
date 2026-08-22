@@ -36,7 +36,7 @@ export function SettingsPage() {
   }, []);
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav active="/settings" />
       <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' ? 1080 : 760 }}>
         <h1 style={styles.title}>{t('settings.title')}</h1>
@@ -88,7 +88,7 @@ function ProfileTab() {
   const kyc = KYC_STATUS_LABEL[me.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
 
   return (
-    <div style={styles.card}>
+    <div className="accent-edge" style={styles.card}>
       <Row label={t('settings.email')} value={me.email} />
       <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
       <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
@@ -685,7 +685,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: 'auto',
     lineHeight: 1.6,
   },
-  title: { fontSize: 20, marginBottom: 20 },
+  title: { fontSize: 22, marginBottom: 20, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   layout: { display: 'grid', gridTemplateColumns: '180px 1fr', gap: 24, alignItems: 'start' },
   tabs: { display: 'flex', flexDirection: 'column', gap: 4 },
   tabBtn: {

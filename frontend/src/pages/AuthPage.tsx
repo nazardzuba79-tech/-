@@ -1,18 +1,42 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { CryptoIcon } from '../components/CryptoIcon';
+
+const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
+
+type HeroTicker = Awaited<ReturnType<typeof api.getExternalTickers>>['tickers'][number];
 
 export function AuthPage() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [tickers, setTickers] = useState<HeroTicker[]>([]);
   const navigate = useNavigate();
+
+  // Live public prices behind the login card — no auth needed for this,
+  // and it's what makes the login screen feel like a real, active market
+  // instead of a static form on a plain background.
+  useEffect(() => {
+    function load() {
+      api
+        .getExternalTickers()
+        .then((res) => {
+          const byPair = new Map(res.tickers.map((tk) => [tk.pair, tk]));
+          setTickers(HERO_PAIRS.map((p) => byPair.get(p)).filter((tk): tk is HeroTicker => !!tk));
+        })
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -30,65 +54,93 @@ export function AuthPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <div style={styles.langSwitch}>
         <LanguageSwitcher />
       </div>
 
-      <div style={styles.card}>
-        <div style={styles.logo}>
+      <div style={styles.layout}>
+        <div className="auth-hero" style={styles.hero}>
           <Logo size="large" />
+          <p style={styles.heroTagline}>{t('auth.heroTagline')}</p>
+
+          <div style={styles.tickerList}>
+            {tickers.map((tk) => {
+              const change = parseFloat(tk.changePercent24h) * 100;
+              const positive = change >= 0;
+              return (
+                <div key={tk.pair} style={styles.tickerRow}>
+                  <span style={styles.tickerLeft}>
+                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={22} />
+                    <span className="mono" style={styles.tickerPair}>
+                      {tk.pair}
+                    </span>
+                  </span>
+                  <span className="mono" style={styles.tickerPrice}>
+                    {parseFloat(tk.lastPrice).toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}
+                  </span>
+                  <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.tickerChange}>
+                    {positive ? '+' : ''}
+                    {change.toFixed(2)}%
+                  </span>
+                </div>
+              );
+            })}
+            {tickers.length === 0 && <div style={styles.tickerHint}>{t('trade.loading')}</div>}
+          </div>
         </div>
 
-        <div style={styles.tabs}>
-          <button
-            style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
-            onClick={() => setMode('login')}
-            type="button"
-          >
-            {t('auth.login')}
-          </button>
-          <button
-            style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
-            onClick={() => setMode('register')}
-            type="button"
-          >
-            {t('auth.register')}
-          </button>
+        <div style={styles.card}>
+          <div style={styles.tabs}>
+            <button
+              style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
+              onClick={() => setMode('login')}
+              type="button"
+            >
+              {t('auth.login')}
+            </button>
+            <button
+              style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
+              onClick={() => setMode('register')}
+              type="button"
+            >
+              {t('auth.register')}
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} style={styles.form}>
+            <label style={styles.label}>
+              {t('auth.email')}
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={styles.input}
+                autoComplete="email"
+              />
+            </label>
+            <label style={styles.label}>
+              {t('auth.password')}
+              <input
+                type="password"
+                required
+                minLength={mode === 'register' ? 10 : undefined}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={styles.input}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              />
+              {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
+            </label>
+
+            {error && <div style={styles.error}>{error}</div>}
+
+            <button type="submit" disabled={loading} style={styles.submit}>
+              {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
+            </button>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
-            {t('auth.email')}
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={styles.input}
-              autoComplete="email"
-            />
-          </label>
-          <label style={styles.label}>
-            {t('auth.password')}
-            <input
-              type="password"
-              required
-              minLength={mode === 'register' ? 10 : undefined}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={styles.input}
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            />
-            {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
-          </label>
-
-          {error && <div style={styles.error}>{error}</div>}
-
-          <button type="submit" disabled={loading} style={styles.submit}>
-            {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
-          </button>
-        </form>
       </div>
     </div>
   );
@@ -100,50 +152,94 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
-    background:
-      'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(247,166,0,0.08), transparent), var(--bg)',
+    padding: '32px 20px',
   },
   langSwitch: {
     position: 'absolute',
     top: 20,
     right: 20,
+    zIndex: 2,
   },
-  card: {
-    width: 360,
+  layout: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 72,
+    maxWidth: 940,
+    width: '100%',
+  },
+  hero: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 18,
+    minWidth: 0,
+  },
+  heroTagline: {
+    fontFamily: 'var(--font-display)',
+    fontSize: 26,
+    fontWeight: 800,
+    lineHeight: 1.25,
+    letterSpacing: '-0.01em',
+    margin: '4px 0 8px',
+    maxWidth: 420,
+    background: 'linear-gradient(120deg, var(--text-primary) 40%, var(--accent) 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
+  tickerList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: 32,
+    borderRadius: 12,
+    padding: 8,
+    maxWidth: 420,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
   },
-  logo: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 20,
-    fontWeight: 700,
-    letterSpacing: '0.05em',
-    marginBottom: 28,
+  tickerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '10px 12px',
+    borderRadius: 8,
+  },
+  tickerLeft: { display: 'flex', alignItems: 'center', gap: 10 },
+  tickerPair: { fontSize: 13, fontWeight: 700 },
+  tickerPrice: { fontSize: 13, color: 'var(--text-secondary)', flex: 1, textAlign: 'right', paddingRight: 16 },
+  tickerChange: { fontSize: 13, fontWeight: 700, width: 70, textAlign: 'right' },
+  tickerHint: { padding: 14, color: 'var(--text-tertiary)', fontSize: 12 },
+  card: {
+    width: 380,
+    flexShrink: 0,
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: 32,
+    boxShadow: '0 24px 70px rgba(0,0,0,0.4)',
   },
   tabs: {
     display: 'flex',
     gap: 4,
     marginBottom: 24,
     background: 'var(--panel-alt)',
-    borderRadius: 6,
+    borderRadius: 8,
     padding: 3,
   },
   tab: {
     flex: 1,
-    padding: '8px 0',
+    padding: '9px 0',
     background: 'transparent',
     border: 'none',
-    borderRadius: 4,
+    borderRadius: 6,
     color: 'var(--text-secondary)',
     fontSize: 13,
-    fontWeight: 600,
+    fontWeight: 700,
   },
   tabActive: {
     background: 'var(--panel)',
     color: 'var(--text-primary)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
   },
   form: {
     display: 'flex',
@@ -160,8 +256,8 @@ const styles: Record<string, React.CSSProperties> = {
   input: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
-    borderRadius: 4,
-    padding: '10px 12px',
+    borderRadius: 8,
+    padding: '11px 12px',
     color: 'var(--text-primary)',
     fontSize: 14,
   },
@@ -173,7 +269,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--sell-dim)',
     color: 'var(--sell)',
     padding: '8px 12px',
-    borderRadius: 4,
+    borderRadius: 8,
     fontSize: 12,
   },
   submit: {

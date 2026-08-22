@@ -67,7 +67,7 @@ export function WalletPage() {
   const filteredRows = rows.filter((r) => r.asset.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav active="/wallet" />
       <main style={styles.main}>
         <div style={styles.headerRow}>
@@ -93,7 +93,7 @@ export function WalletPage() {
           style={styles.search}
         />
 
-        <div style={styles.table}>
+        <div className="accent-edge" style={styles.table}>
           <div style={styles.columns}>
             <span>{t('wallet.asset')}</span>
             <span style={{ textAlign: 'right' }}>{t('wallet.available')}</span>
@@ -146,7 +146,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 16,
   },
   eyebrow: { fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 },
-  totalValue: { fontSize: 34, fontWeight: 800, fontFamily: 'var(--font-mono)' },
+  totalValue: {
+    fontSize: 38,
+    fontWeight: 800,
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: '-0.01em',
+    background: 'linear-gradient(120deg, var(--text-primary) 55%, var(--accent) 130%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+  },
   totalCurrency: { fontSize: 16, color: 'var(--text-secondary)', fontWeight: 600 },
   btcLine: { fontSize: 13, color: 'var(--text-tertiary)', marginTop: 6, fontFamily: 'var(--font-mono)' },
   search: { width: 260, marginBottom: 14 },

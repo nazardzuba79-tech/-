@@ -71,7 +71,7 @@ export function MarketsPage() {
   );
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav active="/markets" />
 
       <main style={styles.main}>
@@ -163,7 +163,7 @@ const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' },
   main: { padding: 32, maxWidth: 1100, margin: '0 auto', width: '100%' },
   headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
-  title: { fontSize: 20, margin: 0 },
+  title: { fontSize: 22, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   banner: {
     padding: '10px 14px',
     borderRadius: 4,

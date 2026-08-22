@@ -21,8 +21,14 @@
   /* Type — Inter reads noticeably crisper than the plain system-font stack
      at small trading-UI sizes, which is the whole point (real exchanges
      like Bybit use a dedicated UI face for exactly this reason). Falls
-     back to the system stack if the Google Fonts request is ever blocked. */
+     back to the system stack if the Google Fonts request is ever blocked.
+     Manrope is a separate, more geometric/distinctive face reserved for
+     headlines and big numbers (logo, page titles, hero price) — pairing a
+     display face with a body face is what makes a UI read as designed
+     rather than "default Bootstrap-ish", which was the actual substance
+     behind "looks cheap". */
   --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Manrope', var(--font-ui);
   --font-mono: 'Roboto Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
@@ -46,6 +52,40 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Soft, fixed "aurora mesh" of low-opacity glows behind every page —
+   applied as a class (not baked into --bg) so it sits underneath opaque
+   panels/cards instead of showing through them, but still reads at the
+   page edges and through any translucent surface (glass nav, etc). This
+   is the single biggest lever against a page looking like a flat gray
+   rectangle. */
+.page-mesh {
+  position: relative;
+  background: var(--bg);
+}
+.page-mesh::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 900px 500px at 8% -5%, rgba(247, 166, 0, 0.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 100% 10%, rgba(0, 214, 143, 0.07), transparent 60%),
+    radial-gradient(ellipse 800px 600px at 50% 110%, rgba(91, 141, 239, 0.06), transparent 60%);
+}
+.page-mesh > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Frosted-glass surface — used for the nav bar so it reads as floating
+   above the mesh rather than a flat opaque strip. */
+.glass-panel {
+  background: rgba(20, 23, 29, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
 button {
@@ -182,6 +222,23 @@ button:not(:disabled):active {
   background: var(--accent);
 }
 
+/* Thin gradient accent along a card's top edge — used on a handful of
+   "hero" cards (wallet total, profile) so they read as a highlighted
+   surface rather than the exact same flat panel as everything else. */
+.accent-edge {
+  position: relative;
+}
+.accent-edge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 8px 8px 0 0;
+  background: linear-gradient(90deg, var(--accent), var(--buy) 60%, transparent 100%);
+}
+
 /* Pill status badge — replaces plain colored text for KYC/order/key
    status everywhere so state reads as a distinct chip, not just a color. */
 .badge {
@@ -200,6 +257,12 @@ button:not(:disabled):active {
   height: 6px;
   border-radius: 50%;
   background: currentColor;
+}
+
+@media (max-width: 820px) {
+  .auth-hero {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

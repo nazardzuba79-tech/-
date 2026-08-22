@@ -38,7 +38,7 @@ export function CardPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div className="page-mesh" style={styles.page}>
       <Nav active="/card" />
       <main style={styles.main}>
         <div style={styles.cardVisual}>
@@ -149,7 +149,7 @@ const styles: Record<string, React.CSSProperties> = {
   cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   cardVisualWordmark: { color: '#0b0e11', fontWeight: 800, fontSize: 18, fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' },
   headerRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 },
-  title: { fontSize: 22, margin: 0 },
+  title: { fontSize: 24, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   badge: {
     background: 'var(--accent)',
     color: '#0b0e11',

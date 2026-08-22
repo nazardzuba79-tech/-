@@ -37,7 +37,7 @@ export function Nav({
   }
 
   return (
-    <nav style={styles.nav}>
+    <nav className="glass-panel" style={styles.nav}>
       <Link to="/trade" style={styles.logo}>
         <Logo />
       </Link>
@@ -113,17 +113,17 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '0 20px',
     height: 56,
     borderBottom: '1px solid var(--border)',
-    background: 'var(--panel)',
     boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
-    position: 'relative',
+    position: 'sticky',
+    top: 0,
     zIndex: 10,
     flexShrink: 0,
   },
   logo: {
-    fontFamily: 'var(--font-mono)',
+    fontFamily: 'var(--font-display)',
     fontSize: 16,
-    fontWeight: 700,
-    letterSpacing: '0.05em',
+    fontWeight: 800,
+    letterSpacing: '0.02em',
   },
   link: {
     fontSize: 13,

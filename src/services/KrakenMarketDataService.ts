@@ -264,7 +264,12 @@ export class KrakenMarketDataService {
         const lastPrice = Number(raw.c[0]);
         const openPrice = Number(raw.o);
         const changePercent24h = openPrice === 0 ? '0' : (((lastPrice - openPrice) / openPrice) * 100).toFixed(4);
-        const quoteVolume24h = (Number(raw.v[1]) * Number(raw.p[1])).toFixed(2);
+        // Prefer the real 24h VWAP for turnover, but fall back to last
+        // price if Kraken ever returns a missing/zero VWAP (illiquid pair,
+        // API quirk) — better an approximation than a silent "0".
+        const vwap = Number(raw.p?.[1]);
+        const effectivePrice = vwap > 0 ? vwap : lastPrice;
+        const quoteVolume24h = (Number(raw.v[1]) * effectivePrice).toFixed(2);
         byPair.set(info.pair, {
           pair: info.pair,
           lastPrice: raw.c[0],
