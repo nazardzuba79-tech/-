@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Logo } from '../components/Logo';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 export function AuthPage() {
-  const { t, lang, setLang } = useLanguage();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,12 +32,7 @@ export function AuthPage() {
   return (
     <div style={styles.page}>
       <div style={styles.langSwitch}>
-        <button onClick={() => setLang('ru')} style={{ ...styles.langBtn, ...(lang === 'ru' ? styles.langBtnActive : {}) }}>
-          RU
-        </button>
-        <button onClick={() => setLang('en')} style={{ ...styles.langBtn, ...(lang === 'en' ? styles.langBtnActive : {}) }}>
-          EN
-        </button>
+        <LanguageSwitcher />
       </div>
 
       <div style={styles.card}>
@@ -112,24 +108,6 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 20,
     right: 20,
-    display: 'flex',
-    gap: 2,
-    background: 'var(--panel-alt)',
-    borderRadius: 4,
-    padding: 2,
-  },
-  langBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--text-secondary)',
-    borderRadius: 3,
-    padding: '5px 10px',
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  langBtnActive: {
-    background: 'var(--panel)',
-    color: 'var(--text-primary)',
   },
   card: {
     width: 360,

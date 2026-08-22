@@ -4,6 +4,7 @@ import { clearToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { BalanceStrip } from './BalanceStrip';
 import { Logo } from './Logo';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -21,7 +22,7 @@ export function Nav({
   rightExtra?: ReactNode;
 }) {
   const navigate = useNavigate();
-  const { t, lang, setLang } = useLanguage();
+  const { t } = useLanguage();
 
   const LINKS = [
     { to: '/trade', label: t('nav.trade') },
@@ -56,20 +57,7 @@ export function Nav({
       <div style={styles.right}>
         <BalanceStrip />
         {rightExtra}
-        <div style={styles.langSwitch}>
-          <button
-            onClick={() => setLang('ru')}
-            style={{ ...styles.langBtn, ...(lang === 'ru' ? styles.langBtnActive : {}) }}
-          >
-            RU
-          </button>
-          <button
-            onClick={() => setLang('en')}
-            style={{ ...styles.langBtn, ...(lang === 'en' ? styles.langBtnActive : {}) }}
-          >
-            EN
-          </button>
-        </div>
+        <LanguageSwitcher />
         <Link to="/settings" style={styles.settingsLink} title={t('nav.settings')} aria-label={t('nav.settings')}>
           <GearIcon active={active === '/settings'} />
         </Link>
@@ -155,26 +143,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 18,
-  },
-  langSwitch: {
-    display: 'flex',
-    gap: 2,
-    background: 'var(--panel-alt)',
-    borderRadius: 4,
-    padding: 2,
-  },
-  langBtn: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--text-secondary)',
-    borderRadius: 3,
-    padding: '4px 8px',
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  langBtnActive: {
-    background: 'var(--panel)',
-    color: 'var(--text-primary)',
   },
   settingsLink: {
     display: 'flex',

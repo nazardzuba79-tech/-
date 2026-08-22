@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
@@ -127,7 +127,7 @@ export function MarketsPage() {
                       {parseFloat(tk.low24h)}
                     </span>
                     <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                      {parseFloat(tk.volume24h).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })}
+                      {parseFloat(tk.volume24h).toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}
                     </span>
                   </div>
                 );

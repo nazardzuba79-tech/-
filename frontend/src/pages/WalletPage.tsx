@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { DepositModal } from '../components/DepositModal';
 import { SearchInput } from '../components/SearchInput';
@@ -74,7 +74,7 @@ export function WalletPage() {
           <div>
             <div style={styles.eyebrow}>{t('wallet.title')}</div>
             <div style={styles.totalValue}>
-              {totalUsd.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })}{' '}
+              {totalUsd.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}{' '}
               <span style={styles.totalCurrency}>USD</span>
             </div>
             {btcEquivalent !== null && (
@@ -115,11 +115,11 @@ export function WalletPage() {
                   {parseFloat(r.locked).toFixed(6)}
                 </span>
                 <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                  {r.price !== null ? r.price.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }) : '—'}
+                  {r.price !== null ? r.price.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'}
                 </span>
                 <span className="mono" style={{ textAlign: 'right' }} title={r.value === null ? t('wallet.priceUnavailable') : undefined}>
                   {r.value !== null
-                    ? r.value.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 })
+                    ? r.value.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })
                     : '—'}
                 </span>
               </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Badge } from './Badge';
 
 interface Order {
@@ -53,7 +53,7 @@ export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
               <Badge text={t('trade.status.CANCELLED')} color="var(--text-secondary)" bg="var(--neutral-dim)" />
             )}
             <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
-              {new Date(o.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')}
+              {new Date(o.createdAt).toLocaleString(localeOf(lang))}
             </span>
           </div>
         ))}

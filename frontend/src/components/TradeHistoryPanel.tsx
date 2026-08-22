@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 
 interface Trade {
   id: string;
@@ -42,7 +42,7 @@ export function TradeHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
             <span className="mono">{parseFloat(tr.price).toFixed(2)}</span>
             <span className="mono">{parseFloat(tr.quantity).toFixed(5)}</span>
             <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
-              {new Date(tr.executedAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')}
+              {new Date(tr.executedAt).toLocaleString(localeOf(lang))}
             </span>
           </div>
         ))}

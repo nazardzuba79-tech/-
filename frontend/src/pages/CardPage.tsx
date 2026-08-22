@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { LogoMark } from '../components/Logo';
 
@@ -84,7 +84,7 @@ export function CardPage() {
               <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
                 {t('card.joinedSince', {
                   date: waitlist.joinedAt
-                    ? new Date(waitlist.joinedAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')
+                    ? new Date(waitlist.joinedAt).toLocaleDateString(localeOf(lang))
                     : '',
                 })}
               </span>

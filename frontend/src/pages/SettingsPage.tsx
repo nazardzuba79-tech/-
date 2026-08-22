@@ -1,6 +1,6 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { SearchInput } from '../components/SearchInput';
 import { Badge } from '../components/Badge';
@@ -90,7 +90,7 @@ function ProfileTab() {
   return (
     <div style={styles.card}>
       <Row label={t('settings.email')} value={me.email} />
-      <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
+      <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
       <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
       <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
       <Row label={t('settings.twoFactor')} value={<span style={{ color: 'var(--text-tertiary)' }}>{t('settings.comingSoon')}</span>} />
@@ -558,7 +558,7 @@ function ClientsTab() {
           <>
             <Row label={t('settings.email')} value={selected.email} />
             <Row label={t('settings.role')} value={selected.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
-            <Row label={t('settings.memberSince')} value={new Date(selected.createdAt).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
+            <Row label={t('settings.memberSince')} value={new Date(selected.createdAt).toLocaleDateString(localeOf(lang))} />
             <Row
               label={t('settings.verification')}
               value={(() => {
@@ -571,12 +571,12 @@ function ClientsTab() {
               <>
                 <Row label={t('settings.fullNameLabel')} value={selected.latestKyc.fullName} />
                 <Row label={t('settings.country')} value={getCountryName(selected.latestKyc.country, lang)} />
-                <Row label={t('settings.dateOfBirth')} value={new Date(selected.latestKyc.dateOfBirth).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
+                <Row label={t('settings.dateOfBirth')} value={new Date(selected.latestKyc.dateOfBirth).toLocaleDateString(localeOf(lang))} />
                 <Row
                   label={t('settings.document')}
                   value={`${DOC_TYPE_LABEL[selected.latestKyc.documentType] ?? selected.latestKyc.documentType} №${selected.latestKyc.documentNumber}`}
                 />
-                <Row label={t('settings.sent')} value={new Date(selected.latestKyc.createdAt).toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US')} />
+                <Row label={t('settings.sent')} value={new Date(selected.latestKyc.createdAt).toLocaleString(localeOf(lang))} />
                 {selected.latestKyc.status === 'REJECTED' && selected.latestKyc.rejectionReason && (
                   <Row label={t('settings.rejectionReasonLabel')} value={selected.latestKyc.rejectionReason} />
                 )}

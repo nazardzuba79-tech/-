@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf, Lang } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { Badge } from './Badge';
 
@@ -56,7 +56,7 @@ export function TickerBar({ pair }: { pair: string }) {
           {pair}
         </span>
         <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.lastPrice}>
-          {stats ? stats.lastPrice.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }) : '—'}
+          {stats ? stats.lastPrice.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'}
         </span>
         {stats && (
           <Badge
@@ -69,9 +69,9 @@ export function TickerBar({ pair }: { pair: string }) {
 
       <div style={styles.divider} />
 
-      <Stat label={t('trade.high24h')} value={stats ? stats.high24h.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }) : '—'} />
-      <Stat label={t('trade.low24h')} value={stats ? stats.low24h.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }) : '—'} />
-      <Stat label={`${t('trade.volume24h')} (${baseAsset})`} value={stats ? stats.volume24h.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { maximumFractionDigits: 2 }) : '—'} />
+      <Stat label={t('trade.high24h')} value={stats ? stats.high24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
+      <Stat label={t('trade.low24h')} value={stats ? stats.low24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
+      <Stat label={`${t('trade.volume24h')} (${baseAsset})`} value={stats ? stats.volume24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
       <Stat
         label={`${t('trade.turnover24h')} (${quoteAsset})`}
         value={stats ? formatCompact(stats.quoteVolume24h, lang) : '—'}
@@ -91,8 +91,8 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatCompact(n: number, lang: 'ru' | 'en'): string {
-  return n.toLocaleString(lang === 'ru' ? 'ru-RU' : 'en-US', { notation: 'compact', maximumFractionDigits: 2 });
+function formatCompact(n: number, lang: Lang): string {
+  return n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 });
 }
 
 const styles: Record<string, React.CSSProperties> = {
