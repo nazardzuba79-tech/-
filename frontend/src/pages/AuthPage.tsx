@@ -17,6 +17,7 @@ export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tickers, setTickers] = useState<HeroTicker[]>([]);
@@ -45,6 +46,10 @@ export function AuthPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    if (mode === 'register' && password !== confirmPassword) {
+      setError(t('auth.passwordMismatch'));
+      return;
+    }
     setLoading(true);
     try {
       const result = mode === 'login' ? await api.login(email, password) : await api.register(email, password);
@@ -124,7 +129,7 @@ export function AuthPage() {
           </div>
         </div>
 
-        <div style={styles.card}>
+        <div style={{ ...styles.card, ...(mode === 'register' && !pendingToken ? styles.cardRegisterGlow : {}) }}>
           {pendingToken ? (
             <>
               <div style={styles.twoFaTitle}>{t('auth.twoFaTitle')}</div>
@@ -168,23 +173,36 @@ export function AuthPage() {
               <div style={styles.tabs}>
                 <button
                   style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
-                  onClick={() => setMode('login')}
+                  onClick={() => {
+                    setMode('login');
+                    setConfirmPassword('');
+                    setError(null);
+                  }}
                   type="button"
                 >
                   {t('auth.login')}
                 </button>
                 <button
                   style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
-                  onClick={() => setMode('register')}
+                  onClick={() => {
+                    setMode('register');
+                    setError(null);
+                  }}
                   type="button"
                 >
                   {t('auth.register')}
                 </button>
               </div>
 
+              {mode === 'register' && (
+                <>
+                  <p style={styles.registerSubline}>{t('auth.registerSubline')}</p>
+                  <div style={styles.cardWaitlistBadge}>{t('auth.cardWaitlistBadge')}</div>
+                </>
+              )}
+
               <form onSubmit={handleSubmit} style={styles.form}>
-                <label style={styles.label}>
-                  {t('auth.email')}
+                <FormField label={t('auth.email')}>
                   <input
                     type="email"
                     required
@@ -193,9 +211,8 @@ export function AuthPage() {
                     style={styles.input}
                     autoComplete="email"
                   />
-                </label>
-                <label style={styles.label}>
-                  {t('auth.password')}
+                </FormField>
+                <FormField label={t('auth.password')} hint={mode === 'register' ? t('auth.minChars') : undefined}>
                   <input
                     type="password"
                     required
@@ -205,14 +222,44 @@ export function AuthPage() {
                     style={styles.input}
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
-                  {mode === 'register' && <span style={styles.hint}>{t('auth.minChars')}</span>}
-                </label>
+                </FormField>
+                {mode === 'register' && (
+                  <FormField
+                    label={t('auth.confirmPassword')}
+                    hint={
+                      confirmPassword
+                        ? confirmPassword === password
+                          ? `✓ ${t('auth.passwordMatch')}`
+                          : t('auth.passwordMismatch')
+                        : undefined
+                    }
+                    hintColor={confirmPassword ? (confirmPassword === password ? 'var(--buy)' : 'var(--sell)') : undefined}
+                  >
+                    <input
+                      type="password"
+                      required
+                      minLength={10}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      style={styles.input}
+                      autoComplete="new-password"
+                    />
+                  </FormField>
+                )}
 
                 {error && <div style={styles.error}>{error}</div>}
 
                 <button type="submit" disabled={loading} style={styles.submit}>
                   {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
                 </button>
+
+                {mode === 'register' && (
+                  <div style={styles.featureRow}>
+                    <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
+                    <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
+                    <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
+                  </div>
+                )}
               </form>
             </>
           )}
@@ -233,6 +280,84 @@ export function AuthPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+/** Label + input wrapper with a small "alive" focus micro-interaction —
+ * the label lifts in color to the accent while its field is focused,
+ * instead of the field being the only thing that visibly reacts. */
+function FormField({
+  label,
+  hint,
+  hintColor,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  hintColor?: string;
+  children: React.ReactElement;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <label
+      style={{
+        ...styles.label,
+        color: focused ? 'var(--accent)' : 'var(--text-secondary)',
+        transition: 'color 0.15s ease',
+      }}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+    >
+      {label}
+      {children}
+      {hint && <span style={{ ...styles.hint, color: hintColor ?? 'var(--text-tertiary)' }}>{hint}</span>}
+    </label>
+  );
+}
+
+function FeatureBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
+  return (
+    <div style={styles.featureBadge}>
+      {icon}
+      <span>{label}</span>
+    </div>
+  );
+}
+
+const ICON_PROPS = {
+  width: 15,
+  height: 15,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: 'var(--accent)',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+function PercentIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  );
+}
+function ShieldIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+function CardChipIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
   );
 }
 
@@ -318,6 +443,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 16,
     padding: 32,
     boxShadow: '0 24px 70px rgba(0,0,0,0.4)',
+    transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
+  },
+  cardRegisterGlow: {
+    borderColor: 'rgba(247,166,0,0.4)',
+    boxShadow: '0 24px 70px rgba(0,0,0,0.4), 0 0 0 1px rgba(247,166,0,0.15), 0 0 40px rgba(247,166,0,0.12)',
   },
   tabs: {
     display: 'flex',
@@ -341,6 +471,46 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     color: 'var(--text-primary)',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+  },
+  registerSubline: {
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.5,
+    margin: '-14px 0 16px',
+  },
+  cardWaitlistBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    background: 'linear-gradient(90deg, var(--accent-dim), rgba(0,214,143,0.12))',
+    border: '1px solid var(--accent)',
+    borderRadius: 10,
+    padding: '9px 12px',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    lineHeight: 1.4,
+    marginBottom: 20,
+  },
+  featureRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 4,
+  },
+  featureBadge: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 5,
+    padding: '10px 6px',
+    background: 'var(--panel-alt)',
+    borderRadius: 10,
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+    textAlign: 'center',
   },
   twoFaTitle: { fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, marginBottom: 8 },
   twoFaHint: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 20 },
