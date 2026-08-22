@@ -4,34 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { SearchInput } from './SearchInput';
 import { CryptoIcon } from './CryptoIcon';
 import { SkeletonRow } from './Skeleton';
-
-interface TickerRow {
-  pair: string;
-  lastPrice: string;
-  changePercent24h: string;
-  quoteVolume24h: string;
-}
-
-const FAVORITES_KEY = 'exchange_favorite_pairs';
-// Preferred order for the quote-asset filter chips — whichever of these
-// actually appear in the live ticker list are shown, most-traded first.
-const QUOTE_PRIORITY = ['USDT', 'USD', 'USDC', 'EUR', 'BTC', 'ETH'];
-
-function loadFavorites(): Set<string> {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) ?? '[]'));
-  } catch {
-    return new Set();
-  }
-}
-
-function saveFavorites(favs: Set<string>) {
-  try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favs)));
-  } catch {
-    // best-effort — favorites just won't persist across reloads
-  }
-}
+import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
 
 /**
  * Trade-page pair picker — button showing the current pair, opens a
@@ -94,15 +67,7 @@ export function PairSelector({ pair, onChange }: { pair: string; onChange: (pair
     });
   }
 
-  const filtered = tickers
-    .filter((tk) => tk.pair.toLowerCase().includes(search.toLowerCase()))
-    .filter((tk) => !quoteFilter || tk.pair.split('/')[1] === quoteFilter)
-    .filter((tk) => !favoritesOnly || favorites.has(tk.pair))
-    // Most-traded pairs first — sorting alphabetically (the API's raw
-    // order) put obscure, barely-liquid tickers at the top just because
-    // their symbol starts early in the alphabet.
-    .sort((a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0'))
-    .slice(0, 200);
+  const filtered = filterAndSortPairs(tickers, { search, quoteFilter, favoritesOnly, favorites }).slice(0, 200);
 
   return (
     <div ref={containerRef} style={styles.container}>

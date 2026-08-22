@@ -4,6 +4,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
 import { PairSelector } from '../components/PairSelector';
+import { PairListSidebar } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm } from '../components/OrderForm';
@@ -85,6 +86,10 @@ export function TradePage() {
       <TickerBar pair={pair} />
 
       <main style={styles.grid}>
+        <div style={styles.pairListColumn}>
+          <PairListSidebar pair={pair} onChange={setPair} />
+        </div>
+
         <div style={styles.chartColumn}>
           <PriceChart pair={pair} />
         </div>
@@ -178,6 +183,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 1,
     background: 'var(--border)',
     padding: 1,
+    minHeight: 0,
+  },
+  pairListColumn: {
+    background: 'var(--bg)',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '0 0 250px',
     minHeight: 0,
   },
   chartColumn: {
