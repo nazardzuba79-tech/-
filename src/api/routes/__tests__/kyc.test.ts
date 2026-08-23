@@ -11,10 +11,10 @@ function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 }
 
-function buildApp(prisma: any) {
+function buildApp(prisma: any, emailService: any = { notifySubmission: jest.fn().mockResolvedValue(undefined) }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', kycRouter(prisma));
+  app.use('/api/v1', kycRouter(prisma, emailService));
   return app;
 }
 

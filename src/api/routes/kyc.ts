@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { KycEmailService } from '../../services/KycEmailService';
 
 /**
  * KYC identity verification — submission + manual review, same pattern as
@@ -61,7 +62,7 @@ const reviewSchema = z.object({
   reason: z.string().max(500).optional(),
 });
 
-export function kycRouter(prisma: PrismaClient): Router {
+export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): Router {
   const router = Router();
 
   router.post('/kyc/submit', requireAuth, handleUpload, async (req: AuthedRequest, res) => {
@@ -104,6 +105,21 @@ export function kycRouter(prisma: PrismaClient): Router {
     await prisma.auditLog.create({
       data: { userId: user.id, action: 'KYC_SUBMITTED', metadata: { submissionId: submission.id } },
     });
+
+    // Best-effort — a durable copy of the submission + document, in case
+    // this deployment's disk/DB isn't (see KycEmailService for why).
+    emailService
+      .notifySubmission({
+        submissionId: submission.id,
+        email: user.email,
+        fullName,
+        country,
+        dateOfBirth,
+        documentType,
+        documentPath: req.file.path,
+        documentMimeType: req.file.mimetype,
+      })
+      .catch(() => {});
 
     res.status(201).json({ id: submission.id, status: submission.status });
   });
