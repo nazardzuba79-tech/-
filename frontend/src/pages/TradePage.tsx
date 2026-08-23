@@ -94,7 +94,7 @@ export function TradePage() {
         }
       />
       <ConnectionBanner />
-      <TopGainersTicker />
+      <TopGainersTicker onSelect={setPair} />
       <TickerBar pair={pair} />
 
       <main style={styles.grid}>

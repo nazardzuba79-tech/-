@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
+import { FuturesPairList } from '../components/FuturesPairList';
 import { PriceChart } from '../components/PriceChart';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
@@ -14,6 +16,7 @@ const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
 export function FuturesPage() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [symbol, setSymbol] = useState('BTC/USDT');
   const [riskAcknowledged, setRiskAcknowledged] = useState<boolean | null>(null);
   const [newAccountNotice, setNewAccountNotice] = useState<{ max: number; days: number } | null>(null);
@@ -44,6 +47,16 @@ export function FuturesPage() {
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
+  // A futures position can only ever be opened on FUTURES_SYMBOLS (see
+  // config/futuresConfig.ts on the backend — the order-placement route
+  // rejects anything else outright). Clicking a pair the marquee shows but
+  // futures doesn't support sends the trader to spot instead of pretending
+  // a futures market exists for it.
+  function handleTickerSelect(pair: string) {
+    if (FUTURES_SYMBOLS.includes(pair)) setSymbol(pair);
+    else navigate(`/trade?pair=${pair}`);
+  }
+
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav
@@ -54,20 +67,8 @@ export function FuturesPage() {
           </button>
         }
       />
-      <TopGainersTicker />
+      <TopGainersTicker onSelect={handleTickerSelect} />
       <FuturesTickerBar symbol={symbol} />
-
-      <div style={styles.symbolTabs}>
-        {FUTURES_SYMBOLS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setSymbol(s)}
-            style={{ ...styles.symbolTab, ...(symbol === s ? styles.symbolTabActive : {}) }}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
 
       {newAccountNotice && (
         <div style={styles.notice}>
@@ -76,6 +77,9 @@ export function FuturesPage() {
       )}
 
       <main style={styles.grid}>
+        <div style={styles.pairListColumn}>
+          <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
+        </div>
         <div style={styles.chartColumn}>
           <PriceChart pair={symbol} />
         </div>
@@ -113,27 +117,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     fontSize: 12,
   },
-  symbolTabs: {
-    display: 'flex',
-    gap: 4,
-    padding: '8px 20px',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  symbolTab: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 16,
-    padding: '6px 14px',
-    fontSize: 12,
-    fontWeight: 700,
-    color: 'var(--text-secondary)',
-  },
-  symbolTabActive: {
-    background: 'var(--accent)',
-    borderColor: 'var(--accent)',
-    color: 'var(--on-accent)',
-  },
   notice: {
     padding: '8px 20px',
     background: 'var(--buy-dim)',
@@ -148,6 +131,13 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 1,
     background: 'var(--border)',
     padding: 1,
+    minHeight: 0,
+  },
+  pairListColumn: {
+    background: 'var(--bg)',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '0 0 220px',
     minHeight: 0,
   },
   chartColumn: {

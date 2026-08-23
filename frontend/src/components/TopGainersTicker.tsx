@@ -5,6 +5,7 @@ import { parseChangePercent } from '../lib/priceChange';
 import { TOP_COINS } from '../lib/topCoins';
 
 interface Item {
+  /** Slash-separated, e.g. "BTC/USDT" — what onSelect gets called with. */
   pair: string;
   changePercent: number;
 }
@@ -12,8 +13,12 @@ interface Item {
 /** Scrolling marquee of major-coin 24h movers, Binance/Bybit-style —
  * restricted to TOP_COINS (see that file's comment on why it's a curated
  * allowlist rather than a live market-cap ranking) so this never surfaces
- * an obscure microcap next to BTC/ETH. */
-export function TopGainersTicker() {
+ * an obscure microcap next to BTC/ETH. Each item is clickable when
+ * `onSelect` is passed — it always receives the slash-separated pair (e.g.
+ * "SOL/USDT"); the caller decides what "select" means for its own page
+ * (switch the spot pair, switch the futures symbol, or navigate away for a
+ * pair that page can't trade). */
+export function TopGainersTicker({ onSelect }: { onSelect?: (pair: string) => void }) {
   const { lang } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
 
@@ -27,7 +32,7 @@ export function TopGainersTicker() {
           const filtered = res.tickers
             .filter((tk) => tk.pair.endsWith('/USDT') && TOP_COINS.has(tk.pair.split('/')[0]))
             .map((tk) => ({
-              pair: tk.pair.replace('/', ''),
+              pair: tk.pair,
               changePercent: parseChangePercent(tk.changePercent24h, tk.pair),
               quoteVolume24h: parseFloat(tk.quoteVolume24h || '0'),
             }))
@@ -56,14 +61,29 @@ export function TopGainersTicker() {
       <div className="ticker-track" style={styles.track}>
         {loop.map((it, i) => {
           const positive = it.changePercent >= 0;
-          return (
-            <span key={`${it.pair}-${i}`} style={styles.item}>
-              <span style={styles.symbol}>{it.pair}</span>
+          const display = it.pair.replace('/', '');
+          const content = (
+            <>
+              <span style={styles.symbol}>{display}</span>
               <span style={{ color: positive ? 'var(--buy)' : 'var(--sell)', fontWeight: 700 }}>
                 {positive ? '+' : ''}
                 {it.changePercent.toFixed(2)}%
               </span>
               {it.pair === hottest.pair && <span style={styles.hotBadge}>HOT</span>}
+            </>
+          );
+          return onSelect ? (
+            <button
+              key={`${it.pair}-${i}`}
+              onClick={() => onSelect(it.pair)}
+              className="row-hover"
+              style={{ ...styles.item, ...styles.itemBtn }}
+            >
+              {content}
+            </button>
+          ) : (
+            <span key={`${it.pair}-${i}`} style={styles.item}>
+              {content}
             </span>
           );
         })}
@@ -92,6 +112,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'var(--font-mono)',
     padding: '0 18px',
     whiteSpace: 'nowrap',
+  },
+  itemBtn: {
+    background: 'transparent',
+    border: 'none',
+    borderRadius: 6,
+    color: 'inherit',
+    cursor: 'pointer',
   },
   symbol: { color: 'var(--text-primary)', fontWeight: 700 },
   hotBadge: {
