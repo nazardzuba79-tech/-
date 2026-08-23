@@ -6,8 +6,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Used only for `prisma migrate deploy`, never at runtime. Neon's pooled
+  // connection (the normal DATABASE_URL, routed through PgBouncer in
+  // transaction mode) doesn't reliably hold the session-level advisory
+  // lock Prisma takes before applying migrations — that's what was
+  // causing the intermittent "P1002 ... Timed out trying to acquire a
+  // postgres advisory lock" deploy failures. A direct (unpooled)
+  // connection doesn't have that problem. See:
+  // https://pris.ly/d/migrate-advisory-locking
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
