@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { clearToken } from '../lib/api';
+import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { BalanceStrip } from './BalanceStrip';
 import { Logo } from './Logo';
@@ -25,6 +25,7 @@ export function Nav({
   const location = useLocation();
   const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const LINKS = [
     { to: '/trade', label: t('nav.trade') },
@@ -39,6 +40,17 @@ export function Nav({
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
+
+  // Just a UX convenience for showing/hiding the tab — the real gate is
+  // AdminLayout re-checking role ADMIN against the server on every visit,
+  // and every /admin/* API call independently re-checking it too.
+  useEffect(() => {
+    if (!getToken()) return;
+    api
+      .getMe()
+      .then((me) => setIsAdmin(me.isAdmin))
+      .catch(() => {});
+  }, []);
 
   function handleLogout() {
     clearToken();
@@ -74,6 +86,15 @@ export function Nav({
         <Link to="/otc" style={{ ...styles.link, ...(active === '/otc' ? styles.linkActive : {}) }}>
           {t('nav.otc')}
         </Link>
+        {isAdmin && (
+          <Link
+            to="/admin"
+            style={{ ...styles.link, ...styles.cardLink, ...(active === '/admin' ? styles.linkActive : {}) }}
+          >
+            <ShieldIcon active={active === '/admin'} />
+            {t('nav.admin')}
+          </Link>
+        )}
         {middle}
       </div>
 
@@ -120,6 +141,15 @@ export function Nav({
         <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
           {t('nav.otc')}
         </Link>
+        {isAdmin && (
+          <Link
+            to="/admin"
+            style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/admin' ? styles.linkActive : {}) }}
+          >
+            <ShieldIcon active={active === '/admin'} />
+            {t('nav.admin')}
+          </Link>
+        )}
 
         <div style={styles.mobileDivider} />
 
@@ -202,6 +232,24 @@ function GearIcon({ active }: { active: boolean }) {
     >
       <circle cx="12" cy="12" r="3" />
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function ShieldIcon({ active }: { active: boolean }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
+      <path d="M9 12l2 2 4-4" />
     </svg>
   );
 }
