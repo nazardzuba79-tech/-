@@ -356,38 +356,38 @@ export function WalletPage() {
           <div className="surface-raised" style={styles.donutCard}>
             <span style={styles.donutTitle}>{t('wallet.allocation')}</span>
             {hideBalance ? (
-              <div style={{ ...styles.donutPlaceholder, width: 168, height: 168 }}>{MASK}</div>
+              <div style={{ ...styles.donutPlaceholder, width: 200, height: 200 }}>{MASK}</div>
             ) : (
               <div style={styles.donutRow}>
                 <div style={styles.donutSvgWrap}>
-                  <div style={{ opacity: donutSlices.length === 0 ? 0.35 : 1 }}>
-                    <PortfolioDonut slices={donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices} />
+                  <div style={{ opacity: donutSlices.length === 0 ? 0.75 : 1 }}>
+                    <PortfolioDonut slices={donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices} size={200} thickness={28} />
                   </div>
                   {donutSlices.length === 0 && <span style={styles.donutEmptyLabel}>$0</span>}
                 </div>
-                {donutSlices.length > 0 && (
-                  <div style={styles.legend}>
-                    {donutSlices.map((s) => {
-                      const pct = donutTotal > 0 ? (s.value / donutTotal) * 100 : 0;
-                      const isOther = s.label === t('wallet.other');
-                      return (
-                        <div key={s.label} style={styles.legendRow}>
-                          {isOther ? (
-                            <span style={{ ...styles.legendDot, background: s.color }} />
-                          ) : (
-                            <CryptoIcon symbol={s.label} size={14} />
-                          )}
-                          <span className="mono" style={{ fontSize: 11 }}>
-                            {s.label}
-                          </span>
+                <div style={{ ...styles.legend, opacity: donutSlices.length === 0 ? 0.75 : 1 }}>
+                  {(donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices).map((s) => {
+                    const pct = donutTotal > 0 ? (s.value / donutTotal) * 100 : 0;
+                    const isOther = s.label === t('wallet.other');
+                    return (
+                      <div key={s.label} style={styles.legendRow}>
+                        {isOther ? (
+                          <span style={{ ...styles.legendDot, background: s.color }} />
+                        ) : (
+                          <CryptoIcon symbol={s.label} size={14} />
+                        )}
+                        <span className="mono" style={{ fontSize: 11 }}>
+                          {s.label}
+                        </span>
+                        {donutSlices.length > 0 && (
                           <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
                             {pct.toFixed(1)}%
                           </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -725,10 +725,10 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
+    gap: 12,
     flexShrink: 0,
   },
   donutTitle: { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' },
