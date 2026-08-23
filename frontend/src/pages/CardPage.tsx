@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
-import { LogoMark } from '../components/Logo';
 import { Footer } from '../components/Footer';
 import { Skeleton } from '../components/Skeleton';
 
@@ -88,30 +87,7 @@ export function CardPage() {
         <div style={styles.cardsRow}>
           <div style={styles.productCol}>
             <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
-              <div className="card-tilt" style={styles.cardVisual}>
-                <CardWaves />
-                <div style={styles.cardVisualSheen} />
-                <div style={styles.cardVisualTop}>
-                  <LogoMark size={26} variant="badge" />
-                  <ContactlessIcon />
-                </div>
-                <div style={{ flex: 1 }} />
-                {/* Design mockup only — not a real card number or cardholder. */}
-                <div style={styles.cardVisualNumber} className="mono">
-                  •••• •••• •••• 8860
-                </div>
-                <div style={styles.cardVisualHolder} className="mono">
-                  JOHN JOHNSON
-                </div>
-                <div style={{ height: 14 }} />
-                <div style={styles.cardVisualBottom}>
-                  <div style={styles.cardVisualBrand}>
-                    <span style={styles.cardVisualWordmark}>VOLTEX</span>
-                    <span style={styles.cardVisualNetwork}>Crypto Card</span>
-                  </div>
-                  <MastercardMark />
-                </div>
-              </div>
+              <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" />
             </div>
 
             <div style={styles.vipBox}>
@@ -146,30 +122,7 @@ export function CardPage() {
 
           <div style={styles.productCol}>
             <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
-              <div className="card-tilt" style={styles.icyCardVisual}>
-                <IcyCardTexture />
-                <div style={styles.icyCardVisualSheen} />
-                <div style={styles.cardVisualTop}>
-                  <IcyLogoMark />
-                  <ContactlessIcon stroke="rgba(22,56,92,0.55)" />
-                </div>
-                <div style={{ flex: 1 }} />
-                {/* Design mockup only — not a real card number or cardholder. */}
-                <div style={styles.icyCardVisualNumber} className="mono">
-                  •••• •••• •••• 4417
-                </div>
-                <div style={styles.icyCardVisualHolder} className="mono">
-                  JOHN JOHNSON
-                </div>
-                <div style={{ height: 14 }} />
-                <div style={styles.cardVisualBottom}>
-                  <div style={styles.cardVisualBrand}>
-                    <span style={styles.icyWordmarkSmall}>VOLTEX</span>
-                    <span style={styles.icyProductName}>ICY WHITE</span>
-                  </div>
-                  <MastercardMark />
-                </div>
-              </div>
+              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" />
             </div>
 
             <div style={styles.icyBox}>
@@ -214,7 +167,7 @@ export function CardPage() {
             <div style={styles.compareHeaderRow}>
               <span />
               <span style={styles.compareColHeader}>{t('card.baseProductLabel')}</span>
-              <span style={{ ...styles.compareColHeader, color: '#16385c' }}>{t('card.icyProductLabel')}</span>
+              <span style={{ ...styles.compareColHeader, color: ICY_CARD_THEME.textColor }}>{t('card.icyProductLabel')}</span>
             </div>
             <div style={styles.compareRow}>
               <span style={styles.compareRowLabel}>{t('card.compareCashback')}</span>
@@ -314,67 +267,112 @@ function AtmIcon() {
   );
 }
 
-function ContactlessIcon({ stroke = 'rgba(15,18,22,0.6)' }: { stroke?: string }) {
+// EMV chip icon for the card's top-left corner — tone follows the card's
+// own metal finish (gold on the rose-gold card, silver on the Icy White one).
+function ChipIcon({ tone }: { tone: 'gold' | 'silver' }) {
+  const fill = tone === 'gold' ? '#dcb877' : '#c9ced5';
+  const line = tone === 'gold' ? '#a9843f' : '#8a919b';
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2.2" strokeLinecap="round">
-      <path d="M8 10a4 4 0 0 1 0 4" />
-      <path d="M11 7a8 8 0 0 1 0 10" />
-      <path d="M14 4a12 12 0 0 1 0 16" />
+    <svg width="34" height="26" viewBox="0 0 34 26" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0.5" y="0.5" width="33" height="25" rx="4" fill={fill} stroke={line} strokeWidth="0.75" />
+      <line x1="11.5" y1="0.5" x2="11.5" y2="25.5" stroke={line} strokeWidth="0.75" />
+      <line x1="22.5" y1="0.5" x2="22.5" y2="25.5" stroke={line} strokeWidth="0.75" />
+      <line x1="0.5" y1="9" x2="33.5" y2="9" stroke={line} strokeWidth="0.75" />
+      <line x1="0.5" y1="17" x2="33.5" y2="17" stroke={line} strokeWidth="0.75" />
+      <rect x="11.5" y="9" width="11" height="8" fill="none" stroke={line} strokeWidth="0.75" />
     </svg>
   );
 }
 
-// Dark-tinted bolt mark for the Icy White card's top corner — the shared
-// LogoMark component only ships an orange-badge or orange-gradient variant,
-// neither of which reads as "dark" against this card's pale, cool surface.
-function IcyLogoMark() {
+// Large tone-on-tone hexagon + bolt watermark, the card's main brand mark
+// (mirrors the reference's embossed center-right emblem) — a low-opacity
+// tint of the card's own finish, not a separate colored logo.
+function HexEmblem({ tint }: { tint: string }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z" fill="#16385c" />
+    <svg
+      style={{ position: 'absolute', top: '16%', right: -18, width: 170, height: 170, pointerEvents: 'none' }}
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <polygon points="50,4 91,27 91,73 50,96 9,73 9,27" fill="none" stroke={tint} strokeWidth="3" />
+      <path d="M54 20L28 52h20l-3 28 30-36H55l3-24z" fill={tint} />
     </svg>
   );
 }
 
-// Subtle engraved wave motif (Bybit-style) tiled across the light card face
-// — purely decorative texture, sits between the base gradient and the
-// content, well below the sheen and text layers.
-function CardWaves() {
-  return (
-    <svg style={styles.cardVisualWaves} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="cardWavePattern" width="46" height="26" patternTransform="rotate(-10)" patternUnits="userSpaceOnUse">
-          <path d="M0 13 Q11.5 2 23 13 T46 13" fill="none" stroke="rgba(15,18,22,0.055)" strokeWidth="1.1" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#cardWavePattern)" />
-    </svg>
-  );
+// Text-based network mark — swap for the real issuing network's artwork
+// once the card partnership is finalized.
+function VisaMark({ color }: { color: string }) {
+  return <span style={{ ...styles.visaMark, color }}>VISA</span>;
 }
 
-// Crystalline frost lattice for the Icy White card — same tiled-pattern
-// technique as CardWaves, but a faceted diamond grid instead of a wave
-// motif, reading as ice/frost rather than brushed metal.
-function IcyCardTexture() {
-  return (
-    <svg style={styles.cardVisualWaves} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="icyFrostPattern" width="28" height="28" patternTransform="rotate(15)" patternUnits="userSpaceOnUse">
-          <path d="M14 0 L28 14 L14 28 L0 14 Z" fill="none" stroke="rgba(47,102,144,0.09)" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#icyFrostPattern)" />
-    </svg>
-  );
+interface CardTheme {
+  background: string;
+  border: string;
+  boxShadow: string;
+  chipTone: 'gold' | 'silver';
+  hexTint: string;
+  textColor: string;
 }
 
-// Placeholder network mark — swap for the real issuing network's logo once
-// the card partnership is finalized.
-function MastercardMark() {
+// Warm rose-gold brushed metal — the base Voltex Crypto Card.
+const BASE_CARD_THEME: CardTheme = {
+  background: 'linear-gradient(125deg, #f6d9c9 0%, #eab89e 22%, #f9e3d6 40%, #dfa084 58%, #f2c7ae 76%, #e6ab8e 100%)',
+  border: '1px solid rgba(120,70,45,0.18)',
+  boxShadow: '0 24px 50px rgba(120,70,45,0.22), 0 8px 20px rgba(120,70,45,0.12)',
+  chipTone: 'gold',
+  hexTint: 'rgba(120,70,45,0.16)',
+  textColor: '#2b1a0c',
+};
+
+// Cool silver/platinum brushed metal — the Icy White card. Kept clearly
+// distinct in tone from the base card's rose-gold so the two products read
+// as different materials, not just different labels.
+const ICY_CARD_THEME: CardTheme = {
+  background: 'linear-gradient(125deg, #f4f5f7 0%, #d9dde2 22%, #ffffff 40%, #b9bfc8 58%, #eef0f3 76%, #c8cdd4 100%)',
+  border: '1px solid rgba(40,55,70,0.16)',
+  boxShadow: '0 24px 50px rgba(30,45,60,0.18), 0 8px 20px rgba(30,45,60,0.10)',
+  chipTone: 'silver',
+  hexTint: 'rgba(30,45,60,0.14)',
+  textColor: '#16202b',
+};
+
+/**
+ * Shared card face: brushed-metal finish, EMV chip, hexagon watermark,
+ * masked demo number/cardholder (design placeholders, not real data), the
+ * VOLTEX wordmark (always black with a gold-gradient "L", the app's
+ * standard brand treatment — see Logo.tsx), and a DEBIT/VISA lockup. Only
+ * the finish, last 4 digits, and holder name vary between the two cards.
+ */
+function CardFace({ theme, last4, holderName }: { theme: CardTheme; last4: string; holderName: string }) {
   return (
-    <svg width="38" height="24" viewBox="0 0 38 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <circle cx="14" cy="12" r="11" fill="#EB001B" />
-      <circle cx="24" cy="12" r="11" fill="#F79E1B" fillOpacity="0.85" />
-    </svg>
+    <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+      <div style={styles.brushedTexture} />
+      <HexEmblem tint={theme.hexTint} />
+      <div style={styles.cardVisualSheen} />
+      <div style={styles.cardVisualTop}>
+        <ChipIcon tone={theme.chipTone} />
+      </div>
+      <div style={{ flex: 1 }} />
+      <div style={{ ...styles.cardVisualNumber, color: theme.textColor }} className="mono">
+        •••• •••• •••• {last4}
+      </div>
+      <div style={{ height: 14 }} />
+      <div style={styles.cardVisualBottom}>
+        <div style={styles.cardVisualBrand}>
+          <span style={{ ...styles.cardVisualWordmark, color: theme.textColor }}>
+            VO<span style={styles.cardVisualWordmarkL}>L</span>TEX
+          </span>
+          <span style={{ ...styles.cardVisualHolder, color: theme.textColor }} className="mono">
+            {holderName}
+          </span>
+        </div>
+        <div style={styles.cardNetworkStack}>
+          <span style={{ ...styles.cardDebitLabel, color: theme.textColor }}>DEBIT</span>
+          <VisaMark color={theme.textColor} />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -427,29 +425,14 @@ const styles: Record<string, React.CSSProperties> = {
   cardsRow: { display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 32, alignItems: 'flex-start' },
   productCol: { flex: '1 1 340px', minWidth: 300, display: 'flex', flexDirection: 'column', gap: 16 },
   cardTiltWrap: { width: 300 },
-  cardVisual: {
-    ...CARD_VISUAL_BASE,
-    // Light metallic/glossy finish (Bybit-style) — a soft grey-to-white
-    // diagonal gradient for volume, with the wave-pattern and sheen layers
-    // below adding the engraved-metal and glossy-reflection detail.
-    background: 'linear-gradient(135deg, #f4f5f7 0%, #ffffff 30%, #e9ebef 55%, #ffffff 78%, #eef0f3 100%)',
-    border: '1px solid rgba(15,18,22,0.08)',
-    boxShadow: '0 24px 50px rgba(15,18,22,0.18), 0 8px 20px rgba(15,18,22,0.10)',
-  },
-  icyCardVisual: {
-    ...CARD_VISUAL_BASE,
-    // Pearlescent white-to-pale-blue gradient for a "frosted/icy" metal —
-    // the frost-lattice texture and cool-toned sheen below add the
-    // crystalline shimmer.
-    background: 'linear-gradient(135deg, #ffffff 0%, #eef6fb 28%, #dceefa 52%, #ffffff 76%, #e6f2fa 100%)',
-    border: '1px solid rgba(47,102,144,0.14)',
-    boxShadow: '0 24px 50px rgba(30,70,110,0.16), 0 8px 20px rgba(30,70,110,0.09)',
-  },
-  cardVisualWaves: {
+  // Fine diagonal brushed-metal streaks, layered over each card's own
+  // gradient finish — shared by both cards, since only the base gradient
+  // beneath it differs.
+  brushedTexture: {
     position: 'absolute',
     inset: 0,
-    width: '100%',
-    height: '100%',
+    backgroundImage:
+      'repeating-linear-gradient(115deg, rgba(255,255,255,0.28) 0px, rgba(255,255,255,0.28) 1px, rgba(0,0,0,0.035) 2px, transparent 3px, transparent 6px)',
     pointerEvents: 'none',
   },
   cardVisualSheen: {
@@ -460,37 +443,29 @@ const styles: Record<string, React.CSSProperties> = {
     pointerEvents: 'none',
   },
   cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardVisualNumber: { color: 'rgba(15,18,22,0.75)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
-  cardVisualHolder: { color: 'rgba(15,18,22,0.65)', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
-  cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  cardVisualBrand: { display: 'flex', flexDirection: 'column', gap: 2 },
+  cardVisualNumber: { fontSize: 16, fontWeight: 700, letterSpacing: '0.08em' },
+  cardVisualHolder: { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
+  cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
+  cardVisualBrand: { display: 'flex', flexDirection: 'column', gap: 3 },
   cardVisualWordmark: {
-    color: 'var(--accent)',
-    fontWeight: 800,
-    fontSize: 18,
-    fontFamily: 'var(--font-mono)',
-    letterSpacing: '0.03em',
-    textShadow: '0 0 10px rgba(247,166,0,0.35)',
-  },
-  cardVisualNetwork: { color: 'rgba(15,18,22,0.55)', fontWeight: 700, fontSize: 12, letterSpacing: '0.02em' },
-  icyCardVisualSheen: {
-    position: 'absolute',
-    inset: 0,
-    background:
-      'linear-gradient(115deg, rgba(255,255,255,0.95) 0%, rgba(214,235,250,0.3) 18%, rgba(255,255,255,0) 36%, rgba(173,216,240,0.15) 58%, rgba(255,255,255,0.65) 78%, rgba(255,255,255,0) 100%)',
-    pointerEvents: 'none',
-  },
-  icyCardVisualNumber: { color: 'rgba(22,56,92,0.7)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
-  icyCardVisualHolder: { color: 'rgba(22,56,92,0.6)', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
-  icyWordmarkSmall: { color: 'rgba(22,56,92,0.55)', fontWeight: 700, fontSize: 11, letterSpacing: '0.05em' },
-  icyProductName: {
     fontWeight: 800,
     fontSize: 16,
     fontFamily: 'var(--font-mono)',
-    letterSpacing: '0.05em',
-    backgroundImage: 'linear-gradient(135deg, #3f6c93 0%, #b8ccdb 45%, #3f6c93 100%)',
+    letterSpacing: '0.03em',
+  },
+  cardVisualWordmarkL: {
+    backgroundImage: 'linear-gradient(135deg, #ffd166, var(--accent))',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
+  },
+  cardNetworkStack: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 },
+  cardDebitLabel: { fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', opacity: 0.7 },
+  visaMark: {
+    fontFamily: 'var(--font-display)',
+    fontWeight: 900,
+    fontStyle: 'italic',
+    fontSize: 17,
+    letterSpacing: '0.01em',
   },
   vipBox: {
     position: 'relative',
