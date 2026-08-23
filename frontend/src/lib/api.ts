@@ -473,6 +473,12 @@ export const api = {
       { method: 'POST', body: JSON.stringify(params) }
     ),
 
+  // Marks an incoming transfer as not one of ours (e.g. old unrelated
+  // activity on a reused treasury address) — permanently hides it from
+  // getAdminIncomingDeposits. See adminDeposits.ts.
+  ignoreIncomingDeposit: (params: { chain: string; txHash: string }) =>
+    request<{ status: string }>('/admin/deposits/ignore', { method: 'POST', body: JSON.stringify(params) }),
+
   // Admin: manual withdrawal fulfillment — the reverse of the above. See
   // src/api/routes/adminWithdrawals.ts.
   getAdminWithdrawals: () =>

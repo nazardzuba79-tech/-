@@ -72,13 +72,42 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
 
     if (results.length === 0) return res.json([]);
 
-    const existing = await prisma.deposit.findMany({
-      where: { OR: results.map((r) => ({ chain: r.chain, txHash: r.txHash })) },
-      select: { chain: true, txHash: true },
-    });
-    const existingKeys = new Set(existing.map((d) => `${d.chain}:${d.txHash}`));
+    const [existing, ignored] = await Promise.all([
+      prisma.deposit.findMany({
+        where: { OR: results.map((r) => ({ chain: r.chain, txHash: r.txHash })) },
+        select: { chain: true, txHash: true },
+      }),
+      prisma.ignoredIncomingTransfer.findMany({
+        where: { OR: results.map((r) => ({ chain: r.chain, txHash: r.txHash })) },
+        select: { chain: true, txHash: true },
+      }),
+    ]);
+    const excludedKeys = new Set([...existing, ...ignored].map((d) => `${d.chain}:${d.txHash}`));
 
-    res.json(results.filter((r) => !existingKeys.has(`${r.chain}:${r.txHash}`)));
+    res.json(results.filter((r) => !excludedKeys.has(`${r.chain}:${r.txHash}`)));
+  });
+
+  const ignoreSchema = z.object({
+    chain: z.string().min(1),
+    txHash: z.string().min(1),
+  });
+
+  // Marks a listed-but-not-ours transfer (e.g. old unrelated activity on a
+  // reused treasury address) as permanently excluded from the feed above —
+  // for entries that will never get credited because they aren't actually
+  // this exchange's deposits.
+  router.post('/admin/deposits/ignore', requireAuth, requireAdmin(prisma), async (req, res) => {
+    const parsed = ignoreSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const { chain, txHash } = parsed.data;
+
+    await prisma.ignoredIncomingTransfer.upsert({
+      where: { chain_txHash: { chain, txHash } },
+      create: { chain, txHash },
+      update: {},
+    });
+
+    res.json({ status: 'ignored' });
   });
 
   const manualCreditSchema = z.object({

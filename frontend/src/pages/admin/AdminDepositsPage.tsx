@@ -18,6 +18,7 @@ export function AdminDepositsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [pickedUser, setPickedUser] = useState<Record<string, string>>({});
   const [creditingKey, setCreditingKey] = useState<string | null>(null);
+  const [ignoringKey, setIgnoringKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [filterUser, setFilterUser] = useState('');
@@ -59,6 +60,21 @@ export function AdminDepositsPage() {
     }
   }
 
+  async function handleIgnore(tr: Incoming) {
+    const key = `${tr.chain}:${tr.txHash}`;
+    if (!window.confirm('Скрыть этот перевод навсегда? Он не является депозитом от клиента.')) return;
+    setError(null);
+    setIgnoringKey(key);
+    try {
+      await api.ignoreIncomingDeposit({ chain: tr.chain, txHash: tr.txHash });
+      setIncoming((prev) => prev.filter((t) => `${t.chain}:${t.txHash}` !== key));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Не удалось скрыть перевод.');
+    } finally {
+      setIgnoringKey(null);
+    }
+  }
+
   const filtered = useMemo(() => {
     if (!history) return [];
     return history.filter((d) => {
@@ -79,7 +95,7 @@ export function AdminDepositsPage() {
 
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Непривязанные входящие переводы</h3>
       <div style={{ ...styles.table, marginBottom: 32 }}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr', minWidth: 900 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1020 }}>
           <span>Сеть</span>
           <span>Актив</span>
           <span style={{ textAlign: 'right' }}>Сумма</span>
@@ -87,11 +103,12 @@ export function AdminDepositsPage() {
           <span>Txid</span>
           <span>Зачислить пользователю</span>
           <span />
+          <span />
         </div>
         {incoming.map((tr) => {
           const key = `${tr.chain}:${tr.txHash}`;
           return (
-            <div key={key} style={{ ...styles.tableRow, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr', minWidth: 900 }}>
+            <div key={key} style={{ ...styles.tableRow, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1020 }}>
               <span>{tr.chain}</span>
               <span className="mono">{tr.asset}</span>
               <span className="mono" style={{ textAlign: 'right' }}>{tr.amount}</span>
@@ -107,6 +124,9 @@ export function AdminDepositsPage() {
               </select>
               <button disabled={!pickedUser[key] || creditingKey === key} onClick={() => handleCredit(tr)} style={styles.approveBtn}>
                 {creditingKey === key ? 'Зачисление…' : 'Зачислить'}
+              </button>
+              <button disabled={ignoringKey === key} onClick={() => handleIgnore(tr)} style={styles.neutralBtn} title="Не является депозитом — скрыть навсегда">
+                {ignoringKey === key ? 'Скрытие…' : 'Игнорировать'}
               </button>
             </div>
           );

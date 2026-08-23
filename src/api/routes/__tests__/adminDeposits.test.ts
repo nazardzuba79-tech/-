@@ -20,6 +20,7 @@ function adminPrisma(overrides: any = {}) {
   return {
     user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
     deposit: { findMany: jest.fn().mockResolvedValue([]) },
+    ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn().mockResolvedValue({}) },
     treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
     ...overrides,
   };
@@ -114,6 +115,65 @@ describe('admin deposits routes', () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual([expect.objectContaining({ chain: 'bitcoin', txHash: 'tx-new', asset: 'BTC' })]);
+    });
+
+    it('excludes transfers an admin has ignored, alongside already-recorded ones', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qtreasury';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('/address/')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () =>
+              Promise.resolve([
+                { txid: 'tx-new', vout: [{ scriptpubkey_address: 'bc1qtreasury', value: 100000 }], status: { confirmed: true, block_height: 100 } },
+                { txid: 'tx-ignored', vout: [{ scriptpubkey_address: 'bc1qtreasury', value: 50000 }], status: { confirmed: true, block_height: 90 } },
+              ]),
+          });
+        }
+        return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve('105') });
+      });
+
+      const prisma = adminPrisma({
+        ignoredIncomingTransfer: { findMany: jest.fn().mockResolvedValue([{ chain: 'bitcoin', txHash: 'tx-ignored' }]) },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).get('/api/v1/admin/deposits/incoming').set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([expect.objectContaining({ chain: 'bitcoin', txHash: 'tx-new', asset: 'BTC' })]);
+    });
+  });
+
+  describe('POST /admin/deposits/ignore', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/deposits/ignore')
+        .set('Authorization', authHeader('u1'))
+        .send({ chain: 'bitcoin', txHash: 'tx-old' });
+      expect(res.status).toBe(403);
+    });
+
+    it('records the ignored transfer so future feeds exclude it', async () => {
+      const prisma = adminPrisma();
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .post('/api/v1/admin/deposits/ignore')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ chain: 'bitcoin', txHash: 'tx-old' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ status: 'ignored' });
+      expect(prisma.ignoredIncomingTransfer.upsert).toHaveBeenCalledWith({
+        where: { chain_txHash: { chain: 'bitcoin', txHash: 'tx-old' } },
+        create: { chain: 'bitcoin', txHash: 'tx-old' },
+        update: {},
+      });
     });
   });
 

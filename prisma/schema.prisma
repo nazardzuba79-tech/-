@@ -176,6 +176,21 @@ model Deposit {
   @@index([userId])
 }
 
+/// A transfer surfaced by a deposit-verifier's listIncoming() (see
+/// adminDeposits.ts) that an admin has confirmed is NOT one of this
+/// exchange's deposits — e.g. old unrelated activity a treasury address
+/// already had before this deployment started using it. Once ignored, it's
+/// permanently filtered out of the "unlinked incoming transfers" feed,
+/// the same way an already-credited Deposit is.
+model IgnoredIncomingTransfer {
+  id        String   @id @default(uuid())
+  chain     String
+  txHash    String
+  createdAt DateTime @default(now())
+
+  @@unique([chain, txHash])
+}
+
 /// Manual withdrawal request — the mirror of the manual deposit-crediting
 /// flow (see DepositService/adminDeposits.ts): the client requests one
 /// (which immediately locks the balance so it can't also be spent trading
