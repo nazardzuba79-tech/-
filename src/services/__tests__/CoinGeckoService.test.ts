@@ -21,6 +21,24 @@ describe('CoinGeckoService', () => {
     expect(rankings[0]).toMatchObject({ symbol: 'BTC', rank: 1, name: 'Bitcoin', image: 'btc.png' });
   });
 
+  it('sends the API key header on every request when configured', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(MARKETS_BODY));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, 'test-demo-key');
+
+    await service.getRankings();
+
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({ headers: { 'x-cg-demo-api-key': 'test-demo-key' } });
+  });
+
+  it('omits the API key header when none is configured', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(MARKETS_BODY));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await service.getRankings();
+
+    expect(fetchFn.mock.calls[0][1]).toMatchObject({ headers: undefined });
+  });
+
   it('tags coins with categories from the per-category endpoints', async () => {
     const fetchFn = jest.fn().mockImplementation((url: string) => {
       if (url.includes('category=stablecoins')) {
@@ -148,9 +166,9 @@ describe('CoinGeckoService', () => {
       const first = await service.getRankings();
       expect(first.map((r) => r.symbol)).toEqual(['BTC', 'ETH', 'USDT']);
 
-      // Past RANKINGS_TTL_MS (5 minutes) — the next call refetches, which
+      // Past RANKINGS_TTL_MS (1 hour) — the next call refetches, which
       // this mock now fails.
-      jest.advanceTimersByTime(5 * 60_000 + 1000);
+      jest.advanceTimersByTime(60 * 60_000 + 1000);
 
       const second = await service.getRankings();
       expect(second).toEqual(first);

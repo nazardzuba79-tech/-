@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 
-// Matches the backend's RANKINGS_TTL_MS (CoinGeckoService) — no point
-// polling faster than the server-side cache actually refreshes.
-const POLL_MS = 60_000;
+// The backend's own cache (RANKINGS_TTL_MS in CoinGeckoService) only
+// refreshes once an hour, so polling faster than this doesn't get fresher
+// numbers — it would just re-fetch the same cached response repeatedly.
+// Five minutes still recovers a transient failure quickly (see the retry
+// note below) without polling our own backend pointlessly often.
+const POLL_MS = 5 * 60_000;
 
 export interface CoinGeckoStats {
   // Real global 24h trading volume across every exchange CoinGecko tracks

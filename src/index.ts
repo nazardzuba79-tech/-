@@ -45,7 +45,11 @@ const app = express();
 const prisma = new PrismaClient();
 const engine = new MatchingEngine();
 const marketDataService = new KrakenMarketDataService(process.env.KRAKEN_API_BASE_URL || 'https://api.kraken.com');
-const coinGeckoService = new CoinGeckoService(process.env.COINGECKO_API_BASE_URL || 'https://api.coingecko.com/api/v3');
+const coinGeckoService = new CoinGeckoService(
+  process.env.COINGECKO_API_BASE_URL || 'https://api.coingecko.com/api/v3',
+  fetch,
+  process.env.COINGECKO_API_KEY
+);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 

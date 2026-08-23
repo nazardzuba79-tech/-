@@ -41,7 +41,12 @@ export interface CoinRanking {
   sparkline: number[];
 }
 
-const RANKINGS_TTL_MS = 5 * 60_000; // short enough that price/volume/marketCap stay reasonably fresh, long enough to stay well under CoinGecko's free-tier rate limit
+// Refreshed at most once an hour — this data doesn't need to be
+// second-fresh, and each refresh costs 5 CoinGecko calls (1 markets +
+// 4 category), so hourly keeps monthly usage comfortably inside the free
+// Demo plan's 10,000-call cap even under sustained traffic (worst case
+// ~5 * 24 * 31 ≈ 3,720/month, versus 10,000 available).
+const RANKINGS_TTL_MS = 60 * 60_000;
 const TOP_N = 200;
 
 // CoinGecko's own category slugs for the four groupings the UI filters by.
@@ -100,7 +105,14 @@ export class CoinGeckoService {
 
   constructor(
     private readonly baseUrl = 'https://api.coingecko.com/api/v3',
-    private readonly fetchFn: typeof fetch = fetch
+    private readonly fetchFn: typeof fetch = fetch,
+    // Free "Demo" plan key (see COINGECKO_API_KEY in .env.example) — moves
+    // every request from the public anonymous rate-limit pool (shared with
+    // everyone else calling CoinGecko without a key, prone to throttling
+    // under real traffic) onto this app's own dedicated 100-calls/min,
+    // 10,000-calls/month quota. Optional: falls back to the anonymous tier
+    // when unset, same "gracefully absent" pattern as everywhere else.
+    private readonly apiKey?: string
   ) {}
 
   /** Top ~200 coins by market cap, each tagged with whichever of the four
@@ -184,7 +196,9 @@ export class CoinGeckoService {
   private async request(path: string): Promise<unknown> {
     let res: Response;
     try {
-      res = await this.fetchFn(`${this.baseUrl}${path}`);
+      res = await this.fetchFn(`${this.baseUrl}${path}`, {
+        headers: this.apiKey ? { 'x-cg-demo-api-key': this.apiKey } : undefined,
+      });
     } catch (err: any) {
       throw new ExternalRankingError(`Failed to reach CoinGecko: ${err.message}`);
     }
