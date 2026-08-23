@@ -17,7 +17,10 @@
  *
  * Three chain "types" are supported, each verified completely differently
  * on deposit claim (see src/services/deposit-verifiers/):
- *   - "evm"     Ethereum, Polygon, BSC, ... — via an RPC provider (ethers.js)
+ *   - "evm"     Ethereum, Polygon, BSC, ... — a free public RPC endpoint
+ *               (no signup) verifies a specific tx at credit time; a free
+ *               Etherscan-style API key (2-minute signup, no payment) powers
+ *               the admin's incoming-transfers feed — see EvmDepositVerifier
  *   - "bitcoin" Bitcoin — via a public Esplora-style block explorer API
  *   - "tron"    Tron (e.g. USDT-TRC20) — via the TronGrid API
  *
@@ -43,11 +46,18 @@ export interface ChainConfig {
   nativeAsset: string; // "ETH", "BTC", "TRX", ...
   /** ERC-20 / TRC-20 tokens supported for deposit on this chain. */
   tokens: Record<string, { contractAddress: string; decimals: number }>;
-  /** EVM only — JSON-RPC endpoint (Alchemy/Infura/...). */
+  /** EVM only — JSON-RPC endpoint, used only for the authoritative
+   * single-transaction check at credit time. A free public endpoint (e.g.
+   * https://ethereum.publicnode.com) is fine here — no signup, no payment,
+   * no API key. */
   rpcUrl?: string;
-  /** Bitcoin/Tron only — REST API base URL (Blockstream Esplora / TronGrid). */
+  /** Bitcoin/Tron/EVM — REST API base URL (Blockstream Esplora / TronGrid /
+   * Etherscan) that powers the admin's incoming-transfers feed. */
   apiUrl?: string;
-  /** Tron only — optional TronGrid API key (raises the free rate limit). */
+  /** Tron: optional, raises TronGrid's free rate limit. EVM: required for
+   * the incoming-transfers feed — Etherscan's API key is free (signup at
+   * https://etherscan.io/apis, no payment), just not automatic like the
+   * TronGrid/Blockstream defaults below. */
   apiKey?: string;
 }
 
@@ -60,6 +70,7 @@ const DEFAULT_MIN_CONFIRMATIONS: Record<ChainType, number> = {
 const DEFAULT_API_URL: Partial<Record<ChainType, string>> = {
   bitcoin: 'https://blockstream.info/api',
   tron: 'https://api.trongrid.io',
+  evm: 'https://api.etherscan.io/api',
 };
 
 function requireEnv(name: string): string {
@@ -82,7 +93,12 @@ export function loadChainConfig(chain: string): ChainConfig {
   };
 
   if (type === 'evm') {
-    return { ...base, rpcUrl: requireEnv(`${prefix}_RPC_URL`) };
+    return {
+      ...base,
+      rpcUrl: requireEnv(`${prefix}_RPC_URL`),
+      apiUrl: process.env[`${prefix}_API_URL`] ?? DEFAULT_API_URL[type],
+      apiKey: process.env[`${prefix}_API_KEY`],
+    };
   }
 
   return {

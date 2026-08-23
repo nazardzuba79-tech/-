@@ -18,6 +18,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
+    ethereum: t('deposit.chain.ethereum'),
   };
   const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
   const [chainsLoaded, setChainsLoaded] = useState(false);

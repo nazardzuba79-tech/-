@@ -217,6 +217,26 @@ export const api = {
       }[]
     >('/deposits/me'),
 
+  getMyWithdrawals: () =>
+    request<
+      {
+        id: string;
+        asset: string;
+        network: string;
+        toAddress: string;
+        amount: string;
+        status: string;
+        rejectionReason: string | null;
+        createdAt: string;
+      }[]
+    >('/withdrawals/me'),
+
+  requestWithdrawal: (params: { asset: string; network: string; toAddress: string; amount: string }) =>
+    request<{ id: string; asset: string; network: string; toAddress: string; amount: string; status: string }>(
+      '/withdrawals',
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
+
   // Read-only mirror of Kraken market data — coin list, price, order book.
   getExternalSymbols: () =>
     request<{ source: string; symbols: { pair: string; baseAsset: string; quoteAsset: string }[] }>(
@@ -455,6 +475,33 @@ export const api = {
       '/admin/deposits/manual-credit',
       { method: 'POST', body: JSON.stringify(params) }
     ),
+
+  // Admin: manual withdrawal fulfillment — the reverse of the above. See
+  // src/api/routes/adminWithdrawals.ts.
+  getAdminWithdrawals: () =>
+    request<
+      {
+        id: string;
+        userId: string;
+        userEmail: string;
+        asset: string;
+        network: string;
+        toAddress: string;
+        amount: string;
+        status: string;
+        rejectionReason: string | null;
+        createdAt: string;
+      }[]
+    >('/admin/withdrawals'),
+
+  completeWithdrawal: (id: string) =>
+    request<{ id: string; status: string }>(`/admin/withdrawals/${id}/complete`, { method: 'POST' }),
+
+  rejectWithdrawal: (id: string, reason?: string) =>
+    request<{ id: string; status: string }>(`/admin/withdrawals/${id}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
 
   reviewKyc: (submissionId: string, approve: boolean, reason?: string) =>
     request<{ status: string }>(`/kyc/${submissionId}/review`, {

@@ -1,3 +1,4 @@
+import { ethers } from 'ethers';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { loadChainConfig } from '../config/chains';
@@ -25,7 +26,9 @@ export interface ReserveRow {
 
 // Same narrow list deposits.ts actually accepts claims on — a reserves row
 // for a chain nobody can deposit through would be misleading, not honest.
-const KNOWN_CHAINS = ['bitcoin', 'tron'];
+const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum'];
+
+const ERC20_BALANCE_OF_ABI = ['function balanceOf(address) view returns (uint256)'];
 
 async function internalLiabilities(prisma: PrismaClient, asset: string): Promise<BigNumber> {
   const rows = await prisma.balance.findMany({ where: { asset }, select: { available: true, locked: true } });
@@ -84,14 +87,36 @@ async function fetchTronTokenBalance(
   return new BigNumber(raw).dividedBy(new BigNumber(10).pow(decimals));
 }
 
+// RPC-based, like EvmDepositVerifier.verify() — a single balance read per
+// asset, cheap enough for a free public endpoint even though this runs on
+// every reserves check rather than only at credit time.
+async function fetchEvmNativeBalance(rpcUrl: string, address: string): Promise<BigNumber> {
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const balance = await provider.getBalance(address);
+  return new BigNumber(ethers.formatEther(balance));
+}
+
+async function fetchEvmTokenBalance(
+  rpcUrl: string,
+  treasuryAddress: string,
+  contractAddress: string,
+  decimals: number
+): Promise<BigNumber> {
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const contract = new ethers.Contract(contractAddress, ERC20_BALANCE_OF_ABI, provider);
+  const raw: bigint = await contract.balanceOf(treasuryAddress);
+  return new BigNumber(raw.toString()).dividedBy(new BigNumber(10).pow(decimals));
+}
+
 /**
  * A self-reported reserves check, not an independent audit: it compares
  * this deployment's own database (what it owes every user, per asset)
  * against the same treasury addresses' real on-chain balances, fetched live
- * from the same public block explorer / TronGrid APIs the deposit verifiers
- * use. There is no cryptographic attestation (Merkle proof of individual
- * balances, third-party auditor signature, ...) — that's a materially
- * different, much bigger feature. Labelled as such in the UI.
+ * from the same public block explorer / TronGrid / RPC endpoints the
+ * deposit verifiers use. There is no cryptographic attestation (Merkle
+ * proof of individual balances, third-party auditor signature, ...) —
+ * that's a materially different, much bigger feature. Labelled as such in
+ * the UI.
  */
 export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = fetch): Promise<ReserveRow[]> {
   const rows: ReserveRow[] = [];
@@ -148,6 +173,56 @@ export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = 
             token.decimals,
             fetchFn
           );
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: onChain.toFixed(),
+            coverageRatio: coverageRatio(onChain, liabilities),
+          });
+        } catch (err: any) {
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: null,
+            coverageRatio: null,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    if (config.type === 'evm') {
+      const nativeLiabilities = await internalLiabilities(prisma, config.nativeAsset);
+      try {
+        const onChain = await fetchEvmNativeBalance(config.rpcUrl!, config.treasuryAddress);
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: onChain.toFixed(),
+          coverageRatio: coverageRatio(onChain, nativeLiabilities),
+        });
+      } catch (err: any) {
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: null,
+          coverageRatio: null,
+          error: err.message,
+        });
+      }
+
+      for (const [asset, token] of Object.entries(config.tokens)) {
+        const liabilities = await internalLiabilities(prisma, asset);
+        try {
+          const onChain = await fetchEvmTokenBalance(config.rpcUrl!, config.treasuryAddress, token.contractAddress, token.decimals);
           rows.push({
             chain: config.chain,
             asset,

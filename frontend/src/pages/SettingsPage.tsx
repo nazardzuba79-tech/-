@@ -8,7 +8,7 @@ import { getCountries, getCountryName } from '../lib/countries';
 import { Footer } from '../components/Footer';
 import { Skeleton, SkeletonRow } from '../components/Skeleton';
 
-type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients' | 'deposits';
+type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients' | 'deposits' | 'withdrawals';
 type T = ReturnType<typeof useLanguage>['t'];
 
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
@@ -40,7 +40,12 @@ export function SettingsPage() {
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav active="/settings" />
-      <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' || tab === 'deposits' ? 1080 : 760 }}>
+      <main
+        style={{
+          ...styles.main,
+          maxWidth: tab === 'clients' || tab === 'api' || tab === 'deposits' || tab === 'withdrawals' ? 1080 : 760,
+        }}
+      >
         <h1 style={styles.title}>{t('settings.title')}</h1>
 
         <div style={styles.layout}>
@@ -55,6 +60,13 @@ export function SettingsPage() {
             {isAdmin && (
               <TabButton label={t('settings.tab.deposits')} active={tab === 'deposits'} onClick={() => setTab('deposits')} />
             )}
+            {isAdmin && (
+              <TabButton
+                label={t('settings.tab.withdrawals')}
+                active={tab === 'withdrawals'}
+                onClick={() => setTab('withdrawals')}
+              />
+            )}
           </div>
 
           <div style={styles.content}>
@@ -64,6 +76,7 @@ export function SettingsPage() {
             {tab === 'api' && <ApiKeysTab />}
             {tab === 'clients' && isAdmin && <ClientsTab />}
             {tab === 'deposits' && isAdmin && <DepositsTab />}
+            {tab === 'withdrawals' && isAdmin && <WithdrawalsTab />}
           </div>
         </div>
 
@@ -1154,6 +1167,133 @@ function DepositsTab() {
             </div>
           ))}
           {history.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.deposits.noHistory')}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Manual withdrawal fulfillment — the reverse of DepositsTab. A client's
+ * request already locked their balance (see WithdrawalService); the admin
+ * sends the crypto by hand from the treasury wallet outside this app
+ * entirely, then comes back here to mark the request completed (releases
+ * the lock) or rejected (returns the funds to the client's available
+ * balance).
+ */
+function WithdrawalsTab() {
+  const { t, lang } = useLanguage();
+  const [withdrawals, setWithdrawals] = useState<Awaited<ReturnType<typeof api.getAdminWithdrawals>>>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function reload() {
+    api
+      .getAdminWithdrawals()
+      .then(setWithdrawals)
+      .finally(() => setLoaded(true));
+  }
+
+  useEffect(reload, []);
+
+  const pending = withdrawals.filter((w) => w.status === 'PENDING');
+
+  async function handleComplete(id: string) {
+    setError(null);
+    setBusyId(id);
+    try {
+      await api.completeWithdrawal(id);
+      reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.withdrawals.actionError'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleReject(id: string) {
+    const reason = window.prompt(t('settings.withdrawals.rejectPrompt')) ?? undefined;
+    setError(null);
+    setBusyId(id);
+    try {
+      await api.rejectWithdrawal(id, reason || undefined);
+      reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.withdrawals.actionError'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h3 style={styles.sectionTitle}>{t('settings.withdrawals.pendingTitle')}</h3>
+        {error && <div style={styles.errorBox}>{error}</div>}
+        <div className="surface-raised" style={styles.depositsTable}>
+          <div style={{ ...styles.depositsHeader, gridTemplateColumns: '1.6fr 0.8fr 0.8fr 1.6fr 1fr 1.2fr' }}>
+            <span>{t('settings.deposits.client')}</span>
+            <span>{t('settings.deposits.asset')}</span>
+            <span>{t('settings.withdrawals.network')}</span>
+            <span>{t('settings.withdrawals.address')}</span>
+            <span style={{ textAlign: 'right' }}>{t('settings.deposits.amount')}</span>
+            <span />
+          </div>
+          {pending.map((w) => (
+            <div key={w.id} style={{ ...styles.depositsRow, gridTemplateColumns: '1.6fr 0.8fr 0.8fr 1.6fr 1fr 1.2fr' }}>
+              <span style={{ fontSize: 12 }}>{w.userEmail}</span>
+              <span className="mono">{w.asset}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{w.network}</span>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={w.toAddress}>
+                {w.toAddress}
+              </span>
+              <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button disabled={busyId === w.id} onClick={() => handleComplete(w.id)} style={styles.approveBtn}>
+                  {t('settings.withdrawals.complete')}
+                </button>
+                <button disabled={busyId === w.id} onClick={() => handleReject(w.id)} style={styles.rejectBtn}>
+                  {t('settings.withdrawals.reject')}
+                </button>
+              </div>
+            </div>
+          ))}
+          {loaded && pending.length === 0 && (
+            <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.withdrawals.noPending')}</p>
+          )}
+          {!loaded && <Skeleton height={80} />}
+        </div>
+      </div>
+
+      <div>
+        <h3 style={styles.sectionTitle}>{t('settings.withdrawals.historyTitle')}</h3>
+        <div className="surface-raised" style={{ ...styles.depositsTable, gridTemplateColumns: undefined }}>
+          <div style={{ ...styles.depositsHeader, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1.6fr 1fr 1fr' }}>
+            <span>{t('settings.deposits.date')}</span>
+            <span>{t('settings.deposits.client')}</span>
+            <span>{t('settings.deposits.asset')}</span>
+            <span>{t('settings.withdrawals.address')}</span>
+            <span style={{ textAlign: 'right' }}>{t('settings.deposits.amount')}</span>
+            <span>{t('settings.deposits.status')}</span>
+          </div>
+          {withdrawals.map((w) => (
+            <div key={w.id} style={{ ...styles.depositsRow, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1.6fr 1fr 1fr' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(w.createdAt).toLocaleString(localeOf(lang))}</span>
+              <span style={{ fontSize: 12 }}>{w.userEmail}</span>
+              <span className="mono">{w.asset}</span>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={w.toAddress}>
+                {w.toAddress}
+              </span>
+              <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
+              <span style={{ fontSize: 12 }} title={w.rejectionReason ?? undefined}>
+                {w.status}
+              </span>
+            </div>
+          ))}
+          {withdrawals.length === 0 && (
+            <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.withdrawals.noHistory')}</p>
+          )}
         </div>
       </div>
     </div>

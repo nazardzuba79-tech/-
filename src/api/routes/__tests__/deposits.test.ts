@@ -41,10 +41,19 @@ describe('deposits routes', () => {
       expect(chainNames).not.toContain('tron');
     });
 
-    it('never lists ethereum, even if its env vars happen to be set', async () => {
+    it('lists ethereum once its env vars are configured', async () => {
       process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
       process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
       process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-chains').set('Authorization', authHeader('user-1'));
+
+      expect(res.body.map((c: any) => c.chain)).toContain('ethereum');
+    });
+
+    it('omits ethereum when its env vars are not set', async () => {
+      delete process.env.ETHEREUM_TREASURY_ADDRESS;
 
       const app = buildApp();
       const res = await request(app).get('/api/v1/deposit-chains').set('Authorization', authHeader('user-1'));

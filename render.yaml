@@ -29,6 +29,16 @@ services:
         value: TRX
       - key: TRON_TOKENS
         value: "USDT:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t:6"
+      - key: ETHEREUM_TREASURY_ADDRESS
+        sync: false # optional — only needed if you want Ethereum (ETH + ERC-20 USDT) deposits working; your own wallet address (e.g. Trust Wallet)
+      - key: ETHEREUM_NATIVE_ASSET
+        value: ETH
+      - key: ETHEREUM_RPC_URL
+        value: "https://ethereum.publicnode.com" # free public RPC, no signup — verifies one tx at credit time
+      - key: ETHEREUM_TOKENS
+        value: "USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6"
+      - key: ETHEREUM_API_KEY
+        sync: false # optional — free key from https://etherscan.io/apis, powers the admin's incoming-transfers feed
 
   - type: web
     name: exchange-frontend

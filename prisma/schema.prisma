@@ -156,20 +156,32 @@ model Deposit {
   @@index([userId])
 }
 
+/// Manual withdrawal request — the mirror of the manual deposit-crediting
+/// flow (see DepositService/adminDeposits.ts): the client requests one
+/// (which immediately locks the balance so it can't also be spent trading
+/// or double-withdrawn), an admin sends the crypto by hand from the same
+/// treasury wallet deposits are received into, and marks the request
+/// completed or rejected. No on-chain broadcast/confirmation tracking here
+/// — that would only make sense for an automated signer, which this
+/// deployment deliberately doesn't have (see config/chains.ts's
+/// single-treasury model doc comment).
 model Withdrawal {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  asset          String
-  chain          String
-  toAddress      String
-  amount         Decimal  @db.Decimal(36, 18)
-  fee            Decimal  @db.Decimal(36, 18)
-  status         String   // PENDING_REVIEW | APPROVED | BROADCAST | CONFIRMED | REJECTED
-  approvedBy     String?  // admin/ops user id — withdrawals need multi-party approval, see README
-  txHash         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id])
+  asset              String
+  /// Free-text network label (e.g. "TRC20", "ERC20", "native") — withdrawal
+  /// isn't limited to the few chains this deployment can verify a DEPOSIT
+  /// on, since a user can hold (and want to withdraw) any asset they
+  /// acquired by trading, not just what they deposited directly.
+  network            String
+  toAddress          String
+  amount             Decimal   @db.Decimal(36, 18)
+  status             String    // PENDING | COMPLETED | REJECTED
+  rejectionReason    String?
+  performedByAdminId String?   // admin who completed or rejected this
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])

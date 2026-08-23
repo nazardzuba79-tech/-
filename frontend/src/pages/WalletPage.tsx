@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
-import { useToast } from '../lib/toast';
 import { Nav } from '../components/Nav';
 import { DepositModal } from '../components/DepositModal';
+import { WithdrawModal } from '../components/WithdrawModal';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon, avatarColor } from '../components/CryptoIcon';
@@ -85,7 +85,6 @@ function saveFlag(key: string, value: boolean) {
  */
 export function WalletPage() {
   const { t, lang } = useLanguage();
-  const toast = useToast();
   const navigate = useNavigate();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
@@ -95,6 +94,7 @@ export function WalletPage() {
   const [rankingsError, setRankingsError] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [withdrawAsset, setWithdrawAsset] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [hideBalance, setHideBalance] = useState(() => loadFlag(HIDE_BALANCE_KEY));
   const [hideZero, setHideZero] = useState(() => loadFlag(HIDE_ZERO_KEY));
@@ -188,9 +188,6 @@ export function WalletPage() {
     }
   }
 
-  function handleWithdrawClick() {
-    toast.info(t('wallet.withdrawUnavailable'));
-  }
 
   const spotValue = (asset: string, b?: Balance) => {
     if (!b) return 0;
@@ -442,9 +439,9 @@ export function WalletPage() {
                               <TransferIcon />
                             </button>
                             <button
-                              onClick={handleWithdrawClick}
-                              style={{ ...styles.actionBtn, opacity: 0.45 }}
-                              title={t('wallet.withdrawUnavailable')}
+                              onClick={() => setWithdrawAsset(r.symbol)}
+                              style={styles.actionBtn}
+                              title={t('wallet.actionWithdraw')}
                             >
                               <WithdrawIcon />
                             </button>
@@ -547,6 +544,7 @@ export function WalletPage() {
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
+      {withdrawAsset && <WithdrawModal asset={withdrawAsset} onClose={() => setWithdrawAsset(null)} />}
     </div>
   );
 }

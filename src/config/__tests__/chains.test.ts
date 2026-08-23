@@ -22,6 +22,29 @@ describe('loadChainConfig', () => {
     expect(config.minConfirmations).toBe(12);
   });
 
+  it('defaults an EVM chain to the Etherscan API and picks up an optional API key', () => {
+    process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+    process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+    process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+    process.env.ETHEREUM_API_KEY = 'secret-key';
+
+    const config = loadChainConfig('ethereum');
+
+    expect(config.apiUrl).toBe('https://api.etherscan.io/api');
+    expect(config.apiKey).toBe('secret-key');
+  });
+
+  it('lets ETHEREUM_API_URL override the default Etherscan-style endpoint', () => {
+    process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+    process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+    process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+    process.env.ETHEREUM_API_URL = 'https://my-explorer.example/api';
+
+    const config = loadChainConfig('ethereum');
+
+    expect(config.apiUrl).toBe('https://my-explorer.example/api');
+  });
+
   it('throws when an EVM chain is missing its RPC URL', () => {
     process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
     process.env.ETHEREUM_NATIVE_ASSET = 'ETH';

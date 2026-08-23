@@ -1,3 +1,16 @@
+jest.mock('ethers', () => {
+  const actual = jest.requireActual('ethers');
+  return {
+    ...actual,
+    ethers: {
+      ...actual.ethers,
+      JsonRpcProvider: jest.fn(),
+      Contract: jest.fn(),
+    },
+  };
+});
+
+import { ethers } from 'ethers';
 import { getReserves } from '../ReservesService';
 
 const OLD_ENV = process.env;
@@ -6,6 +19,7 @@ beforeEach(() => {
   process.env = { ...OLD_ENV };
   delete process.env.BITCOIN_TREASURY_ADDRESS;
   delete process.env.TRON_TREASURY_ADDRESS;
+  delete process.env.ETHEREUM_TREASURY_ADDRESS;
 });
 afterAll(() => {
   process.env = OLD_ENV;
@@ -108,5 +122,64 @@ describe('getReserves', () => {
     const rows = await getReserves(prisma, fetchFn);
 
     expect(rows[0].coverageRatio).toBe(0.5);
+  });
+
+  describe('Ethereum (evm)', () => {
+    function setEthEnv() {
+      process.env.ETHEREUM_TREASURY_ADDRESS = '0x1234567890123456789012345678901234567890';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+    }
+
+    it('checks the native ETH balance against summed user liabilities', async () => {
+      setEthEnv();
+      (ethers.JsonRpcProvider as unknown as jest.Mock).mockImplementation(() => ({
+        getBalance: jest.fn().mockResolvedValue(ethers.parseEther('2')),
+      }));
+      const prisma = makePrisma({ ETH: [{ available: '1.5', locked: '0.5' }] });
+
+      const rows = await getReserves(prisma, jest.fn());
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0].chain).toBe('ethereum');
+      expect(rows[0].asset).toBe('ETH');
+      expect(rows[0].internalLiabilities).toBe('2');
+      expect(rows[0].onChainBalance).toBe('2');
+      expect(rows[0].coverageRatio).toBe(1);
+    });
+
+    it('checks each configured ERC-20 token balance via balanceOf', async () => {
+      setEthEnv();
+      process.env.ETHEREUM_TOKENS = 'USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6';
+      (ethers.JsonRpcProvider as unknown as jest.Mock).mockImplementation(() => ({
+        getBalance: jest.fn().mockResolvedValue(0n),
+      }));
+      (ethers.Contract as unknown as jest.Mock).mockImplementation(() => ({
+        balanceOf: jest.fn().mockResolvedValue(1_000_000_000n), // 1000 USDT at 6 decimals
+      }));
+      const prisma = makePrisma({ ETH: [], USDT: [{ available: '1000', locked: '0' }] });
+
+      const rows = await getReserves(prisma, jest.fn());
+
+      const usdtRow = rows.find((r) => r.asset === 'USDT')!;
+      expect(usdtRow.chain).toBe('ethereum');
+      expect(usdtRow.internalLiabilities).toBe('1000');
+      expect(usdtRow.onChainBalance).toBe('1000');
+      expect(usdtRow.coverageRatio).toBe(1);
+    });
+
+    it('surfaces an RPC failure as onChainBalance: null instead of hiding it', async () => {
+      setEthEnv();
+      (ethers.JsonRpcProvider as unknown as jest.Mock).mockImplementation(() => ({
+        getBalance: jest.fn().mockRejectedValue(new Error('RPC unreachable')),
+      }));
+      const prisma = makePrisma({ ETH: [{ available: '1', locked: '0' }] });
+
+      const rows = await getReserves(prisma, jest.fn());
+
+      expect(rows[0].onChainBalance).toBeNull();
+      expect(rows[0].coverageRatio).toBeNull();
+      expect(rows[0].error).toContain('RPC unreachable');
+    });
   });
 });
