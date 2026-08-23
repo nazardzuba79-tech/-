@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
-import { BalanceStrip } from './BalanceStrip';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -104,7 +103,6 @@ export function Nav({
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
-        <BalanceStrip />
         {rightExtra}
         <LanguageSwitcher />
         <button onClick={handleLogout} style={styles.logoutBtn}>
@@ -159,9 +157,6 @@ export function Nav({
         <div style={styles.mobileDivider} />
 
         {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
-        <div style={styles.mobileBalanceRow}>
-          <BalanceStrip />
-        </div>
         <div style={styles.mobileLangRow}>
           <LanguageSwitcher />
         </div>
@@ -322,10 +317,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   mobileRightExtra: {
     padding: '8px 0',
-  },
-  mobileBalanceRow: {
-    padding: '10px 6px',
-    borderBottom: '1px solid var(--border)',
   },
   mobileLangRow: {
     padding: '10px 6px',

@@ -400,7 +400,6 @@ const RU = {
   'markets.rankingsUnavailable': 'Данные о капитализации временно недоступны',
   'markets.rank': 'Ранг',
 
-  'balance.zero': 'Баланс: 0',
 
   'wallet.title': 'Обзор активов',
   'wallet.approxBtc': '≈ {amount} BTC',
@@ -936,7 +935,6 @@ const EN: Record<Key, string> = {
   'markets.rankingsUnavailable': 'Market cap data is temporarily unavailable',
   'markets.rank': 'Rank',
 
-  'balance.zero': 'Balance: 0',
 
   'wallet.title': 'Assets Overview',
   'wallet.approxBtc': '≈ {amount} BTC',
@@ -1469,7 +1467,6 @@ const ZH: Record<Key, string> = {
   'markets.rankingsUnavailable': '市值数据暂时不可用',
   'markets.rank': '排名',
 
-  'balance.zero': '余额：0',
 
   'wallet.title': '资产总览',
   'wallet.approxBtc': '≈ {amount} BTC',
