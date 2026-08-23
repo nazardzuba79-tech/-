@@ -88,17 +88,27 @@ export function CardPage() {
 
           <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
             <div className="card-tilt" style={styles.cardVisual}>
+              <CardWaves />
               <div style={styles.cardVisualSheen} />
               <div style={styles.cardVisualTop}>
                 <LogoMark size={26} variant="badge" />
                 <ContactlessIcon />
               </div>
+              <div style={{ flex: 1 }} />
+              {/* Design mockup only — not a real card number or cardholder. */}
               <div style={styles.cardVisualNumber} className="mono">
-                •••• •••• •••• ••••
+                •••• •••• •••• 8860
               </div>
+              <div style={styles.cardVisualHolder} className="mono">
+                JOHN JOHNSON
+              </div>
+              <div style={{ height: 14 }} />
               <div style={styles.cardVisualBottom}>
-                <span style={styles.cardVisualWordmark}>VOLTEX</span>
-                <span style={styles.cardVisualNetwork}>Crypto Card</span>
+                <div style={styles.cardVisualBrand}>
+                  <span style={styles.cardVisualWordmark}>VOLTEX</span>
+                  <span style={styles.cardVisualNetwork}>Crypto Card</span>
+                </div>
+                <MastercardMark />
               </div>
             </div>
           </div>
@@ -215,10 +225,37 @@ function AtmIcon() {
 
 function ContactlessIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.2" strokeLinecap="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(15,18,22,0.6)" strokeWidth="2.2" strokeLinecap="round">
       <path d="M8 10a4 4 0 0 1 0 4" />
       <path d="M11 7a8 8 0 0 1 0 10" />
       <path d="M14 4a12 12 0 0 1 0 16" />
+    </svg>
+  );
+}
+
+// Subtle engraved wave motif (Bybit-style) tiled across the light card face
+// — purely decorative texture, sits between the base gradient and the
+// content, well below the sheen and text layers.
+function CardWaves() {
+  return (
+    <svg style={styles.cardVisualWaves} xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="cardWavePattern" width="46" height="26" patternTransform="rotate(-10)" patternUnits="userSpaceOnUse">
+          <path d="M0 13 Q11.5 2 23 13 T46 13" fill="none" stroke="rgba(15,18,22,0.055)" strokeWidth="1.1" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#cardWavePattern)" />
+    </svg>
+  );
+}
+
+// Placeholder network mark — swap for the real issuing network's logo once
+// the card partnership is finalized.
+function MastercardMark() {
+  return (
+    <svg width="38" height="24" viewBox="0 0 38 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="14" cy="12" r="11" fill="#EB001B" />
+      <circle cx="24" cy="12" r="11" fill="#F79E1B" fillOpacity="0.85" />
     </svg>
   );
 }
@@ -270,37 +307,44 @@ const styles: Record<string, React.CSSProperties> = {
     aspectRatio: '1.586',
     borderRadius: 18,
     padding: 24,
-    // Metallic graphite finish (Bybit-style) instead of a flat brand-color
-    // fill — several dark tone stops on a steep diagonal read as brushed
-    // metal, with the sheen layer below adding the glossy highlight.
-    background:
-      'linear-gradient(135deg, #3a3f4a 0%, #16181c 22%, #2b2e35 45%, #0e0f12 68%, #3d4149 85%, #1a1c20 100%)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    boxShadow: '0 20px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)',
+    // Light metallic/glossy finish (Bybit-style) — a soft grey-to-white
+    // diagonal gradient for volume, with the wave-pattern and sheen layers
+    // below adding the engraved-metal and glossy-reflection detail.
+    background: 'linear-gradient(135deg, #f4f5f7 0%, #ffffff 30%, #e9ebef 55%, #ffffff 78%, #eef0f3 100%)',
+    border: '1px solid rgba(15,18,22,0.08)',
+    boxShadow: '0 24px 50px rgba(15,18,22,0.18), 0 8px 20px rgba(15,18,22,0.10)',
     display: 'flex',
     flexDirection: 'column',
-    justifyContent: 'space-between',
     overflow: 'hidden',
+  },
+  cardVisualWaves: {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none',
   },
   cardVisualSheen: {
     position: 'absolute',
     inset: 0,
     background:
-      'linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 22%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0) 78%)',
+      'linear-gradient(115deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0) 34%, rgba(15,18,22,0.03) 55%, rgba(255,255,255,0.55) 76%, rgba(255,255,255,0) 100%)',
     pointerEvents: 'none',
   },
   cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardVisualNumber: { color: 'rgba(255,255,255,0.55)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
+  cardVisualNumber: { color: 'rgba(15,18,22,0.75)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
+  cardVisualHolder: { color: 'rgba(15,18,22,0.65)', fontSize: 13, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
   cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  cardVisualBrand: { display: 'flex', flexDirection: 'column', gap: 2 },
   cardVisualWordmark: {
     color: 'var(--accent)',
     fontWeight: 800,
     fontSize: 18,
     fontFamily: 'var(--font-mono)',
     letterSpacing: '0.03em',
-    textShadow: '0 0 16px rgba(247,166,0,0.5)',
+    textShadow: '0 0 10px rgba(247,166,0,0.35)',
   },
-  cardVisualNetwork: { color: 'rgba(255,255,255,0.55)', fontWeight: 700, fontSize: 12, letterSpacing: '0.02em' },
+  cardVisualNetwork: { color: 'rgba(15,18,22,0.55)', fontWeight: 700, fontSize: 12, letterSpacing: '0.02em' },
   vipBox: {
     position: 'relative',
     background: 'linear-gradient(135deg, rgba(255,209,102,0.14) 0%, rgba(247,166,0,0.04) 100%)',
