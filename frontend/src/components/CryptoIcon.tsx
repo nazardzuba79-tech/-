@@ -5,7 +5,19 @@ import { useState } from 'react';
 // licensing their own full coin-logo library. Falls back to a colored
 // letter avatar (deterministic color per symbol) for any coin missing
 // from the set, same pattern Bybit itself uses for long-tail listings.
+//
+// A few coins get an explicit override instead of the generic set: TON
+// (Toncoin) was added to major exchanges after that dataset's last big
+// refresh and isn't reliably present there, so it's pointed at the Trust
+// Wallet assets repo instead — a widely mirrored, de-facto-standard source
+// for a coin's official logo.
+const ICON_URL_OVERRIDES: Record<string, string> = {
+  TON: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ton/info/logo.png',
+};
+
 function iconUrl(symbol: string): string {
+  const override = ICON_URL_OVERRIDES[symbol.toUpperCase()];
+  if (override) return override;
   return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${symbol.toLowerCase()}.png`;
 }
 
@@ -31,6 +43,36 @@ export function avatarColor(symbol: string): string {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];
 }
 
+export interface AssetColor {
+  /** Solid brand color — also the start color for a gradient asset. */
+  solid: string;
+  /** Present only for assets whose brand mark is itself a gradient (SOL). */
+  gradientTo?: string;
+}
+
+// Real brand colors for the coins this exchange actually deposits/withdraws
+// (see config/chains.ts) plus the handful of others prominent enough to
+// warrant their own look in the portfolio donut, rather than a hashed
+// placeholder color. Anything else still gets a deterministic color via
+// avatarColor() below — never a missing/blank swatch.
+const BRAND_COLORS: Record<string, AssetColor> = {
+  BTC: { solid: '#F7931A' },
+  ETH: { solid: '#627EEA' },
+  USDT: { solid: '#26A17B' },
+  // XRP's own mark is monochrome black-on-white; a light, near-neutral tone
+  // reads as that same "dark/white" identity without vanishing into either
+  // a dark panel background or a pure-white USDC slice next to it.
+  XRP: { solid: '#B4B8C0' },
+  USDC: { solid: '#FFFFFF' },
+  SOL: { solid: '#9945FF', gradientTo: '#14F195' },
+  TON: { solid: '#0088CC' },
+  TRX: { solid: '#FF0013' },
+};
+
+export function assetColor(symbol: string): AssetColor {
+  return BRAND_COLORS[symbol.toUpperCase()] ?? { solid: avatarColor(symbol) };
+}
+
 export function CryptoIcon({ symbol, size = 20 }: { symbol: string; size?: number }) {
   const [failed, setFailed] = useState(false);
 
@@ -41,7 +83,7 @@ export function CryptoIcon({ symbol, size = 20 }: { symbol: string; size?: numbe
           width: size,
           height: size,
           borderRadius: '50%',
-          background: avatarColor(symbol),
+          background: assetColor(symbol).solid,
           color: 'var(--on-accent)',
           display: 'flex',
           alignItems: 'center',

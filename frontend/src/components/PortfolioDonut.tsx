@@ -1,7 +1,12 @@
+import { useId, useState } from 'react';
+
 export interface DonutSlice {
   label: string;
   value: number;
   color: string;
+  /** Present only for a slice whose brand color is itself a gradient (SOL) —
+   * renders color -> gradientTo instead of a flat stroke. */
+  gradientTo?: string;
 }
 
 /** Plain SVG donut — no charting library, same approach as the rest of this
@@ -17,6 +22,8 @@ export function PortfolioDonut({
   size?: number;
   thickness?: number;
 }) {
+  const gradientBaseId = useId();
+  const [hovered, setHovered] = useState<number | null>(null);
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   const radius = (size - thickness) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -29,6 +36,17 @@ export function PortfolioDonut({
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <defs>
+        {slices.map(
+          (s, i) =>
+            s.gradientTo && (
+              <linearGradient key={i} id={`${gradientBaseId}-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={s.color} />
+                <stop offset="100%" stopColor={s.gradientTo} />
+              </linearGradient>
+            )
+        )}
+      </defs>
       <g transform={`rotate(-90 ${size / 2} ${size / 2})`}>
         {total <= 0 ? (
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border)" strokeWidth={thickness} />
@@ -37,6 +55,7 @@ export function PortfolioDonut({
             const frac = s.value / total;
             const rawDash = frac * circumference;
             const dash = Math.max(rawDash - gapLen, 0);
+            const isHovered = hovered === i;
             const el = (
               <circle
                 key={i}
@@ -44,11 +63,18 @@ export function PortfolioDonut({
                 cy={size / 2}
                 r={radius}
                 fill="none"
-                stroke={s.color}
-                strokeWidth={thickness}
+                stroke={s.gradientTo ? `url(#${gradientBaseId}-${i})` : s.color}
+                strokeWidth={isHovered ? thickness + 3 : thickness}
                 strokeLinecap="round"
                 strokeDasharray={`${dash} ${circumference - dash}`}
                 strokeDashoffset={-offset}
+                onMouseEnter={() => setHovered(i)}
+                onMouseLeave={() => setHovered((h) => (h === i ? null : h))}
+                style={{
+                  cursor: 'pointer',
+                  transition: 'stroke-width 120ms ease, filter 120ms ease',
+                  filter: isHovered ? `drop-shadow(0 0 6px ${s.color})` : 'none',
+                }}
               />
             );
             // Advance by the untrimmed share so every gap lands in the same

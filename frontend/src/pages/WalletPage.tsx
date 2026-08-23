@@ -7,7 +7,7 @@ import { DepositModal } from '../components/DepositModal';
 import { WithdrawModal } from '../components/WithdrawModal';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { SearchInput } from '../components/SearchInput';
-import { CryptoIcon, avatarColor } from '../components/CryptoIcon';
+import { CryptoIcon, assetColor } from '../components/CryptoIcon';
 import { PortfolioDonut, DonutSlice } from '../components/PortfolioDonut';
 import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
@@ -32,17 +32,13 @@ interface Deposit {
 }
 
 const STABLE_ASSETS = new Set(['USDT', 'USDC', 'USD']);
-// Purely illustrative — shown only while the account holds nothing at all,
-// dimmed and explicitly labeled "example" (see the donut render below) so
-// it's never mistaken for real holdings. Colors come from the same
-// avatarColor() hash real slices use, so if this account later actually
-// holds these exact assets, the colors won't jump.
-const EXAMPLE_DONUT_SLICES: DonutSlice[] = [
-  { label: 'BTC', value: 45, color: avatarColor('BTC') },
-  { label: 'ETH', value: 25, color: avatarColor('ETH') },
-  { label: 'USDT', value: 20, color: avatarColor('USDT') },
-  { label: 'SOL', value: 10, color: avatarColor('SOL') },
-];
+// Not offered on this exchange — kept out of both the assets table and the
+// portfolio donut (TON stands in its place among the featured assets).
+const EXCLUDED_ASSETS = new Set(['BNB']);
+// A slice below this share of the portfolio is folded into "Other" rather
+// than drawn as its own sliver — keeps the ring and legend readable once an
+// account holds many small positions.
+const MIN_SLICE_SHARE = 0.02;
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
 const HIDE_ZERO_KEY = 'exchange_hide_zero_balances';
 const MASK = '••••••';
@@ -220,16 +216,20 @@ export function WalletPage() {
     for (const b of spotBalances) combined.set(b.asset, (combined.get(b.asset) ?? 0) + spotValue(b.asset, b));
     for (const b of futuresBalances) combined.set(b.asset, (combined.get(b.asset) ?? 0) + spotValue(b.asset, b));
     const entries = Array.from(combined.entries())
-      .filter(([, v]) => v > 0)
+      .filter(([asset, v]) => v > 0 && !EXCLUDED_ASSETS.has(asset))
       .sort((a, b) => b[1] - a[1]);
-    const TOP_N = 6;
-    const top = entries.slice(0, TOP_N);
-    const restTotal = entries.slice(TOP_N).reduce((sum, [, v]) => sum + v, 0);
-    const slices: DonutSlice[] = top.map(([asset, value]) => ({ label: asset, value, color: avatarColor(asset) }));
+    const grandTotal = entries.reduce((sum, [, v]) => sum + v, 0);
+    const main = entries.filter(([, v]) => v / grandTotal >= MIN_SLICE_SHARE);
+    const restTotal = entries.filter(([, v]) => v / grandTotal < MIN_SLICE_SHARE).reduce((sum, [, v]) => sum + v, 0);
+    const slices: DonutSlice[] = main.map(([asset, value]) => {
+      const c = assetColor(asset);
+      return { label: asset, value, color: c.solid, gradientTo: c.gradientTo };
+    });
     if (restTotal > 0) slices.push({ label: t('wallet.other'), value: restTotal, color: 'var(--border)' });
     return slices;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spotBalances, futuresBalances, priceByAsset, lang]);
+  const donutTotal = donutSlices.reduce((sum, s) => sum + s.value, 0);
 
   // The full top-200 coin browser, left-joined with the account's real spot
   // balances (0 if the account never held that asset) — every supported
@@ -246,9 +246,9 @@ export function WalletPage() {
 
 
   const rows = useMemo(() => {
-    const rankingBySymbol = new Map(rankings.map((r) => [r.symbol, r]));
-    const extraHeld = spotBalances.filter((b) => !rankingBySymbol.has(b.asset));
-    const symbols = [...rankings.map((r) => r.symbol), ...extraHeld.map((b) => b.asset)];
+    const rankingBySymbol = new Map(rankings.filter((r) => !EXCLUDED_ASSETS.has(r.symbol)).map((r) => [r.symbol, r]));
+    const extraHeld = spotBalances.filter((b) => !rankingBySymbol.has(b.asset) && !EXCLUDED_ASSETS.has(b.asset));
+    const symbols = [...rankingBySymbol.keys(), ...extraHeld.map((b) => b.asset)];
     return symbols.map((symbol) => {
       const ranking = rankingBySymbol.get(symbol) ?? null;
       const b = balanceByAsset.get(symbol);
@@ -346,27 +346,32 @@ export function WalletPage() {
             ) : (
               <div style={styles.donutRow}>
                 <div style={styles.donutSvgWrap}>
-                  <div style={{ opacity: donutSlices.length === 0 ? 0.4 : 1 }}>
-                    <PortfolioDonut slices={donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices} />
+                  <PortfolioDonut slices={donutSlices} />
+                  {donutSlices.length === 0 && <span style={styles.donutEmptyLabel}>$0</span>}
+                </div>
+                {donutSlices.length > 0 && (
+                  <div style={styles.legend}>
+                    {donutSlices.map((s) => {
+                      const pct = donutTotal > 0 ? (s.value / donutTotal) * 100 : 0;
+                      const isOther = s.label === t('wallet.other');
+                      return (
+                        <div key={s.label} style={styles.legendRow}>
+                          {isOther ? (
+                            <span style={{ ...styles.legendDot, background: s.color }} />
+                          ) : (
+                            <CryptoIcon symbol={s.label} size={14} />
+                          )}
+                          <span className="mono" style={{ fontSize: 11 }}>
+                            {s.label}
+                          </span>
+                          <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 'auto' }}>
+                            {pct.toFixed(1)}%
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {donutSlices.length === 0 && <span style={styles.donutExampleLabel}>{t('wallet.donutExample')}</span>}
-                </div>
-                <div style={styles.legend}>
-                  {donutSlices.length === 0 ? (
-                    <span style={{ color: 'var(--text-tertiary)', fontSize: 11, lineHeight: 1.5, maxWidth: 100 }}>
-                      {t('wallet.donutExampleHint')}
-                    </span>
-                  ) : (
-                    donutSlices.map((s) => (
-                      <div key={s.label} style={styles.legendRow}>
-                        <span style={{ ...styles.legendDot, background: s.color }} />
-                        <span className="mono" style={{ fontSize: 11 }}>
-                          {s.label}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -713,17 +718,14 @@ const styles: Record<string, React.CSSProperties> = {
   donutTitle: { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' },
   donutRow: { display: 'flex', alignItems: 'center', gap: 16 },
   donutSvgWrap: { position: 'relative', display: 'inline-flex' },
-  donutExampleLabel: {
+  donutEmptyLabel: {
     position: 'absolute',
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: 800,
     color: 'var(--text-secondary)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    textAlign: 'center',
     pointerEvents: 'none',
   },
   donutPlaceholder: {
@@ -733,7 +735,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-tertiary)',
     fontSize: 13,
   },
-  legend: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 70 },
+  legend: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 108 },
   legendRow: { display: 'flex', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
   depositBtn: {
