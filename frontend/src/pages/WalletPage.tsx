@@ -39,6 +39,20 @@ const EXCLUDED_ASSETS = new Set(['BNB']);
 // than drawn as its own sliver — keeps the ring and legend readable once an
 // account holds many small positions.
 const MIN_SLICE_SHARE = 0.02;
+// Purely illustrative — shown dimmed, with no legend and no "example" label,
+// only while the account holds nothing at all, so the ring itself hints at
+// what a real distribution looks like instead of a flat empty circle.
+const EXAMPLE_DONUT_SLICES: DonutSlice[] = (
+  [
+    ['BTC', 45],
+    ['ETH', 25],
+    ['USDT', 20],
+    ['SOL', 10],
+  ] as const
+).map(([label, value]) => {
+  const c = assetColor(label);
+  return { label, value, color: c.solid, gradientTo: c.gradientTo };
+});
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
 const HIDE_ZERO_KEY = 'exchange_hide_zero_balances';
 const MASK = '••••••';
@@ -346,7 +360,9 @@ export function WalletPage() {
             ) : (
               <div style={styles.donutRow}>
                 <div style={styles.donutSvgWrap}>
-                  <PortfolioDonut slices={donutSlices} />
+                  <div style={{ opacity: donutSlices.length === 0 ? 0.35 : 1 }}>
+                    <PortfolioDonut slices={donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices} />
+                  </div>
                   {donutSlices.length === 0 && <span style={styles.donutEmptyLabel}>$0</span>}
                 </div>
                 {donutSlices.length > 0 && (
