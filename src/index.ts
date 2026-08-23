@@ -21,6 +21,8 @@ import { cardRouter } from './api/routes/card';
 import { apiKeysRouter } from './api/routes/apiKeys';
 import { reservesRouter } from './api/routes/reserves';
 import { futuresRouter } from './api/routes/futures';
+import { supportRouter } from './api/routes/support';
+import { SupportEmailService } from './services/SupportEmailService';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
@@ -37,6 +39,7 @@ const prisma = new PrismaClient();
 const engine = new MatchingEngine();
 const marketDataService = new KrakenMarketDataService(process.env.KRAKEN_API_BASE_URL || 'https://api.kraken.com');
 const coinGeckoService = new CoinGeckoService(process.env.COINGECKO_API_BASE_URL || 'https://api.coingecko.com/api/v3');
+const supportEmailService = new SupportEmailService();
 
 // Perpetual futures runs on its own matching engine and services,
 // deliberately never sharing state with the spot engine above (see
@@ -89,6 +92,7 @@ app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService));
+app.use('/api/v1', supportRouter(prisma, supportEmailService));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

@@ -85,7 +85,9 @@ const TYPE_STYLES: Record<ToastType, React.CSSProperties> = {
 const styles: Record<string, React.CSSProperties> = {
   stack: {
     position: 'fixed',
-    bottom: 20,
+    // Clears the floating support-chat launcher button (56px + 24px
+    // margin, see SupportWidget) so the two don't visually overlap.
+    bottom: 92,
     right: 20,
     display: 'flex',
     flexDirection: 'column',

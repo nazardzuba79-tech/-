@@ -4,6 +4,7 @@ import { App } from './App';
 import { LanguageProvider } from './lib/i18n';
 import { ToastProvider } from './lib/toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { SupportWidget } from './components/SupportWidget';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <LanguageProvider>
         <ToastProvider>
           <App />
+          <SupportWidget />
         </ToastProvider>
       </LanguageProvider>
     </ErrorBoundary>

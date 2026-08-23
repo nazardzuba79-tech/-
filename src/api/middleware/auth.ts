@@ -29,3 +29,20 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 }
+
+/** Like requireAuth, but never rejects — sets req.userId when a valid
+ * bearer token is present, otherwise leaves the request anonymous. For
+ * routes usable by both logged-in users and guests (e.g. the support chat
+ * widget), where a missing/invalid token just means "guest", not an error. */
+export function optionalAuth(req: AuthedRequest, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(header.slice(7), JWT_SECRET!) as { sub: string; purpose?: string };
+      if (!payload.purpose) req.userId = payload.sub;
+    } catch {
+      // Invalid/expired token on an optional-auth route: proceed as a guest.
+    }
+  }
+  next();
+}

@@ -45,6 +45,7 @@ model User {
   /// (see /futures/risk-ack). Must be non-null before any position can be
   /// opened — enforced server-side, not just hidden behind a frontend gate.
   futuresRiskAckAt DateTime?
+  supportConversations SupportConversation[]
 
   @@index([email])
 }
@@ -409,4 +410,54 @@ model InsuranceFundLedger {
   createdAt  DateTime @default(now())
 
   @@index([asset, createdAt])
+}
+
+enum SupportSubject {
+  TECHNICAL
+  KYC
+  CARD
+  OTHER
+}
+
+enum SupportSender {
+  USER
+  ADMIN
+}
+
+/// One support chat thread. `id` itself doubles as the ticket number
+/// referenced in outbound admin-notification emails (`[Ticket #<id>]`) —
+/// no separate token needed since it's already a random, unguessable
+/// UUID. `userId` is null for a guest (not logged in): a guest's only
+/// "credential" is knowing this conversation's id, which the frontend
+/// keeps in localStorage — the same anonymous-visitor-id trust model
+/// Intercom/Zendesk widgets themselves use. `guestName`/`guestEmail` are
+/// always collected via the pre-chat form (even for a logged-in user,
+/// since User has no name field) so support has a name/contact email to
+/// reply to regardless of account status.
+model SupportConversation {
+  id           String         @id @default(uuid())
+  userId       String?
+  user         User?          @relation(fields: [userId], references: [id])
+  guestName    String
+  guestEmail   String
+  subject      SupportSubject
+  /// Flips true when an admin reply lands via the inbound-email webhook;
+  /// drives the floating widget's unread badge. Cleared by POST .../read.
+  unreadByUser Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  messages     SupportMessage[]
+
+  @@index([userId])
+}
+
+model SupportMessage {
+  id             String              @id @default(uuid())
+  conversationId String
+  conversation   SupportConversation @relation(fields: [conversationId], references: [id])
+  sender         SupportSender
+  body           String
+  createdAt      DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
 }
