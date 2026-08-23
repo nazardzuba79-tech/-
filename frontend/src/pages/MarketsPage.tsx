@@ -11,6 +11,13 @@ import { SkeletonRow } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
 import { CATEGORIES, CoinCategory, CoinRanking } from '../lib/pairList';
 
+// Excluded from the default pair-selection pick below — a stablecoin base
+// (USDC/USD, USDT/EUR, ...) trades flat around 1.00, so its order book is a
+// wall of identical prices and makes a confusing, seemingly-broken default
+// view even though the data itself is correct. Still fully selectable by
+// clicking it in the list — just never auto-picked.
+const STABLE_BASES = new Set(['USDT', 'USDC', 'USD', 'DAI', 'EUR']);
+
 const CATEGORY_LABEL_KEY: Record<CoinCategory, Key> = {
   DEFI: 'markets.category.defi',
   LAYER_1: 'markets.category.layer1',
@@ -66,9 +73,10 @@ export function MarketsPage() {
           setError(null);
           setSelectedPair((current) => {
             if (current) return current;
-            const mostLiquid = [...res.tickers].sort(
+            const byVolumeDesc = [...res.tickers].sort(
               (a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')
-            )[0];
+            );
+            const mostLiquid = byVolumeDesc.find((tk) => !STABLE_BASES.has(tk.pair.split('/')[0])) ?? byVolumeDesc[0];
             return mostLiquid?.pair ?? null;
           });
         })
