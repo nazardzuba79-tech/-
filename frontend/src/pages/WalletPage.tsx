@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { useToast } from '../lib/toast';
@@ -8,9 +9,10 @@ import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon, avatarColor } from '../components/CryptoIcon';
 import { PortfolioDonut, DonutSlice } from '../components/PortfolioDonut';
+import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
-import { parseChangePercent } from '../lib/priceChange';
+import { CoinRanking } from '../lib/pairList';
 
 interface Balance {
   asset: string;
@@ -42,8 +44,9 @@ const EXPLORER_TX_URL: Record<string, (tx: string) => string> = {
   tron: (tx) => `https://tronscan.org/#/transaction/${tx}`,
 };
 
-type SortKey = 'asset' | 'total' | 'value' | 'change';
+type SortKey = 'asset' | 'price' | 'change' | 'volume' | 'marketCap';
 type Tab = 'assets' | 'history';
+const RANKINGS_POLL_MS = 10_000;
 type HistoryFilter = 'ALL' | 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM';
 
 const HISTORY_STATUS_KEY: Record<string, Key> = {
@@ -83,17 +86,19 @@ function saveFlag(key: string, value: boolean) {
 export function WalletPage() {
   const { t, lang } = useLanguage();
   const toast = useToast();
+  const navigate = useNavigate();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
-  const [balancesLoaded, setBalancesLoaded] = useState(false);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
-  const [changeByAsset, setChangeByAsset] = useState<Record<string, number>>({});
+  const [rankings, setRankings] = useState<CoinRanking[]>([]);
+  const [rankingsLoaded, setRankingsLoaded] = useState(false);
+  const [rankingsError, setRankingsError] = useState(false);
   const [showDeposit, setShowDeposit] = useState(false);
   const [showTransfer, setShowTransfer] = useState(false);
   const [search, setSearch] = useState('');
   const [hideBalance, setHideBalance] = useState(() => loadFlag(HIDE_BALANCE_KEY));
   const [hideZero, setHideZero] = useState(() => loadFlag(HIDE_ZERO_KEY));
-  const [sortKey, setSortKey] = useState<SortKey>('value');
+  const [sortKey, setSortKey] = useState<SortKey>('marketCap');
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const [tab, setTab] = useState<Tab>('assets');
   const [deposits, setDeposits] = useState<Deposit[] | null>(null);
@@ -102,31 +107,48 @@ export function WalletPage() {
 
   useEffect(() => {
     function load() {
-      api
-        .getBalances()
-        .then(setSpotBalances)
-        .catch(() => {})
-        .finally(() => setBalancesLoaded(true));
+      api.getBalances().then(setSpotBalances).catch(() => {});
       api.getFuturesBalances().then(setFuturesBalances).catch(() => {});
+      // Kraken-mirrored USDT prices — used for the header's total portfolio
+      // value (actually tradable, our-exchange pricing) and to tell whether
+      // an asset has a real pair here at all (gates the "Buy" action below).
+      // Per-row price/24h%/volume/market cap in the table itself come from
+      // CoinGeckoService's real market-wide data instead (see the rankings
+      // effect) — that's the source explicitly requested for this table.
       api
         .getExternalTickers()
         .then((res) => {
           const prices: Record<string, number> = {};
-          const changes: Record<string, number> = {};
           for (const tk of res.tickers) {
             const [base, quote] = tk.pair.split('/');
-            if (quote === 'USDT') {
-              prices[base] = parseFloat(tk.lastPrice);
-              changes[base] = parseChangePercent(tk.changePercent24h, tk.pair);
-            }
+            if (quote === 'USDT') prices[base] = parseFloat(tk.lastPrice);
           }
           setPriceByAsset(prices);
-          setChangeByAsset(changes);
         })
         .catch(() => {});
     }
     load();
     const interval = setInterval(load, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Top-200-by-market-cap coin browser data (price/24h%/volume/market cap/
+  // sparkline) — polled on its own cadence since it's backed by the
+  // backend's own short cache (see CoinGeckoService), so polling this often
+  // just re-serves that cache cheaply rather than hammering CoinGecko.
+  useEffect(() => {
+    function load() {
+      api
+        .getExternalRankings()
+        .then((res) => {
+          setRankings(res.rankings as CoinRanking[]);
+          setRankingsError(false);
+        })
+        .catch(() => setRankingsError(true))
+        .finally(() => setRankingsLoaded(true));
+    }
+    load();
+    const interval = setInterval(load, RANKINGS_POLL_MS);
     return () => clearInterval(interval);
   }, []);
 
@@ -201,23 +223,47 @@ export function WalletPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spotBalances, futuresBalances, priceByAsset, lang]);
 
-  const rows = spotBalances.map((b) => {
-    const total = parseFloat(b.available) + parseFloat(b.locked);
-    const price = priceOf(b.asset);
-    const value = price !== null ? total * price : null;
-    const change = changeByAsset[b.asset];
-    return { ...b, total, price, value, change: STABLE_ASSETS.has(b.asset) ? 0 : change };
-  });
+  // The full top-200 coin browser, left-joined with the account's real spot
+  // balances (0 if the account never held that asset) — every supported
+  // coin shows up here regardless of balance, per the redesign; "hide zero
+  // balances" is just a filter over this same list, not a different query.
+  // A balance the account genuinely holds in an asset outside the top-200
+  // (rare, but not impossible) is still included — never hide real money
+  // just because CoinGecko didn't rank it.
+  const balanceByAsset = useMemo(() => {
+    const m = new Map<string, Balance>();
+    for (const b of spotBalances) m.set(b.asset, b);
+    return m;
+  }, [spotBalances]);
+
+  const tradableBases = useMemo(() => new Set(Object.keys(priceByAsset)), [priceByAsset]);
+
+  const rows = useMemo(() => {
+    const rankingBySymbol = new Map(rankings.map((r) => [r.symbol, r]));
+    const extraHeld = spotBalances.filter((b) => !rankingBySymbol.has(b.asset));
+    const symbols = [...rankings.map((r) => r.symbol), ...extraHeld.map((b) => b.asset)];
+    return symbols.map((symbol) => {
+      const ranking = rankingBySymbol.get(symbol) ?? null;
+      const b = balanceByAsset.get(symbol);
+      const available = b ? parseFloat(b.available) : 0;
+      const locked = b ? parseFloat(b.locked) : 0;
+      return { symbol, ranking, available, locked, total: available + locked };
+    });
+  }, [rankings, spotBalances, balanceByAsset]);
 
   const visibleRows = rows
-    .filter((r) => r.asset.toLowerCase().includes(search.toLowerCase()))
+    .filter((r) => {
+      const q = search.toLowerCase();
+      return r.symbol.toLowerCase().includes(q) || (r.ranking?.name.toLowerCase().includes(q) ?? false);
+    })
     .filter((r) => !hideZero || r.total > 0)
     .sort((a, b) => {
       let cmp = 0;
-      if (sortKey === 'asset') cmp = a.asset.localeCompare(b.asset);
-      else if (sortKey === 'total') cmp = a.total - b.total;
-      else if (sortKey === 'value') cmp = (a.value ?? -1) - (b.value ?? -1);
-      else if (sortKey === 'change') cmp = (a.change ?? 0) - (b.change ?? 0);
+      if (sortKey === 'asset') cmp = a.symbol.localeCompare(b.symbol);
+      else if (sortKey === 'price') cmp = (a.ranking?.price ?? -1) - (b.ranking?.price ?? -1);
+      else if (sortKey === 'change') cmp = (a.ranking?.changePercent24h ?? -Infinity) - (b.ranking?.changePercent24h ?? -Infinity);
+      else if (sortKey === 'volume') cmp = (a.ranking?.volume24h ?? -1) - (b.ranking?.volume24h ?? -1);
+      else if (sortKey === 'marketCap') cmp = (a.ranking?.marketCap ?? -1) - (b.ranking?.marketCap ?? -1);
       return cmp * sortDir;
     });
 
@@ -225,6 +271,18 @@ export function WalletPage() {
 
   function formatUsd(n: number): string {
     return hideBalance ? MASK : n.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 });
+  }
+
+  function formatPrice(n: number): string {
+    return `$${n.toLocaleString(localeOf(lang), { maximumFractionDigits: n < 1 ? 6 : 2 })}`;
+  }
+
+  function formatCompactUsd(n: number): string {
+    return `$${n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 })}`;
+  }
+
+  function handleBuyClick(symbol: string) {
+    navigate(`/trade?pair=${symbol}/USDT`);
   }
 
   return (
@@ -321,64 +379,94 @@ export function WalletPage() {
               </label>
             </div>
 
-            <div className="accent-edge surface-raised" style={styles.table}>
+            <div className="accent-edge surface-raised" style={{ ...styles.table, overflowX: 'auto' }}>
               <div style={styles.columns}>
                 <SortableHeader label={t('wallet.asset')} sortKey="asset" active={sortKey} dir={sortDir} onSort={handleSort} />
                 <span style={{ textAlign: 'right' }}>{t('wallet.available')}</span>
                 <span style={{ textAlign: 'right' }}>{t('wallet.locked')}</span>
+                <SortableHeader label={t('wallet.price')} sortKey="price" active={sortKey} dir={sortDir} onSort={handleSort} align="right" />
                 <SortableHeader label={t('wallet.change24h')} sortKey="change" active={sortKey} dir={sortDir} onSort={handleSort} align="right" />
-                <SortableHeader label={t('wallet.value')} sortKey="value" active={sortKey} dir={sortDir} onSort={handleSort} align="right" />
+                <SortableHeader label={t('wallet.volume24hMarket')} sortKey="volume" active={sortKey} dir={sortDir} onSort={handleSort} align="right" />
+                <SortableHeader label={t('wallet.marketCap')} sortKey="marketCap" active={sortKey} dir={sortDir} onSort={handleSort} align="right" />
+                <span style={{ textAlign: 'center' }}>{t('wallet.sparkline')}</span>
                 <span style={{ textAlign: 'right' }}>{t('wallet.actions')}</span>
               </div>
               <div style={styles.rows}>
-                {visibleRows.map((r) => (
-                  <div key={r.asset} style={styles.row}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }} className="mono">
-                      <CryptoIcon symbol={r.asset} size={22} />
-                      {r.asset}
-                    </span>
-                    <span className="mono" style={{ textAlign: 'right' }}>
-                      {hideBalance ? MASK : parseFloat(r.available).toFixed(6)}
-                    </span>
-                    <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                      {hideBalance ? MASK : parseFloat(r.locked).toFixed(6)}
-                    </span>
-                    <span
-                      className={`mono ${r.change !== undefined && r.change < 0 ? 'text-sell' : 'text-buy'}`}
-                      style={{ textAlign: 'right' }}
-                    >
-                      {r.change !== undefined && Number.isFinite(r.change)
-                        ? `${r.change >= 0 ? '+' : ''}${r.change.toFixed(2)}%`
-                        : '—'}
-                    </span>
-                    <span
-                      className="mono"
-                      style={{ textAlign: 'right' }}
-                      title={r.value === null ? t('wallet.priceUnavailable') : undefined}
-                    >
-                      {r.value !== null ? formatUsd(r.value) : '—'}
-                    </span>
-                    <span style={styles.actionsCell}>
-                      <button onClick={() => setShowDeposit(true)} style={styles.actionBtn} title={t('wallet.deposit')}>
-                        <DepositIcon />
-                      </button>
-                      <button onClick={() => setShowTransfer(true)} style={styles.actionBtn} title={t('wallet.actionTransfer')}>
-                        <TransferIcon />
-                      </button>
-                      <button
-                        onClick={handleWithdrawClick}
-                        style={{ ...styles.actionBtn, opacity: 0.45 }}
-                        title={t('wallet.withdrawUnavailable')}
+                {visibleRows.map((r) => {
+                  const change = r.ranking?.changePercent24h;
+                  const tradable = tradableBases.has(r.symbol);
+                  return (
+                    <div key={r.symbol} style={styles.row}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, minWidth: 0 }} className="mono">
+                        <CryptoIcon symbol={r.symbol} size={22} />
+                        <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                          <span>{r.symbol}</span>
+                          {r.ranking && (
+                            <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {r.ranking.name}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="mono" style={{ textAlign: 'right' }}>
+                        {hideBalance ? MASK : r.available.toFixed(6)}
+                      </span>
+                      <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                        {hideBalance ? MASK : r.locked.toFixed(6)}
+                      </span>
+                      <span className="mono" style={{ textAlign: 'right' }}>
+                        {r.ranking ? formatPrice(r.ranking.price) : '—'}
+                      </span>
+                      <span
+                        className={`mono ${change !== null && change !== undefined && change < 0 ? 'text-sell' : 'text-buy'}`}
+                        style={{ textAlign: 'right' }}
                       >
-                        <WithdrawIcon />
-                      </button>
-                    </span>
-                  </div>
-                ))}
-                {!balancesLoaded &&
-                  Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 1, 1, 1, 1]} />)}
-                {balancesLoaded && rows.length === 0 && <p style={styles.hint}>{t('wallet.noAssets')}</p>}
-                {rows.length > 0 && visibleRows.length === 0 && <p style={styles.hint}>{t('wallet.noSearchResults')}</p>}
+                        {change !== null && change !== undefined ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '—'}
+                      </span>
+                      <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                        {r.ranking ? formatCompactUsd(r.ranking.volume24h) : '—'}
+                      </span>
+                      <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                        {r.ranking?.marketCap ? formatCompactUsd(r.ranking.marketCap) : '—'}
+                      </span>
+                      <span style={{ display: 'flex', justifyContent: 'center' }}>
+                        {r.ranking && r.ranking.sparkline.length > 1 ? <Sparkline points={r.ranking.sparkline} /> : '—'}
+                      </span>
+                      <span style={styles.actionsCell}>
+                        {r.total > 0 ? (
+                          <>
+                            <button onClick={() => setShowDeposit(true)} style={styles.actionBtn} title={t('wallet.deposit')}>
+                              <DepositIcon />
+                            </button>
+                            <button onClick={() => setShowTransfer(true)} style={styles.actionBtn} title={t('wallet.actionTransfer')}>
+                              <TransferIcon />
+                            </button>
+                            <button
+                              onClick={handleWithdrawClick}
+                              style={{ ...styles.actionBtn, opacity: 0.45 }}
+                              title={t('wallet.withdrawUnavailable')}
+                            >
+                              <WithdrawIcon />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => tradable && handleBuyClick(r.symbol)}
+                            disabled={!tradable}
+                            style={{ ...styles.buyBtn, ...(tradable ? {} : styles.buyBtnDisabled) }}
+                            title={tradable ? undefined : t('wallet.pairUnavailable')}
+                          >
+                            {t('wallet.buy')}
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+                {!rankingsLoaded &&
+                  Array.from({ length: 8 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 1, 1, 1, 1, 1, 1, 1]} />)}
+                {rankingsLoaded && rankingsError && rows.length === 0 && <p style={styles.hint}>{t('wallet.rankingsLoadError')}</p>}
+                {rankingsLoaded && rows.length > 0 && visibleRows.length === 0 && <p style={styles.hint}>{t('wallet.noSearchResults')}</p>}
               </div>
             </div>
           </>
@@ -663,7 +751,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   columns: {
     display: 'grid',
-    gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr 1fr',
+    gridTemplateColumns: '1.4fr 0.9fr 0.9fr 0.9fr 0.8fr 1fr 1fr 0.9fr 1.1fr',
+    minWidth: 1000,
     padding: '12px 18px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
@@ -684,7 +773,8 @@ const styles: Record<string, React.CSSProperties> = {
   rows: { display: 'flex', flexDirection: 'column' },
   row: {
     display: 'grid',
-    gridTemplateColumns: '1.2fr 1fr 1fr 1fr 1fr 1fr',
+    gridTemplateColumns: '1.4fr 0.9fr 0.9fr 0.9fr 0.8fr 1fr 1fr 0.9fr 1.1fr',
+    minWidth: 1000,
     padding: '12px 18px',
     fontSize: 13,
     alignItems: 'center',
@@ -702,6 +792,20 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 6,
     color: 'var(--text-secondary)',
+  },
+  buyBtn: {
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    border: 'none',
+    borderRadius: 6,
+    padding: '6px 14px',
+    fontSize: 11,
+    fontWeight: 800,
+  },
+  buyBtnDisabled: {
+    background: 'var(--panel-alt)',
+    color: 'var(--text-tertiary)',
+    cursor: 'not-allowed',
   },
   explorerLink: { fontSize: 12, color: 'var(--accent)', fontWeight: 600 },
   hint: { padding: 24, color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center' },

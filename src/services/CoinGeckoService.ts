@@ -1,12 +1,15 @@
 /**
- * Read-only mirror of CoinGecko's public market-cap ranking + category
- * data (no API key needed — these are public endpoints). This NEVER backs
- * an actual trading pair by itself: Kraken (KrakenMarketDataService)
- * remains the only source of real price/candle/order-book data, since
- * that's what our matching engine and price watchers can actually act on.
- * CoinGeckoService only supplies metadata — market-cap rank and category
- * tags — used to sort and filter the pair list Kraken already provides,
- * never to invent a pair Kraken can't back with real market data.
+ * Read-only mirror of CoinGecko's public top-200-by-market-cap data (no API
+ * key needed — these are public endpoints): rank, category tags, and each
+ * coin's own market-wide price/24h change/volume/market cap/7d sparkline.
+ * This NEVER backs an actual trading pair by itself: Kraken
+ * (KrakenMarketDataService) remains the only source of real tradable
+ * price/candle/order-book data, since that's what our matching engine and
+ * price watchers can actually act on. CoinGeckoService's price/volume
+ * figures are used only where showing real market-wide data is the point
+ * (e.g. the Wallet page's full coin browser, which lists every top-200
+ * coin whether or not the account holds any and whether or not it's even
+ * tradable here) — never to invent a pair Kraken can't back.
  *
  * NOT tested against the live API from this environment (this sandbox's
  * outbound proxy blocks it, confirmed via a direct curl returning a 403 on
@@ -25,9 +28,20 @@ export interface CoinRanking {
   name: string;
   image: string;
   categories: CoinCategory[];
+  // Real market-wide figures from the same CoinGecko response as the rank
+  // above (not our own Kraken-mirrored turnover, which only reflects
+  // liquidity on Kraken specifically) — used by the Wallet page's asset
+  // browser so every top-200 coin shows real data even with a $0 balance.
+  price: number;
+  changePercent24h: number | null;
+  volume24h: number;
+  marketCap: number | null;
+  // Hourly closes over the last 7 days (CoinGecko's own sparkline_in_7d),
+  // ~168 points — real history, not synthesized.
+  sparkline: number[];
 }
 
-const RANKINGS_TTL_MS = 60 * 60_000; // market-cap rank/category doesn't move minute to minute
+const RANKINGS_TTL_MS = 5 * 60_000; // short enough that price/volume/marketCap stay reasonably fresh, long enough to stay well under CoinGecko's free-tier rate limit
 const TOP_N = 200;
 
 // CoinGecko's own category slugs for the four groupings the UI filters by.
@@ -74,6 +88,11 @@ interface CoinGeckoMarketRow {
   name: string;
   image: string;
   market_cap_rank: number | null;
+  current_price: number | null;
+  price_change_percentage_24h: number | null;
+  total_volume: number | null;
+  market_cap: number | null;
+  sparkline_in_7d?: { price: number[] };
 }
 
 export class CoinGeckoService {
@@ -90,7 +109,7 @@ export class CoinGeckoService {
     if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.rankings;
 
     const markets = (await this.request(
-      `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=false`
+      `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=true`
     )) as CoinGeckoMarketRow[];
 
     const bySymbol = new Map<string, CoinRanking>();
@@ -106,6 +125,11 @@ export class CoinGeckoService {
         name: m.name,
         image: m.image,
         categories: [],
+        price: m.current_price ?? 0,
+        changePercent24h: m.price_change_percentage_24h ?? null,
+        volume24h: m.total_volume ?? 0,
+        marketCap: m.market_cap ?? null,
+        sparkline: m.sparkline_in_7d?.price ?? [],
       });
     }
 

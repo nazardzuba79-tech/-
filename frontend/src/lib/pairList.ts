@@ -17,6 +17,13 @@ export interface CoinRanking {
   name: string;
   image: string;
   categories: CoinCategory[];
+  // Real market-wide figures (not our own exchange's turnover) — see
+  // CoinGeckoService's doc comment on the backend for why.
+  price: number;
+  changePercent24h: number | null;
+  volume24h: number;
+  marketCap: number | null;
+  sparkline: number[];
 }
 
 export const CATEGORIES: CoinCategory[] = ['DEFI', 'LAYER_1', 'MEME', 'STABLECOIN'];

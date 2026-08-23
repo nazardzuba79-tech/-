@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -21,10 +22,17 @@ import { krakenSocket } from '../lib/krakenSocket';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 const WS_FALLBACK_TIMEOUT_MS = 4000;
+const PAIR_PATTERN = /^[A-Z0-9]+\/[A-Z0-9]+$/;
 
 export function TradePage() {
   const { t } = useLanguage();
-  const [pair, setPair] = useState('BTC/USDT');
+  const [searchParams] = useSearchParams();
+  // Lets other pages (e.g. the Wallet page's "Buy" action on a zero-balance
+  // asset) deep-link straight into a specific pair via ?pair=SOL/USDT —
+  // validated so a malformed value just falls back to the default instead
+  // of rendering a broken pair.
+  const requestedPair = searchParams.get('pair');
+  const [pair, setPair] = useState(requestedPair && PAIR_PATTERN.test(requestedPair) ? requestedPair : 'BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bookTab, setBookTab] = useState<'book' | 'trades' | 'otc'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');

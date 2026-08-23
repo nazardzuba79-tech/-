@@ -229,13 +229,28 @@ export const api = {
       '/market/external/symbols'
     ),
 
-  // Market-cap rank + category (DeFi/Layer 1/Meme/Stablecoin) from the
-  // CoinGecko mirror — metadata only, layered on top of the real Kraken
-  // pair list above, never a source of tradable pairs by itself.
+  // Top-200-by-market-cap coins from CoinGecko: rank, category tags, and
+  // each coin's own real market-wide price/24h change/volume/market cap/7d
+  // sparkline (not our own Kraken-mirrored turnover) — layered on top of
+  // the real Kraken pair list above, never a source of tradable pairs by
+  // itself. Powers the category filters, the rank badge, and the Wallet
+  // page's full coin browser (which lists every one of these regardless
+  // of whether the account holds any).
   getExternalRankings: () =>
     request<{
       source: string;
-      rankings: { symbol: string; rank: number; name: string; image: string; categories: string[] }[];
+      rankings: {
+        symbol: string;
+        rank: number;
+        name: string;
+        image: string;
+        categories: string[];
+        price: number;
+        changePercent24h: number | null;
+        volume24h: number;
+        marketCap: number | null;
+        sparkline: number[];
+      }[];
     }>('/market/external/rankings'),
 
   getExternalTickers: () =>

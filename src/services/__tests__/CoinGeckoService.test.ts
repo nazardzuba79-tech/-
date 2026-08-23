@@ -138,4 +138,47 @@ describe('CoinGeckoService', () => {
 
     await expect(service.getRankings()).rejects.toThrow('Failed to reach CoinGecko');
   });
+
+  it('carries the real market-wide price/24h change/volume/market cap/sparkline through from the same markets call', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(
+      jsonResponse([
+        {
+          symbol: 'btc',
+          name: 'Bitcoin',
+          image: 'btc.png',
+          market_cap_rank: 1,
+          current_price: 65000.5,
+          price_change_percentage_24h: -2.34,
+          total_volume: 31_700_000_000,
+          market_cap: 1_500_000_000_000,
+          sparkline_in_7d: { price: [64000, 64500, 65000.5] },
+        },
+      ])
+    );
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    const rankings = await service.getRankings();
+
+    expect(rankings[0]).toMatchObject({
+      price: 65000.5,
+      changePercent24h: -2.34,
+      volume24h: 31_700_000_000,
+      marketCap: 1_500_000_000_000,
+      sparkline: [64000, 64500, 65000.5],
+    });
+    // sparkline=true, not sparkline=false, is what actually asked CoinGecko
+    // for that history — otherwise sparkline_in_7d never comes back at all.
+    expect(fetchFn.mock.calls[0][0]).toContain('sparkline=true');
+  });
+
+  it('falls back to safe defaults when CoinGecko omits a market-wide field', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(
+      jsonResponse([{ symbol: 'zzz', name: 'Thin Coin', image: 'zzz.png', market_cap_rank: 199 }])
+    );
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    const rankings = await service.getRankings();
+
+    expect(rankings[0]).toMatchObject({ price: 0, changePercent24h: null, volume24h: 0, marketCap: null, sparkline: [] });
+  });
 });
