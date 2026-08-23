@@ -25,7 +25,8 @@ export function adminRouter(prisma: PrismaClient): Router {
         return {
           id: u.id,
           email: u.email,
-          isAdmin: u.isAdmin,
+          role: u.role,
+          isAdmin: u.role === 'ADMIN',
           kycStatus: u.kycStatus,
           createdAt: u.createdAt,
           latestKyc: latest

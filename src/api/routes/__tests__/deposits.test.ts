@@ -12,7 +12,8 @@ function authHeader(userId: string) {
 function buildApp(prisma: any = {}, priceSource: any = { getTicker: jest.fn().mockResolvedValue(null) }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', depositsRouter(prisma, priceSource));
+  const fullPrisma = { treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) }, ...prisma };
+  app.use('/api/v1', depositsRouter(fullPrisma, priceSource));
   return app;
 }
 

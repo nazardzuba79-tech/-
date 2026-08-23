@@ -38,6 +38,7 @@ function makePrisma(balancesByAsset: Record<string, { available: string; locked:
         )
       ),
     },
+    treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
   } as any;
 }
 

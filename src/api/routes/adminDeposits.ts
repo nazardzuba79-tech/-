@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { loadChainConfig, ChainConfig } from '../../config/chains';
+import { ChainConfig } from '../../config/chains';
 import { createVerifier } from '../../services/deposit-verifiers';
 import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
+import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
-import { KNOWN_CHAINS, TX_HASH_PATTERN } from './deposits';
+import { KNOWN_CHAINS, TX_HASH_PATTERN, resolveChainConfig } from './deposits';
 
 /**
  * Manual, admin-driven deposit crediting — the replacement for asking the
@@ -20,6 +21,7 @@ import { KNOWN_CHAINS, TX_HASH_PATTERN } from './deposits';
  */
 export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSource): Router {
   const router = Router();
+  const treasuryWallets = new TreasuryWalletService(prisma);
 
   // Every deposit ever recorded, across every user — GET /deposits/me is
   // deliberately scoped to the caller only, this is the admin-wide view.
@@ -54,7 +56,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
     for (const chain of KNOWN_CHAINS) {
       let config: ChainConfig;
       try {
-        config = loadChainConfig(chain);
+        config = await resolveChainConfig(treasuryWallets, chain);
       } catch {
         continue; // not configured on this deployment
       }
@@ -96,7 +98,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
 
     let config: ChainConfig;
     try {
-      config = loadChainConfig(chain);
+      config = await resolveChainConfig(treasuryWallets, chain);
     } catch {
       return res.status(404).json({ error: `Unknown or unconfigured chain: ${chain}` });
     }

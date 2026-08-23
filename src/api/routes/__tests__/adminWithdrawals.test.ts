@@ -18,7 +18,7 @@ function buildApp(prisma: any) {
 
 function adminPrisma(overrides: any = {}) {
   return {
-    user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: true }) },
+    user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
     withdrawal: { findMany: jest.fn().mockResolvedValue([]) },
     ...overrides,
   };
@@ -47,7 +47,7 @@ function withTransaction(prisma: any, opts: { balance?: any; withdrawal?: any } 
 describe('admin withdrawals routes', () => {
   describe('GET /admin/withdrawals', () => {
     it('requires an admin account', async () => {
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } });
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
       const app = buildApp(prisma);
       const res = await request(app).get('/api/v1/admin/withdrawals').set('Authorization', authHeader('u1'));
       expect(res.status).toBe(403);
@@ -82,7 +82,7 @@ describe('admin withdrawals routes', () => {
 
   describe('POST /admin/withdrawals/:id/complete', () => {
     it('requires an admin account', async () => {
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } });
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
       const app = buildApp(prisma);
       const res = await request(app).post('/api/v1/admin/withdrawals/w1/complete').set('Authorization', authHeader('u1'));
       expect(res.status).toBe(403);

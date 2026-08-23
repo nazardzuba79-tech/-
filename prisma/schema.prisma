@@ -14,7 +14,13 @@ model User {
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
-  isAdmin       Boolean   @default(false)
+  /// Sole source of truth for admin access (see requireAdmin middleware) —
+  /// never derive access from the email address in application code.
+  /// Auto-assigned ADMIN at registration for exactly one email (see
+  /// src/api/routes/auth.ts); everyone else registers as USER. Promote
+  /// further accounts only via a direct DB update, same deliberately
+  /// manual bar as the old isAdmin boolean had.
+  role          Role      @default(USER)
   kycStatus     KycStatus @default(NOT_STARTED)
   twoFactorSecret String?
   twoFactorEnabled Boolean @default(false)
@@ -55,6 +61,11 @@ enum KycStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 /// One row per (user, asset). `available` can be traded; `locked` is reserved
@@ -177,14 +188,35 @@ model Withdrawal {
   network            String
   toAddress          String
   amount             Decimal   @db.Decimal(36, 18)
-  status             String    // PENDING | COMPLETED | REJECTED
+  /// PENDING (locked, awaiting review) -> APPROVED (admin has reviewed and
+  /// intends to send, still locked) -> SENT (admin sent the crypto by hand
+  /// and recorded txHash, lock released) — or PENDING -> REJECTED at any
+  /// point before SENT (lock released back to available).
+  status             String    // PENDING | APPROVED | SENT | REJECTED
+  /// Set once the admin has actually broadcast the transaction from the
+  /// treasury wallet — filled in on the APPROVED -> SENT transition, never
+  /// guessed or pre-filled.
+  txHash             String?
   rejectionReason    String?
-  performedByAdminId String?   // admin who completed or rejected this
+  performedByAdminId String?   // admin who approved/sent/rejected this
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
+}
+
+/// The single treasury address deposits are watched on for a given chain —
+/// admin-editable, overrides the env-var default in config/chains.ts the
+/// moment a row exists (see TreasuryWalletService). Deleting a row reverts
+/// that chain to its env-var address.
+model TreasuryWallet {
+  id                 String   @id @default(uuid())
+  chain              String   @unique // "bitcoin", "tron", "ethereum", ...
+  address            String
+  updatedByAdminId   String?
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
 }
 
 /// Immutable audit log — every balance-affecting action gets a row.

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import { loadChainConfig, ChainConfig } from '../../config/chains';
 import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
+import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 
 // The only chains this deployment knows how to verify deposits on — see
@@ -29,30 +30,41 @@ export const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
   tron: /^[a-fA-F0-9]{64}$/,
 };
 
+/** loadChainConfig() + the admin-editable treasury address override applied
+ * on top — the one function every route below resolves a chain through, so
+ * an admin's address change is reflected everywhere consistently. */
+export async function resolveChainConfig(treasuryWallets: TreasuryWalletService, chain: string): Promise<ChainConfig> {
+  return treasuryWallets.applyOverride(loadChainConfig(chain));
+}
+
 export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): Router {
   const router = Router();
+  const treasuryWallets = new TreasuryWalletService(prisma);
 
   // Every chain this deployment actually accepts deposits on (i.e. has a
   // treasury address configured for), with the exact assets supported on
   // each — the deposit UI should only ever offer these, so a user can't
   // send something the backend has no way to credit.
-  router.get('/deposit-chains', requireAuth, (_req, res) => {
-    const chains = KNOWN_CHAINS.flatMap((chain) => {
+  router.get('/deposit-chains', requireAuth, async (_req, res) => {
+    const chains: { chain: string; nativeAsset: string; tokens: string[] }[] = [];
+    for (const chain of KNOWN_CHAINS) {
       try {
-        const config = loadChainConfig(chain);
-        return [{ chain: config.chain, nativeAsset: config.nativeAsset, tokens: Object.keys(config.tokens) }];
+        const config = await resolveChainConfig(treasuryWallets, chain);
+        chains.push({ chain: config.chain, nativeAsset: config.nativeAsset, tokens: Object.keys(config.tokens) });
       } catch {
-        return []; // not configured on this deployment — omit it
+        // not configured on this deployment — omit it
       }
-    });
+    }
     res.json(chains);
   });
 
   // Shows YOUR treasury wallet address (e.g. Trust Wallet) — same address
-  // for every user, on every chain you've configured via env vars.
-  router.get('/deposit-address/:chain', requireAuth, (req, res) => {
+  // for every user, on every chain you've configured. Reflects whatever an
+  // admin most recently set via Settings → Кошельки, falling back to the
+  // env-var default when no override has ever been set.
+  router.get('/deposit-address/:chain', requireAuth, async (req, res) => {
     try {
-      const config = loadChainConfig(req.params.chain);
+      const config = await resolveChainConfig(treasuryWallets, req.params.chain);
       res.json({
         chain: config.chain,
         address: config.treasuryAddress,
@@ -90,7 +102,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   router.post('/deposits/claim/:chain', requireAuth, async (req: AuthedRequest, res) => {
     let config: ChainConfig;
     try {
-      config = loadChainConfig(req.params.chain);
+      config = await resolveChainConfig(treasuryWallets, req.params.chain);
     } catch {
       return res.status(404).json({ error: `Unknown or unconfigured chain: ${req.params.chain}` });
     }

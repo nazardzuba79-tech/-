@@ -155,7 +155,7 @@ describe('GET /kyc/me', () => {
 
 describe('admin-only KYC routes', () => {
   it('POST /kyc/:id/review requires an admin account', async () => {
-    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } } as any;
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } } as any;
     const app = buildApp(prisma);
 
     const res = await request(app)
@@ -169,7 +169,7 @@ describe('admin-only KYC routes', () => {
   it('POST /kyc/:id/review approves a submission for an admin', async () => {
     const prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({ isAdmin: true }),
+        findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
         update: jest.fn(),
       },
       kycSubmission: {
@@ -192,7 +192,7 @@ describe('admin-only KYC routes', () => {
 
   it('POST /kyc/:id/review rejects with a reason', async () => {
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: true }), update: jest.fn() },
+      user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), update: jest.fn() },
       kycSubmission: {
         findUnique: jest.fn().mockResolvedValue({ id: 'sub-1', userId: 'user-1', status: 'PENDING' }),
         update: jest.fn(),
@@ -215,7 +215,7 @@ describe('admin-only KYC routes', () => {
 
   it('POST /kyc/:id/review refuses to re-review an already-decided submission', async () => {
     const prisma = {
-      user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: true }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
       kycSubmission: { findUnique: jest.fn().mockResolvedValue({ id: 'sub-1', status: 'APPROVED' }) },
     } as any;
     const app = buildApp(prisma);

@@ -13,6 +13,13 @@ function loginMetadata(req: Request) {
   return { ip: req.ip ?? null, userAgent: req.get('user-agent') ?? null };
 }
 
+// The ONE email that ever gets ADMIN automatically, and only at the moment
+// of registration — never re-checked or re-derived from email afterward
+// (see requireAdmin middleware, which only ever reads the role column).
+// Lowercased for a case-insensitive match, same normalization Postgres's
+// own unique index on email doesn't enforce but registration should.
+const ADMIN_EMAIL = 'voltex.crypto@gmail.com';
+
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) throw new Error('JWT_SECRET env var is required');
 
@@ -93,12 +100,13 @@ export function authRouter(prisma: PrismaClient): Router {
     }
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const role = email.toLowerCase() === ADMIN_EMAIL ? 'ADMIN' : 'USER';
     const user = await prisma.user.create({
-      data: { email, passwordHash },
+      data: { email, passwordHash, role },
     });
 
     await prisma.auditLog.create({
-      data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email } },
+      data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email, ...loginMetadata(req) } },
     });
 
     res.status(201).json({ token: issueToken(user.id) });

@@ -18,8 +18,9 @@ function buildApp(prisma: any, priceSource: any = { getTicker: jest.fn().mockRes
 
 function adminPrisma(overrides: any = {}) {
   return {
-    user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: true }) },
+    user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) },
     deposit: { findMany: jest.fn().mockResolvedValue([]) },
+    treasuryWallet: { findUnique: jest.fn().mockResolvedValue(null) },
     ...overrides,
   };
 }
@@ -40,7 +41,7 @@ describe('admin deposits routes', () => {
 
   describe('GET /admin/deposits', () => {
     it('requires an admin account', async () => {
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } });
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
       const app = buildApp(prisma);
       const res = await request(app).get('/api/v1/admin/deposits').set('Authorization', authHeader('u1'));
       expect(res.status).toBe(403);
@@ -118,7 +119,7 @@ describe('admin deposits routes', () => {
 
   describe('POST /admin/deposits/manual-credit', () => {
     it('requires an admin account', async () => {
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } });
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
       const app = buildApp(prisma);
       const res = await request(app)
         .post('/api/v1/admin/deposits/manual-credit')
@@ -130,7 +131,7 @@ describe('admin deposits routes', () => {
     it('400s an invalid tx hash for the chain', async () => {
       process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qtreasury';
       process.env.BITCOIN_NATIVE_ASSET = 'BTC';
-      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: true }) } });
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }) } });
       const app = buildApp(prisma);
 
       const res = await request(app)
@@ -158,7 +159,7 @@ describe('admin deposits routes', () => {
         user: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ isAdmin: true }) // requireAdmin check
+            .mockResolvedValueOnce({ role: 'ADMIN' }) // requireAdmin check
             .mockResolvedValueOnce(null), // target user lookup
         },
       });
@@ -179,7 +180,7 @@ describe('admin deposits routes', () => {
         user: {
           findUnique: jest
             .fn()
-            .mockResolvedValueOnce({ isAdmin: true })
+            .mockResolvedValueOnce({ role: 'ADMIN' })
             .mockResolvedValueOnce({ id: '11111111-1111-1111-1111-111111111111' }),
         },
         // Pre-existing Deposit row makes DepositService.claimDeposit take its

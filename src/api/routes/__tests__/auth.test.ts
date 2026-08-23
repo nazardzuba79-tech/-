@@ -48,6 +48,62 @@ describe('auth routes', () => {
     expect(prisma.user.create).toHaveBeenCalled();
   });
 
+  it('registers everyone else as a plain USER', async () => {
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+
+    await request(app).post('/api/v1/auth/register').send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'USER' }) })
+    );
+  });
+
+  it('assigns ADMIN automatically to exactly the one designated admin email', async () => {
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'voltex.crypto@gmail.com', password: 'correcthorsebattery' });
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'ADMIN' }) })
+    );
+  });
+
+  it('matches the admin email case-insensitively', async () => {
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'Voltex.Crypto@Gmail.com', password: 'correcthorsebattery' });
+
+    expect(prisma.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ role: 'ADMIN' }) })
+    );
+  });
+
+  it('records the registration IP and user agent on the audit log', async () => {
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+
+    await request(app)
+      .post('/api/v1/auth/register')
+      .set('User-Agent', 'test-agent/1.0')
+      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: 'USER_REGISTERED',
+          metadata: expect.objectContaining({ userAgent: 'test-agent/1.0' }),
+        }),
+      })
+    );
+  });
+
   it('rejects registration with a weak password', async () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);

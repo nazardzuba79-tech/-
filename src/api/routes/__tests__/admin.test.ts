@@ -18,7 +18,7 @@ function buildApp(prisma: any) {
 
 describe('GET /admin/clients', () => {
   it('requires an admin account', async () => {
-    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ isAdmin: false }) } } as any;
+    const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } } as any;
     const app = buildApp(prisma);
 
     const res = await request(app).get('/api/v1/admin/clients').set('Authorization', authHeader('user-1'));
@@ -29,10 +29,10 @@ describe('GET /admin/clients', () => {
   it('returns every client, each paired with their latest KYC submission', async () => {
     const prisma = {
       user: {
-        findUnique: jest.fn().mockResolvedValue({ isAdmin: true }),
+        findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
         findMany: jest.fn().mockResolvedValue([
-          { id: 'user-1', email: 'verified@team.com', isAdmin: false, kycStatus: 'APPROVED', createdAt: new Date('2026-01-01') },
-          { id: 'user-2', email: 'new@team.com', isAdmin: false, kycStatus: 'NOT_STARTED', createdAt: new Date('2026-02-01') },
+          { id: 'user-1', email: 'verified@team.com', role: 'USER', kycStatus: 'APPROVED', createdAt: new Date('2026-01-01') },
+          { id: 'user-2', email: 'new@team.com', role: 'USER', kycStatus: 'NOT_STARTED', createdAt: new Date('2026-02-01') },
         ]),
       },
       kycSubmission: {
