@@ -9,9 +9,12 @@ function iconUrl(symbol: string): string {
   return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${symbol.toLowerCase()}.png`;
 }
 
-const AVATAR_COLORS = ['#f7a600', '#00d68f', '#ff4d6a', '#5b8def', '#b073ff', '#00c2d1', '#e0a72e'];
+export const AVATAR_COLORS = ['#f7a600', '#00d68f', '#ff4d6a', '#5b8def', '#b073ff', '#00c2d1', '#e0a72e'];
 
-function avatarColor(symbol: string): string {
+// Exported so anything showing a per-asset color swatch (e.g. the wallet's
+// portfolio donut chart) uses the exact same deterministic color a coin's
+// icon falls back to — one color-per-symbol mapping, not two that drift.
+export function avatarColor(symbol: string): string {
   let hash = 0;
   for (let i = 0; i < symbol.length; i++) hash = (hash * 31 + symbol.charCodeAt(i)) >>> 0;
   return AVATAR_COLORS[hash % AVATAR_COLORS.length];

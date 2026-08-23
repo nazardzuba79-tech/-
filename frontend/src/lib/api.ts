@@ -209,6 +209,20 @@ export const api = {
       { method: 'POST', body: JSON.stringify({ txHash, asset }) }
     ),
 
+  getMyDeposits: () =>
+    request<
+      {
+        id: string;
+        asset: string;
+        chain: string;
+        txHash: string;
+        amount: string;
+        confirmations: number;
+        status: string;
+        createdAt: string;
+      }[]
+    >('/deposits/me'),
+
   // Read-only mirror of Kraken market data — coin list, price, order book.
   getExternalSymbols: () =>
     request<{ source: string; symbols: { pair: string; baseAsset: string; quoteAsset: string }[] }>(
