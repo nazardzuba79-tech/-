@@ -2,11 +2,12 @@ import request from 'supertest';
 import express from 'express';
 import { marketRouter } from '../market';
 import { ExternalMarketDataError } from '../../../services/KrakenMarketDataService';
+import { ExternalRankingError } from '../../../services/CoinGeckoService';
 
-function buildApp(marketDataService: any) {
+function buildApp(marketDataService: any, coinGeckoService: any = { getRankings: jest.fn().mockResolvedValue([]) }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', marketRouter(marketDataService));
+  app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
   return app;
 }
 
@@ -83,5 +84,28 @@ describe('market routes', () => {
 
     expect(res.status).toBe(502);
     expect(res.body.error).toBe('Kraken is down');
+  });
+
+  it('GET /market/external/rankings returns the mirrored CoinGecko rankings', async () => {
+    const coinGeckoService = {
+      getRankings: jest.fn().mockResolvedValue([{ symbol: 'BTC', rank: 1, name: 'Bitcoin', image: 'btc.png', categories: [] }]),
+    };
+    const app = buildApp({}, coinGeckoService);
+
+    const res = await request(app).get('/api/v1/market/external/rankings');
+
+    expect(res.status).toBe(200);
+    expect(res.body.source).toBe('coingecko');
+    expect(res.body.rankings).toHaveLength(1);
+  });
+
+  it('GET /market/external/rankings returns 502 when CoinGecko fails', async () => {
+    const coinGeckoService = { getRankings: jest.fn().mockRejectedValue(new ExternalRankingError('CoinGecko is down')) };
+    const app = buildApp({}, coinGeckoService);
+
+    const res = await request(app).get('/api/v1/market/external/rankings');
+
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBe('CoinGecko is down');
   });
 });

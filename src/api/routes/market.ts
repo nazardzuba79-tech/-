@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { KrakenMarketDataService, ExternalMarketDataError } from '../../services/KrakenMarketDataService';
+import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -12,8 +13,27 @@ import { KrakenMarketDataService, ExternalMarketDataError } from '../../services
  * Express path params can't contain "/" — the handler converts it back to
  * our internal "BTC/USDT" format.
  */
-export function marketRouter(marketDataService: KrakenMarketDataService): Router {
+export function marketRouter(marketDataService: KrakenMarketDataService, coinGeckoService: CoinGeckoService): Router {
   const router = Router();
+
+  // Market-cap rank + category metadata (DeFi/Layer 1/Meme/Stablecoin) for
+  // sorting and filtering the pair list — Kraken's own AssetPairs endpoint
+  // (listSymbols above) has neither, so this is a separate real source
+  // rather than a hand-maintained ranking that would go stale. Purely
+  // additive: a coin missing here just doesn't get a rank/category badge,
+  // it's never removed from the tradable pair list over it.
+  router.get('/market/external/rankings', async (_req, res) => {
+    try {
+      const rankings = await coinGeckoService.getRankings();
+      res.json({ source: 'coingecko', rankings });
+    } catch (err) {
+      if (err instanceof ExternalRankingError) {
+        return res.status(502).json({ error: err.message });
+      }
+      console.error(err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
 
   router.get('/market/external/symbols', async (_req, res) => {
     try {

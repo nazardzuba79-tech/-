@@ -1,11 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, Key } from '../lib/i18n';
 import { SearchInput } from './SearchInput';
 import { CryptoIcon } from './CryptoIcon';
 import { SkeletonRow } from './Skeleton';
-import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
+import {
+  QUOTE_PRIORITY,
+  CATEGORIES,
+  CoinCategory,
+  CoinRanking,
+  loadFavorites,
+  saveFavorites,
+  filterAndSortPairs,
+  TickerRow,
+} from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
+
+const CATEGORY_LABEL_KEY: Record<CoinCategory, Key> = {
+  DEFI: 'markets.category.defi',
+  LAYER_1: 'markets.category.layer1',
+  MEME: 'markets.category.meme',
+  STABLECOIN: 'markets.category.stablecoin',
+};
 
 /**
  * Persistent pair list docked to the left of the trade-page chart —
@@ -21,6 +37,8 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
   const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  const [categoryFilter, setCategoryFilter] = useState<CoinCategory | null>(null);
+  const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
 
   function loadTickers() {
     setLoadError(false);
@@ -34,6 +52,21 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
     loadTickers();
     const poll = window.setInterval(loadTickers, 10000);
     return () => window.clearInterval(poll);
+  }, []);
+
+  // Market-cap rank + category tags — a separate, slower-changing fetch
+  // from the live ticker poll above. A failure here just means the
+  // category chips silently do nothing (see the chip's disabled state
+  // below) rather than breaking the pair list itself.
+  useEffect(() => {
+    api
+      .getExternalRankings()
+      .then((res) => {
+        const map = new Map<string, CoinRanking>();
+        for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
+        setRankByBase(map);
+      })
+      .catch(() => {});
   }, []);
 
   const quoteChips = useMemo(() => {
@@ -52,7 +85,15 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
     });
   }
 
-  const filtered = filterAndSortPairs(tickers, { search, quoteFilter, favoritesOnly, favorites });
+  const filtered = filterAndSortPairs(tickers, {
+    search,
+    quoteFilter,
+    favoritesOnly,
+    favorites,
+    categoryFilter,
+    rankByBase: rankByBase ?? undefined,
+    sortByRank: categoryFilter !== null,
+  });
 
   return (
     <div style={styles.panel}>
@@ -81,6 +122,25 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
             style={{ ...styles.chip, ...(quoteFilter === q ? styles.chipActive : {}) }}
           >
             {q}
+          </button>
+        ))}
+      </div>
+
+      <div style={styles.chipsRow}>
+        {CATEGORIES.map((c) => (
+          <button
+            key={c}
+            disabled={!rankByBase}
+            onClick={() => setCategoryFilter((prev) => (prev === c ? null : c))}
+            className="row-hover"
+            style={{
+              ...styles.chip,
+              ...(categoryFilter === c ? styles.chipActive : {}),
+              opacity: rankByBase ? 1 : 0.5,
+            }}
+            title={!rankByBase ? t('markets.rankingsUnavailable') : undefined}
+          >
+            {t(CATEGORY_LABEL_KEY[c])}
           </button>
         ))}
       </div>

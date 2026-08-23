@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
@@ -8,6 +8,14 @@ import { CryptoIcon } from '../components/CryptoIcon';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
+import { CATEGORIES, CoinCategory, CoinRanking } from '../lib/pairList';
+
+const CATEGORY_LABEL_KEY: Record<CoinCategory, Key> = {
+  DEFI: 'markets.category.defi',
+  LAYER_1: 'markets.category.layer1',
+  MEME: 'markets.category.meme',
+  STABLECOIN: 'markets.category.stablecoin',
+};
 
 interface Ticker {
   pair: string;
@@ -34,6 +42,19 @@ export function MarketsPage() {
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<CoinCategory | null>(null);
+  const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
+
+  useEffect(() => {
+    api
+      .getExternalRankings()
+      .then((res) => {
+        const map = new Map<string, CoinRanking>();
+        for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
+        setRankByBase(map);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     function refreshTickers() {
@@ -79,10 +100,24 @@ export function MarketsPage() {
     () =>
       tickers
         .filter((t) => t.pair.toLowerCase().includes(search.toLowerCase()))
-        // Most-traded first — the raw API order is roughly alphabetical,
-        // which otherwise puts thin, barely-liquid pairs at the top.
-        .sort((a, b) => parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')),
-    [tickers, search]
+        .filter((t) => {
+          if (!categoryFilter) return true;
+          const ranking = rankByBase?.get(t.pair.split('/')[0]);
+          return ranking?.categories.includes(categoryFilter) ?? false;
+        })
+        .sort((a, b) => {
+          // Browsing a category is browsing by market-cap rank within it —
+          // only kicks in once real CoinGecko data is actually loaded.
+          if (categoryFilter && rankByBase) {
+            const rankA = rankByBase.get(a.pair.split('/')[0])?.rank ?? Infinity;
+            const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
+            if (rankA !== rankB) return rankA - rankB;
+          }
+          // Most-traded first — the raw API order is roughly alphabetical,
+          // which otherwise puts thin, barely-liquid pairs at the top.
+          return parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0');
+        }),
+    [tickers, search, categoryFilter, rankByBase]
   );
 
   return (
@@ -96,6 +131,25 @@ export function MarketsPage() {
         </div>
 
         {error && <div style={styles.banner}>{error}</div>}
+
+        <div style={styles.chipsRow}>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              disabled={!rankByBase}
+              onClick={() => setCategoryFilter((prev) => (prev === c ? null : c))}
+              className="row-hover"
+              style={{
+                ...styles.chip,
+                ...(categoryFilter === c ? styles.chipActive : {}),
+                opacity: rankByBase ? 1 : 0.5,
+              }}
+              title={!rankByBase ? t('markets.rankingsUnavailable') : undefined}
+            >
+              {t(CATEGORY_LABEL_KEY[c])}
+            </button>
+          ))}
+        </div>
 
         <div style={styles.grid}>
           <div className="surface-raised" style={styles.listPanel}>
@@ -121,9 +175,12 @@ export function MarketsPage() {
                       background: tk.pair === selectedPair ? 'var(--panel-alt)' : 'transparent',
                     }}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} />
-                      {tk.pair}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
+                      {rankByBase?.get(tk.pair.split('/')[0])?.rank !== undefined && (
+                        <span style={styles.rankBadge}>#{rankByBase!.get(tk.pair.split('/')[0])!.rank}</span>
+                      )}
                     </span>
                     <span className="mono" style={{ textAlign: 'right' }}>
                       {parseFloat(tk.lastPrice)}
@@ -188,6 +245,26 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 20,
     background: 'var(--sell-dim)',
     color: 'var(--sell)',
+  },
+  chipsRow: { display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  chip: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 999,
+    padding: '6px 14px',
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+  },
+  chipActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' },
+  rankBadge: {
+    flexShrink: 0,
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--text-tertiary)',
+    background: 'var(--panel-alt)',
+    borderRadius: 999,
+    padding: '2px 6px',
   },
   grid: { display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' },
   listPanel: {

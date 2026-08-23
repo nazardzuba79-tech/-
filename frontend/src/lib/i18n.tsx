@@ -342,6 +342,12 @@ const RU = {
   'markets.nothingFound': 'Ничего не найдено.',
   'markets.loading': 'Загрузка...',
   'markets.selectPair': 'Выбери пару из списка',
+  'markets.category.defi': 'DeFi',
+  'markets.category.layer1': 'Layer 1',
+  'markets.category.meme': 'Мемкоины',
+  'markets.category.stablecoin': 'Стейблкоины',
+  'markets.rankingsUnavailable': 'Данные о капитализации временно недоступны',
+  'markets.rank': 'Ранг',
 
   'balance.zero': 'Баланс: 0',
 
@@ -428,7 +434,7 @@ const RU = {
   'futures.myOrders': 'Мои ордера',
 } as const;
 
-type Key = keyof typeof RU;
+export type Key = keyof typeof RU;
 
 const EN: Record<Key, string> = {
   'nav.trade': 'Trade',
@@ -753,6 +759,12 @@ const EN: Record<Key, string> = {
   'markets.nothingFound': 'Nothing found.',
   'markets.loading': 'Loading...',
   'markets.selectPair': 'Select a pair from the list',
+  'markets.category.defi': 'DeFi',
+  'markets.category.layer1': 'Layer 1',
+  'markets.category.meme': 'Meme coins',
+  'markets.category.stablecoin': 'Stablecoins',
+  'markets.rankingsUnavailable': 'Market cap data is temporarily unavailable',
+  'markets.rank': 'Rank',
 
   'balance.zero': 'Balance: 0',
 
@@ -1160,6 +1172,12 @@ const ZH: Record<Key, string> = {
   'markets.nothingFound': '未找到结果。',
   'markets.loading': '加载中...',
   'markets.selectPair': '从列表中选择一个交易对',
+  'markets.category.defi': 'DeFi',
+  'markets.category.layer1': 'Layer 1',
+  'markets.category.meme': '模因币',
+  'markets.category.stablecoin': '稳定币',
+  'markets.rankingsUnavailable': '市值数据暂时不可用',
+  'markets.rank': '排名',
 
   'balance.zero': '余额：0',
 

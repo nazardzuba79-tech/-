@@ -1,0 +1,116 @@
+/**
+ * Read-only mirror of CoinGecko's public market-cap ranking + category
+ * data (no API key needed — these are public endpoints). This NEVER backs
+ * an actual trading pair by itself: Kraken (KrakenMarketDataService)
+ * remains the only source of real price/candle/order-book data, since
+ * that's what our matching engine and price watchers can actually act on.
+ * CoinGeckoService only supplies metadata — market-cap rank and category
+ * tags — used to sort and filter the pair list Kraken already provides,
+ * never to invent a pair Kraken can't back with real market data.
+ *
+ * NOT tested against the live API from this environment (this sandbox's
+ * outbound proxy blocks it, confirmed via a direct curl returning a 403 on
+ * the CONNECT tunnel — same class of restriction as Kraken elsewhere in
+ * this codebase) — verify against the real API before depending on this
+ * in production, same caveat the deposit verifiers carry.
+ */
+
+export class ExternalRankingError extends Error {}
+
+export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN';
+
+export interface CoinRanking {
+  symbol: string; // e.g. "BTC" — matches our internal asset codes
+  rank: number;
+  name: string;
+  image: string;
+  categories: CoinCategory[];
+}
+
+const RANKINGS_TTL_MS = 60 * 60_000; // market-cap rank/category doesn't move minute to minute
+const TOP_N = 200;
+
+// CoinGecko's own category slugs for the four groupings the UI filters by.
+const CATEGORY_SLUGS: Record<CoinCategory, string> = {
+  DEFI: 'decentralized-finance-defi',
+  LAYER_1: 'layer-1',
+  MEME: 'meme-token',
+  STABLECOIN: 'stablecoins',
+};
+
+interface CoinGeckoMarketRow {
+  symbol: string;
+  name: string;
+  image: string;
+  market_cap_rank: number | null;
+}
+
+export class CoinGeckoService {
+  private cache: { rankings: CoinRanking[]; expiresAt: number } | null = null;
+
+  constructor(
+    private readonly baseUrl = 'https://api.coingecko.com/api/v3',
+    private readonly fetchFn: typeof fetch = fetch
+  ) {}
+
+  /** Top ~200 coins by market cap, each tagged with whichever of the four
+   * tracked categories it belongs to. Sorted ascending by rank. */
+  async getRankings(): Promise<CoinRanking[]> {
+    if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.rankings;
+
+    const markets = (await this.request(
+      `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=false`
+    )) as CoinGeckoMarketRow[];
+
+    const bySymbol = new Map<string, CoinRanking>();
+    for (const m of markets) {
+      const symbol = m.symbol.toUpperCase();
+      // CoinGecko occasionally lists two different coins sharing a ticker
+      // (e.g. wrapped variants) — keep whichever we see first, which is
+      // the higher-ranked one since the response is already rank-sorted.
+      if (bySymbol.has(symbol)) continue;
+      bySymbol.set(symbol, {
+        symbol,
+        rank: m.market_cap_rank ?? TOP_N + 1,
+        name: m.name,
+        image: m.image,
+        categories: [],
+      });
+    }
+
+    // One call per category, matching returned coins against the top-N set
+    // built above — real API-sourced category membership, not a hardcoded
+    // per-coin list that would silently go stale as coins launch/delist.
+    for (const [key, slug] of Object.entries(CATEGORY_SLUGS) as [CoinCategory, string][]) {
+      try {
+        const coins = (await this.request(
+          `/coins/markets?vs_currency=usd&category=${slug}&order=market_cap_desc&per_page=250&page=1&sparkline=false`
+        )) as CoinGeckoMarketRow[];
+        for (const c of coins) {
+          const entry = bySymbol.get(c.symbol.toUpperCase());
+          if (entry) entry.categories.push(key);
+        }
+      } catch {
+        // One category endpoint failing shouldn't blank out the whole
+        // ranking list — that coin just won't get a category tag this cycle.
+      }
+    }
+
+    const rankings = Array.from(bySymbol.values()).sort((a, b) => a.rank - b.rank);
+    this.cache = { rankings, expiresAt: Date.now() + RANKINGS_TTL_MS };
+    return rankings;
+  }
+
+  private async request(path: string): Promise<unknown> {
+    let res: Response;
+    try {
+      res = await this.fetchFn(`${this.baseUrl}${path}`);
+    } catch (err: any) {
+      throw new ExternalRankingError(`Failed to reach CoinGecko: ${err.message}`);
+    }
+    if (!res.ok) {
+      throw new ExternalRankingError(`CoinGecko responded with HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+}

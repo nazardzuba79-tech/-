@@ -13,6 +13,7 @@ import { candlesRouter } from './api/routes/candles';
 import { productsRouter } from './api/routes/products';
 import { balancesRouter } from './api/routes/balances';
 import { marketRouter } from './api/routes/market';
+import { CoinGeckoService } from './services/CoinGeckoService';
 import { accountRouter } from './api/routes/account';
 import { kycRouter } from './api/routes/kyc';
 import { adminRouter } from './api/routes/admin';
@@ -35,6 +36,7 @@ const app = express();
 const prisma = new PrismaClient();
 const engine = new MatchingEngine();
 const marketDataService = new KrakenMarketDataService(process.env.KRAKEN_API_BASE_URL || 'https://api.kraken.com');
+const coinGeckoService = new CoinGeckoService(process.env.COINGECKO_API_BASE_URL || 'https://api.coingecko.com/api/v3');
 
 // Perpetual futures runs on its own matching engine and services,
 // deliberately never sharing state with the spot engine above (see
@@ -79,7 +81,7 @@ app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
-app.use('/api/v1', marketRouter(marketDataService));
+app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma));
 app.use('/api/v1', adminRouter(prisma));

@@ -215,6 +215,15 @@ export const api = {
       '/market/external/symbols'
     ),
 
+  // Market-cap rank + category (DeFi/Layer 1/Meme/Stablecoin) from the
+  // CoinGecko mirror — metadata only, layered on top of the real Kraken
+  // pair list above, never a source of tradable pairs by itself.
+  getExternalRankings: () =>
+    request<{
+      source: string;
+      rankings: { symbol: string; rank: number; name: string; image: string; categories: string[] }[];
+    }>('/market/external/rankings'),
+
   getExternalTickers: () =>
     request<{
       source: string;
