@@ -132,7 +132,6 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
         fullName: k.fullName,
         dateOfBirth: k.dateOfBirth,
         documentType: k.documentType,
-        documentNumber: k.documentNumber,
         status: k.status,
         rejectionReason: k.rejectionReason,
         reviewedBy: k.reviewedBy,

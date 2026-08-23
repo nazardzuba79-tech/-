@@ -129,7 +129,7 @@ describe('admin users routes', () => {
         withdrawal: { findMany: jest.fn().mockResolvedValue([{ id: 'w1', asset: 'USDT', network: 'TRC20', toAddress: 'T1', amount: { toString: () => '50' }, status: 'SENT', txHash: 'tx1', rejectionReason: null, createdAt: new Date() }]) },
         order: { findMany: jest.fn().mockResolvedValue([{ id: 'o1', pair: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: { toString: () => '50000' }, originalQuantity: { toString: () => '1' }, remainingQuantity: { toString: () => '0' }, status: 'FILLED', createdAt: new Date() }]) },
         purchase: { findMany: jest.fn().mockResolvedValue([{ id: 'p1', product: { name: 'VIP Card' }, amount: { toString: () => '10' }, asset: 'USDT', status: 'FULFILLED', createdAt: new Date() }]) },
-        kycSubmission: { findMany: jest.fn().mockResolvedValue([{ id: 'k1', country: 'UA', fullName: 'Alice', dateOfBirth: new Date('1990-01-01'), documentType: 'PASSPORT', documentNumber: 'AA1', status: 'APPROVED', rejectionReason: null, reviewedBy: 'admin-1', reviewedAt: new Date(), createdAt: new Date() }]) },
+        kycSubmission: { findMany: jest.fn().mockResolvedValue([{ id: 'k1', country: 'UA', fullName: 'Alice', dateOfBirth: new Date('1990-01-01'), documentType: 'PASSPORT', status: 'APPROVED', rejectionReason: null, reviewedBy: 'admin-1', reviewedAt: new Date(), createdAt: new Date() }]) },
       });
       const app = buildApp(prisma);
       const res = await request(app).get('/api/v1/admin/users/user-1').set('Authorization', authHeader('admin-1'));

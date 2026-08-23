@@ -272,7 +272,6 @@ model KycSubmission {
   fullName          String
   dateOfBirth       DateTime
   documentType      String    // PASSPORT | ID_CARD | DRIVERS_LICENSE
-  documentNumber    String
   documentImagePath String
   status            String    @default("PENDING") // PENDING | APPROVED | REJECTED
   rejectionReason   String?

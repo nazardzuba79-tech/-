@@ -36,7 +36,6 @@ export function adminRouter(prisma: PrismaClient): Router {
                 fullName: latest.fullName,
                 dateOfBirth: latest.dateOfBirth,
                 documentType: latest.documentType,
-                documentNumber: latest.documentNumber,
                 status: latest.status,
                 rejectionReason: latest.rejectionReason,
                 createdAt: latest.createdAt,

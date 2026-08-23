@@ -196,7 +196,7 @@ export function AdminUserDetailPage() {
         {detail.kycSubmissions.map((k) => (
           <Row
             key={k.id}
-            label={`${k.fullName} · ${k.documentType} №${k.documentNumber}`}
+            label={`${k.fullName} · ${k.documentType}`}
             value={<span className="mono">{k.status} · {new Date(k.createdAt).toLocaleDateString('ru-RU')}</span>}
           />
         ))}

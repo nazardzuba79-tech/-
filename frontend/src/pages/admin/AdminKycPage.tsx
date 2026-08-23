@@ -129,7 +129,7 @@ export function AdminKycPage() {
               <div style={styles.row}>
                 <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Документ</span>
                 <span style={{ fontSize: 13 }}>
-                  {DOC_TYPE_LABEL[selected.latestKyc.documentType] ?? selected.latestKyc.documentType} №{selected.latestKyc.documentNumber}
+                  {DOC_TYPE_LABEL[selected.latestKyc.documentType] ?? selected.latestKyc.documentType}
                 </span>
               </div>
               <div style={styles.row}>

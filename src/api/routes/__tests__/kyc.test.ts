@@ -29,7 +29,6 @@ const validFields = {
   fullName: 'Іван Іванов',
   dateOfBirth: '1990-01-01',
   documentType: 'PASSPORT',
-  documentNumber: 'AB123456',
 };
 
 function submitRequest(app: express.Express, userId: string, fields = validFields) {

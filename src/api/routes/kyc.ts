@@ -54,7 +54,6 @@ const submitSchema = z.object({
   fullName: z.string().min(1).max(200),
   dateOfBirth: z.string().refine((v) => !isNaN(Date.parse(v)), 'invalid date of birth'),
   documentType: z.enum(['PASSPORT', 'ID_CARD', 'DRIVERS_LICENSE']),
-  documentNumber: z.string().min(1).max(50),
 });
 
 const reviewSchema = z.object({
@@ -90,7 +89,7 @@ export function kycRouter(prisma: PrismaClient): Router {
       return res.status(400).json({ error: 'A submission is already pending review' });
     }
 
-    const { country, fullName, dateOfBirth, documentType, documentNumber } = parsed.data;
+    const { country, fullName, dateOfBirth, documentType } = parsed.data;
     const submission = await prisma.kycSubmission.create({
       data: {
         userId: user.id,
@@ -98,7 +97,6 @@ export function kycRouter(prisma: PrismaClient): Router {
         fullName,
         dateOfBirth: new Date(dateOfBirth),
         documentType,
-        documentNumber,
         documentImagePath: req.file.path,
       },
     });

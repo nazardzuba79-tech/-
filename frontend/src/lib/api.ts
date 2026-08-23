@@ -395,7 +395,6 @@ export const api = {
     fullName: string;
     dateOfBirth: string;
     documentType: 'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE';
-    documentNumber: string;
     document: File;
   }) => {
     const form = new FormData();
@@ -403,7 +402,6 @@ export const api = {
     form.append('fullName', fields.fullName);
     form.append('dateOfBirth', fields.dateOfBirth);
     form.append('documentType', fields.documentType);
-    form.append('documentNumber', fields.documentNumber);
     form.append('document', fields.document);
     return requestForm<{ id: string; status: string }>('/kyc/submit', form);
   },
@@ -437,7 +435,6 @@ export const api = {
           fullName: string;
           dateOfBirth: string;
           documentType: string;
-          documentNumber: string;
           status: string;
           rejectionReason: string | null;
           createdAt: string;
@@ -765,7 +762,6 @@ export const api = {
         fullName: string;
         dateOfBirth: string;
         documentType: string;
-        documentNumber: string;
         status: string;
         rejectionReason: string | null;
         reviewedBy: string | null;

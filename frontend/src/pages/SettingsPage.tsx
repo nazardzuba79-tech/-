@@ -531,11 +531,10 @@ function VerificationTab() {
   const { t, lang } = useLanguage();
   const KYC_STATUS_LABEL = kycStatusLabel(t);
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
-  const [country, setCountry] = useState('UA');
+  const [country, setCountry] = useState('RU');
   const [fullName, setFullName] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [documentType, setDocumentType] = useState<'PASSPORT' | 'ID_CARD' | 'DRIVERS_LICENSE'>('PASSPORT');
-  const [documentNumber, setDocumentNumber] = useState('');
   const [document, setDocument] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -555,10 +554,9 @@ function VerificationTab() {
     }
     setSubmitting(true);
     try {
-      await api.submitKyc({ country, fullName, dateOfBirth, documentType, documentNumber, document });
+      await api.submitKyc({ country, fullName, dateOfBirth, documentType, document });
       setFullName('');
       setDateOfBirth('');
-      setDocumentNumber('');
       setDocument(null);
       reload();
     } catch (err) {
@@ -637,16 +635,6 @@ function VerificationTab() {
               <option value="ID_CARD">{DOC_TYPE_LABEL.ID_CARD}</option>
               <option value="DRIVERS_LICENSE">{DOC_TYPE_LABEL.DRIVERS_LICENSE}</option>
             </select>
-          </label>
-          <label style={styles.label}>
-            {t('settings.documentNumber')}
-            <input
-              type="text"
-              required
-              value={documentNumber}
-              onChange={(e) => setDocumentNumber(e.target.value)}
-              style={styles.input}
-            />
           </label>
           <label style={styles.label}>
             {t('settings.documentPhoto')}
