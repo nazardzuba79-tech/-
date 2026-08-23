@@ -62,6 +62,29 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
     }
   });
 
+  // The account's own deposit history — real Deposit rows written by
+  // DepositService on every claim attempt (PENDING/CONFIRMED/CREDITED),
+  // scoped to req.userId so no one can read another account's deposits.
+  router.get('/deposits/me', requireAuth, async (req: AuthedRequest, res) => {
+    const deposits = await prisma.deposit.findMany({
+      where: { userId: req.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    res.json(
+      deposits.map((d) => ({
+        id: d.id,
+        asset: d.asset,
+        chain: d.chain,
+        txHash: d.txHash,
+        amount: d.amount.toString(),
+        confirmations: d.confirmations,
+        status: d.status,
+        createdAt: d.createdAt,
+      }))
+    );
+  });
+
   router.post('/deposits/claim/:chain', requireAuth, async (req: AuthedRequest, res) => {
     let config: ChainConfig;
     try {

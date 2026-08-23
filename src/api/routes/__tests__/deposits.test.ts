@@ -111,4 +111,40 @@ describe('deposits routes', () => {
       expect(res.status).toBe(404);
     });
   });
+
+  describe('GET /deposits/me', () => {
+    it("returns only this account's own deposits, newest first", async () => {
+      const rows = [
+        {
+          id: 'dep-1',
+          userId: 'user-1',
+          asset: 'BTC',
+          chain: 'bitcoin',
+          txHash: 'a'.repeat(64),
+          amount: { toString: () => '0.05' },
+          confirmations: 3,
+          status: 'CREDITED',
+          createdAt: new Date('2026-01-01'),
+        },
+      ];
+      const findManyMock = jest.fn().mockResolvedValue(rows);
+      const prisma = { deposit: { findMany: findManyMock } };
+      const app = buildApp(prisma);
+
+      const res = await request(app).get('/api/v1/deposits/me').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0]).toMatchObject({ asset: 'BTC', amount: '0.05', status: 'CREDITED' });
+      expect(findManyMock).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: 'user-1' }, orderBy: { createdAt: 'desc' } })
+      );
+    });
+
+    it('requires authentication', async () => {
+      const app = buildApp({ deposit: { findMany: jest.fn() } });
+      const res = await request(app).get('/api/v1/deposits/me');
+      expect(res.status).toBe(401);
+    });
+  });
 });
