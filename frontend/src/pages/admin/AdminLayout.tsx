@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, NavLink, Outlet } from 'react-router-dom';
 import { api, getToken } from '../../lib/api';
+import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
 import { styles } from './adminStyles';
 
 const SECTIONS = [
@@ -24,6 +25,7 @@ const SECTIONS = [
  */
 export function AdminLayout() {
   const [status, setStatus] = useState<'loading' | 'denied' | 'ok'>('loading');
+  const [soundOn, setSoundOn] = useState(isAdminAlertSoundEnabled);
 
   useEffect(() => {
     if (!getToken()) {
@@ -54,6 +56,23 @@ export function AdminLayout() {
             </NavLink>
           ))}
         </nav>
+
+        <div style={{ marginTop: 'auto' }}>
+          {/* Toggles the chime in useAdminAlerts.ts — fires anywhere in the
+              app on a brand-new deposit/withdrawal/KYC submission, not just
+              while sitting on this page. */}
+          <label style={styles.soundToggle}>
+            <input
+              type="checkbox"
+              checked={soundOn}
+              onChange={(e) => {
+                setSoundOn(e.target.checked);
+                setAdminAlertSoundEnabled(e.target.checked);
+              }}
+            />
+            🔔 Звук новых событий
+          </label>
+        </div>
       </aside>
       <main style={styles.main}>
         <Outlet />

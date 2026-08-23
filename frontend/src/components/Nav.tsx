@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useAdminAlertSound } from '../lib/useAdminAlerts';
 import { BalanceStrip } from './BalanceStrip';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -51,6 +52,10 @@ export function Nav({
       .then((me) => setIsAdmin(me.isAdmin))
       .catch(() => {});
   }, []);
+
+  // Chimes on a brand-new deposit/withdrawal/KYC submission, from anywhere
+  // in the app — not just while sitting on /admin. See useAdminAlerts.ts.
+  useAdminAlertSound(isAdmin);
 
   function handleLogout() {
     clearToken();

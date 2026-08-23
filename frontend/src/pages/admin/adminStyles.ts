@@ -33,6 +33,15 @@ export const styles: Record<string, CSSProperties> = {
     borderRadius: 8,
   },
   navItemActive: { background: 'var(--panel)', color: 'var(--text-primary)', fontWeight: 600 },
+  soundToggle: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '9px 12px',
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+  },
   main: { padding: '32px 40px', maxWidth: 1200, minWidth: 0 },
   title: { fontSize: 20, marginBottom: 20, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   card: {
