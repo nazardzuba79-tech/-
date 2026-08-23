@@ -104,13 +104,29 @@ export class CoinGeckoService {
   ) {}
 
   /** Top ~200 coins by market cap, each tagged with whichever of the four
-   * tracked categories it belongs to. Sorted ascending by rank. */
+   * tracked categories it belongs to. Sorted ascending by rank.
+   *
+   * On a refresh failure (CoinGecko's free/anonymous tier rate-limits
+   * fairly readily), this serves the last successful snapshot instead of
+   * throwing, however stale — every caller (ticker turnover/market-cap
+   * stats, the Wallet page's coin browser, category filters) would
+   * otherwise intermittently go blank/"—" for everyone on the exact
+   * request that happens to land during a rate-limited window, then
+   * silently recover on the next one. A five-minutes-stale market cap is
+   * far less confusing than a flickering dash. Only a genuinely first-ever
+   * call (nothing cached yet) still throws. */
   async getRankings(): Promise<CoinRanking[]> {
     if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.rankings;
 
-    const markets = (await this.request(
-      `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=true`
-    )) as CoinGeckoMarketRow[];
+    let markets: CoinGeckoMarketRow[];
+    try {
+      markets = (await this.request(
+        `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=true`
+      )) as CoinGeckoMarketRow[];
+    } catch (err) {
+      if (this.cache) return this.cache.rankings;
+      throw err;
+    }
 
     const bySymbol = new Map<string, CoinRanking>();
     for (const m of markets) {

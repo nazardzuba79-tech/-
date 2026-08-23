@@ -139,6 +139,33 @@ describe('CoinGeckoService', () => {
     await expect(service.getRankings()).rejects.toThrow('Failed to reach CoinGecko');
   });
 
+  it('serves the last successful snapshot instead of throwing when a refresh fails after the cache expires', async () => {
+    jest.useFakeTimers();
+    try {
+      const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse(MARKETS_BODY)).mockRejectedValue(new Error('rate limited'));
+      const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+      const first = await service.getRankings();
+      expect(first.map((r) => r.symbol)).toEqual(['BTC', 'ETH', 'USDT']);
+
+      // Past RANKINGS_TTL_MS (5 minutes) — the next call refetches, which
+      // this mock now fails.
+      jest.advanceTimersByTime(5 * 60_000 + 1000);
+
+      const second = await service.getRankings();
+      expect(second).toEqual(first);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('still throws on a refresh failure when there is no prior successful snapshot to fall back to', async () => {
+    const fetchFn = jest.fn().mockRejectedValue(new Error('rate limited'));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await expect(service.getRankings()).rejects.toThrow(ExternalRankingError);
+  });
+
   it('carries the real market-wide price/24h change/volume/market cap/sparkline through from the same markets call', async () => {
     const fetchFn = jest.fn().mockResolvedValue(
       jsonResponse([
