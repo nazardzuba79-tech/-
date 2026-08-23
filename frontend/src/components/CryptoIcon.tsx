@@ -9,7 +9,18 @@ function iconUrl(symbol: string): string {
   return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${symbol.toLowerCase()}.png`;
 }
 
-export const AVATAR_COLORS = ['#f7a600', '#00d68f', '#ff4d6a', '#5b8def', '#b073ff', '#00c2d1', '#e0a72e'];
+export const AVATAR_COLORS = [
+  '#f7a600', // amber
+  '#00d68f', // green
+  '#ff4d6a', // red/coral
+  '#5b8def', // blue
+  '#b073ff', // purple
+  '#00c2d1', // cyan
+  '#f472b6', // pink
+  '#facc15', // yellow
+  '#38bdf8', // sky
+  '#fb923c', // orange
+];
 
 // Exported so anything showing a per-asset color swatch (e.g. the wallet's
 // portfolio donut chart) uses the exact same deterministic color a coin's

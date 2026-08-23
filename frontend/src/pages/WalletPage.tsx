@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -85,7 +84,6 @@ function saveFlag(key: string, value: boolean) {
  */
 export function WalletPage() {
   const { t, lang } = useLanguage();
-  const navigate = useNavigate();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
@@ -233,7 +231,6 @@ export function WalletPage() {
     return m;
   }, [spotBalances]);
 
-  const tradableBases = useMemo(() => new Set(Object.keys(priceByAsset)), [priceByAsset]);
 
   const rows = useMemo(() => {
     const rankingBySymbol = new Map(rankings.map((r) => [r.symbol, r]));
@@ -276,10 +273,6 @@ export function WalletPage() {
 
   function formatCompactUsd(n: number): string {
     return `$${n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 })}`;
-  }
-
-  function handleBuyClick(symbol: string) {
-    navigate(`/trade?pair=${symbol}/USDT`);
   }
 
   return (
@@ -391,7 +384,6 @@ export function WalletPage() {
               <div style={styles.rows}>
                 {visibleRows.map((r) => {
                   const change = r.ranking?.changePercent24h;
-                  const tradable = tradableBases.has(r.symbol);
                   return (
                     <div key={r.symbol} style={styles.row}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, minWidth: 0 }} className="mono">
@@ -430,7 +422,7 @@ export function WalletPage() {
                         {r.ranking && r.ranking.sparkline.length > 1 ? <Sparkline points={r.ranking.sparkline} /> : '—'}
                       </span>
                       <span style={styles.actionsCell}>
-                        {r.total > 0 ? (
+                        {r.total > 0 && (
                           <>
                             <button onClick={() => setShowDeposit(true)} style={styles.actionBtn} title={t('wallet.deposit')}>
                               <DepositIcon />
@@ -446,15 +438,6 @@ export function WalletPage() {
                               <WithdrawIcon />
                             </button>
                           </>
-                        ) : (
-                          <button
-                            onClick={() => tradable && handleBuyClick(r.symbol)}
-                            disabled={!tradable}
-                            style={{ ...styles.buyBtn, ...(tradable ? {} : styles.buyBtnDisabled) }}
-                            title={tradable ? undefined : t('wallet.pairUnavailable')}
-                          >
-                            {t('wallet.buy')}
-                          </button>
                         )}
                       </span>
                     </div>
@@ -790,20 +773,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 6,
     color: 'var(--text-secondary)',
-  },
-  buyBtn: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    border: 'none',
-    borderRadius: 6,
-    padding: '6px 14px',
-    fontSize: 11,
-    fontWeight: 800,
-  },
-  buyBtnDisabled: {
-    background: 'var(--panel-alt)',
-    color: 'var(--text-tertiary)',
-    cursor: 'not-allowed',
   },
   explorerLink: { fontSize: 12, color: 'var(--accent)', fontWeight: 600 },
   hint: { padding: 24, color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center' },
