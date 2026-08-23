@@ -8,7 +8,9 @@ services:
     dockerContext: .
     envVars:
       - key: DATABASE_URL
-        sync: false # set manually — paste your Neon connection string
+        sync: false # set manually — paste your Neon POOLED connection string
+      - key: DIRECT_URL
+        sync: false # set manually — paste your Neon DIRECT (non-pooled) connection string; required for `prisma migrate deploy` to acquire its advisory lock reliably, see prisma/schema.prisma
       - key: JWT_SECRET
         generateValue: true # Render generates a random secret for you
       - key: API_KEY_ENCRYPTION_SECRET
