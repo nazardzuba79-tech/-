@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -31,6 +32,17 @@ interface Deposit {
 }
 
 const STABLE_ASSETS = new Set(['USDT', 'USDC', 'USD']);
+// Purely illustrative — shown only while the account holds nothing at all,
+// dimmed and explicitly labeled "example" (see the donut render below) so
+// it's never mistaken for real holdings. Colors come from the same
+// avatarColor() hash real slices use, so if this account later actually
+// holds these exact assets, the colors won't jump.
+const EXAMPLE_DONUT_SLICES: DonutSlice[] = [
+  { label: 'BTC', value: 45, color: avatarColor('BTC') },
+  { label: 'ETH', value: 25, color: avatarColor('ETH') },
+  { label: 'USDT', value: 20, color: avatarColor('USDT') },
+  { label: 'SOL', value: 10, color: avatarColor('SOL') },
+];
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
 const HIDE_ZERO_KEY = 'exchange_hide_zero_balances';
 const MASK = '••••••';
@@ -84,6 +96,7 @@ function saveFlag(key: string, value: boolean) {
  */
 export function WalletPage() {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
@@ -275,6 +288,15 @@ export function WalletPage() {
     return `$${n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 })}`;
   }
 
+  // Always enabled, for every coin — not gated on whether it has a real
+  // Kraken pair here. If it doesn't, the trade page just shows empty
+  // market data for that pair (same honest "—" fallback it already uses
+  // for any pair with no live ticker), rather than this table pre-judging
+  // tradability with a disabled button.
+  function handleTradeClick(symbol: string) {
+    navigate(`/trade?pair=${symbol}/USDT`);
+  }
+
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav active="/wallet" />
@@ -323,17 +345,27 @@ export function WalletPage() {
               <div style={{ ...styles.donutPlaceholder, width: 168, height: 168 }}>{MASK}</div>
             ) : (
               <div style={styles.donutRow}>
-                <PortfolioDonut slices={donutSlices} />
+                <div style={styles.donutSvgWrap}>
+                  <div style={{ opacity: donutSlices.length === 0 ? 0.4 : 1 }}>
+                    <PortfolioDonut slices={donutSlices.length === 0 ? EXAMPLE_DONUT_SLICES : donutSlices} />
+                  </div>
+                  {donutSlices.length === 0 && <span style={styles.donutExampleLabel}>{t('wallet.donutExample')}</span>}
+                </div>
                 <div style={styles.legend}>
-                  {donutSlices.length === 0 && <span style={{ color: 'var(--text-tertiary)', fontSize: 11 }}>—</span>}
-                  {donutSlices.map((s) => (
-                    <div key={s.label} style={styles.legendRow}>
-                      <span style={{ ...styles.legendDot, background: s.color }} />
-                      <span className="mono" style={{ fontSize: 11 }}>
-                        {s.label}
-                      </span>
-                    </div>
-                  ))}
+                  {donutSlices.length === 0 ? (
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: 11, lineHeight: 1.5, maxWidth: 100 }}>
+                      {t('wallet.donutExampleHint')}
+                    </span>
+                  ) : (
+                    donutSlices.map((s) => (
+                      <div key={s.label} style={styles.legendRow}>
+                        <span style={{ ...styles.legendDot, background: s.color }} />
+                        <span className="mono" style={{ fontSize: 11 }}>
+                          {s.label}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -422,7 +454,7 @@ export function WalletPage() {
                         {r.ranking && r.ranking.sparkline.length > 1 ? <Sparkline points={r.ranking.sparkline} /> : '—'}
                       </span>
                       <span style={styles.actionsCell}>
-                        {r.total > 0 && (
+                        {r.total > 0 ? (
                           <>
                             <button onClick={() => setShowDeposit(true)} style={styles.actionBtn} title={t('wallet.deposit')}>
                               <DepositIcon />
@@ -438,6 +470,10 @@ export function WalletPage() {
                               <WithdrawIcon />
                             </button>
                           </>
+                        ) : (
+                          <button onClick={() => handleTradeClick(r.symbol)} style={styles.tradeBtn}>
+                            {t('wallet.tradeAction')}
+                          </button>
                         )}
                       </span>
                     </div>
@@ -676,6 +712,20 @@ const styles: Record<string, React.CSSProperties> = {
   },
   donutTitle: { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' },
   donutRow: { display: 'flex', alignItems: 'center', gap: 16 },
+  donutSvgWrap: { position: 'relative', display: 'inline-flex' },
+  donutExampleLabel: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    fontSize: 10,
+    fontWeight: 800,
+    color: 'var(--text-secondary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    textAlign: 'center',
+    pointerEvents: 'none',
+  },
   donutPlaceholder: {
     display: 'flex',
     alignItems: 'center',
@@ -773,6 +823,15 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 6,
     color: 'var(--text-secondary)',
+  },
+  tradeBtn: {
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    border: 'none',
+    borderRadius: 6,
+    padding: '6px 14px',
+    fontSize: 11,
+    fontWeight: 800,
   },
   explorerLink: { fontSize: 12, color: 'var(--accent)', fontWeight: 600 },
   hint: { padding: 24, color: 'var(--text-tertiary)', fontSize: 13, textAlign: 'center' },
