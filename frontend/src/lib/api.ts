@@ -675,6 +675,150 @@ export const api = {
     }),
 
   markSupportConversationRead: (id: string) => request<void>(`/support/conversations/${id}/read`, { method: 'POST' }),
+
+  // --- Admin panel (/admin) — every call below is re-checked for role on
+  // the server on every request (see requireAdmin middleware); nothing
+  // here is trusted client-side. ---
+
+  getAdminWallets: () =>
+    request<
+      {
+        chain: string;
+        nativeAsset: string | null;
+        tokens: string[];
+        address: string | null;
+        isOverridden: boolean;
+        envConfigured: boolean;
+        updatedByAdminId: string | null;
+        updatedAt: string | null;
+      }[]
+    >('/admin/wallets'),
+
+  setAdminWalletAddress: (chain: string, address: string) =>
+    request<{ chain: string; address: string }>(`/admin/wallets/${chain}`, {
+      method: 'PUT',
+      body: JSON.stringify({ address }),
+    }),
+
+  resetAdminWallet: (chain: string) => request<{ ok: boolean }>(`/admin/wallets/${chain}`, { method: 'DELETE' }),
+
+  getAdminUsers: (search?: string) =>
+    request<
+      {
+        id: string;
+        email: string;
+        role: 'USER' | 'ADMIN';
+        isAdmin: boolean;
+        kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+        createdAt: string;
+        registrationIp: string | null;
+        balances: { asset: string; available: string; locked: string }[];
+      }[]
+    >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
+
+  getAdminUserDetail: (id: string) =>
+    request<{
+      id: string;
+      email: string;
+      role: 'USER' | 'ADMIN';
+      isAdmin: boolean;
+      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
+      createdAt: string;
+      registrationIp: string | null;
+      balances: { asset: string; available: string; locked: string }[];
+      deposits: {
+        id: string;
+        asset: string;
+        chain: string;
+        txHash: string;
+        amount: string;
+        confirmations: number;
+        status: string;
+        createdAt: string;
+      }[];
+      withdrawals: {
+        id: string;
+        asset: string;
+        network: string;
+        toAddress: string;
+        amount: string;
+        status: string;
+        txHash: string | null;
+        rejectionReason: string | null;
+        createdAt: string;
+      }[];
+      orders: {
+        id: string;
+        pair: string;
+        side: string;
+        type: string;
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        createdAt: string;
+      }[];
+      purchases: { id: string; productName: string; amount: string; asset: string; status: string; createdAt: string }[];
+      kycSubmissions: {
+        id: string;
+        country: string;
+        fullName: string;
+        dateOfBirth: string;
+        documentType: string;
+        documentNumber: string;
+        status: string;
+        rejectionReason: string | null;
+        reviewedBy: string | null;
+        reviewedAt: string | null;
+        createdAt: string;
+      }[];
+    }>(`/admin/users/${id}`),
+
+  adjustUserBalance: (userId: string, asset: string, amount: string, reason: string) =>
+    request<{ asset: string; available: string; locked: string }>(`/admin/users/${userId}/adjust-balance`, {
+      method: 'POST',
+      body: JSON.stringify({ asset, amount, reason }),
+    }),
+
+  getAdminAuditLog: (params?: { action?: string; userId?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.action) qs.set('action', params.action);
+    if (params?.userId) qs.set('userId', params.userId);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<
+      {
+        id: string;
+        userId: string | null;
+        userEmail: string | null;
+        action: string;
+        metadata: Record<string, unknown>;
+        performedByAdminEmail: string | null;
+        createdAt: string;
+      }[]
+    >(`/admin/audit-log${suffix}`);
+  },
+
+  getAdminProducts: () =>
+    request<
+      { id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean; createdAt: string }[]
+    >('/admin/products'),
+
+  createProduct: (params: { name: string; description: string; priceAmount: string; priceAsset: string }) =>
+    request<{ id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>(
+      '/products',
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
+
+  updateProduct: (
+    id: string,
+    patch: Partial<{ name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>
+  ) =>
+    request<{ id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>(
+      `/products/${id}`,
+      { method: 'PATCH', body: JSON.stringify(patch) }
+    ),
+
+  deleteProduct: (id: string) => request<void>(`/products/${id}`, { method: 'DELETE' }),
 };
 
 export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';

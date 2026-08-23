@@ -9,6 +9,15 @@ import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
 import { LegalPage } from './pages/LegalPage';
 import { getToken } from './lib/api';
+import { AdminLayout } from './pages/admin/AdminLayout';
+import { AdminWalletsPage } from './pages/admin/AdminWalletsPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminUserDetailPage } from './pages/admin/AdminUserDetailPage';
+import { AdminKycPage } from './pages/admin/AdminKycPage';
+import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
+import { AdminDepositsPage } from './pages/admin/AdminDepositsPage';
+import { AdminProductsPage } from './pages/admin/AdminProductsPage';
+import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   return getToken() ? children : <Navigate to="/" replace />;
@@ -78,6 +87,22 @@ export function App() {
         {/* Public — reachable both signed-in (footer link) and from the
             login screen, without requiring auth like every other page. */}
         <Route path="/legal/:doc" element={<LegalPage />} />
+
+        {/* Admin panel — deliberately not linked from anywhere in the
+            normal UI, reachable only by a direct visit. AdminLayout is a
+            UX-only gate; every request underneath is independently
+            re-checked for role ADMIN on the server (see requireAdmin). */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Navigate to="wallets" replace />} />
+          <Route path="wallets" element={<AdminWalletsPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="users/:id" element={<AdminUserDetailPage />} />
+          <Route path="kyc" element={<AdminKycPage />} />
+          <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
+          <Route path="deposits" element={<AdminDepositsPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="audit-log" element={<AdminAuditLogPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
