@@ -19,6 +19,7 @@ export function AdminKycPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [documentIsPdf, setDocumentIsPdf] = useState(false);
+  const [documentError, setDocumentError] = useState(false);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -33,10 +34,9 @@ export function AdminKycPage() {
   const selected = queue.find((c) => c.id === selectedId) ?? queue[0] ?? null;
 
   useEffect(() => {
-    if (!selected?.latestKyc) {
-      setDocumentUrl(null);
-      return;
-    }
+    setDocumentUrl(null);
+    setDocumentError(false);
+    if (!selected?.latestKyc) return;
     let revoked = '';
     api
       .getKycDocument(selected.latestKyc.id)
@@ -45,7 +45,7 @@ export function AdminKycPage() {
         setDocumentUrl(url);
         setDocumentIsPdf(contentType === 'application/pdf');
       })
-      .catch(() => setDocumentUrl(null));
+      .catch(() => setDocumentError(true));
     return () => {
       if (revoked) URL.revokeObjectURL(revoked);
     };
@@ -156,7 +156,11 @@ export function AdminKycPage() {
                   alignItems: 'center',
                 }}
               >
-                {documentUrl ? (
+                {documentError ? (
+                  <span style={{ color: 'var(--sell)', fontSize: 12 }}>
+                    Не удалось загрузить документ — файл отсутствует или повреждён на сервере.
+                  </span>
+                ) : documentUrl ? (
                   documentIsPdf ? (
                     <a href={documentUrl} target="_blank" rel="noreferrer">Открыть PDF</a>
                   ) : (
