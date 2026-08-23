@@ -26,6 +26,7 @@ const RU = {
   'nav.products': 'Товары',
   'nav.card': 'Crypto Card',
   'nav.settings': 'Настройки',
+  'nav.otc': 'OTC',
   'nav.logout': 'Выйти',
   'nav.menu': 'Меню',
   'connection.lost': 'Соединение с биржевым WebSocket потеряно. Переподключение...',
@@ -60,7 +61,6 @@ const RU = {
 
   'trade.orderBook': 'Стакан',
   'trade.trades': 'Сделки',
-  'trade.otc': 'OTC',
   'trade.otcTitle': 'OTC-торговля',
   'trade.otcDisclaimer': 'Торговля на OTC-рынке доступна инвесторам с объёмом от $100 000. Сделки проходят вне открытого стакана, через персонального менеджера.',
   'trade.otcContact': 'Хотите узнать больше или подтвердить объём? Напишите в поддержку — кнопка чата внизу справа.',
@@ -508,6 +508,7 @@ const EN: Record<Key, string> = {
   'nav.products': 'Products',
   'nav.card': 'Crypto Card',
   'nav.settings': 'Settings',
+  'nav.otc': 'OTC',
   'nav.logout': 'Log out',
   'nav.menu': 'Menu',
   'connection.lost': 'Lost connection to the exchange WebSocket. Reconnecting...',
@@ -542,7 +543,6 @@ const EN: Record<Key, string> = {
 
   'trade.orderBook': 'Order Book',
   'trade.trades': 'Trades',
-  'trade.otc': 'OTC',
   'trade.otcTitle': 'OTC trading',
   'trade.otcDisclaimer': 'OTC trading is available to investors with a volume of $100,000 or more. Trades happen off the open book, through a dedicated account manager.',
   'trade.otcContact': 'Want to learn more or confirm your volume? Message support — the chat button in the bottom-right corner.',
@@ -988,6 +988,7 @@ const ZH: Record<Key, string> = {
   'nav.products': '商品',
   'nav.card': 'Crypto Card',
   'nav.settings': '设置',
+  'nav.otc': 'OTC',
   'nav.logout': '退出登录',
   'nav.menu': '菜单',
   'connection.lost': '与交易所 WebSocket 的连接已断开,正在重新连接...',
@@ -1022,7 +1023,6 @@ const ZH: Record<Key, string> = {
 
   'trade.orderBook': '订单簿',
   'trade.trades': '成交',
-  'trade.otc': 'OTC',
   'trade.otcTitle': 'OTC 交易',
   'trade.otcDisclaimer': 'OTC 交易仅面向交易量达 10 万美元及以上的投资者开放。交易在场外通过专属客户经理完成，不进入公开订单簿。',
   'trade.otcContact': '想了解更多或确认您的交易量？请联系客服 — 点击右下角的聊天按钮。',

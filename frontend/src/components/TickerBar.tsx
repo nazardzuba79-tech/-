@@ -5,6 +5,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { Badge } from './Badge';
 import { parseChangePercent } from '../lib/priceChange';
 import { btcTurnover } from '../lib/turnover';
+import { useGlobalVolumeUsd } from '../lib/useGlobalVolume';
 
 interface Stats {
   lastPrice: number;
@@ -21,6 +22,7 @@ export function TickerBar({ pair }: { pair: string }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
+  const globalVolumeUsd = useGlobalVolumeUsd(baseAsset);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,16 +42,15 @@ export function TickerBar({ pair }: { pair: string }) {
           });
         })
         .catch(() => {});
-      // Needed to express turnover in BTC for anything not already
-      // BTC-quoted or BTC itself — skipped in that case, see btcTurnover().
-      if (baseAsset !== 'BTC' && quoteAsset !== 'BTC') {
-        api
-          .getExternalTicker('BTC/USDT')
-          .then((res) => {
-            if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
-          })
-          .catch(() => {});
-      }
+      // Needed both to express turnover in BTC for a non-BTC pair (see
+      // btcTurnover()) and to convert the global USD volume below into BTC
+      // terms — fetched unconditionally since either use needs it.
+      api
+        .getExternalTicker('BTC/USDT')
+        .then((res) => {
+          if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
+        })
+        .catch(() => {});
     }
     load();
     const interval = setInterval(load, 3000);
@@ -86,12 +87,22 @@ export function TickerBar({ pair }: { pair: string }) {
       <Stat label={t('trade.low24h')} value={stats ? stats.low24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
       <Stat label={`${t('trade.volume24h')} (${baseAsset})`} value={stats ? stats.volume24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
       <Stat
-        label={`${t('trade.turnover24h')} (${quoteAsset})`}
-        value={stats ? formatCompact(stats.quoteVolume24h, lang) : '—'}
+        label={`${t('trade.turnover24h')} (${globalVolumeUsd !== null ? 'USD' : quoteAsset})`}
+        value={(() => {
+          // Prefer CoinGecko's global 24h volume (real, aggregated across
+          // every exchange it tracks) — our own Kraken mirror only reflects
+          // Kraken's own liquidity for this one pair, which reads
+          // unrealistically small (millions, not billions) for a major coin.
+          // Falls back to the pair's own Kraken turnover when the asset
+          // isn't in CoinGecko's top-200 or the rankings fetch failed.
+          if (globalVolumeUsd !== null) return formatCompact(globalVolumeUsd, lang);
+          return stats ? formatCompact(stats.quoteVolume24h, lang) : '—';
+        })()}
       />
       <Stat
         label={`${t('trade.turnover24h')} (BTC)`}
         value={(() => {
+          if (globalVolumeUsd !== null && btcUsdtPrice) return formatCompact(globalVolumeUsd / btcUsdtPrice, lang);
           if (!stats) return '—';
           const btc = btcTurnover({ baseAsset, quoteAsset, volume24h: stats.volume24h, quoteVolume24h: stats.quoteVolume24h, btcUsdtPrice });
           return btc !== null ? formatCompact(btc, lang) : '—';

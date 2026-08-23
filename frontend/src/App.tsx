@@ -5,6 +5,7 @@ import { FuturesPage } from './pages/FuturesPage';
 import { MarketsPage } from './pages/MarketsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
+import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
 import { LegalPage } from './pages/LegalPage';
 import { getToken } from './lib/api';
@@ -63,6 +64,14 @@ export function App() {
           element={
             <RequireAuth>
               <WalletPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/otc"
+          element={
+            <RequireAuth>
+              <OtcPage />
             </RequireAuth>
           }
         />

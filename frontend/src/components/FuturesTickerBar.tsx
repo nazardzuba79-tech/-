@@ -4,6 +4,7 @@ import { useLanguage, localeOf } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { btcTurnover } from '../lib/turnover';
+import { useGlobalVolumeUsd } from '../lib/useGlobalVolume';
 
 /** Mark Price shown deliberately separate from Last Price (per the futures
  * spec) — mark price is what PnL/liquidation are computed off, last price
@@ -21,6 +22,7 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
   const [quoteVolume24h, setQuoteVolume24h] = useState<number | null>(null);
   const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
   const [, quoteAsset] = symbol.split('/');
+  const globalVolumeUsd = useGlobalVolumeUsd(baseAsset);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,15 +54,14 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
         })
         .catch(() => {});
       // Same real-BTC-price-based conversion as the spot TickerBar — see
-      // btcTurnover(). Skipped when this contract is already BTC/USDT.
-      if (baseAsset !== 'BTC' && quoteAsset !== 'BTC') {
-        api
-          .getExternalTicker('BTC/USDT')
-          .then((res) => {
-            if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
-          })
-          .catch(() => {});
-      }
+      // btcTurnover() and useGlobalVolumeUsd() — fetched unconditionally
+      // since converting the global USD volume into BTC terms needs it too.
+      api
+        .getExternalTicker('BTC/USDT')
+        .then((res) => {
+          if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
+        })
+        .catch(() => {});
     }
     load();
     const interval = setInterval(load, 4000);
@@ -74,10 +75,19 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
   const fmt = (n: number | null) => (n !== null ? n.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—');
   const fmtCompact = (n: number | null) =>
     n !== null ? n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 }) : '—';
+  // Prefer CoinGecko's global 24h volume (real, aggregated across every
+  // exchange it tracks) — this contract's own Kraken-mirrored turnover only
+  // reflects Kraken's own liquidity for one pair, which reads unrealistically
+  // small (millions, not billions) for a major coin. Falls back to the pair's
+  // own Kraken turnover when the asset isn't in CoinGecko's top-200.
+  const turnoverUsd = globalVolumeUsd ?? quoteVolume24h;
+  const turnoverUsdLabel = globalVolumeUsd !== null ? 'USD' : quoteAsset;
   const turnoverBtc =
-    volume24h !== null && quoteVolume24h !== null
-      ? btcTurnover({ baseAsset, quoteAsset, volume24h, quoteVolume24h, btcUsdtPrice })
-      : null;
+    globalVolumeUsd !== null && btcUsdtPrice
+      ? globalVolumeUsd / btcUsdtPrice
+      : volume24h !== null && quoteVolume24h !== null
+        ? btcTurnover({ baseAsset, quoteAsset, volume24h, quoteVolume24h, btcUsdtPrice })
+        : null;
 
   return (
     <div style={styles.bar}>
@@ -98,8 +108,8 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
       <Stat label={t('futures.markPrice')} value={fmt(markPrice)} />
       <Stat label={t('futures.indexPrice')} value={fmt(indexPrice)} />
       <Stat
-        label={`${t('trade.turnover24h')} (${quoteAsset})`}
-        value={quoteVolume24h !== null ? fmtCompact(quoteVolume24h) : '—'}
+        label={`${t('trade.turnover24h')} (${turnoverUsdLabel})`}
+        value={fmtCompact(turnoverUsd)}
       />
       <Stat label={`${t('trade.turnover24h')} (BTC)`} value={fmtCompact(turnoverBtc)} />
       <Stat

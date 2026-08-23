@@ -279,13 +279,13 @@ export const api = {
       };
     }>(`/market/external/tickers/${pairToSlug(pair)}`),
 
-  getExternalOrderBook: (pair: string) =>
+  getExternalOrderBook: (pair: string, limit = 10) =>
     request<{
       pair: string;
       bids: { price: string; quantity: string }[];
       asks: { price: string; quantity: string }[];
       timestamp: number;
-    }>(`/market/external/orderbook/${pairToSlug(pair)}`),
+    }>(`/market/external/orderbook/${pairToSlug(pair)}?limit=${limit}`),
 
   getExternalCandles: (pair: string, interval: string, limit = 300) =>
     request<{

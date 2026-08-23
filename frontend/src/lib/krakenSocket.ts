@@ -39,6 +39,10 @@ interface BookState {
 
 const WS_URL = 'wss://ws.kraken.com/v2';
 const MAX_RECONNECT_DELAY_MS = 15_000;
+// Kraken's book channel only accepts 10/25/100/500/1000 — 10 (its own
+// default) keeps each side short enough to fit OrderBookPanel's fixed
+// height without scrolling past a wall of asks before reaching the bids.
+const BOOK_DEPTH = 10;
 
 class KrakenSocket {
   private ws: WebSocket | null = null;
@@ -79,7 +83,7 @@ class KrakenSocket {
     const isNewSubscription = !this.bookListeners.has(pair);
     if (isNewSubscription) this.bookListeners.set(pair, new Set());
     this.bookListeners.get(pair)!.add(listener);
-    if (isNewSubscription) this.send({ method: 'subscribe', params: { channel: 'book', symbol: [pair], depth: 25 } });
+    if (isNewSubscription) this.send({ method: 'subscribe', params: { channel: 'book', symbol: [pair], depth: BOOK_DEPTH } });
 
     return () => {
       const set = this.bookListeners.get(pair);
@@ -133,7 +137,7 @@ class KrakenSocket {
       this.reconnectDelay = 1000;
       this.setStatus('connected');
       for (const pair of this.bookListeners.keys()) {
-        this.send({ method: 'subscribe', params: { channel: 'book', symbol: [pair], depth: 25 } });
+        this.send({ method: 'subscribe', params: { channel: 'book', symbol: [pair], depth: BOOK_DEPTH } });
       }
       for (const pair of this.tradeListeners.keys()) {
         this.send({ method: 'subscribe', params: { channel: 'trade', symbol: [pair] } });

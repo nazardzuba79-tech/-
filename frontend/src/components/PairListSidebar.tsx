@@ -56,18 +56,27 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
   }, []);
 
   // Market-cap rank + category tags — a separate, slower-changing fetch
-  // from the live ticker poll above. A failure here just means the
-  // category chips silently do nothing (see the chip's disabled state
-  // below) rather than breaking the pair list itself.
+  // from the live ticker poll above. Backend caches this for 5 minutes, so
+  // polling here is cheap; the real reason to poll rather than fetch once
+  // is resilience — a single failed attempt (CoinGecko rate-limited right
+  // as our cache expired, a cold-start blip) used to leave the category
+  // chips permanently disabled for the rest of the session with nothing to
+  // retry it. A transient failure now just keeps the previous map (or
+  // null, before the first success) until the next tick succeeds.
   useEffect(() => {
-    api
-      .getExternalRankings()
-      .then((res) => {
-        const map = new Map<string, CoinRanking>();
-        for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
-        setRankByBase(map);
-      })
-      .catch(() => {});
+    function loadRankings() {
+      api
+        .getExternalRankings()
+        .then((res) => {
+          const map = new Map<string, CoinRanking>();
+          for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
+          setRankByBase(map);
+        })
+        .catch(() => {});
+    }
+    loadRankings();
+    const poll = window.setInterval(loadRankings, 60_000);
+    return () => window.clearInterval(poll);
   }, []);
 
   const quoteChips = useMemo(() => {

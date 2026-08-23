@@ -71,6 +71,9 @@ export function Nav({
           <GearIcon active={active === '/settings'} />
           {t('nav.settings')}
         </Link>
+        <Link to="/otc" style={{ ...styles.link, ...(active === '/otc' ? styles.linkActive : {}) }}>
+          {t('nav.otc')}
+        </Link>
         {middle}
       </div>
 
@@ -113,6 +116,9 @@ export function Nav({
         >
           <GearIcon active={active === '/settings'} />
           {t('nav.settings')}
+        </Link>
+        <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
+          {t('nav.otc')}
         </Link>
 
         <div style={styles.mobileDivider} />
