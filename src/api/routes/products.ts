@@ -13,6 +13,17 @@ const createProductSchema = z.object({
   priceAsset: z.string().min(1).max(10),
 });
 
+const updateProductSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().min(1).max(2000).optional(),
+  priceAmount: z
+    .string()
+    .refine((v) => new BigNumber(v).isGreaterThan(0), 'price must be > 0')
+    .optional(),
+  priceAsset: z.string().min(1).max(10).optional(),
+  active: z.boolean().optional(),
+});
+
 export function productsRouter(prisma: PrismaClient): Router {
   const router = Router();
   const purchaseService = new PurchaseService(prisma);
@@ -40,6 +51,29 @@ export function productsRouter(prisma: PrismaClient): Router {
 
     const product = await prisma.product.create({ data: parsed.data });
     res.status(201).json({ ...product, priceAmount: product.priceAmount.toString() });
+  });
+
+  // Admin-only: every product, active or not — the public catalog above
+  // only ever shows active ones, so the admin panel needs its own listing
+  // to manage (and reactivate) everything.
+  router.get('/admin/products', requireAuth, requireAdmin(prisma), async (_req, res) => {
+    const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(products.map((p) => ({ ...p, priceAmount: p.priceAmount.toString() })));
+  });
+
+  // Admin-only: edit any subset of a product's fields, including
+  // reactivating one that was previously soft-deleted.
+  router.patch('/products/:id', requireAuth, requireAdmin(prisma), async (req, res) => {
+    const parsed = updateProductSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    if (Object.keys(parsed.data).length === 0) return res.status(400).json({ error: 'No fields to update' });
+
+    try {
+      const product = await prisma.product.update({ where: { id: req.params.id }, data: parsed.data });
+      res.json({ ...product, priceAmount: product.priceAmount.toString() });
+    } catch {
+      res.status(404).json({ error: 'Product not found' });
+    }
   });
 
   // Admin-only: stop selling a product (soft delete — keeps purchase history intact).

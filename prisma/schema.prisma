@@ -233,7 +233,7 @@ model AuditLog {
 }
 
 /// A product or service you sell through the exchange. Only an admin
-/// (User.isAdmin) can create/edit these — see requireAdmin middleware.
+/// (User.role == ADMIN) can create/edit these — see requireAdmin middleware.
 model Product {
   id          String   @id @default(uuid())
   name        String

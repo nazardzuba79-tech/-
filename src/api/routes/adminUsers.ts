@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
+import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
 
 /**
  * Admin's view into every registered account — the registration data,
@@ -12,6 +14,7 @@ import { requireAdmin } from '../middleware/admin';
  */
 export function adminUsersRouter(prisma: PrismaClient): Router {
   const router = Router();
+  const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
   router.get('/admin/users', requireAuth, requireAdmin(prisma), async (req, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -137,6 +140,36 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
         createdAt: k.createdAt,
       })),
     });
+  });
+
+  const adjustBalanceSchema = z.object({
+    asset: z.string().min(1).max(10),
+    amount: z.string().min(1),
+    reason: z.string().trim().min(1).max(500),
+  });
+
+  // Manual correction of a user's available balance — always requires a
+  // reason, which lands in AuditLog alongside the admin who made it (see
+  // BalanceAdjustmentService). Not for routine crediting: that's what the
+  // deposit-claim and manual-credit flows are for.
+  router.post('/admin/users/:id/adjust-balance', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = adjustBalanceSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    try {
+      const result = await balanceAdjustments.adjust({
+        userId: req.params.id,
+        asset: parsed.data.asset,
+        amount: parsed.data.amount,
+        reason: parsed.data.reason,
+        performedByAdminId: req.userId!,
+      });
+      res.json(result);
+    } catch (err) {
+      if (err instanceof BalanceAdjustmentError) return res.status(400).json({ error: err.message });
+      console.error(err);
+      res.status(500).json({ error: 'Failed to adjust balance' });
+    }
   });
 
   return router;

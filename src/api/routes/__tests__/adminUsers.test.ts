@@ -19,8 +19,8 @@ function buildApp(prisma: any) {
 function adminPrisma(overrides: any = {}) {
   return {
     user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), findMany: jest.fn().mockResolvedValue([]) },
-    auditLog: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null) },
-    balance: { findMany: jest.fn().mockResolvedValue([]) },
+    auditLog: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
+    balance: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), upsert: jest.fn() },
     deposit: { findMany: jest.fn().mockResolvedValue([]) },
     withdrawal: { findMany: jest.fn().mockResolvedValue([]) },
     order: { findMany: jest.fn().mockResolvedValue([]) },
@@ -28,6 +28,21 @@ function adminPrisma(overrides: any = {}) {
     kycSubmission: { findMany: jest.fn().mockResolvedValue([]) },
     ...overrides,
   };
+}
+
+function withBalanceTransaction(prisma: any, opts: { balance?: { available: string; locked: string } | null } = {}) {
+  const balanceState = opts.balance ? { ...opts.balance } : null;
+  const tx = {
+    balance: {
+      findUnique: jest.fn().mockImplementation(() => Promise.resolve(balanceState)),
+      upsert: jest.fn().mockImplementation(({ create, update }: any) =>
+        Promise.resolve(balanceState ? { ...balanceState, ...update, asset: create.asset } : { ...create, locked: '0' })
+      ),
+    },
+    auditLog: { create: jest.fn() },
+  };
+  prisma.$transaction = jest.fn(async (fn: any) => fn(tx));
+  return { prisma, tx };
 }
 
 describe('admin users routes', () => {
@@ -130,6 +145,55 @@ describe('admin users routes', () => {
         purchases: [expect.objectContaining({ productName: 'VIP Card' })],
         kycSubmissions: [expect.objectContaining({ id: 'k1', fullName: 'Alice' })],
       });
+    });
+  });
+
+  describe('POST /admin/users/:id/adjust-balance', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('u1'))
+        .send({ asset: 'USDT', amount: '10', reason: 'test' });
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects a missing reason', async () => {
+      const prisma = adminPrisma();
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'USDT', amount: '10' });
+      expect(res.status).toBe(400);
+    });
+
+    it('applies the adjustment and returns the new balance', async () => {
+      const prisma = adminPrisma();
+      withBalanceTransaction(prisma, { balance: { available: '100', locked: '0' } });
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'USDT', amount: '25', reason: 'Reconciliation credit' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ asset: 'USDT', available: '125', locked: '0' });
+    });
+
+    it('400s when the adjustment would push the balance negative', async () => {
+      const prisma = adminPrisma();
+      withBalanceTransaction(prisma, { balance: { available: '10', locked: '0' } });
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/adjust-balance')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'USDT', amount: '-50', reason: 'oops' });
+
+      expect(res.status).toBe(400);
     });
   });
 });
