@@ -8,7 +8,7 @@ import { getCountries, getCountryName } from '../lib/countries';
 import { Footer } from '../components/Footer';
 import { Skeleton, SkeletonRow } from '../components/Skeleton';
 
-type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients';
+type Tab = 'profile' | 'security' | 'verification' | 'api' | 'clients' | 'deposits';
 type T = ReturnType<typeof useLanguage>['t'];
 
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
@@ -40,7 +40,7 @@ export function SettingsPage() {
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav active="/settings" />
-      <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' ? 1080 : 760 }}>
+      <main style={{ ...styles.main, maxWidth: tab === 'clients' || tab === 'api' || tab === 'deposits' ? 1080 : 760 }}>
         <h1 style={styles.title}>{t('settings.title')}</h1>
 
         <div style={styles.layout}>
@@ -52,6 +52,9 @@ export function SettingsPage() {
             {isAdmin && (
               <TabButton label={t('settings.tab.clients')} active={tab === 'clients'} onClick={() => setTab('clients')} />
             )}
+            {isAdmin && (
+              <TabButton label={t('settings.tab.deposits')} active={tab === 'deposits'} onClick={() => setTab('deposits')} />
+            )}
           </div>
 
           <div style={styles.content}>
@@ -60,6 +63,7 @@ export function SettingsPage() {
             {tab === 'verification' && <VerificationTab />}
             {tab === 'api' && <ApiKeysTab />}
             {tab === 'clients' && isAdmin && <ClientsTab />}
+            {tab === 'deposits' && isAdmin && <DepositsTab />}
           </div>
         </div>
 
@@ -1014,6 +1018,148 @@ function ClientsTab() {
   );
 }
 
+/**
+ * Manual deposit crediting — replaces asking the client to find and paste a
+ * tx hash. "Нові надходження" is a live read of the treasury address's
+ * actual on-chain activity (see adminDeposits.ts / listIncoming on each
+ * verifier); picking a client + clicking "Зарахувати" re-verifies that
+ * specific transfer on-chain and credits it — the feed itself never
+ * directly moves money, it's just what makes finding the tx hash the
+ * admin's job instead of the client's.
+ */
+function DepositsTab() {
+  const { t, lang } = useLanguage();
+  const [incoming, setIncoming] = useState<Awaited<ReturnType<typeof api.getAdminIncomingDeposits>>>([]);
+  const [incomingLoaded, setIncomingLoaded] = useState(false);
+  const [incomingError, setIncomingError] = useState(false);
+  const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getAdminDeposits>>>([]);
+  const [clients, setClients] = useState<Awaited<ReturnType<typeof api.getAllClients>>>([]);
+  const [pickedUser, setPickedUser] = useState<Record<string, string>>({});
+  const [creditingKey, setCreditingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function reloadIncoming() {
+    api
+      .getAdminIncomingDeposits()
+      .then((res) => {
+        setIncoming(res);
+        setIncomingError(false);
+      })
+      .catch(() => setIncomingError(true))
+      .finally(() => setIncomingLoaded(true));
+  }
+
+  useEffect(() => {
+    reloadIncoming();
+    api.getAdminDeposits().then(setHistory).catch(() => {});
+    api.getAllClients().then(setClients).catch(() => {});
+  }, []);
+
+  async function handleCredit(t2: { chain: string; txHash: string; asset: string }) {
+    const key = `${t2.chain}:${t2.txHash}`;
+    const userId = pickedUser[key];
+    if (!userId) return;
+    setError(null);
+    setCreditingKey(key);
+    try {
+      await api.creditDepositManually({ userId, chain: t2.chain, txHash: t2.txHash, asset: t2.asset });
+      reloadIncoming();
+      api.getAdminDeposits().then(setHistory).catch(() => {});
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.deposits.creditError'));
+    } finally {
+      setCreditingKey(null);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h3 style={styles.sectionTitle}>{t('settings.deposits.incomingTitle')}</h3>
+        {error && <div style={styles.errorBox}>{error}</div>}
+        <div className="surface-raised" style={styles.depositsTable}>
+          <div style={styles.depositsHeader}>
+            <span>{t('settings.deposits.chain')}</span>
+            <span>{t('settings.deposits.asset')}</span>
+            <span style={{ textAlign: 'right' }}>{t('settings.deposits.amount')}</span>
+            <span style={{ textAlign: 'right' }}>{t('settings.deposits.confirmations')}</span>
+            <span>{t('settings.deposits.txHash')}</span>
+            <span>{t('settings.deposits.creditTo')}</span>
+            <span />
+          </div>
+          {incoming.map((tr) => {
+            const key = `${tr.chain}:${tr.txHash}`;
+            return (
+              <div key={key} style={styles.depositsRow}>
+                <span>{tr.chain}</span>
+                <span className="mono">{tr.asset}</span>
+                <span className="mono" style={{ textAlign: 'right' }}>{tr.amount}</span>
+                <span className="mono" style={{ textAlign: 'right' }}>{tr.confirmations}</span>
+                <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={tr.txHash}>
+                  {tr.txHash.slice(0, 10)}…
+                </span>
+                <select
+                  value={pickedUser[key] ?? ''}
+                  onChange={(e) => setPickedUser((prev) => ({ ...prev, [key]: e.target.value }))}
+                  style={styles.input}
+                >
+                  <option value="">{t('settings.deposits.pickClient')}</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  disabled={!pickedUser[key] || creditingKey === key}
+                  onClick={() => handleCredit(tr)}
+                  style={styles.approveBtn}
+                >
+                  {creditingKey === key ? t('settings.deposits.crediting') : t('settings.deposits.credit')}
+                </button>
+              </div>
+            );
+          })}
+          {incomingLoaded && !incomingError && incoming.length === 0 && (
+            <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.deposits.noIncoming')}</p>
+          )}
+          {incomingError && <p style={{ padding: 14, color: 'var(--sell)', fontSize: 12 }}>{t('settings.deposits.incomingLoadError')}</p>}
+          {!incomingLoaded && <Skeleton height={80} />}
+        </div>
+      </div>
+
+      <div>
+        <h3 style={styles.sectionTitle}>{t('settings.deposits.historyTitle')}</h3>
+        <div className="surface-raised" style={{ ...styles.depositsTable, gridTemplateColumns: undefined }}>
+          <div style={{ ...styles.depositsHeader, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 0.8fr 1fr 1fr 1.4fr' }}>
+            <span>{t('settings.deposits.date')}</span>
+            <span>{t('settings.deposits.client')}</span>
+            <span>{t('settings.deposits.asset')}</span>
+            <span>{t('settings.deposits.chain')}</span>
+            <span style={{ textAlign: 'right' }}>{t('settings.deposits.amount')}</span>
+            <span>{t('settings.deposits.status')}</span>
+            <span>{t('settings.deposits.txHash')}</span>
+          </div>
+          {history.map((d) => (
+            <div key={d.id} style={{ ...styles.depositsRow, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 0.8fr 1fr 1fr 1.4fr' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(d.createdAt).toLocaleString(localeOf(lang))}</span>
+              <span style={{ fontSize: 12 }}>{d.userEmail}</span>
+              <span className="mono">{d.asset}</span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.chain}</span>
+              <span className="mono" style={{ textAlign: 'right' }}>{d.amount}</span>
+              <span style={{ fontSize: 12 }}>{d.status}</span>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={d.txHash}>
+                {d.txHash.slice(0, 10)}…
+              </span>
+            </div>
+          ))}
+          {history.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.deposits.noHistory')}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={styles.row}>
@@ -1032,6 +1178,34 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 6,
     padding: 16,
     marginBottom: 20,
+  },
+  sectionTitle: { fontSize: 14, fontWeight: 700, margin: '0 0 10px' },
+  depositsTable: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    overflowX: 'auto',
+  },
+  depositsHeader: {
+    display: 'grid',
+    gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr',
+    minWidth: 900,
+    padding: '10px 14px',
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+    borderBottom: '1px solid var(--border)',
+    gap: 8,
+  },
+  depositsRow: {
+    display: 'grid',
+    gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr',
+    minWidth: 900,
+    padding: '10px 14px',
+    fontSize: 13,
+    alignItems: 'center',
+    borderTop: '1px solid var(--border)',
+    gap: 8,
   },
   keyTable: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
   th: {

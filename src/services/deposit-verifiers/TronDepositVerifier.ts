@@ -1,7 +1,9 @@
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../../config/chains';
-import { DepositVerifier } from './types';
+import { DepositVerifier, IncomingTransfer } from './types';
 import { DepositVerificationError } from './errors';
+
+const INCOMING_FEED_LIMIT = 20;
 
 interface TronGridEvent {
   block_number: number;
@@ -19,6 +21,16 @@ interface TronGridNowBlockResponse {
   block_header: { raw_data: { number: number } };
 }
 
+interface TronGridTrc20Transfer {
+  transaction_id: string;
+  to: string;
+  value: string;
+}
+
+interface TronGridTrc20Response {
+  data: TronGridTrc20Transfer[];
+}
+
 /**
  * Tron only — for USDT and other TRC-20 tokens (native TRX deposits aren't
  * implemented; add a native-transfer check the same way EvmDepositVerifier
@@ -26,6 +38,9 @@ interface TronGridNowBlockResponse {
  * which reports Transfer events with addresses already in base58 (T...)
  * form — no hex/base58 conversion needed to compare against the treasury
  * address.
+ *
+ * Also powers the admin manual-credit feed (listIncoming) via TronGrid's
+ * account-scoped TRC-20 transfer list — same API, no separate integration.
  *
  * NOT tested against the live API from this environment (network access
  * here is sandboxed) — verify against TronGrid's real API with a small real
@@ -67,6 +82,35 @@ export class TronDepositVerifier implements DepositVerifier {
     const confirmations = nowBlock.block_header.raw_data.number - transfers[0].block_number + 1;
 
     return { amount, confirmations };
+  }
+
+  async listIncoming(): Promise<IncomingTransfer[]> {
+    const treasury = this.chainConfig.treasuryAddress;
+    const results: IncomingTransfer[] = [];
+
+    // One call per configured TRC-20 token (just USDT normally) — TronGrid's
+    // account-scoped endpoint already filters to this address, so no
+    // client-side matching needed like the Bitcoin verifier does.
+    for (const [asset, tokenConfig] of Object.entries(this.chainConfig.tokens)) {
+      const res = await this.request<TronGridTrc20Response>(
+        `/v1/accounts/${treasury}/transactions/trc20?limit=${INCOMING_FEED_LIMIT}&only_to=true&contract_address=${tokenConfig.contractAddress}`
+      );
+      for (const t of res.data) {
+        if (t.to !== treasury) continue; // belt-and-suspenders, only_to should already guarantee this
+        results.push({
+          txHash: t.transaction_id,
+          asset,
+          amount: new BigNumber(t.value).dividedBy(new BigNumber(10).pow(tokenConfig.decimals)).toString(),
+          // This endpoint only returns already-indexed transfers (no mempool
+          // entries), so treating them as at-minimum-confirmed is accurate
+          // enough for the feed — verify() re-checks the real count at
+          // credit time regardless.
+          confirmations: this.chainConfig.minConfirmations,
+        });
+      }
+    }
+
+    return results;
   }
 
   private baseUrl(): string {

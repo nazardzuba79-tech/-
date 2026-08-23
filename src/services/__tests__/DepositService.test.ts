@@ -151,6 +151,64 @@ describe('DepositService', () => {
       expect(result.status).toBe('CREDITED');
     });
 
+    it('records performedByAdminId in the audit log when an admin credits on the user\'s behalf', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('1') }),
+      }));
+
+      const auditLogCreate = jest.fn();
+      const prisma = {
+        deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
+        $transaction: jest.fn(async (fn: any) =>
+          fn({
+            deposit: { create: jest.fn() },
+            balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
+            auditLog: { create: auditLogCreate },
+          })
+        ),
+      } as any;
+
+      const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
+      await service.claimDeposit({
+        userId: 'u1',
+        txHash: '0x' + '8'.repeat(64),
+        asset: 'ETH',
+        performedByAdminId: 'admin-1',
+      });
+
+      expect(auditLogCreate).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ metadata: expect.objectContaining({ performedByAdminId: 'admin-1' }) }) })
+      );
+    });
+
+    it('omits performedByAdminId from the audit log for a normal self-claim', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('1') }),
+      }));
+
+      const auditLogCreate = jest.fn();
+      const prisma = {
+        deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
+        $transaction: jest.fn(async (fn: any) =>
+          fn({
+            deposit: { create: jest.fn() },
+            balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
+            auditLog: { create: auditLogCreate },
+          })
+        ),
+      } as any;
+
+      const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
+      await service.claimDeposit({ userId: 'u1', txHash: '0x' + '9'.repeat(64), asset: 'ETH' });
+
+      const metadata = auditLogCreate.mock.calls[0][0].data.metadata;
+      expect(metadata.performedByAdminId).toBeUndefined();
+    });
+
     it('does not block a deposit when the price feed is unavailable', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),

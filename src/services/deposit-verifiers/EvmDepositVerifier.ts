@@ -1,10 +1,11 @@
 import { ethers } from 'ethers';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../../config/chains';
-import { DepositVerifier } from './types';
+import { DepositVerifier, IncomingTransfer } from './types';
 import { DepositVerificationError } from './errors';
 
 const ERC20_TRANSFER_TOPIC = ethers.id('Transfer(address,address,uint256)');
+const INCOMING_FEED_BLOCK_RANGE = 5000; // ~a day or so on most chains; getLogs providers often cap range anyway
 
 /** Ethereum and other EVM-compatible chains (Polygon, BSC, ...) via a JSON-RPC provider. */
 export class EvmDepositVerifier implements DepositVerifier {
@@ -62,5 +63,36 @@ export class EvmDepositVerifier implements DepositVerifier {
 
     const rawAmount = BigInt(matchingLog.data);
     return new BigNumber(rawAmount.toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals));
+  }
+
+  /** Token transfers only — plain native-currency (ETH/MATIC/BNB) transfers
+   * emit no event log, so listing them needs a real chain indexer rather
+   * than a single JSON-RPC provider. Not implemented here; this chain isn't
+   * wired into KNOWN_CHAINS anyway (see deposits.ts), so it's unreachable
+   * in this deployment regardless. */
+  async listIncoming(): Promise<IncomingTransfer[]> {
+    const provider = new ethers.JsonRpcProvider(this.chainConfig.rpcUrl);
+    const treasury = this.chainConfig.treasuryAddress.toLowerCase();
+    const latestBlock = await provider.getBlockNumber();
+    const fromBlock = Math.max(0, latestBlock - INCOMING_FEED_BLOCK_RANGE);
+
+    const results: IncomingTransfer[] = [];
+    for (const [asset, tokenConfig] of Object.entries(this.chainConfig.tokens)) {
+      const logs = await provider.getLogs({
+        address: tokenConfig.contractAddress,
+        topics: [ERC20_TRANSFER_TOPIC, null, ethers.zeroPadValue(treasury, 32)],
+        fromBlock,
+        toBlock: latestBlock,
+      });
+      for (const log of logs) {
+        results.push({
+          txHash: log.transactionHash,
+          asset,
+          amount: new BigNumber(BigInt(log.data).toString()).dividedBy(new BigNumber(10).pow(tokenConfig.decimals)).toString(),
+          confirmations: latestBlock - log.blockNumber + 1,
+        });
+      }
+    }
+    return results;
   }
 }

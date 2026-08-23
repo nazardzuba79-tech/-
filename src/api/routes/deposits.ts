@@ -17,11 +17,13 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 // those need a paid/registered RPC provider (Alchemy/Infura) to verify,
 // which is exactly the setup friction this list avoids. EvmDepositVerifier
 // still exists if you want to add one back later: add its chain name here.
-const KNOWN_CHAINS = ['bitcoin', 'tron'];
+// Exported so adminDeposits.ts (the manual-credit feed) walks the exact
+// same set of chains — one list, not two that could drift apart.
+export const KNOWN_CHAINS = ['bitcoin', 'tron'];
 
 // Bitcoin/Tron tx hashes are plain 64 hex chars (as shown by their block
 // explorers); EVM chains prefix the same 64 hex chars with "0x".
-const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
+export const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
   evm: /^0x[a-fA-F0-9]{64}$/,
   bitcoin: /^[a-fA-F0-9]{64}$/,
   tron: /^[a-fA-F0-9]{64}$/,

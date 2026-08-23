@@ -97,4 +97,32 @@ describe('TronDepositVerifier', () => {
     const verifier = new TronDepositVerifier(chainConfig, fetchFn);
     await expect(verifier.verify('tx1', 'USDT')).rejects.toThrow('Failed to reach TronGrid API');
   });
+
+  describe('listIncoming', () => {
+    it('lists recent TRC-20 transfers to the treasury address, one call per configured token', async () => {
+      const fetchFn = jest.fn().mockResolvedValueOnce(
+        jsonResponse({
+          data: [
+            { transaction_id: 'tx-a', to: TREASURY, value: '5000000' },
+            { transaction_id: 'tx-b', to: TREASURY, value: '1250000' },
+          ],
+        })
+      );
+
+      const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+      const result = await verifier.listIncoming();
+
+      expect(result).toEqual([
+        { txHash: 'tx-a', asset: 'USDT', amount: '5', confirmations: 19 },
+        { txHash: 'tx-b', asset: 'USDT', amount: '1.25', confirmations: 19 },
+      ]);
+      expect(fetchFn).toHaveBeenCalledWith(expect.stringContaining(`/v1/accounts/${TREASURY}/transactions/trc20`), expect.anything());
+    });
+
+    it('returns an empty list when there are no transfers', async () => {
+      const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse({ data: [] }));
+      const verifier = new TronDepositVerifier(chainConfig, fetchFn);
+      await expect(verifier.listIncoming()).resolves.toEqual([]);
+    });
+  });
 });

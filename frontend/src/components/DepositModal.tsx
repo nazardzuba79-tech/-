@@ -1,16 +1,20 @@
-import { useState, useEffect, FormEvent } from 'react';
-import { api, ApiError } from '../lib/api';
+import { useState, useEffect } from 'react';
+import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
-import { useToast } from '../lib/toast';
 
 const MIN_DEPOSIT_USD = 1000;
 // Mirrors the backend's STABLECOINS set (src/services/DepositService.ts) —
 // for these, $1000 IS the equivalent amount, no price lookup needed.
 const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
 
+/**
+ * Deposit is now purely "here's the address" — no tx-hash entry. An admin
+ * credits it manually from the Settings → Deposits feed (real on-chain
+ * data, re-verified at credit time), so the client never needs to find and
+ * paste anything. See src/pages/SettingsPage.tsx's DepositsTab.
+ */
 export function DepositModal({ onClose }: { onClose: () => void }) {
   const { t, lang } = useLanguage();
-  const toast = useToast();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
@@ -21,12 +25,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   const [address, setAddress] = useState<string | null>(null);
   const [assets, setAssets] = useState<string[]>([]);
   const [asset, setAsset] = useState('');
-  const [txHash, setTxHash] = useState('');
-  const [result, setResult] = useState<{ status: string; amount: string; confirmations: number; minDepositUsd?: number } | null>(
-    null
-  );
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [minEquivalent, setMinEquivalent] = useState<number | null>(null);
 
@@ -47,8 +46,6 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     if (!chain) return;
     setAddress(null);
-    setTxHash('');
-    setResult(null);
     api
       .getDepositAddress(chain)
       .then((res) => {
@@ -92,26 +89,6 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     await navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-  }
-
-  async function handleClaim(e: FormEvent) {
-    e.preventDefault();
-    if (!chain) return;
-    setError(null);
-    setSubmitting(true);
-    try {
-      const res = await api.claimDeposit(chain, txHash, asset);
-      setResult(res);
-      if (res.status === 'CREDITED') {
-        toast.success(t('deposit.creditedToast', { amount: res.amount, asset }));
-      }
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('deposit.claimError');
-      setError(message);
-      toast.error(message);
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   return (
@@ -175,7 +152,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
               })}
             </div>
 
-            <form onSubmit={handleClaim} style={styles.form}>
+            {assets.length > 1 && (
               <label style={styles.label}>
                 {t('deposit.asset')}
                 <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
@@ -186,34 +163,9 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                   ))}
                 </select>
               </label>
-              <label style={styles.label}>
-                {t('deposit.txHash')}
-                <input
-                  className="mono"
-                  type="text"
-                  required
-                  placeholder={t('deposit.txHashPlaceholder')}
-                  value={txHash}
-                  onChange={(e) => setTxHash(e.target.value)}
-                  style={styles.input}
-                />
-              </label>
+            )}
 
-              {error && <div style={styles.error}>{error}</div>}
-              {result && (
-                <div style={result.status === 'BELOW_MINIMUM' ? styles.error : styles.success}>
-                  {result.status === 'CREDITED'
-                    ? t('deposit.credited', { amount: result.amount, asset })
-                    : result.status === 'BELOW_MINIMUM'
-                    ? t('deposit.belowMinimum', { amount: result.amount, asset, min: String(result.minDepositUsd ?? 1000) })
-                    : t('deposit.pending', { confirmations: result.confirmations })}
-                </div>
-              )}
-
-              <button type="submit" disabled={submitting || !address} style={styles.submit}>
-                {submitting ? t('deposit.checking') : t('deposit.checkAndCredit')}
-              </button>
-            </form>
+            <div style={styles.success}>{t('deposit.manualCreditNote')}</div>
           </>
         )}
 
@@ -310,11 +262,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent)',
     marginBottom: 12,
   },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
   label: {
     display: 'flex',
     flexDirection: 'column',
@@ -343,15 +290,5 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     borderRadius: 8,
     fontSize: 12,
-  },
-  submit: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    border: 'none',
-    borderRadius: 24,
-    padding: '12px 0',
-    fontWeight: 800,
-    fontSize: 14,
-    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
   },
 };

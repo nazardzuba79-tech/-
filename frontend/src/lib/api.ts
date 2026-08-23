@@ -203,12 +203,6 @@ export const api = {
       `/deposit-address/${chain}`
     ),
 
-  claimDeposit: (chain: string, txHash: string, asset: string) =>
-    request<{ status: string; amount: string; confirmations: number; minDepositUsd?: number }>(
-      `/deposits/claim/${chain}`,
-      { method: 'POST', body: JSON.stringify({ txHash, asset }) }
-    ),
-
   getMyDeposits: () =>
     request<
       {
@@ -432,6 +426,35 @@ export const api = {
     >('/admin/clients'),
 
   getKycDocument: (submissionId: string) => requestBlobUrl(`/kyc/${submissionId}/document`),
+
+  // Admin: manual deposit crediting — replaces asking the client for a tx
+  // hash. See src/api/routes/adminDeposits.ts.
+  getAdminDeposits: () =>
+    request<
+      {
+        id: string;
+        userId: string;
+        userEmail: string;
+        asset: string;
+        chain: string;
+        txHash: string;
+        amount: string;
+        confirmations: number;
+        status: string;
+        createdAt: string;
+      }[]
+    >('/admin/deposits'),
+
+  getAdminIncomingDeposits: () =>
+    request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number }[]>(
+      '/admin/deposits/incoming'
+    ),
+
+  creditDepositManually: (params: { userId: string; chain: string; txHash: string; asset: string }) =>
+    request<{ status: string; amount: string; confirmations: number; minDepositUsd?: number }>(
+      '/admin/deposits/manual-credit',
+      { method: 'POST', body: JSON.stringify(params) }
+    ),
 
   reviewKyc: (submissionId: string, approve: boolean, reason?: string) =>
     request<{ status: string }>(`/kyc/${submissionId}/review`, {

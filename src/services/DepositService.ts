@@ -48,8 +48,13 @@ export class DepositService {
     userId: string;
     txHash: string;
     asset: string;
+    // Set when an admin triggers this on the user's behalf (the manual
+    // deposit-crediting feed) rather than the user self-claiming — recorded
+    // in the audit log for accountability. Undefined for the normal
+    // self-service path.
+    performedByAdminId?: string;
   }): Promise<{ status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM'; amount: string; confirmations: number; minDepositUsd?: number }> {
-    const { userId, txHash, asset } = params;
+    const { userId, txHash, asset, performedByAdminId } = params;
 
     // Idempotency: if we've already recorded this tx, don't re-verify or re-credit.
     const existing = await this.prisma.deposit.findUnique({
@@ -101,7 +106,16 @@ export class DepositService {
           data: { available: new BigNumber(balance.available.toString()).plus(amount).toString() },
         });
         await tx.auditLog.create({
-          data: { userId, action: 'DEPOSIT_CREDITED', metadata: { txHash, asset, amount: amount.toString() } },
+          data: {
+            userId,
+            action: 'DEPOSIT_CREDITED',
+            metadata: {
+              txHash,
+              asset,
+              amount: amount.toString(),
+              ...(performedByAdminId ? { performedByAdminId } : {}),
+            },
+          },
         });
       } else if (status === 'BELOW_MINIMUM') {
         await tx.auditLog.create({

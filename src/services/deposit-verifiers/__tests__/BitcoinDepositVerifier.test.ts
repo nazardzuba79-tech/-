@@ -81,4 +81,37 @@ describe('BitcoinDepositVerifier', () => {
     const verifier = new BitcoinDepositVerifier(chainConfig, fetchFn);
     await expect(verifier.verify('tx1', 'BTC')).rejects.toThrow('Failed to reach Bitcoin explorer API');
   });
+
+  describe('listIncoming', () => {
+    it('returns only txs paying the treasury address, with real confirmation counts', async () => {
+      const fetchFn = jest
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse([
+            { txid: 'tx-a', vout: [{ scriptpubkey_address: TREASURY, value: 50000 }], status: { confirmed: true, block_height: 800000 } },
+            { txid: 'tx-b', vout: [{ scriptpubkey_address: 'someone-else', value: 10000 }], status: { confirmed: true, block_height: 800000 } },
+            { txid: 'tx-c', vout: [{ scriptpubkey_address: TREASURY, value: 25000 }], status: { confirmed: false } },
+          ])
+        )
+        .mockResolvedValueOnce(textResponse('800001'));
+
+      const verifier = new BitcoinDepositVerifier(chainConfig, fetchFn);
+      const result = await verifier.listIncoming();
+
+      expect(result).toEqual([
+        { txHash: 'tx-a', asset: 'BTC', amount: '0.0005', confirmations: 2 },
+        { txHash: 'tx-c', asset: 'BTC', amount: '0.00025', confirmations: 0 },
+      ]);
+    });
+
+    it('returns an empty list without a tip-height call when nothing matches', async () => {
+      const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse([{ txid: 'tx-a', vout: [{ scriptpubkey_address: 'someone-else', value: 1000 }], status: { confirmed: true, block_height: 1 } }]));
+      const verifier = new BitcoinDepositVerifier(chainConfig, fetchFn);
+
+      const result = await verifier.listIncoming();
+
+      expect(result).toEqual([]);
+      expect(fetchFn).toHaveBeenCalledTimes(1);
+    });
+  });
 });

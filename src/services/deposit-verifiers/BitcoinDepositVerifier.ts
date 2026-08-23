@@ -1,9 +1,10 @@
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../../config/chains';
-import { DepositVerifier } from './types';
+import { DepositVerifier, IncomingTransfer } from './types';
 import { DepositVerificationError } from './errors';
 
 const SATS_PER_BTC = new BigNumber(10).pow(8);
+const INCOMING_FEED_LIMIT = 25; // one Esplora page — enough for "recent deposits", not a full history sync
 
 interface EsploraVout {
   scriptpubkey_address?: string;
@@ -11,6 +12,7 @@ interface EsploraVout {
 }
 
 interface EsploraTx {
+  txid: string;
   vout: EsploraVout[];
   status: { confirmed: boolean; block_height?: number };
 }
@@ -21,6 +23,9 @@ interface EsploraTx {
  * (Blockstream's by default; point BITCOIN_API_URL at a self-hosted Esplora
  * instance if you'd rather not depend on a third party for something that
  * moves money).
+ *
+ * Also powers the admin manual-credit feed (listIncoming) via Esplora's
+ * /address/:address/txs endpoint — the same API, no separate integration.
  *
  * NOT tested against the live API from this environment (network access
  * here is sandboxed) — verify against Blockstream's real API with a small
@@ -37,9 +42,7 @@ export class BitcoinDepositVerifier implements DepositVerifier {
     const tx = await this.requestJson<EsploraTx>(`/tx/${txHash}`);
     const treasury = this.chainConfig.treasuryAddress;
 
-    const matchingSats = tx.vout
-      .filter((o) => o.scriptpubkey_address === treasury)
-      .reduce((sum, o) => sum + o.value, 0);
+    const matchingSats = this.matchingSats(tx, treasury);
     if (matchingSats === 0) {
       throw new DepositVerificationError('Transaction does not pay the treasury address');
     }
@@ -52,6 +55,28 @@ export class BitcoinDepositVerifier implements DepositVerifier {
     }
 
     return { amount, confirmations };
+  }
+
+  async listIncoming(): Promise<IncomingTransfer[]> {
+    const treasury = this.chainConfig.treasuryAddress;
+    const txs = await this.requestJson<EsploraTx[]>(`/address/${treasury}/txs`);
+    const matching = txs.slice(0, INCOMING_FEED_LIMIT).filter((tx) => this.matchingSats(tx, treasury) > 0);
+    if (matching.length === 0) return [];
+
+    // One tip-height call shared across the whole batch — cheap, and gives
+    // real confirmation counts instead of a placeholder.
+    const tipHeight = Number(await this.requestText('/blocks/tip/height'));
+
+    return matching.map((tx) => ({
+      txHash: tx.txid,
+      asset: this.chainConfig.nativeAsset,
+      amount: new BigNumber(this.matchingSats(tx, treasury)).dividedBy(SATS_PER_BTC).toString(),
+      confirmations: tx.status.confirmed && tx.status.block_height != null ? tipHeight - tx.status.block_height + 1 : 0,
+    }));
+  }
+
+  private matchingSats(tx: EsploraTx, treasury: string): number {
+    return tx.vout.filter((o) => o.scriptpubkey_address === treasury).reduce((sum, o) => sum + o.value, 0);
   }
 
   private baseUrl(): string {
