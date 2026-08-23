@@ -456,6 +456,35 @@ a:hover > .nav-card-icon {
   }
 }
 
+/* Binance-style flash on a live-polled price cell — pulses a tinted
+   background then fades, giving a "live" cue without redrawing the row. */
+.price-flash-up {
+  border-radius: 3px;
+  animation: price-flash-up 0.6s ease-out;
+}
+.price-flash-down {
+  border-radius: 3px;
+  animation: price-flash-down 0.6s ease-out;
+}
+@keyframes price-flash-up {
+  0% {
+    background: var(--buy-dim);
+    color: var(--buy);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes price-flash-down {
+  0% {
+    background: var(--sell-dim);
+    color: var(--sell);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 .ticker-track {
   animation: ticker-scroll 60s linear infinite;
 }

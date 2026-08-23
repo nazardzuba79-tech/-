@@ -5,6 +5,7 @@ import { Nav } from '../components/Nav';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { SearchInput } from '../components/SearchInput';
 import { CryptoIcon } from '../components/CryptoIcon';
+import { PriceCell } from '../components/PriceCell';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
@@ -182,9 +183,7 @@ export function MarketsPage() {
                         <span style={styles.rankBadge}>#{rankByBase!.get(tk.pair.split('/')[0])!.rank}</span>
                       )}
                     </span>
-                    <span className="mono" style={{ textAlign: 'right' }}>
-                      {parseFloat(tk.lastPrice)}
-                    </span>
+                    <PriceCell value={parseFloat(tk.lastPrice)} className="mono" style={{ textAlign: 'right' }} />
                     <span
                       className={positive ? 'text-buy' : 'text-sell'}
                       style={{ textAlign: 'right' }}

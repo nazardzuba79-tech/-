@@ -4,6 +4,7 @@ import { useLanguage, Key } from '../lib/i18n';
 import { SearchInput } from './SearchInput';
 import { CryptoIcon } from './CryptoIcon';
 import { SkeletonRow } from './Skeleton';
+import { PriceCell } from './PriceCell';
 import {
   QUOTE_PRIORITY,
   CATEGORIES,
@@ -50,7 +51,7 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
 
   useEffect(() => {
     loadTickers();
-    const poll = window.setInterval(loadTickers, 10000);
+    const poll = window.setInterval(loadTickers, 4000);
     return () => window.clearInterval(poll);
   }, []);
 
@@ -174,9 +175,8 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
                   {tk.pair}
                 </span>
               </span>
-              <span className="mono" style={{ textAlign: 'right', fontSize: 12 }}>
-                {parseFloat(tk.lastPrice)}
-              </span>
+              <PriceCell value={parseFloat(tk.lastPrice)} className="mono" style={{ textAlign: 'right', fontSize: 12 }} />
+
               <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ textAlign: 'right', fontSize: 12 }}>
                 {positive ? '+' : ''}
                 {change.toFixed(2)}%

@@ -38,6 +38,37 @@ const CATEGORY_SLUGS: Record<CoinCategory, string> = {
   STABLECOIN: 'stablecoins',
 };
 
+// Hand-maintained fallback for well-known coins, merged into whatever the
+// per-category API calls above return. Not a replacement for the live
+// data — it's a safety net: CoinGecko's free/anonymous API tier is prone
+// to rate-limiting a burst of 4 back-to-back category requests (the first
+// one, market-cap rankings, tends to go through since it fires first; the
+// next 4 sharing the same rate-limit window often don't), which previously
+// left EVERY coin's `categories` empty and made every category filter chip
+// show "nothing found" even though rankings had loaded fine. Covers the
+// major, unambiguous coins so the filters stay usable even when every
+// category endpoint above fails outright — the API is still the primary
+// source for anything beyond this list.
+const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
+  // DeFi
+  UNI: ['DEFI'], AAVE: ['DEFI'], MKR: ['DEFI'], CRV: ['DEFI'], LDO: ['DEFI'],
+  SNX: ['DEFI'], COMP: ['DEFI'], SUSHI: ['DEFI'], CAKE: ['DEFI'], DYDX: ['DEFI'],
+  GMX: ['DEFI'], RUNE: ['DEFI'], BAL: ['DEFI'], YFI: ['DEFI'], '1INCH': ['DEFI'],
+  // Layer 1
+  BTC: ['LAYER_1'], ETH: ['LAYER_1'], SOL: ['LAYER_1'], ADA: ['LAYER_1'], AVAX: ['LAYER_1'],
+  DOT: ['LAYER_1'], NEAR: ['LAYER_1'], ATOM: ['LAYER_1'], BNB: ['LAYER_1'], TRX: ['LAYER_1'],
+  TON: ['LAYER_1'], XLM: ['LAYER_1'], ALGO: ['LAYER_1'], FTM: ['LAYER_1'], ICP: ['LAYER_1'],
+  APT: ['LAYER_1'], SUI: ['LAYER_1'], SEI: ['LAYER_1'], INJ: ['LAYER_1'], HBAR: ['LAYER_1'],
+  EGLD: ['LAYER_1'], KAS: ['LAYER_1'], ETC: ['LAYER_1'], XRP: ['LAYER_1'], LTC: ['LAYER_1'],
+  // Meme coins
+  DOGE: ['MEME'], SHIB: ['MEME'], PEPE: ['MEME'], WIF: ['MEME'], BONK: ['MEME'],
+  FLOKI: ['MEME'], TRUMP: ['MEME'], MELANIA: ['MEME'], BRETT: ['MEME'], POPCAT: ['MEME'],
+  // Stablecoins
+  USDT: ['STABLECOIN'], USDC: ['STABLECOIN'], DAI: ['STABLECOIN'], TUSD: ['STABLECOIN'],
+  USDG: ['STABLECOIN'], FDUSD: ['STABLECOIN'], USDP: ['STABLECOIN'], PYUSD: ['STABLECOIN'],
+  GUSD: ['STABLECOIN'],
+};
+
 interface CoinGeckoMarketRow {
   symbol: string;
   name: string;
@@ -94,6 +125,15 @@ export class CoinGeckoService {
         // One category endpoint failing shouldn't blank out the whole
         // ranking list — that coin just won't get a category tag this cycle.
       }
+    }
+
+    // Merge in the local fallback (see LOCAL_CATEGORY_FALLBACK above) so
+    // well-known coins still end up correctly categorized even when every
+    // per-category call above failed — deduped via Set since a coin can
+    // legitimately land in >1 category from the two sources combined.
+    for (const entry of bySymbol.values()) {
+      const fallback = LOCAL_CATEGORY_FALLBACK[entry.symbol];
+      if (fallback) entry.categories = Array.from(new Set([...entry.categories, ...fallback]));
     }
 
     const rankings = Array.from(bySymbol.values()).sort((a, b) => a.rank - b.rank);
