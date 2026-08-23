@@ -7,6 +7,7 @@ import { BotsComingSoon } from '../components/BotsComingSoon';
 import { PairListSidebar } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
+import { OtcPanel } from '../components/OtcPanel';
 import { OrderForm } from '../components/OrderForm';
 import { DepositModal } from '../components/DepositModal';
 import { PriceChart } from '../components/PriceChart';
@@ -25,7 +26,7 @@ export function TradePage() {
   const { t } = useLanguage();
   const [pair, setPair] = useState('BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
-  const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
+  const [bookTab, setBookTab] = useState<'book' | 'trades' | 'otc'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [showDeposit, setShowDeposit] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
@@ -112,12 +113,16 @@ export function TradePage() {
             >
               {t('trade.trades')}
             </button>
+            <button
+              onClick={() => setBookTab('otc')}
+              style={{ ...styles.bookTab, ...(bookTab === 'otc' ? styles.bookTabActive : {}) }}
+            >
+              {t('trade.otc')}
+            </button>
           </div>
-          {bookTab === 'book' ? (
-            <OrderBookPanel bids={book.bids} asks={book.asks} />
-          ) : (
-            <RecentTradesPanel pair={pair} />
-          )}
+          {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
+          {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+          {bookTab === 'otc' && <OtcPanel />}
         </div>
 
         <div style={styles.formColumn}>

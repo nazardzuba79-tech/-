@@ -4,6 +4,7 @@ import { useLanguage, localeOf, Lang } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { Badge } from './Badge';
 import { parseChangePercent } from '../lib/priceChange';
+import { btcTurnover } from '../lib/turnover';
 
 interface Stats {
   lastPrice: number;
@@ -18,6 +19,7 @@ interface Stats {
 export function TickerBar({ pair }: { pair: string }) {
   const { t, lang } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
 
   useEffect(() => {
@@ -38,6 +40,16 @@ export function TickerBar({ pair }: { pair: string }) {
           });
         })
         .catch(() => {});
+      // Needed to express turnover in BTC for anything not already
+      // BTC-quoted or BTC itself — skipped in that case, see btcTurnover().
+      if (baseAsset !== 'BTC' && quoteAsset !== 'BTC') {
+        api
+          .getExternalTicker('BTC/USDT')
+          .then((res) => {
+            if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
+          })
+          .catch(() => {});
+      }
     }
     load();
     const interval = setInterval(load, 3000);
@@ -45,7 +57,7 @@ export function TickerBar({ pair }: { pair: string }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [pair]);
+  }, [pair, baseAsset, quoteAsset]);
 
   const positive = (stats?.changePercent ?? 0) >= 0;
 
@@ -76,6 +88,14 @@ export function TickerBar({ pair }: { pair: string }) {
       <Stat
         label={`${t('trade.turnover24h')} (${quoteAsset})`}
         value={stats ? formatCompact(stats.quoteVolume24h, lang) : '—'}
+      />
+      <Stat
+        label={`${t('trade.turnover24h')} (BTC)`}
+        value={(() => {
+          if (!stats) return '—';
+          const btc = btcTurnover({ baseAsset, quoteAsset, volume24h: stats.volume24h, quoteVolume24h: stats.quoteVolume24h, btcUsdtPrice });
+          return btc !== null ? formatCompact(btc, lang) : '—';
+        })()}
       />
     </div>
   );

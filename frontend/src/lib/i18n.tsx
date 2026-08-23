@@ -60,6 +60,10 @@ const RU = {
 
   'trade.orderBook': 'Стакан',
   'trade.trades': 'Сделки',
+  'trade.otc': 'OTC',
+  'trade.otcTitle': 'OTC-торговля',
+  'trade.otcDisclaimer': 'Торговля на OTC-рынке доступна инвесторам с объёмом от $100 000. Сделки проходят вне открытого стакана, через персонального менеджера.',
+  'trade.otcContact': 'Хотите узнать больше или подтвердить объём? Напишите в поддержку — кнопка чата внизу справа.',
   'trade.myOrders': 'Мои ордера',
   'trade.searchPair': 'Поиск пары, напр. ETH',
   'trade.allPairs': 'Все',
@@ -525,6 +529,10 @@ const EN: Record<Key, string> = {
 
   'trade.orderBook': 'Order Book',
   'trade.trades': 'Trades',
+  'trade.otc': 'OTC',
+  'trade.otcTitle': 'OTC trading',
+  'trade.otcDisclaimer': 'OTC trading is available to investors with a volume of $100,000 or more. Trades happen off the open book, through a dedicated account manager.',
+  'trade.otcContact': 'Want to learn more or confirm your volume? Message support — the chat button in the bottom-right corner.',
   'trade.myOrders': 'My Orders',
   'trade.searchPair': 'Search pair, e.g. ETH',
   'trade.allPairs': 'All',
@@ -988,6 +996,10 @@ const ZH: Record<Key, string> = {
 
   'trade.orderBook': '订单簿',
   'trade.trades': '成交',
+  'trade.otc': 'OTC',
+  'trade.otcTitle': 'OTC 交易',
+  'trade.otcDisclaimer': 'OTC 交易仅面向交易量达 10 万美元及以上的投资者开放。交易在场外通过专属客户经理完成，不进入公开订单簿。',
+  'trade.otcContact': '想了解更多或确认您的交易量？请联系客服 — 点击右下角的聊天按钮。',
   'trade.myOrders': '我的订单',
   'trade.searchPair': '搜索交易对，例如 ETH',
   'trade.allPairs': '全部',

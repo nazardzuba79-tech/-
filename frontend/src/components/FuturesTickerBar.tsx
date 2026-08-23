@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
+import { btcTurnover } from '../lib/turnover';
 
 /** Mark Price shown deliberately separate from Last Price (per the futures
  * spec) — mark price is what PnL/liquidation are computed off, last price
@@ -16,6 +17,10 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
+  const [volume24h, setVolume24h] = useState<number | null>(null);
+  const [quoteVolume24h, setQuoteVolume24h] = useState<number | null>(null);
+  const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
+  const [, quoteAsset] = symbol.split('/');
 
   useEffect(() => {
     let cancelled = false;
@@ -26,6 +31,8 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
           if (cancelled) return;
           setLastPrice(parseFloat(res.ticker.lastPrice));
           setChangePercent(parseChangePercent(res.ticker.changePercent24h, symbol));
+          setVolume24h(parseFloat(res.ticker.volume24h));
+          setQuoteVolume24h(parseFloat(res.ticker.quoteVolume24h));
         })
         .catch(() => {});
       api
@@ -44,6 +51,16 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
           setFundingRate(latest ? parseFloat(latest.rate) : null);
         })
         .catch(() => {});
+      // Same real-BTC-price-based conversion as the spot TickerBar — see
+      // btcTurnover(). Skipped when this contract is already BTC/USDT.
+      if (baseAsset !== 'BTC' && quoteAsset !== 'BTC') {
+        api
+          .getExternalTicker('BTC/USDT')
+          .then((res) => {
+            if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
+          })
+          .catch(() => {});
+      }
     }
     load();
     const interval = setInterval(load, 4000);
@@ -51,10 +68,16 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [symbol]);
+  }, [symbol, baseAsset, quoteAsset]);
 
   const positive = changePercent >= 0;
   const fmt = (n: number | null) => (n !== null ? n.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—');
+  const fmtCompact = (n: number | null) =>
+    n !== null ? n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 }) : '—';
+  const turnoverBtc =
+    volume24h !== null && quoteVolume24h !== null
+      ? btcTurnover({ baseAsset, quoteAsset, volume24h, quoteVolume24h, btcUsdtPrice })
+      : null;
 
   return (
     <div style={styles.bar}>
@@ -74,6 +97,11 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
       <Stat label={t('trade.price')} value={`${fmt(lastPrice)}`} />
       <Stat label={t('futures.markPrice')} value={fmt(markPrice)} />
       <Stat label={t('futures.indexPrice')} value={fmt(indexPrice)} />
+      <Stat
+        label={`${t('trade.turnover24h')} (${quoteAsset})`}
+        value={quoteVolume24h !== null ? fmtCompact(quoteVolume24h) : '—'}
+      />
+      <Stat label={`${t('trade.turnover24h')} (BTC)`} value={fmtCompact(turnoverBtc)} />
       <Stat
         label={t('futures.fundingRate')}
         value={fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}

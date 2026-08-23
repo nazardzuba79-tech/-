@@ -485,6 +485,31 @@ a:hover > .nav-card-icon {
   }
 }
 
+/* Order-book row pulse on any quantity update — deliberately symmetric
+   for both bid and ask rows (see OrderBookPanel's useRowFlash). */
+.book-row-flash-up {
+  animation: book-row-flash-up 0.45s ease-out;
+}
+.book-row-flash-down {
+  animation: book-row-flash-down 0.45s ease-out;
+}
+@keyframes book-row-flash-up {
+  0% {
+    background: rgba(0, 214, 143, 0.32);
+  }
+  100% {
+    background: transparent;
+  }
+}
+@keyframes book-row-flash-down {
+  0% {
+    background: rgba(255, 77, 106, 0.32);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 .ticker-track {
   animation: ticker-scroll 60s linear infinite;
 }

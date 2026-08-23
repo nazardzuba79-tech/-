@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 
 interface Level {
@@ -65,6 +66,33 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
   );
 }
 
+const FLASH_DURATION_MS = 450;
+
+/** True for a brief moment right after this row's quantity changes — same
+ * per-row-hook pattern as usePriceFlash, needed here since it must isolate
+ * state per price level, not just per side. Fires on ANY change (up or
+ * down), unlike the ticker price flash which is directional — a depth
+ * level updating at all is the signal a real order-book DOM highlights,
+ * regardless of which way its size moved. */
+function useRowFlash(quantity: number): boolean {
+  const prevRef = useRef<number | null>(null);
+  const [flashing, setFlashing] = useState(false);
+  const timerRef = useRef<number>();
+
+  useEffect(() => {
+    if (prevRef.current !== null && prevRef.current !== quantity) {
+      setFlashing(true);
+      window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => setFlashing(false), FLASH_DURATION_MS);
+    }
+    prevRef.current = quantity;
+  }, [quantity]);
+
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
+
+  return flashing;
+}
+
 function Row({
   level,
   side,
@@ -77,9 +105,11 @@ function Row({
   const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
   const color = side === 'BUY' ? 'var(--buy)' : 'var(--sell)';
   const gradientColor = side === 'BUY' ? 'rgba(0,214,143,0.28)' : 'rgba(255,77,106,0.28)';
+  const flashing = useRowFlash(parseFloat(level.quantity));
+  const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
 
   return (
-    <div className="row-hover" style={styles.row}>
+    <div className={`row-hover ${flashClass}`} style={styles.row}>
       <div
         style={{
           ...styles.depthBar,
