@@ -4,7 +4,7 @@ import { useLanguage, localeOf } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { btcTurnover } from '../lib/turnover';
-import { useGlobalVolumeUsd } from '../lib/useGlobalVolume';
+import { useCoinGeckoStats } from '../lib/useCoinGeckoStats';
 
 /** Mark Price shown deliberately separate from Last Price (per the futures
  * spec) — mark price is what PnL/liquidation are computed off, last price
@@ -22,7 +22,8 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
   const [quoteVolume24h, setQuoteVolume24h] = useState<number | null>(null);
   const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
   const [, quoteAsset] = symbol.split('/');
-  const globalVolumeUsd = useGlobalVolumeUsd(baseAsset);
+  const geckoStats = useCoinGeckoStats(baseAsset);
+  const globalVolumeUsd = geckoStats?.volume24h ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +55,7 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
         })
         .catch(() => {});
       // Same real-BTC-price-based conversion as the spot TickerBar — see
-      // btcTurnover() and useGlobalVolumeUsd() — fetched unconditionally
+      // btcTurnover() and useCoinGeckoStats() — fetched unconditionally
       // since converting the global USD volume into BTC terms needs it too.
       api
         .getExternalTicker('BTC/USDT')
@@ -117,6 +118,7 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
         value={fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
         color={fundingRate !== null ? (fundingRate >= 0 ? 'var(--buy)' : 'var(--sell)') : undefined}
       />
+      <Stat label={t('wallet.marketCap')} value={geckoStats?.marketCap != null ? fmtCompact(geckoStats.marketCap) : '—'} />
     </div>
   );
 }

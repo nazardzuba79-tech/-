@@ -5,7 +5,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { Badge } from './Badge';
 import { parseChangePercent } from '../lib/priceChange';
 import { btcTurnover } from '../lib/turnover';
-import { useGlobalVolumeUsd } from '../lib/useGlobalVolume';
+import { useCoinGeckoStats } from '../lib/useCoinGeckoStats';
 
 interface Stats {
   lastPrice: number;
@@ -21,8 +21,10 @@ export function TickerBar({ pair }: { pair: string }) {
   const { t, lang } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
+  const [fundingRate, setFundingRate] = useState<number | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
-  const globalVolumeUsd = useGlobalVolumeUsd(baseAsset);
+  const geckoStats = useCoinGeckoStats(baseAsset);
+  const globalVolumeUsd = geckoStats?.volume24h ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +53,21 @@ export function TickerBar({ pair }: { pair: string }) {
           if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
         })
         .catch(() => {});
+      // Real funding-rate history exists only for pairs with an actual
+      // futures market (FUTURES_SYMBOLS on the backend) — for every other
+      // spot pair this just comes back with an empty history, which we
+      // show as '—' rather than fabricating a rate for a market that
+      // doesn't exist.
+      api
+        .getFuturesFundingRate(pair, 1)
+        .then((res) => {
+          if (cancelled) return;
+          const latest = res.history[0];
+          setFundingRate(latest ? parseFloat(latest.rate) : null);
+        })
+        .catch(() => {
+          if (!cancelled) setFundingRate(null);
+        });
     }
     load();
     const interval = setInterval(load, 3000);
@@ -108,15 +125,24 @@ export function TickerBar({ pair }: { pair: string }) {
           return btc !== null ? formatCompact(btc, lang) : '—';
         })()}
       />
+      <Stat
+        label={t('futures.fundingRate')}
+        value={fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
+        color={fundingRate !== null ? (fundingRate >= 0 ? 'var(--buy)' : 'var(--sell)') : undefined}
+      />
+      <Stat
+        label={t('wallet.marketCap')}
+        value={geckoStats?.marketCap != null ? formatCompact(geckoStats.marketCap, lang) : '—'}
+      />
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div style={styles.stat}>
       <span style={styles.statLabel}>{label}</span>
-      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--text-primary)' }}>
         {value}
       </span>
     </div>
