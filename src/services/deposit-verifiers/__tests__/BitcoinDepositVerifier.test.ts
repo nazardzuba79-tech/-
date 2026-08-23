@@ -88,8 +88,8 @@ describe('BitcoinDepositVerifier', () => {
         .fn()
         .mockResolvedValueOnce(
           jsonResponse([
-            { txid: 'tx-a', vout: [{ scriptpubkey_address: TREASURY, value: 50000 }], status: { confirmed: true, block_height: 800000 } },
-            { txid: 'tx-b', vout: [{ scriptpubkey_address: 'someone-else', value: 10000 }], status: { confirmed: true, block_height: 800000 } },
+            { txid: 'tx-a', vout: [{ scriptpubkey_address: TREASURY, value: 50000 }], status: { confirmed: true, block_height: 800000, block_time: 1700000000 } },
+            { txid: 'tx-b', vout: [{ scriptpubkey_address: 'someone-else', value: 10000 }], status: { confirmed: true, block_height: 800000, block_time: 1700000000 } },
             { txid: 'tx-c', vout: [{ scriptpubkey_address: TREASURY, value: 25000 }], status: { confirmed: false } },
           ])
         )
@@ -99,8 +99,8 @@ describe('BitcoinDepositVerifier', () => {
       const result = await verifier.listIncoming();
 
       expect(result).toEqual([
-        { txHash: 'tx-a', asset: 'BTC', amount: '0.0005', confirmations: 2 },
-        { txHash: 'tx-c', asset: 'BTC', amount: '0.00025', confirmations: 0 },
+        { txHash: 'tx-a', asset: 'BTC', amount: '0.0005', confirmations: 2, timestamp: new Date(1700000000 * 1000).toISOString() },
+        { txHash: 'tx-c', asset: 'BTC', amount: '0.00025', confirmations: 0, timestamp: null },
       ]);
     });
 

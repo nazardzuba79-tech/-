@@ -95,7 +95,8 @@ export function AdminDepositsPage() {
 
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Непривязанные входящие переводы</h3>
       <div style={{ ...styles.table, marginBottom: 32 }}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1020 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: '1.1fr 0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1140 }}>
+          <span>Дата поступления</span>
           <span>Сеть</span>
           <span>Актив</span>
           <span style={{ textAlign: 'right' }}>Сумма</span>
@@ -108,7 +109,10 @@ export function AdminDepositsPage() {
         {incoming.map((tr) => {
           const key = `${tr.chain}:${tr.txHash}`;
           return (
-            <div key={key} style={{ ...styles.tableRow, gridTemplateColumns: '0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1020 }}>
+            <div key={key} style={{ ...styles.tableRow, gridTemplateColumns: '1.1fr 0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1140 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {tr.timestamp ? new Date(tr.timestamp).toLocaleString('ru-RU') : '—'}
+              </span>
               <span>{tr.chain}</span>
               <span className="mono">{tr.asset}</span>
               <span className="mono" style={{ textAlign: 'right' }}>{tr.amount}</span>

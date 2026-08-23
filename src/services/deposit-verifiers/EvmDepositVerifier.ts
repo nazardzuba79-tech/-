@@ -18,6 +18,7 @@ interface EtherscanNativeTx {
   to: string;
   value: string;
   isError: string; // "0" success, "1" failed — failed txs never moved the funds
+  timeStamp: string; // unix seconds, as a string
 }
 
 interface EtherscanTokenTx {
@@ -25,6 +26,7 @@ interface EtherscanTokenTx {
   to: string;
   value: string;
   contractAddress: string;
+  timeStamp: string; // unix seconds, as a string
 }
 
 /**
@@ -126,6 +128,7 @@ export class EvmDepositVerifier implements DepositVerifier {
         asset: this.chainConfig.nativeAsset,
         amount: new BigNumber(ethers.formatEther(tx.value)).toString(),
         confirmations: this.chainConfig.minConfirmations,
+        timestamp: new Date(Number(tx.timeStamp) * 1000).toISOString(),
       });
     }
 
@@ -144,6 +147,7 @@ export class EvmDepositVerifier implements DepositVerifier {
           asset,
           amount: new BigNumber(tx.value).dividedBy(new BigNumber(10).pow(tokenConfig.decimals)).toString(),
           confirmations: this.chainConfig.minConfirmations,
+          timestamp: new Date(Number(tx.timeStamp) * 1000).toISOString(),
         });
       }
     }

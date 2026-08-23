@@ -14,7 +14,7 @@ interface EsploraVout {
 interface EsploraTx {
   txid: string;
   vout: EsploraVout[];
-  status: { confirmed: boolean; block_height?: number };
+  status: { confirmed: boolean; block_height?: number; block_time?: number };
 }
 
 /**
@@ -72,6 +72,7 @@ export class BitcoinDepositVerifier implements DepositVerifier {
       asset: this.chainConfig.nativeAsset,
       amount: new BigNumber(this.matchingSats(tx, treasury)).dividedBy(SATS_PER_BTC).toString(),
       confirmations: tx.status.confirmed && tx.status.block_height != null ? tipHeight - tx.status.block_height + 1 : 0,
+      timestamp: tx.status.block_time != null ? new Date(tx.status.block_time * 1000).toISOString() : null,
     }));
   }
 

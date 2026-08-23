@@ -463,7 +463,7 @@ export const api = {
     >('/admin/deposits'),
 
   getAdminIncomingDeposits: () =>
-    request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number }[]>(
+    request<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number; timestamp: string | null }[]>(
       '/admin/deposits/incoming'
     ),
 

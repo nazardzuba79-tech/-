@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate, NavLink, Outlet } from 'react-router-dom';
+import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { api, getToken } from '../../lib/api';
 import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
 import { styles } from './adminStyles';
@@ -45,6 +45,9 @@ export function AdminLayout() {
     <div style={styles.page}>
       <aside style={styles.sidebar}>
         <div style={styles.sidebarTitle}>Админ-панель</div>
+        <Link to="/" style={styles.backToExchange}>
+          ← На биржу
+        </Link>
         <nav style={styles.nav}>
           {SECTIONS.map((s) => (
             <NavLink

@@ -118,9 +118,9 @@ describe('EvmDepositVerifier', () => {
             status: '1',
             message: 'OK',
             result: [
-              { hash: '0xa', to: TREASURY, value: ethers.parseEther('2').toString(), isError: '0' },
-              { hash: '0xb', to: TREASURY, value: ethers.parseEther('1').toString(), isError: '1' }, // failed tx
-              { hash: '0xc', to: '0xsomeoneelse', value: ethers.parseEther('3').toString(), isError: '0' },
+              { hash: '0xa', to: TREASURY, value: ethers.parseEther('2').toString(), isError: '0', timeStamp: '1700000000' },
+              { hash: '0xb', to: TREASURY, value: ethers.parseEther('1').toString(), isError: '1', timeStamp: '1700000000' }, // failed tx
+              { hash: '0xc', to: '0xsomeoneelse', value: ethers.parseEther('3').toString(), isError: '0', timeStamp: '1700000000' },
             ],
           })
         )
@@ -129,7 +129,9 @@ describe('EvmDepositVerifier', () => {
       const verifier = new EvmDepositVerifier(chainConfig, fetchFn);
       const result = await verifier.listIncoming();
 
-      expect(result).toEqual([{ txHash: '0xa', asset: 'ETH', amount: '2', confirmations: 12 }]);
+      expect(result).toEqual([
+        { txHash: '0xa', asset: 'ETH', amount: '2', confirmations: 12, timestamp: new Date(1700000000 * 1000).toISOString() },
+      ]);
     });
 
     it('lists ERC-20 token transfers to the treasury address', async () => {
@@ -140,14 +142,16 @@ describe('EvmDepositVerifier', () => {
           jsonResponse({
             status: '1',
             message: 'OK',
-            result: [{ hash: '0xd', to: TREASURY, value: '75000000', contractAddress: USDT_CONTRACT }],
+            result: [{ hash: '0xd', to: TREASURY, value: '75000000', contractAddress: USDT_CONTRACT, timeStamp: '1700000000' }],
           })
         );
 
       const verifier = new EvmDepositVerifier(chainConfig, fetchFn);
       const result = await verifier.listIncoming();
 
-      expect(result).toEqual([{ txHash: '0xd', asset: 'USDT', amount: '75', confirmations: 12 }]);
+      expect(result).toEqual([
+        { txHash: '0xd', asset: 'USDT', amount: '75', confirmations: 12, timestamp: new Date(1700000000 * 1000).toISOString() },
+      ]);
     });
 
     it('throws a clear error when no API key is configured', async () => {

@@ -9,6 +9,10 @@ export interface IncomingTransfer {
   asset: string;
   amount: string;
   confirmations: number;
+  /** ISO-8601 timestamp of the transaction, when the underlying explorer API
+   * reports one. Null for an unconfirmed (mempool) Bitcoin transfer, which
+   * has no block yet to take a time from. */
+  timestamp: string | null;
 }
 
 /** One implementation per ChainType — see createVerifier() in index.ts. */

@@ -103,8 +103,8 @@ describe('TronDepositVerifier', () => {
       const fetchFn = jest.fn().mockResolvedValueOnce(
         jsonResponse({
           data: [
-            { transaction_id: 'tx-a', to: TREASURY, value: '5000000' },
-            { transaction_id: 'tx-b', to: TREASURY, value: '1250000' },
+            { transaction_id: 'tx-a', to: TREASURY, value: '5000000', block_timestamp: 1700000000000 },
+            { transaction_id: 'tx-b', to: TREASURY, value: '1250000', block_timestamp: 1700000100000 },
           ],
         })
       );
@@ -113,8 +113,8 @@ describe('TronDepositVerifier', () => {
       const result = await verifier.listIncoming();
 
       expect(result).toEqual([
-        { txHash: 'tx-a', asset: 'USDT', amount: '5', confirmations: 19 },
-        { txHash: 'tx-b', asset: 'USDT', amount: '1.25', confirmations: 19 },
+        { txHash: 'tx-a', asset: 'USDT', amount: '5', confirmations: 19, timestamp: new Date(1700000000000).toISOString() },
+        { txHash: 'tx-b', asset: 'USDT', amount: '1.25', confirmations: 19, timestamp: new Date(1700000100000).toISOString() },
       ]);
       expect(fetchFn).toHaveBeenCalledWith(expect.stringContaining(`/v1/accounts/${TREASURY}/transactions/trc20`), expect.anything());
     });

@@ -25,6 +25,7 @@ interface TronGridTrc20Transfer {
   transaction_id: string;
   to: string;
   value: string;
+  block_timestamp: number; // unix milliseconds
 }
 
 interface TronGridTrc20Response {
@@ -106,6 +107,7 @@ export class TronDepositVerifier implements DepositVerifier {
           // enough for the feed — verify() re-checks the real count at
           // credit time regardless.
           confirmations: this.chainConfig.minConfirmations,
+          timestamp: new Date(t.block_timestamp).toISOString(),
         });
       }
     }

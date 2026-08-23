@@ -4,9 +4,35 @@ import type { CSSProperties } from 'react';
  * rest of the exchange (see SettingsPage's own `styles`), just laid out as
  * a sidebar shell instead of a tab strip since this is a separate section,
  * not one more Settings tab. */
+// The rest of the exchange is a dark theme (see index.css's --bg etc.), but
+// the admin panel reads real client data (emails, addresses, IPs) that's
+// easier to scan on a light surface — so every color token below is
+// re-pointed at a light palette right here, at the panel's root. Every
+// admin page/component below just uses var(--panel)/var(--text-primary)/etc
+// same as before; overriding the custom properties on this one ancestor
+// element re-themes the whole section without touching each page.
+const LIGHT_THEME_VARS = {
+  '--bg': '#ffffff',
+  '--panel': '#ffffff',
+  '--panel-alt': '#f3f4f6',
+  '--panel-alt-hover': '#e9eaed',
+  '--border': '#e3e5e9',
+  '--text-primary': '#14171d',
+  '--text-secondary': '#4b5563',
+  '--text-tertiary': '#6b7280',
+  '--neutral-dim': 'rgba(20, 23, 29, 0.06)',
+} as CSSProperties;
+
 export const styles: Record<string, CSSProperties> = {
-  loadingScreen: { minHeight: '100vh', background: 'var(--bg)' },
-  page: { minHeight: '100vh', background: 'var(--bg)', display: 'grid', gridTemplateColumns: '220px 1fr' },
+  loadingScreen: { minHeight: '100vh', background: '#ffffff' },
+  // `color` is set explicitly here (not just the --text-* variables) because
+  // index.css's `body { color: var(--text-primary) }` resolves against the
+  // ORIGINAL dark-theme value at body's own scope — a descendant redefining
+  // the variable doesn't retroactively change what body already inherited
+  // down. Declaring `color` fresh at this root re-anchors inheritance for
+  // every child element that doesn't set its own color (table cell text,
+  // etc.), which is most of them.
+  page: { ...LIGHT_THEME_VARS, minHeight: '100vh', background: 'var(--bg)', color: 'var(--text-primary)', display: 'grid', gridTemplateColumns: '220px 1fr' },
   sidebar: {
     borderRight: '1px solid var(--border)',
     padding: '24px 12px',
@@ -23,6 +49,17 @@ export const styles: Record<string, CSSProperties> = {
     fontSize: 15,
     letterSpacing: '-0.01em',
     padding: '0 12px 16px',
+  },
+  backToExchange: {
+    textDecoration: 'none',
+    color: 'var(--text-secondary)',
+    fontSize: 12,
+    fontWeight: 600,
+    padding: '8px 12px',
+    margin: '0 0 16px',
+    borderRadius: 8,
+    border: '1px solid var(--border)',
+    display: 'block',
   },
   nav: { display: 'flex', flexDirection: 'column', gap: 2 },
   navItem: {
