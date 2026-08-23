@@ -44,10 +44,12 @@ const MIN_SLICE_SHARE = 0.02;
 // what a real distribution looks like instead of a flat empty circle.
 const EXAMPLE_DONUT_SLICES: DonutSlice[] = (
   [
-    ['BTC', 45],
-    ['ETH', 25],
-    ['USDT', 20],
-    ['SOL', 10],
+    ['BTC', 38],
+    ['ETH', 20],
+    ['USDT', 15],
+    ['SOL', 12],
+    ['XRP', 9],
+    ['TRX', 6],
   ] as const
 ).map(([label, value]) => {
   const c = assetColor(label);
@@ -684,9 +686,28 @@ function WithdrawIcon() {
   );
 }
 
+// Light, white-card redesign scoped to this page's content (everything
+// inside <main>, below the shared dark Nav bar) — these locally redefine
+// the same CSS custom properties every existing var(--panel)/var(--border)/
+// var(--text-*) style below already reads from, so the whole page flips to
+// a light/dark-text look without duplicating every rule. `color` is set
+// explicitly here (not just the custom props) so plain inherited text also
+// picks up the dark value instead of the app-wide light-on-dark default.
+const LIGHT_PAGE_VARS = {
+  ['--panel' as any]: '#ffffff',
+  ['--panel-alt' as any]: '#f1f3f7',
+  ['--panel-alt-hover' as any]: '#e8ebf0',
+  ['--border' as any]: '#e3e6ec',
+  ['--text-primary' as any]: '#12151a',
+  ['--text-secondary' as any]: '#4b5563',
+  ['--text-tertiary' as any]: '#6b7280',
+  ['--neutral-dim' as any]: 'rgba(75,85,99,0.08)',
+  color: 'var(--text-primary)',
+} as React.CSSProperties;
+
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' },
-  main: { padding: '32px', maxWidth: 1080, margin: '0 auto', width: '100%' },
+  page: { minHeight: '100vh', background: '#f7f8fa', display: 'flex', flexDirection: 'column' },
+  main: { padding: '32px', maxWidth: 1080, margin: '0 auto', width: '100%', ...LIGHT_PAGE_VARS },
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',

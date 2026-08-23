@@ -57,14 +57,15 @@ export interface AssetColor {
 // avatarColor() below — never a missing/blank swatch.
 const BRAND_COLORS: Record<string, AssetColor> = {
   BTC: { solid: '#F7931A' },
-  ETH: { solid: '#627EEA' },
-  USDT: { solid: '#26A17B' },
-  // XRP's own mark is monochrome black-on-white; a light, near-neutral tone
-  // reads as that same "dark/white" identity without vanishing into either
-  // a dark panel background or a pure-white USDC slice next to it.
-  XRP: { solid: '#B4B8C0' },
-  USDC: { solid: '#FFFFFF' },
-  SOL: { solid: '#9945FF', gradientTo: '#14F195' },
+  ETH: { solid: '#4F46E5' },
+  USDT: { solid: '#0ECB81' },
+  // A vivid, distinct hue rather than the old near-neutral grey — that
+  // read fine on a dark panel but disappeared entirely on a light one.
+  XRP: { solid: '#E1147D' },
+  // Real USDC blue instead of plain white, which vanished against a light
+  // card background.
+  USDC: { solid: '#2775CA' },
+  SOL: { solid: '#9945FF', gradientTo: '#00D9C0' },
   TON: { solid: '#0088CC' },
   TRX: { solid: '#FF0013' },
 };

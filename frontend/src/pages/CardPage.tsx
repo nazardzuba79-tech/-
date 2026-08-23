@@ -215,7 +215,7 @@ function AtmIcon() {
 
 function ContactlessIcon() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" strokeWidth="2.2" strokeLinecap="round">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2.2" strokeLinecap="round">
       <path d="M8 10a4 4 0 0 1 0 4" />
       <path d="M11 7a8 8 0 0 1 0 10" />
       <path d="M14 4a12 12 0 0 1 0 16" />
@@ -223,9 +223,27 @@ function ContactlessIcon() {
   );
 }
 
+// Light, premium redesign scoped to this page's content — same pattern as
+// WalletPage's LIGHT_PAGE_VARS: redefines the custom properties every
+// var(--panel)/var(--border)/var(--text-*) style below already reads from,
+// so the whole page flips to a light/dark-text look without duplicating
+// every rule. `color` is set explicitly so plain inherited text also picks
+// up the dark value instead of the app-wide light-on-dark default.
+const LIGHT_PAGE_VARS = {
+  ['--panel' as any]: '#ffffff',
+  ['--panel-alt' as any]: '#f1f3f7',
+  ['--panel-alt-hover' as any]: '#e8ebf0',
+  ['--border' as any]: '#e3e6ec',
+  ['--text-primary' as any]: '#12151a',
+  ['--text-secondary' as any]: '#4b5563',
+  ['--text-tertiary' as any]: '#6b7280',
+  ['--neutral-dim' as any]: 'rgba(75,85,99,0.08)',
+  color: 'var(--text-primary)',
+} as React.CSSProperties;
+
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: 'var(--bg)' },
-  main: { padding: 32, maxWidth: 960, margin: '0 auto' },
+  page: { minHeight: '100vh', background: 'linear-gradient(180deg, #ffffff 0%, #f2f3f6 100%)' },
+  main: { padding: 32, maxWidth: 960, margin: '0 auto', ...LIGHT_PAGE_VARS },
   hero: {
     display: 'flex',
     alignItems: 'center',
@@ -252,8 +270,13 @@ const styles: Record<string, React.CSSProperties> = {
     aspectRatio: '1.586',
     borderRadius: 18,
     padding: 24,
-    background: 'linear-gradient(135deg, #f7a600 0%, #ffb524 45%, #b97300 100%)',
-    boxShadow: '0 16px 40px rgba(247,166,0,0.25)',
+    // Metallic graphite finish (Bybit-style) instead of a flat brand-color
+    // fill — several dark tone stops on a steep diagonal read as brushed
+    // metal, with the sheen layer below adding the glossy highlight.
+    background:
+      'linear-gradient(135deg, #3a3f4a 0%, #16181c 22%, #2b2e35 45%, #0e0f12 68%, #3d4149 85%, #1a1c20 100%)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    boxShadow: '0 20px 48px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.12)',
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
@@ -262,14 +285,22 @@ const styles: Record<string, React.CSSProperties> = {
   cardVisualSheen: {
     position: 'absolute',
     inset: 0,
-    background: 'linear-gradient(115deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 35%)',
+    background:
+      'linear-gradient(115deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.04) 22%, rgba(255,255,255,0) 40%, rgba(255,255,255,0.08) 60%, rgba(255,255,255,0) 78%)',
     pointerEvents: 'none',
   },
   cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardVisualNumber: { color: 'rgba(11,14,17,0.75)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
+  cardVisualNumber: { color: 'rgba(255,255,255,0.55)', fontSize: 18, fontWeight: 700, letterSpacing: '0.08em' },
   cardVisualBottom: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  cardVisualWordmark: { color: 'var(--on-accent)', fontWeight: 800, fontSize: 18, fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' },
-  cardVisualNetwork: { color: 'rgba(11,14,17,0.75)', fontWeight: 700, fontSize: 12, letterSpacing: '0.02em' },
+  cardVisualWordmark: {
+    color: 'var(--accent)',
+    fontWeight: 800,
+    fontSize: 18,
+    fontFamily: 'var(--font-mono)',
+    letterSpacing: '0.03em',
+    textShadow: '0 0 16px rgba(247,166,0,0.5)',
+  },
+  cardVisualNetwork: { color: 'rgba(255,255,255,0.55)', fontWeight: 700, fontSize: 12, letterSpacing: '0.02em' },
   vipBox: {
     position: 'relative',
     background: 'linear-gradient(135deg, rgba(255,209,102,0.14) 0%, rgba(247,166,0,0.04) 100%)',
