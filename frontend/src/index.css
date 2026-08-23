@@ -299,6 +299,16 @@ textarea:focus-visible {
   background-color: var(--panel-alt) !important;
 }
 
+/* Same idea as .row-hover, one shade darker — for elements that already
+   sit on a --panel-alt surface themselves (the admin sidebar), where
+   .row-hover's hover color would be invisible against its own background. */
+.row-hover-alt {
+  transition: background-color 0.12s ease;
+}
+.row-hover-alt:hover {
+  background-color: var(--panel-alt-hover) !important;
+}
+
 /* Card hover-lift for clickable/tappable cards (products, card-page
    features, settings tabs) — subtle, not a gimmick: a soft rise + glow
    instead of a flat rectangle with zero feedback. */

@@ -45,7 +45,7 @@ export function AdminLayout() {
     <div style={styles.page}>
       <aside style={styles.sidebar}>
         <div style={styles.sidebarTitle}>Админ-панель</div>
-        <Link to="/" style={styles.backToExchange}>
+        <Link to="/" className="row-hover-alt" style={styles.backToExchange}>
           ← На биржу
         </Link>
         <nav style={styles.nav}>
@@ -53,6 +53,7 @@ export function AdminLayout() {
             <NavLink
               key={s.to}
               to={s.to}
+              className="row-hover-alt"
               style={({ isActive }) => ({ ...styles.navItem, ...(isActive ? styles.navItemActive : {}) })}
             >
               {s.label}
