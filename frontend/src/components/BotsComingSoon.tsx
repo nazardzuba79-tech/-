@@ -1,9 +1,9 @@
 import { useLanguage } from '../lib/i18n';
 import { Badge } from './Badge';
 
-/** Non-interactive teaser — no trading-bots feature exists yet, so this is
- * deliberately not a link to anything. Replaces the nav's pair selector on
- * the trade page (redundant with the pair list sidebar right below it). */
+/** Non-interactive teaser — no AI trading-bots feature exists yet, so this
+ * is deliberately not a link to anything. Replaces the nav's pair selector
+ * on the trade page (redundant with the pair list sidebar right below it). */
 export function BotsComingSoon() {
   const { t } = useLanguage();
   return (

@@ -151,20 +151,33 @@ function BurgerIcon({ open }: { open: boolean }) {
   );
 }
 
+let cardIconGradientSeq = 0;
+
+// Its own gradient + glow, unlike the plain currentColor nav icons — the
+// card page is a real product to sell, so its nav entry should read as a
+// small preview of that card rather than blend in with Settings/gear.
 function CardIcon({ active }: { active: boolean }) {
+  const gradientId = useState(() => `nav-card-gradient-${cardIconGradientSeq++}`)[0];
   return (
     <svg
-      width="15"
-      height="15"
+      className="nav-card-icon"
+      width="17"
+      height="17"
       viewBox="0 0 24 24"
       fill="none"
-      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      style={{ filter: active ? 'drop-shadow(0 0 5px rgba(139,92,246,0.65))' : undefined }}
     >
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <line x1="2" y1="10" x2="22" y2="10" />
+      <defs>
+        <linearGradient id={gradientId} x1="2" y1="5" x2="22" y2="19" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#8b5cf6" />
+          <stop offset="1" stopColor="#3b82f6" />
+        </linearGradient>
+      </defs>
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke={`url(#${gradientId})`} />
+      <line x1="2" y1="10" x2="22" y2="10" stroke={`url(#${gradientId})`} />
     </svg>
   );
 }
