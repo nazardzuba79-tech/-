@@ -80,31 +80,68 @@ describe('admin withdrawals routes', () => {
     });
   });
 
-  describe('POST /admin/withdrawals/:id/complete', () => {
+  describe('POST /admin/withdrawals/:id/approve', () => {
     it('requires an admin account', async () => {
       const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
       const app = buildApp(prisma);
-      const res = await request(app).post('/api/v1/admin/withdrawals/w1/complete').set('Authorization', authHeader('u1'));
+      const res = await request(app).post('/api/v1/admin/withdrawals/w1/approve').set('Authorization', authHeader('u1'));
       expect(res.status).toBe(403);
     });
 
     it('404s an unknown withdrawal id', async () => {
       const prisma = withTransaction(adminPrisma(), { withdrawal: null });
       const app = buildApp(prisma);
-      const res = await request(app).post('/api/v1/admin/withdrawals/nope/complete').set('Authorization', authHeader('admin-1'));
+      const res = await request(app).post('/api/v1/admin/withdrawals/nope/approve').set('Authorization', authHeader('admin-1'));
       expect(res.status).toBe(400);
     });
 
-    it('completes a pending withdrawal', async () => {
+    it('approves a pending withdrawal, leaving it locked', async () => {
       const prisma = withTransaction(adminPrisma(), {
         balance: { available: '60', locked: '40' },
         withdrawal: { id: 'w1', userId: 'user-1', asset: 'USDT', amount: '40', status: 'PENDING' },
       });
       const app = buildApp(prisma);
-      const res = await request(app).post('/api/v1/admin/withdrawals/w1/complete').set('Authorization', authHeader('admin-1'));
+      const res = await request(app).post('/api/v1/admin/withdrawals/w1/approve').set('Authorization', authHeader('admin-1'));
 
       expect(res.status).toBe(200);
-      expect(res.body).toMatchObject({ status: 'COMPLETED' });
+      expect(res.body).toMatchObject({ status: 'APPROVED' });
+    });
+  });
+
+  describe('POST /admin/withdrawals/:id/mark-sent', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/withdrawals/w1/mark-sent')
+        .set('Authorization', authHeader('u1'))
+        .send({ txHash: 'abc123' });
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects a missing txHash', async () => {
+      const prisma = adminPrisma();
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/withdrawals/w1/mark-sent')
+        .set('Authorization', authHeader('admin-1'))
+        .send({});
+      expect(res.status).toBe(400);
+    });
+
+    it('marks an approved withdrawal sent and releases the lock', async () => {
+      const prisma = withTransaction(adminPrisma(), {
+        balance: { available: '60', locked: '40' },
+        withdrawal: { id: 'w1', userId: 'user-1', asset: 'USDT', amount: '40', status: 'APPROVED' },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/withdrawals/w1/mark-sent')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ txHash: 'abc123' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ status: 'SENT', txHash: 'abc123' });
     });
   });
 

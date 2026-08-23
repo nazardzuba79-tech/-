@@ -10,6 +10,7 @@ export interface WithdrawalResult {
   toAddress: string;
   amount: string;
   status: string;
+  txHash?: string;
 }
 
 /**
@@ -17,11 +18,14 @@ export interface WithdrawalResult {
  * crediting flow. Requesting one immediately moves the amount from
  * `available` to `locked` (same available/locked mechanics OrderService
  * uses to hold funds against a resting order), so it can't also be spent
- * placing an order or withdrawn twice while pending. An admin then sends
- * the crypto by hand from the treasury wallet and marks the request
- * completed (locked hold released, nothing returns to available — the
- * funds actually left) or rejected (locked hold released back to
- * available — nothing left, so nothing to send).
+ * placing an order or withdrawn twice while pending.
+ *
+ * Lifecycle: PENDING (locked, awaiting review) -> APPROVED (admin has
+ * reviewed and intends to send, still locked) -> SENT (admin actually
+ * broadcast the transaction from the treasury wallet and recorded its
+ * txHash, lock released — the funds genuinely left) — or PENDING/APPROVED
+ * -> REJECTED at any point before SENT (lock released back to `available`,
+ * since nothing was actually sent).
  */
 export class WithdrawalService {
   constructor(private prisma: PrismaClient) {}
@@ -84,12 +88,35 @@ export class WithdrawalService {
     });
   }
 
-  /** Admin confirms they've manually sent the funds — releases the locked
-   * hold without returning anything to `available`, since the funds
-   * genuinely left the treasury wallet. */
-  async completeWithdrawal(params: { withdrawalId: string; performedByAdminId: string }): Promise<WithdrawalResult> {
+  /** Admin has reviewed the request and intends to send the funds — the
+   * hold stays locked (nothing has actually moved on-chain yet). */
+  async approveWithdrawal(params: { withdrawalId: string; performedByAdminId: string }): Promise<WithdrawalResult> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const withdrawal = await this.requirePending(tx, params.withdrawalId);
+      const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING']);
+
+      const updated = await tx.withdrawal.update({
+        where: { id: withdrawal.id },
+        data: { status: 'APPROVED', performedByAdminId: params.performedByAdminId },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: withdrawal.userId,
+          action: 'WITHDRAWAL_APPROVED',
+          metadata: { withdrawalId: withdrawal.id, performedByAdminId: params.performedByAdminId },
+        },
+      });
+
+      return this.toResult(updated);
+    });
+  }
+
+  /** Admin confirms they've actually broadcast the transaction from the
+   * treasury wallet — releases the locked hold without returning anything
+   * to `available`, since the funds genuinely left, and records the txHash. */
+  async markSent(params: { withdrawalId: string; performedByAdminId: string; txHash: string }): Promise<WithdrawalResult> {
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['APPROVED']);
 
       const balance = await tx.balance.findUnique({
         where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
@@ -103,14 +130,14 @@ export class WithdrawalService {
 
       const updated = await tx.withdrawal.update({
         where: { id: withdrawal.id },
-        data: { status: 'COMPLETED', performedByAdminId: params.performedByAdminId },
+        data: { status: 'SENT', performedByAdminId: params.performedByAdminId, txHash: params.txHash },
       });
 
       await tx.auditLog.create({
         data: {
           userId: withdrawal.userId,
-          action: 'WITHDRAWAL_COMPLETED',
-          metadata: { withdrawalId: withdrawal.id, performedByAdminId: params.performedByAdminId },
+          action: 'WITHDRAWAL_SENT',
+          metadata: { withdrawalId: withdrawal.id, performedByAdminId: params.performedByAdminId, txHash: params.txHash },
         },
       });
 
@@ -119,14 +146,15 @@ export class WithdrawalService {
   }
 
   /** Admin declines the request — releases the locked hold back to
-   * `available`, since nothing was actually sent. */
+   * `available`, since nothing was actually sent. Allowed from PENDING or
+   * APPROVED, any time before the funds are actually sent. */
   async rejectWithdrawal(params: {
     withdrawalId: string;
     performedByAdminId: string;
     reason?: string;
   }): Promise<WithdrawalResult> {
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const withdrawal = await this.requirePending(tx, params.withdrawalId);
+      const withdrawal = await this.requireStatus(tx, params.withdrawalId, ['PENDING', 'APPROVED']);
 
       const balance = await tx.balance.findUnique({
         where: { userId_asset: { userId: withdrawal.userId, asset: withdrawal.asset } },
@@ -156,16 +184,24 @@ export class WithdrawalService {
     });
   }
 
-  private async requirePending(tx: Prisma.TransactionClient, withdrawalId: string) {
+  private async requireStatus(tx: Prisma.TransactionClient, withdrawalId: string, allowed: string[]) {
     const withdrawal = await tx.withdrawal.findUnique({ where: { id: withdrawalId } });
     if (!withdrawal) throw new WithdrawalRequestError('Withdrawal request not found');
-    if (withdrawal.status !== 'PENDING') {
+    if (!allowed.includes(withdrawal.status)) {
       throw new WithdrawalRequestError(`Withdrawal request is already ${withdrawal.status}`);
     }
     return withdrawal;
   }
 
-  private toResult(w: { id: string; asset: string; network: string; toAddress: string; amount: unknown; status: string }): WithdrawalResult {
+  private toResult(w: {
+    id: string;
+    asset: string;
+    network: string;
+    toAddress: string;
+    amount: unknown;
+    status: string;
+    txHash?: string | null;
+  }): WithdrawalResult {
     return {
       id: w.id,
       asset: w.asset,
@@ -173,6 +209,7 @@ export class WithdrawalService {
       toAddress: w.toAddress,
       amount: (w.amount as { toString(): string }).toString(),
       status: w.status,
+      txHash: w.txHash ?? undefined,
     };
   }
 }

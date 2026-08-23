@@ -1175,11 +1175,12 @@ function DepositsTab() {
 
 /**
  * Manual withdrawal fulfillment — the reverse of DepositsTab. A client's
- * request already locked their balance (see WithdrawalService); the admin
- * sends the crypto by hand from the treasury wallet outside this app
- * entirely, then comes back here to mark the request completed (releases
- * the lock) or rejected (returns the funds to the client's available
- * balance).
+ * request already locked their balance (see WithdrawalService); the flow is
+ * PENDING -> approve (still locked) -> mark sent with the txid once the
+ * admin has actually broadcast it from the treasury wallet by hand (releases
+ * the lock) — or reject at any point before that (returns the funds to the
+ * client's available balance). The full version of this workflow lives in
+ * the dedicated /admin panel; this tab is a lighter mirror of it.
  */
 function WithdrawalsTab() {
   const { t, lang } = useLanguage();
@@ -1197,13 +1198,28 @@ function WithdrawalsTab() {
 
   useEffect(reload, []);
 
-  const pending = withdrawals.filter((w) => w.status === 'PENDING');
+  const pending = withdrawals.filter((w) => w.status === 'PENDING' || w.status === 'APPROVED');
 
-  async function handleComplete(id: string) {
+  async function handleApprove(id: string) {
     setError(null);
     setBusyId(id);
     try {
-      await api.completeWithdrawal(id);
+      await api.approveWithdrawal(id);
+      reload();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.withdrawals.actionError'));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleMarkSent(id: string) {
+    const txHash = window.prompt(t('settings.withdrawals.txHashPrompt'));
+    if (!txHash) return;
+    setError(null);
+    setBusyId(id);
+    try {
+      await api.markWithdrawalSent(id, txHash);
       reload();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('settings.withdrawals.actionError'));
@@ -1250,9 +1266,16 @@ function WithdrawalsTab() {
               </span>
               <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button disabled={busyId === w.id} onClick={() => handleComplete(w.id)} style={styles.approveBtn}>
-                  {t('settings.withdrawals.complete')}
-                </button>
+                {w.status === 'PENDING' && (
+                  <button disabled={busyId === w.id} onClick={() => handleApprove(w.id)} style={styles.approveBtn}>
+                    {t('settings.withdrawals.complete')}
+                  </button>
+                )}
+                {w.status === 'APPROVED' && (
+                  <button disabled={busyId === w.id} onClick={() => handleMarkSent(w.id)} style={styles.approveBtn}>
+                    {t('settings.withdrawals.markSent')}
+                  </button>
+                )}
                 <button disabled={busyId === w.id} onClick={() => handleReject(w.id)} style={styles.rejectBtn}>
                   {t('settings.withdrawals.reject')}
                 </button>

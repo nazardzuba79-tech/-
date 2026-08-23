@@ -7,10 +7,12 @@ import { requireAdmin } from '../middleware/admin';
 
 /**
  * Manual withdrawal fulfillment — the mirror of adminDeposits.ts. A client's
- * request already locked their balance (see WithdrawalService); the admin
- * sends the crypto by hand from the treasury wallet outside this system
- * entirely, then comes back here to mark it completed (releases the hold)
- * or rejected (returns the funds to the client's available balance).
+ * request already locked their balance (see WithdrawalService); the flow is
+ * PENDING -> APPROVED (admin has reviewed, still locked) -> SENT (admin has
+ * actually broadcast the transaction from the treasury wallet by hand and
+ * records its txHash here, which releases the lock) — or REJECTED at any
+ * point before SENT, which returns the funds to the client's available
+ * balance.
  */
 export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -32,20 +34,43 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
         toAddress: w.toAddress,
         amount: w.amount.toString(),
         status: w.status,
+        txHash: w.txHash,
         rejectionReason: w.rejectionReason,
+        performedByAdminId: w.performedByAdminId,
         createdAt: w.createdAt,
+        updatedAt: w.updatedAt,
       }))
     );
   });
 
-  router.post('/admin/withdrawals/:id/complete', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/withdrawals/:id/approve', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
     try {
-      const result = await service.completeWithdrawal({ withdrawalId: req.params.id, performedByAdminId: req.userId! });
+      const result = await service.approveWithdrawal({ withdrawalId: req.params.id, performedByAdminId: req.userId! });
       res.json(result);
     } catch (err) {
       if (err instanceof WithdrawalRequestError) return res.status(400).json({ error: err.message });
       console.error(err);
-      res.status(500).json({ error: 'Failed to complete withdrawal' });
+      res.status(500).json({ error: 'Failed to approve withdrawal' });
+    }
+  });
+
+  const markSentSchema = z.object({ txHash: z.string().trim().min(1).max(256) });
+
+  router.post('/admin/withdrawals/:id/mark-sent', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = markSentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    try {
+      const result = await service.markSent({
+        withdrawalId: req.params.id,
+        performedByAdminId: req.userId!,
+        txHash: parsed.data.txHash,
+      });
+      res.json(result);
+    } catch (err) {
+      if (err instanceof WithdrawalRequestError) return res.status(400).json({ error: err.message });
+      console.error(err);
+      res.status(500).json({ error: 'Failed to mark withdrawal as sent' });
     }
   });
 

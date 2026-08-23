@@ -9,17 +9,22 @@ interface HeldBalance {
 
 const STATUS_KEY: Record<string, Key> = {
   PENDING: 'wallet.withdrawStatus.PENDING',
-  COMPLETED: 'wallet.withdrawStatus.COMPLETED',
+  APPROVED: 'wallet.withdrawStatus.APPROVED',
+  SENT: 'wallet.withdrawStatus.SENT',
+  // Legacy status value from before the two-step approve/mark-sent flow —
+  // kept so any pre-existing rows still render a sensible label.
+  COMPLETED: 'wallet.withdrawStatus.SENT',
   REJECTED: 'wallet.withdrawStatus.REJECTED',
 };
 
 /**
  * Client-facing withdrawal request — no automated broadcast. Submitting
  * immediately locks the amount out of `available` (see WithdrawalService),
- * then an admin sends the crypto by hand and marks the request completed
- * from Settings → Выводы. That manual step is why this shows a note about
- * turnaround time instead of a progress bar — there's no on-chain status
- * to poll until the admin has actually acted.
+ * then an admin reviews and approves it, sends the crypto by hand from the
+ * treasury wallet, and marks the request sent (with its txid) from the
+ * admin panel. That manual step is why this shows a note about turnaround
+ * time instead of a progress bar — there's no on-chain status to poll until
+ * the admin has actually acted.
  */
 export function WithdrawModal({ asset, onClose }: { asset: string; onClose: () => void }) {
   const { t, lang } = useLanguage();
@@ -170,7 +175,11 @@ export function WithdrawModal({ asset, onClose }: { asset: string; onClose: () =
                     fontSize: 11,
                     fontWeight: 700,
                     color:
-                      w.status === 'COMPLETED' ? 'var(--buy)' : w.status === 'REJECTED' ? 'var(--sell)' : 'var(--accent)',
+                      w.status === 'SENT' || w.status === 'COMPLETED'
+                        ? 'var(--buy)'
+                        : w.status === 'REJECTED'
+                          ? 'var(--sell)'
+                          : 'var(--accent)',
                   }}
                 >
                   {t(STATUS_KEY[w.status] ?? 'wallet.withdrawStatus.PENDING')}

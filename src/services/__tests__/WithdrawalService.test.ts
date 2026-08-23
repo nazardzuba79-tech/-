@@ -84,20 +84,20 @@ describe('WithdrawalService', () => {
     });
   });
 
-  describe('completeWithdrawal', () => {
-    it('releases the locked hold without returning anything to available', async () => {
+  describe('approveWithdrawal', () => {
+    it('marks it APPROVED and leaves the hold locked', async () => {
       const prisma = makePrisma({
         balance: { available: '60', locked: '40' },
         withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'PENDING' },
       });
       const service = new WithdrawalService(prisma);
 
-      const result = await service.completeWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' });
+      const result = await service.approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' });
 
-      expect(result.status).toBe('COMPLETED');
-      expect(prisma.balance.update).toHaveBeenCalledWith(expect.objectContaining({ data: { locked: '0' } }));
+      expect(result.status).toBe('APPROVED');
+      expect(prisma.balance.update).not.toHaveBeenCalled();
       expect(prisma.auditLog.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ action: 'WITHDRAWAL_COMPLETED' }) })
+        expect.objectContaining({ data: expect.objectContaining({ action: 'WITHDRAWAL_APPROVED' }) })
       );
     });
 
@@ -105,21 +105,52 @@ describe('WithdrawalService', () => {
       const prisma = makePrisma({ withdrawal: null });
       const service = new WithdrawalService(prisma);
 
-      await expect(service.completeWithdrawal({ withdrawalId: 'nope', performedByAdminId: 'admin-1' })).rejects.toThrow(
+      await expect(service.approveWithdrawal({ withdrawalId: 'nope', performedByAdminId: 'admin-1' })).rejects.toThrow(
         'not found'
       );
     });
 
-    it('refuses to complete a withdrawal that is already resolved', async () => {
+    it('refuses to approve a withdrawal that is not PENDING', async () => {
       const prisma = makePrisma({
         balance: { available: '60', locked: '0' },
-        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'COMPLETED' },
+        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'APPROVED' },
       });
       const service = new WithdrawalService(prisma);
 
-      await expect(service.completeWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' })).rejects.toThrow(
-        'already COMPLETED'
+      await expect(service.approveWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' })).rejects.toThrow(
+        'already APPROVED'
       );
+    });
+  });
+
+  describe('markSent', () => {
+    it('releases the locked hold without returning anything to available, and records the txHash', async () => {
+      const prisma = makePrisma({
+        balance: { available: '60', locked: '40' },
+        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'APPROVED' },
+      });
+      const service = new WithdrawalService(prisma);
+
+      const result = await service.markSent({ withdrawalId: 'w1', performedByAdminId: 'admin-1', txHash: 'abc123' });
+
+      expect(result.status).toBe('SENT');
+      expect(result.txHash).toBe('abc123');
+      expect(prisma.balance.update).toHaveBeenCalledWith(expect.objectContaining({ data: { locked: '0' } }));
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ action: 'WITHDRAWAL_SENT', metadata: expect.objectContaining({ txHash: 'abc123' }) }) })
+      );
+    });
+
+    it('refuses to mark a withdrawal sent before it has been approved', async () => {
+      const prisma = makePrisma({
+        balance: { available: '60', locked: '40' },
+        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'PENDING' },
+      });
+      const service = new WithdrawalService(prisma);
+
+      await expect(
+        service.markSent({ withdrawalId: 'w1', performedByAdminId: 'admin-1', txHash: 'abc123' })
+      ).rejects.toThrow('already PENDING');
     });
   });
 
@@ -146,16 +177,28 @@ describe('WithdrawalService', () => {
       );
     });
 
-    it('refuses to reject a withdrawal that is already resolved', async () => {
+    it('also allows rejecting an already-approved withdrawal', async () => {
+      const prisma = makePrisma({
+        balance: { available: '60', locked: '40' },
+        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'APPROVED' },
+      });
+      const service = new WithdrawalService(prisma);
+
+      const result = await service.rejectWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' });
+
+      expect(result.status).toBe('REJECTED');
+    });
+
+    it('refuses to reject a withdrawal that has already been sent', async () => {
       const prisma = makePrisma({
         balance: { available: '100', locked: '0' },
-        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'REJECTED' },
+        withdrawal: { id: 'w1', userId: 'u1', asset: 'USDT', amount: '40', status: 'SENT' },
       });
       const service = new WithdrawalService(prisma);
 
       await expect(
         service.rejectWithdrawal({ withdrawalId: 'w1', performedByAdminId: 'admin-1' })
-      ).rejects.toThrow('already REJECTED');
+      ).rejects.toThrow('already SENT');
     });
   });
 });

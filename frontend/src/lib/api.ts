@@ -489,13 +489,20 @@ export const api = {
         toAddress: string;
         amount: string;
         status: string;
+        txHash: string | null;
         rejectionReason: string | null;
         createdAt: string;
       }[]
     >('/admin/withdrawals'),
 
-  completeWithdrawal: (id: string) =>
-    request<{ id: string; status: string }>(`/admin/withdrawals/${id}/complete`, { method: 'POST' }),
+  approveWithdrawal: (id: string) =>
+    request<{ id: string; status: string }>(`/admin/withdrawals/${id}/approve`, { method: 'POST' }),
+
+  markWithdrawalSent: (id: string, txHash: string) =>
+    request<{ id: string; status: string }>(`/admin/withdrawals/${id}/mark-sent`, {
+      method: 'POST',
+      body: JSON.stringify({ txHash }),
+    }),
 
   rejectWithdrawal: (id: string, reason?: string) =>
     request<{ id: string; status: string }>(`/admin/withdrawals/${id}/reject`, {
