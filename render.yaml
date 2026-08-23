@@ -3,6 +3,7 @@ services:
     name: exchange-api
     runtime: docker
     plan: free
+    region: frankfurt # closest/best-connected Render region to Russia/CIS/Europe
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
@@ -33,6 +34,9 @@ services:
     name: exchange-frontend
     runtime: docker
     plan: free
+    region: frankfurt # keep both services in the same region — matters less
+    # for this one (it's just static files behind Render's own CDN either
+    # way) but no reason not to match the backend
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
