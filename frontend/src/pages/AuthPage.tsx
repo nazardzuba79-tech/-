@@ -258,6 +258,7 @@ export function AuthPage() {
                     <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
                     <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
                     <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
+                    <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
                   </div>
                 )}
               </form>
@@ -495,7 +496,7 @@ const styles: Record<string, React.CSSProperties> = {
   featureRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 6,
     marginTop: 4,
   },
   featureBadge: {
@@ -504,10 +505,10 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     alignItems: 'center',
     gap: 5,
-    padding: '10px 6px',
+    padding: '10px 4px',
     background: 'var(--panel-alt)',
     borderRadius: 10,
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: 700,
     color: 'var(--text-secondary)',
     textAlign: 'center',
