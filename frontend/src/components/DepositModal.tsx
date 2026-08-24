@@ -114,8 +114,6 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
             : t('deposit.minAmountHint', { amount: MIN_DEPOSIT_USD })}
         </div>
 
-        <p style={styles.hint}>{t('deposit.hint')}</p>
-
         {!chainsLoaded && !error && (
           <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('deposit.loadingNetworks')}</p>
         )}
@@ -211,12 +209,6 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     color: 'var(--text-secondary)',
     fontSize: 16,
-  },
-  hint: {
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-    lineHeight: 1.5,
-    marginBottom: 16,
   },
   addressBox: {
     display: 'flex',

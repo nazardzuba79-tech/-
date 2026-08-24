@@ -154,7 +154,6 @@ const RU = {
 
   'deposit.title': 'Пополнение',
   'deposit.close': 'Закрыть',
-  'deposit.hint': 'Отправь крипту на адрес ниже со своего кошелька — команда проверит поступление и зачислит баланс вручную.',
   'deposit.manualCreditNote': 'Депозит будет зачислен в течение 30-60 минут.',
   'deposit.loadingNetworks': 'Загрузка сетей...',
   'deposit.noneConfigured': 'Пополнение пока недоступно — владелец биржи ещё не указал адрес кошелька ни для одной сети (BITCOIN_TREASURY_ADDRESS / TRON_TREASURY_ADDRESS в настройках сервера).',
@@ -700,7 +699,6 @@ const EN: Record<Key, string> = {
 
   'deposit.title': 'Deposit',
   'deposit.close': 'Close',
-  'deposit.hint': 'Send crypto to the address below from your own wallet — the team will verify it arrived and credit your balance manually.',
   'deposit.manualCreditNote': 'Your deposit will be credited within 30-60 minutes.',
   'deposit.loadingNetworks': 'Loading networks...',
   'deposit.noneConfigured': "Deposits aren't available yet — the exchange owner hasn't set a wallet address for any network (BITCOIN_TREASURY_ADDRESS / TRON_TREASURY_ADDRESS in server settings).",
@@ -1244,7 +1242,6 @@ const ZH: Record<Key, string> = {
 
   'deposit.title': '充值',
   'deposit.close': '关闭',
-  'deposit.hint': '从你自己的钱包发送加密货币到下面的地址——团队核实到账后会手动为你充值。',
   'deposit.manualCreditNote': '存款将在30-60分钟内到账。',
   'deposit.loadingNetworks': '正在加载网络...',
   'deposit.noneConfigured': '暂时无法充值——交易所管理员尚未为任何网络设置钱包地址（服务器设置中的 BITCOIN_TREASURY_ADDRESS / TRON_TREASURY_ADDRESS）。',
