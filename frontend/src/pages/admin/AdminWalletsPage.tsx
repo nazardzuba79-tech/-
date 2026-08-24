@@ -5,7 +5,15 @@ import { Skeleton } from '../../components/Skeleton';
 
 type Wallet = Awaited<ReturnType<typeof api.getAdminWallets>>[number];
 
-const CHAIN_LABEL: Record<string, string> = { bitcoin: 'Bitcoin', tron: 'Tron', ethereum: 'Ethereum' };
+const CHAIN_LABEL: Record<string, string> = { bitcoin: 'Bitcoin', tron: 'Tron — USDT (TRC-20)', ethereum: 'Ethereum' };
+
+// Tron deposits only support TRC-20 tokens (USDT) — native TRX deposits
+// aren't implemented (see TronDepositVerifier), so showing the native
+// asset here would incorrectly suggest sending plain TRX works.
+function supportedAssetsLabel(chain: string, nativeAsset: string, tokens: string[]): string {
+  if (chain === 'tron') return tokens.length ? tokens.join(', ') + ' (TRC-20)' : 'нет поддерживаемых активов';
+  return `${nativeAsset}${tokens.length ? `, ${tokens.join(', ')}` : ''}`;
+}
 
 /** Кошельки для пополнения — один адрес приёма депозитов на каждую сеть.
  * Сохранение сразу применяется везде, где бэкенд отдаёт адрес пользователю
@@ -76,7 +84,7 @@ export function AdminWalletsPage() {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{CHAIN_LABEL[w.chain] ?? w.chain}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-                    {w.nativeAsset ? `${w.nativeAsset}${w.tokens.length ? `, ${w.tokens.join(', ')}` : ''}` : 'Сеть не настроена на бэкенде'}
+                    {w.nativeAsset ? supportedAssetsLabel(w.chain, w.nativeAsset, w.tokens) : 'Сеть не настроена на бэкенде'}
                   </div>
                 </div>
                 {w.isOverridden ? (

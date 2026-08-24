@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
-import { loadChainConfig, ChainConfig } from '../../config/chains';
+import { ChainConfig } from '../../config/chains';
 import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
 import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
@@ -30,11 +30,13 @@ export const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
   tron: /^[a-fA-F0-9]{64}$/,
 };
 
-/** loadChainConfig() + the admin-editable treasury address override applied
- * on top — the one function every route below resolves a chain through, so
- * an admin's address change is reflected everywhere consistently. */
+/** Thin re-export of TreasuryWalletService.resolve() — kept here since every
+ * route in this file (and adminDeposits.ts) already imports KNOWN_CHAINS
+ * from this module and calls this alongside it. The real logic lives on the
+ * service (not this route file) so other services can use it too without
+ * pulling in Express route/middleware modules. */
 export async function resolveChainConfig(treasuryWallets: TreasuryWalletService, chain: string): Promise<ChainConfig> {
-  return treasuryWallets.applyOverride(loadChainConfig(chain));
+  return treasuryWallets.resolve(chain);
 }
 
 export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): Router {
@@ -68,7 +70,11 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
       res.json({
         chain: config.chain,
         address: config.treasuryAddress,
-        supportedAssets: [config.nativeAsset, ...Object.keys(config.tokens)],
+        // Tron's native asset (TRX) is deliberately excluded — TronDepositVerifier
+        // only checks TRC-20 token transfers, so a native TRX send would never
+        // verify or even show up in the admin's incoming feed. Every other
+        // chain type here (bitcoin, evm) actually supports its native asset.
+        supportedAssets: config.type === 'tron' ? Object.keys(config.tokens) : [config.nativeAsset, ...Object.keys(config.tokens)],
         note: 'Send only the listed assets on this exact network. After sending, submit the tx hash to /deposits/claim.',
       });
     } catch {

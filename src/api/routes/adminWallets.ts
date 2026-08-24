@@ -33,7 +33,14 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
       let tokens: string[] = [];
       try {
         const config = loadChainConfig(chain);
-        defaultAddress = config.treasuryAddress;
+        // loadChainConfig() never requires a treasury address (see its
+        // comment) — envConfigured here means "this chain type itself is
+        // set up on the backend" (native asset, RPC, ...), not "has an
+        // address". A chain with no address anywhere yet still reports
+        // envConfigured: true and address: null, which the admin panel
+        // shows as an empty field to fill in — not the "not configured on
+        // this deployment at all" state.
+        defaultAddress = config.treasuryAddress || null;
         nativeAsset = config.nativeAsset;
         tokens = Object.keys(config.tokens);
       } catch {

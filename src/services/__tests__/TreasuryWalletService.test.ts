@@ -107,4 +107,49 @@ describe('TreasuryWalletService', () => {
     const rows = await service.list();
     expect(rows.map((r) => r.chain)).toEqual(['bitcoin', 'tron']);
   });
+
+  describe('resolve()', () => {
+    const OLD_ENV = process.env;
+
+    beforeEach(() => {
+      process.env = { ...OLD_ENV };
+      delete process.env.BITCOIN_TREASURY_ADDRESS;
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+    });
+    afterAll(() => {
+      process.env = OLD_ENV;
+    });
+
+    it('throws when there is no treasury address anywhere — env or override', async () => {
+      const prisma = makePrismaMock();
+      const service = new TreasuryWalletService(prisma);
+
+      await expect(service.resolve('bitcoin')).rejects.toThrow('No treasury address configured');
+    });
+
+    it('resolves using the env-var address when no override exists', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qenv-default';
+      const prisma = makePrismaMock();
+      const service = new TreasuryWalletService(prisma);
+
+      const config = await service.resolve('bitcoin');
+
+      expect(config.treasuryAddress).toBe('bc1qenv-default');
+    });
+
+    // The actual bug this guards against: an admin sets a treasury address
+    // purely through the admin panel, on a deployment where the
+    // *_TREASURY_ADDRESS env var was never set. That must work — the whole
+    // point of TreasuryWalletService is "no redeploy, no env var edit".
+    it('resolves using the admin override even when the env var was never set', async () => {
+      const prisma = makePrismaMock();
+      const service = new TreasuryWalletService(prisma);
+      await service.upsert('bitcoin', 'bc1qadmin-set', 'admin-1');
+
+      const config = await service.resolve('bitcoin');
+
+      expect(config.treasuryAddress).toBe('bc1qadmin-set');
+      expect(config.nativeAsset).toBe('BTC');
+    });
+  });
 });

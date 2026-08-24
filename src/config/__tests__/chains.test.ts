@@ -98,6 +98,23 @@ describe('loadChainConfig', () => {
     expect(config.apiKey).toBe('secret-key');
   });
 
+  it('does not throw when the treasury address env var is missing — an admin-set override can supply it instead', () => {
+    process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+    delete process.env.BITCOIN_TREASURY_ADDRESS;
+
+    const config = loadChainConfig('bitcoin');
+
+    expect(config.treasuryAddress).toBe('');
+    expect(config.nativeAsset).toBe('BTC');
+  });
+
+  it('still throws when NATIVE_ASSET is missing — that one has no admin-editable substitute', () => {
+    delete process.env.BITCOIN_NATIVE_ASSET;
+    delete process.env.BITCOIN_TREASURY_ADDRESS;
+
+    expect(() => loadChainConfig('bitcoin')).toThrow('BITCOIN_NATIVE_ASSET');
+  });
+
   it('lets a per-chain MIN_CONFIRMATIONS override the type default', () => {
     process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
     process.env.BITCOIN_NATIVE_ASSET = 'BTC';

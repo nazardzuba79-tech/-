@@ -69,6 +69,76 @@ describe('deposits routes', () => {
     });
   });
 
+  describe('GET /deposit-address/:chain', () => {
+    it('includes the native asset for bitcoin', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-address/bitcoin').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.supportedAssets).toEqual(['BTC']);
+    });
+
+    // The real bug this guards against: TronDepositVerifier only ever
+    // checks TRC-20 token transfers, never native TRX — offering TRX here
+    // would let a client "deposit" something that can never be verified or
+    // even show up in the admin's incoming-transfers feed.
+    it('excludes the native asset (TRX) for tron, offering only its TRC-20 tokens', async () => {
+      process.env.TRON_TREASURY_ADDRESS = 'Texample';
+      process.env.TRON_NATIVE_ASSET = 'TRX';
+      process.env.TRON_TOKENS = 'USDT:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t:6';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-address/tron').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.supportedAssets).toEqual(['USDT']);
+    });
+
+    it('includes both the native asset and any tokens for an EVM chain', async () => {
+      process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+      process.env.ETHEREUM_TOKENS = 'USDT:0xdAC17F958D2ee523a2206206994597C13D831ec7:6';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-address/ethereum').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.supportedAssets).toEqual(['ETH', 'USDT']);
+    });
+
+    it('404s when the chain has no treasury address anywhere — env or admin override', async () => {
+      delete process.env.BITCOIN_TREASURY_ADDRESS;
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-address/bitcoin').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(404);
+    });
+
+    // The actual fix: an admin-set address (no env var at all) must work —
+    // that's the entire point of TreasuryWalletService's override.
+    it('200s using an admin-set override address even with no env var set', async () => {
+      delete process.env.BITCOIN_TREASURY_ADDRESS;
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      const prisma = {
+        treasuryWallet: {
+          findUnique: jest.fn().mockResolvedValue({ chain: 'bitcoin', address: 'bc1qadmin-set' }),
+        },
+      };
+      const app = buildApp(prisma);
+      const res = await request(app).get('/api/v1/deposit-address/bitcoin').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.address).toBe('bc1qadmin-set');
+    });
+  });
+
   describe('POST /deposits/claim/:chain', () => {
     it('accepts a 0x-prefixed hash for an EVM chain', async () => {
       process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';

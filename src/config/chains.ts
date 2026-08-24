@@ -86,7 +86,14 @@ export function loadChainConfig(chain: string): ChainConfig {
   const base = {
     chain,
     type,
-    treasuryAddress: requireEnv(`${prefix}_TREASURY_ADDRESS`),
+    // Deliberately NOT requireEnv() here — the treasury address is exactly
+    // the one thing TreasuryWalletService.applyOverride() lets an admin set
+    // from the panel with no redeploy (see its doc comment). Requiring it
+    // here would mean an admin-saved address in the DB never even gets a
+    // chance to apply, because this function would already have thrown.
+    // resolveChainConfig() (deposits.ts) is what actually enforces that
+    // *some* address — env or override — ends up set before use.
+    treasuryAddress: process.env[`${prefix}_TREASURY_ADDRESS`] ?? '',
     minConfirmations: Number(process.env[`${prefix}_MIN_CONFIRMATIONS`] ?? DEFAULT_MIN_CONFIRMATIONS[type]),
     nativeAsset: requireEnv(`${prefix}_NATIVE_ASSET`),
     tokens: parseTokenList(process.env[`${prefix}_TOKENS`]),

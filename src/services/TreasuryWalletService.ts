@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { ChainConfig } from '../config/chains';
+import { ChainConfig, loadChainConfig } from '../config/chains';
 
 export interface TreasuryWalletRow {
   chain: string;
@@ -43,5 +43,24 @@ export class TreasuryWalletService {
   async applyOverride(config: ChainConfig): Promise<ChainConfig> {
     const row = await this.prisma.treasuryWallet.findUnique({ where: { chain: config.chain } });
     return row ? { ...config, treasuryAddress: row.address } : config;
+  }
+
+  /** loadChainConfig() + this override applied on top — the one call every
+   * route/service resolves a chain through, so an admin's address change is
+   * reflected everywhere consistently.
+   *
+   * loadChainConfig() itself never requires a treasury address (an admin
+   * override can supply one with no env var and no redeploy — see this
+   * class's own doc comment above), so this is the one place that actually
+   * enforces *some* address exists — env or override — before treating the
+   * chain as usable. Throws the same way an unconfigured chain always has,
+   * so every existing caller's try/catch-and-skip already does the right
+   * thing. */
+  async resolve(chain: string): Promise<ChainConfig> {
+    const config = await this.applyOverride(loadChainConfig(chain));
+    if (!config.treasuryAddress) {
+      throw new Error(`No treasury address configured for chain: ${chain}`);
+    }
+    return config;
   }
 }

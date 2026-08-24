@@ -171,7 +171,7 @@ const RU = {
   'deposit.loadChainsError': 'Не удалось загрузить список поддерживаемых сетей',
   'deposit.loadAddressError': 'Не удалось загрузить адрес для депозита',
   'deposit.chain.bitcoin': 'Bitcoin',
-  'deposit.chain.tron': 'Tron (TRC20)',
+  'deposit.chain.tron': 'USDT (TRC-20)',
   'deposit.chain.ethereum': 'Ethereum (ERC20)',
 
   'settings.title': 'Настройки',
@@ -719,7 +719,7 @@ const EN: Record<Key, string> = {
   'deposit.loadChainsError': 'Could not load the list of supported networks',
   'deposit.loadAddressError': 'Could not load the deposit address',
   'deposit.chain.bitcoin': 'Bitcoin',
-  'deposit.chain.tron': 'Tron (TRC20)',
+  'deposit.chain.tron': 'USDT (TRC-20)',
   'deposit.chain.ethereum': 'Ethereum (ERC20)',
 
   'settings.title': 'Settings',
@@ -1265,7 +1265,7 @@ const ZH: Record<Key, string> = {
   'deposit.loadChainsError': '无法加载支持的网络列表',
   'deposit.loadAddressError': '无法加载充值地址',
   'deposit.chain.bitcoin': 'Bitcoin',
-  'deposit.chain.tron': 'Tron (TRC20)',
+  'deposit.chain.tron': 'USDT (TRC-20)',
   'deposit.chain.ethereum': 'Ethereum (ERC20)',
 
   'settings.title': '设置',

@@ -1,7 +1,6 @@
 import { ethers } from 'ethers';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
-import { loadChainConfig } from '../config/chains';
 import { TreasuryWalletService } from './TreasuryWalletService';
 
 const SATS_PER_BTC = new BigNumber(10).pow(8);
@@ -126,9 +125,9 @@ export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = 
   for (const chain of KNOWN_CHAINS) {
     let config;
     try {
-      config = await treasuryWallets.applyOverride(loadChainConfig(chain));
+      config = await treasuryWallets.resolve(chain);
     } catch {
-      continue; // not configured on this deployment
+      continue; // not configured on this deployment (no treasury address anywhere)
     }
 
     if (config.type === 'bitcoin') {
