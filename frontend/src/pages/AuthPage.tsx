@@ -312,7 +312,6 @@ function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
 
       <div style={styles.perksGrid}>
         <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
-        <PerkCard icon={<ShieldIcon />} title={t('auth.perks.security.title')} text={t('auth.perks.security.text')} />
         <PerkCard
           icon={<span style={{ fontSize: 20, lineHeight: 1 }}>🇸🇬</span>}
           title={t('auth.perks.jurisdiction.title')}
