@@ -175,6 +175,26 @@ describe('auth routes', () => {
     expect(res.status).toBe(401);
   });
 
+  it('rejects login for a blocked account, even with the correct password', async () => {
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash('correcthorsebattery', 12);
+    const prisma = makePrismaMock({
+      user: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue({ id: 'user-1', email: 'alice@team.com', passwordHash, blockedAt: new Date(), blockedReason: 'Нарушение правил' }),
+      },
+    });
+    const app = buildApp(prisma);
+
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toContain('Нарушение правил');
+  });
+
   it('rejects login for a nonexistent user without revealing that', async () => {
     const prisma = makePrismaMock(); // findUnique resolves null
     const app = buildApp(prisma);

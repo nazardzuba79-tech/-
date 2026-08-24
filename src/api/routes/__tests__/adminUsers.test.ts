@@ -18,14 +18,31 @@ function buildApp(prisma: any) {
 
 function adminPrisma(overrides: any = {}) {
   return {
-    user: { findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }), findMany: jest.fn().mockResolvedValue([]) },
-    auditLog: { findMany: jest.fn().mockResolvedValue([]), findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
-    balance: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), upsert: jest.fn() },
-    deposit: { findMany: jest.fn().mockResolvedValue([]) },
-    withdrawal: { findMany: jest.fn().mockResolvedValue([]) },
-    order: { findMany: jest.fn().mockResolvedValue([]) },
-    purchase: { findMany: jest.fn().mockResolvedValue([]) },
-    kycSubmission: { findMany: jest.fn().mockResolvedValue([]) },
+    user: {
+      findUnique: jest.fn().mockResolvedValue({ role: 'ADMIN' }),
+      findMany: jest.fn().mockResolvedValue([]),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    auditLog: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn().mockResolvedValue(null),
+      groupBy: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+    },
+    balance: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), upsert: jest.fn(), deleteMany: jest.fn() },
+    deposit: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    withdrawal: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    order: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    futuresOrder: { count: jest.fn().mockResolvedValue(0) },
+    futuresPosition: { count: jest.fn().mockResolvedValue(0) },
+    futuresBalance: { deleteMany: jest.fn() },
+    purchase: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+    kycSubmission: { findMany: jest.fn().mockResolvedValue([]), deleteMany: jest.fn() },
+    apiKey: { deleteMany: jest.fn() },
+    wallet: { deleteMany: jest.fn() },
+    supportConversation: { updateMany: jest.fn() },
+    $transaction: jest.fn((ops: any[]) => Promise.all(ops)),
     ...overrides,
   };
 }
@@ -67,6 +84,7 @@ describe('admin users routes', () => {
             { userId: 'user-1', action: 'USER_REGISTERED', metadata: { ip: '1.2.3.4' }, createdAt: new Date('2026-01-01') },
           ]),
           findFirst: jest.fn(),
+          groupBy: jest.fn().mockResolvedValue([]),
         },
         balance: {
           findMany: jest.fn().mockResolvedValue([
@@ -194,6 +212,124 @@ describe('admin users routes', () => {
         .send({ asset: 'USDT', amount: '-50', reason: 'oops' });
 
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /admin/users/:id/block', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app).post('/api/v1/admin/users/user-1/block').set('Authorization', authHeader('u1')).send({ reason: 'spam' });
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects a missing reason', async () => {
+      const prisma = adminPrisma();
+      const app = buildApp(prisma);
+      const res = await request(app).post('/api/v1/admin/users/user-1/block').set('Authorization', authHeader('admin-1')).send({});
+      expect(res.status).toBe(400);
+    });
+
+    it('404s an unknown user id', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce(null) },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).post('/api/v1/admin/users/nope/block').set('Authorization', authHeader('admin-1')).send({ reason: 'spam' });
+      expect(res.status).toBe(404);
+    });
+
+    it('refuses to block an admin account', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'ADMIN' }) },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).post('/api/v1/admin/users/user-1/block').set('Authorization', authHeader('admin-1')).send({ reason: 'spam' });
+      expect(res.status).toBe(400);
+    });
+
+    it('sets blockedAt/blockedReason and writes an audit log entry', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'USER' }), update: jest.fn() },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/block')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ reason: 'Нарушение правил' });
+
+      expect(res.status).toBe(200);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { blockedAt: expect.any(Date), blockedReason: 'Нарушение правил' },
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ userId: 'user-1', action: 'USER_BLOCKED' }) })
+      );
+    });
+  });
+
+  describe('POST /admin/users/:id/unblock', () => {
+    it('clears blockedAt/blockedReason', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'USER' }), update: jest.fn() },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).post('/api/v1/admin/users/user-1/unblock').set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(200);
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'user-1' }, data: { blockedAt: null, blockedReason: null } });
+    });
+  });
+
+  describe('DELETE /admin/users/:id', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app).delete('/api/v1/admin/users/user-1').set('Authorization', authHeader('u1'));
+      expect(res.status).toBe(403);
+    });
+
+    it('refuses to delete an admin account', async () => {
+      const prisma = adminPrisma({
+        user: { findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'ADMIN' }) },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).delete('/api/v1/admin/users/user-1').set('Authorization', authHeader('admin-1'));
+      expect(res.status).toBe(400);
+    });
+
+    // The core safety rule: an account with any real money movement keeps
+    // its trail — it can only be blocked, never hard-deleted.
+    it('refuses to delete a user who has any deposits', async () => {
+      const prisma = adminPrisma({
+        user: {
+          findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'USER', email: 'alice@team.com' }),
+          delete: jest.fn(),
+        },
+        deposit: { count: jest.fn().mockResolvedValue(1) },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).delete('/api/v1/admin/users/user-1').set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(400);
+      expect(prisma.user.delete).not.toHaveBeenCalled();
+    });
+
+    it('deletes a dormant user with zero financial history', async () => {
+      const prisma = adminPrisma({
+        user: {
+          findUnique: jest.fn().mockResolvedValueOnce({ role: 'ADMIN' }).mockResolvedValueOnce({ id: 'user-1', role: 'USER', email: 'ghost@team.com' }),
+          delete: jest.fn(),
+        },
+      });
+      const app = buildApp(prisma);
+      const res = await request(app).delete('/api/v1/admin/users/user-1').set('Authorization', authHeader('admin-1'));
+
+      expect(res.status).toBe(200);
+      expect(prisma.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } });
+      expect(prisma.balance.deleteMany).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
+      expect(prisma.supportConversation.updateMany).toHaveBeenCalledWith({ where: { userId: 'user-1' }, data: { userId: null } });
     });
   });
 });

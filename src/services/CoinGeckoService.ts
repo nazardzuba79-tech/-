@@ -1,5 +1,5 @@
 /**
- * Read-only mirror of CoinGecko's public top-200-by-market-cap data (no API
+ * Read-only mirror of CoinGecko's public top-250-by-market-cap data (no API
  * key needed — these are public endpoints): rank, category tags, and each
  * coin's own market-wide price/24h change/volume/market cap/7d sparkline.
  * This NEVER backs an actual trading pair by itself: Kraken
@@ -47,7 +47,12 @@ export interface CoinRanking {
 // Demo plan's 10,000-call cap even under sustained traffic (worst case
 // ~5 * 24 * 31 ≈ 3,720/month, versus 10,000 available).
 const RANKINGS_TTL_MS = 60 * 60_000;
-const TOP_N = 200;
+// 250 is CoinGecko's own per_page cap for this endpoint — using the max
+// (rather than 200) pulls in more of the longer-tail DeFi/meme coins that
+// rank just outside the very top by market cap, which is where most of
+// those two categories actually sit (the top ranks skew L1/majors), so the
+// category filter chips have more to show without changing anything else.
+const TOP_N = 250;
 
 // CoinGecko's own category slugs for the four groupings the UI filters by.
 const CATEGORY_SLUGS: Record<CoinCategory, string> = {
@@ -73,6 +78,9 @@ const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
   UNI: ['DEFI'], AAVE: ['DEFI'], MKR: ['DEFI'], CRV: ['DEFI'], LDO: ['DEFI'],
   SNX: ['DEFI'], COMP: ['DEFI'], SUSHI: ['DEFI'], CAKE: ['DEFI'], DYDX: ['DEFI'],
   GMX: ['DEFI'], RUNE: ['DEFI'], BAL: ['DEFI'], YFI: ['DEFI'], '1INCH': ['DEFI'],
+  ENA: ['DEFI'], JUP: ['DEFI'], ONDO: ['DEFI'], RAY: ['DEFI'], PENDLE: ['DEFI'],
+  FXS: ['DEFI'], KAVA: ['DEFI'], MORPHO: ['DEFI'], JTO: ['DEFI'], PYTH: ['DEFI'],
+  ZRO: ['DEFI'], EIGEN: ['DEFI'], OSMO: ['DEFI'], SPELL: ['DEFI'], ENS: ['DEFI'],
   // Layer 1
   BTC: ['LAYER_1'], ETH: ['LAYER_1'], SOL: ['LAYER_1'], ADA: ['LAYER_1'], AVAX: ['LAYER_1'],
   DOT: ['LAYER_1'], NEAR: ['LAYER_1'], ATOM: ['LAYER_1'], BNB: ['LAYER_1'], TRX: ['LAYER_1'],
@@ -82,6 +90,9 @@ const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
   // Meme coins
   DOGE: ['MEME'], SHIB: ['MEME'], PEPE: ['MEME'], WIF: ['MEME'], BONK: ['MEME'],
   FLOKI: ['MEME'], TRUMP: ['MEME'], MELANIA: ['MEME'], BRETT: ['MEME'], POPCAT: ['MEME'],
+  PNUT: ['MEME'], GOAT: ['MEME'], MOODENG: ['MEME'], FARTCOIN: ['MEME'], PENGU: ['MEME'],
+  MEW: ['MEME'], NEIRO: ['MEME'], ACT: ['MEME'], TURBO: ['MEME'], MOG: ['MEME'],
+  BOME: ['MEME'], WEN: ['MEME'],
   // Stablecoins
   USDT: ['STABLECOIN'], USDC: ['STABLECOIN'], DAI: ['STABLECOIN'], TUSD: ['STABLECOIN'],
   USDG: ['STABLECOIN'], FDUSD: ['STABLECOIN'], USDP: ['STABLECOIN'], PYUSD: ['STABLECOIN'],
@@ -115,7 +126,7 @@ export class CoinGeckoService {
     private readonly apiKey?: string
   ) {}
 
-  /** Top ~200 coins by market cap, each tagged with whichever of the four
+  /** Top ~250 coins by market cap, each tagged with whichever of the four
    * tracked categories it belongs to. Sorted ascending by rank.
    *
    * On a refresh failure (CoinGecko's free/anonymous tier rate-limits

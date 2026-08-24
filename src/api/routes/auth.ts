@@ -127,6 +127,12 @@ export function authRouter(prisma: PrismaClient): Router {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    if (user.blockedAt) {
+      return res.status(403).json({
+        error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
+      });
+    }
+
     if (user.twoFactorEnabled) {
       return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }
@@ -155,6 +161,12 @@ export function authRouter(prisma: PrismaClient): Router {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.twoFactorEnabled) {
       return res.status(401).json({ error: 'Login session expired, please sign in again' });
+    }
+
+    if (user.blockedAt) {
+      return res.status(403).json({
+        error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
+      });
     }
 
     const result = await verifyAndConsume2FACode(user, code);

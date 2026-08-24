@@ -19,13 +19,14 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
   router.get('/admin/users', requireAuth, requireAdmin(prisma), async (req, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
-    const [users, registrations, balances] = await Promise.all([
+    const [users, registrations, balances, lastLogins] = await Promise.all([
       prisma.user.findMany({
         where: search ? { email: { contains: search, mode: 'insensitive' } } : undefined,
         orderBy: { createdAt: 'desc' },
       }),
       prisma.auditLog.findMany({ where: { action: 'USER_REGISTERED' }, orderBy: { createdAt: 'asc' } }),
       prisma.balance.findMany(),
+      prisma.auditLog.groupBy({ by: ['userId'], where: { action: 'USER_LOGGED_IN' }, _max: { createdAt: true } }),
     ]);
 
     const registrationIpByUser = new Map<string, string | null>();
@@ -43,6 +44,11 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
       balancesByUser.set(b.userId, list);
     }
 
+    const lastLoginByUser = new Map<string, Date | null>();
+    for (const l of lastLogins) {
+      if (l.userId) lastLoginByUser.set(l.userId, l._max.createdAt);
+    }
+
     res.json(
       users.map((u) => ({
         id: u.id,
@@ -52,6 +58,10 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
         kycStatus: u.kycStatus,
         createdAt: u.createdAt,
         registrationIp: registrationIpByUser.get(u.id) ?? null,
+        lastLoginAt: lastLoginByUser.get(u.id) ?? null,
+        isBlocked: !!u.blockedAt,
+        blockedAt: u.blockedAt,
+        blockedReason: u.blockedReason,
         balances: (balancesByUser.get(u.id) ?? []).map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
       }))
     );
@@ -65,8 +75,9 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const [registration, balances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
+    const [registration, lastLogin, balances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
       prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_REGISTERED' }, orderBy: { createdAt: 'asc' } }),
+      prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_LOGGED_IN' }, orderBy: { createdAt: 'desc' } }),
       prisma.balance.findMany({ where: { userId: id } }),
       prisma.deposit.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
       prisma.withdrawal.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
@@ -85,6 +96,10 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
       kycStatus: user.kycStatus,
       createdAt: user.createdAt,
       registrationIp: registrationMeta?.ip ?? null,
+      lastLoginAt: lastLogin?.createdAt ?? null,
+      isBlocked: !!user.blockedAt,
+      blockedAt: user.blockedAt,
+      blockedReason: user.blockedReason,
       balances: balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
       deposits: deposits.map((d) => ({
         id: d.id,
@@ -169,6 +184,91 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
       console.error(err);
       res.status(500).json({ error: 'Failed to adjust balance' });
     }
+  });
+
+  const blockSchema = z.object({
+    reason: z.string().trim().min(1).max(300),
+  });
+
+  // Locks the account out at login (see auth.ts) — for rule violations or
+  // long-dormant accounts an admin decides to shut down without deleting
+  // their history. Existing sessions still expire naturally rather than
+  // being revoked mid-flight.
+  router.post('/admin/users/:id/block', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = blockSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    if (target.role === 'ADMIN') return res.status(400).json({ error: 'Cannot block an admin account' });
+
+    await prisma.user.update({
+      where: { id: target.id },
+      data: { blockedAt: new Date(), blockedReason: parsed.data.reason },
+    });
+    await prisma.auditLog.create({
+      data: { userId: target.id, action: 'USER_BLOCKED', metadata: { reason: parsed.data.reason, performedByAdminId: req.userId } },
+    });
+    res.json({ ok: true });
+  });
+
+  router.post('/admin/users/:id/unblock', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+
+    await prisma.user.update({ where: { id: target.id }, data: { blockedAt: null, blockedReason: null } });
+    await prisma.auditLog.create({
+      data: { userId: target.id, action: 'USER_UNBLOCKED', metadata: { performedByAdminId: req.userId } },
+    });
+    res.json({ ok: true });
+  });
+
+  // Permanently removes an account, but only once it has zero financial
+  // history to lose — no deposits, withdrawals, spot/futures orders, or
+  // purchases. That's deliberately what makes this safe to offer as a
+  // one-click "delete" rather than block: an account with real money
+  // movement keeps its trail (compliance, disputes) and must be blocked
+  // instead. AuditLog rows are left in place either way — they carry no DB
+  // relation to User, so nothing here can orphan-break them.
+  router.delete('/admin/users/:id', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const target = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+    if (target.role === 'ADMIN') return res.status(400).json({ error: 'Cannot delete an admin account' });
+
+    const [deposits, withdrawals, orders, futuresOrders, futuresPositions, purchases] = await Promise.all([
+      prisma.deposit.count({ where: { userId: target.id } }),
+      prisma.withdrawal.count({ where: { userId: target.id } }),
+      prisma.order.count({ where: { userId: target.id } }),
+      prisma.futuresOrder.count({ where: { userId: target.id } }),
+      prisma.futuresPosition.count({ where: { userId: target.id } }),
+      prisma.purchase.count({ where: { userId: target.id } }),
+    ]);
+    if (deposits + withdrawals + orders + futuresOrders + futuresPositions + purchases > 0) {
+      return res.status(400).json({
+        error: 'У пользователя есть история операций (депозиты/выводы/ордера/покупки) — такой аккаунт можно только заблокировать, не удалить.',
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.balance.deleteMany({ where: { userId: target.id } }),
+      prisma.wallet.deleteMany({ where: { userId: target.id } }),
+      prisma.kycSubmission.deleteMany({ where: { userId: target.id } }),
+      prisma.apiKey.deleteMany({ where: { userId: target.id } }),
+      prisma.futuresBalance.deleteMany({ where: { userId: target.id } }),
+      // Support history is kept (guestName/guestEmail already carry it) —
+      // just detached from the account being deleted.
+      prisma.supportConversation.updateMany({ where: { userId: target.id }, data: { userId: null } }),
+      prisma.auditLog.create({
+        data: {
+          userId: null,
+          action: 'USER_DELETED',
+          metadata: { deletedUserId: target.id, deletedEmail: target.email, performedByAdminId: req.userId },
+        },
+      }),
+      prisma.user.delete({ where: { id: target.id } }),
+    ]);
+
+    res.json({ ok: true });
   });
 
   return router;

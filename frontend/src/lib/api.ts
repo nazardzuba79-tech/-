@@ -715,6 +715,10 @@ export const api = {
         kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
         createdAt: string;
         registrationIp: string | null;
+        lastLoginAt: string | null;
+        isBlocked: boolean;
+        blockedAt: string | null;
+        blockedReason: string | null;
         balances: { asset: string; available: string; locked: string }[];
       }[]
     >(`/admin/users${search ? `?search=${encodeURIComponent(search)}` : ''}`),
@@ -728,6 +732,10 @@ export const api = {
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       createdAt: string;
       registrationIp: string | null;
+      lastLoginAt: string | null;
+      isBlocked: boolean;
+      blockedAt: string | null;
+      blockedReason: string | null;
       balances: { asset: string; available: string; locked: string }[];
       deposits: {
         id: string;
@@ -781,6 +789,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ asset, amount, reason }),
     }),
+
+  blockUser: (userId: string, reason: string) =>
+    request<{ ok: boolean }>(`/admin/users/${userId}/block`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  unblockUser: (userId: string) => request<{ ok: boolean }>(`/admin/users/${userId}/unblock`, { method: 'POST' }),
+
+  deleteUser: (userId: string) => request<{ ok: boolean }>(`/admin/users/${userId}`, { method: 'DELETE' }),
 
   getAdminAuditLog: (params?: { action?: string; userId?: string }) => {
     const qs = new URLSearchParams();

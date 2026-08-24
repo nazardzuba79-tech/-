@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
@@ -46,6 +46,10 @@ export function AdminUserDetailPage() {
   const [adjustSuccess, setAdjustSuccess] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [accountBusy, setAccountBusy] = useState(false);
+  const navigate = useNavigate();
+
   function reload() {
     api
       .getAdminUserDetail(id)
@@ -56,6 +60,48 @@ export function AdminUserDetailPage() {
   }
 
   useEffect(reload, [id]);
+
+  async function handleBlock() {
+    const reason = window.prompt('Причина блокировки (обязательно):');
+    if (!reason || !reason.trim()) return;
+    setAccountError(null);
+    setAccountBusy(true);
+    try {
+      await api.blockUser(id, reason.trim());
+      reload();
+    } catch (err) {
+      setAccountError(err instanceof ApiError ? err.message : 'Не удалось заблокировать пользователя.');
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function handleUnblock() {
+    setAccountError(null);
+    setAccountBusy(true);
+    try {
+      await api.unblockUser(id);
+      reload();
+    } catch (err) {
+      setAccountError(err instanceof ApiError ? err.message : 'Не удалось разблокировать пользователя.');
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!detail) return;
+    if (!window.confirm(`Удалить аккаунт ${detail.email} без возможности восстановления?`)) return;
+    setAccountError(null);
+    setAccountBusy(true);
+    try {
+      await api.deleteUser(id);
+      navigate('/admin/users');
+    } catch (err) {
+      setAccountError(err instanceof ApiError ? err.message : 'Не удалось удалить пользователя.');
+      setAccountBusy(false);
+    }
+  }
 
   async function handleAdjust(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +148,17 @@ export function AdminUserDetailPage() {
           <Row label="Регистрация" value={new Date(detail.createdAt).toLocaleString('ru-RU')} />
           <Row label="IP при регистрации" value={detail.registrationIp ?? '—'} />
           <Row label="Верификация" value={<Badge text={kycBadge.text} color={kycBadge.color} bg={kycBadge.bg} />} />
+          <Row label="Последний вход" value={detail.lastLoginAt ? new Date(detail.lastLoginAt).toLocaleString('ru-RU') : 'Ни разу не входил'} />
+          <Row
+            label="Статус"
+            value={
+              detail.isBlocked ? (
+                <Badge text={`Заблокирован${detail.blockedReason ? `: ${detail.blockedReason}` : ''}`} color="var(--sell)" bg="var(--sell-dim)" />
+              ) : (
+                <Badge text="Активен" color="var(--buy)" bg="var(--buy-dim)" />
+              )
+            }
+          />
         </Section>
 
         <Section title="Баланс">
@@ -111,6 +168,35 @@ export function AdminUserDetailPage() {
           ))}
         </Section>
       </div>
+
+      {!detail.isAdmin && (
+        <>
+          <Section title="Учётная запись">
+            <p style={styles.hint}>
+              Блокировка запрещает вход в аккаунт (существующая сессия истечёт сама, максимум через 12 часов) — используйте для нарушения правил.
+              Удаление доступно только для аккаунтов без истории операций (нет депозитов, выводов, ордеров, покупок) — например, для тех, кто
+              зарегистрировался и давно не заходит, ничего не внёс.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {detail.isBlocked ? (
+                <button onClick={handleUnblock} disabled={accountBusy} style={styles.approveBtn}>
+                  Разблокировать
+                </button>
+              ) : (
+                <button onClick={handleBlock} disabled={accountBusy} style={styles.rejectBtn}>
+                  Заблокировать
+                </button>
+              )}
+              <button onClick={handleDelete} disabled={accountBusy} style={{ ...styles.rejectBtn, borderColor: 'var(--sell)' }}>
+                Удалить аккаунт
+              </button>
+            </div>
+            {accountError && <div style={styles.errorBox}>{accountError}</div>}
+          </Section>
+
+          <div style={{ height: 16 }} />
+        </>
+      )}
 
       <Section title="Ручная корректировка баланса">
         <p style={styles.hint}>

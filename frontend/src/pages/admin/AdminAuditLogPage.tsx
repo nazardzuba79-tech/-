@@ -33,6 +33,9 @@ export function AdminAuditLogPage() {
         <option value="TREASURY_WALLET_RESET">TREASURY_WALLET_RESET</option>
         <option value="BALANCE_ADJUSTED">BALANCE_ADJUSTED</option>
         <option value="USER_REGISTERED">USER_REGISTERED</option>
+        <option value="USER_BLOCKED">USER_BLOCKED</option>
+        <option value="USER_UNBLOCKED">USER_UNBLOCKED</option>
+        <option value="USER_DELETED">USER_DELETED</option>
       </select>
 
       <div style={styles.table}>
