@@ -15,6 +15,14 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
+# Render (Frankfurt) reaching Neon (us-east-2) over IPv6 silently stalls
+# after the TCP handshake instead of failing fast — confirmed by the DB
+# itself answering the same advisory-lock query in ~230ms when run
+# directly against it, while every migrate deploy attempt from this
+# container hung for exactly Prisma's 10s ceiling. Forces Node's DNS
+# resolution (used by both `prisma migrate deploy` and the running app's
+# own DB queries) to prefer IPv4, avoiding the broken path.
+ENV NODE_OPTIONS="--dns-result-order=ipv4first"
 RUN apk add --no-cache openssl
 COPY package*.json ./
 COPY prisma ./prisma
