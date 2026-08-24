@@ -22,4 +22,21 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/dist ./dist
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+# Neon's free tier suspends its compute after a few minutes idle — the
+# first connection after a deploy often has to wake it up, which can take
+# longer than the ~10s Prisma allows to acquire its migration advisory
+# lock (P1002). That's a cold-start latency problem, separate from (and on
+# top of) DIRECT_URL avoiding the pooled-connection lock issue: a failed
+# first attempt has already reached and woken the compute, so retrying
+# lands on an awake database. Fails loudly (exit 1) instead of silently
+# starting the app against an unmigrated schema if every attempt fails.
+CMD ["sh", "-c", "\
+  n=0; \
+  until npx prisma migrate deploy; do \
+    n=$((n+1)); \
+    if [ $n -ge 6 ]; then echo 'prisma migrate deploy failed after 6 attempts'; exit 1; fi; \
+    echo \"prisma migrate deploy failed (attempt $n/6) — retrying in 5s, likely just waking the DB...\"; \
+    sleep 5; \
+  done; \
+  node dist/index.js \
+"]
