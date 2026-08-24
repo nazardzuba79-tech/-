@@ -7,6 +7,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Skeleton } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
+import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -88,6 +89,7 @@ export function AuthPage() {
         <LanguageSwitcher />
       </div>
 
+      <div style={styles.fold}>
       <div style={styles.layout}>
         <div className="auth-hero" style={styles.hero}>
           <Logo size="large" />
@@ -253,22 +255,25 @@ export function AuthPage() {
                   {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
                 </button>
 
-                {mode === 'register' && (
-                  <>
-                    <div style={styles.featureRow}>
-                      <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
-                      <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
-                      <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
-                      <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
-                    </div>
-                    <p style={styles.privacyNote}>🔒 {t('auth.privacyNote')}</p>
-                  </>
-                )}
+                {/* Shown on both tabs, not just Регистрация — these are
+                    general exchange advantages, not a registration-only
+                    pitch (unlike registerSubline/cardWaitlistBadge above,
+                    which talk about signing up specifically). */}
+                <div style={styles.featureRow}>
+                  <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
+                  <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
+                  <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
+                  <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
+                </div>
+                <p style={styles.privacyNote}>🔒 {t('auth.privacyNote')}</p>
               </form>
             </>
           )}
         </div>
       </div>
+      </div>
+
+      <PerksSection t={t} />
 
       <div style={styles.legalRow}>
         <Link to="/legal/terms" style={styles.legalLink}>
@@ -283,6 +288,48 @@ export function AuthPage() {
           {t('footer.risk')}
         </Link>
       </div>
+    </div>
+  );
+}
+
+/** Big card banner + a grid of exchange-wide advantages, below the login
+ * fold — the small feature badges near the submit button are a compact
+ * reminder; this is the actual pitch, same idea as a real exchange's
+ * marketing homepage (card hero image + benefits grid). */
+function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  return (
+    <div style={styles.perksSection}>
+      <div style={styles.perksBanner}>
+        <div className="card-tilt-wrap" style={styles.perksBannerCard}>
+          <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" />
+        </div>
+        <div style={styles.perksBannerText}>
+          <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>
+          <h2 style={styles.perksBannerTitle}>{t('auth.perks.cardTitle')}</h2>
+          <p style={styles.perksBannerLead}>{t('auth.perks.cardText')}</p>
+        </div>
+      </div>
+
+      <div style={styles.perksGrid}>
+        <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
+        <PerkCard icon={<ShieldIcon />} title={t('auth.perks.security.title')} text={t('auth.perks.security.text')} />
+        <PerkCard
+          icon={<span style={{ fontSize: 20, lineHeight: 1 }}>🇸🇬</span>}
+          title={t('auth.perks.jurisdiction.title')}
+          text={t('auth.perks.jurisdiction.text')}
+        />
+        <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
+      </div>
+    </div>
+  );
+}
+
+function PerkCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="card-hover" style={styles.perkCard}>
+      <div style={styles.perkIconBadge}>{icon}</div>
+      <h3 style={styles.perkTitle}>{title}</h3>
+      <p style={styles.perkText}>{text}</p>
     </div>
   );
 }
@@ -364,14 +411,25 @@ function CardChipIcon() {
     </svg>
   );
 }
+function AssetsIcon() {
+  return (
+    <svg {...ICON_PROPS} width={20} height={20}>
+      <circle cx="9" cy="9" r="6" />
+      <circle cx="15" cy="15" r="6" opacity={0.5} />
+    </svg>
+  );
+}
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
+    padding: '32px 20px 40px',
+  },
+  fold: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '32px 20px',
+    padding: '40px 0 64px',
   },
   langSwitch: {
     position: 'absolute',
@@ -380,14 +438,11 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 2,
   },
   legalRow: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
+    marginTop: 40,
   },
   legalLink: { fontSize: 11, color: 'var(--text-tertiary)' },
   legalDot: { fontSize: 11, color: 'var(--text-tertiary)' },
@@ -575,4 +630,69 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
     marginTop: 8,
   },
+  perksSection: {
+    maxWidth: 1080,
+    margin: '0 auto',
+    paddingTop: 24,
+  },
+  perksBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 56,
+    flexWrap: 'wrap',
+    background: 'linear-gradient(135deg, var(--panel) 0%, var(--panel-alt) 100%)',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '48px 56px',
+    marginBottom: 40,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+  },
+  perksBannerCard: { flexShrink: 0, margin: '0 auto' },
+  perksBannerText: { flex: '1 1 320px', minWidth: 280 },
+  perksBannerKicker: {
+    display: 'inline-block',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'var(--accent)',
+    marginBottom: 10,
+  },
+  perksBannerTitle: {
+    fontSize: 26,
+    margin: '0 0 12px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.25,
+  },
+  perksBannerLead: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, maxWidth: 460, margin: 0 },
+  perksGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 16,
+  },
+  perkCard: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    padding: 24,
+  },
+  perkIconBadge: {
+    width: 40,
+    height: 40,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    background: 'var(--accent-dim)',
+    marginBottom: 14,
+  },
+  perkTitle: {
+    fontSize: 15,
+    margin: '0 0 6px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+  },
+  perkText: { fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
 };
