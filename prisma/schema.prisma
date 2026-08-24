@@ -73,6 +73,7 @@ model User {
   supportConversations SupportConversation[]
   demoBalances  DemoBalance[]
   demoOrders    DemoOrder[]
+  portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
 }
@@ -588,6 +589,28 @@ model DemoOrder {
 
   @@index([userId])
   @@index([pair, status])
+}
+
+/// One row per (user, day) — the account's total portfolio value in USD at
+/// the moment it was recorded, used to draw the Wallet page's profit chart
+/// (7d/30d/90d). Written by the client itself (POST /wallet/portfolio-
+/// snapshot, from the exact number already shown as the header total —
+/// spot + futures, priced off the same Kraken mirror the rest of the app
+/// uses) rather than computed server-side, so there's no second pricing
+/// pipeline to keep in sync with the one already on screen. Deliberately
+/// NOT backfilled — history starts accumulating the first time this
+/// account visits the Wallet page after this shipped, same "real data
+/// only, even if it's thin at first" rule as everywhere else real money is
+/// involved. At most one row per user per UTC calendar day (see
+/// portfolio.ts).
+model PortfolioSnapshot {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  totalValueUsd Decimal  @db.Decimal(24, 2)
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 /// One row per fill in the demo order book. No FK to DemoOrder on purpose,

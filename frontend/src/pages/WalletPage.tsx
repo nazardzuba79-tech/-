@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
@@ -13,6 +13,7 @@ import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
 import { Badge } from '../components/Badge';
+import { PortfolioValueChart, ChartRange } from '../components/PortfolioValueChart';
 import { CoinRanking } from '../lib/pairList';
 
 interface Balance {
@@ -129,6 +130,10 @@ export function WalletPage() {
   const [deposits, setDeposits] = useState<Deposit[] | null>(null);
   const [historyError, setHistoryError] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<HistoryFilter>('ALL');
+  const [chartRange, setChartRange] = useState<ChartRange>('30d');
+  const [chartPoints, setChartPoints] = useState<{ date: string; totalValueUsd: string }[]>([]);
+  const [chartLoading, setChartLoading] = useState(true);
+  const snapshotRecordedRef = useRef(false);
 
   useEffect(() => {
     function load() {
@@ -228,6 +233,33 @@ export function WalletPage() {
   const totalUsd = spotTotalUsd + futuresTotalUsd;
   const btcPrice = priceOf('BTC');
   const btcEquivalent = btcPrice ? totalUsd / btcPrice : null;
+
+  // Records today's snapshot at most once per page load (the backend also
+  // dedupes per UTC day, this just avoids firing on every 8s balance poll)
+  // once real balances have actually loaded — never on the initial 0 before
+  // the first fetch resolves, which would record a false "empty" day.
+  useEffect(() => {
+    if (snapshotRecordedRef.current) return;
+    if (spotBalances.length === 0 && futuresBalances.length === 0) return;
+    snapshotRecordedRef.current = true;
+    api
+      .recordPortfolioSnapshot(totalUsd.toFixed(2))
+      .then(() => api.getPortfolioHistory(chartRange))
+      .then((res) => setChartPoints(res.points))
+      .catch(() => {})
+      .finally(() => setChartLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotBalances, futuresBalances]);
+
+  useEffect(() => {
+    if (!snapshotRecordedRef.current) return;
+    setChartLoading(true);
+    api
+      .getPortfolioHistory(chartRange)
+      .then((res) => setChartPoints(res.points))
+      .catch(() => {})
+      .finally(() => setChartLoading(false));
+  }, [chartRange]);
 
   // Combined per-asset portfolio value (spot + futures) — what the donut
   // chart represents, since "portfolio allocation" means the whole
@@ -399,10 +431,24 @@ export function WalletPage() {
             )}
           </div>
 
-          <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
-            {t('wallet.deposit')}
-          </button>
+          <div style={styles.headerBtnCol}>
+            <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
+              {t('wallet.deposit')}
+            </button>
+            <button onClick={() => setShowTransfer(true)} style={styles.secondaryBtn}>
+              {t('wallet.actionTransfer')}
+            </button>
+            <button onClick={() => setTab('history')} style={styles.secondaryBtn}>
+              {t('wallet.tab.history')}
+            </button>
+          </div>
         </div>
+
+        {!hideBalance && (
+          <div style={{ marginBottom: 24 }}>
+            <PortfolioValueChart points={chartPoints} range={chartRange} onRangeChange={setChartRange} loading={chartLoading} />
+          </div>
+        )}
 
         <div style={styles.tabs}>
           <button
@@ -729,7 +775,7 @@ const LIGHT_PAGE_VARS = {
 } as React.CSSProperties;
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: '#f7f8fa', display: 'flex', flexDirection: 'column' },
+  page: { minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' },
   main: { padding: '32px', maxWidth: 1080, margin: '0 auto', width: '100%', ...LIGHT_PAGE_VARS },
   headerRow: {
     display: 'flex',
@@ -807,6 +853,7 @@ const styles: Record<string, React.CSSProperties> = {
   legend: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 108 },
   legendRow: { display: 'flex', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
+  headerBtnCol: { display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignSelf: 'flex-start' },
   depositBtn: {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
@@ -816,8 +863,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     fontSize: 13,
     boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
-    flexShrink: 0,
-    alignSelf: 'flex-start',
+  },
+  secondaryBtn: {
+    background: '#ffffff',
+    color: 'var(--text-primary)',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '11px 22px',
+    fontWeight: 700,
+    fontSize: 13,
   },
   tabs: { display: 'flex', gap: 4, marginBottom: 16, borderBottom: '1px solid var(--border)' },
   tabBtn: {

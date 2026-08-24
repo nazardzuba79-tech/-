@@ -207,6 +207,17 @@ export const api = {
       `/demo/trades/${pair}`
     ),
 
+  // Wallet page's profit chart — the client already computes total
+  // portfolio value (spot + futures), this just persists/reads it back.
+  recordPortfolioSnapshot: (totalValueUsd: string) =>
+    request<{ recorded: boolean }>('/wallet/portfolio-snapshot', {
+      method: 'POST',
+      body: JSON.stringify({ totalValueUsd }),
+    }),
+
+  getPortfolioHistory: (range: '7d' | '30d' | '90d') =>
+    request<{ points: { date: string; totalValueUsd: string }[] }>(`/wallet/portfolio-history?range=${range}`),
+
   demoTopUp: (userId: string, asset: string, amount: string, note?: string) =>
     request<{ asset: string; available: string; locked: string }>(`/admin/users/${userId}/demo-topup`, {
       method: 'POST',
