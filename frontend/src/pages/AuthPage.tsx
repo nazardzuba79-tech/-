@@ -254,12 +254,15 @@ export function AuthPage() {
                 </button>
 
                 {mode === 'register' && (
-                  <div style={styles.featureRow}>
-                    <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
-                    <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
-                    <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
-                    <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
-                  </div>
+                  <>
+                    <div style={styles.featureRow}>
+                      <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
+                      <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
+                      <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
+                      <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
+                    </div>
+                    <p style={styles.privacyNote}>🔒 {t('auth.privacyNote')}</p>
+                  </>
                 )}
               </form>
             </>
@@ -498,6 +501,13 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: 6,
     marginTop: 4,
+  },
+  privacyNote: {
+    fontSize: 11,
+    lineHeight: 1.5,
+    color: 'var(--text-tertiary)',
+    textAlign: 'center',
+    margin: '10px 0 0',
   },
   featureBadge: {
     flex: 1,
