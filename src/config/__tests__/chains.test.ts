@@ -45,12 +45,34 @@ describe('loadChainConfig', () => {
     expect(config.apiUrl).toBe('https://my-explorer.example/api');
   });
 
-  it('throws when an EVM chain is missing its RPC URL', () => {
+  it('defaults Ethereum to a free public RPC endpoint when ETHEREUM_RPC_URL is not set — same zero-config treatment as Bitcoin/Tron', () => {
     process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
     process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
     delete process.env.ETHEREUM_RPC_URL;
 
-    expect(() => loadChainConfig('ethereum')).toThrow('ETHEREUM_RPC_URL');
+    const config = loadChainConfig('ethereum');
+
+    expect(config.rpcUrl).toBe('https://ethereum.publicnode.com');
+  });
+
+  it('still lets ETHEREUM_RPC_URL override the default when explicitly set', () => {
+    process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+    process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+    process.env.ETHEREUM_RPC_URL = 'https://my-own-node.example';
+
+    const config = loadChainConfig('ethereum');
+
+    expect(config.rpcUrl).toBe('https://my-own-node.example');
+  });
+
+  // Other EVM chains (Polygon, BSC, ...) have no universal free default the
+  // way Ethereum does — they still need their own explicit *_RPC_URL.
+  it('throws when a non-Ethereum EVM chain is missing its RPC URL', () => {
+    process.env.POLYGON_TREASURY_ADDRESS = '0xabc';
+    process.env.POLYGON_NATIVE_ASSET = 'MATIC';
+    delete process.env.POLYGON_RPC_URL;
+
+    expect(() => loadChainConfig('polygon')).toThrow('POLYGON_RPC_URL');
   });
 
   it('infers type "bitcoin" and defaults the API URL and confirmations', () => {

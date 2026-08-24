@@ -18,9 +18,12 @@
  * Three chain "types" are supported, each verified completely differently
  * on deposit claim (see src/services/deposit-verifiers/):
  *   - "evm"     Ethereum, Polygon, BSC, ... — a free public RPC endpoint
- *               (no signup) verifies a specific tx at credit time; a free
- *               Etherscan-style API key (2-minute signup, no payment) powers
- *               the admin's incoming-transfers feed — see EvmDepositVerifier
+ *               (no signup) verifies a specific tx at credit time; for
+ *               Ethereum specifically this defaults automatically (same
+ *               zero-config treatment as Bitcoin/Tron below) — other EVM
+ *               chains still need their own *_RPC_URL. A free Etherscan-
+ *               style API key (2-minute signup, no payment) powers the
+ *               admin's incoming-transfers feed — see EvmDepositVerifier
  *   - "bitcoin" Bitcoin — via a public Esplora-style block explorer API
  *   - "tron"    Tron (e.g. USDT-TRC20) — via the TronGrid API
  *
@@ -73,6 +76,16 @@ const DEFAULT_API_URL: Partial<Record<ChainType, string>> = {
   evm: 'https://api.etherscan.io/api',
 };
 
+// Bitcoin/Tron get a zero-config default API above; Ethereum gets the same
+// treatment here for its RPC endpoint — a genuinely free, no-signup public
+// node, so ETH deposits work out of the box exactly like BTC/TRON, without
+// an admin having to paste an RPC URL into env vars first. Other EVM chains
+// (Polygon, BSC, ...) still require their own *_RPC_URL — there's no single
+// universal default that makes sense for an arbitrary chain.
+const DEFAULT_RPC_URL: Partial<Record<string, string>> = {
+  ethereum: 'https://ethereum.publicnode.com',
+};
+
 function requireEnv(name: string): string {
   const v = process.env[name];
   if (!v) throw new Error(`Missing required env var: ${name}`);
@@ -100,9 +113,10 @@ export function loadChainConfig(chain: string): ChainConfig {
   };
 
   if (type === 'evm') {
+    const defaultRpcUrl = DEFAULT_RPC_URL[chain.toLowerCase()];
     return {
       ...base,
-      rpcUrl: requireEnv(`${prefix}_RPC_URL`),
+      rpcUrl: process.env[`${prefix}_RPC_URL`] ?? defaultRpcUrl ?? requireEnv(`${prefix}_RPC_URL`),
       apiUrl: process.env[`${prefix}_API_URL`] ?? DEFAULT_API_URL[type],
       apiKey: process.env[`${prefix}_API_KEY`],
     };
