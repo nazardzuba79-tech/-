@@ -170,6 +170,49 @@ export const api = {
       body: JSON.stringify(params),
     }),
 
+  // Demo trading — admin-only sandbox, its own order book/balances,
+  // completely separate from the real ones above.
+  getDemoBalances: () => request<{ asset: string; available: string; locked: string }[]>('/demo/balances'),
+
+  getDemoOrderBook: (pair: string) =>
+    request<{
+      pair: string;
+      bids: { price: string; quantity: string; orders: number }[];
+      asks: { price: string; quantity: string; orders: number }[];
+      timestamp: number;
+    }>(`/demo/orderbook/${pair}`),
+
+  placeDemoOrder: (params: { pair: string; side: 'BUY' | 'SELL'; type: 'LIMIT' | 'MARKET'; price?: string; quantity: string }) =>
+    request('/demo/orders', { method: 'POST', body: JSON.stringify(params) }),
+
+  getDemoOpenOrders: () =>
+    request<
+      {
+        id: string;
+        pair: string;
+        side: 'BUY' | 'SELL';
+        type: 'LIMIT' | 'MARKET';
+        price: string | null;
+        originalQuantity: string;
+        remainingQuantity: string;
+        status: string;
+        createdAt: string;
+      }[]
+    >('/demo/orders/open'),
+
+  cancelDemoOrder: (orderId: string) => request(`/demo/orders/${orderId}`, { method: 'DELETE' }),
+
+  getDemoTrades: (pair: string) =>
+    request<{ id: string; pair: string; price: string; quantity: string; side: 'BUY' | 'SELL'; executedAt: string }[]>(
+      `/demo/trades/${pair}`
+    ),
+
+  demoTopUp: (userId: string, asset: string, amount: string, note?: string) =>
+    request<{ asset: string; available: string; locked: string }>(`/admin/users/${userId}/demo-topup`, {
+      method: 'POST',
+      body: JSON.stringify({ asset, amount, note }),
+    }),
+
   getCandles: (pair: string, interval: string, limit = 200) =>
     request<{
       pair: string;
@@ -325,6 +368,7 @@ export const api = {
     request<{
       id: string;
       email: string;
+      displayName: string | null;
       isAdmin: boolean;
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       twoFactorEnabled: boolean;
@@ -737,6 +781,7 @@ export const api = {
       blockedAt: string | null;
       blockedReason: string | null;
       balances: { asset: string; available: string; locked: string }[];
+      demoBalances: { asset: string; available: string; locked: string }[];
       deposits: {
         id: string;
         asset: string;

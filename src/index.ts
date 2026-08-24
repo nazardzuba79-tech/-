@@ -40,6 +40,8 @@ import { LiquidationEngine } from './futures/LiquidationEngine';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
+import { DemoTradingService } from './services/DemoTradingService';
+import { demoTradingRouter } from './api/routes/demoTrading';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -67,6 +69,13 @@ const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 // those injected deps, so a second instance here is safe.
 const spotOrderService = new OrderService(prisma, engine, marketDataService);
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
+
+// Admin-only sandbox for testing order-book/liquidity behavior with fake
+// funds — its own engine and its own DemoBalance/DemoOrder/DemoTrade
+// tables, never sharing state with the spot or futures engines above (see
+// DemoBalance's schema.prisma doc comment for why).
+const demoEngine = new MatchingEngine();
+const demoTradingService = new DemoTradingService(prisma, demoEngine);
 
 // Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
 // req.ip is always the proxy's own address, which would both defeat the
@@ -104,13 +113,14 @@ app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
 app.use('/api/v1', adminRouter(prisma));
-app.use('/api/v1', adminUsersRouter(prisma));
+app.use('/api/v1', adminUsersRouter(prisma, demoTradingService));
 app.use('/api/v1', adminAuditLogRouter(prisma));
 app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService));
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
+app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

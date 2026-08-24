@@ -26,6 +26,7 @@ export function Nav({
   const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   const LINKS = [
     { to: '/trade', label: t('nav.trade') },
@@ -48,7 +49,10 @@ export function Nav({
     if (!getToken()) return;
     api
       .getMe()
-      .then((me) => setIsAdmin(me.isAdmin))
+      .then((me) => {
+        setIsAdmin(me.isAdmin);
+        setDisplayName(me.displayName);
+      })
       .catch(() => {});
   }, []);
 
@@ -99,10 +103,16 @@ export function Nav({
             {t('nav.admin')}
           </Link>
         )}
+        {isAdmin && (
+          <Link to="/demo" style={{ ...styles.link, ...(active === '/demo' ? styles.linkActive : {}) }}>
+            Demo
+          </Link>
+        )}
         {middle}
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
+        {displayName && <span style={styles.displayName}>{displayName}</span>}
         {rightExtra}
         <LanguageSwitcher />
         <button onClick={handleLogout} style={styles.logoutBtn}>
@@ -151,6 +161,11 @@ export function Nav({
           >
             <ShieldIcon active={active === '/admin'} />
             {t('nav.admin')}
+          </Link>
+        )}
+        {isAdmin && (
+          <Link to="/demo" style={{ ...styles.mobileLink, ...(active === '/demo' ? styles.linkActive : {}) }}>
+            Demo
           </Link>
         )}
 
@@ -339,6 +354,11 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 16,
+  },
+  displayName: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
   },
   logoutBtn: {
     background: 'transparent',

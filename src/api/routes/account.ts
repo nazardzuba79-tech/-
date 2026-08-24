@@ -39,6 +39,7 @@ export function accountRouter(prisma: PrismaClient): Router {
     res.json({
       id: user.id,
       email: user.email,
+      displayName: user.displayName,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
       kycStatus: user.kycStatus,

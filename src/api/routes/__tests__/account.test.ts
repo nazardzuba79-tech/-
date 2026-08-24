@@ -41,6 +41,28 @@ describe('account routes', () => {
       expect(res.body.passwordHash).toBeUndefined();
     });
 
+    it('includes displayName when set on the account', async () => {
+      const prisma = {
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'user-1',
+            email: 'voltex.crypto@gmail.com',
+            displayName: 'Ксения',
+            isAdmin: true,
+            kycStatus: 'NOT_STARTED',
+            twoFactorEnabled: false,
+            createdAt: new Date('2026-01-01'),
+          }),
+        },
+      } as any;
+      const app = buildApp(prisma);
+
+      const res = await request(app).get('/api/v1/me').set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.displayName).toBe('Ксения');
+    });
+
     it('requires authentication', async () => {
       const app = buildApp({ user: { findUnique: jest.fn() } } as any);
       const res = await request(app).get('/api/v1/me');

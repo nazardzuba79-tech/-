@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services/BalanceAdjustmentService';
+import { DemoTradingService, DemoTradingError } from '../../services/DemoTradingService';
 
 /**
  * Admin's view into every registered account — the registration data,
@@ -12,7 +13,7 @@ import { BalanceAdjustmentService, BalanceAdjustmentError } from '../../services
  * registration IP isn't a column on User; it's read back from the
  * USER_REGISTERED AuditLog entry auth.ts already writes on every sign-up.
  */
-export function adminUsersRouter(prisma: PrismaClient): Router {
+export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingService): Router {
   const router = Router();
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
@@ -75,10 +76,11 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
-    const [registration, lastLogin, balances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
+    const [registration, lastLogin, balances, demoBalances, deposits, withdrawals, orders, purchases, kycSubmissions] = await Promise.all([
       prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_REGISTERED' }, orderBy: { createdAt: 'asc' } }),
       prisma.auditLog.findFirst({ where: { userId: id, action: 'USER_LOGGED_IN' }, orderBy: { createdAt: 'desc' } }),
       prisma.balance.findMany({ where: { userId: id } }),
+      prisma.demoBalance.findMany({ where: { userId: id }, orderBy: { asset: 'asc' } }),
       prisma.deposit.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
       prisma.withdrawal.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
       prisma.order.findMany({ where: { userId: id }, orderBy: { createdAt: 'desc' }, take: 100 }),
@@ -101,6 +103,7 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
       blockedAt: user.blockedAt,
       blockedReason: user.blockedReason,
       balances: balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
+      demoBalances: demoBalances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })),
       deposits: deposits.map((d) => ({
         id: d.id,
         asset: d.asset,
@@ -183,6 +186,37 @@ export function adminUsersRouter(prisma: PrismaClient): Router {
       if (err instanceof BalanceAdjustmentError) return res.status(400).json({ error: err.message });
       console.error(err);
       res.status(500).json({ error: 'Failed to adjust balance' });
+    }
+  });
+
+  const demoTopupSchema = z.object({
+    asset: z.string().trim().min(1).max(10),
+    amount: z.string().min(1),
+    note: z.string().trim().max(500).optional(),
+  });
+
+  // Credits/debits the target account's DEMO balance only — a fully
+  // separate ledger from adjust-balance above, never touches the real
+  // Balance table or ReservesService. Single explicit :id from the form,
+  // admin-only: no bulk/broadcast path exists here. Always logs to
+  // AuditLog with reason "demo top-up" (see DemoTradingService.topUp).
+  router.post('/admin/users/:id/demo-topup', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+    const parsed = demoTopupSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    try {
+      const result = await demoTrading.topUp({
+        userId: req.params.id,
+        asset: parsed.data.asset.toUpperCase(),
+        amount: parsed.data.amount,
+        note: parsed.data.note,
+        performedByAdminId: req.userId!,
+      });
+      res.json(result);
+    } catch (err) {
+      if (err instanceof DemoTradingError) return res.status(400).json({ error: err.message });
+      console.error(err);
+      res.status(500).json({ error: 'Failed to adjust demo balance' });
     }
   });
 

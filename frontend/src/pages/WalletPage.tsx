@@ -12,6 +12,7 @@ import { PortfolioDonut, DonutSlice } from '../components/PortfolioDonut';
 import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
 import { SkeletonRow } from '../components/Skeleton';
+import { Badge } from '../components/Badge';
 import { CoinRanking } from '../lib/pairList';
 
 interface Balance {
@@ -111,6 +112,7 @@ export function WalletPage() {
   const navigate = useNavigate();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
+  const [demoBalances, setDemoBalances] = useState<Balance[]>([]);
   const [priceByAsset, setPriceByAsset] = useState<Record<string, number>>({});
   const [rankings, setRankings] = useState<CoinRanking[]>([]);
   const [rankingsLoaded, setRankingsLoaded] = useState(false);
@@ -132,6 +134,9 @@ export function WalletPage() {
     function load() {
       api.getBalances().then(setSpotBalances).catch(() => {});
       api.getFuturesBalances().then(setFuturesBalances).catch(() => {});
+      // 403s silently for any non-admin account — this is the admin-only
+      // demo sandbox's balance, shown here only when it's actually non-empty.
+      api.getDemoBalances().then(setDemoBalances).catch(() => {});
       // Kraken-mirrored USDT prices — used for the header's total portfolio
       // value (actually tradable, our-exchange pricing) and to tell whether
       // an asset has a real pair here at all (gates the "Buy" action below).
@@ -581,6 +586,24 @@ export function WalletPage() {
           </>
         )}
 
+        {demoBalances.length > 0 && (
+          <div style={styles.demoCard}>
+            <div style={styles.demoCardHeader}>
+              <Badge text="DEMO" color="#a15c00" bg="#fdecc8" />
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>Demo-баланс</h3>
+              <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Тестовые средства — отдельно от реального баланса</span>
+            </div>
+            {demoBalances.map((b) => (
+              <div key={b.asset} style={styles.demoRow}>
+                <span className="mono">{b.asset}</span>
+                <span className="mono" style={{ color: 'var(--text-secondary)' }}>
+                  {b.available} доступно{Number(b.locked) > 0 ? `, ${b.locked} заблокировано` : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <Footer />
       </main>
 
@@ -716,6 +739,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 20,
     flexWrap: 'wrap',
   },
+  demoCard: {
+    background: '#fffaf0',
+    border: '1px solid #f0d9a8',
+    borderRadius: 8,
+    padding: 16,
+    marginTop: 20,
+  },
+  demoCardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
+  demoRow: { display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12, borderTop: '1px solid #f0d9a8' },
   eyebrowRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 },
   eyebrow: { fontSize: 13, color: 'var(--text-secondary)' },
   eyeBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', display: 'flex', padding: 2 },

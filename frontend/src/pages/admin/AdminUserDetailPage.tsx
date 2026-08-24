@@ -50,6 +50,13 @@ export function AdminUserDetailPage() {
   const [accountBusy, setAccountBusy] = useState(false);
   const navigate = useNavigate();
 
+  const [demoAsset, setDemoAsset] = useState('');
+  const [demoAmount, setDemoAmount] = useState('');
+  const [demoNote, setDemoNote] = useState('');
+  const [demoError, setDemoError] = useState<string | null>(null);
+  const [demoSuccess, setDemoSuccess] = useState<string | null>(null);
+  const [demoBusy, setDemoBusy] = useState(false);
+
   function reload() {
     api
       .getAdminUserDetail(id)
@@ -119,6 +126,25 @@ export function AdminUserDetailPage() {
       setAdjustError(err instanceof ApiError ? err.message : 'Не удалось скорректировать баланс.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleDemoTopUp(e: React.FormEvent) {
+    e.preventDefault();
+    setDemoError(null);
+    setDemoSuccess(null);
+    setDemoBusy(true);
+    try {
+      const result = await api.demoTopUp(id, demoAsset.trim().toUpperCase(), demoAmount.trim(), demoNote.trim() || undefined);
+      setDemoSuccess(`Новый demo-баланс: ${result.available} ${result.asset}`);
+      setDemoAsset('');
+      setDemoAmount('');
+      setDemoNote('');
+      reload();
+    } catch (err) {
+      setDemoError(err instanceof ApiError ? err.message : 'Не удалось начислить demo-баланс.');
+    } finally {
+      setDemoBusy(false);
     }
   }
 
@@ -221,6 +247,45 @@ export function AdminUserDetailPage() {
         </form>
         {adjustError && <div style={styles.errorBox}>{adjustError}</div>}
         {adjustSuccess && <div style={styles.successBox}>{adjustSuccess}</div>}
+      </Section>
+
+      <div style={{ height: 16 }} />
+
+      <Section title="Demo-баланс (песочница)">
+        <p style={styles.hint}>
+          Тестовые средства, полностью отдельные от реального баланса и резервов — только для проверки торговли на странице «Demo». Начисление всегда
+          логируется в журнал действий с пометкой «demo top-up».
+        </p>
+        {detail.demoBalances.length === 0 ? (
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Demo-баланс пуст.</p>
+        ) : (
+          detail.demoBalances.map((b) => (
+            <Row
+              key={b.asset}
+              label={`DEMO · ${b.asset}`}
+              value={<span className="mono">{b.available} доступно, {b.locked} заблокировано</span>}
+            />
+          ))
+        )}
+        <form onSubmit={handleDemoTopUp} style={{ ...styles.form, display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, alignItems: 'end' }}>
+          <label style={styles.label}>
+            Актив
+            <input style={styles.input} value={demoAsset} onChange={(e) => setDemoAsset(e.target.value)} placeholder="BTC" required />
+          </label>
+          <label style={styles.label}>
+            Сумма (± )
+            <input style={styles.input} value={demoAmount} onChange={(e) => setDemoAmount(e.target.value)} placeholder="272" required />
+          </label>
+          <label style={styles.label}>
+            Заметка (необязательно)
+            <input style={styles.input} value={demoNote} onChange={(e) => setDemoNote(e.target.value)} placeholder="Например: первичное начисление" />
+          </label>
+          <button type="submit" style={styles.primaryBtn} disabled={demoBusy}>
+            Начислить demo
+          </button>
+        </form>
+        {demoError && <div style={styles.errorBox}>{demoError}</div>}
+        {demoSuccess && <div style={styles.successBox}>{demoSuccess}</div>}
       </Section>
 
       <div style={{ height: 16 }} />

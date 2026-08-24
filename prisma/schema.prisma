@@ -48,6 +48,10 @@ model User {
   /// (JWT_EXPIRES_IN) rather than being revoked mid-flight.
   blockedAt     DateTime?
   blockedReason String?
+  /// Optional display name shown instead of the raw email in the nav/header.
+  /// Purely cosmetic — never used for auth, lookups, or anywhere the email
+  /// itself is the actual identifier.
+  displayName   String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -67,6 +71,8 @@ model User {
   /// opened — enforced server-side, not just hidden behind a frontend gate.
   futuresRiskAckAt DateTime?
   supportConversations SupportConversation[]
+  demoBalances  DemoBalance[]
+  demoOrders    DemoOrder[]
 
   @@index([email])
 }
@@ -533,4 +539,71 @@ model SupportMessage {
   createdAt      DateTime            @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+/// Sandbox for testing trading/order-book behavior with fake funds, kept
+/// fully separate from the real Balance/Order/Trade tables — same "never
+/// let it silently reach into a user's real holdings" principle as
+/// FuturesBalance above, but here the reason is even stronger: nothing in
+/// ReservesService (proof of reserves), withdrawal/deposit flows, or any
+/// real balance query ever touches this table, so a demo credit can never
+/// leak into what the exchange reports it owes real users. Matched by its
+/// own MatchingEngine instance (see index.ts's demoEngine) — structurally
+/// impossible for a demo order to cross with a real user's order, not just
+/// filtered out by a flag someone could forget to check. Only accounts with
+/// role ADMIN can place demo orders or receive a demo top-up (see
+/// requireAdmin on the /demo/* routes and the admin-users demo-topup
+/// route) — this is a private sandbox for the operator, not a feature for
+/// real users.
+model DemoBalance {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  asset     String
+  available Decimal  @default(0) @db.Decimal(36, 18)
+  locked    Decimal  @default(0) @db.Decimal(36, 18)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, asset])
+  @@index([userId])
+}
+
+/// Mirrors the spot Order model's happy path only — LIMIT/MARKET, no
+/// stop/take-profit/OCO fields — since this exists purely to watch
+/// order-book depth and matching behavior, not to duplicate every trading
+/// feature. See DemoBalance's doc comment for the isolation rationale.
+model DemoOrder {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  pair              String
+  side              String   // BUY | SELL
+  type              String   // LIMIT | MARKET
+  price             Decimal? @db.Decimal(36, 18)
+  originalQuantity  Decimal  @db.Decimal(36, 18)
+  remainingQuantity Decimal  @db.Decimal(36, 18)
+  status            String   // OPEN | PARTIALLY_FILLED | FILLED | CANCELLED
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([pair, status])
+}
+
+/// One row per fill in the demo order book. No FK to DemoOrder on purpose,
+/// same as the real Trade model — a trade is an immutable historical fact,
+/// even if the order rows around it later change.
+model DemoTrade {
+  id           String   @id @default(uuid())
+  pair         String
+  takerOrderId String
+  makerOrderId String
+  takerUserId  String
+  makerUserId  String
+  price        Decimal  @db.Decimal(36, 18)
+  quantity     Decimal  @db.Decimal(36, 18)
+  side         String
+  executedAt   DateTime @default(now())
+
+  @@index([pair, executedAt])
 }

@@ -9,10 +9,10 @@ function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
 }
 
-function buildApp(prisma: any) {
+function buildApp(prisma: any, demoTrading: any = { topUp: jest.fn().mockResolvedValue({ asset: 'BTC', available: '272', locked: '0' }) }) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', adminUsersRouter(prisma));
+  app.use('/api/v1', adminUsersRouter(prisma, demoTrading));
   return app;
 }
 
@@ -31,6 +31,7 @@ function adminPrisma(overrides: any = {}) {
       create: jest.fn(),
     },
     balance: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), upsert: jest.fn(), deleteMany: jest.fn() },
+    demoBalance: { findMany: jest.fn().mockResolvedValue([]) },
     deposit: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
     withdrawal: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
     order: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
@@ -212,6 +213,59 @@ describe('admin users routes', () => {
         .send({ asset: 'USDT', amount: '-50', reason: 'oops' });
 
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /admin/users/:id/demo-topup', () => {
+    it('requires an admin account', async () => {
+      const prisma = adminPrisma({ user: { findUnique: jest.fn().mockResolvedValue({ role: 'USER' }) } });
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/demo-topup')
+        .set('Authorization', authHeader('u1'))
+        .send({ asset: 'BTC', amount: '272' });
+      expect(res.status).toBe(403);
+    });
+
+    it('rejects a missing amount', async () => {
+      const prisma = adminPrisma();
+      const app = buildApp(prisma);
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/demo-topup')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'BTC' });
+      expect(res.status).toBe(400);
+    });
+
+    it('credits the demo balance via DemoTradingService.topUp, scoped to exactly the one target user', async () => {
+      const demoTrading = { topUp: jest.fn().mockResolvedValue({ asset: 'BTC', available: '272', locked: '0' }) };
+      const prisma = adminPrisma();
+      const app = buildApp(prisma, demoTrading);
+
+      const res = await request(app)
+        .post('/api/v1/admin/users/user-1/demo-topup')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'btc', amount: '272' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ asset: 'BTC', available: '272', locked: '0' });
+      expect(demoTrading.topUp).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-1', asset: 'BTC', amount: '272', performedByAdminId: 'admin-1' })
+      );
+    });
+
+    it('does not touch any user other than the one named in the URL', async () => {
+      const demoTrading = { topUp: jest.fn().mockResolvedValue({ asset: 'USDT', available: '7000000', locked: '0' }) };
+      const prisma = adminPrisma();
+      const app = buildApp(prisma, demoTrading);
+
+      await request(app)
+        .post('/api/v1/admin/users/only-this-user/demo-topup')
+        .set('Authorization', authHeader('admin-1'))
+        .send({ asset: 'USDT', amount: '7000000' });
+
+      expect(demoTrading.topUp).toHaveBeenCalledTimes(1);
+      expect(demoTrading.topUp.mock.calls[0][0].userId).toBe('only-this-user');
     });
   });
 
