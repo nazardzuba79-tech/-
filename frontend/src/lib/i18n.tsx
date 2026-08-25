@@ -517,6 +517,11 @@ const RU = {
   'marketing.statAssetsLabel': 'Активов',
   'marketing.statNoKycLabel': 'Без верификации',
 
+  'marketing.heroPerk1': 'Без верификации',
+  'marketing.heroPerk2': '2FA-защита аккаунта',
+  'marketing.heroPerk3': 'Прямое исполнение ордеров',
+  'marketing.heroPerk4': 'Контроль лимитов на вывод',
+
   'marketing.featuresLabel': 'Почему VOLTEX',
   'marketing.featuresTitle': 'Мощь, точность и скорость в едином терминале',
   'marketing.featuresSubtitle': 'Всё необходимое трейдеру — в одной, по-настоящему работающей бирже.',
@@ -1181,6 +1186,11 @@ const EN: Record<Key, string> = {
   'marketing.statAssetsLabel': 'Assets',
   'marketing.statNoKycLabel': 'No verification',
 
+  'marketing.heroPerk1': 'No verification required',
+  'marketing.heroPerk2': '2FA account protection',
+  'marketing.heroPerk3': 'Direct order execution',
+  'marketing.heroPerk4': 'Withdrawal limit controls',
+
   'marketing.featuresLabel': 'Why VOLTEX',
   'marketing.featuresTitle': 'Power, precision and speed in a single terminal',
   'marketing.featuresSubtitle': 'Everything a trader needs, in one exchange that actually works.',
@@ -1831,6 +1841,11 @@ const ZH: Record<Key, string> = {
   'marketing.statAssetsValue': '500+',
   'marketing.statAssetsLabel': '种资产',
   'marketing.statNoKycLabel': '无需验证',
+
+  'marketing.heroPerk1': '无需身份验证',
+  'marketing.heroPerk2': '双重验证（2FA）保护',
+  'marketing.heroPerk3': '直接订单执行',
+  'marketing.heroPerk4': '提现限额管控',
 
   'marketing.featuresLabel': '为什么选择 VOLTEX',
   'marketing.featuresTitle': '强大、精准、迅速——尽在一个终端',

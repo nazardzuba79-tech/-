@@ -128,6 +128,13 @@ export function MarketingPage() {
           <div className="hero-glow hero-glow-purple" />
           <div className="marketing-hero-grid" style={{ ...styles.heroGrid, position: 'relative' }}>
             <div style={styles.heroLeft}>
+              <div style={styles.heroPerks}>
+                {[t('marketing.heroPerk1'), t('marketing.heroPerk2'), t('marketing.heroPerk3'), t('marketing.heroPerk4')].map((perk) => (
+                  <span key={perk} style={styles.heroPerkBadge}>
+                    <CheckIcon /> {perk}
+                  </span>
+                ))}
+              </div>
               <span style={styles.eyebrow}>
                 <span style={styles.eyebrowDot} />
                 {t('marketing.eyebrow')}
@@ -856,6 +863,19 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
   },
   heroLeft: { minWidth: 0 },
+  heroPerks: { display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26 },
+  heroPerkBadge: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 7,
+    padding: '7px 14px',
+    borderRadius: 999,
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    fontSize: 12.5,
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+  },
   eyebrow: {
     display: 'inline-flex',
     alignItems: 'center',
