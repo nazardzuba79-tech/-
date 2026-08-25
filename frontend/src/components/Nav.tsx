@@ -101,11 +101,8 @@ export function Nav({
           {t('nav.otc')}
         </Link>
         {isAdmin && (
-          <Link
-            to="/admin"
-            style={{ ...styles.link, ...styles.cardLink, ...(active === '/admin' ? styles.linkActive : {}) }}
-          >
-            <ShieldIcon active={active === '/admin'} />
+          <Link to="/admin" style={{ ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}>
+            <ShieldIcon admin />
             {t('nav.admin')}
           </Link>
         )}
@@ -166,9 +163,9 @@ export function Nav({
         {isAdmin && (
           <Link
             to="/admin"
-            style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/admin' ? styles.linkActive : {}) }}
+            style={{ ...styles.mobileLink, ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}
           >
-            <ShieldIcon active={active === '/admin'} />
+            <ShieldIcon admin />
             {t('nav.admin')}
           </Link>
         )}
@@ -272,14 +269,14 @@ function GearIcon({ active }: { active: boolean }) {
   );
 }
 
-function ShieldIcon({ active }: { active: boolean }) {
+function ShieldIcon({ active, admin }: { active?: boolean; admin?: boolean }) {
   return (
     <svg
       width="16"
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
+      stroke={admin ? '#fca5a5' : active ? 'var(--text-primary)' : 'var(--text-secondary)'}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -369,6 +366,26 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
+  },
+  // Fixed, non-theme colors on purpose — this button has to stay legible
+  // regardless of which page's accent color is active, since it's the one
+  // link on the whole site that opens a privileged, money-moving area.
+  adminBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+    background: 'rgba(239,68,68,0.14)',
+    border: '1px solid rgba(248,113,113,0.5)',
+    borderRadius: 8,
+    padding: '6px 12px',
+    fontSize: 13,
+    fontWeight: 700,
+    color: '#fca5a5',
+  },
+  adminBadgeActive: {
+    background: 'rgba(239,68,68,0.28)',
+    borderColor: '#f87171',
+    color: '#fecaca',
   },
   right: {
     marginLeft: 'auto',

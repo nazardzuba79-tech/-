@@ -12,7 +12,7 @@ services:
       - key: DIRECT_URL
         sync: false # set manually — paste your Neon DIRECT (non-pooled) connection string; required for `prisma migrate deploy` to acquire its advisory lock reliably, see prisma/schema.prisma
       - key: JWT_SECRET
-        generateValue: true # Render generates a random secret for you
+        sync: false # set manually ONCE in the Render dashboard, e.g. `openssl rand -hex 32` — do NOT use generateValue here: every Blueprint sync it can be regenerated, which silently invalidates every logged-in session (this is what was logging users out). Once you set a fixed value here, never change it — it must stay the same across every future deploy.
       - key: API_KEY_ENCRYPTION_SECRET
         sync: false # set manually — generate with: openssl rand -hex 32
       - key: PORT
