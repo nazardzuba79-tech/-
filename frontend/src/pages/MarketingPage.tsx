@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Sparkline } from '../components/Sparkline';
-import { Footer } from '../components/Footer';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
 import { parseChangePercent } from '../lib/priceChange';
@@ -139,10 +138,10 @@ export function MarketingPage() {
                   {t('marketing.exploreMarkets')}
                 </a>
               </div>
-              <div style={styles.featureRow}>
-                <FeatureStat label={t('auth.perks.fee.title')} />
-                <FeatureStat label={t('dashboard.quickLinkFuturesDesc')} />
-                <FeatureStat label={t('auth.perks.assets.title')} />
+              <div style={styles.heroStatRow}>
+                <HeroStat value={t('marketing.statFeeValue')} label={t('marketing.statFeeLabel')} />
+                <HeroStat value={t('marketing.statLeverageValue')} label={t('marketing.statLeverageLabel')} />
+                <HeroStat value={t('marketing.statAssetsValue')} label={t('marketing.statAssetsLabel')} />
               </div>
             </div>
 
@@ -225,6 +224,10 @@ export function MarketingPage() {
           </div>
         </section>
 
+        <FeaturesSection t={t} />
+        <GlobalStatsSection t={t} />
+        <SupportedAssetsSection tickers={tickers} fmt={fmt} t={t} />
+
         <section style={styles.perksSection}>
           <div style={styles.perksBanner}>
             <div className="card-tilt-wrap" style={styles.perksBannerCard}>
@@ -246,18 +249,342 @@ export function MarketingPage() {
           </div>
         </section>
 
-        <Footer />
+        <FaqSection t={t} />
+        <FinalCtaSection t={t} />
+        <SiteFooterSection t={t} />
       </main>
     </div>
   );
 }
 
-function FeatureStat({ label }: { label: string }) {
+function HeroStat({ value, label }: { value: string; label: string }) {
   return (
-    <div style={styles.featureItem}>
-      <CheckIcon />
-      <span>{label}</span>
+    <div>
+      <div style={styles.heroStatValue}>{value}</div>
+      <div style={styles.heroStatLabel}>{label}</div>
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Features — v0's "Why VOLTEX" tile grid. Copy describes only real,      */
+/* already-built functionality (2FA, login history, withdrawal limits,   */
+/* the actual chart/order toolset, the real $20k copy-trading gate) —    */
+/* v0's own version claimed fabricated benchmark numbers (1.4M orders/sec,*/
+/* sub-10ms latency, 180+ countries, 50+ fiat rails) that don't describe  */
+/* this exchange, so those are left out rather than ported verbatim. */
+function FeaturesSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  return (
+    <section style={styles.featuresSection}>
+      <div style={{ maxWidth: 640 }}>
+        <span style={styles.eyebrow}>
+          <span style={styles.eyebrowDot} />
+          {t('marketing.featuresLabel')}
+        </span>
+        <h2 style={styles.featuresTitle}>{t('marketing.featuresTitle')}</h2>
+        <p style={styles.featuresSubtitle}>{t('marketing.featuresSubtitle')}</p>
+      </div>
+
+      <div className="marketing-features-grid" style={styles.featuresGrid}>
+        <FeatureTile span={2}>
+          <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <FeatureIconBadge>
+                <ZapIcon />
+              </FeatureIconBadge>
+              <h3 style={styles.featureTileTitle}>{t('marketing.feature.execution.title')}</h3>
+              <p style={styles.featureTileText}>{t('marketing.feature.execution.text')}</p>
+            </div>
+            <div style={{ flex: '1 1 220px', minWidth: 200 }}>
+              <Sparkline points={[20, 24, 22, 30, 28, 38, 34, 46, 52, 48, 60, 72]} width={220} height={80} />
+            </div>
+          </div>
+        </FeatureTile>
+
+        <FeatureTile>
+          <FeatureIconBadge>
+            <ShieldIcon />
+          </FeatureIconBadge>
+          <h3 style={styles.featureTileTitle}>{t('marketing.feature.security.title')}</h3>
+          <p style={styles.featureTileText}>{t('marketing.feature.security.text')}</p>
+          <ul style={styles.featureList}>
+            {[t('marketing.feature.security.item1'), t('marketing.feature.security.item2'), t('marketing.feature.security.item3')].map(
+              (item) => (
+                <li key={item} style={styles.featureListItem}>
+                  <CheckIcon /> {item}
+                </li>
+              )
+            )}
+          </ul>
+        </FeatureTile>
+
+        <FeatureTile>
+          <FeatureIconBadge>
+            <ChartIcon />
+          </FeatureIconBadge>
+          <h3 style={styles.featureTileTitle}>{t('marketing.feature.tools.title')}</h3>
+          <p style={styles.featureTileText}>{t('marketing.feature.tools.text')}</p>
+        </FeatureTile>
+
+        <FeatureTile>
+          <FeatureIconBadge>
+            <UsersIcon />
+          </FeatureIconBadge>
+          <h3 style={styles.featureTileTitle}>{t('marketing.feature.copyTrading.title')}</h3>
+          <p style={styles.featureTileText}>{t('marketing.feature.copyTrading.text')}</p>
+        </FeatureTile>
+
+        <FeatureTile>
+          <FeatureIconBadge>
+            <MobileIcon />
+          </FeatureIconBadge>
+          <h3 style={styles.featureTileTitle}>{t('marketing.feature.mobile.title')}</h3>
+          <p style={styles.featureTileText}>{t('marketing.feature.mobile.text')}</p>
+        </FeatureTile>
+
+        <FeatureTile span={3}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 260px' }}>
+              <FeatureIconBadge>
+                <GlobeIcon />
+              </FeatureIconBadge>
+              <h3 style={styles.featureTileTitle}>{t('marketing.feature.global.title')}</h3>
+              <p style={{ ...styles.featureTileText, maxWidth: 460 }}>{t('marketing.feature.global.text')}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 32 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={styles.heroStatValue}>{t('marketing.statAssetsValue')}</div>
+                <div style={styles.heroStatLabel}>{t('marketing.statAssetsLabel')}</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={styles.heroStatValue}>{t('marketing.statLeverageValue')}</div>
+                <div style={styles.heroStatLabel}>{t('marketing.statLeverageLabel')}</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={styles.heroStatValue}>{t('marketing.statNoKycLabel')}</div>
+                <div style={styles.heroStatLabel}>KYC</div>
+              </div>
+            </div>
+          </div>
+        </FeatureTile>
+      </div>
+    </section>
+  );
+}
+
+function FeatureTile({ children, span }: { children: React.ReactNode; span?: number }) {
+  return (
+    <div className="marketing-feature-tile" style={{ ...styles.featureTile, gridColumn: span ? `span ${span}` : undefined }}>
+      {children}
+    </div>
+  );
+}
+
+function FeatureIconBadge({ children }: { children: React.ReactNode }) {
+  return <span style={styles.featureIconBadge}>{children}</span>;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Global stats strip — v0's version claims fabricated business metrics   */
+/* ($1.2T+ quarterly volume, 32M+ verified users, 180+ countries). Those   */
+/* aren't true of this exchange, so the same 4-stat visual band instead   */
+/* shows the real, already-verified claims used elsewhere on this site. */
+function GlobalStatsSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  const stats: [string, string][] = [
+    [t('marketing.statAssetsValue'), t('marketing.statAssetsLabel')],
+    [t('marketing.statLeverageValue'), t('marketing.statLeverageLabel')],
+    [t('marketing.statFeeValue'), t('marketing.statFeeLabel')],
+    ['KYC', t('marketing.statNoKycLabel')],
+  ];
+  return (
+    <section style={styles.globalStats}>
+      <div className="marketing-global-stats-grid" style={styles.globalStatsGrid}>
+        {stats.map(([v, l]) => (
+          <div key={l} style={{ textAlign: 'center' }}>
+            <div style={styles.globalStatValue}>{v}</div>
+            <div style={styles.heroStatLabel}>{l}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Supported assets grid — real pairs, real live prices (same api call as */
+/* the hero/overview panels above), just a wider, denser list. */
+const SUPPORTED_ASSET_PAIRS = [
+  'BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'BNB/USDT', 'XRP/USDT', 'ADA/USDT',
+  'AVAX/USDT', 'DOGE/USDT', 'LINK/USDT', 'DOT/USDT', 'TON/USDT', 'TRX/USDT',
+];
+
+function SupportedAssetsSection({
+  tickers,
+  fmt,
+  t,
+}: {
+  tickers: Map<string, Ticker>;
+  fmt: (n: number) => string;
+  t: ReturnType<typeof useLanguage>['t'];
+}) {
+  return (
+    <section style={styles.supportedSection}>
+      <div style={{ maxWidth: 640 }}>
+        <span style={styles.eyebrow}>
+          <span style={styles.eyebrowDot} />
+          {t('marketing.supportedAssetsLabel')}
+        </span>
+        <h2 style={styles.featuresTitle}>{t('marketing.supportedAssetsTitle')}</h2>
+        <p style={styles.featuresSubtitle}>{t('marketing.supportedAssetsSubtitle')}</p>
+      </div>
+      <div style={styles.supportedGrid}>
+        {SUPPORTED_ASSET_PAIRS.map((pair) => {
+          const tk = tickers.get(pair);
+          const change = tk ? parseChangePercent(tk.changePercent24h, pair) : 0;
+          const base = pair.split('/')[0];
+          const positive = change >= 0;
+          return (
+            <div key={pair} style={styles.supportedRow}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                <CryptoIcon symbol={base} size={26} />
+                <span style={{ fontSize: 13, fontWeight: 700 }}>{base}</span>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
+                  {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
+                </div>
+                <div className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 11, fontWeight: 700 }}>
+                  {tk ? `${positive ? '+' : ''}${change.toFixed(2)}%` : ''}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* FAQ — honest answers describing what this exchange actually does      */
+/* (real 0% spot fee, real no-KYC trading, real 2FA, real $20k copy-      */
+/* trading gate, no native mobile app yet) rather than v0's placeholder   */
+/* claims (cold-storage custody, proof-of-reserves reports, 1.4M orders/  */
+/* sec) that would misrepresent a real, functioning exchange. */
+const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'] as const;
+
+function FaqSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section style={styles.faqSection}>
+      <div style={{ textAlign: 'center' }}>
+        <span style={{ ...styles.eyebrow, justifyContent: 'center' }}>
+          <span style={styles.eyebrowDot} />
+          {t('marketing.faqLabel')}
+        </span>
+        <h2 style={{ ...styles.featuresTitle, marginTop: 12 }}>{t('marketing.faqTitle')}</h2>
+      </div>
+      <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {FAQ_KEYS.map((k, i) => {
+          const isOpen = open === i;
+          return (
+            <div key={k} style={styles.faqItem}>
+              <button type="button" onClick={() => setOpen(isOpen ? null : i)} style={styles.faqQuestion} aria-expanded={isOpen}>
+                <span>{t(`marketing.faq.${k}` as Key)}</span>
+                <PlusIcon rotated={isOpen} />
+              </button>
+              {isOpen && <p style={styles.faqAnswer}>{t(`marketing.faq.${k.replace('q', 'a')}` as Key)}</p>}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function FinalCtaSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  return (
+    <section style={styles.finalCtaSection}>
+      <div style={styles.finalCtaCard}>
+        <h2 style={styles.finalCtaTitle}>{t('marketing.finalCtaTitle')}</h2>
+        <p style={styles.finalCtaSubtitle}>{t('marketing.finalCtaSubtitle')}</p>
+        <div style={{ ...styles.heroCtaRow, justifyContent: 'center', marginTop: 28 }}>
+          <Link to="/login" style={styles.heroPrimaryBtn}>
+            {t('marketing.startTrading')} <ArrowIcon />
+          </Link>
+          <Link to="/markets" style={styles.heroSecondaryBtn}>
+            {t('marketing.exploreMarkets')}
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/* Site footer — v0's version links to pages this app doesn't have        */
+/* (Careers, Newsroom, Status, Docs, API...). Same 3-column layout, but    */
+/* every link routes to a page that actually exists here. */
+const FOOTER_COLS: { titleKey: 'marketing.footerProducts' | 'marketing.footerCompany' | 'marketing.footerSupportCol'; links: { to: string; key: string }[] }[] = [
+  {
+    titleKey: 'marketing.footerProducts',
+    links: [
+      { to: '/trade', key: 'nav.trade' },
+      { to: '/futures', key: 'nav.futures' },
+      { to: '/copy-trading', key: 'nav.copyTrading' },
+      { to: '/card', key: 'nav.card' },
+    ],
+  },
+  {
+    titleKey: 'marketing.footerCompany',
+    links: [
+      { to: '/legal/about', key: 'footer.about' },
+      { to: '/legal/terms', key: 'footer.terms' },
+      { to: '/legal/privacy', key: 'footer.privacy' },
+      { to: '/legal/risk', key: 'footer.risk' },
+    ],
+  },
+  {
+    titleKey: 'marketing.footerSupportCol',
+    links: [
+      { to: '/legal/support', key: 'footer.support' },
+      { to: '/markets', key: 'nav.markets' },
+      { to: '/dashboard', key: 'nav.dashboard' },
+      { to: '/wallet', key: 'nav.wallet' },
+    ],
+  },
+];
+
+function SiteFooterSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
+  return (
+    <footer style={styles.siteFooter}>
+      <div style={styles.siteFooterInner}>
+        <div className="marketing-site-footer-grid" style={styles.siteFooterGrid}>
+          <div className="marketing-site-footer-logo-col" style={{ gridColumn: 'span 2' }}>
+            <Logo />
+            <p style={styles.siteFooterTagline}>{t('marketing.footerTagline')}</p>
+          </div>
+          {FOOTER_COLS.map((col) => (
+            <div key={col.titleKey}>
+              <h3 style={styles.siteFooterColTitle}>{t(col.titleKey)}</h3>
+              <ul style={styles.siteFooterLinkList}>
+                {col.links.map((l) => (
+                  <li key={l.to}>
+                    <Link to={l.to} style={styles.siteFooterLink}>
+                      {t(l.key as Key)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div style={styles.siteFooterBottom}>
+          <p style={{ margin: 0 }}>{t('footer.rights')}</p>
+          <p style={{ margin: 0, maxWidth: 560, textAlign: 'right' }}>{t('footer.riskWarning')}</p>
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -374,6 +701,75 @@ function AssetsIcon() {
     <svg {...PERK_ICON_PROPS} width={20} height={20}>
       <circle cx="9" cy="9" r="6" />
       <circle cx="15" cy="15" r="6" opacity={0.5} />
+    </svg>
+  );
+}
+
+function ZapIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <path d="M13 2L4 14h7l-1 8 10-12h-7l1-8z" />
+    </svg>
+  );
+}
+function ShieldIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+function ChartIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <path d="M3 3v18h18" />
+      <path d="M7 15l4-5 3 3 5-7" />
+    </svg>
+  );
+}
+function UsersIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" />
+      <circle cx="18" cy="9" r="2.4" />
+      <path d="M15.5 20c0-2.6 1.8-4.7 4-5.4" />
+    </svg>
+  );
+}
+function MobileIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <rect x="6" y="2" width="12" height="20" rx="2.5" />
+      <line x1="10" y1="19" x2="14" y2="19" />
+    </svg>
+  );
+}
+function GlobeIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <circle cx="12" cy="12" r="9.5" />
+      <path d="M2.5 12h19" />
+      <path d="M12 2.5c2.6 2.6 4 6 4 9.5s-1.4 6.9-4 9.5c-2.6-2.6-4-6-4-9.5s1.4-6.9 4-9.5z" />
+    </svg>
+  );
+}
+function PlusIcon({ rotated }: { rotated?: boolean }) {
+  return (
+    <svg
+      width={16}
+      height={16}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--accent)"
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ transition: 'transform 0.2s ease', transform: rotated ? 'rotate(45deg)' : 'none', flexShrink: 0 }}
+    >
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   );
 }
@@ -503,8 +899,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '13px 24px',
     borderRadius: 12,
   },
-  featureRow: { display: 'flex', flexDirection: 'column', gap: 10, marginTop: 40 },
-  featureItem: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text-secondary)' },
+  heroStatRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24, marginTop: 44, maxWidth: 420 },
+  heroStatValue: { fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' },
+  heroStatLabel: { marginTop: 4, fontSize: 12.5, color: 'var(--text-tertiary)' },
   heroRight: { position: 'relative', minHeight: 700, marginRight: 10 },
   previewWrap: { position: 'relative', maxWidth: 680 },
   previewCard: {
@@ -619,4 +1016,126 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
   },
   perkText: { fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
+
+  featuresSection: { maxWidth: 1280, margin: '0 auto', padding: '20px 20px 64px' },
+  featuresTitle: {
+    fontFamily: 'var(--font-display)',
+    fontSize: 30,
+    fontWeight: 800,
+    margin: '14px 0 0',
+    letterSpacing: '-0.01em',
+    lineHeight: 1.25,
+  },
+  featuresSubtitle: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, margin: '12px 0 0' },
+  featuresGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginTop: 32 },
+  featureTile: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: 24,
+  },
+  featureIconBadge: {
+    display: 'inline-flex',
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    background: 'var(--accent-dim)',
+    marginBottom: 16,
+  },
+  featureTileTitle: { fontSize: 17, margin: '0 0 8px', fontFamily: 'var(--font-display)', fontWeight: 700 },
+  featureTileText: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
+  featureList: { listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 8 },
+  featureListItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-secondary)' },
+
+  globalStats: { borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--panel-alt)' },
+  globalStatsGrid: {
+    maxWidth: 1280,
+    margin: '0 auto',
+    padding: '44px 20px',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: 16,
+  },
+  globalStatValue: { fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 800, letterSpacing: '-0.01em' },
+
+  supportedSection: { maxWidth: 1280, margin: '0 auto', padding: '64px 20px 20px' },
+  supportedGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, marginTop: 28 },
+  supportedRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: '12px 14px',
+  },
+
+  faqSection: { maxWidth: 760, margin: '0 auto', padding: '64px 20px' },
+  faqItem: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' },
+  faqQuestion: {
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    background: 'transparent',
+    border: 'none',
+    padding: '16px 18px',
+    textAlign: 'left',
+    fontSize: 14.5,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  faqAnswer: { margin: 0, padding: '0 18px 18px', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 },
+
+  finalCtaSection: { maxWidth: 1280, margin: '0 auto', padding: '20px 20px 64px' },
+  finalCtaCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    textAlign: 'center',
+    background: 'linear-gradient(135deg, var(--panel) 0%, var(--panel-alt) 100%)',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '64px 32px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+  },
+  finalCtaTitle: {
+    fontFamily: 'var(--font-display)',
+    fontSize: 34,
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    margin: 0,
+    maxWidth: 620,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+  finalCtaSubtitle: {
+    fontSize: 14,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.65,
+    maxWidth: 460,
+    margin: '14px auto 0',
+  },
+
+  siteFooter: { borderTop: '1px solid var(--border)', background: 'var(--panel-alt)' },
+  siteFooterInner: { maxWidth: 1280, margin: '0 auto', padding: '52px 20px 28px' },
+  siteFooterGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 32 },
+  siteFooterTagline: { fontSize: 12.5, color: 'var(--text-tertiary)', lineHeight: 1.6, maxWidth: 260, marginTop: 14 },
+  siteFooterColTitle: { fontSize: 13, fontWeight: 700, margin: 0, color: 'var(--text-primary)' },
+  siteFooterLinkList: { listStyle: 'none', margin: '14px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 10 },
+  siteFooterLink: { fontSize: 13, color: 'var(--text-secondary)' },
+  siteFooterBottom: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 20,
+    flexWrap: 'wrap',
+    marginTop: 44,
+    paddingTop: 22,
+    borderTop: '1px solid var(--border)',
+    fontSize: 11.5,
+    color: 'var(--text-tertiary)',
+  },
 };

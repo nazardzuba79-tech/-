@@ -573,6 +573,28 @@ a:hover > .nav-card-icon {
   .marketing-phone {
     display: none !important;
   }
+  .marketing-features-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .marketing-feature-tile {
+    grid-column: auto !important;
+  }
+  .marketing-global-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .marketing-site-footer-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .marketing-site-footer-logo-col {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .marketing-global-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
 }
 
 @media (max-width: 860px) {

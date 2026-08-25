@@ -1,66 +1,58 @@
 /**
- * VOLTEX brand mark — a geometric lightning bolt (voltage/speed) paired
- * with the wordmark. `LogoMark` alone is the icon (used for the favicon
- * and as a standalone badge); `Logo` is the full lockup used in the nav
- * and on the auth screen.
+ * VOLTEX brand mark — the owner's actual v0-designed glyph: two interlocking
+ * angular shards that read as both a lightning bolt (energy/speed) and a
+ * sharp "V" (VOLTEX), cyan-to-purple gradient. `LogoMark` alone is the icon
+ * (used for the favicon and as a standalone badge); `Logo` is the full
+ * lockup used in the nav and on the auth screen.
  */
 
-const BOLT_PATH = 'M13 2L4 14h7l-1 8 10-12h-7l1-8z';
 const BOLT_GRADIENT_ID = 'voltex-bolt-gradient';
 
 export function LogoMark({ size = 22, variant = 'bolt' }: { size?: number; variant?: 'bolt' | 'badge' }) {
   if (variant === 'badge') {
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" rx="6" fill="var(--accent)" />
-        <path d={BOLT_PATH} fill="var(--on-accent)" />
+      <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="var(--accent)" />
+        <path d="M20.5 3 L11 19 L17 19 L14.5 27 Z" fill="var(--on-accent)" opacity="0.55" />
+        <path d="M23 3 L9 22 L18 22 L15.5 37 L32 16 L22 16 Z" fill="var(--on-accent)" />
       </svg>
     );
   }
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id={BOLT_GRADIENT_ID} x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffd166" />
-          <stop offset="1" stopColor="var(--accent)" />
+        <linearGradient id={BOLT_GRADIENT_ID} x1="6" y1="2" x2="34" y2="38" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#18C8FF" />
+          <stop offset="1" stopColor="#6C5CE7" />
         </linearGradient>
       </defs>
-      <path d={BOLT_PATH} fill={`url(#${BOLT_GRADIENT_ID})`} />
+      {/* depth shard */}
+      <path d="M20.5 3 L11 19 L17 19 L14.5 27 Z" fill="#6C5CE7" opacity="0.55" />
+      {/* main bolt / V */}
+      <path d="M23 3 L9 22 L18 22 L15.5 37 L32 16 L22 16 Z" fill={`url(#${BOLT_GRADIENT_ID})`} />
     </svg>
   );
 }
 
 export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
-  const iconSize = size === 'large' ? 42 : 20;
-  const fontSize = size === 'large' ? 36 : 16;
+  const iconSize = size === 'large' ? 40 : 24;
+  const fontSize = size === 'large' ? 34 : 17;
 
   const lockup = (
     <span
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: size === 'large' ? 12 : 7,
+        gap: size === 'large' ? 12 : 8,
         fontFamily: 'var(--font-display)',
-        fontWeight: 800,
+        fontWeight: 700,
         fontSize,
-        letterSpacing: '0.01em',
+        letterSpacing: '0.12em',
         color: 'var(--text-primary)',
       }}
     >
       <LogoMark size={iconSize} />
-      <span>
-        VO
-        <span
-          style={{
-            background: 'linear-gradient(135deg, #ffd166, var(--accent))',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          L
-        </span>
-        TEX
-      </span>
+      <span>VOLTEX</span>
     </span>
   );
 
