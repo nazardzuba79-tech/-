@@ -20,10 +20,18 @@ function withDepth(levels: Level[]): (Level & { cumulative: number })[] {
   });
 }
 
+// Real order-book DOMs don't scroll through the whole book by default —
+// they show a fixed window of levels closest to the spread, so the
+// buy/sell split is always visible together without the trader having to
+// scroll past a wall of asks first. `bids`/`asks` arrive best-price-first
+// (see withDepth's caller below), so the first N of each is exactly that
+// near-spread window.
+const VISIBLE_LEVELS_PER_SIDE = 15;
+
 export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] }) {
   const { t } = useLanguage();
-  const asksDepth = withDepth(asks);
-  const bidsDepth = withDepth(bids);
+  const asksDepth = withDepth(asks).slice(0, VISIBLE_LEVELS_PER_SIDE);
+  const bidsDepth = withDepth(bids).slice(0, VISIBLE_LEVELS_PER_SIDE);
   const maxDepth = Math.max(
     asksDepth.length ? asksDepth[asksDepth.length - 1].cumulative : 0,
     bidsDepth.length ? bidsDepth[bidsDepth.length - 1].cumulative : 0,
@@ -34,6 +42,14 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
   const spread = bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
   const spreadPct = spread !== null && bestBid ? (spread / bestBid) * 100 : null;
+  const midPrice = bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
+
+  // Buy/sell pressure within the visible window — real, derived from the
+  // same depth already on screen, same idea as the reference's B/S bar.
+  const visibleBuyVolume = bidsDepth.length ? bidsDepth[bidsDepth.length - 1].cumulative : 0;
+  const visibleSellVolume = asksDepth.length ? asksDepth[asksDepth.length - 1].cumulative : 0;
+  const totalVisibleVolume = visibleBuyVolume + visibleSellVolume;
+  const buyPct = totalVisibleVolume > 0 ? (visibleBuyVolume / totalVisibleVolume) * 100 : 50;
 
   return (
     <div style={styles.panel}>
@@ -42,7 +58,7 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
         <span style={{ textAlign: 'right' }}>{t('trade.quantity')}</span>
       </div>
 
-      <div style={styles.rows}>
+      <div style={{ ...styles.rows, ...styles.asksRows }}>
         {asksDepth
           .slice()
           .reverse()
@@ -51,16 +67,30 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
           ))}
       </div>
 
-      <div style={styles.spread}>
-        {spread !== null && spreadPct !== null
-          ? `${t('trade.spread')}: ${spread.toFixed(2)} (${spreadPct.toFixed(3)}%)`
-          : '—'}
+      <div style={styles.midBand}>
+        {midPrice !== null && (
+          <span className="mono" style={styles.midPrice}>
+            {midPrice.toFixed(2)}
+          </span>
+        )}
+        <span style={styles.spread}>
+          {spread !== null && spreadPct !== null
+            ? `${t('trade.spread')}: ${spread.toFixed(2)} (${spreadPct.toFixed(3)}%)`
+            : '—'}
+        </span>
       </div>
 
       <div style={styles.rows}>
         {bidsDepth.map((level) => (
           <Row key={level.price} level={level} side="BUY" maxDepth={maxDepth} />
         ))}
+      </div>
+
+      <div style={styles.ratioBar}>
+        <div style={{ ...styles.ratioFill, width: `${buyPct}%`, background: 'var(--buy)' }} />
+        <div style={{ ...styles.ratioFill, width: `${100 - buyPct}%`, background: 'var(--sell)' }} />
+        <span style={styles.ratioLabelLeft}>B {buyPct.toFixed(0)}%</span>
+        <span style={styles.ratioLabelRight}>{(100 - buyPct).toFixed(0)}% S</span>
       </div>
     </div>
   );
@@ -134,7 +164,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     minHeight: 0,
     flex: 1,
-    overflow: 'auto',
+    overflow: 'hidden',
   },
   columnLabels: {
     display: 'grid',
@@ -142,10 +172,22 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 14px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
+    flexShrink: 0,
   },
+  // Each half gets an equal share of whatever vertical room is actually
+  // available and clips the far end first (never the end nearest the
+  // spread) — so both the ask half and the bid half stay visible together
+  // without scrolling, on any panel height, instead of one side pushing
+  // the other off-screen.
   rows: {
+    flex: 1,
+    minHeight: 0,
     display: 'flex',
     flexDirection: 'column',
+    overflow: 'hidden',
+  },
+  asksRows: {
+    justifyContent: 'flex-end',
   },
   row: {
     position: 'relative',
@@ -153,6 +195,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '1fr 1fr',
     padding: '3px 14px',
     fontSize: 12,
+    flexShrink: 0,
   },
   depthBar: {
     position: 'absolute',
@@ -160,11 +203,52 @@ const styles: Record<string, React.CSSProperties> = {
     top: 0,
     bottom: 0,
   },
-  spread: {
+  midBand: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
     padding: '8px 14px',
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
     borderTop: '1px solid var(--border)',
     borderBottom: '1px solid var(--border)',
+  },
+  midPrice: {
+    fontSize: 15,
+    fontWeight: 800,
+    color: 'var(--text-primary)',
+  },
+  spread: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
+  },
+  ratioBar: {
+    position: 'relative',
+    flexShrink: 0,
+    display: 'flex',
+    height: 22,
+    overflow: 'hidden',
+  },
+  ratioFill: {
+    height: '100%',
+    opacity: 0.5,
+  },
+  ratioLabelLeft: {
+    position: 'absolute',
+    left: 10,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--buy)',
+  },
+  ratioLabelRight: {
+    position: 'absolute',
+    right: 10,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    fontSize: 10,
+    fontWeight: 700,
+    color: 'var(--sell)',
   },
 };
