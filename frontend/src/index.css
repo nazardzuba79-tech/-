@@ -547,6 +547,28 @@ a:hover > .nav-card-icon {
   display: none;
 }
 
+.marketing-burger {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .marketing-nav-desktop {
+    display: none !important;
+  }
+  .marketing-burger {
+    display: flex !important;
+  }
+  .marketing-mobile-menu.open {
+    display: flex !important;
+  }
+  .marketing-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .marketing-phone {
+    display: none !important;
+  }
+}
+
 @media (max-width: 860px) {
   .nav-desktop-links,
   .nav-desktop-right {

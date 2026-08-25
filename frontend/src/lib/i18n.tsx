@@ -502,6 +502,12 @@ const RU = {
     'Торговля криптовалютами сопряжена с высоким риском и подходит не всем инвесторам. Стоимость активов может значительно колебаться. Торгуй только теми средствами, потерю которых можешь себе позволить.',
 
   'nav.futures': 'Фьючерсы',
+  'marketing.eyebrow': 'Биржа институционального уровня',
+  'marketing.startTrading': 'Начать торговлю',
+  'marketing.exploreMarkets': 'Смотреть рынки',
+  'marketing.popularPairs': 'Популярные торговые пары',
+  'marketing.viewAllMarkets': 'Все рынки',
+  'marketing.liveMarkets': 'Актуальные рынки',
   'nav.dashboard': 'Дашборд',
   'nav.copyTrading': 'Копитрейдинг',
 
@@ -1096,6 +1102,12 @@ const EN: Record<Key, string> = {
     'Cryptocurrency trading carries a high level of risk and may not be suitable for all investors. Asset values can fluctuate significantly. Only trade with funds you can afford to lose.',
 
   'nav.futures': 'Futures',
+  'marketing.eyebrow': 'Institutional-grade crypto exchange',
+  'marketing.startTrading': 'Start Trading',
+  'marketing.exploreMarkets': 'Explore Markets',
+  'marketing.popularPairs': 'Popular trading pairs',
+  'marketing.viewAllMarkets': 'View all markets',
+  'marketing.liveMarkets': 'Live markets',
   'nav.dashboard': 'Dashboard',
   'nav.copyTrading': 'Copy Trading',
 
@@ -1686,6 +1698,12 @@ const ZH: Record<Key, string> = {
   'footer.riskWarning': '加密货币交易存在高风险,并非适合所有投资者。资产价值可能大幅波动。请仅使用你能承受损失的资金进行交易。',
 
   'nav.futures': '合约',
+  'marketing.eyebrow': '机构级加密货币交易所',
+  'marketing.startTrading': '开始交易',
+  'marketing.exploreMarkets': '浏览市场',
+  'marketing.popularPairs': '热门交易对',
+  'marketing.viewAllMarkets': '查看所有市场',
+  'marketing.liveMarkets': '实时市场',
   'nav.dashboard': '仪表盘',
   'nav.copyTrading': '跟单交易',
 

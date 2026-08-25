@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
+import { MarketingPage } from './pages/MarketingPage';
 import { TradePage } from './pages/TradePage';
 import { FuturesPage } from './pages/FuturesPage';
 import { MarketsPage } from './pages/MarketsPage';
@@ -30,7 +31,8 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={getToken() ? <Navigate to="/trade" replace /> : <AuthPage />} />
+        <Route path="/" element={getToken() ? <Navigate to="/trade" replace /> : <MarketingPage />} />
+        <Route path="/login" element={getToken() ? <Navigate to="/trade" replace /> : <AuthPage />} />
         <Route
           path="/trade"
           element={
