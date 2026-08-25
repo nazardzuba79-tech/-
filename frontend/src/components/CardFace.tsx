@@ -126,6 +126,7 @@ export function CardFace({
   holderName,
   network = 'visa',
   imageSrc,
+  imageWidth = 340,
 }: {
   theme: CardTheme;
   last4: string;
@@ -135,6 +136,9 @@ export function CardFace({
   // face below — used for the Icy White card's dark redesign, sourced
   // straight from the user's own reference image.
   imageSrc?: string;
+  // Display width in px for the imageSrc branch — callers with more room
+  // (e.g. a wide promo banner) can size it up so it's easier to make out.
+  imageWidth?: number;
 }) {
   if (imageSrc) {
     // The real photo's own aspect ratio (530:440) — reusing CARD_VISUAL_BASE's
@@ -145,7 +149,7 @@ export function CardFace({
         src={imageSrc}
         alt="Voltex card"
         className="card-tilt"
-        style={{ position: 'relative', width: 340, aspectRatio: '530 / 440', borderRadius: 18, display: 'block', objectFit: 'contain' }}
+        style={{ position: 'relative', width: imageWidth, aspectRatio: '530 / 440', borderRadius: 18, display: 'block', objectFit: 'contain' }}
       />
     );
   }
