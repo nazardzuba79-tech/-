@@ -234,8 +234,6 @@ export function MarketingPage() {
         </section>
 
         <FeaturesSection t={t} />
-        <GlobalStatsSection t={t} />
-        <SupportedAssetsSection tickers={tickers} fmt={fmt} t={t} />
 
         <section style={styles.perksSection}>
           <div style={styles.perksBanner}>
@@ -263,6 +261,9 @@ export function MarketingPage() {
             <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
           </div>
         </section>
+
+        <GlobalStatsSection t={t} />
+        <SupportedAssetsSection tickers={tickers} fmt={fmt} t={t} />
 
         <FaqSection t={t} />
         <FinalCtaSection t={t} />
