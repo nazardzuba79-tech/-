@@ -112,11 +112,6 @@ export function Nav({
             {t('nav.admin')}
           </Link>
         )}
-        {isAdmin && (
-          <Link to="/demo" style={{ ...styles.link, ...(active === '/demo' ? styles.linkActive : {}) }}>
-            Demo
-          </Link>
-        )}
         {middle}
       </div>
 
@@ -179,11 +174,6 @@ export function Nav({
           >
             <ShieldIcon admin />
             {t('nav.admin')}
-          </Link>
-        )}
-        {isAdmin && (
-          <Link to="/demo" style={{ ...styles.mobileLink, ...(active === '/demo' ? styles.linkActive : {}) }}>
-            Demo
           </Link>
         )}
 

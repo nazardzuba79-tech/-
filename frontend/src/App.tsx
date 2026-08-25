@@ -11,7 +11,6 @@ import { WalletPage } from './pages/WalletPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CopyTradingPage } from './pages/CopyTradingPage';
 import { ArbitragePage } from './pages/ArbitragePage';
-import { DemoTradePage } from './pages/DemoTradePage';
 import { LegalPage } from './pages/LegalPage';
 import { getToken } from './lib/api';
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -111,16 +110,6 @@ export function App() {
           element={
             <RequireAuth>
               <ArbitragePage />
-            </RequireAuth>
-          }
-        />
-        {/* Admin-only sandbox — server independently re-checks role ADMIN
-            on every /demo/* call, this route guard is just UX. */}
-        <Route
-          path="/demo"
-          element={
-            <RequireAuth>
-              <DemoTradePage />
             </RequireAuth>
           }
         />
