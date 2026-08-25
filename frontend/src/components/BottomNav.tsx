@@ -13,7 +13,7 @@ export function BottomNav() {
     { to: '/wallet', label: t('nav.wallet'), icon: WalletIcon },
     { to: '/markets', label: t('nav.markets'), icon: MarketsIcon },
     { to: '/trade', label: t('nav.trade'), icon: TradeIcon },
-    { to: '/settings', label: t('nav.settings'), icon: ProfileIcon },
+    { to: '/settings', label: t('nav.profile'), icon: ProfileIcon },
   ];
 
   return (

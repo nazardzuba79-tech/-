@@ -95,13 +95,6 @@ export function Nav({
           <CardIcon active={active === '/card'} />
           {t('nav.card')}
         </Link>
-        <Link
-          to="/settings"
-          style={{ ...styles.link, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
-        >
-          <GearIcon active={active === '/settings'} />
-          {t('nav.settings')}
-        </Link>
         <Link to="/otc" style={{ ...styles.link, ...(active === '/otc' ? styles.linkActive : {}) }}>
           {t('nav.otc')}
         </Link>
@@ -115,7 +108,17 @@ export function Nav({
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
-        {displayName && <span style={styles.displayName}>{displayName}</span>}
+        {/* Replaces both the old bare display-name text and the separate
+            Settings tab — Settings/Profile is one destination now, entered
+            through the name itself (SettingsPage's own Profile tab is
+            already its default tab, so this lands exactly where it reads). */}
+        <Link
+          to="/settings"
+          style={{ ...styles.profileLink, ...(active === '/settings' ? styles.linkActive : {}) }}
+        >
+          <UserIcon active={active === '/settings'} />
+          {displayName || t('nav.profile')}
+        </Link>
         {rightExtra}
         <LanguageSwitcher />
         <button onClick={handleLogout} style={styles.logoutBtn}>
@@ -156,13 +159,6 @@ export function Nav({
           <CardIcon active={active === '/card'} />
           {t('nav.card')}
         </Link>
-        <Link
-          to="/settings"
-          style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
-        >
-          <GearIcon active={active === '/settings'} />
-          {t('nav.settings')}
-        </Link>
         <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
           {t('nav.otc')}
         </Link>
@@ -177,6 +173,14 @@ export function Nav({
         )}
 
         <div style={styles.mobileDivider} />
+
+        <Link
+          to="/settings"
+          style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
+        >
+          <UserIcon active={active === '/settings'} />
+          {displayName || t('nav.profile')}
+        </Link>
 
         {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
         <div style={styles.mobileLangRow}>
@@ -243,7 +247,7 @@ function CardIcon({ active }: { active: boolean }) {
   );
 }
 
-function GearIcon({ active }: { active: boolean }) {
+function UserIcon({ active }: { active: boolean }) {
   return (
     <svg
       width="17"
@@ -255,8 +259,8 @@ function GearIcon({ active }: { active: boolean }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
     </svg>
   );
 }
@@ -383,7 +387,10 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 16,
   },
-  displayName: {
+  profileLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
     fontSize: 13,
     fontWeight: 700,
     color: 'var(--text-primary)',
