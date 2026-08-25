@@ -8,6 +8,7 @@ import { CryptoIcon } from '../components/CryptoIcon';
 import { Skeleton } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
+import { PhoneMockup } from '../components/PhoneMockup';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -129,6 +130,10 @@ export function AuthPage() {
                 </div>
               ))}
           </div>
+        </div>
+
+        <div className="auth-phone" style={styles.phoneCol}>
+          <PhoneMockup style={{ width: 240 }} />
         </div>
 
         <div style={{ ...styles.card, ...(mode === 'register' && !pendingToken ? styles.cardRegisterGlow : {}) }}>
@@ -467,9 +472,10 @@ const styles: Record<string, React.CSSProperties> = {
   layout: {
     display: 'flex',
     alignItems: 'center',
-    gap: 72,
-    maxWidth: 940,
+    gap: 48,
+    maxWidth: 1200,
     width: '100%',
+    justifyContent: 'center',
   },
   hero: {
     flex: 1,
@@ -477,6 +483,12 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     gap: 16,
     minWidth: 0,
+  },
+  phoneCol: {
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   heroTagline: {
     fontFamily: 'var(--font-display)',

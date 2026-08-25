@@ -8,6 +8,7 @@ import { CryptoIcon } from '../components/CryptoIcon';
 import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
+import { PhoneMockup } from '../components/PhoneMockup';
 import { parseChangePercent } from '../lib/priceChange';
 
 const NAV_LINKS = [
@@ -306,50 +307,7 @@ function HeroPreviewPanel({
 
       {/* Phone mockup — a generic illustrative app preview, same convention
           as v0's own mockup; numbers are not tied to any real account. */}
-      <div className="marketing-phone" style={styles.phone}>
-        <div style={styles.phoneScreen}>
-          <div style={styles.phoneStatusBar}>
-            <span>11:00</span>
-            <span>●●●</span>
-          </div>
-          <div style={styles.phoneWalletRow}>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>Your Wallet</div>
-              <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>0x46GaC...2V9N9</div>
-            </div>
-            <span style={styles.phoneManageBtn}>Manage</span>
-          </div>
-          <div style={{ padding: '0 16px' }}>
-            <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Total Balance</div>
-            <div style={{ fontSize: 26, fontWeight: 800, marginTop: 3 }}>2,206.30 <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>USDT</span></div>
-            <div style={{ marginTop: 14, fontSize: 13, fontWeight: 700 }}>Trading Account</div>
-            <div style={styles.phoneStatLine}>
-              <span style={{ color: 'var(--text-tertiary)' }}>Margin</span>
-              <span className="mono">513.15 USDT</span>
-            </div>
-            <div style={styles.phoneStatLine}>
-              <span style={{ color: 'var(--text-tertiary)' }}>Available</span>
-              <span className="mono">493.15 USDT</span>
-            </div>
-            <div style={styles.phoneBtnRow}>
-              <span style={styles.phoneSmallBtn}>Deposit</span>
-              <span style={styles.phoneSmallBtn}>Withdraw</span>
-            </div>
-            <div style={styles.phonePnlBox}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                <span>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Live P&amp;L </span>
-                  <span className="text-buy mono">+0.28</span>
-                </span>
-                <span>
-                  <span style={{ color: 'var(--text-tertiary)' }}>Realized </span>
-                  <span className="text-sell mono">-0.42</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PhoneMockup className="marketing-phone" style={{ position: 'absolute', right: -70, bottom: -90 }} />
     </div>
   );
 }
@@ -583,39 +541,6 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     padding: '1px 6px',
   },
-  phone: {
-    position: 'absolute',
-    right: -70,
-    bottom: -90,
-    width: 320,
-    borderRadius: 42,
-    border: '1px solid var(--border)',
-    background: '#05070c',
-    padding: 10,
-    boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
-  },
-  phoneScreen: {
-    borderRadius: 34,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    overflow: 'hidden',
-    paddingBottom: 16,
-  },
-  phoneStatusBar: { display: 'flex', justifyContent: 'space-between', padding: '14px 18px 6px', fontSize: 13, fontWeight: 600 },
-  phoneWalletRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: 'var(--panel-alt)',
-    borderRadius: 13,
-    margin: '10px 16px',
-    padding: '10px 13px',
-  },
-  phoneManageBtn: { fontSize: 12, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 8, padding: '3px 8px' },
-  phoneStatLine: { display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 6 },
-  phoneBtnRow: { display: 'flex', gap: 8, marginTop: 14 },
-  phoneSmallBtn: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 0' },
-  phonePnlBox: { marginTop: 14, background: 'var(--panel-alt)', borderRadius: 10, padding: 11 },
   overview: { borderTop: '1px solid var(--border)', background: 'var(--panel-alt)' },
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },

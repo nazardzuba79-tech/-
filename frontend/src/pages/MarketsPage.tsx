@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -45,6 +46,7 @@ interface Ticker {
  */
 export function MarketsPage() {
   const { t, lang } = useLanguage();
+  const navigate = useNavigate();
   const [tickers, setTickers] = useState<Ticker[]>([]);
   const [search, setSearch] = useState('');
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
@@ -177,7 +179,7 @@ export function MarketsPage() {
                 return (
                   <div
                     key={tk.pair}
-                    onClick={() => setSelectedPair(tk.pair)}
+                    onClick={() => navigate(`/trade?pair=${encodeURIComponent(tk.pair)}`)}
                     className="row-hover"
                     style={{
                       ...styles.listRow,
