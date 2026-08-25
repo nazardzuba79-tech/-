@@ -81,26 +81,26 @@ export function TradePage() {
   }
 
   return (
-    <div className="page-mesh" style={styles.page}>
+    <div className="page-mesh trading-page" style={styles.page}>
       <Nav active="/trade" middle={<BotsComingSoon />} />
       <ConnectionBanner />
       <TopGainersTicker onSelect={setPair} />
 
-      <div style={styles.content}>
+      <div className="trading-content" style={styles.content}>
         <div style={styles.tickerCard}>
           <TickerBar pair={pair} />
         </div>
 
-        <main style={styles.grid}>
-          <div style={styles.pairListColumn}>
+        <main className="trading-grid" style={styles.grid}>
+          <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
             <PairListSidebar pair={pair} onChange={setPair} />
           </div>
 
-          <div style={styles.chartColumn}>
+          <div className="trading-col trading-col-chart" style={styles.chartColumn}>
             <PriceChart pair={pair} />
           </div>
 
-          <div style={styles.bookColumn}>
+          <div className="trading-col trading-col-book" style={styles.bookColumn}>
             <div style={styles.bookTabs}>
               <button
                 onClick={() => setBookTab('book')}
@@ -119,12 +119,12 @@ export function TradePage() {
             {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
           </div>
 
-          <div style={styles.formColumn}>
+          <div className="trading-col trading-col-form" style={styles.formColumn}>
             <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
           </div>
         </main>
 
-        <div style={styles.ordersRow}>
+        <div className="trading-orders-row" style={styles.ordersRow}>
           <div style={styles.bottomTabs}>
             <button
               onClick={() => setBottomTab('open')}

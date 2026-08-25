@@ -626,6 +626,59 @@ a:hover > .nav-card-icon {
   .page-mesh {
     padding-bottom: 64px;
   }
+
+  /* Trade/Futures: desktop is a fixed-viewport row of fixed-width columns
+     (pair list | chart | book | order form) that has no room on a phone —
+     switch to a natural-scrolling stack instead, chart and order form
+     first since those are what a trader actually needs immediately. */
+  .trading-page {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .trading-content {
+    overflow: visible !important;
+  }
+  .trading-grid {
+    flex-direction: column !important;
+  }
+  .trading-col {
+    flex: none !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .trading-col-chart {
+    order: 1;
+    height: 380px !important;
+  }
+  .trading-col-form {
+    order: 2;
+    height: auto !important;
+  }
+  .trading-col-pairlist {
+    order: 3;
+    height: 260px !important;
+  }
+  .trading-col-book {
+    order: 4;
+    height: 320px !important;
+  }
+  .trading-orders-row {
+    flex: none !important;
+    height: 300px !important;
+  }
+
+  /* Markets: the fixed 1fr/340px grid puts the order-book column off the
+     right edge of a phone screen — stack it under the pair list instead. */
+  .markets-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Wallet: 32px of fixed side padding plus the donut card's minimum
+     content width (200px donut + legend) together overflow a phone's
+     content width by a few px — trim the padding to make room. */
+  .wallet-main {
+    padding: 16px !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

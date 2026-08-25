@@ -58,7 +58,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="page-mesh" style={styles.page}>
+    <div className="page-mesh trading-page" style={styles.page}>
       <Nav
         active="/futures"
         rightExtra={
@@ -69,7 +69,7 @@ export function FuturesPage() {
       />
       <TopGainersTicker onSelect={handleTickerSelect} />
 
-      <div style={styles.content}>
+      <div className="trading-content" style={styles.content}>
         <div style={styles.tickerCard}>
           <FuturesTickerBar symbol={symbol} />
         </div>
@@ -80,19 +80,19 @@ export function FuturesPage() {
           </div>
         )}
 
-        <main style={styles.grid}>
-          <div style={styles.pairListColumn}>
+        <main className="trading-grid" style={styles.grid}>
+          <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
             <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
           </div>
-          <div style={styles.chartColumn}>
+          <div className="trading-col trading-col-chart" style={styles.chartColumn}>
             <PriceChart pair={symbol} />
           </div>
-          <div style={styles.formColumn}>
+          <div className="trading-col trading-col-form" style={styles.formColumn}>
             <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} />
           </div>
         </main>
 
-        <div style={styles.positionsRow}>
+        <div className="trading-orders-row" style={styles.positionsRow}>
           <FuturesPositionsPanel refreshKey={positionsRefreshKey} />
         </div>
       </div>

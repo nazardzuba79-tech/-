@@ -353,7 +353,7 @@ export function WalletPage() {
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav active="/wallet" />
-      <main style={styles.main}>
+      <main className="wallet-main" style={styles.main}>
         <div style={styles.headerRow}>
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={styles.eyebrowRow}>

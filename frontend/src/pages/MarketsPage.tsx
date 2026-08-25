@@ -162,7 +162,7 @@ export function MarketsPage() {
           ))}
         </div>
 
-        <div style={styles.grid}>
+        <div className="markets-grid" style={styles.grid}>
           <div className="surface-raised" style={styles.listPanel}>
             <div style={styles.listHeader}>
               <span>{t('markets.pair')}</span>
@@ -219,7 +219,7 @@ export function MarketsPage() {
             </div>
           </div>
 
-          <div style={styles.bookColumn}>
+          <div className="markets-book-column" style={styles.bookColumn}>
             {selectedPair ? (
               <>
                 <div style={styles.selectedPair} className="mono">
