@@ -91,7 +91,10 @@ export function AuthPage() {
       </div>
 
       <div style={styles.fold}>
-      <div style={styles.layout}>
+      <div className="bg-grid" />
+      <div className="hero-glow hero-glow-cyan" />
+      <div className="hero-glow hero-glow-purple" />
+      <div style={{ ...styles.layout, position: 'relative' }}>
         <div className="auth-hero" style={styles.hero}>
           <Logo size="large" />
           <p style={styles.heroTagline}>{t('auth.heroTagline')}</p>
@@ -449,6 +452,8 @@ const styles: Record<string, React.CSSProperties> = {
     ...AUTH_V0_VARS,
   },
   fold: {
+    position: 'relative',
+    overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

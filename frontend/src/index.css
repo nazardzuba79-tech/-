@@ -681,6 +681,41 @@ a:hover > .nav-card-icon {
   }
 }
 
+/* Ambient hero background — subtle grid + two blurred brand-color glow
+   blobs (cyan + purple), matching the v0 reference's hero.tsx exactly.
+   Used behind the marketing landing hero and the login/register hero. */
+.bg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: linear-gradient(to right, rgba(28, 39, 53, 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 39, 53, 0.55) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.hero-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+}
+.hero-glow-cyan {
+  top: -160px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 384px;
+  width: 672px;
+  background: rgba(24, 200, 255, 0.2);
+  filter: blur(120px);
+}
+.hero-glow-purple {
+  top: 160px;
+  right: 0;
+  height: 288px;
+  width: 288px;
+  background: rgba(108, 92, 231, 0.2);
+  filter: blur(120px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;

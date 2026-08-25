@@ -123,7 +123,10 @@ export function MarketingPage() {
 
       <main>
         <section style={styles.hero}>
-          <div className="marketing-hero-grid" style={styles.heroGrid}>
+          <div className="bg-grid" />
+          <div className="hero-glow hero-glow-cyan" />
+          <div className="hero-glow hero-glow-purple" />
+          <div className="marketing-hero-grid" style={{ ...styles.heroGrid, position: 'relative' }}>
             <div style={styles.heroLeft}>
               <span style={styles.eyebrow}>
                 <span style={styles.eyebrowDot} />
