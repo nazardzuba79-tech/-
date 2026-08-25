@@ -518,8 +518,9 @@ const RU = {
   'marketing.statNoKycLabel': 'Без верификации',
 
   'marketing.heroPerk1': 'Без верификации',
-  'marketing.heroPerk2': 'Оплата подписок iCloud, ChatGPT и других сервисов App Store',
-  'marketing.heroPerk3': 'Apple Pay и Google Pay — покупки и снятие наличных по всему миру',
+  'marketing.heroPerk2': 'Крипто-карта: подписки iCloud, ChatGPT и других сервисов App Store',
+  'marketing.heroPerk3': 'Крипто-карта: Apple Pay и Google Pay — покупки и снятие наличных по всему миру',
+  'marketing.heroPerk4': 'OTC-торговля от $100 000 через персонального менеджера',
 
   'marketing.featuresLabel': 'Почему VOLTEX',
   'marketing.featuresTitle': 'Мощь, точность и скорость в едином терминале',
@@ -1186,8 +1187,9 @@ const EN: Record<Key, string> = {
   'marketing.statNoKycLabel': 'No verification',
 
   'marketing.heroPerk1': 'No verification required',
-  'marketing.heroPerk2': 'Pay for iCloud, ChatGPT and other App Store subscriptions',
-  'marketing.heroPerk3': 'Apple Pay & Google Pay — spend and withdraw cash worldwide',
+  'marketing.heroPerk2': 'Crypto card: pay for iCloud, ChatGPT and other App Store subscriptions',
+  'marketing.heroPerk3': 'Crypto card: Apple Pay & Google Pay — spend and withdraw cash worldwide',
+  'marketing.heroPerk4': 'OTC trading from $100,000 through a dedicated account manager',
 
   'marketing.featuresLabel': 'Why VOLTEX',
   'marketing.featuresTitle': 'Power, precision and speed in a single terminal',
@@ -1841,8 +1843,9 @@ const ZH: Record<Key, string> = {
   'marketing.statNoKycLabel': '无需验证',
 
   'marketing.heroPerk1': '无需身份验证',
-  'marketing.heroPerk2': '支付 iCloud、ChatGPT 等 App Store 订阅',
-  'marketing.heroPerk3': 'Apple Pay 和 Google Pay——全球消费与取现',
+  'marketing.heroPerk2': '加密卡：支付 iCloud、ChatGPT 等 App Store 订阅',
+  'marketing.heroPerk3': '加密卡：Apple Pay 和 Google Pay——全球消费与取现',
+  'marketing.heroPerk4': 'OTC 交易，10 万美元起，专属客户经理',
 
   'marketing.featuresLabel': '为什么选择 VOLTEX',
   'marketing.featuresTitle': '强大、精准、迅速——尽在一个终端',

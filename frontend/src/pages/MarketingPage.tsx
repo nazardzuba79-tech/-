@@ -129,7 +129,7 @@ export function MarketingPage() {
           <div className="marketing-hero-grid" style={{ ...styles.heroGrid, position: 'relative' }}>
             <div style={styles.heroLeft}>
               <div style={styles.heroPerks}>
-                {[t('marketing.heroPerk1'), t('marketing.heroPerk2'), t('marketing.heroPerk3')].map((perk) => (
+                {[t('marketing.heroPerk1'), t('marketing.heroPerk2'), t('marketing.heroPerk3'), t('marketing.heroPerk4')].map((perk) => (
                   <span key={perk} style={styles.heroPerkBadge}>
                     <CheckIcon /> {perk}
                   </span>
