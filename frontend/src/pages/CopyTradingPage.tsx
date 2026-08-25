@@ -41,7 +41,6 @@ export function CopyTradingPage() {
   const { t } = useLanguage();
   const [riskFilter, setRiskFilter] = useState<(typeof RISK_FILTERS)[number]>('ALL');
   const [sortKey, setSortKey] = useState<'roi' | 'winRate' | 'copiers'>('roi');
-  const [copying, setCopying] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     return TRADERS.filter((tr) => riskFilter === 'ALL' || tr.risk === riskFilter).sort((a, b) => {
@@ -183,11 +182,8 @@ export function CopyTradingPage() {
                 ))}
               </div>
 
-              <button
-                onClick={() => setCopying((c) => ({ ...c, [tr.id]: !c[tr.id] }))}
-                style={{ ...styles.copyBtn, ...(copying[tr.id] ? styles.copyBtnActive : {}) }}
-              >
-                {copying[tr.id] ? '✓' : ''} {t('copyTrading.copyBtn')}
+              <button disabled style={{ ...styles.copyBtn, ...styles.copyBtnDisabled }}>
+                {t('copyTrading.copyBtn')}
               </button>
             </div>
           ))}
@@ -316,9 +312,9 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
   },
-  copyBtnActive: {
-    background: 'var(--buy-dim)',
-    color: 'var(--buy)',
-    border: '1px solid var(--buy)',
+  copyBtnDisabled: {
+    background: 'var(--panel-alt)',
+    color: 'var(--text-tertiary)',
+    cursor: 'not-allowed',
   },
 };

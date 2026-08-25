@@ -187,9 +187,6 @@ export function MarketsPage() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} />
                       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
-                      {rankByBase?.get(tk.pair.split('/')[0])?.rank !== undefined && (
-                        <span style={styles.rankBadge}>#{rankByBase!.get(tk.pair.split('/')[0])!.rank}</span>
-                      )}
                     </span>
                     <PriceCell value={parseFloat(tk.lastPrice)} className="mono" style={{ textAlign: 'right' }} />
                     <span
@@ -288,15 +285,6 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
   },
   chipActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' },
-  rankBadge: {
-    flexShrink: 0,
-    fontSize: 10,
-    fontWeight: 700,
-    color: 'var(--text-tertiary)',
-    background: 'var(--panel-alt)',
-    borderRadius: 999,
-    padding: '2px 6px',
-  },
   grid: { display: 'grid', gridTemplateColumns: '1fr 340px', gap: 12, alignItems: 'start' },
   listPanel: {
     background: 'var(--panel)',
@@ -306,7 +294,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   listHeader: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 0.8fr 1fr 1fr 1fr',
+    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.9fr 0.9fr 0.9fr',
     padding: '10px 14px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
@@ -316,7 +304,7 @@ const styles: Record<string, React.CSSProperties> = {
   listBody: { maxHeight: 560, overflowY: 'auto' },
   listRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 0.8fr 1fr 1fr 1fr',
+    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.9fr 0.9fr 0.9fr',
     padding: '10px 14px',
     fontSize: 13,
     cursor: 'pointer',

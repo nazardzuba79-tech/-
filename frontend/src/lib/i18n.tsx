@@ -539,7 +539,7 @@ const RU = {
 
   'copyTrading.title': 'Копитрейдинг',
   'copyTrading.subtitle': 'Следуй за проверенными трейдерами и копируй их сделки автоматически.',
-  'copyTrading.demoNotice': 'Демо-режим: функция копитрейдинга пока в разработке. Трейдеры и статистика ниже — иллюстративные примеры, а не реальные данные.',
+  'copyTrading.demoNotice': 'Копитрейдинг доступен только клиентам с депозитом от $20 000. Свяжитесь с поддержкой, чтобы получить доступ.',
   'copyTrading.roi': 'Доходность (30д)',
   'copyTrading.winRate': 'Win rate',
   'copyTrading.followers': 'Подписчиков',
@@ -1139,7 +1139,7 @@ const EN: Record<Key, string> = {
 
   'copyTrading.title': 'Copy Trading',
   'copyTrading.subtitle': 'Follow proven traders and copy their trades automatically.',
-  'copyTrading.demoNotice': "Demo mode: copy trading is still in development. The traders and stats below are illustrative examples, not real data.",
+  'copyTrading.demoNotice': 'Copy trading is available only to clients with a deposit of $20,000+. Contact support to get access.',
   'copyTrading.roi': 'ROI (30D)',
   'copyTrading.winRate': 'Win rate',
   'copyTrading.followers': 'Followers',
@@ -1735,7 +1735,7 @@ const ZH: Record<Key, string> = {
 
   'copyTrading.title': '跟单交易',
   'copyTrading.subtitle': '跟随优秀交易员，自动复制他们的交易。',
-  'copyTrading.demoNotice': '演示模式：跟单交易功能仍在开发中。以下交易员和数据仅为示例，并非真实数据。',
+  'copyTrading.demoNotice': '跟单交易仅面向存款达 $20,000 及以上的客户开放。请联系客服获取访问权限。',
   'copyTrading.roi': '收益率（30天）',
   'copyTrading.winRate': '胜率',
   'copyTrading.followers': '关注者',
