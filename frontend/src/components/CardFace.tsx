@@ -24,16 +24,20 @@ export const BASE_CARD_THEME: CardTheme = {
   textColor: '#2b1a0c',
 };
 
-// Cool silver/platinum brushed metal — the Icy White card. Kept clearly
-// distinct in tone from the base card's rose-gold so the two products read
-// as different materials, not just different labels.
+// Dark graphite metal with a cyan-to-purple neon rim glow — the Icy White
+// card's visual redesign (still the same product/tier underneath, only the
+// face changed: no more silver brushed metal, no hex/bolt watermark). The
+// glow is two overlapping colored shadow layers rather than a literal
+// gradient border, since a plain <div style> border can't carry a gradient
+// on its own — this reads the same at card size.
 export const ICY_CARD_THEME: CardTheme = {
-  background: 'linear-gradient(125deg, #f4f5f7 0%, #d9dde2 22%, #ffffff 40%, #b9bfc8 58%, #eef0f3 76%, #c8cdd4 100%)',
-  border: '1px solid rgba(40,55,70,0.16)',
-  boxShadow: '0 24px 50px rgba(30,45,60,0.18), 0 8px 20px rgba(30,45,60,0.10)',
+  background: 'linear-gradient(145deg, #1a1d24 0%, #0c0e12 28%, #202430 52%, #0a0c10 76%, #161920 100%)',
+  border: '1px solid rgba(120,150,200,0.22)',
+  boxShadow:
+    '0 0 0 1px rgba(24,200,255,0.14), 0 0 34px rgba(24,200,255,0.22), 0 0 60px rgba(108,92,231,0.22), 0 24px 50px rgba(0,0,0,0.5)',
   chipTone: 'silver',
-  hexTint: 'rgba(30,45,60,0.14)',
-  textColor: '#16202b',
+  hexTint: 'rgba(0,0,0,0)',
+  textColor: '#f2f4f7',
 };
 
 // EMV chip icon for the card's top-left corner — tone follows the card's

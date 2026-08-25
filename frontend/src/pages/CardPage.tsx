@@ -168,7 +168,7 @@ export function CardPage() {
             <div style={styles.compareHeaderRow}>
               <span />
               <span style={styles.compareColHeader}>{t('card.baseProductLabel')}</span>
-              <span style={{ ...styles.compareColHeader, color: ICY_CARD_THEME.textColor }}>{t('card.icyProductLabel')}</span>
+              <span style={styles.compareColHeader}>{t('card.icyProductLabel')}</span>
             </div>
             <div style={styles.compareRow}>
               <span style={styles.compareRowLabel}>{t('card.compareCashback')}</span>
