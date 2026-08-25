@@ -518,9 +518,8 @@ const RU = {
   'marketing.statNoKycLabel': 'Без верификации',
 
   'marketing.heroPerk1': 'Без верификации',
-  'marketing.heroPerk2': 'Крипто-карта для покупок по всему миру',
-  'marketing.heroPerk3': 'Снятие наличных в любой стране',
-  'marketing.heroPerk4': 'Контроль лимитов на вывод',
+  'marketing.heroPerk2': 'Оплата подписок iCloud, ChatGPT и других сервисов App Store',
+  'marketing.heroPerk3': 'Apple Pay и Google Pay — покупки и снятие наличных по всему миру',
 
   'marketing.featuresLabel': 'Почему VOLTEX',
   'marketing.featuresTitle': 'Мощь, точность и скорость в едином терминале',
@@ -1187,9 +1186,8 @@ const EN: Record<Key, string> = {
   'marketing.statNoKycLabel': 'No verification',
 
   'marketing.heroPerk1': 'No verification required',
-  'marketing.heroPerk2': 'Crypto card for purchases worldwide',
-  'marketing.heroPerk3': 'Cash withdrawals in any country',
-  'marketing.heroPerk4': 'Withdrawal limit controls',
+  'marketing.heroPerk2': 'Pay for iCloud, ChatGPT and other App Store subscriptions',
+  'marketing.heroPerk3': 'Apple Pay & Google Pay — spend and withdraw cash worldwide',
 
   'marketing.featuresLabel': 'Why VOLTEX',
   'marketing.featuresTitle': 'Power, precision and speed in a single terminal',
@@ -1843,9 +1841,8 @@ const ZH: Record<Key, string> = {
   'marketing.statNoKycLabel': '无需验证',
 
   'marketing.heroPerk1': '无需身份验证',
-  'marketing.heroPerk2': '加密卡，全球消费',
-  'marketing.heroPerk3': '任意国家均可取现',
-  'marketing.heroPerk4': '提现限额管控',
+  'marketing.heroPerk2': '支付 iCloud、ChatGPT 等 App Store 订阅',
+  'marketing.heroPerk3': 'Apple Pay 和 Google Pay——全球消费与取现',
 
   'marketing.featuresLabel': '为什么选择 VOLTEX',
   'marketing.featuresTitle': '强大、精准、迅速——尽在一个终端',
