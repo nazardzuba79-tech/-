@@ -635,7 +635,7 @@ export function WalletPage() {
         {demoBalances.length > 0 && (
           <div style={styles.demoCard}>
             <div style={styles.demoCardHeader}>
-              <Badge text="DEMO" color="#a15c00" bg="#fdecc8" />
+              <Badge text="DEMO" color="var(--accent)" bg="var(--accent-dim)" />
               <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>Demo-баланс</h3>
               <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Тестовые средства — отдельно от реального баланса</span>
             </div>
@@ -755,28 +755,37 @@ function WithdrawIcon() {
   );
 }
 
-// Light, white-card redesign scoped to this page's content (everything
-// inside <main>, below the shared dark Nav bar) — these locally redefine
-// the same CSS custom properties every existing var(--panel)/var(--border)/
-// var(--text-*) style below already reads from, so the whole page flips to
-// a light/dark-text look without duplicating every rule. `color` is set
-// explicitly here (not just the custom props) so plain inherited text also
-// picks up the dark value instead of the app-wide light-on-dark default.
-const LIGHT_PAGE_VARS = {
-  ['--panel' as any]: '#ffffff',
-  ['--panel-alt' as any]: '#f1f3f7',
-  ['--panel-alt-hover' as any]: '#e8ebf0',
-  ['--border' as any]: '#e3e6ec',
-  ['--text-primary' as any]: '#12151a',
-  ['--text-secondary' as any]: '#4b5563',
-  ['--text-tertiary' as any]: '#6b7280',
-  ['--neutral-dim' as any]: 'rgba(75,85,99,0.08)',
+// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
+// scoped to just this page's content (everything inside <main>, below the
+// shared Nav bar) the same way FuturesPage/MarketsPage/TradePage/
+// DashboardPage re-theme themselves — every existing var(--panel)/
+// var(--border)/var(--text-*) rule below picks this up automatically.
+// `color` is set explicitly here (not just the custom props) so plain
+// inherited text also picks up the right value instead of the app-wide
+// default.
+const WALLET_V0_VARS = {
+  ['--panel' as any]: '#121925',
+  ['--panel-alt' as any]: '#0e131d',
+  ['--panel-alt-hover' as any]: '#172131',
+  ['--border' as any]: '#1c2735',
+  ['--text-primary' as any]: '#f5f7fa',
+  ['--text-secondary' as any]: '#8b96a8',
+  ['--text-tertiary' as any]: '#6b7789',
+  ['--neutral-dim' as any]: 'rgba(139,150,168,0.1)',
+  ['--buy' as any]: '#19d98b',
+  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
+  ['--sell' as any]: '#ff4d67',
+  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
+  ['--accent' as any]: '#18c8ff',
+  ['--accent-hover' as any]: '#3fd4ff',
+  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
+  ['--on-accent' as any]: '#04121b',
   color: 'var(--text-primary)',
 } as React.CSSProperties;
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column' },
-  main: { padding: '32px', maxWidth: 1080, margin: '0 auto', width: '100%', ...LIGHT_PAGE_VARS },
+  page: { minHeight: '100vh', background: '#080b12', display: 'flex', flexDirection: 'column' },
+  main: { padding: '32px', maxWidth: 1080, margin: '0 auto', width: '100%', ...WALLET_V0_VARS },
   headerRow: {
     display: 'flex',
     justifyContent: 'space-between',
@@ -786,14 +795,14 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
   },
   demoCard: {
-    background: '#fffaf0',
-    border: '1px solid #f0d9a8',
-    borderRadius: 8,
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     padding: 16,
     marginTop: 20,
   },
   demoCardHeader: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
-  demoRow: { display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12, borderTop: '1px solid #f0d9a8' },
+  demoRow: { display: 'flex', justifyContent: 'space-between', padding: '6px 0', fontSize: 12, borderTop: '1px solid var(--border)' },
   eyebrowRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 },
   eyebrow: { fontSize: 13, color: 'var(--text-secondary)' },
   eyeBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', display: 'flex', padding: 2 },
@@ -858,17 +867,16 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
     border: 'none',
-    borderRadius: 24,
+    borderRadius: 10,
     padding: '11px 22px',
     fontWeight: 800,
     fontSize: 13,
-    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
   },
   secondaryBtn: {
-    background: '#ffffff',
-    color: 'var(--text-primary)',
+    background: 'transparent',
+    color: 'var(--text-secondary)',
     border: '1px solid var(--border)',
-    borderRadius: 24,
+    borderRadius: 10,
     padding: '11px 22px',
     fontWeight: 700,
     fontSize: 13,
@@ -902,7 +910,7 @@ const styles: Record<string, React.CSSProperties> = {
   table: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   columns: {
