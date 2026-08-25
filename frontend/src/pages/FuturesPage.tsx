@@ -8,7 +8,6 @@ import { FuturesPairList } from '../components/FuturesPairList';
 import { PriceChart } from '../components/PriceChart';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
-import { FuturesRiskDisclaimerModal } from '../components/FuturesRiskDisclaimerModal';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { TopGainersTicker } from '../components/TopGainersTicker';
 
@@ -18,20 +17,12 @@ export function FuturesPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [symbol, setSymbol] = useState('BTC/USDT');
-  const [riskAcknowledged, setRiskAcknowledged] = useState<boolean | null>(null);
   const [newAccountNotice, setNewAccountNotice] = useState<{ max: number; days: number } | null>(null);
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
 
-  useEffect(() => {
-    api
-      .getFuturesRiskAck()
-      .then((res) => setRiskAcknowledged(res.acknowledged))
-      .catch(() => setRiskAcknowledged(false));
-  }, []);
-
   // Surface the new-account leverage cap as an informational notice — the
-  // real enforcement is server-side (see requireRiskAck/leverage checks in
+  // real enforcement is server-side (see the leverage checks in
   // FuturesPositionService), this is just so the trader isn't surprised by
   // a rejected order at 50x on day one.
   useEffect(() => {
@@ -97,9 +88,6 @@ export function FuturesPage() {
         </div>
       </div>
 
-      {riskAcknowledged === false && (
-        <FuturesRiskDisclaimerModal onAccepted={() => setRiskAcknowledged(true)} />
-      )}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );

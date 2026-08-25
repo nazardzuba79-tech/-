@@ -612,12 +612,6 @@ export const api = {
       leverageTiers: { notionalCap: number; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
     }>('/futures/config'),
 
-  getFuturesRiskAck: () =>
-    request<{ acknowledged: boolean; acknowledgedAt: string | null }>('/futures/risk-ack'),
-
-  acknowledgeFuturesRisk: () =>
-    request<{ acknowledged: boolean; acknowledgedAt: string }>('/futures/risk-ack', { method: 'POST' }),
-
   placeFuturesOrder: (params: {
     symbol: string;
     side: 'BUY' | 'SELL';

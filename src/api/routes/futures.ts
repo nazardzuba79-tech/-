@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient, Prisma } from '@prisma/client';
@@ -70,33 +70,9 @@ export function futuresRouter(
     });
   });
 
-  router.get('/futures/risk-ack', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
-    const user = await prisma.user.findUnique({ where: { id: req.userId } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ acknowledged: !!user.futuresRiskAckAt, acknowledgedAt: user.futuresRiskAckAt });
-  });
-
-  router.post('/futures/risk-ack', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
-    const user = await prisma.user.update({ where: { id: req.userId }, data: { futuresRiskAckAt: new Date() } });
-    res.json({ acknowledged: true, acknowledgedAt: user.futuresRiskAckAt });
-  });
-
-  // The risk disclaimer is enforced HERE, not just hidden client-side —
-  // any request that tries to open futures exposure without a recorded
-  // acknowledgment is rejected regardless of what the UI showed.
-  async function requireRiskAck(req: ApiAuthedRequest, res: Response): Promise<boolean> {
-    const user = await prisma.user.findUnique({ where: { id: req.userId } });
-    if (!user?.futuresRiskAckAt) {
-      res.status(403).json({ error: 'Risk disclaimer must be acknowledged before trading futures (POST /futures/risk-ack)' });
-      return false;
-    }
-    return true;
-  }
-
   router.post('/futures/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    if (!(await requireRiskAck(req, res))) return;
 
     const { symbol, side, type, price, quantity, leverage, marginType, reduceOnly } = parsed.data;
     try {

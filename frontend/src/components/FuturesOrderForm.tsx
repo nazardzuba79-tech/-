@@ -4,7 +4,6 @@ import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
-import { HighLeverageConfirmModal } from './HighLeverageConfirmModal';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 
 const PERCENT_STOPS = [0, 25, 50, 75, 100];
@@ -26,7 +25,6 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [showLeverageConfirm, setShowLeverageConfirm] = useState(false);
 
   useEffect(() => {
     api.getFuturesConfig().then(setConfig).catch(() => {});
@@ -120,10 +118,6 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (config && leverage >= config.highLeverageWarningThreshold) {
-      setShowLeverageConfirm(true);
-      return;
-    }
     submitOrder();
   }
 
@@ -303,17 +297,6 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
             </tbody>
           </table>
         </div>
-      )}
-
-      {showLeverageConfirm && (
-        <HighLeverageConfirmModal
-          leverage={leverage}
-          onCancel={() => setShowLeverageConfirm(false)}
-          onConfirm={() => {
-            setShowLeverageConfirm(false);
-            submitOrder();
-          }}
-        />
       )}
     </div>
   );
