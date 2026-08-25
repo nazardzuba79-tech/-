@@ -74,6 +74,18 @@ function VisaMark({ color }: { color: string }) {
   return <span style={{ ...styles.visaMark, color }}>VISA</span>;
 }
 
+// Classic dual-circle Mastercard mark — same placeholder spirit as
+// VisaMark above (real network artwork lands once the partnership is
+// finalized), geometric rather than text so it reads correctly next to it.
+function MastercardMark() {
+  return (
+    <svg width="34" height="21" viewBox="0 0 34 21" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="13" cy="10.5" r="10.5" fill="#EB001B" opacity="0.88" />
+      <circle cx="21" cy="10.5" r="10.5" fill="#F79E1B" opacity="0.88" />
+    </svg>
+  );
+}
+
 // Shared layout for both card visuals — only the finish (background/
 // border/shadow) differs between the base and Icy White cards.
 const CARD_VISUAL_BASE: CSSProperties = {
@@ -90,11 +102,21 @@ const CARD_VISUAL_BASE: CSSProperties = {
 /**
  * Brushed-metal finish, EMV chip, hexagon watermark, masked demo
  * number/cardholder (design placeholders, not real data), the VOLTEX
- * wordmark, and a DEBIT/VISA lockup. Only the finish, last 4 digits, and
- * holder name vary between the two cards. Wrap in a `.card-tilt-wrap` div
- * for the hover-tilt effect (see index.css).
+ * wordmark, and a DEBIT/network lockup. Only the finish, last 4 digits,
+ * holder name, and network mark vary between the two cards. Wrap in a
+ * `.card-tilt-wrap` div for the hover-tilt effect (see index.css).
  */
-export function CardFace({ theme, last4, holderName }: { theme: CardTheme; last4: string; holderName: string }) {
+export function CardFace({
+  theme,
+  last4,
+  holderName,
+  network = 'visa',
+}: {
+  theme: CardTheme;
+  last4: string;
+  holderName: string;
+  network?: 'visa' | 'mastercard';
+}) {
   return (
     <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
       <div style={styles.brushedTexture} />
@@ -119,7 +141,7 @@ export function CardFace({ theme, last4, holderName }: { theme: CardTheme; last4
         </div>
         <div style={styles.cardNetworkStack}>
           <span style={{ ...styles.cardDebitLabel, color: theme.textColor }}>DEBIT</span>
-          <VisaMark color={theme.textColor} />
+          {network === 'mastercard' ? <MastercardMark /> : <VisaMark color={theme.textColor} />}
         </div>
       </div>
     </div>

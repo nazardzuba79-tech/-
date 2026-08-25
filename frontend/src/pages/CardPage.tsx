@@ -123,7 +123,7 @@ export function CardPage() {
 
           <div style={styles.productCol}>
             <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
-              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" />
+              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" />
             </div>
 
             <div style={styles.icyBox}>

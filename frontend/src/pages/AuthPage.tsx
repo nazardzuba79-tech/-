@@ -328,7 +328,7 @@ function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
     <div style={styles.perksSection}>
       <div style={styles.perksBanner}>
         <div className="card-tilt-wrap" style={styles.perksBannerCard}>
-          <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" />
+          <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" network="mastercard" />
         </div>
         <div style={styles.perksBannerText}>
           <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>
