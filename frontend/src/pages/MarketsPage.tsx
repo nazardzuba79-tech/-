@@ -130,7 +130,7 @@ export function MarketsPage() {
   );
 
   return (
-    <div className="page-mesh" style={styles.page}>
+    <div className="page-mesh" style={{ ...styles.page, ...MARKETS_V0_VARS }}>
       <Nav active="/markets" />
 
       <main style={styles.main}>
@@ -240,6 +240,30 @@ export function MarketsPage() {
   );
 }
 
+// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
+// scoped to just this page the same way FuturesPage/WalletPage re-theme
+// themselves — every existing var(--panel)/var(--border)/var(--text-*)
+// rule below (and in the shared Nav rendered above) picks this up
+// automatically. Cyan accent replaces the site's default amber.
+const MARKETS_V0_VARS = {
+  ['--bg' as any]: '#080b12',
+  ['--panel' as any]: '#121925',
+  ['--panel-alt' as any]: '#0e131d',
+  ['--panel-alt-hover' as any]: '#172131',
+  ['--border' as any]: '#1c2735',
+  ['--text-primary' as any]: '#f5f7fa',
+  ['--text-secondary' as any]: '#8b96a8',
+  ['--text-tertiary' as any]: '#6b7789',
+  ['--buy' as any]: '#19d98b',
+  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
+  ['--sell' as any]: '#ff4d67',
+  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
+  ['--accent' as any]: '#18c8ff',
+  ['--accent-hover' as any]: '#3fd4ff',
+  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
+  ['--on-accent' as any]: '#04121b',
+} as React.CSSProperties;
+
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' },
   main: { padding: 32, maxWidth: 1100, margin: '0 auto', width: '100%' },
@@ -273,11 +297,11 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 999,
     padding: '2px 6px',
   },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 340px', gap: 12, alignItems: 'start' },
   listPanel: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 12,
     overflow: 'hidden',
   },
   listHeader: {
@@ -305,7 +329,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 12,
     boxShadow: 'var(--shadow-sm)',
   },

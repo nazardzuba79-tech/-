@@ -7,6 +7,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
 import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { CopyTradingPage } from './pages/CopyTradingPage';
 import { DemoTradePage } from './pages/DemoTradePage';
 import { LegalPage } from './pages/LegalPage';
 import { getToken } from './lib/api';
@@ -82,6 +84,22 @@ export function App() {
           element={
             <RequireAuth>
               <OtcPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAuth>
+              <DashboardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/copy-trading"
+          element={
+            <RequireAuth>
+              <CopyTradingPage />
             </RequireAuth>
           }
         />

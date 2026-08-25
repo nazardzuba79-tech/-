@@ -95,78 +95,107 @@ export function TradePage() {
       />
       <ConnectionBanner />
       <TopGainersTicker onSelect={setPair} />
-      <TickerBar pair={pair} />
 
-      <main style={styles.grid}>
-        <div style={styles.pairListColumn}>
-          <PairListSidebar pair={pair} onChange={setPair} />
+      <div style={styles.content}>
+        <div style={styles.tickerCard}>
+          <TickerBar pair={pair} />
         </div>
 
-        <div style={styles.chartColumn}>
-          <PriceChart pair={pair} />
-        </div>
+        <main style={styles.grid}>
+          <div style={styles.pairListColumn}>
+            <PairListSidebar pair={pair} onChange={setPair} />
+          </div>
 
-        <div style={styles.bookColumn}>
-          <div style={styles.bookTabs}>
+          <div style={styles.chartColumn}>
+            <PriceChart pair={pair} />
+          </div>
+
+          <div style={styles.bookColumn}>
+            <div style={styles.bookTabs}>
+              <button
+                onClick={() => setBookTab('book')}
+                style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
+              >
+                {t('trade.orderBook')}
+              </button>
+              <button
+                onClick={() => setBookTab('trades')}
+                style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
+              >
+                {t('trade.trades')}
+              </button>
+            </div>
+            {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
+            {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+          </div>
+
+          <div style={styles.formColumn}>
+            <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
+          </div>
+        </main>
+
+        <div style={styles.ordersRow}>
+          <div style={styles.bottomTabs}>
             <button
-              onClick={() => setBookTab('book')}
-              style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
+              onClick={() => setBottomTab('open')}
+              style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
             >
-              {t('trade.orderBook')}
+              {t('trade.tabOpenOrders')}
             </button>
             <button
-              onClick={() => setBookTab('trades')}
-              style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
+              onClick={() => setBottomTab('orderHistory')}
+              style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
             >
-              {t('trade.trades')}
+              {t('trade.tabOrderHistory')}
+            </button>
+            <button
+              onClick={() => setBottomTab('tradeHistory')}
+              style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
+            >
+              {t('trade.tabTradeHistory')}
+            </button>
+            <button
+              onClick={() => setBottomTab('assets')}
+              style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
+            >
+              {t('trade.tabAssets')}
             </button>
           </div>
-          {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
-          {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+          {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
+          {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+          {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+          {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
         </div>
-
-        <div style={styles.formColumn}>
-          <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
-        </div>
-      </main>
-
-      <div style={styles.ordersRow}>
-        <div style={styles.bottomTabs}>
-          <button
-            onClick={() => setBottomTab('open')}
-            style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
-          >
-            {t('trade.tabOpenOrders')}
-          </button>
-          <button
-            onClick={() => setBottomTab('orderHistory')}
-            style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
-          >
-            {t('trade.tabOrderHistory')}
-          </button>
-          <button
-            onClick={() => setBottomTab('tradeHistory')}
-            style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
-          >
-            {t('trade.tabTradeHistory')}
-          </button>
-          <button
-            onClick={() => setBottomTab('assets')}
-            style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
-          >
-            {t('trade.tabAssets')}
-          </button>
-        </div>
-        {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
-        {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-        {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-        {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
       </div>
 
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     </div>
   );
 }
+
+// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
+// scoped to just this page the same way FuturesPage/MarketsPage re-theme
+// themselves — every existing var(--panel)/var(--border)/var(--text-*)
+// rule below (and in the shared Nav rendered above) picks this up
+// automatically. Cyan accent replaces the site's default amber.
+const TRADE_V0_VARS = {
+  ['--bg' as any]: '#080b12',
+  ['--panel' as any]: '#121925',
+  ['--panel-alt' as any]: '#0e131d',
+  ['--panel-alt-hover' as any]: '#172131',
+  ['--border' as any]: '#1c2735',
+  ['--text-primary' as any]: '#f5f7fa',
+  ['--text-secondary' as any]: '#8b96a8',
+  ['--text-tertiary' as any]: '#6b7789',
+  ['--buy' as any]: '#19d98b',
+  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
+  ['--sell' as any]: '#ff4d67',
+  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
+  ['--accent' as any]: '#18c8ff',
+  ['--accent-hover' as any]: '#3fd4ff',
+  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
+  ['--on-accent' as any]: '#04121b',
+} as React.CSSProperties;
 
 const styles: Record<string, React.CSSProperties> = {
   page: {
@@ -175,40 +204,61 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    ...TRADE_V0_VARS,
   },
   depositBtn: {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
     border: 'none',
-    borderRadius: 18,
+    borderRadius: 10,
     padding: '8px 16px',
     fontWeight: 800,
     fontSize: 12,
-    boxShadow: '0 2px 10px rgba(247,166,0,0.3)',
+  },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    padding: '12px 16px 16px',
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+  tickerCard: {
+    flexShrink: 0,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    overflow: 'hidden',
   },
   grid: {
     flex: 1,
     display: 'flex',
-    gap: 1,
-    background: 'var(--border)',
-    padding: 1,
+    gap: 12,
     minHeight: 0,
   },
   pairListColumn: {
-    background: 'var(--bg)',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     flex: '0 0 250px',
     minHeight: 0,
+    overflow: 'hidden',
   },
   chartColumn: {
-    background: 'var(--bg)',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     display: 'flex',
     flex: '1 1 auto',
     minWidth: 0,
+    overflow: 'hidden',
   },
   bookColumn: {
-    background: 'var(--bg)',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     flex: '0 0 300px',
@@ -233,7 +283,6 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: 'inset 0 -2px 0 var(--accent)',
   },
   formColumn: {
-    background: 'var(--bg)',
     flex: '0 0 300px',
     overflowY: 'auto',
   },
@@ -242,8 +291,10 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     background: 'var(--panel)',
-    borderTop: '1px solid var(--border)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     minHeight: 0,
+    overflow: 'hidden',
   },
   bottomTabs: {
     display: 'flex',

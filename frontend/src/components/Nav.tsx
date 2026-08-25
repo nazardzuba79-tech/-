@@ -29,10 +29,12 @@ export function Nav({
   const [displayName, setDisplayName] = useState<string | null>(null);
 
   const LINKS = [
+    { to: '/dashboard', label: t('nav.dashboard') },
     { to: '/trade', label: t('nav.trade') },
     { to: '/futures', label: t('nav.futures') },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/markets', label: t('nav.markets') },
+    { to: '/copy-trading', label: t('nav.copyTrading') },
   ];
 
   // A stale open drawer surviving a navigation (tap a link, land on the new
