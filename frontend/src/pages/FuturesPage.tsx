@@ -68,28 +68,33 @@ export function FuturesPage() {
         }
       />
       <TopGainersTicker onSelect={handleTickerSelect} />
-      <FuturesTickerBar symbol={symbol} />
 
-      {newAccountNotice && (
-        <div style={styles.notice}>
-          {t('futures.newAccountLimitNotice', { max: newAccountNotice.max, days: newAccountNotice.days })}
+      <div style={styles.content}>
+        <div style={styles.tickerCard}>
+          <FuturesTickerBar symbol={symbol} />
         </div>
-      )}
 
-      <main style={styles.grid}>
-        <div style={styles.pairListColumn}>
-          <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
-        </div>
-        <div style={styles.chartColumn}>
-          <PriceChart pair={symbol} />
-        </div>
-        <div style={styles.formColumn}>
-          <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} />
-        </div>
-      </main>
+        {newAccountNotice && (
+          <div style={styles.notice}>
+            {t('futures.newAccountLimitNotice', { max: newAccountNotice.max, days: newAccountNotice.days })}
+          </div>
+        )}
 
-      <div style={styles.positionsRow}>
-        <FuturesPositionsPanel refreshKey={positionsRefreshKey} />
+        <main style={styles.grid}>
+          <div style={styles.pairListColumn}>
+            <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
+          </div>
+          <div style={styles.chartColumn}>
+            <PriceChart pair={symbol} />
+          </div>
+          <div style={styles.formColumn}>
+            <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} />
+          </div>
+        </main>
+
+        <div style={styles.positionsRow}>
+          <FuturesPositionsPanel refreshKey={positionsRefreshKey} />
+        </div>
       </div>
 
       {riskAcknowledged === false && (
@@ -100,6 +105,31 @@ export function FuturesPage() {
   );
 }
 
+// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
+// scoped to just this page the same way WalletPage/AdminLayout re-theme
+// themselves — every existing var(--panel)/var(--border)/var(--text-*)
+// rule below (and in the futures sub-components, and in the shared Nav
+// rendered above) picks this up automatically, nothing else on the site
+// changes. Cyan/purple brand accent replaces the site's default amber.
+const FUTURES_V0_VARS = {
+  ['--bg' as any]: '#080b12',
+  ['--panel' as any]: '#121925',
+  ['--panel-alt' as any]: '#0e131d',
+  ['--panel-alt-hover' as any]: '#172131',
+  ['--border' as any]: '#1c2735',
+  ['--text-primary' as any]: '#f5f7fa',
+  ['--text-secondary' as any]: '#8b96a8',
+  ['--text-tertiary' as any]: '#6b7789',
+  ['--buy' as any]: '#19d98b',
+  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
+  ['--sell' as any]: '#ff4d67',
+  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
+  ['--accent' as any]: '#18c8ff',
+  ['--accent-hover' as any]: '#3fd4ff',
+  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
+  ['--on-accent' as any]: '#04121b',
+} as React.CSSProperties;
+
 const styles: Record<string, React.CSSProperties> = {
   page: {
     height: '100vh',
@@ -107,47 +137,67 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',
+    ...FUTURES_V0_VARS,
   },
   transferBtn: {
     background: 'transparent',
     border: '1px solid var(--border)',
     color: 'var(--text-secondary)',
-    borderRadius: 18,
+    borderRadius: 10,
     padding: '8px 16px',
     fontWeight: 700,
     fontSize: 12,
   },
+  content: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    padding: '12px 16px 16px',
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+  tickerCard: {
+    flexShrink: 0,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    overflow: 'hidden',
+  },
   notice: {
-    padding: '8px 20px',
+    padding: '8px 14px',
     background: 'var(--buy-dim)',
     color: 'var(--buy)',
     fontSize: 12,
     fontWeight: 600,
+    borderRadius: 10,
     flexShrink: 0,
   },
   grid: {
     flex: 1,
     display: 'flex',
-    gap: 1,
-    background: 'var(--border)',
-    padding: 1,
+    gap: 12,
     minHeight: 0,
   },
   pairListColumn: {
-    background: 'var(--bg)',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     display: 'flex',
     flexDirection: 'column',
     flex: '0 0 220px',
     minHeight: 0,
+    overflow: 'hidden',
   },
   chartColumn: {
-    background: 'var(--bg)',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     display: 'flex',
     flex: '1 1 auto',
     minWidth: 0,
+    overflow: 'hidden',
   },
   formColumn: {
-    background: 'var(--bg)',
     flex: '0 0 320px',
     overflowY: 'auto',
   },
@@ -156,7 +206,9 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     background: 'var(--panel)',
-    borderTop: '1px solid var(--border)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     minHeight: 0,
+    overflow: 'hidden',
   },
 };
