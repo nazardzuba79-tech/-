@@ -18,7 +18,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="bottom-nav" style={styles.nav}>
+    <nav className="bottom-nav bottom-nav-liquid-glass" style={styles.nav}>
       {ITEMS.map(({ to, label, icon: Icon }) => {
         const active = location.pathname === to;
         return (
@@ -40,9 +40,6 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 90,
     display: 'grid',
     gridTemplateColumns: 'repeat(5, 1fr)',
-    background: 'var(--panel)',
-    borderTop: '1px solid var(--border)',
-    backdropFilter: 'blur(12px)',
   },
   item: {
     display: 'flex',

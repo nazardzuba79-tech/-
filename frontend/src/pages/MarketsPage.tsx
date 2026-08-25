@@ -177,7 +177,7 @@ export function MarketsPage() {
         </div>
 
         <div className="markets-grid" style={styles.grid}>
-          <div className="surface-raised" style={styles.listPanel}>
+          <div className="surface-raised card-liquid-glass" style={styles.listPanel}>
             <div style={styles.listHeader}>
               <span>{t('markets.pair')}</span>
               <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
@@ -233,7 +233,7 @@ export function MarketsPage() {
             </div>
           </div>
 
-          <div className="markets-book-column" style={styles.bookColumn}>
+          <div className="markets-book-column card-liquid-glass" style={styles.bookColumn}>
             {selectedPair ? (
               <>
                 <div style={styles.selectedPair} className="mono">
@@ -303,8 +303,6 @@ const styles: Record<string, React.CSSProperties> = {
   chipActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 340px', gap: 12, alignItems: 'start' },
   listPanel: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -331,11 +329,8 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
     borderRadius: 12,
     padding: 12,
-    boxShadow: 'var(--shadow-sm)',
   },
   selectedPair: { fontSize: 14, fontWeight: 700, padding: '0 4px', fontFamily: 'var(--font-display)', letterSpacing: '0.01em' },
 };

@@ -158,8 +158,11 @@ function Row({
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  // No background of its own — every caller already renders this inside a
+  // panel that supplies one (var(--panel) normally, or a translucent
+  // liquid-glass background on Markets' book column), so this only needs
+  // to lay its rows out, not paint over whatever's behind it.
   panel: {
-    background: 'var(--panel)',
     display: 'flex',
     flexDirection: 'column',
     minHeight: 0,

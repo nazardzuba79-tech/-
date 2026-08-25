@@ -27,7 +27,7 @@ export function FuturesRiskDisclaimerModal({ onAccepted }: { onAccepted: () => v
 
   return (
     <div style={styles.overlay}>
-      <div style={styles.modal}>
+      <div className="modal-liquid-glass" style={styles.modal}>
         <h3 style={styles.title}>{t('futures.riskDisclaimerTitle')}</h3>
         <p style={styles.body}>{t('futures.riskDisclaimerBody')}</p>
         <label style={styles.checkboxRow}>
@@ -55,11 +55,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: 460,
-    background: 'var(--panel)',
     border: '1px solid var(--sell)',
     borderRadius: 10,
     padding: 24,
-    boxShadow: 'var(--shadow-lg)',
   },
   title: { fontSize: 17, margin: '0 0 12px', color: 'var(--sell)' },
   body: { fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '0 0 18px' },

@@ -77,7 +77,7 @@ export function WithdrawModal({ asset, onClose }: { asset: string; onClose: () =
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-liquid-glass" style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.headerRow}>
           <h2 style={styles.title}>{t('wallet.withdrawTitle')}</h2>
           <button onClick={onClose} style={styles.closeBtn} aria-label={t('deposit.close')}>
@@ -205,13 +205,10 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: 460,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
     borderRadius: 8,
     padding: 24,
     maxHeight: '90vh',
     overflowY: 'auto',
-    boxShadow: 'var(--shadow-lg)',
   },
   headerRow: {
     display: 'flex',

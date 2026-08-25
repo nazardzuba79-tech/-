@@ -15,7 +15,7 @@ export function HighLeverageConfirmModal({
   const { t } = useLanguage();
   return (
     <div style={styles.overlay} onClick={onCancel}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-liquid-glass" style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h3 style={styles.title}>{t('futures.leverageWarningTitle')}</h3>
         <p style={styles.body}>{t('futures.leverageWarningBody', { leverage })}</p>
         <div style={styles.actions}>
@@ -43,11 +43,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: 400,
-    background: 'var(--panel)',
     border: '1px solid var(--sell)',
     borderRadius: 10,
     padding: 22,
-    boxShadow: 'var(--shadow-lg)',
   },
   title: { fontSize: 15, margin: '0 0 10px', color: 'var(--sell)' },
   body: { fontSize: 13, lineHeight: 1.6, color: 'var(--text-secondary)', margin: '0 0 18px' },

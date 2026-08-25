@@ -47,7 +47,7 @@ export function FuturesTransferModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-liquid-glass" style={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div style={styles.headerRow}>
           <h3 style={styles.title}>{t('futures.transfer')}</h3>
           <button onClick={onClose} style={styles.closeBtn}>✕</button>
@@ -114,11 +114,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: 380,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
     borderRadius: 10,
     padding: 22,
-    boxShadow: 'var(--shadow-lg)',
   },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   title: { fontSize: 15, margin: 0 },
