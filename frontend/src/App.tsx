@@ -10,6 +10,7 @@ import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { CopyTradingPage } from './pages/CopyTradingPage';
+import { ArbitragePage } from './pages/ArbitragePage';
 import { DemoTradePage } from './pages/DemoTradePage';
 import { LegalPage } from './pages/LegalPage';
 import { getToken } from './lib/api';
@@ -102,6 +103,14 @@ export function App() {
           element={
             <RequireAuth>
               <CopyTradingPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/arbitrage"
+          element={
+            <RequireAuth>
+              <ArbitragePage />
             </RequireAuth>
           }
         />

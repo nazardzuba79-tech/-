@@ -579,6 +579,23 @@ const RU = {
 
   'nav.dashboard': 'Дашборд',
   'nav.copyTrading': 'Копитрейдинг',
+  'nav.arbitrage': 'Арбитраж',
+
+  'arbitrage.title': 'Арбитраж между биржами',
+  'arbitrage.subtitle':
+    'Живое сравнение цен по одним и тем же парам на разных биржах — реальные данные, обновляются каждые несколько секунд.',
+  'arbitrage.monitorNotice':
+    'Это витрина реальных ценовых расхождений, а не автоматический трейдинг-бот: платформа не переводит и не торгует твоими средствами на других биржах. Перевод монет между биржами обычно занимает больше времени, чем живёт сам разрыв в цене — учитывай это при ручном исполнении.',
+  'arbitrage.colPair': 'Пара',
+  'arbitrage.colBuy': 'Купить',
+  'arbitrage.colSell': 'Продать',
+  'arbitrage.colSpread': 'Спред',
+  'arbitrage.colNetSpread': 'Спред за вычетом комиссий',
+  'arbitrage.feeNote': 'Оценка после комиссии тейкера ~0,1% за каждую сделку (0,2% туда-обратно) — у тебя на бирже реальная комиссия может отличаться.',
+  'arbitrage.empty': 'Сейчас нет пар с котировками от двух и более бирж одновременно.',
+  'arbitrage.loadError': 'Не удалось загрузить данные с внешних бирж. Попробуй обновить через минуту.',
+  'arbitrage.refresh': 'Обновить',
+  'arbitrage.lastUpdated': 'Обновлено: {time}',
 
   'dashboard.welcome': 'С возвращением{name}',
   'dashboard.subtitle': 'Вот как выглядит твой портфель сегодня.',
@@ -1239,6 +1256,22 @@ const EN: Record<Key, string> = {
 
   'nav.dashboard': 'Dashboard',
   'nav.copyTrading': 'Copy Trading',
+  'nav.arbitrage': 'Arbitrage',
+
+  'arbitrage.title': 'Cross-exchange arbitrage',
+  'arbitrage.subtitle': 'Live price comparison for the same pairs across different exchanges — real data, refreshed every few seconds.',
+  'arbitrage.monitorNotice':
+    "This is a real price-gap monitor, not an automated trading bot: the platform never transfers or trades your funds on other exchanges. Moving coins between exchanges usually takes longer than the price gap itself lasts — factor that in if you execute manually.",
+  'arbitrage.colPair': 'Pair',
+  'arbitrage.colBuy': 'Buy on',
+  'arbitrage.colSell': 'Sell on',
+  'arbitrage.colSpread': 'Spread',
+  'arbitrage.colNetSpread': 'Spread after fees',
+  'arbitrage.feeNote': 'Net figure assumes a ~0.10% taker fee per leg (0.20% round trip) — your real fee on each exchange may differ.',
+  'arbitrage.empty': 'No pairs currently have quotes from two or more exchanges at once.',
+  'arbitrage.loadError': "Couldn't load data from the external exchanges. Try refreshing in a minute.",
+  'arbitrage.refresh': 'Refresh',
+  'arbitrage.lastUpdated': 'Updated: {time}',
 
   'dashboard.welcome': 'Welcome back{name}',
   'dashboard.subtitle': "Here's how your portfolio is performing today.",
@@ -1895,6 +1928,21 @@ const ZH: Record<Key, string> = {
 
   'nav.dashboard': '仪表盘',
   'nav.copyTrading': '跟单交易',
+  'nav.arbitrage': '套利',
+
+  'arbitrage.title': '跨交易所套利',
+  'arbitrage.subtitle': '实时对比不同交易所同一交易对的价格——真实数据，每隔几秒刷新一次。',
+  'arbitrage.monitorNotice': '这只是一个真实的价差监控工具，不是自动交易机器人：平台不会在其他交易所转移或交易你的资金。币种在交易所之间的转账时间通常比价差本身存在的时间还长——手动操作时请考虑这一点。',
+  'arbitrage.colPair': '交易对',
+  'arbitrage.colBuy': '买入交易所',
+  'arbitrage.colSell': '卖出交易所',
+  'arbitrage.colSpread': '价差',
+  'arbitrage.colNetSpread': '扣除手续费后价差',
+  'arbitrage.feeNote': '净值假设每笔交易约 0.10% 的吃单手续费（往返 0.20%）——你在各交易所的实际手续费可能不同。',
+  'arbitrage.empty': '目前没有同时来自两个及以上交易所报价的交易对。',
+  'arbitrage.loadError': '无法加载外部交易所数据，请稍后重试。',
+  'arbitrage.refresh': '刷新',
+  'arbitrage.lastUpdated': '更新时间：{time}',
 
   'dashboard.welcome': '欢迎回来{name}',
   'dashboard.subtitle': '这是你今天的投资组合表现。',

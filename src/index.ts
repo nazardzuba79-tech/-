@@ -18,6 +18,8 @@ import { productsRouter } from './api/routes/products';
 import { balancesRouter } from './api/routes/balances';
 import { marketRouter } from './api/routes/market';
 import { CoinGeckoService } from './services/CoinGeckoService';
+import { ArbitrageService } from './services/ArbitrageService';
+import { arbitrageRouter } from './api/routes/arbitrage';
 import { accountRouter } from './api/routes/account';
 import { kycRouter } from './api/routes/kyc';
 import { adminRouter } from './api/routes/admin';
@@ -53,6 +55,7 @@ const coinGeckoService = new CoinGeckoService(
   fetch,
   process.env.COINGECKO_API_KEY
 );
+const arbitrageService = new ArbitrageService(marketDataService);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 
@@ -111,6 +114,7 @@ app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
+app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
 app.use('/api/v1', adminRouter(prisma));

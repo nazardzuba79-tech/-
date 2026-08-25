@@ -321,6 +321,22 @@ export const api = {
       }[];
     }>('/market/external/rankings'),
 
+  // Live cross-exchange spread comparison (Binance/OKX/Kraken) — see
+  // ArbitrageService's doc comment on the backend for what this is and
+  // isn't (a real-time monitor, never an auto-trading/fund-moving bot).
+  getArbitrageOpportunities: () =>
+    request<{
+      opportunities: {
+        pair: string;
+        buyExchange: string;
+        buyPrice: number;
+        sellExchange: string;
+        sellPrice: number;
+        spreadPercent: number;
+        netSpreadPercent: number;
+      }[];
+    }>('/arbitrage/opportunities'),
+
   getExternalTickers: () =>
     request<{
       source: string;

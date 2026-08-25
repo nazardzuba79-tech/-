@@ -40,6 +40,7 @@ export function Nav({
     { to: '/dashboard', label: t('nav.dashboard') },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/copy-trading', label: t('nav.copyTrading') },
+    { to: '/arbitrage', label: t('nav.arbitrage') },
   ];
 
   // A stale open drawer surviving a navigation (tap a link, land on the new
