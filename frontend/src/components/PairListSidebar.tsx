@@ -40,6 +40,19 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
   const [categoryFilter, setCategoryFilter] = useState<CoinCategory | null>(null);
   const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
+  const [sortField, setSortField] = useState<'volume' | 'change'>('volume');
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
+
+  function toggleChangeSort() {
+    setSortField((prev) => {
+      if (prev !== 'change') {
+        setSortDir(-1); // biggest gainers first on first click
+        return 'change';
+      }
+      setSortDir((d) => (d === -1 ? 1 : -1));
+      return 'change';
+    });
+  }
 
   function loadTickers() {
     setLoadError(false);
@@ -103,6 +116,8 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
     categoryFilter,
     rankByBase: rankByBase ?? undefined,
     sortByRank: categoryFilter !== null,
+    sortField,
+    sortDir,
   });
 
   return (
@@ -158,7 +173,10 @@ export function PairListSidebar({ pair, onChange }: { pair: string; onChange: (p
       <div style={styles.columns}>
         <span>{t('markets.pair')}</span>
         <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
-        <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+        <button onClick={toggleChangeSort} style={styles.sortableHeader}>
+          {t('markets.change24h')}
+          {sortField === 'change' && <span style={{ fontSize: 9 }}>{sortDir === -1 ? '▼' : '▲'}</span>}
+        </button>
       </div>
 
       <div style={styles.list}>
@@ -247,6 +265,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-tertiary)',
     borderBottom: '1px solid var(--border)',
     flexShrink: 0,
+  },
+  sortableHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    fontSize: 10,
+    color: 'inherit',
+    width: '100%',
   },
   list: { flex: 1, overflowY: 'auto', minHeight: 0 },
   option: {

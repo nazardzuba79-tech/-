@@ -28,6 +28,17 @@ export function FuturesPairList({
   const [tickers, setTickers] = useState<Record<string, { lastPrice: string; changePercent24h: string }>>({});
   const [loaded, setLoaded] = useState(false);
   const [search, setSearch] = useState('');
+  const [sortByChange, setSortByChange] = useState(false);
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
+
+  function toggleChangeSort() {
+    if (!sortByChange) {
+      setSortByChange(true);
+      setSortDir(-1);
+    } else {
+      setSortDir((d) => (d === -1 ? 1 : -1));
+    }
+  }
 
   useEffect(() => {
     function load() {
@@ -49,7 +60,14 @@ export function FuturesPairList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbols.join(',')]);
 
-  const filtered = symbols.filter((s) => s.toLowerCase().includes(search.toLowerCase()));
+  const filtered = symbols
+    .filter((s) => s.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      if (!sortByChange) return 0; // keep the caller's original (config) order
+      const changeA = tickers[a] ? parseChangePercent(tickers[a].changePercent24h, a) : -Infinity;
+      const changeB = tickers[b] ? parseChangePercent(tickers[b].changePercent24h, b) : -Infinity;
+      return (changeA - changeB) * sortDir;
+    });
 
   return (
     <div style={styles.panel}>
@@ -58,7 +76,10 @@ export function FuturesPairList({
       <div style={styles.columns}>
         <span>{t('markets.pair')}</span>
         <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
-        <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+        <button onClick={toggleChangeSort} style={styles.sortableHeader}>
+          {t('markets.change24h')}
+          {sortByChange && <span style={{ fontSize: 9 }}>{sortDir === -1 ? '▼' : '▲'}</span>}
+        </button>
       </div>
 
       <div style={styles.list}>
@@ -115,6 +136,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-tertiary)',
     borderBottom: '1px solid var(--border)',
     flexShrink: 0,
+  },
+  sortableHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    fontSize: 10,
+    color: 'inherit',
+    width: '100%',
   },
   list: { flex: 1, overflowY: 'auto', minHeight: 0 },
   option: {

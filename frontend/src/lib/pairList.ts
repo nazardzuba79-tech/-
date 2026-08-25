@@ -2,6 +2,8 @@
 // whatever component browses the Kraken ticker mirror — currently just
 // PairListSidebar, the persistent panel on the trade page.
 
+import { parseChangePercent } from './priceChange';
+
 export interface TickerRow {
   pair: string;
   lastPrice: string;
@@ -21,6 +23,8 @@ export interface CoinRanking {
   // CoinGeckoService's doc comment on the backend for why.
   price: number;
   changePercent24h: number | null;
+  changePercent7d: number | null;
+  changePercent30d: number | null;
   volume24h: number;
   marketCap: number | null;
   sparkline: number[];
@@ -59,9 +63,17 @@ export function filterAndSortPairs(
     categoryFilter?: CoinCategory | null;
     rankByBase?: Map<string, CoinRanking>;
     sortByRank?: boolean;
+    // 'change' sorts by each pair's own live 24h% (gainers/losers), driven
+    // by the same real Kraken-mirrored figure the visible column shows —
+    // no CoinGecko dependency needed since every TickerRow already carries
+    // changePercent24h. Defaults to 'volume' (most-traded first), the
+    // existing behavior.
+    sortField?: 'volume' | 'change';
+    sortDir?: 1 | -1;
   }
 ): TickerRow[] {
   const rankByBase = opts.rankByBase;
+  const sortDir = opts.sortDir ?? -1;
   return tickers
     .filter((tk) => tk.pair.toLowerCase().includes(opts.search.toLowerCase()))
     .filter((tk) => !opts.quoteFilter || tk.pair.split('/')[1] === opts.quoteFilter)
@@ -81,9 +93,14 @@ export function filterAndSortPairs(
         const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
         if (rankA !== rankB) return rankA - rankB;
       }
+      if (opts.sortField === 'change') {
+        const changeA = parseChangePercent(a.changePercent24h, a.pair);
+        const changeB = parseChangePercent(b.changePercent24h, b.pair);
+        return (changeA - changeB) * sortDir;
+      }
       // Most-traded pairs first — sorting alphabetically (the API's raw
       // order) put obscure, barely-liquid tickers at the top just because
       // their symbol starts early in the alphabet.
-      return parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0');
+      return (parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')) * (sortDir === -1 ? 1 : -1);
     });
 }

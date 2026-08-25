@@ -56,6 +56,23 @@ export function MarketsPage() {
   const [error, setError] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<CoinCategory | null>(null);
   const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
+  // 'volume' is the existing default (most-traded first). 24h uses each
+  // pair's own live Kraken change (same number the column shows); 7d/30d
+  // need real CoinGecko data (rankByBase) since Kraken's ticker has no such
+  // field — those two sort options are disabled until it's loaded.
+  const [sortField, setSortField] = useState<'volume' | '24h' | '7d' | '30d'>('volume');
+  const [sortDir, setSortDir] = useState<1 | -1>(-1);
+
+  function toggleSort(field: '24h' | '7d' | '30d') {
+    setSortField((prev) => {
+      if (prev !== field) {
+        setSortDir(-1); // biggest gainers first on first click
+        return field;
+      }
+      setSortDir((d) => (d === -1 ? 1 : -1));
+      return field;
+    });
+  }
 
   // Fire-once-and-forget here left the category chips permanently disabled
   // whenever the single attempt landed on a transient failure (e.g. the
@@ -138,11 +155,26 @@ export function MarketsPage() {
             const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
             if (rankA !== rankB) return rankA - rankB;
           }
+          if (sortField === '24h') {
+            const changeA = parseChangePercent(a.changePercent24h, a.pair);
+            const changeB = parseChangePercent(b.changePercent24h, b.pair);
+            return (changeA - changeB) * sortDir;
+          }
+          if (sortField === '7d' || sortField === '30d') {
+            const key = sortField === '7d' ? 'changePercent7d' : 'changePercent30d';
+            // No CoinGecko data for a pair sorts last regardless of
+            // direction, rather than jumping to the top on ascending sort.
+            const valueA = rankByBase?.get(a.pair.split('/')[0])?.[key];
+            const valueB = rankByBase?.get(b.pair.split('/')[0])?.[key];
+            if (valueA === null || valueA === undefined) return valueB === null || valueB === undefined ? 0 : 1;
+            if (valueB === null || valueB === undefined) return -1;
+            return (valueA - valueB) * sortDir;
+          }
           // Most-traded first — the raw API order is roughly alphabetical,
           // which otherwise puts thin, barely-liquid pairs at the top.
           return parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0');
         }),
-    [tickers, search, categoryFilter, rankByBase]
+    [tickers, search, categoryFilter, rankByBase, sortField, sortDir]
   );
 
   return (
@@ -181,7 +213,28 @@ export function MarketsPage() {
             <div style={styles.listHeader}>
               <span>{t('markets.pair')}</span>
               <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
-              <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+              <button onClick={() => toggleSort('24h')} style={styles.sortableHeader}>
+                {t('markets.change24h')}
+                {sortField === '24h' && <span style={{ fontSize: 9 }}>{sortDir === -1 ? '▼' : '▲'}</span>}
+              </button>
+              <button
+                onClick={() => toggleSort('7d')}
+                disabled={!rankByBase}
+                style={{ ...styles.sortableHeader, opacity: rankByBase ? 1 : 0.5 }}
+                title={!rankByBase ? t('markets.rankingsUnavailable') : undefined}
+              >
+                {t('markets.change7d')}
+                {sortField === '7d' && <span style={{ fontSize: 9 }}>{sortDir === -1 ? '▼' : '▲'}</span>}
+              </button>
+              <button
+                onClick={() => toggleSort('30d')}
+                disabled={!rankByBase}
+                style={{ ...styles.sortableHeader, opacity: rankByBase ? 1 : 0.5 }}
+                title={!rankByBase ? t('markets.rankingsUnavailable') : undefined}
+              >
+                {t('markets.change30d')}
+                {sortField === '30d' && <span style={{ fontSize: 9 }}>{sortDir === -1 ? '▼' : '▲'}</span>}
+              </button>
               <span style={{ textAlign: 'right' }}>{t('markets.high24h')}</span>
               <span style={{ textAlign: 'right' }}>{t('markets.low24h')}</span>
               <span style={{ textAlign: 'right' }}>{t('markets.volume24h')}</span>
@@ -190,6 +243,9 @@ export function MarketsPage() {
               {filtered.map((tk) => {
                 const change = parseChangePercent(tk.changePercent24h, tk.pair);
                 const positive = change >= 0;
+                const ranking = rankByBase?.get(tk.pair.split('/')[0]);
+                const change7d = ranking?.changePercent7d ?? null;
+                const change30d = ranking?.changePercent30d ?? null;
                 return (
                   <div
                     key={tk.pair}
@@ -212,6 +268,18 @@ export function MarketsPage() {
                       {positive ? '+' : ''}
                       {change.toFixed(2)}%
                     </span>
+                    <span
+                      className={change7d === null ? undefined : change7d >= 0 ? 'text-buy' : 'text-sell'}
+                      style={{ textAlign: 'right', color: change7d === null ? 'var(--text-tertiary)' : undefined }}
+                    >
+                      {change7d === null ? '—' : `${change7d >= 0 ? '+' : ''}${change7d.toFixed(2)}%`}
+                    </span>
+                    <span
+                      className={change30d === null ? undefined : change30d >= 0 ? 'text-buy' : 'text-sell'}
+                      style={{ textAlign: 'right', color: change30d === null ? 'var(--text-tertiary)' : undefined }}
+                    >
+                      {change30d === null ? '—' : `${change30d >= 0 ? '+' : ''}${change30d.toFixed(2)}%`}
+                    </span>
                     <span className="mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
                       {parseFloat(tk.high24h)}
                     </span>
@@ -229,7 +297,7 @@ export function MarketsPage() {
               )}
               {tickers.length === 0 &&
                 !error &&
-                Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 0.8, 1, 1, 1]} />)}
+                Array.from({ length: 10 }).map((_, i) => <SkeletonRow key={i} columns={[2, 1, 0.8, 0.8, 0.8, 1, 1, 1]} />)}
             </div>
           </div>
 
@@ -305,20 +373,35 @@ const styles: Record<string, React.CSSProperties> = {
   listPanel: {
     borderRadius: 12,
     overflow: 'hidden',
+    overflowX: 'auto',
   },
   listHeader: {
     display: 'grid',
-    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.9fr 0.9fr 0.9fr',
+    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.7fr 0.7fr 0.9fr 0.9fr 0.9fr',
+    minWidth: 800,
     padding: '10px 14px',
     fontSize: 11,
     color: 'var(--text-tertiary)',
     borderBottom: '1px solid var(--border)',
     gap: 8,
   },
+  sortableHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 3,
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    fontSize: 11,
+    color: 'inherit',
+    width: '100%',
+  },
   listBody: { maxHeight: 560, overflowY: 'auto' },
   listRow: {
     display: 'grid',
-    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.9fr 0.9fr 0.9fr',
+    gridTemplateColumns: '2fr 0.9fr 0.7fr 0.7fr 0.7fr 0.9fr 0.9fr 0.9fr',
+    minWidth: 800,
     padding: '10px 14px',
     fontSize: 13,
     cursor: 'pointer',

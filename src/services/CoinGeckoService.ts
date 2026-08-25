@@ -34,6 +34,12 @@ export interface CoinRanking {
   // browser so every top-200 coin shows real data even with a $0 balance.
   price: number;
   changePercent24h: number | null;
+  // Real 7d/30d change straight from CoinGecko's own price_change_percentage
+  // fields (not derived from the 7d sparkline below, which is hourly closes
+  // and would need extra math to reproduce the same number) — powers the
+  // Markets page's 7d/30d gainers/losers sort.
+  changePercent7d: number | null;
+  changePercent30d: number | null;
   volume24h: number;
   marketCap: number | null;
   // Hourly closes over the last 7 days (CoinGecko's own sparkline_in_7d),
@@ -109,6 +115,8 @@ interface CoinGeckoMarketRow {
   market_cap_rank: number | null;
   current_price: number | null;
   price_change_percentage_24h: number | null;
+  price_change_percentage_7d_in_currency?: number | null;
+  price_change_percentage_30d_in_currency?: number | null;
   total_volume: number | null;
   market_cap: number | null;
   sparkline_in_7d?: { price: number[] };
@@ -160,7 +168,7 @@ export class CoinGeckoService {
         let rows: CoinGeckoMarketRow[];
         try {
           rows = (await this.request(
-            `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${CG_MAX_PER_PAGE}&page=${page}&sparkline=true`
+            `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${CG_MAX_PER_PAGE}&page=${page}&sparkline=true&price_change_percentage=7d,30d`
           )) as CoinGeckoMarketRow[];
         } catch (err) {
           if (page === 1) throw err;
@@ -188,6 +196,8 @@ export class CoinGeckoService {
         categories: [],
         price: m.current_price ?? 0,
         changePercent24h: m.price_change_percentage_24h ?? null,
+        changePercent7d: m.price_change_percentage_7d_in_currency ?? null,
+        changePercent30d: m.price_change_percentage_30d_in_currency ?? null,
         volume24h: m.total_volume ?? 0,
         marketCap: m.market_cap ?? null,
         sparkline: m.sparkline_in_7d?.price ?? [],

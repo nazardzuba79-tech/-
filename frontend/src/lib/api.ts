@@ -315,6 +315,8 @@ export const api = {
         categories: string[];
         price: number;
         changePercent24h: number | null;
+        changePercent7d: number | null;
+        changePercent30d: number | null;
         volume24h: number;
         marketCap: number | null;
         sparkline: number[];
