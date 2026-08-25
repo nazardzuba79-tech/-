@@ -477,15 +477,14 @@ a:hover > .nav-card-icon {
   box-shadow: -24px 28px 60px rgba(0, 0, 0, 0.45);
 }
 @media (prefers-reduced-motion: reduce) {
-  .card-tilt-wrap::before {
-    display: none;
-  }
+  /* A static resting tilt isn't motion — only the animated transition on
+     hover is, so that's the only thing reduced-motion needs to drop. The
+     card and its ghost stay visible at their normal tilted rest state. */
   .card-tilt {
-    transform: none;
     transition: none;
   }
   .card-tilt-wrap:hover .card-tilt {
-    transform: none;
+    transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg);
   }
 }
 
