@@ -10,10 +10,9 @@ export function BottomNav() {
   const { t } = useLanguage();
 
   const ITEMS = [
-    { to: '/dashboard', label: t('nav.dashboard'), icon: HomeIcon },
+    { to: '/wallet', label: t('nav.wallet'), icon: WalletIcon },
     { to: '/markets', label: t('nav.markets'), icon: MarketsIcon },
     { to: '/trade', label: t('nav.trade'), icon: TradeIcon },
-    { to: '/wallet', label: t('nav.wallet'), icon: WalletIcon },
     { to: '/settings', label: t('nav.settings'), icon: ProfileIcon },
   ];
 
@@ -63,15 +62,6 @@ function iconProps(active: boolean) {
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
   };
-}
-
-function HomeIcon({ active }: { active: boolean }) {
-  return (
-    <svg {...iconProps(active)}>
-      <path d="M3 11l9-8 9 8" />
-      <path d="M5 10v10h14V10" />
-    </svg>
-  );
 }
 
 function MarketsIcon({ active }: { active: boolean }) {

@@ -8,7 +8,6 @@ import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
 import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
-import { DashboardPage } from './pages/DashboardPage';
 import { CopyTradingPage } from './pages/CopyTradingPage';
 import { ArbitragePage } from './pages/ArbitragePage';
 import { LegalPage } from './pages/LegalPage';
@@ -89,14 +88,10 @@ export function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <DashboardPage />
-            </RequireAuth>
-          }
-        />
+        {/* Dashboard folded into Wallet (see WalletPage's doc comment) —
+            redirect rather than a hard 404 for anything that still links
+            to the old path. */}
+        <Route path="/dashboard" element={<Navigate to="/wallet" replace />} />
         <Route
           path="/copy-trading"
           element={

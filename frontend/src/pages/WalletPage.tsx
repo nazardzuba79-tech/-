@@ -33,6 +33,15 @@ interface Deposit {
   createdAt: string;
 }
 
+type ActivityType = 'DEPOSIT' | 'WITHDRAW' | 'BUY' | 'SELL';
+interface ActivityItem {
+  id: string;
+  type: ActivityType;
+  asset: string;
+  amountLabel: string;
+  timestamp: number;
+}
+
 const STABLE_ASSETS = new Set(['USDT', 'USDC', 'USD']);
 // Not offered on this exchange — kept out of both the assets table and the
 // portfolio donut (TON stands in its place among the featured assets).
@@ -102,6 +111,12 @@ function saveFlag(key: string, value: boolean) {
  * real Spot vs Futures split (two genuinely separate balance pools, see
  * FuturesBalance's schema comment), and a per-asset breakdown.
  *
+ * Also absorbs what used to be a standalone Dashboard page (open orders/
+ * positions counts + a combined deposit/withdrawal/trade activity feed) —
+ * that page was mostly duplicating the total value/donut/chart already
+ * shown here, so its few genuinely new pieces moved in rather than keeping
+ * a second nav tab open just for them.
+ *
  * No "Funding" bucket: this exchange has no such account type, so
  * inventing one here would just be fictional UI. No Web3/on-chain tab
  * either — that would need a connected external wallet (WalletConnect/
@@ -133,6 +148,9 @@ export function WalletPage() {
   const [chartRange, setChartRange] = useState<ChartRange>('30d');
   const [chartPoints, setChartPoints] = useState<{ date: string; totalValueUsd: string }[]>([]);
   const [chartLoading, setChartLoading] = useState(true);
+  const [openOrdersCount, setOpenOrdersCount] = useState<number | null>(null);
+  const [openPositionsCount, setOpenPositionsCount] = useState<number | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[] | null>(null);
   const snapshotRecordedRef = useRef(false);
 
   useEffect(() => {
@@ -192,6 +210,55 @@ export function WalletPage() {
       .then(setDeposits)
       .catch(() => setHistoryError(true));
   }, [tab, deposits]);
+
+  // Folded in from the old standalone Dashboard page (merged here since it
+  // was mostly duplicating what Wallet already shows) — real open order/
+  // position counts and a combined recent-activity feed across deposits,
+  // withdrawals, and trades, same real endpoints as everywhere else.
+  useEffect(() => {
+    Promise.all([api.getMyOrders('OPEN'), api.getMyFuturesOrders('OPEN')])
+      .then(([spot, futures]) => setOpenOrdersCount(spot.length + futures.length))
+      .catch(() => {});
+    api
+      .getFuturesPositions()
+      .then((positions) => setOpenPositionsCount(positions.length))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    Promise.all([api.getMyDeposits(), api.getMyWithdrawals(), api.getMyTrades()])
+      .then(([dep, withdrawals, trades]) => {
+        const items: ActivityItem[] = [
+          ...dep.map((d): ActivityItem => ({
+            id: `dep-${d.id}`,
+            type: 'DEPOSIT',
+            asset: d.asset,
+            amountLabel: `+${d.amount} ${d.asset}`,
+            timestamp: new Date(d.createdAt).getTime(),
+          })),
+          ...withdrawals.map((w): ActivityItem => ({
+            id: `wd-${w.id}`,
+            type: 'WITHDRAW',
+            asset: w.asset,
+            amountLabel: `-${w.amount} ${w.asset}`,
+            timestamp: new Date(w.createdAt).getTime(),
+          })),
+          ...trades.map((tr): ActivityItem => {
+            const [base] = tr.pair.split('/');
+            return {
+              id: `tr-${tr.id}`,
+              type: tr.side === 'BUY' ? 'BUY' : 'SELL',
+              asset: base,
+              amountLabel: `${tr.quantity} ${base}`,
+              timestamp: new Date(tr.executedAt).getTime(),
+            };
+          }),
+        ];
+        items.sort((a, b) => b.timestamp - a.timestamp);
+        setActivity(items.slice(0, 6));
+      })
+      .catch(() => setActivity([]));
+  }, []);
 
   function priceOf(asset: string): number | null {
     if (STABLE_ASSETS.has(asset)) return 1;
@@ -389,6 +456,18 @@ export function WalletPage() {
                   {formatUsd(futuresTotalUsd)}
                 </span>
               </div>
+              <div style={styles.breakdownChip}>
+                <span style={styles.breakdownLabel}>{t('dashboard.openOrders')}</span>
+                <span className="mono" style={styles.breakdownValue}>
+                  {openOrdersCount ?? '—'}
+                </span>
+              </div>
+              <div style={styles.breakdownChip}>
+                <span style={styles.breakdownLabel}>{t('dashboard.openPositions')}</span>
+                <span className="mono" style={styles.breakdownValue}>
+                  {openPositionsCount ?? '—'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -447,6 +526,31 @@ export function WalletPage() {
         {!hideBalance && (
           <div style={{ marginBottom: 24 }}>
             <PortfolioValueChart points={chartPoints} range={chartRange} onRangeChange={setChartRange} loading={chartLoading} />
+          </div>
+        )}
+
+        {!hideBalance && activity !== null && activity.length > 0 && (
+          <div className="accent-edge surface-raised" style={styles.activityCard}>
+            <div style={styles.activityHeaderRow}>
+              <h2 style={styles.cardHeading}>{t('dashboard.recentActivity')}</h2>
+            </div>
+            {activity.map((a) => (
+              <div key={a.id} style={styles.activityRow}>
+                <CryptoIcon symbol={a.asset} size={28} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+                    {t(`dashboard.activity.${a.type.toLowerCase()}` as Key)}
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 400 }}>{a.asset}</span>
+                  </div>
+                  <div className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                    {a.amountLabel}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                  {new Date(a.timestamp).toLocaleString(localeOf(lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -794,6 +898,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 20,
     flexWrap: 'wrap',
   },
+  activityCard: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 24 },
+  activityHeaderRow: { padding: '16px 20px', borderBottom: '1px solid var(--border)' },
+  cardHeading: { fontSize: 14, margin: 0, fontWeight: 700 },
+  activityRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   demoCard: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',

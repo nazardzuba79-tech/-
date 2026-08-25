@@ -15,7 +15,6 @@ const NAV_LINKS = [
   { to: '/trade', key: 'nav.trade' as const },
   { to: '/futures', key: 'nav.futures' as const },
   { to: '/copy-trading', key: 'nav.copyTrading' as const },
-  { to: '/dashboard', key: 'nav.dashboard' as const },
 ];
 
 const HERO_COINS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'TRX/USDT', 'DOGE/USDT'];
@@ -559,7 +558,6 @@ const FOOTER_COLS: { titleKey: 'marketing.footerProducts' | 'marketing.footerCom
     links: [
       { to: '/legal/support', key: 'footer.support' },
       { to: '/markets', key: 'nav.markets' },
-      { to: '/dashboard', key: 'nav.dashboard' },
       { to: '/wallet', key: 'nav.wallet' },
     ],
   },
