@@ -543,6 +543,10 @@ a:hover > .nav-card-icon {
   }
 }
 
+.bottom-nav {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .nav-desktop-links,
   .nav-desktop-right {
@@ -553,6 +557,24 @@ a:hover > .nav-card-icon {
   }
   .nav-mobile-menu.open {
     display: flex !important;
+  }
+  .bottom-nav {
+    display: grid;
+  }
+  /* Dashboard's fixed 2fr/1fr and 4-column grids would otherwise overflow
+     horizontally on a phone-width screen — collapse to a single column. */
+  .dash-grid-2-1,
+  .dash-grid-4 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Same idea as v0's AppShell `pb-20 md:pb-0` — keeps page content clear
+     of the fixed bottom tab bar. box-sizing: border-box (set globally)
+     means this shrinks the content box rather than growing past 100vh, so
+     it's safe on the fixed-height flex pages (Trade/Futures) too — their
+     internal flex children just get slightly less room, they don't get
+     pushed under the bar. */
+  .page-mesh {
+    padding-bottom: 64px;
   }
 }
 

@@ -210,7 +210,7 @@ export function DashboardPage() {
         <h1 style={styles.title}>{t('dashboard.welcome', { name: displayName ? `, ${displayName}` : '' })}</h1>
         <p style={styles.subtitle}>{t('dashboard.subtitle')}</p>
 
-        <div style={styles.summaryRow}>
+        <div className="dash-grid-2-1" style={styles.summaryRow}>
           <div style={styles.summaryCard}>
             <div style={styles.summaryHeaderRow}>
               <div>
@@ -248,7 +248,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        <div style={styles.quickLinksRow}>
+        <div className="dash-grid-4" style={styles.quickLinksRow}>
           {QUICK_LINKS.map((l) => (
             <Link key={l.to} to={l.to} style={styles.quickLinkCard} className="row-hover">
               <div style={styles.quickLinkTitle}>{l.label}</div>
@@ -257,7 +257,7 @@ export function DashboardPage() {
           ))}
         </div>
 
-        <div style={styles.bottomRow}>
+        <div className="dash-grid-2-1" style={styles.bottomRow}>
           <div style={styles.activityCard}>
             <div style={styles.activityHeaderRow}>
               <h2 style={styles.cardHeading}>{t('dashboard.recentActivity')}</h2>

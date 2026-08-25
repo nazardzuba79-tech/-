@@ -5,6 +5,7 @@ import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { BottomNav } from './BottomNav';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -68,6 +69,7 @@ export function Nav({
   }
 
   return (
+    <>
     <nav className="glass-panel" style={styles.nav}>
       <Link to="/trade" style={styles.logo}>
         <Logo />
@@ -182,6 +184,8 @@ export function Nav({
         </button>
       </div>
     </nav>
+    <BottomNav />
+    </>
   );
 }
 
