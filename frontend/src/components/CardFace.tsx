@@ -125,12 +125,28 @@ export function CardFace({
   last4,
   holderName,
   network = 'visa',
+  imageSrc,
 }: {
   theme: CardTheme;
   last4: string;
   holderName: string;
   network?: 'visa' | 'mastercard';
+  // When set, renders this real photo/render instead of the CSS-built
+  // face below — used for the Icy White card's dark redesign, sourced
+  // straight from the user's own reference image.
+  imageSrc?: string;
 }) {
+  if (imageSrc) {
+    return (
+      <img
+        src={imageSrc}
+        alt="Voltex card"
+        className="card-tilt"
+        style={{ ...CARD_VISUAL_BASE, padding: 0, objectFit: 'cover', display: 'block' }}
+      />
+    );
+  }
+
   const content = (
     <>
       <div style={styles.brushedTexture} />
