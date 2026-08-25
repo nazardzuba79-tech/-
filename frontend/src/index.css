@@ -445,10 +445,10 @@ a:hover > .nav-card-icon {
 }
 
 .card-tilt-wrap {
-  /* Closer than a typical subtle-hover perspective (was 1200px) — the
-     reference design's tilt is dramatic, not a barely-there hint, and a
-     closer vanishing point is what actually sells that at this card size. */
-  perspective: 700px;
+  /* 1100px matches the reference's reconstructed perspective distance —
+     less aggressive than the earlier 700px guess, since rotateZ below
+     now does a lot of the "clearly tilted" work on its own. */
+  perspective: 1100px;
   position: relative;
 }
 /* A dimmer duplicate card sitting behind-below the real one, at the same
@@ -458,22 +458,22 @@ a:hover > .nav-card-icon {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.02));
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  transform: rotateY(-30deg) rotateX(14deg) translate(30px, 40px) translateZ(-70px);
+  border-radius: 19px;
+  background: #2e323b;
+  opacity: 0.72;
+  transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg) translate(45px, 45px) translateZ(-60px);
   transform-style: preserve-3d;
   pointer-events: none;
   z-index: -1;
 }
 .card-tilt {
-  transform: rotateY(-30deg) rotateX(14deg);
+  transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg);
   transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.5s ease;
   transform-style: preserve-3d;
   will-change: transform;
 }
 .card-tilt-wrap:hover .card-tilt {
-  transform: rotateY(-18deg) rotateX(8deg) scale(1.05);
+  transform: rotateX(3deg) rotateY(-7deg) rotateZ(-10deg) scale(1.05);
   box-shadow: -24px 28px 60px rgba(0, 0, 0, 0.45);
 }
 @media (prefers-reduced-motion: reduce) {

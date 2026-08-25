@@ -29,27 +29,29 @@ export const BASE_CARD_THEME: CardTheme = {
   textColor: '#2b1a0c',
 };
 
-// Dark graphite metal with a genuine neon cyan-to-purple gradient ring — the
+// Dark graphite metal with a genuine neon violet-to-cyan gradient ring — the
 // Icy White card's visual redesign (still the same product/tier underneath,
 // only the face changed: no more silver brushed metal, no hex/bolt
-// watermark). borderGradient paints as a real 2px ring (see CardFace's
-// wrapper div below), not just a soft shadow, so it reads as a crisp
-// glowing edge rather than a faint tint.
+// watermark). Colors below are design tokens reconstructed from the user's
+// reference image (via a vision-model color read), not guessed — matte
+// graphite rather than flat black, glow skewed purple-heavy on one side.
+// borderGradient paints as a real 2px ring (see CardFace's wrapper div
+// below), not just a soft shadow, so it reads as a crisp glowing edge.
 export const ICY_CARD_THEME: CardTheme = {
-  background: 'linear-gradient(145deg, #1a1d24 0%, #0c0e12 28%, #202430 52%, #0a0c10 76%, #161920 100%)',
+  background: 'linear-gradient(135deg, #4a4f59 0%, #30343d 28%, #1d2027 62%, #15181e 100%)',
   border: '1px solid rgba(120,150,200,0.22)',
-  borderGradient: 'linear-gradient(135deg, #22d3ff 0%, #7c6cf0 45%, #b45cf0 70%, #22d3ff 100%)',
-  boxShadow: '0 0 46px rgba(34,211,255,0.55), 0 0 80px rgba(124,108,240,0.4), 0 24px 55px rgba(0,0,0,0.55)',
+  borderGradient: 'linear-gradient(135deg, #9b3cff 0%, #704bff 27%, #536fff 52%, #258dff 78%, #00c8ff 100%)',
+  boxShadow: '0 0 24px rgba(139,53,255,0.4), 0 0 44px rgba(0,191,255,0.28), 35px 38px 45px rgba(0,0,0,0.48)',
   chipTone: 'silver',
   hexTint: 'rgba(0,0,0,0)',
-  textColor: '#f2f4f7',
+  textColor: '#c6cad2',
 };
 
 // EMV chip icon for the card's top-left corner — tone follows the card's
 // own metal finish (gold on the rose-gold card, silver on the Icy White one).
 function ChipIcon({ tone }: { tone: 'gold' | 'silver' }) {
-  const fill = tone === 'gold' ? '#dcb877' : '#c9ced5';
-  const line = tone === 'gold' ? '#a9843f' : '#8a919b';
+  const fill = tone === 'gold' ? '#dcb877' : '#c4c8d0';
+  const line = tone === 'gold' ? '#a9843f' : '#737881';
   return (
     <svg width="34" height="26" viewBox="0 0 34 26" xmlns="http://www.w3.org/2000/svg">
       <rect x="0.5" y="0.5" width="33" height="25" rx="4" fill={fill} stroke={line} strokeWidth="0.75" />
@@ -177,6 +179,7 @@ export function CardFace({
             flexDirection: 'column',
             overflow: 'hidden',
             background: theme.background,
+            boxShadow: 'inset 0 0 35px rgba(0,0,0,0.28)',
           }}
         >
           {content}
