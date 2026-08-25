@@ -6,6 +6,7 @@ import { useAdminAlertSound } from '../lib/useAdminAlerts';
 import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
+import { DepositModal } from './DepositModal';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -28,6 +29,7 @@ export function Nav({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [showDeposit, setShowDeposit] = useState(false);
 
   const LINKS = [
     { to: '/dashboard', label: t('nav.dashboard') },
@@ -116,6 +118,9 @@ export function Nav({
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
+        <button onClick={() => setShowDeposit(true)} style={styles.navDepositBtn}>
+          {t('wallet.deposit')}
+        </button>
         {displayName && <span style={styles.displayName}>{displayName}</span>}
         {rightExtra}
         <LanguageSwitcher />
@@ -175,6 +180,15 @@ export function Nav({
 
         <div style={styles.mobileDivider} />
 
+        <button
+          onClick={() => {
+            setShowDeposit(true);
+            setMobileOpen(false);
+          }}
+          style={{ ...styles.navDepositBtn, width: '100%' }}
+        >
+          {t('wallet.deposit')}
+        </button>
         {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
         <div style={styles.mobileLangRow}>
           <LanguageSwitcher />
@@ -184,6 +198,7 @@ export function Nav({
         </button>
       </div>
     </nav>
+    {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     <BottomNav />
     </>
   );
@@ -365,6 +380,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     fontWeight: 700,
     color: 'var(--text-primary)',
+  },
+  navDepositBtn: {
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    border: 'none',
+    borderRadius: 8,
+    padding: '8px 16px',
+    fontWeight: 800,
+    fontSize: 12,
   },
   logoutBtn: {
     background: 'transparent',

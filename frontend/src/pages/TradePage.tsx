@@ -9,7 +9,6 @@ import { PairListSidebar } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm } from '../components/OrderForm';
-import { DepositModal } from '../components/DepositModal';
 import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
@@ -35,7 +34,6 @@ export function TradePage() {
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
-  const [showDeposit, setShowDeposit] = useState(false);
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
 
   // The visible order book mirrors Kraken's real depth for a live, populated
@@ -84,15 +82,7 @@ export function TradePage() {
 
   return (
     <div className="page-mesh" style={styles.page}>
-      <Nav
-        active="/trade"
-        middle={<BotsComingSoon />}
-        rightExtra={
-          <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
-            {t('nav.deposit')}
-          </button>
-        }
-      />
+      <Nav active="/trade" middle={<BotsComingSoon />} />
       <ConnectionBanner />
       <TopGainersTicker onSelect={setPair} />
 
@@ -167,8 +157,6 @@ export function TradePage() {
           {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
         </div>
       </div>
-
-      {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     </div>
   );
 }
@@ -205,15 +193,6 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: 'column',
     overflow: 'hidden',
     ...TRADE_V0_VARS,
-  },
-  depositBtn: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    border: 'none',
-    borderRadius: 10,
-    padding: '8px 16px',
-    fontWeight: 800,
-    fontSize: 12,
   },
   content: {
     flex: 1,
