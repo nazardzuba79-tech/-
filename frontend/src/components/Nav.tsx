@@ -31,12 +31,14 @@ export function Nav({
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showDeposit, setShowDeposit] = useState(false);
 
+  // Ordered to match a real exchange's own nav (Markets, then Trade, then
+  // Futures right after the primary deposit CTA), with the rest following.
   const LINKS = [
-    { to: '/dashboard', label: t('nav.dashboard') },
+    { to: '/markets', label: t('nav.markets') },
     { to: '/trade', label: t('nav.trade') },
     { to: '/futures', label: t('nav.futures') },
+    { to: '/dashboard', label: t('nav.dashboard') },
     { to: '/wallet', label: t('nav.wallet') },
-    { to: '/markets', label: t('nav.markets') },
     { to: '/copy-trading', label: t('nav.copyTrading') },
   ];
 
@@ -72,12 +74,15 @@ export function Nav({
 
   return (
     <>
-    <nav className="glass-panel" style={styles.nav}>
+    <nav className="glass-panel nav-liquid-glass" style={styles.nav}>
       <Link to="/trade" style={styles.logo}>
         <Logo />
       </Link>
 
       <div className="nav-desktop-links" style={styles.desktopLinks}>
+        <button onClick={() => setShowDeposit(true)} style={styles.navDepositBtn}>
+          {t('wallet.deposit')}
+        </button>
         {LINKS.map((l) => (
           <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
             {l.label}
@@ -115,9 +120,6 @@ export function Nav({
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
-        <button onClick={() => setShowDeposit(true)} style={styles.navDepositBtn}>
-          {t('wallet.deposit')}
-        </button>
         {displayName && <span style={styles.displayName}>{displayName}</span>}
         {rightExtra}
         <LanguageSwitcher />
@@ -137,6 +139,15 @@ export function Nav({
       </button>
 
       <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`} style={styles.mobileMenu}>
+        <button
+          onClick={() => {
+            setShowDeposit(true);
+            setMobileOpen(false);
+          }}
+          style={{ ...styles.navDepositBtn, width: '100%', marginBottom: 4 }}
+        >
+          {t('wallet.deposit')}
+        </button>
         {LINKS.map((l) => (
           <Link
             key={l.to}
@@ -177,15 +188,6 @@ export function Nav({
 
         <div style={styles.mobileDivider} />
 
-        <button
-          onClick={() => {
-            setShowDeposit(true);
-            setMobileOpen(false);
-          }}
-          style={{ ...styles.navDepositBtn, width: '100%' }}
-        >
-          {t('wallet.deposit')}
-        </button>
         {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
         <div style={styles.mobileLangRow}>
           <LanguageSwitcher />
@@ -293,9 +295,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 24,
     padding: '0 20px',
-    height: 56,
-    borderBottom: '1px solid var(--border)',
-    boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
+    height: 64,
     position: 'sticky',
     top: 0,
     zIndex: 10,
@@ -324,7 +324,7 @@ const styles: Record<string, React.CSSProperties> = {
   mobileMenu: {
     display: 'none',
     position: 'absolute',
-    top: 56,
+    top: 64,
     left: 0,
     right: 0,
     flexDirection: 'column',
@@ -333,7 +333,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     borderBottom: '1px solid var(--border)',
     boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
-    maxHeight: 'calc(100vh - 56px)',
+    maxHeight: 'calc(100vh - 64px)',
     overflowY: 'auto',
   },
   mobileLink: {
@@ -398,14 +398,19 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: 'var(--text-primary)',
   },
+  // Deliberately the one filled/glowing button among plain text nav links —
+  // same idea as a real exchange's "Buy crypto" nav CTA: it's the
+  // highest-value action, so it should read as a button, not a link.
   navDepositBtn: {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
     border: 'none',
-    borderRadius: 8,
-    padding: '8px 16px',
+    borderRadius: 10,
+    padding: '9px 18px',
     fontWeight: 800,
-    fontSize: 12,
+    fontSize: 13,
+    letterSpacing: '0.01em',
+    boxShadow: '0 4px 16px -2px var(--accent-dim), inset 0 1px 0 rgba(255,255,255,0.18)',
   },
   logoutBtn: {
     background: 'transparent',
