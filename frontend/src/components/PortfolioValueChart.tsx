@@ -41,7 +41,7 @@ export function PortfolioValueChart({
   });
 
   const positive = points.length >= 2 ? values[values.length - 1] >= values[0] : true;
-  const color = positive ? '#00a878' : '#e5484d';
+  const color = positive ? 'var(--buy)' : 'var(--sell)';
   const changeUsd = points.length >= 2 ? values[values.length - 1] - values[0] : 0;
   const changePct = points.length >= 2 && values[0] !== 0 ? (changeUsd / values[0]) * 100 : 0;
 
@@ -104,27 +104,27 @@ export function PortfolioValueChart({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: { background: '#ffffff', border: '1px solid #e5e7eb', borderRadius: 8, padding: 20 },
+  card: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 8, padding: 20 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 10 },
-  title: { fontSize: 14, fontWeight: 700, margin: '0 0 4px', color: '#14171d' },
+  title: { fontSize: 14, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' },
   change: { fontSize: 13, fontWeight: 600 },
   rangeRow: { display: 'flex', gap: 6 },
   rangeBtn: {
-    background: '#f3f4f6',
-    border: '1px solid #e5e7eb',
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
     borderRadius: 20,
     padding: '5px 14px',
     fontSize: 12,
     fontWeight: 700,
-    color: '#4b5563',
+    color: 'var(--text-secondary)',
   },
-  rangeBtnActive: { background: '#14171d', color: '#ffffff', borderColor: '#14171d' },
+  rangeBtnActive: { background: 'var(--accent)', color: 'var(--on-accent)', borderColor: 'var(--accent)' },
   emptyState: {
     minHeight: 160,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: '#9ca3af',
+    color: 'var(--text-tertiary)',
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 1.6,
