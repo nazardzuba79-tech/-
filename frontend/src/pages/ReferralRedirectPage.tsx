@@ -5,8 +5,9 @@ export const REFERRAL_CODE_STORAGE_KEY = 'exchange_referral_code';
 
 /**
  * The clean, shareable link a referral code turns into: /r/:code. Stores
- * the code locally and hands off to the login/register screen — AuthPage
- * reads it back out at registration time and sends it along as `ref` (see
+ * the code locally and hands off to the marketing landing page — AuthPage
+ * reads the code back out at registration time (reached from there via
+ * its own "Начать торговлю" links) and sends it along as `ref` (see
  * auth.ts's registerSchema on the backend). Never itself creates or
  * changes anything; a bad/unknown code just goes nowhere special, same as
  * the backend silently ignoring one it doesn't recognize.
@@ -23,5 +24,5 @@ export function ReferralRedirectPage() {
     }
   }, [code]);
 
-  return <Navigate to="/login" replace />;
+  return <Navigate to="/" replace />;
 }
