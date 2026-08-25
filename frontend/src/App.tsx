@@ -11,6 +11,7 @@ import { WalletPage } from './pages/WalletPage';
 import { CopyTradingPage } from './pages/CopyTradingPage';
 import { ArbitragePage } from './pages/ArbitragePage';
 import { LegalPage } from './pages/LegalPage';
+import { ReferralRedirectPage } from './pages/ReferralRedirectPage';
 import { getToken } from './lib/api';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminWalletsPage } from './pages/admin/AdminWalletsPage';
@@ -111,6 +112,9 @@ export function App() {
         {/* Public — reachable both signed-in (footer link) and from the
             login screen, without requiring auth like every other page. */}
         <Route path="/legal/:doc" element={<LegalPage />} />
+        {/* A referral link (see Settings' Referral tab) — public, no auth,
+            since it has to work for someone who's never signed up yet. */}
+        <Route path="/r/:code" element={<ReferralRedirectPage />} />
 
         {/* Admin panel — deliberately not linked from anywhere in the
             normal UI, reachable only by a direct visit. AdminLayout is a

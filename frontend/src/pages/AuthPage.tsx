@@ -9,6 +9,7 @@ import { Skeleton } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
+import { REFERRAL_CODE_STORAGE_KEY } from './ReferralRedirectPage';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -54,10 +55,29 @@ export function AuthPage() {
     }
     setLoading(true);
     try {
-      const result = mode === 'login' ? await api.login(email, password) : await api.register(email, password);
+      let result;
+      if (mode === 'login') {
+        result = await api.login(email, password);
+      } else {
+        let refCode: string | undefined;
+        try {
+          refCode = localStorage.getItem(REFERRAL_CODE_STORAGE_KEY) ?? undefined;
+        } catch {
+          // no localStorage access — register without a referral, same as
+          // anyone who never followed a referral link
+        }
+        result = await api.register(email, password, refCode);
+      }
       if ('requires2fa' in result) {
         setPendingToken(result.pendingToken);
       } else {
+        if (mode === 'register') {
+          try {
+            localStorage.removeItem(REFERRAL_CODE_STORAGE_KEY);
+          } catch {
+            // harmless if this fails — the code just lingers unused
+          }
+        }
         setToken(result.token);
         navigate('/trade');
       }

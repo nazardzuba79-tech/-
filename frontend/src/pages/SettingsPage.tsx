@@ -7,7 +7,7 @@ import { getCountries } from '../lib/countries';
 import { Footer } from '../components/Footer';
 import { Skeleton, SkeletonRow } from '../components/Skeleton';
 
-type Tab = 'profile' | 'security' | 'verification' | 'api';
+type Tab = 'profile' | 'security' | 'verification' | 'api' | 'referral';
 type T = ReturnType<typeof useLanguage>['t'];
 
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
@@ -43,6 +43,7 @@ export function SettingsPage() {
             <TabButton label={t('settings.tab.security')} active={tab === 'security'} onClick={() => setTab('security')} />
             <TabButton label={t('settings.tab.verification')} active={tab === 'verification'} onClick={() => setTab('verification')} />
             <TabButton label={t('settings.tab.api')} active={tab === 'api'} onClick={() => setTab('api')} />
+            <TabButton label={t('settings.tab.referral')} active={tab === 'referral'} onClick={() => setTab('referral')} />
           </div>
 
           <div style={styles.content}>
@@ -50,6 +51,7 @@ export function SettingsPage() {
             {tab === 'security' && <SecurityTab />}
             {tab === 'verification' && <VerificationTab />}
             {tab === 'api' && <ApiKeysTab />}
+            {tab === 'referral' && <ReferralTab />}
           </div>
         </div>
 
@@ -829,6 +831,92 @@ requests.post(
   );
 }
 
+function ReferralTab() {
+  const { t, lang } = useLanguage();
+  const [data, setData] = useState<Awaited<ReturnType<typeof api.getReferralMe>> | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    api.getReferralMe().then(setData).catch(() => {});
+  }, []);
+
+  // Built from wherever the page is actually being served — a Render
+  // subdomain until a custom domain is pointed at it, whatever real domain
+  // after that. Never hardcoded, since a hardcoded name here could easily
+  // end up not being the domain the app is actually running on.
+  const link = data ? `${window.location.origin}/r/${data.referralCode}` : '';
+
+  async function handleCopy() {
+    if (!link) return;
+    await navigator.clipboard.writeText(link);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
+  if (!data) return <Skeleton height={200} />;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div className="surface-raised" style={styles.card}>
+        <h3 style={styles.cardTitle}>{t('settings.referral')}</h3>
+        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
+          {t('settings.referralDesc', { percent: data.rewardPercent })}
+        </p>
+
+        <div style={styles.secretBox}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="mono" style={{ flex: 1, fontSize: 13, wordBreak: 'break-all' }}>
+              {link}
+            </span>
+            <button type="button" onClick={handleCopy} style={styles.copyBtn}>
+              {copied ? t('deposit.copied') : t('deposit.copy')}
+            </button>
+          </div>
+        </div>
+
+        <Row label={t('settings.referralCount')} value={data.referredCount} />
+
+        <h4 style={{ fontSize: 13, margin: '20px 0 8px' }}>{t('settings.referralEarned')}</h4>
+        {data.rewardsByAsset.length === 0 ? (
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('settings.referralNoRewardsYet')}</p>
+        ) : (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {data.rewardsByAsset.map((r) => (
+              <span key={r.asset} className="mono" style={styles.referralAssetChip}>
+                {parseFloat(r.amount).toLocaleString(localeOf(lang), { maximumFractionDigits: 8 })} {r.asset}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {data.recentRewards.length > 0 && (
+        <div className="surface-raised" style={styles.card}>
+          <h3 style={styles.cardTitle}>{t('settings.referralRecentRewards')}</h3>
+          <table style={styles.keyTable}>
+            <thead>
+              <tr>
+                <th style={styles.th}>{t('settings.referralRewardDate')}</th>
+                <th style={styles.th}>{t('settings.referralRewardAmount')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentRewards.map((r) => (
+                <tr key={r.id}>
+                  <td style={styles.td}>{new Date(r.createdAt).toLocaleString(localeOf(lang))}</td>
+                  <td style={styles.td} className="mono">
+                    {parseFloat(r.amount).toLocaleString(localeOf(lang), { maximumFractionDigits: 8 })} {r.asset}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={styles.row}>
@@ -911,6 +999,15 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 16,
   },
   cardTitle: { fontSize: 14, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.01em' },
+  referralAssetChip: {
+    background: 'var(--buy-dim)',
+    color: 'var(--buy)',
+    border: '1px solid var(--buy)',
+    borderRadius: 999,
+    padding: '5px 12px',
+    fontSize: 12,
+    fontWeight: 700,
+  },
   row: {
     display: 'flex',
     justifyContent: 'space-between',

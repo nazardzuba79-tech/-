@@ -35,7 +35,10 @@ const chainConfig: ChainConfig = {
   tokens: {},
 };
 
-function makePrismaMock(depositExists: any = null) {
+// referredById defaults to null (not referred) — tests that care about the
+// referral-reward path pass their own tx mock in via txOverrides instead of
+// reaching into this helper.
+function makePrismaMock(depositExists: any = null, txOverrides: any = {}) {
   return {
     deposit: {
       findUnique: jest.fn().mockResolvedValue(depositExists),
@@ -44,12 +47,15 @@ function makePrismaMock(depositExists: any = null) {
     balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
     auditLog: { create: jest.fn() },
     $transaction: jest.fn(async (fn: any) => fn({
-      deposit: { create: jest.fn() },
+      deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
       balance: {
         upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }),
         update: jest.fn(),
       },
       auditLog: { create: jest.fn() },
+      user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
+      referralReward: { create: jest.fn() },
+      ...txOverrides,
     })),
   } as any;
 }
@@ -120,6 +126,74 @@ describe('DepositService', () => {
     expect(result.status).toBe('PENDING');
   });
 
+  describe('referral rewards', () => {
+    it('credits the referrer 5% of a credited deposit, in the same asset', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('2') }), // 2 ETH
+      }));
+
+      const referrerBalanceUpdate = jest.fn();
+      const referralRewardCreate = jest.fn();
+      const prisma = makePrismaMock(null, {
+        user: { findUnique: jest.fn().mockResolvedValue({ referredById: 'referrer-1' }) },
+        balance: {
+          upsert: jest.fn().mockResolvedValue({ available: '10', locked: '0' }),
+          update: referrerBalanceUpdate,
+        },
+        referralReward: { create: referralRewardCreate },
+      });
+
+      const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'a'.repeat(64), asset: 'ETH' });
+
+      expect(result.status).toBe('CREDITED');
+      // Depositor's own credit (2 ETH) then the referrer's reward (0.1 ETH,
+      // 5% of 2) — both go through the same balance.update mock here since
+      // this test overrides it for both calls, so assert the second (last)
+      // call is the referrer's.
+      expect(referrerBalanceUpdate).toHaveBeenCalledTimes(2);
+      expect(referrerBalanceUpdate.mock.calls[1][0]).toMatchObject({
+        where: { userId_asset: { userId: 'referrer-1', asset: 'ETH' } },
+        data: { available: '10.1' },
+      });
+      expect(referralRewardCreate).toHaveBeenCalledWith({
+        data: {
+          referrerId: 'referrer-1',
+          referredUserId: 'u1',
+          depositId: 'dep1',
+          asset: 'ETH',
+          amount: '0.1',
+        },
+      });
+    });
+
+    it('does not create a reward or touch any other balance for a non-referred user', async () => {
+      mockJsonRpcProvider.mockImplementation(() => ({
+        getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
+        getBlockNumber: jest.fn().mockResolvedValue(102),
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('2') }),
+      }));
+
+      const balanceUpdate = jest.fn();
+      const referralRewardCreate = jest.fn();
+      const prisma = makePrismaMock(null, {
+        user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
+        balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: balanceUpdate },
+        referralReward: { create: referralRewardCreate },
+      });
+
+      const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
+      const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + 'b'.repeat(64), asset: 'ETH' });
+
+      expect(result.status).toBe('CREDITED');
+      // Only the depositor's own credit — no second call for a referrer.
+      expect(balanceUpdate).toHaveBeenCalledTimes(1);
+      expect(referralRewardCreate).not.toHaveBeenCalled();
+    });
+  });
+
   describe('minimum deposit ($1000 USD-equivalent)', () => {
     it('does not credit a confirmed deposit worth less than $1000', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
@@ -163,9 +237,11 @@ describe('DepositService', () => {
         deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
         $transaction: jest.fn(async (fn: any) =>
           fn({
-            deposit: { create: jest.fn() },
+            deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
             balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
             auditLog: { create: auditLogCreate },
+            user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
+            referralReward: { create: jest.fn() },
           })
         ),
       } as any;
@@ -195,9 +271,11 @@ describe('DepositService', () => {
         deposit: { findUnique: jest.fn().mockResolvedValue(null), create: jest.fn() },
         $transaction: jest.fn(async (fn: any) =>
           fn({
-            deposit: { create: jest.fn() },
+            deposit: { create: jest.fn().mockResolvedValue({ id: 'dep1' }) },
             balance: { upsert: jest.fn().mockResolvedValue({ available: '0', locked: '0' }), update: jest.fn() },
             auditLog: { create: auditLogCreate },
+            user: { findUnique: jest.fn().mockResolvedValue({ referredById: null }) },
+            referralReward: { create: jest.fn() },
           })
         ),
       } as any;

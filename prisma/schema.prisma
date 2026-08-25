@@ -52,6 +52,22 @@ model User {
   /// Purely cosmetic — never used for auth, lookups, or anywhere the email
   /// itself is the actual identifier.
   displayName   String?
+  /// Assigned to every user at registration (see src/api/routes/auth.ts) —
+  /// the short code their own referral link embeds (/r/:code). Unique so a
+  /// link unambiguously identifies exactly one referrer.
+  referralCode  String    @unique
+  /// Set once, at registration, from the ?ref= code on the link the new
+  /// user signed up through — never changed afterward. Null for anyone who
+  /// registered without a referral link.
+  referredById  String?
+  referredBy    User?     @relation("Referrals", fields: [referredById], references: [id])
+  referrals     User[]    @relation("Referrals")
+  /// Rewards this user has EARNED as a referrer — see ReferralReward's own
+  /// doc comment for how/when these are created.
+  referralRewardsEarned ReferralReward[] @relation("ReferralRewardsEarned")
+  /// Rewards a referrer earned FROM this user's own deposits — the other
+  /// side of the same rows as referralRewardsEarned above.
+  referralRewardsGenerated ReferralReward[] @relation("ReferralRewardsFromDeposits")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -185,8 +201,32 @@ model Deposit {
   status        String   // PENDING | CONFIRMED | CREDITED
   createdAt     DateTime @default(now())
 
+  referralReward ReferralReward?
+
   @@unique([chain, txHash])
   @@index([userId])
+}
+
+/// A 5%-of-deposit reward credited to a referrer when a user they referred
+/// (User.referredById) gets a deposit CREDITED — see DepositService's
+/// claimDeposit, which creates exactly one of these per rewarded deposit
+/// (the @unique on depositId is what makes that a hard guarantee, not just
+/// an intent) in the same transaction as the deposit credit itself. The
+/// reward is paid in the SAME asset as the deposit, straight into the
+/// referrer's spot balance — never a separate synthetic point currency.
+model ReferralReward {
+  id             String   @id @default(uuid())
+  referrerId     String
+  referrer       User     @relation("ReferralRewardsEarned", fields: [referrerId], references: [id])
+  referredUserId String
+  referredUser   User     @relation("ReferralRewardsFromDeposits", fields: [referredUserId], references: [id])
+  depositId      String   @unique
+  deposit        Deposit  @relation(fields: [depositId], references: [id])
+  asset          String
+  amount         Decimal  @db.Decimal(36, 18)
+  createdAt      DateTime @default(now())
+
+  @@index([referrerId])
 }
 
 /// A transfer surfaced by a deposit-verifier's listIncoming() (see

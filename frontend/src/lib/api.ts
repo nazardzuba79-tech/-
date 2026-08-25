@@ -115,8 +115,8 @@ async function requestBlobUrl(path: string): Promise<{ url: string; contentType:
 }
 
 export const api = {
-  register: (email: string, password: string) =>
-    request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
+  register: (email: string, password: string, ref?: string) =>
+    request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, ref }) }),
 
   login: (email: string, password: string) =>
     request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {
@@ -322,6 +322,17 @@ export const api = {
         sparkline: number[];
       }[];
     }>('/market/external/rankings'),
+
+  // Read-only — see referral.ts's doc comment on the backend. The actual
+  // reward payout happens inside DepositService, never here.
+  getReferralMe: () =>
+    request<{
+      referralCode: string;
+      rewardPercent: number;
+      referredCount: number;
+      rewardsByAsset: { asset: string; amount: string }[];
+      recentRewards: { id: string; asset: string; amount: string; createdAt: string }[];
+    }>('/referral/me'),
 
   // Live cross-exchange spread comparison (Binance/OKX/Kraken) — see
   // ArbitrageService's doc comment on the backend for what this is and

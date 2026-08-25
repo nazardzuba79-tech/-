@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
+import { generateReferralCode } from '../../services/referralCode';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -37,6 +38,12 @@ const registerSchema = z.object({
   // Minimum bar for a team tool — raise this and/or add a strength meter
   // client-side if you want stricter policy.
   password: z.string().min(10, 'password must be at least 10 characters'),
+  // The referral code from the link the new user signed up through (see
+  // /r/:code on the frontend). Optional — most registrations have none.
+  // Looked up and stored as referredById below; a code that doesn't match
+  // any user is silently ignored rather than rejecting the registration
+  // over it (a stale/typo'd link shouldn't block signup).
+  ref: z.string().max(32).optional(),
 });
 
 const loginSchema = z.object({
@@ -90,7 +97,7 @@ export function authRouter(prisma: PrismaClient): Router {
 
     const parsed = registerSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { email, password } = parsed.data;
+    const { email, password, ref } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -101,9 +108,25 @@ export function authRouter(prisma: PrismaClient): Router {
 
     const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const role = email.toLowerCase() === ADMIN_EMAIL ? 'ADMIN' : 'USER';
-    const user = await prisma.user.create({
-      data: { email, passwordHash, role },
-    });
+
+    const referrer = ref ? await prisma.user.findUnique({ where: { referralCode: ref.toUpperCase() } }) : null;
+
+    // Astronomically unlikely to ever collide (32^8 combinations), but a
+    // unique constraint is only actually enforced if we respect it — retry
+    // a handful of times rather than letting a freak collision 500 the
+    // request.
+    let user;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        user = await prisma.user.create({
+          data: { email, passwordHash, role, referralCode: generateReferralCode(), referredById: referrer?.id },
+        });
+        break;
+      } catch (err: any) {
+        if (err?.code === 'P2002' && err?.meta?.target?.includes?.('referralCode') && attempt < 5) continue;
+        throw err;
+      }
+    }
 
     await prisma.auditLog.create({
       data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email, ...loginMetadata(req) } },

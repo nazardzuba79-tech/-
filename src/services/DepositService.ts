@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
 import { createVerifier } from './deposit-verifiers';
-import { MIN_DEPOSIT_USD } from '../config/limits';
+import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT } from '../config/limits';
 
 export { DepositVerificationError } from './deposit-verifiers';
 
@@ -83,7 +83,7 @@ export class DepositService {
     }
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.deposit.create({
+      const deposit = await tx.deposit.create({
         data: {
           userId,
           asset,
@@ -117,6 +117,41 @@ export class DepositService {
             },
           },
         });
+
+        // Referral reward: 5% of THIS deposit, in the same asset, straight
+        // to the referrer's own spot balance — see ReferralReward's schema
+        // doc comment. Only ever runs for a user who was actually referred
+        // (referredById set once, at registration); everyone else is a
+        // no-op here.
+        const depositor = await tx.user.findUnique({ where: { id: userId }, select: { referredById: true } });
+        if (depositor?.referredById) {
+          const rewardAmount = amount.times(REFERRAL_REWARD_PERCENT).dividedBy(100);
+          const referrerBalance = await tx.balance.upsert({
+            where: { userId_asset: { userId: depositor.referredById, asset } },
+            create: { userId: depositor.referredById, asset, available: '0', locked: '0' },
+            update: {},
+          });
+          await tx.balance.update({
+            where: { userId_asset: { userId: depositor.referredById, asset } },
+            data: { available: new BigNumber(referrerBalance.available.toString()).plus(rewardAmount).toString() },
+          });
+          await tx.referralReward.create({
+            data: {
+              referrerId: depositor.referredById,
+              referredUserId: userId,
+              depositId: deposit.id,
+              asset,
+              amount: rewardAmount.toString(),
+            },
+          });
+          await tx.auditLog.create({
+            data: {
+              userId: depositor.referredById,
+              action: 'REFERRAL_REWARD_CREDITED',
+              metadata: { referredUserId: userId, depositId: deposit.id, asset, amount: rewardAmount.toString() },
+            },
+          });
+        }
       } else if (status === 'BELOW_MINIMUM') {
         await tx.auditLog.create({
           data: { userId, action: 'DEPOSIT_BELOW_MINIMUM', metadata: { txHash, asset, amount: amount.toString() } },
