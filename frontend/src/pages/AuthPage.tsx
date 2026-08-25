@@ -327,7 +327,7 @@ function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   return (
     <div style={styles.perksSection}>
       <div style={styles.perksBanner}>
-        <div className="card-tilt-wrap" style={styles.perksBannerCard}>
+        <div className="card-tilt-wrap-photo" style={{ ...styles.perksBannerCard, transform: 'translate(-18px, -20px)' }}>
           <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" network="mastercard" imageSrc="/cards/voltex-card-dark.png" />
         </div>
         <div style={styles.perksBannerText}>

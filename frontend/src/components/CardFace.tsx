@@ -137,12 +137,15 @@ export function CardFace({
   imageSrc?: string;
 }) {
   if (imageSrc) {
+    // The real photo's own aspect ratio (530:440) — reusing CARD_VISUAL_BASE's
+    // 1.586 (credit-card) aspect would force a crop tight enough to cut into
+    // the photo's own background chart graphic and stacked-card shadow.
     return (
       <img
         src={imageSrc}
         alt="Voltex card"
         className="card-tilt"
-        style={{ ...CARD_VISUAL_BASE, padding: 0, objectFit: 'cover', display: 'block' }}
+        style={{ position: 'relative', width: 340, aspectRatio: '530 / 440', borderRadius: 18, display: 'block', objectFit: 'contain' }}
       />
     );
   }

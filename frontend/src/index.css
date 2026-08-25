@@ -444,7 +444,8 @@ a:hover > .nav-card-icon {
   filter: drop-shadow(0 0 6px rgba(139, 92, 246, 0.75)) !important;
 }
 
-.card-tilt-wrap {
+.card-tilt-wrap,
+.card-tilt-wrap-photo {
   /* 1100px matches the reference's reconstructed perspective distance —
      less aggressive than the earlier 700px guess, since rotateZ below
      now does a lot of the "clearly tilted" work on its own. */
@@ -453,7 +454,10 @@ a:hover > .nav-card-icon {
 }
 /* A dimmer duplicate card sitting behind-below the real one, at the same
    resting tilt — the "stacked cards" depth cue from the reference design.
-   Pure decoration: no content, never intercepts clicks. */
+   Pure decoration: no content, never intercepts clicks. Only for the
+   CSS-built card face — the real photo (card-tilt-wrap-photo) already has
+   its own stacked-card duplicate baked into the image, so adding this
+   would double it up. */
 .card-tilt-wrap::before {
   content: '';
   position: absolute;
@@ -472,7 +476,8 @@ a:hover > .nav-card-icon {
   transform-style: preserve-3d;
   will-change: transform;
 }
-.card-tilt-wrap:hover .card-tilt {
+.card-tilt-wrap:hover .card-tilt,
+.card-tilt-wrap-photo:hover .card-tilt {
   transform: rotateX(3deg) rotateY(-7deg) rotateZ(-10deg) scale(1.05);
   box-shadow: -24px 28px 60px rgba(0, 0, 0, 0.45);
 }
@@ -483,7 +488,8 @@ a:hover > .nav-card-icon {
   .card-tilt {
     transition: none;
   }
-  .card-tilt-wrap:hover .card-tilt {
+  .card-tilt-wrap:hover .card-tilt,
+  .card-tilt-wrap-photo:hover .card-tilt {
     transform: rotateX(5deg) rotateY(-12deg) rotateZ(-15deg);
   }
 }
