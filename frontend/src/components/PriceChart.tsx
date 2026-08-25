@@ -46,6 +46,14 @@ interface ConditionalOrder {
 
 const INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
 type Interval = (typeof INTERVALS)[number];
+const INTERVAL_SECONDS: Record<Interval, number> = {
+  '1m': 60,
+  '5m': 300,
+  '15m': 900,
+  '1h': 3600,
+  '4h': 14400,
+  '1d': 86400,
+};
 
 type Tool = 'cursor' | 'trendline' | 'horizontal' | 'ruler' | 'text';
 
@@ -140,8 +148,6 @@ export function PriceChart({ pair }: { pair: string }) {
 
   const toolRef = useRef(tool);
   toolRef.current = tool;
-  const pendingRef = useRef(pendingPoint);
-  pendingRef.current = pendingPoint;
 
   // Create the chart once on mount.
   useEffect(() => {
@@ -281,7 +287,7 @@ export function PriceChart({ pair }: { pair: string }) {
 
     function handleClick(param: MouseEventParams<Time>) {
       const activeTool = toolRef.current;
-      if (activeTool === 'cursor') return;
+      if (activeTool !== 'horizontal' && activeTool !== 'text') return;
       const p = pointFromEvent(param);
       if (!p) return;
 
@@ -303,31 +309,10 @@ export function PriceChart({ pair }: { pair: string }) {
         if (text && text.trim()) {
           setLabels((prev) => [...prev, { id: nextDrawingId++, at: p, text: text.trim() }]);
         }
-        return;
       }
-
-      // Trend line / ruler: two-click tools — first click sets the anchor,
-      // second click finalizes the shape and clears the anchor.
-      const anchor = pendingRef.current;
-      if (!anchor) {
-        setPendingPoint(p);
-        return;
-      }
-      if (activeTool === 'trendline') {
-        setTrendLines((prev) => [...prev, { id: nextDrawingId++, a: anchor, b: p }]);
-      } else if (activeTool === 'ruler') {
-        setRulers((prev) => [...prev, { id: nextDrawingId++, a: anchor, b: p }]);
-      }
-      setPendingPoint(null);
-    }
-
-    function handleMove(param: MouseEventParams<Time>) {
-      if (!pendingRef.current) return;
-      setCursorPoint(pointFromEvent(param));
     }
 
     chart.subscribeClick(handleClick);
-    chart.subscribeCrosshairMove(handleMove);
 
     const resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
@@ -339,7 +324,6 @@ export function PriceChart({ pair }: { pair: string }) {
     return () => {
       resizeObserver.disconnect();
       chart.unsubscribeClick(handleClick);
-      chart.unsubscribeCrosshairMove(handleMove);
       chart.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -594,6 +578,61 @@ export function PriceChart({ pair }: { pair: string }) {
     return { x, y };
   }
 
+  function pointFromClientXY(clientX: number, clientY: number): Point | null {
+    const container = containerRef.current;
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    if (!container || !chart || !series) return null;
+    const rect = container.getBoundingClientRect();
+    const price = series.coordinateToPrice(clientY - rect.top);
+    const time = chart.timeScale().coordinateToTime(clientX - rect.left);
+    if (price === null || time === null) return null;
+    return { time: time as unknown as number, price };
+  }
+
+  // Trend line / ruler: a genuine press-drag-release gesture (like
+  // TradingView's own tools) instead of two separate clicks — mousedown
+  // sets the anchor, mousemove live-previews the shape, mouseup finalizes
+  // it. Native window listeners (not React handlers) so the drag keeps
+  // tracking even if the cursor leaves the chart area mid-gesture.
+  const handleOverlayMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (tool !== 'trendline' && tool !== 'ruler') return;
+      const startPoint = pointFromClientXY(e.clientX, e.clientY);
+      if (!startPoint) return;
+      const start: Point = startPoint;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      setPendingPoint(start);
+      setCursorPoint(start);
+
+      function handleMove(ev: MouseEvent) {
+        const p = pointFromClientXY(ev.clientX, ev.clientY);
+        if (p) setCursorPoint(p);
+      }
+      function handleUp(ev: MouseEvent) {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleUp);
+        setPendingPoint(null);
+        setCursorPoint(null);
+        // A near-zero drag is a stray click, not an intended measurement —
+        // don't leave a zero-length shape behind.
+        if (Math.abs(ev.clientX - startX) < 3 && Math.abs(ev.clientY - startY) < 3) return;
+        const end = pointFromClientXY(ev.clientX, ev.clientY);
+        if (!end) return;
+        const activeTool = toolRef.current;
+        if (activeTool === 'trendline') {
+          setTrendLines((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
+        } else if (activeTool === 'ruler') {
+          setRulers((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
+        }
+      }
+      window.addEventListener('mousemove', handleMove);
+      window.addEventListener('mouseup', handleUp);
+    },
+    [tool]
+  );
+
   return (
     <div style={styles.wrapper}>
       <div style={styles.topToolbar}>
@@ -656,7 +695,18 @@ export function PriceChart({ pair }: { pair: string }) {
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
 
-          <svg style={styles.overlay}>
+          <svg
+            style={{ ...styles.overlay, pointerEvents: tool === 'trendline' || tool === 'ruler' ? 'auto' : 'none' }}
+            onMouseDown={handleOverlayMouseDown}
+          >
+            {/* A bare <svg> only hit-tests its painted children, not its own
+                empty viewport — without this transparent (not "none") rect
+                covering the whole area, drags over blank chart space would
+                fall straight through to the canvas underneath. */}
+            {(tool === 'trendline' || tool === 'ruler') && (
+              <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
+            )}
+
             {trendLines.map((l) => {
               const a = toScreen(l.a);
               const b = toScreen(l.b);
@@ -668,12 +718,14 @@ export function PriceChart({ pair }: { pair: string }) {
               const a = toScreen(r.a);
               const b = toScreen(r.b);
               if (!a || !b) return null;
-              const pct = ((r.b.price - r.a.price) / r.a.price) * 100;
+              const priceDiff = r.b.price - r.a.price;
+              const pct = (priceDiff / r.a.price) * 100;
+              const bars = Math.round(Math.abs(r.b.time - r.a.time) / INTERVAL_SECONDS[interval]);
               const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
               return (
                 <g key={r.id}>
                   <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="4 3" />
-                  <RulerLabel x={mid.x} y={mid.y} pct={pct} />
+                  <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} />
                 </g>
               );
             })}
@@ -684,16 +736,20 @@ export function PriceChart({ pair }: { pair: string }) {
                 const a = toScreen(pendingPoint);
                 const b = toScreen(cursorPoint);
                 if (!a || !b) return null;
+                if (tool === 'ruler') {
+                  const priceDiff = cursorPoint.price - pendingPoint.price;
+                  const pct = (priceDiff / pendingPoint.price) * 100;
+                  const bars = Math.round(Math.abs(cursorPoint.time - pendingPoint.time) / INTERVAL_SECONDS[interval]);
+                  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+                  return (
+                    <g>
+                      <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="3 3" />
+                      <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} />
+                    </g>
+                  );
+                }
                 return (
-                  <line
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke={tool === 'ruler' ? '#5b8def' : '#f7a600'}
-                    strokeWidth={1.5}
-                    strokeDasharray="3 3"
-                  />
+                  <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f7a600" strokeWidth={1.5} strokeDasharray="3 3" />
                 );
               })()}
 
@@ -762,15 +818,22 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   );
 }
 
-function RulerLabel({ x, y, pct }: { x: number; y: number; pct: number }) {
+function RulerLabel({ x, y, pct, priceDiff, bars }: { x: number; y: number; pct: number; priceDiff: number; bars: number }) {
   const positive = pct >= 0;
-  const text = `${positive ? '+' : ''}${pct.toFixed(2)}%`;
-  const width = text.length * 7 + 12;
+  const sign = positive ? '+' : '';
+  const pctText = `${sign}${pct.toFixed(2)}%`;
+  const diffMagnitude = Math.abs(priceDiff);
+  const diffText = `${sign}${priceDiff.toFixed(diffMagnitude !== 0 && diffMagnitude < 1 ? 6 : 2)}`;
+  const detailText = `${diffText} · ${bars} бар${bars === 1 ? '' : 'ів'}`;
+  const width = Math.max(pctText.length, detailText.length) * 6.6 + 14;
   return (
-    <g transform={`translate(${x - width / 2}, ${y - 11})`}>
-      <rect width={width} height={22} rx={5} fill={positive ? '#00d68f' : '#ff4d6a'} />
-      <text x={width / 2} y={15} textAnchor="middle" fontSize={11} fontWeight={700} fill="#0b0e11">
-        {text}
+    <g transform={`translate(${x - width / 2}, ${y - 20})`}>
+      <rect width={width} height={38} rx={5} fill={positive ? '#00d68f' : '#ff4d6a'} />
+      <text x={width / 2} y={16} textAnchor="middle" fontSize={12} fontWeight={700} fill="#0b0e11">
+        {pctText}
+      </text>
+      <text x={width / 2} y={30} textAnchor="middle" fontSize={10} fontWeight={600} fill="#0b0e11" opacity={0.85}>
+        {detailText}
       </text>
     </g>
   );
@@ -1028,6 +1091,13 @@ const styles: Record<string, React.CSSProperties> = {
     inset: 0,
     width: '100%',
     height: '100%',
+    // lightweight-charts' own crosshair canvas sits at z-index: 2 inside
+    // the chart div — a plain z-index:auto sibling loses hit-testing to it
+    // regardless of DOM order (a positioned z-index:auto element always
+    // paints below a positioned descendant with an explicit positive
+    // z-index, even one nested many levels deep with no stacking context
+    // of its own in between). This has to clear that 2.
+    zIndex: 3,
     pointerEvents: 'none',
   },
   textLabel: {
