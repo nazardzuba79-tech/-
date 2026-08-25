@@ -12,6 +12,11 @@ export interface CardTheme {
   chipTone: 'gold' | 'silver';
   hexTint: string;
   textColor: string;
+  // Optional real gradient ring around the card (a padded outer div whose
+  // own background shows through as a border), for themes where a plain
+  // CSS `border` (a single flat color) reads too faint — e.g. the Dark
+  // card's neon cyan-to-purple rim. When set, this takes over from `border`.
+  borderGradient?: string;
 }
 
 // Warm rose-gold brushed metal — the base Voltex Crypto Card.
@@ -24,17 +29,17 @@ export const BASE_CARD_THEME: CardTheme = {
   textColor: '#2b1a0c',
 };
 
-// Dark graphite metal with a cyan-to-purple neon rim glow — the Icy White
-// card's visual redesign (still the same product/tier underneath, only the
-// face changed: no more silver brushed metal, no hex/bolt watermark). The
-// glow is two overlapping colored shadow layers rather than a literal
-// gradient border, since a plain <div style> border can't carry a gradient
-// on its own — this reads the same at card size.
+// Dark graphite metal with a genuine neon cyan-to-purple gradient ring — the
+// Icy White card's visual redesign (still the same product/tier underneath,
+// only the face changed: no more silver brushed metal, no hex/bolt
+// watermark). borderGradient paints as a real 2px ring (see CardFace's
+// wrapper div below), not just a soft shadow, so it reads as a crisp
+// glowing edge rather than a faint tint.
 export const ICY_CARD_THEME: CardTheme = {
   background: 'linear-gradient(145deg, #1a1d24 0%, #0c0e12 28%, #202430 52%, #0a0c10 76%, #161920 100%)',
   border: '1px solid rgba(120,150,200,0.22)',
-  boxShadow:
-    '0 0 0 1px rgba(24,200,255,0.14), 0 0 34px rgba(24,200,255,0.22), 0 0 60px rgba(108,92,231,0.22), 0 24px 50px rgba(0,0,0,0.5)',
+  borderGradient: 'linear-gradient(135deg, #22d3ff 0%, #7c6cf0 45%, #b45cf0 70%, #22d3ff 100%)',
+  boxShadow: '0 0 46px rgba(34,211,255,0.55), 0 0 80px rgba(124,108,240,0.4), 0 24px 55px rgba(0,0,0,0.55)',
   chipTone: 'silver',
   hexTint: 'rgba(0,0,0,0)',
   textColor: '#f2f4f7',
@@ -103,6 +108,9 @@ const CARD_VISUAL_BASE: CSSProperties = {
   overflow: 'hidden',
 };
 
+// Border-ring thickness when a theme uses borderGradient (see CardTheme).
+const RING_WIDTH = 2;
+
 /**
  * Brushed-metal finish, EMV chip, hexagon watermark, masked demo
  * number/cardholder (design placeholders, not real data), the VOLTEX
@@ -121,8 +129,8 @@ export function CardFace({
   holderName: string;
   network?: 'visa' | 'mastercard';
 }) {
-  return (
-    <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+  const content = (
+    <>
       <div style={styles.brushedTexture} />
       <HexEmblem tint={theme.hexTint} />
       <div style={styles.cardVisualSheen} />
@@ -148,6 +156,38 @@ export function CardFace({
           {network === 'mastercard' ? <MastercardMark /> : <VisaMark color={theme.textColor} />}
         </div>
       </div>
+    </>
+  );
+
+  // A plain CSS `border` can only ever be one flat color — for a theme
+  // that wants a real cyan-to-purple gradient ring, the ring has to be
+  // painted as this outer div's own background, showing through a padding
+  // gap around an inner div that holds the actual dark card fill.
+  if (theme.borderGradient) {
+    return (
+      <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, padding: RING_WIDTH, display: 'block', background: theme.borderGradient, boxShadow: theme.boxShadow }}>
+        <div
+          style={{
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            borderRadius: 18 - RING_WIDTH,
+            padding: 24,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            background: theme.background,
+          }}
+        >
+          {content}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+      {content}
     </div>
   );
 }
