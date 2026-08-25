@@ -419,10 +419,35 @@ function AssetsIcon() {
   );
 }
 
+// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
+// scoped to this page the same way FuturesPage/WalletPage/etc re-theme
+// themselves — every existing var(--panel)/var(--border)/var(--text-*)
+// rule below (and in the shared ticker/card UI) picks this up
+// automatically.
+const AUTH_V0_VARS = {
+  ['--bg' as any]: '#080b12',
+  ['--panel' as any]: '#121925',
+  ['--panel-alt' as any]: '#0e131d',
+  ['--panel-alt-hover' as any]: '#172131',
+  ['--border' as any]: '#1c2735',
+  ['--text-primary' as any]: '#f5f7fa',
+  ['--text-secondary' as any]: '#8b96a8',
+  ['--text-tertiary' as any]: '#6b7789',
+  ['--buy' as any]: '#19d98b',
+  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
+  ['--sell' as any]: '#ff4d67',
+  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
+  ['--accent' as any]: '#18c8ff',
+  ['--accent-hover' as any]: '#3fd4ff',
+  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
+  ['--on-accent' as any]: '#04121b',
+} as React.CSSProperties;
+
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
     padding: '32px 20px 40px',
+    ...AUTH_V0_VARS,
   },
   fold: {
     display: 'flex',
@@ -504,8 +529,8 @@ const styles: Record<string, React.CSSProperties> = {
     transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
   },
   cardRegisterGlow: {
-    borderColor: 'rgba(247,166,0,0.4)',
-    boxShadow: '0 24px 70px rgba(0,0,0,0.4), 0 0 0 1px rgba(247,166,0,0.15), 0 0 40px rgba(247,166,0,0.12)',
+    borderColor: 'rgba(24,200,255,0.4)',
+    boxShadow: '0 24px 70px rgba(0,0,0,0.4), 0 0 0 1px rgba(24,200,255,0.15), 0 0 40px rgba(24,200,255,0.12)',
   },
   tabs: {
     display: 'flex',
@@ -622,11 +647,10 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--accent)',
     color: 'var(--on-accent)',
     border: 'none',
-    borderRadius: 24,
+    borderRadius: 10,
     padding: '12px 0',
     fontWeight: 800,
     fontSize: 14,
-    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
     marginTop: 8,
   },
   perksSection: {
