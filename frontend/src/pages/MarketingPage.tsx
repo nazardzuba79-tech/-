@@ -7,6 +7,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
 import { Sparkline } from '../components/Sparkline';
 import { Footer } from '../components/Footer';
+import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { parseChangePercent } from '../lib/priceChange';
 
 const NAV_LINKS = [
@@ -17,7 +18,7 @@ const NAV_LINKS = [
   { to: '/dashboard', key: 'nav.dashboard' as const },
 ];
 
-const HERO_COINS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+const HERO_COINS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'TRX/USDT', 'DOGE/USDT'];
 const OVERVIEW_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'TRX/USDT', 'DOGE/USDT'];
 const TICKER_STRIP_PAIRS = [...OVERVIEW_PAIRS];
 
@@ -224,6 +225,32 @@ export function MarketingPage() {
           </div>
         </section>
 
+        <section style={styles.perksSection}>
+          <div style={styles.perksBanner}>
+            <div className="card-tilt-wrap" style={styles.perksBannerCard}>
+              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" />
+            </div>
+            <div style={styles.perksBannerText}>
+              <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>
+              <h2 style={styles.perksBannerTitle}>{t('auth.perks.cardTitle')}</h2>
+              <p style={styles.perksBannerLead}>{t('auth.perks.cardText')}</p>
+              <Link to="/login" style={styles.heroPrimaryBtn}>
+                {t('marketing.startTrading')} <ArrowIcon small />
+              </Link>
+            </div>
+          </div>
+
+          <div style={styles.perksGrid}>
+            <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
+            <PerkCard
+              icon={<span style={{ fontSize: 20, lineHeight: 1 }}>🇸🇬</span>}
+              title={t('auth.perks.jurisdiction.title')}
+              text={t('auth.perks.jurisdiction.text')}
+            />
+            <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
+          </div>
+        </section>
+
         <Footer />
       </main>
     </div>
@@ -252,7 +279,6 @@ function HeroPreviewPanel({
         <div style={styles.previewTabs}>
           <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Spot</span>
           <span>Perps</span>
-          <span>200x</span>
         </div>
         <div style={styles.previewListHeader}>
           <span>Contract</span>
@@ -264,18 +290,18 @@ function HeroPreviewPanel({
           const base = pair.split('/')[0];
           return (
             <div key={pair} style={styles.previewRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <CryptoIcon symbol={base} size={26} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <CryptoIcon symbol={base} size={30} />
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700 }}>{pair}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700 }}>{pair}</div>
                   <span style={styles.previewLevBadge}>100x</span>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
+                <div className="mono" style={{ fontSize: 14, fontWeight: 700 }}>
                   {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
                 </div>
-                <div className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 11 }}>
+                <div className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 12 }}>
                   {tk ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : ''}
                 </div>
               </div>
@@ -370,6 +396,46 @@ function BurgerIcon({ open }: { open: boolean }) {
   );
 }
 
+const PERK_ICON_PROPS = {
+  width: 15,
+  height: 15,
+  viewBox: '0 0 24 24',
+  fill: 'none' as const,
+  stroke: 'var(--accent)',
+  strokeWidth: 2,
+  strokeLinecap: 'round' as const,
+  strokeLinejoin: 'round' as const,
+};
+
+function PercentIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS}>
+      <line x1="19" y1="5" x2="5" y2="19" />
+      <circle cx="6.5" cy="6.5" r="2.5" />
+      <circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  );
+}
+
+function AssetsIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={20} height={20}>
+      <circle cx="9" cy="9" r="6" />
+      <circle cx="15" cy="15" r="6" opacity={0.5} />
+    </svg>
+  );
+}
+
+function PerkCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+  return (
+    <div className="card-hover" style={styles.perkCard}>
+      <div style={styles.perkIconBadge}>{icon}</div>
+      <h3 style={styles.perkTitle}>{title}</h3>
+      <p style={styles.perkText}>{text}</p>
+    </div>
+  );
+}
+
 // v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
 // scoped to this page the same way every other reskinned page re-themes
 // itself.
@@ -431,10 +497,10 @@ const styles: Record<string, React.CSSProperties> = {
   mobileLoginBtn: { border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', flex: 1 },
   hero: { position: 'relative', overflow: 'hidden', padding: '64px 20px' },
   heroGrid: {
-    maxWidth: 1280,
+    maxWidth: 1320,
     margin: '0 auto',
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: '0.95fr 1.15fr',
     gap: 48,
     alignItems: 'center',
   },
@@ -488,32 +554,32 @@ const styles: Record<string, React.CSSProperties> = {
   },
   featureRow: { display: 'flex', flexDirection: 'column', gap: 10, marginTop: 40 },
   featureItem: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text-secondary)' },
-  heroRight: { position: 'relative', minHeight: 420 },
-  previewWrap: { position: 'relative' },
+  heroRight: { position: 'relative', minHeight: 560, marginRight: 60 },
+  previewWrap: { position: 'relative', maxWidth: 560 },
   previewCard: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
   },
   previewTabs: {
     display: 'flex',
-    gap: 18,
-    padding: '14px 18px',
+    gap: 20,
+    padding: '18px 24px',
     borderBottom: '1px solid var(--border)',
-    fontSize: 13,
+    fontSize: 14,
     color: 'var(--text-tertiary)',
     fontWeight: 600,
   },
   previewListHeader: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '10px 18px',
-    fontSize: 11,
+    padding: '12px 24px',
+    fontSize: 12,
     color: 'var(--text-tertiary)',
   },
-  previewRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 18px' },
+  previewRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 24px' },
   previewLevBadge: {
     display: 'inline-block',
     marginTop: 3,
@@ -526,13 +592,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   phone: {
     position: 'absolute',
-    right: -8,
-    bottom: -40,
-    width: 208,
-    borderRadius: 34,
+    right: -60,
+    bottom: -56,
+    width: 240,
+    borderRadius: 36,
     border: '1px solid var(--border)',
     background: '#05070c',
-    padding: 8,
+    padding: 9,
     boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
   },
   phoneScreen: {
@@ -574,4 +640,65 @@ const styles: Record<string, React.CSSProperties> = {
   },
   overviewCardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   overviewCardBottom: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 14 },
+  perksSection: { maxWidth: 1280, margin: '0 auto', padding: '20px 20px 64px' },
+  perksBanner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 56,
+    flexWrap: 'wrap',
+    background: 'linear-gradient(135deg, var(--panel) 0%, var(--panel-alt) 100%)',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '48px 56px',
+    marginBottom: 40,
+    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+  },
+  perksBannerCard: { flexShrink: 0, margin: '0 auto' },
+  perksBannerText: { flex: '1 1 320px', minWidth: 280 },
+  perksBannerKicker: {
+    display: 'inline-block',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'var(--accent)',
+    marginBottom: 10,
+  },
+  perksBannerTitle: {
+    fontSize: 26,
+    margin: '0 0 12px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    lineHeight: 1.25,
+  },
+  perksBannerLead: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, maxWidth: 460, margin: '0 0 20px' },
+  perksGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 16,
+  },
+  perkCard: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    padding: 24,
+  },
+  perkIconBadge: {
+    width: 40,
+    height: 40,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    background: 'var(--accent-dim)',
+    marginBottom: 14,
+  },
+  perkTitle: {
+    fontSize: 15,
+    margin: '0 0 6px',
+    fontFamily: 'var(--font-display)',
+    fontWeight: 700,
+  },
+  perkText: { fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
 };
