@@ -518,8 +518,8 @@ const RU = {
   'marketing.statNoKycLabel': 'Без верификации',
 
   'marketing.heroPerk1': 'Без верификации',
-  'marketing.heroPerk2': '2FA-защита аккаунта',
-  'marketing.heroPerk3': 'Прямое исполнение ордеров',
+  'marketing.heroPerk2': 'Крипто-карта для покупок по всему миру',
+  'marketing.heroPerk3': 'Снятие наличных в любой стране',
   'marketing.heroPerk4': 'Контроль лимитов на вывод',
 
   'marketing.featuresLabel': 'Почему VOLTEX',
@@ -1187,8 +1187,8 @@ const EN: Record<Key, string> = {
   'marketing.statNoKycLabel': 'No verification',
 
   'marketing.heroPerk1': 'No verification required',
-  'marketing.heroPerk2': '2FA account protection',
-  'marketing.heroPerk3': 'Direct order execution',
+  'marketing.heroPerk2': 'Crypto card for purchases worldwide',
+  'marketing.heroPerk3': 'Cash withdrawals in any country',
   'marketing.heroPerk4': 'Withdrawal limit controls',
 
   'marketing.featuresLabel': 'Why VOLTEX',
@@ -1843,8 +1843,8 @@ const ZH: Record<Key, string> = {
   'marketing.statNoKycLabel': '无需验证',
 
   'marketing.heroPerk1': '无需身份验证',
-  'marketing.heroPerk2': '双重验证（2FA）保护',
-  'marketing.heroPerk3': '直接订单执行',
+  'marketing.heroPerk2': '加密卡，全球消费',
+  'marketing.heroPerk3': '任意国家均可取现',
   'marketing.heroPerk4': '提现限额管控',
 
   'marketing.featuresLabel': '为什么选择 VOLTEX',
