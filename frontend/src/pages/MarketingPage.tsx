@@ -246,6 +246,12 @@ export function MarketingPage() {
               <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>
               <h2 style={styles.perksBannerTitle}>{t('auth.perks.cardTitle')}</h2>
               <p style={styles.perksBannerLead}>{t('auth.perks.cardText')}</p>
+              <div style={styles.cardBenefitList}>
+                <CardBenefitItem color="#18c8ff" icon={<PayTapIcon />} text={t('card.feature1.title')} />
+                <CardBenefitItem color="#6c5ce7" icon={<ConvertSwapIcon />} text={t('card.feature3.title')} />
+                <CardBenefitItem color="#18c8ff" icon={<AtmSlotIcon />} text={t('card.feature4.title')} />
+                <CardBenefitItem color="#6c5ce7" icon={<PercentIcon />} text={t('card.feature5.title')} />
+              </div>
               <Link to="/login" style={styles.heroPrimaryBtn}>
                 {t('marketing.startTrading')} <ArrowIcon small />
               </Link>
@@ -782,6 +788,45 @@ function PlusIcon({ rotated }: { rotated?: boolean }) {
   );
 }
 
+// Compact icon + one-liner used in the card promo banner — same 4 real
+// perks as CardPage's full feature grid (Apple/Google Pay, no conversion
+// fee, fee-free ATM, 8% cashback), just condensed to a title-only glance.
+function CardBenefitItem({ color, icon, text }: { color: string; icon: React.ReactNode; text: string }) {
+  return (
+    <div style={styles.cardBenefitItem}>
+      <span style={{ ...styles.cardBenefitIconBadge, background: `${color}24`, color }}>{icon}</span>
+      <span style={styles.cardBenefitText}>{text}</span>
+    </div>
+  );
+}
+
+function PayTapIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={16} height={16}>
+      <rect x="6" y="2" width="12" height="20" rx="2.5" />
+      <path d="M2 9c1.3 1.3 1.3 4.7 0 6M4.5 6.5c2.2 2.2 2.2 8.8 0 11" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function ConvertSwapIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={16} height={16}>
+      <path d="M4 8h13l-3-3M20 16H7l3 3" />
+    </svg>
+  );
+}
+
+function AtmSlotIcon() {
+  return (
+    <svg {...PERK_ICON_PROPS} width={16} height={16}>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="M6 12h.01M18 12h.01" />
+    </svg>
+  );
+}
+
 function PerkCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
     <div className="card-hover" style={styles.perkCard}>
@@ -1009,6 +1054,18 @@ const styles: Record<string, React.CSSProperties> = {
     lineHeight: 1.25,
   },
   perksBannerLead: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, maxWidth: 460, margin: '0 0 20px' },
+  cardBenefitList: { display: 'flex', flexDirection: 'column', gap: 12, margin: '0 0 24px' },
+  cardBenefitItem: { display: 'flex', alignItems: 'center', gap: 10 },
+  cardBenefitIconBadge: {
+    width: 28,
+    height: 28,
+    flexShrink: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+  },
+  cardBenefitText: { fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' },
   perksGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
