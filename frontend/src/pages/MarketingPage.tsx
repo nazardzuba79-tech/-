@@ -130,7 +130,6 @@ export function MarketingPage() {
                 {t('marketing.eyebrow')}
               </span>
               <h1 style={styles.heroTitle}>{t('auth.heroTagline')}</h1>
-              <p style={styles.heroSub}>{t('auth.privacyNote')}</p>
               <div style={styles.heroCtaRow}>
                 <Link to="/login" style={styles.heroPrimaryBtn}>
                   {t('marketing.startTrading')} <ArrowIcon />
@@ -242,11 +241,6 @@ export function MarketingPage() {
 
           <div style={styles.perksGrid}>
             <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
-            <PerkCard
-              icon={<span style={{ fontSize: 20, lineHeight: 1 }}>🇸🇬</span>}
-              title={t('auth.perks.jurisdiction.title')}
-              text={t('auth.perks.jurisdiction.text')}
-            />
             <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
           </div>
         </section>
@@ -320,15 +314,15 @@ function HeroPreviewPanel({
           </div>
           <div style={styles.phoneWalletRow}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 600 }}>Your Wallet</div>
-              <div style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>0x46GaC...2V9N9</div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>Your Wallet</div>
+              <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>0x46GaC...2V9N9</div>
             </div>
             <span style={styles.phoneManageBtn}>Manage</span>
           </div>
-          <div style={{ padding: '0 12px' }}>
-            <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Total Balance</div>
-            <div style={{ fontSize: 20, fontWeight: 800, marginTop: 2 }}>2,206.30 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>USDT</span></div>
-            <div style={{ marginTop: 10, fontSize: 10, fontWeight: 700 }}>Trading Account</div>
+          <div style={{ padding: '0 16px' }}>
+            <div style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Total Balance</div>
+            <div style={{ fontSize: 26, fontWeight: 800, marginTop: 3 }}>2,206.30 <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>USDT</span></div>
+            <div style={{ marginTop: 14, fontSize: 13, fontWeight: 700 }}>Trading Account</div>
             <div style={styles.phoneStatLine}>
               <span style={{ color: 'var(--text-tertiary)' }}>Margin</span>
               <span className="mono">513.15 USDT</span>
@@ -342,7 +336,7 @@ function HeroPreviewPanel({
               <span style={styles.phoneSmallBtn}>Withdraw</span>
             </div>
             <div style={styles.phonePnlBox}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span>
                   <span style={{ color: 'var(--text-tertiary)' }}>Live P&amp;L </span>
                   <span className="text-buy mono">+0.28</span>
@@ -497,11 +491,11 @@ const styles: Record<string, React.CSSProperties> = {
   mobileLoginBtn: { border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', flex: 1 },
   hero: { position: 'relative', overflow: 'hidden', padding: '64px 20px' },
   heroGrid: {
-    maxWidth: 1320,
+    maxWidth: 1440,
     margin: '0 auto',
     display: 'grid',
-    gridTemplateColumns: '0.95fr 1.15fr',
-    gap: 48,
+    gridTemplateColumns: '0.8fr 1.3fr',
+    gap: 40,
     alignItems: 'center',
   },
   heroLeft: { minWidth: 0 },
@@ -528,7 +522,6 @@ const styles: Record<string, React.CSSProperties> = {
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
   },
-  heroSub: { fontSize: 16, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '20px 0 0', maxWidth: 480 },
   heroCtaRow: { display: 'flex', gap: 12, marginTop: 32, flexWrap: 'wrap' },
   heroPrimaryBtn: {
     display: 'inline-flex',
@@ -554,8 +547,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   featureRow: { display: 'flex', flexDirection: 'column', gap: 10, marginTop: 40 },
   featureItem: { display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text-secondary)' },
-  heroRight: { position: 'relative', minHeight: 560, marginRight: 60 },
-  previewWrap: { position: 'relative', maxWidth: 560 },
+  heroRight: { position: 'relative', minHeight: 700, marginRight: 10 },
+  previewWrap: { position: 'relative', maxWidth: 680 },
   previewCard: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
@@ -592,37 +585,37 @@ const styles: Record<string, React.CSSProperties> = {
   },
   phone: {
     position: 'absolute',
-    right: -60,
-    bottom: -56,
-    width: 240,
-    borderRadius: 36,
+    right: -70,
+    bottom: -90,
+    width: 320,
+    borderRadius: 42,
     border: '1px solid var(--border)',
     background: '#05070c',
-    padding: 9,
+    padding: 10,
     boxShadow: '0 30px 80px rgba(0,0,0,0.5)',
   },
   phoneScreen: {
-    borderRadius: 26,
+    borderRadius: 34,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     overflow: 'hidden',
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
-  phoneStatusBar: { display: 'flex', justifyContent: 'space-between', padding: '10px 14px 4px', fontSize: 10, fontWeight: 600 },
+  phoneStatusBar: { display: 'flex', justifyContent: 'space-between', padding: '14px 18px 6px', fontSize: 13, fontWeight: 600 },
   phoneWalletRow: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     background: 'var(--panel-alt)',
-    borderRadius: 10,
-    margin: '8px 12px',
-    padding: '8px 10px',
+    borderRadius: 13,
+    margin: '10px 16px',
+    padding: '10px 13px',
   },
-  phoneManageBtn: { fontSize: 9, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 6, padding: '2px 6px' },
-  phoneStatLine: { display: 'flex', justifyContent: 'space-between', fontSize: 10, marginTop: 4 },
-  phoneBtnRow: { display: 'flex', gap: 6, marginTop: 10 },
-  phoneSmallBtn: { flex: 1, textAlign: 'center', fontSize: 9, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 0' },
-  phonePnlBox: { marginTop: 10, background: 'var(--panel-alt)', borderRadius: 8, padding: 8 },
+  phoneManageBtn: { fontSize: 12, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 8, padding: '3px 8px' },
+  phoneStatLine: { display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 6 },
+  phoneBtnRow: { display: 'flex', gap: 8, marginTop: 14 },
+  phoneSmallBtn: { flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 0' },
+  phonePnlBox: { marginTop: 14, background: 'var(--panel-alt)', borderRadius: 10, padding: 11 },
   overview: { borderTop: '1px solid var(--border)', background: 'var(--panel-alt)' },
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },

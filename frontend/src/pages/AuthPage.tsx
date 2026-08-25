@@ -265,7 +265,6 @@ export function AuthPage() {
                   <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
                   <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
                 </div>
-                <p style={styles.privacyNote}>🔒 {t('auth.privacyNote')}</p>
               </form>
             </>
           )}
@@ -312,11 +311,6 @@ function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
 
       <div style={styles.perksGrid}>
         <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
-        <PerkCard
-          icon={<span style={{ fontSize: 20, lineHeight: 1 }}>🇸🇬</span>}
-          title={t('auth.perks.jurisdiction.title')}
-          text={t('auth.perks.jurisdiction.text')}
-        />
         <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
       </div>
     </div>
@@ -580,13 +574,6 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     gap: 6,
     marginTop: 4,
-  },
-  privacyNote: {
-    fontSize: 11,
-    lineHeight: 1.5,
-    color: 'var(--text-tertiary)',
-    textAlign: 'center',
-    margin: '10px 0 0',
   },
   featureBadge: {
     flex: 1,
