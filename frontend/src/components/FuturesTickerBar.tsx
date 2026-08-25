@@ -80,7 +80,7 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
   // exchange it tracks) — this contract's own Kraken-mirrored turnover only
   // reflects Kraken's own liquidity for one pair, which reads unrealistically
   // small (millions, not billions) for a major coin. Falls back to the pair's
-  // own Kraken turnover when the asset isn't in CoinGecko's top-200.
+  // own Kraken turnover when the asset isn't in CoinGecko's top-500.
   const turnoverUsd = globalVolumeUsd ?? quoteVolume24h;
   const turnoverUsdLabel = globalVolumeUsd !== null ? 'USD' : quoteAsset;
   const turnoverBtc =

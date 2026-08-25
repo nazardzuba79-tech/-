@@ -1,5 +1,5 @@
 /**
- * Read-only mirror of CoinGecko's public top-250-by-market-cap data (no API
+ * Read-only mirror of CoinGecko's public top-500-by-market-cap data (no API
  * key needed — these are public endpoints): rank, category tags, and each
  * coin's own market-wide price/24h change/volume/market cap/7d sparkline.
  * This NEVER backs an actual trading pair by itself: Kraken
@@ -7,7 +7,7 @@
  * price/candle/order-book data, since that's what our matching engine and
  * price watchers can actually act on. CoinGeckoService's price/volume
  * figures are used only where showing real market-wide data is the point
- * (e.g. the Wallet page's full coin browser, which lists every top-200
+ * (e.g. the Wallet page's full coin browser, which lists every top-500
  * coin whether or not the account holds any and whether or not it's even
  * tradable here) — never to invent a pair Kraken can't back.
  *
@@ -42,17 +42,20 @@ export interface CoinRanking {
 }
 
 // Refreshed at most once an hour — this data doesn't need to be
-// second-fresh, and each refresh costs 5 CoinGecko calls (1 markets +
-// 4 category), so hourly keeps monthly usage comfortably inside the free
-// Demo plan's 10,000-call cap even under sustained traffic (worst case
-// ~5 * 24 * 31 ≈ 3,720/month, versus 10,000 available).
+// second-fresh, and each refresh costs 6 CoinGecko calls (2 markets pages
+// to cover TOP_N=500 + 4 category), so hourly keeps monthly usage
+// comfortably inside the free Demo plan's 10,000-call cap even under
+// sustained traffic (worst case ~6 * 24 * 31 ≈ 4,464/month, versus 10,000
+// available).
 const RANKINGS_TTL_MS = 60 * 60_000;
-// 250 is CoinGecko's own per_page cap for this endpoint — using the max
-// (rather than 200) pulls in more of the longer-tail DeFi/meme coins that
-// rank just outside the very top by market cap, which is where most of
-// those two categories actually sit (the top ranks skew L1/majors), so the
-// category filter chips have more to show without changing anything else.
-const TOP_N = 250;
+// CoinGecko caps per_page at 250 for this endpoint, so reaching TOP_N above
+// that means paging — see the loop in getRankings() below. Pulling more
+// than the bare top-200/250 matters because that's where most of the
+// longer-tail DeFi/meme coins actually rank (the very top skews L1/majors),
+// so the category filter chips — and any Kraken pair whose base sits
+// outside the top ~250 — have real rank/category data instead of nothing.
+const CG_MAX_PER_PAGE = 250;
+const TOP_N = 500;
 
 // CoinGecko's own category slugs for the four groupings the UI filters by.
 const CATEGORY_SLUGS: Record<CoinCategory, string> = {
@@ -126,7 +129,7 @@ export class CoinGeckoService {
     private readonly apiKey?: string
   ) {}
 
-  /** Top ~250 coins by market cap, each tagged with whichever of the four
+  /** Top ~500 coins by market cap, each tagged with whichever of the four
    * tracked categories it belongs to. Sorted ascending by rank.
    *
    * On a refresh failure (CoinGecko's free/anonymous tier rate-limits
@@ -143,9 +146,28 @@ export class CoinGeckoService {
 
     let markets: CoinGeckoMarketRow[];
     try {
-      markets = (await this.request(
-        `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${TOP_N}&page=1&sparkline=true`
-      )) as CoinGeckoMarketRow[];
+      markets = [];
+      const pageCount = Math.ceil(TOP_N / CG_MAX_PER_PAGE);
+      // Sequential, not Promise.all — same reasoning as the per-category
+      // calls below: CoinGecko's free/anonymous tier is prone to
+      // rate-limiting a burst of concurrent requests more readily than the
+      // same requests spaced out. Only page 1 failing is fatal (no data at
+      // all to serve); a later page failing just means fewer of the
+      // longer-tail ranks make it in this cycle rather than losing
+      // everything — same "partial is better than none" tolerance as the
+      // per-category loop below.
+      for (let page = 1; page <= pageCount; page++) {
+        let rows: CoinGeckoMarketRow[];
+        try {
+          rows = (await this.request(
+            `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${CG_MAX_PER_PAGE}&page=${page}&sparkline=true`
+          )) as CoinGeckoMarketRow[];
+        } catch (err) {
+          if (page === 1) throw err;
+          break;
+        }
+        markets.push(...rows);
+      }
     } catch (err) {
       if (this.cache) return this.cache.rankings;
       throw err;

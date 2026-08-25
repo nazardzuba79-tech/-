@@ -56,7 +56,7 @@ const RU = {
   'auth.perks.fee.text': 'Торгуй без скрытых платежей — комиссия не съедает прибыль на каждой сделке.',
   'auth.perks.jurisdiction.title': 'Регистрация в Сингапуре',
   'auth.perks.jurisdiction.text': 'Компания зарегистрирована в Сингапуре — данные передаются третьим лицам только по обоснованному юридическому запросу.',
-  'auth.perks.assets.title': '200+ активов',
+  'auth.perks.assets.title': '500+ активов',
   'auth.perks.assets.text': 'От BTC и ETH до сотен альткоинов — торгуй тем, что действительно движется на рынке.',
   'auth.cardWaitlistBadge': '🎫 Регистрируйся сейчас — займи место в листе ожидания на крипто-карту VOLTEX',
   'auth.registerSubline': 'Торгуй без комиссии. Прозрачно, без скрытых платежей.',
@@ -513,7 +513,7 @@ const RU = {
   'marketing.statFeeLabel': 'Комиссия на споте',
   'marketing.statLeverageValue': '100x',
   'marketing.statLeverageLabel': 'Макс. плечо',
-  'marketing.statAssetsValue': '200+',
+  'marketing.statAssetsValue': '500+',
   'marketing.statAssetsLabel': 'Активов',
   'marketing.statNoKycLabel': 'Без верификации',
 
@@ -541,7 +541,7 @@ const RU = {
   'marketing.feature.global.text': 'Торгуй сотнями пар без KYC — регистрация занимает меньше минуты.',
 
   'marketing.supportedAssetsLabel': 'Поддерживаемые активы',
-  'marketing.supportedAssetsTitle': 'Торгуй 200+ цифровыми активами',
+  'marketing.supportedAssetsTitle': 'Торгуй 500+ цифровыми активами',
   'marketing.supportedAssetsSubtitle': 'От топовых монет до альткоинов — с глубокой ликвидностью и узкими спредами.',
 
   'marketing.faqLabel': 'Вопросы и ответы',
@@ -720,7 +720,7 @@ const EN: Record<Key, string> = {
   'auth.perks.fee.text': 'Trade with no hidden charges — fees don’t eat into your profit on every trade.',
   'auth.perks.jurisdiction.title': 'Registered in Singapore',
   'auth.perks.jurisdiction.text': 'The company is registered in Singapore — data is shared with third parties only on a substantiated legal request.',
-  'auth.perks.assets.title': '200+ assets',
+  'auth.perks.assets.title': '500+ assets',
   'auth.perks.assets.text': 'From BTC and ETH to hundreds of altcoins — trade what’s actually moving in the market.',
   'auth.cardWaitlistBadge': '🎫 Sign up now — reserve your spot on the VOLTEX crypto card waitlist',
   'auth.registerSubline': 'Trade with zero fees. Transparent, no hidden charges.',
@@ -1177,7 +1177,7 @@ const EN: Record<Key, string> = {
   'marketing.statFeeLabel': 'Spot trading fee',
   'marketing.statLeverageValue': '100x',
   'marketing.statLeverageLabel': 'Max leverage',
-  'marketing.statAssetsValue': '200+',
+  'marketing.statAssetsValue': '500+',
   'marketing.statAssetsLabel': 'Assets',
   'marketing.statNoKycLabel': 'No verification',
 
@@ -1201,7 +1201,7 @@ const EN: Record<Key, string> = {
   'marketing.feature.global.text': 'Trade hundreds of pairs with no KYC — signing up takes under a minute.',
 
   'marketing.supportedAssetsLabel': 'Supported assets',
-  'marketing.supportedAssetsTitle': 'Trade 200+ digital assets',
+  'marketing.supportedAssetsTitle': 'Trade 500+ digital assets',
   'marketing.supportedAssetsSubtitle': 'From top coins to altcoins, with deep liquidity and tight spreads.',
 
   'marketing.faqLabel': 'FAQ',
@@ -1373,7 +1373,7 @@ const ZH: Record<Key, string> = {
   'auth.perks.fee.text': '交易无隐藏费用——手续费不会侵蚀你每一笔交易的利润。',
   'auth.perks.jurisdiction.title': '在新加坡注册',
   'auth.perks.jurisdiction.text': '公司在新加坡注册——仅在收到具有正当法律依据的请求时才会向第三方提供数据。',
-  'auth.perks.assets.title': '200+ 种资产',
+  'auth.perks.assets.title': '500+ 种资产',
   'auth.perks.assets.text': '从 BTC、ETH 到数百种山寨币——交易真正活跃的市场标的。',
   'auth.cardWaitlistBadge': '🎫 立即注册——抢占 VOLTEX 加密卡等候名单席位',
   'auth.registerSubline': '零手续费交易，透明，无隐藏费用。',
@@ -1828,7 +1828,7 @@ const ZH: Record<Key, string> = {
   'marketing.statFeeLabel': '现货交易手续费',
   'marketing.statLeverageValue': '100x',
   'marketing.statLeverageLabel': '最高杠杆',
-  'marketing.statAssetsValue': '200+',
+  'marketing.statAssetsValue': '500+',
   'marketing.statAssetsLabel': '种资产',
   'marketing.statNoKycLabel': '无需验证',
 
@@ -1852,7 +1852,7 @@ const ZH: Record<Key, string> = {
   'marketing.feature.global.text': '无需 KYC 即可交易数百个交易对——注册不到一分钟。',
 
   'marketing.supportedAssetsLabel': '支持的资产',
-  'marketing.supportedAssetsTitle': '交易 200+ 种数字资产',
+  'marketing.supportedAssetsTitle': '交易 500+ 种数字资产',
   'marketing.supportedAssetsSubtitle': '从主流币到山寨币，流动性深、点差窄。',
 
   'marketing.faqLabel': '常见问题',

@@ -284,11 +284,11 @@ export function WalletPage() {
   }, [spotBalances, futuresBalances, priceByAsset, lang]);
   const donutTotal = donutSlices.reduce((sum, s) => sum + s.value, 0);
 
-  // The full top-200 coin browser, left-joined with the account's real spot
+  // The full top-500 coin browser, left-joined with the account's real spot
   // balances (0 if the account never held that asset) — every supported
   // coin shows up here regardless of balance, per the redesign; "hide zero
   // balances" is just a filter over this same list, not a different query.
-  // A balance the account genuinely holds in an asset outside the top-200
+  // A balance the account genuinely holds in an asset outside the top-500
   // (rare, but not impossible) is still included — never hide real money
   // just because CoinGecko didn't rank it.
   const balanceByAsset = useMemo(() => {

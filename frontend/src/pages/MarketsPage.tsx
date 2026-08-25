@@ -19,6 +19,8 @@ import { CATEGORIES, CoinCategory, CoinRanking } from '../lib/pairList';
 // clicking it in the list — just never auto-picked.
 const STABLE_BASES = new Set(['USDT', 'USDC', 'USD', 'DAI', 'EUR']);
 
+const RANKINGS_POLL_MS = 10_000;
+
 const CATEGORY_LABEL_KEY: Record<CoinCategory, Key> = {
   DEFI: 'markets.category.defi',
   LAYER_1: 'markets.category.layer1',
@@ -55,15 +57,27 @@ export function MarketsPage() {
   const [categoryFilter, setCategoryFilter] = useState<CoinCategory | null>(null);
   const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
 
+  // Fire-once-and-forget here left the category chips permanently disabled
+  // whenever the single attempt landed on a transient failure (e.g. the
+  // backend's very first CoinGecko call after a cold start getting
+  // rate-limited, with nothing cached yet to fall back on) — same fix as
+  // WalletPage's own rankings poll: keep retrying on an interval so a
+  // one-off failure self-heals instead of requiring a page reload. Cheap —
+  // the backend serves this from its own hour-long cache either way.
   useEffect(() => {
-    api
-      .getExternalRankings()
-      .then((res) => {
-        const map = new Map<string, CoinRanking>();
-        for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
-        setRankByBase(map);
-      })
-      .catch(() => {});
+    function load() {
+      api
+        .getExternalRankings()
+        .then((res) => {
+          const map = new Map<string, CoinRanking>();
+          for (const r of res.rankings) map.set(r.symbol, r as CoinRanking);
+          setRankByBase(map);
+        })
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, RANKINGS_POLL_MS);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

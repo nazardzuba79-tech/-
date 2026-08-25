@@ -111,7 +111,7 @@ export function TickerBar({ pair }: { pair: string }) {
           // Kraken's own liquidity for this one pair, which reads
           // unrealistically small (millions, not billions) for a major coin.
           // Falls back to the pair's own Kraken turnover when the asset
-          // isn't in CoinGecko's top-200 or the rankings fetch failed.
+          // isn't in CoinGecko's top-500 or the rankings fetch failed.
           if (globalVolumeUsd !== null) return formatCompact(globalVolumeUsd, lang);
           return stats ? formatCompact(stats.quoteVolume24h, lang) : '—';
         })()}

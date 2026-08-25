@@ -21,7 +21,7 @@ export interface CoinGeckoStats {
 }
 
 /** Returns null (not partial data) if the asset isn't in CoinGecko's
- * top-200 or the rankings fetch fails — callers fall back to their own
+ * top-500 or the rankings fetch fails — callers fall back to their own
  * pair-specific figures in that case rather than showing a stat that's
  * silently wrong for that one asset.
  *
