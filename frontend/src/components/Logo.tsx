@@ -1,35 +1,30 @@
 /**
- * VOLTEX brand mark — the owner's actual v0-designed glyph: two interlocking
- * angular shards that read as both a lightning bolt (energy/speed) and a
- * sharp "V" (VOLTEX), cyan-to-purple gradient. `LogoMark` alone is the icon
- * (used for the favicon and as a standalone badge); `Logo` is the full
- * lockup used in the nav and on the auth screen.
+ * VOLTEX brand mark — a white "crossed-out planet": a solid disc with a
+ * tilted orbit ring, sliced by a diagonal cut back to the page background.
+ * Replaces the earlier cyan-to-purple lightning bolt. `LogoMark` alone is
+ * the icon (used for the favicon and as a standalone badge); `Logo` is the
+ * full lockup used in the nav and on the auth screen.
  */
-
-const BOLT_GRADIENT_ID = 'voltex-bolt-gradient';
 
 export function LogoMark({ size = 22, variant = 'bolt' }: { size?: number; variant?: 'bolt' | 'badge' }) {
   if (variant === 'badge') {
     return (
       <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="10" fill="var(--accent)" />
-        <path d="M20.5 3 L11 19 L17 19 L14.5 27 Z" fill="var(--on-accent)" opacity="0.55" />
-        <path d="M23 3 L9 22 L18 22 L15.5 37 L32 16 L22 16 Z" fill="var(--on-accent)" />
+        <ellipse cx="20" cy="20" rx="14.5" ry="5.2" stroke="var(--on-accent)" strokeWidth="1.4" fill="none" transform="rotate(-15 20 20)" />
+        <circle cx="20" cy="20" r="8.5" fill="var(--on-accent)" />
+        <line x1="6" y1="29.5" x2="34" y2="10.5" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
       </svg>
     );
   }
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id={BOLT_GRADIENT_ID} x1="6" y1="2" x2="34" y2="38" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#18C8FF" />
-          <stop offset="1" stopColor="#6C5CE7" />
-        </linearGradient>
-      </defs>
-      {/* depth shard */}
-      <path d="M20.5 3 L11 19 L17 19 L14.5 27 Z" fill="#6C5CE7" opacity="0.55" />
-      {/* main bolt / V */}
-      <path d="M23 3 L9 22 L18 22 L15.5 37 L32 16 L22 16 Z" fill={`url(#${BOLT_GRADIENT_ID})`} />
+      {/* tilted orbit ring */}
+      <ellipse cx="20" cy="20" rx="17" ry="6" stroke="var(--text-primary)" strokeWidth="1.4" fill="none" transform="rotate(-15 20 20)" />
+      {/* planet body */}
+      <circle cx="20" cy="20" r="10" fill="var(--text-primary)" />
+      {/* the "crossed out" cut, back to the page background */}
+      <line x1="4" y1="31" x2="36" y2="9" stroke="var(--bg)" strokeWidth="3.4" strokeLinecap="round" />
     </svg>
   );
 }
@@ -52,7 +47,9 @@ export function Logo({ size = 'nav' }: { size?: 'nav' | 'large' }) {
       }}
     >
       <LogoMark size={iconSize} />
-      <span>VOLTEX</span>
+      <span>
+        VO<span style={{ color: '#F0C419' }}>L</span>TEX
+      </span>
     </span>
   );
 
