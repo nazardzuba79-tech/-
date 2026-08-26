@@ -17,8 +17,12 @@ import { AssetsPanel } from '../components/AssetsPanel';
 import { TopGainersTicker } from '../components/TopGainersTicker';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
+import { CfdInstrumentList } from '../components/CfdInstrumentList';
+import { CfdPricePanel } from '../components/CfdPricePanel';
+import { useCfdTickers } from '../lib/useCfdTickers';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
+type MarketType = 'spot' | 'cfd';
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 const PAIR_PATTERN = /^[A-Z0-9]+\/[A-Z0-9]+$/;
 
@@ -35,6 +39,10 @@ export function TradePage() {
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  const [marketType, setMarketType] = useState<MarketType>('spot');
+  const [cfdSymbol, setCfdSymbol] = useState('XAUUSD');
+  const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
+  const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);
 
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
@@ -87,40 +95,90 @@ export function TradePage() {
       <TopGainersTicker onSelect={setPair} />
 
       <div className="trading-content" style={styles.content}>
-        <div style={styles.tickerCard}>
-          <TickerBar pair={pair} />
+        <div style={styles.marketTypeTabs}>
+          <button
+            onClick={() => setMarketType('spot')}
+            style={{ ...styles.marketTypeTab, ...(marketType === 'spot' ? styles.marketTypeTabActive : {}) }}
+          >
+            {t('trade.spotTab')}
+          </button>
+          <button
+            onClick={() => setMarketType('cfd')}
+            style={{ ...styles.marketTypeTab, ...(marketType === 'cfd' ? styles.marketTypeTabActive : {}) }}
+          >
+            {t('trade.cfdTab')}
+          </button>
         </div>
+
+        {marketType === 'spot' && (
+          <div style={styles.tickerCard}>
+            <TickerBar pair={pair} />
+          </div>
+        )}
 
         <main className="trading-grid" style={styles.grid}>
           <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
-            <PairListSidebar pair={pair} onChange={setPair} />
+            {marketType === 'spot' ? (
+              <PairListSidebar pair={pair} onChange={setPair} />
+            ) : (
+              <CfdInstrumentList
+                symbol={cfdSymbol}
+                onChange={setCfdSymbol}
+                tickers={cfdTickers}
+                configured={cfdConfigured}
+                loadError={cfdLoadError}
+                onRetry={reloadCfd}
+              />
+            )}
           </div>
 
           <div className="trading-col trading-col-chart" style={styles.chartColumn}>
-            <PriceChart pair={pair} />
+            {marketType === 'spot' ? (
+              <PriceChart pair={pair} />
+            ) : (
+              <CfdPricePanel ticker={cfdTicker} loading={cfdTickers.length === 0 && !cfdLoadError} />
+            )}
           </div>
 
           <div className="trading-col trading-col-book" style={styles.bookColumn}>
-            <div style={styles.bookTabs}>
-              <button
-                onClick={() => setBookTab('book')}
-                style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
-              >
-                {t('trade.orderBook')}
-              </button>
-              <button
-                onClick={() => setBookTab('trades')}
-                style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
-              >
-                {t('trade.trades')}
-              </button>
-            </div>
-            {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
-            {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+            {marketType === 'spot' ? (
+              <>
+                <div style={styles.bookTabs}>
+                  <button
+                    onClick={() => setBookTab('book')}
+                    style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
+                  >
+                    {t('trade.orderBook')}
+                  </button>
+                  <button
+                    onClick={() => setBookTab('trades')}
+                    style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
+                  >
+                    {t('trade.trades')}
+                  </button>
+                </div>
+                {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
+                {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+              </>
+            ) : (
+              <div style={styles.cfdNotice}>
+                <div style={styles.cfdNoticeIcon}>◆</div>
+                <p style={styles.cfdNoticeText}>{t('trade.cfdBookUnavailable')}</p>
+              </div>
+            )}
           </div>
 
           <div className="trading-col trading-col-form" style={styles.formColumn}>
-            <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
+            {marketType === 'spot' ? (
+              <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
+            ) : (
+              <div style={styles.cfdNotice}>
+                <div style={styles.cfdNoticeIcon}>◆</div>
+                <h3 style={styles.cfdNoticeTitle}>{t('trade.cfdTitle')}</h3>
+                <p style={styles.cfdNoticeText}>{t('trade.cfdDisclaimer')}</p>
+                <p style={styles.cfdNoticeHint}>{t('trade.cfdContact')}</p>
+              </div>
+            )}
           </div>
         </main>
 
@@ -209,6 +267,38 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--border)',
     overflow: 'hidden',
   },
+  marketTypeTabs: {
+    display: 'flex',
+    gap: 6,
+    flexShrink: 0,
+  },
+  marketTypeTab: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: '7px 18px',
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+  },
+  marketTypeTabActive: {
+    color: 'var(--on-accent)',
+    background: 'var(--accent)',
+    borderColor: 'var(--accent)',
+  },
+  cfdNotice: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    gap: 8,
+    padding: '32px 20px',
+    margin: 'auto',
+  },
+  cfdNoticeIcon: { fontSize: 22, color: 'var(--accent)' },
+  cfdNoticeTitle: { fontSize: 14, fontWeight: 800, margin: 0 },
+  cfdNoticeText: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
+  cfdNoticeHint: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.6, margin: 0 },
   grid: {
     flex: 1,
     display: 'flex',

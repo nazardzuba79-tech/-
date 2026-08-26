@@ -366,6 +366,13 @@ export const api = {
       }[];
     }>('/market/external/tickers'),
 
+  getCfdTickers: () =>
+    request<{
+      source: string;
+      configured: boolean;
+      tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];
+    }>('/cfd/tickers'),
+
   getExternalTicker: (pair: string) =>
     request<{
       source: string;
