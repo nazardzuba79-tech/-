@@ -236,6 +236,21 @@ export class KrakenMarketDataService {
         byPair.set(pair, { pair, baseAsset, quoteAsset, krakenName: raw.altname });
       }
     }
+
+    // Kraken lists plenty of coins (TRX among them) only against USD, never
+    // USDT — but every pair elsewhere in this app is quoted in USDT. USDT
+    // tracks USD closely enough (sub-cent in practice) that reusing the
+    // same Kraken ticker under a "/USDT" label is a fair stand-in, not a
+    // fabricated price — it's still Kraken's real, live number for that
+    // coin. Only fills in the gap; a genuine Kraken USDT pair always wins.
+    for (const info of Array.from(byPair.values())) {
+      if (info.quoteAsset !== 'USD') continue;
+      const usdtPair = `${info.baseAsset}/USDT`;
+      if (!byPair.has(usdtPair)) {
+        byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
+      }
+    }
+
     this.symbolsCache = { byPair, expiresAt: Date.now() + SYMBOLS_TTL_MS };
     return byPair;
   }
