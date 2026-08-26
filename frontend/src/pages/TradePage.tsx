@@ -18,7 +18,7 @@ import { TopGainersTicker } from '../components/TopGainersTicker';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
-import { CfdPricePanel } from '../components/CfdPricePanel';
+import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
@@ -126,7 +126,7 @@ export function TradePage() {
             {marketType === 'spot' ? (
               <PriceChart pair={pair} />
             ) : (
-              <CfdPricePanel ticker={cfdTicker} loading={cfdTickers.length === 0 && !cfdLoadError && cfdConfigured} />
+              <CfdChart symbol={cfdSymbol} ticker={cfdTicker} />
             )}
           </div>
 
