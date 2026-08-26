@@ -322,6 +322,30 @@ textarea:focus-visible {
   background-color: var(--panel-alt-hover) !important;
 }
 
+/* Exact hover/active states for CfdMarketsSection's dashboard rows and
+   tabs — copied verbatim from the Bolt reference's own CSS values rather
+   than reusing the site's row-hover/accent tokens, since this component
+   is a pixel-faithful port of that reference's palette. */
+.dashboard-row-hover {
+  transition: background-color 0.2s ease;
+}
+.dashboard-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.035) !important;
+}
+.dashboard-tab-active {
+  position: relative;
+}
+.dashboard-tab-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -15px;
+  height: 2px;
+  background: #eab308;
+  border-radius: 2px;
+}
+
 /* Card hover-lift for clickable/tappable cards (products, card-page
    features, settings tabs) — subtle, not a gimmick: a soft rise + glow
    instead of a flat rectangle with zero feedback. */
