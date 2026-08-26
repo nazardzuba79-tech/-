@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
-const POLL_MS = 30_000;
+// Matches CfdMarketDataService's server-side cache TTL — polling faster
+// than that just wastes requests without ever seeing fresher data (see
+// CFD_INSTRUMENTS' doc comment there for the Twelve Data credit budget
+// this is paced against).
+const POLL_MS = 60_000;
 
 /** Shared poll so the instrument list and the price panel don't each open
  * their own interval against the same endpoint. */

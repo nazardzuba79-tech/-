@@ -11,20 +11,21 @@ export interface CfdTickerRow {
 }
 
 // Fixed emoji badge per instrument — same spirit as PairListSidebar's
-// CryptoIcon, just without needing per-symbol artwork for a 7-item list.
+// CryptoIcon, just without needing per-symbol artwork for a short list.
+// Kept in sync with CfdMarketDataService's CFD_INSTRUMENTS — see that
+// file's doc comment for why the list is gold + major forex only.
 export const CFD_ICON_BY_SYMBOL: Record<string, string> = {
   XAUUSD: '🥇',
-  XAGUSD: '🥈',
-  USOUSD: '🛢️',
-  NAS100: '💻',
-  US500: '📈',
-  US30: '🏛️',
   EURUSD: '💶',
+  GBPUSD: '💷',
+  USDJPY: '💴',
+  AUDUSD: '🇦🇺',
+  USDCAD: '🇨🇦',
 };
 
 /**
- * Live CFD reference prices (gold, oil, major indices, EUR/USD) from
- * Twelve Data — same row layout as PairListSidebar's crypto pair list, so
+ * Live CFD reference prices (gold + major forex pairs) from Twelve Data —
+ * same row layout as PairListSidebar's crypto pair list, so
  * switching "Spot / CFD" on the Trade page feels like the same product,
  * not a bolted-on widget. See CfdMarketDataService's doc comment for what
  * "live reference price" does and doesn't mean here.

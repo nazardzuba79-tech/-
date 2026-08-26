@@ -37,29 +37,30 @@ export interface CfdCandle {
   close: number;
 }
 
-// A deliberately small, well-known set — enough to fill a "trending CFDs"
-// strip without burning through Twelve Data's free-tier rate limit (8
-// requests/minute, 800/day). All fetched in a single batched request.
+// Twelve Data's free plan charges ONE credit per symbol in a batched
+// /quote request (not one credit per call) against an 8-credits/minute
+// budget — an 11-symbol list (a prior version of this array) demanded 11
+// credits every refetch and permanently exceeded that budget, breaking
+// the batch outright rather than just dropping the unlisted symbols as
+// originally assumed. Kept deliberately small (6 symbols) so one refetch
+// plus one getCandles() call for whichever instrument is selected
+// (see TICKERS_TTL_MS/CANDLES_TTL_MS below) always fits under 8 credits
+// with the same 60s cadence, and restricted to gold + major forex pairs —
+// the asset classes confirmed working from real deployed traffic (XAUUSD
+// and EURUSD were the two that actually returned data), since indices and
+// other commodities were never confirmed and only ate credits for nothing.
 export const CFD_INSTRUMENTS: CfdInstrument[] = [
   { symbol: 'XAUUSD', name: 'Gold US Dollar', twelveDataSymbol: 'XAU/USD' },
-  { symbol: 'XAGUSD', name: 'Silver US Dollar', twelveDataSymbol: 'XAG/USD' },
-  { symbol: 'USOUSD', name: 'WTI Crude Oil Cash', twelveDataSymbol: 'WTI/USD' },
-  { symbol: 'NAS100', name: 'US 100 Cash', twelveDataSymbol: 'NDX' },
-  { symbol: 'US500', name: 'US 500 Cash', twelveDataSymbol: 'SPX' },
-  { symbol: 'US30', name: 'US 30 Cash', twelveDataSymbol: 'DJI' },
   { symbol: 'EURUSD', name: 'Euro vs US Dollar', twelveDataSymbol: 'EUR/USD' },
-  // Major forex pairs — Twelve Data's core, best-supported asset class on
-  // every plan including free/Demo, added as a safe bet alongside the
-  // commodity/index symbols above (some of which turned out to need a
-  // paid plan or a different symbol code — see the getTickers() log for
-  // exactly which ones and why).
   { symbol: 'GBPUSD', name: 'British Pound vs US Dollar', twelveDataSymbol: 'GBP/USD' },
   { symbol: 'USDJPY', name: 'US Dollar vs Japanese Yen', twelveDataSymbol: 'USD/JPY' },
   { symbol: 'AUDUSD', name: 'Australian Dollar vs US Dollar', twelveDataSymbol: 'AUD/USD' },
   { symbol: 'USDCAD', name: 'US Dollar vs Canadian Dollar', twelveDataSymbol: 'USD/CAD' },
 ];
 
-const TICKERS_TTL_MS = 30_000;
+// 60s, not 30s — halves the credit burn rate to stay under Twelve Data's
+// 8-credits/minute free-plan budget (see CFD_INSTRUMENTS' comment above).
+const TICKERS_TTL_MS = 60_000;
 
 const CANDLES_TTL_MS = 60_000;
 

@@ -71,7 +71,10 @@ export function CfdChart({ symbol, ticker }: { symbol: string; ticker: CfdTicker
       }
     }
     load();
-    const poll = window.setInterval(load, 30_000);
+    // Matches CfdMarketDataService's CANDLES_TTL_MS — see CFD_INSTRUMENTS'
+    // doc comment there for the Twelve Data credit budget this is paced
+    // against.
+    const poll = window.setInterval(load, 60_000);
     return () => {
       cancelled = true;
       window.clearInterval(poll);

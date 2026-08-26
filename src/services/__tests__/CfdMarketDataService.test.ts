@@ -15,7 +15,7 @@ describe('CfdMarketDataService', () => {
     const fetchFn = jest.fn().mockResolvedValue(
       jsonResponse({
         'XAU/USD': { symbol: 'XAU/USD', close: '4628.20', percent_change: '0.05' },
-        'WTI/USD': { symbol: 'WTI/USD', close: '81.205', percent_change: '-0.52' },
+        'EUR/USD': { symbol: 'EUR/USD', close: '1.16636', percent_change: '-0.10' },
       })
     );
     const service = new CfdMarketDataService('test-key', fetchFn);
@@ -24,8 +24,8 @@ describe('CfdMarketDataService', () => {
 
     const gold = tickers.find((t) => t.symbol === 'XAUUSD');
     expect(gold).toEqual({ symbol: 'XAUUSD', name: 'Gold US Dollar', price: '4628.20', changePercent24h: '0.05' });
-    const oil = tickers.find((t) => t.symbol === 'USOUSD');
-    expect(oil).toEqual({ symbol: 'USOUSD', name: 'WTI Crude Oil Cash', price: '81.205', changePercent24h: '-0.52' });
+    const eur = tickers.find((t) => t.symbol === 'EURUSD');
+    expect(eur).toEqual({ symbol: 'EURUSD', name: 'Euro vs US Dollar', price: '1.16636', changePercent24h: '-0.10' });
     expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
@@ -33,7 +33,7 @@ describe('CfdMarketDataService', () => {
     const fetchFn = jest.fn().mockResolvedValue(
       jsonResponse({
         'XAU/USD': { symbol: 'XAU/USD', close: '4628.20', percent_change: '0.05' },
-        NDX: { status: 'error', message: 'not available on this plan' },
+        'GBP/USD': { status: 'error', message: 'run out of API credits' },
       })
     );
     const service = new CfdMarketDataService('test-key', fetchFn);
@@ -41,7 +41,7 @@ describe('CfdMarketDataService', () => {
     const tickers = await service.getTickers();
 
     expect(tickers.find((t) => t.symbol === 'XAUUSD')).toBeDefined();
-    expect(tickers.find((t) => t.symbol === 'NAS100')).toBeUndefined();
+    expect(tickers.find((t) => t.symbol === 'GBPUSD')).toBeUndefined();
   });
 
   it('normalizes a single-symbol response (flat object, no per-symbol wrapper)', async () => {
@@ -135,7 +135,7 @@ describe('CfdMarketDataService', () => {
       const fetchFn = jest.fn().mockResolvedValue(jsonResponse({ status: 'error', message: 'not available on this plan' }));
       const service = new CfdMarketDataService('test-key', fetchFn);
 
-      await expect(service.getCandles('NAS100', '1h')).rejects.toThrow('not available on this plan');
+      await expect(service.getCandles('EURUSD', '1h')).rejects.toThrow('not available on this plan');
     });
 
     it('throws ExternalCfdDataError when no API key is configured', async () => {
