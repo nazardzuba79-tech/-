@@ -42,8 +42,15 @@ export function TradePage() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
-  // Nav.tsx's TradeMenu.
+  // Nav.tsx's TradeMenu. TradePage stays mounted across a /trade <-> /trade?market=cfd
+  // navigation (same route, React Router doesn't remount it), so the
+  // useState initializer alone only ever fires once; without this effect,
+  // switching "CFD" -> "Спот" from the nav updates the URL but leaves
+  // marketType — and the whole page — stuck on whatever it started as.
   const [marketType, setMarketType] = useState<MarketType>(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
+  useEffect(() => {
+    setMarketType(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
+  }, [searchParams]);
   const [cfdSymbol, setCfdSymbol] = useState('XAUUSD');
   const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
   const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);
