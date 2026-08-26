@@ -333,7 +333,7 @@ function ShieldIcon({ active, admin }: { active?: boolean; admin?: boolean }) {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke={admin ? '#fca5a5' : active ? 'var(--text-primary)' : 'var(--text-secondary)'}
+      stroke={admin ? '#a5b4fc' : active ? 'var(--text-primary)' : 'var(--text-secondary)'}
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -465,22 +465,24 @@ const styles: Record<string, React.CSSProperties> = {
   // Fixed, non-theme colors on purpose — this button has to stay legible
   // regardless of which page's accent color is active, since it's the one
   // link on the whole site that opens a privileged, money-moving area.
+  // Indigo (not red) to match the admin panel's own brand color, and to
+  // read as "special access" rather than a warning/error.
   adminBadge: {
     display: 'flex',
     alignItems: 'center',
     gap: 7,
-    background: 'rgba(239,68,68,0.14)',
-    border: '1px solid rgba(248,113,113,0.5)',
+    background: 'rgba(79,70,229,0.14)',
+    border: '1px solid rgba(129,140,248,0.5)',
     borderRadius: 8,
     padding: '6px 12px',
     fontSize: 13,
     fontWeight: 700,
-    color: '#fca5a5',
+    color: '#a5b4fc',
   },
   adminBadgeActive: {
-    background: 'rgba(239,68,68,0.28)',
-    borderColor: '#f87171',
-    color: '#fecaca',
+    background: 'rgba(79,70,229,0.28)',
+    borderColor: '#818cf8',
+    color: '#c7d2fe',
   },
   right: {
     marginLeft: 'auto',

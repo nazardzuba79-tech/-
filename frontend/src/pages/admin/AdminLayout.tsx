@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { api, getToken } from '../../lib/api';
 import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
+import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
 import {
-  HexagonIcon,
   WalletIcon,
   UsersIcon,
   ShieldCheckIcon,
@@ -82,9 +82,7 @@ export function AdminLayout() {
       )}
       <aside style={styles.sidebar} className={`admin-mobile-sidebar${mobileOpen ? ' mobile-open' : ''}`}>
         <div style={styles.sidebarBrandRow}>
-          <span style={styles.sidebarBrandMark}>
-            <HexagonIcon size={19} />
-          </span>
+          <LogoMark size={26} />
           <div>
             <div style={styles.sidebarTitle}>VOLTEX</div>
             <div style={styles.sidebarSubtitle}>Admin Panel</div>
