@@ -641,8 +641,460 @@ const ZH_RISK: LegalContent = {
   ],
 };
 
+const ES_TERMS: LegalContent = {
+  title: 'Términos de servicio',
+  updated: 'Última actualización: 22 de agosto de 2026',
+  intro:
+    'Estos términos rigen tu uso de la plataforma VOLTEX. Al registrarte o usar el servicio, confirmas que has leído y aceptas lo siguiente.',
+  sections: [
+    {
+      heading: '1. Sobre el servicio',
+      body: [
+        'VOLTEX es una plataforma de trading de criptomonedas que te permite colocar órdenes límite y de mercado, mantener activos en una billetera interna, y depositar/retirar en las redes admitidas.',
+      ],
+    },
+    {
+      heading: '2. Elegibilidad',
+      body: [
+        'El servicio está disponible solo para personas con capacidad legal de 18 años o más. Al registrarte, confirmas que el uso de servicios de criptomonedas no está prohibido en tu jurisdicción.',
+      ],
+    },
+    {
+      heading: '3. Cuenta y seguridad',
+      body: [
+        'Eres responsable de mantener tu contraseña confidencial, y tus credenciales de autenticación de dos factores una vez activada. Recomendamos encarecidamente activar 2FA en Configuración → Seguridad.',
+        'Notifícanos de inmediato si sospechas de un acceso no autorizado a tu cuenta.',
+      ],
+    },
+    {
+      heading: '4. Órdenes y ejecución',
+      body: [
+        'Las órdenes se emparejan mediante el motor de trading según prioridad de precio-tiempo. Las órdenes de mercado se ejecutan al mejor precio disponible en el libro de órdenes en el momento de colocarse, y pueden sufrir deslizamiento (slippage) cuando la liquidez es baja.',
+      ],
+    },
+    {
+      heading: '5. Comisiones',
+      body: [
+        'Las comisiones de trading actuales se muestran en la interfaz antes de confirmar una operación. Podemos modificar las comisiones con aviso previo dentro del servicio.',
+      ],
+    },
+    {
+      heading: '6. Uso prohibido',
+      body: [
+        'No puedes usar el servicio para lavado de dinero, financiamiento de actividades prohibidas, manipulación del mercado (spoofing, wash trading), ni intentar eludir las salvaguardas técnicas de la plataforma.',
+      ],
+    },
+    {
+      heading: '7. Suspensión y cierre',
+      body: [
+        'Podemos suspender o cerrar una cuenta por incumplir estos términos, para cumplir con la ley, o ante sospecha de fraude, notificando al usuario cuando sea posible.',
+      ],
+    },
+    {
+      heading: '8. Limitación de responsabilidad',
+      body: [
+        'El servicio se ofrece "tal cual". No garantizamos un funcionamiento ininterrumpido y no somos responsables de pérdidas derivadas de la volatilidad del mercado, interrupciones de red, o acciones de terceros.',
+      ],
+    },
+    {
+      heading: '9. Cambios en estos términos',
+      body: ['Podemos actualizar estos términos. Los cambios importantes se anunciarán en el servicio al menos 7 días antes de entrar en vigor.'],
+    },
+  ],
+};
+
+const ES_PRIVACY: LegalContent = {
+  title: 'Política de privacidad',
+  updated: 'Última actualización: 22 de agosto de 2026',
+  intro: 'Este documento explica qué datos recopilamos, por qué, y cómo los protegemos.',
+  sections: [
+    {
+      heading: '1. Datos que recopilamos',
+      body: [
+        'Datos de registro (correo, contraseña con hash), datos de verificación (KYC) — nombre, país, documento de identidad — historial de trading y transacciones, y datos técnicos (dirección IP, tipo de dispositivo) por motivos de seguridad.',
+      ],
+    },
+    {
+      heading: '2. Cómo los usamos',
+      body: [
+        'Para prestar el servicio, ejecutar órdenes, procesar depósitos/retiros, prevenir fraude, y cumplir con los requisitos de prevención de lavado de dinero (AML/KYC).',
+      ],
+    },
+    {
+      heading: '3. Datos de verificación (KYC)',
+      body: [
+        'Los documentos subidos para verificación de identidad se almacenan encriptados y son accesibles solo para el personal autorizado, para fines de revisión y cumplimiento regulatorio.',
+      ],
+    },
+    {
+      heading: '4. Compartir con terceros',
+      body: [
+        'No vendemos datos personales. Los datos pueden compartirse con proveedores de infraestructura (hosting, procesamiento de pagos) solo en la medida necesaria para operar el servicio, y con autoridades ante una solicitud legal.',
+      ],
+    },
+    {
+      heading: '5. Seguridad de los datos',
+      body: [
+        'Las contraseñas se almacenan como hashes bcrypt irreversibles. Los secretos de las claves API se encriptan en reposo. Ofrecemos autenticación de dos factores para protección adicional de la cuenta.',
+      ],
+    },
+    {
+      heading: '6. Tus derechos',
+      body: [
+        'Puedes solicitar una copia de tus datos o su eliminación, excepto la información que estamos legalmente obligados a conservar (por ejemplo, registros KYC/AML durante el período exigido).',
+      ],
+    },
+    {
+      heading: '7. Retención de datos',
+      body: [
+        'Los datos de la cuenta se conservan mientras esté activa. Tras el cierre, los datos exigidos por ley (transacciones, KYC) se guardan durante el período regulado; el resto se elimina.',
+      ],
+    },
+    {
+      heading: '8. Contacto',
+      body: ['Las preguntas sobre datos y privacidad pueden enviarse a través de la sección de soporte de tu cuenta.'],
+    },
+  ],
+};
+
+const ES_ABOUT: LegalContent = {
+  title: 'Sobre nosotros',
+  updated: 'Última actualización: 22 de agosto de 2026',
+  intro:
+    'VOLTEX es una plataforma de trading de criptomonedas: trading spot y de futuros con margen, órdenes límite, de mercado, stop y take-profit, depósitos y retiros en las redes admitidas.',
+  sections: [
+    {
+      heading: 'Motor de emparejamiento',
+      body: [
+        'Las órdenes se emparejan mediante nuestro propio motor de emparejamiento por precio-tiempo. Los datos de mercado (precios, velas, libro de órdenes) reflejan una API de exchange real — sin cotizaciones fijas ni generadas.',
+      ],
+    },
+    {
+      heading: 'Seguridad de la cuenta',
+      body: [
+        'Las contraseñas se almacenan como hashes bcrypt irreversibles, y los secretos de las claves API se encriptan en reposo. La autenticación de dos factores y un historial de inicios de sesión están disponibles en Configuración → Seguridad.',
+      ],
+    },
+    {
+      heading: 'Futuros y gestión de riesgo',
+      body: [
+        'Trading con margen aislado y cruzado, apalancamiento por niveles, liquidación automática contra un precio de referencia real, y un fondo de seguro para déficits en la liquidación.',
+      ],
+    },
+    {
+      heading: 'Transparencia',
+      body: [
+        'No publicamos afirmaciones no verificables sobre rendimientos o volumen de trading. Las comisiones, límites y términos se muestran en la interfaz donde aplican — antes de confirmar una acción, no en letra pequeña.',
+      ],
+    },
+  ],
+};
+
+const ES_SUPPORT: LegalContent = {
+  title: 'Soporte',
+  updated: 'Última actualización: 22 de agosto de 2026',
+  intro: 'Respuestas a preguntas comunes. Para algo específico de tu cuenta, revisa primero Configuración.',
+  sections: [
+    {
+      heading: 'Cómo depositar',
+      body: [
+        'Abre "Depositar" → elige una red → envía los fondos a la dirección mostrada → pega el hash de la transacción para verificarla. El depósito mínimo es el equivalente a $1000 USD; cualquier cantidad menor no será acreditada.',
+      ],
+    },
+    {
+      heading: 'Mi orden no se ejecuta',
+      body: [
+        'Verifica que el precio de activación de una orden stop/take-profit esté en el lado correcto del precio de mercado actual — el formulario de orden muestra la dirección requerida en línea. Las órdenes condicionales pendientes esperan su activación y muestran el estado "Pendiente".',
+      ],
+    },
+    {
+      heading: 'Seguridad de la cuenta',
+      body: [
+        'Activa la autenticación de dos factores y revisa periódicamente el historial de inicios de sesión en Configuración → Seguridad — cada inicio de sesión en tu cuenta aparece ahí.',
+      ],
+    },
+    {
+      heading: 'Verificación (KYC)',
+      body: ['Tu estado de verificación y los documentos requeridos se muestran en la sección de verificación de tu cuenta.'],
+    },
+    {
+      heading: 'Aún tienes preguntas',
+      body: ['Esta versión de la plataforma aún no tiene un canal de soporte en vivo — la sección de soporte se limita a esta página de preguntas frecuentes.'],
+    },
+  ],
+};
+
+const ES_RISK: LegalContent = {
+  title: 'Divulgación de riesgos',
+  updated: 'Última actualización: 22 de agosto de 2026',
+  intro: 'El trading de criptomonedas conlleva un riesgo significativo. Antes de operar, asegúrate de entender y aceptar los siguientes riesgos.',
+  sections: [
+    {
+      heading: '1. Volatilidad',
+      body: ['Los precios de las criptomonedas pueden moverse bruscamente en periodos cortos. El valor de un activo puede subir significativamente o caer a cero.'],
+    },
+    {
+      heading: '2. Sin garantías',
+      body: ['El rendimiento pasado no garantiza resultados futuros. VOLTEX no garantiza ganancias en el trading.'],
+    },
+    {
+      heading: '3. No es asesoría de inversión',
+      body: [
+        'La información en la plataforma (precios, gráficos, estadísticas) se proporciona solo con fines informativos y no constituye asesoría de inversión, fiscal o legal.',
+      ],
+    },
+    {
+      heading: '4. Riesgo de las órdenes de mercado',
+      body: ['Las órdenes de mercado se ejecutan al mejor precio disponible y pueden sufrir deslizamiento, especialmente con baja liquidez o alta volatilidad.'],
+    },
+    {
+      heading: '5. Riesgo tecnológico',
+      body: ['Las interrupciones de red, retrasos de la blockchain o fallas técnicas pueden afectar la ejecución de órdenes o la disponibilidad del servicio.'],
+    },
+    {
+      heading: '6. Riesgo regulatorio',
+      body: ['El estatus legal de las criptomonedas varía según la jurisdicción y puede cambiar, lo que puede afectar la disponibilidad del servicio.'],
+    },
+    {
+      heading: '7. Irreversibilidad de las transacciones',
+      body: ['Las transferencias en cadena generalmente son irreversibles. Verifica cuidadosamente la dirección y la red antes de retirar fondos.'],
+    },
+    {
+      heading: '8. Reconocimiento',
+      body: ['Al usar VOLTEX para operar, confirmas que entiendes los riesgos enumerados anteriormente y operas bajo tu propio riesgo.'],
+    },
+  ],
+};
+
+const HI_TERMS: LegalContent = {
+  title: 'सेवा की शर्तें',
+  updated: 'आखिरी बार अपडेट किया गया: 22 अगस्त, 2026',
+  intro:
+    'ये शर्तें VOLTEX प्लेटफ़ॉर्म के आपके उपयोग को नियंत्रित करती हैं। रजिस्टर करके या सेवा का उपयोग करके, आप पुष्टि करते हैं कि आपने निम्नलिखित को पढ़ा है और उससे सहमत हैं।',
+  sections: [
+    {
+      heading: '1. सेवा के बारे में',
+      body: [
+        'VOLTEX एक क्रिप्टोकरेंसी ट्रेडिंग प्लेटफ़ॉर्म है जो आपको लिमिट और मार्केट ऑर्डर देने, इंटरनल वॉलेट में एसेट्स रखने, और समर्थित नेटवर्क पर डिपॉज़िट/निकासी करने देता है।',
+      ],
+    },
+    {
+      heading: '2. पात्रता',
+      body: [
+        'यह सेवा केवल 18 वर्ष या उससे अधिक उम्र के कानूनी क्षमता वाले व्यक्तियों के लिए उपलब्ध है। रजिस्टर करके, आप पुष्टि करते हैं कि आपके क्षेत्राधिकार में क्रिप्टोकरेंसी सेवाओं का उपयोग प्रतिबंधित नहीं है।',
+      ],
+    },
+    {
+      heading: '3. अकाउंट और सुरक्षा',
+      body: [
+        'अपने पासवर्ड को गोपनीय रखना, और सक्षम होने पर अपने दो-चरणीय प्रमाणीकरण क्रेडेंशियल्स को सुरक्षित रखना आपकी ज़िम्मेदारी है। हम दृढ़ता से सलाह देते हैं कि आप सेटिंग्स → सुरक्षा में 2FA सक्षम करें।',
+        'यदि आपको अपने अकाउंट में अनधिकृत पहुंच का संदेह हो तो तुरंत हमें सूचित करें।',
+      ],
+    },
+    {
+      heading: '4. ऑर्डर और निष्पादन',
+      body: [
+        'ऑर्डर ट्रेडिंग इंजन द्वारा प्राइस-टाइम प्राथमिकता के आधार पर मैच किए जाते हैं। मार्केट ऑर्डर, दिए जाने के समय ऑर्डर बुक में उपलब्ध सर्वोत्तम कीमत पर पूरे होते हैं और कम लिक्विडिटी होने पर स्लिपेज के अधीन हो सकते हैं।',
+      ],
+    },
+    {
+      heading: '5. फीस',
+      body: [
+        'वर्तमान ट्रेडिंग फीस ट्रेड कन्फर्म करने से पहले इंटरफ़ेस में दिखाई जाती है। हम सेवा के भीतर अग्रिम सूचना के साथ फीस बदल सकते हैं।',
+      ],
+    },
+    {
+      heading: '6. निषिद्ध उपयोग',
+      body: [
+        'आप सेवा का उपयोग मनी लॉन्ड्रिंग, निषिद्ध गतिविधि के वित्तपोषण, मार्केट मैनिपुलेशन (स्पूफिंग, वॉश ट्रेडिंग), या प्लेटफ़ॉर्म की तकनीकी सुरक्षा को दरकिनार करने की कोशिश के लिए नहीं कर सकते।',
+      ],
+    },
+    {
+      heading: '7. निलंबन और समाप्ति',
+      body: [
+        'हम इन शर्तों के उल्लंघन, कानून का पालन करने, या धोखाधड़ी के संदेह पर एक अकाउंट को निलंबित या बंद कर सकते हैं, जहां संभव हो यूज़र को सूचित करते हुए।',
+      ],
+    },
+    {
+      heading: '8. दायित्व की सीमा',
+      body: [
+        'सेवा "जैसी है वैसी" प्रदान की जाती है। हम निर्बाध संचालन की गारंटी नहीं देते और मार्केट अस्थिरता, नेटवर्क आउटेज, या तीसरे पक्ष की कार्रवाइयों से होने वाले नुकसान के लिए उत्तरदायी नहीं हैं।',
+      ],
+    },
+    {
+      heading: '9. इन शर्तों में बदलाव',
+      body: ['हम इन शर्तों को अपडेट कर सकते हैं। महत्वपूर्ण बदलाव प्रभावी होने से कम से कम 7 दिन पहले सेवा में घोषित किए जाएंगे।'],
+    },
+  ],
+};
+
+const HI_PRIVACY: LegalContent = {
+  title: 'गोपनीयता नीति',
+  updated: 'आखिरी बार अपडेट किया गया: 22 अगस्त, 2026',
+  intro: 'यह दस्तावेज़ बताता है कि हम कौन सा डेटा एकत्र करते हैं, क्यों, और हम इसे कैसे सुरक्षित रखते हैं।',
+  sections: [
+    {
+      heading: '1. हम जो डेटा एकत्र करते हैं',
+      body: [
+        'रजिस्ट्रेशन डेटा (ईमेल, हैश किया गया पासवर्ड), सत्यापन (KYC) डेटा — नाम, देश, पहचान दस्तावेज़ — ट्रेडिंग और ट्रांज़ैक्शन इतिहास, और सुरक्षा उद्देश्यों के लिए तकनीकी डेटा (IP एड्रेस, डिवाइस प्रकार)।',
+      ],
+    },
+    {
+      heading: '2. हम इसका उपयोग कैसे करते हैं',
+      body: [
+        'सेवा प्रदान करने, ऑर्डर निष्पादित करने, डिपॉज़िट/निकासी प्रोसेस करने, धोखाधड़ी रोकने, और मनी लॉन्ड्रिंग-विरोधी (AML/KYC) आवश्यकताओं का पालन करने के लिए।',
+      ],
+    },
+    {
+      heading: '3. सत्यापन (KYC) डेटा',
+      body: [
+        'पहचान सत्यापन के लिए अपलोड किए गए दस्तावेज़ एन्क्रिप्टेड रूप में संग्रहीत होते हैं और समीक्षा और नियामक अनुपालन उद्देश्यों के लिए केवल अधिकृत स्टाफ के लिए सुलभ होते हैं।',
+      ],
+    },
+    {
+      heading: '4. तीसरे पक्ष के साथ साझाकरण',
+      body: [
+        'हम व्यक्तिगत डेटा नहीं बेचते। डेटा को इंफ्रास्ट्रक्चर प्रदाताओं (होस्टिंग, पेमेंट प्रोसेसिंग) के साथ केवल सेवा संचालित करने के लिए आवश्यक सीमा तक साझा किया जा सकता है, और कानूनी अनुरोध पर अधिकारियों के साथ।',
+      ],
+    },
+    {
+      heading: '5. डेटा सुरक्षा',
+      body: [
+        'पासवर्ड अपरिवर्तनीय bcrypt हैश के रूप में संग्रहीत किए जाते हैं। API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। हम अतिरिक्त अकाउंट सुरक्षा के लिए दो-चरणीय प्रमाणीकरण का समर्थन करते हैं।',
+      ],
+    },
+    {
+      heading: '6. आपके अधिकार',
+      body: [
+        'आप अपने डेटा की एक प्रति या उसे हटाने का अनुरोध कर सकते हैं, उस जानकारी को छोड़कर जिसे हम कानूनी रूप से बनाए रखने के लिए बाध्य हैं (जैसे अनिवार्य अवधि के लिए KYC/AML रिकॉर्ड)।',
+      ],
+    },
+    {
+      heading: '7. डेटा प्रतिधारण',
+      body: [
+        'अकाउंट डेटा तब तक बनाए रखा जाता है जब तक अकाउंट सक्रिय है। बंद होने के बाद, कानून द्वारा आवश्यक डेटा (ट्रांज़ैक्शन, KYC) नियमित अवधि के लिए रखा जाता है; बाकी हटा दिया जाता है।',
+      ],
+    },
+    {
+      heading: '8. संपर्क',
+      body: ['डेटा और गोपनीयता के बारे में प्रश्न आपके अकाउंट में सपोर्ट सेक्शन के माध्यम से भेजे जा सकते हैं।'],
+    },
+  ],
+};
+
+const HI_ABOUT: LegalContent = {
+  title: 'हमारे बारे में',
+  updated: 'आखिरी बार अपडेट किया गया: 22 अगस्त, 2026',
+  intro:
+    'VOLTEX एक क्रिप्टोकरेंसी ट्रेडिंग प्लेटफ़ॉर्म है: स्पॉट और मार्जिन फ्यूचर्स ट्रेडिंग, लिमिट, मार्केट, स्टॉप, और टेक-प्रॉफिट ऑर्डर, समर्थित नेटवर्क पर डिपॉज़िट और निकासी।',
+  sections: [
+    {
+      heading: 'मैचिंग इंजन',
+      body: [
+        'ऑर्डर हमारे अपने प्राइस-टाइम मैचिंग इंजन द्वारा मैच किए जाते हैं। मार्केट डेटा (कीमतें, कैंडल्स, ऑर्डर बुक) एक वास्तविक एक्सचेंज API को प्रतिबिंबित करता है — कोई हार्डकोडेड या जनरेट की गई कोटेशन नहीं।',
+      ],
+    },
+    {
+      heading: 'अकाउंट सुरक्षा',
+      body: [
+        'पासवर्ड अपरिवर्तनीय bcrypt हैश के रूप में संग्रहीत किए जाते हैं, और API कुंजी सीक्रेट्स आराम के समय एन्क्रिप्टेड होते हैं। दो-चरणीय प्रमाणीकरण और लॉगिन इतिहास सेटिंग्स → सुरक्षा में उपलब्ध हैं।',
+      ],
+    },
+    {
+      heading: 'फ्यूचर्स और जोखिम प्रबंधन',
+      body: [
+        'आइसोलेटेड और क्रॉस मार्जिन के साथ मार्जिन ट्रेडिंग, टियर्ड लीवरेज, वास्तविक मार्क प्राइस के खिलाफ स्वचालित लिक्विडेशन, और लिक्विडेशन पर कमी के लिए एक इंश्योरेंस फंड।',
+      ],
+    },
+    {
+      heading: 'पारदर्शिता',
+      body: [
+        'हम रिटर्न या ट्रेडिंग वॉल्यूम के बारे में असत्यापित दावे प्रकाशित नहीं करते। फीस, सीमाएं, और शर्तें वहीं इंटरफ़ेस में दिखाई जाती हैं जहां वे लागू होती हैं — किसी कार्रवाई की पुष्टि करने से पहले, बारीक प्रिंट में नहीं।',
+      ],
+    },
+  ],
+};
+
+const HI_SUPPORT: LegalContent = {
+  title: 'सपोर्ट',
+  updated: 'आखिरी बार अपडेट किया गया: 22 अगस्त, 2026',
+  intro: 'सामान्य प्रश्नों के उत्तर। अकाउंट-विशिष्ट किसी भी चीज़ के लिए, पहले सेटिंग्स जांचें।',
+  sections: [
+    {
+      heading: 'डिपॉज़िट कैसे करें',
+      body: [
+        '"डिपॉज़िट" खोलें → एक नेटवर्क चुनें → दिखाए गए एड्रेस पर फंड भेजें → इसे वेरिफ़ाई करने के लिए ट्रांज़ैक्शन हैश पेस्ट करें। न्यूनतम डिपॉज़िट $1000 USD के बराबर है; इससे कम कुछ भी जमा नहीं किया जाएगा।',
+      ],
+    },
+    {
+      heading: 'मेरा ऑर्डर निष्पादित नहीं हो रहा',
+      body: [
+        'जांचें कि स्टॉप/टेक-प्रॉफिट ट्रिगर कीमत वर्तमान मार्केट कीमत के सही तरफ है — ऑर्डर फॉर्म आवश्यक दिशा इनलाइन दिखाता है। लंबित कंडीशनल ऑर्डर अपने ट्रिगर की प्रतीक्षा करते हैं और "लंबित" स्थिति दिखाते हैं।',
+      ],
+    },
+    {
+      heading: 'अकाउंट सुरक्षा',
+      body: [
+        'दो-चरणीय प्रमाणीकरण चालू करें और समय-समय पर सेटिंग्स → सुरक्षा में लॉगिन इतिहास की समीक्षा करें — आपके अकाउंट में हर साइन-इन वहां दिखाई देता है।',
+      ],
+    },
+    {
+      heading: 'सत्यापन (KYC)',
+      body: ['आपकी सत्यापन स्थिति और आवश्यक दस्तावेज़ आपके अकाउंट के सत्यापन सेक्शन में दिखाए जाते हैं।'],
+    },
+    {
+      heading: 'अभी भी सवाल हैं',
+      body: ['प्लेटफ़ॉर्म के इस संस्करण में अभी तक कोई लाइव सपोर्ट चैनल नहीं है — सपोर्ट सेक्शन इस FAQ पेज तक सीमित है।'],
+    },
+  ],
+};
+
+const HI_RISK: LegalContent = {
+  title: 'जोखिम प्रकटीकरण',
+  updated: 'आखिरी बार अपडेट किया गया: 22 अगस्त, 2026',
+  intro: 'क्रिप्टोकरेंसी ट्रेडिंग में महत्वपूर्ण जोखिम है। ट्रेड करने से पहले, सुनिश्चित करें कि आप नीचे दिए गए जोखिमों को समझते हैं और स्वीकार करते हैं।',
+  sections: [
+    {
+      heading: '1. अस्थिरता',
+      body: ['क्रिप्टोकरेंसी की कीमतें कम समय में तेज़ी से बदल सकती हैं। एसेट का मूल्य काफी बढ़ सकता है या शून्य तक गिर सकता है।'],
+    },
+    {
+      heading: '2. कोई गारंटी नहीं',
+      body: ['पिछला प्रदर्शन भविष्य के परिणामों की गारंटी नहीं देता। VOLTEX ट्रेडिंग मुनाफे की गारंटी नहीं देता।'],
+    },
+    {
+      heading: '3. निवेश सलाह नहीं',
+      body: [
+        'प्लेटफ़ॉर्म पर जानकारी (कीमतें, चार्ट, आंकड़े) केवल सूचनात्मक उद्देश्यों के लिए प्रदान की जाती है और यह निवेश, कर, या कानूनी सलाह नहीं है।',
+      ],
+    },
+    {
+      heading: '4. मार्केट ऑर्डर जोखिम',
+      body: ['मार्केट ऑर्डर सर्वोत्तम उपलब्ध कीमत पर पूरे होते हैं और विशेष रूप से कम लिक्विडिटी या उच्च अस्थिरता के तहत स्लिपेज के अधीन हो सकते हैं।'],
+    },
+    {
+      heading: '5. तकनीकी जोखिम',
+      body: ['नेटवर्क आउटेज, ब्लॉकचेन देरी, या तकनीकी खराबी ऑर्डर निष्पादन या सेवा उपलब्धता को प्रभावित कर सकती है।'],
+    },
+    {
+      heading: '6. नियामक जोखिम',
+      body: ['क्रिप्टोकरेंसी की कानूनी स्थिति क्षेत्राधिकार के अनुसार अलग-अलग होती है और बदल सकती है, जो सेवा उपलब्धता को प्रभावित कर सकती है।'],
+    },
+    {
+      heading: '7. ट्रांज़ैक्शन की अपरिवर्तनीयता',
+      body: ['ऑन-चेन ट्रांसफर आमतौर पर अपरिवर्तनीय होते हैं। फंड निकालने से पहले एड्रेस और नेटवर्क की दोबारा जांच करें।'],
+    },
+    {
+      heading: '8. स्वीकृति',
+      body: ['ट्रेड करने के लिए VOLTEX का उपयोग करके, आप पुष्टि करते हैं कि आप ऊपर सूचीबद्ध जोखिमों को समझते हैं और अपने जोखिम पर ट्रेड करते हैं।'],
+    },
+  ],
+};
+
 export const LEGAL_CONTENT: Record<Lang, Record<LegalDoc, LegalContent>> = {
   ru: { terms: RU_TERMS, privacy: RU_PRIVACY, risk: RU_RISK, about: RU_ABOUT, support: RU_SUPPORT },
   en: { terms: EN_TERMS, privacy: EN_PRIVACY, risk: EN_RISK, about: EN_ABOUT, support: EN_SUPPORT },
   zh: { terms: ZH_TERMS, privacy: ZH_PRIVACY, risk: ZH_RISK, about: ZH_ABOUT, support: ZH_SUPPORT },
+  es: { terms: ES_TERMS, privacy: ES_PRIVACY, risk: ES_RISK, about: ES_ABOUT, support: ES_SUPPORT },
+  hi: { terms: HI_TERMS, privacy: HI_PRIVACY, risk: HI_RISK, about: HI_ABOUT, support: HI_SUPPORT },
 };
