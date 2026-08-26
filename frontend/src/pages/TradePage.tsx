@@ -126,7 +126,7 @@ export function TradePage() {
             {marketType === 'spot' ? (
               <PriceChart pair={pair} />
             ) : (
-              <CfdPricePanel ticker={cfdTicker} loading={cfdTickers.length === 0 && !cfdLoadError} />
+              <CfdPricePanel ticker={cfdTicker} loading={cfdTickers.length === 0 && !cfdLoadError && cfdConfigured} />
             )}
           </div>
 
@@ -151,7 +151,7 @@ export function TradePage() {
                 {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
               </>
             ) : (
-              <CfdSpreadPanel ticker={cfdTicker} />
+              <CfdSpreadPanel ticker={cfdTicker} configured={cfdConfigured} />
             )}
           </div>
 
@@ -159,7 +159,7 @@ export function TradePage() {
             {marketType === 'spot' ? (
               <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
             ) : (
-              <CfdOrderForm symbol={cfdSymbol} ticker={cfdTicker} onPlaced={handleOrderPlaced} />
+              <CfdOrderForm symbol={cfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
             )}
           </div>
         </main>
@@ -212,12 +212,12 @@ export function TradePage() {
 // multi-level depth chart claiming liquidity that doesn't exist. Real CFD
 // brokers show exactly this, not a public order book, since there isn't
 // one for an OTC instrument like gold or an index.
-function CfdSpreadPanel({ ticker }: { ticker: CfdTickerRow | undefined }) {
+function CfdSpreadPanel({ ticker, configured }: { ticker: CfdTickerRow | undefined; configured: boolean }) {
   const { t } = useLanguage();
   if (!ticker) {
     return (
       <div style={spreadStyles.wrap}>
-        <p style={spreadStyles.hint}>{t('trade.loading')}</p>
+        <p style={spreadStyles.hint}>{configured ? t('trade.loading') : t('trade.cfdUnavailable')}</p>
       </div>
     );
   }

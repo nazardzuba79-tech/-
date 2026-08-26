@@ -14,7 +14,17 @@ const PERCENT_STOPS = [0, 25, 50, 75, 100];
  * internal book to rest a LIMIT order against), ISOLATED margin only. See
  * CfdPositionService's doc comment for why.
  */
-export function CfdOrderForm({ symbol, ticker, onPlaced }: { symbol: string; ticker: CfdTickerRow | undefined; onPlaced: () => void }) {
+export function CfdOrderForm({
+  symbol,
+  ticker,
+  configured = true,
+  onPlaced,
+}: {
+  symbol: string;
+  ticker: CfdTickerRow | undefined;
+  configured?: boolean;
+  onPlaced: () => void;
+}) {
   const { t } = useLanguage();
   const toast = useToast();
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -113,7 +123,7 @@ export function CfdOrderForm({ symbol, ticker, onPlaced }: { symbol: string; tic
         <label style={styles.label}>
           {t('trade.cfdMarketPrice')}
           <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
-            {ticker ? `≈ ${ticker.price}` : t('trade.loading')}
+            {ticker ? `≈ ${ticker.price}` : configured ? t('trade.loading') : t('trade.cfdUnavailable')}
           </div>
         </label>
 
