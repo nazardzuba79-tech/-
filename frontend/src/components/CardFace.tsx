@@ -183,8 +183,12 @@ export function CardFace({
   }
 
   if (theme.flat) {
+    // Flat card lies straight, no resting 3D tilt — matches the reference's
+    // own BankCard, which only tilts live on mouse-move and sits flush the
+    // rest of the time. (The brushed/photo cards below keep `.card-tilt`'s
+    // permanent resting angle — that's the black card's own established look.)
     return (
-      <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+      <div style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
         <div style={styles.flatSheen} />
         <div style={styles.cardVisualTop}>
           <div style={styles.flatBrand}>

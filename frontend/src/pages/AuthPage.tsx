@@ -368,7 +368,7 @@ function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
     <div style={styles.perksSection}>
       <div style={styles.perksBanner}>
         <div className="card-tilt-wrap-photo" style={{ ...styles.perksBannerCard, transform: 'translate(-18px, -20px)' }}>
-          <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" network="mastercard" />
+          <CardFace theme={ICY_CARD_THEME} imageSrc="/cards/voltex-card-dark.png" imageWidth={440} last4="4417" holderName="YOUR NAME HERE" network="mastercard" />
         </div>
         <div style={styles.perksBannerText}>
           <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>

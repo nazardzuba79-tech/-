@@ -135,7 +135,7 @@ export function CardPage() {
 
           <div style={styles.productCol}>
             <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
-              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" />
+              <CardFace theme={ICY_CARD_THEME} imageSrc="/cards/voltex-card-dark.png" imageWidth={300} last4="4417" holderName="JOHN JOHNSON" network="mastercard" />
             </div>
 
             <div style={styles.productBox}>
