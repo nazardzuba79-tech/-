@@ -37,6 +37,8 @@ import { KycEmailService } from './services/KycEmailService';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { CfdMarketDataService } from './services/CfdMarketDataService';
+import { CfdPositionService } from './cfd/CfdPositionService';
+import { CfdLiquidationEngine } from './cfd/CfdLiquidationEngine';
 import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
 import { MarkPriceService } from './futures/MarkPriceService';
 import { FuturesPositionService } from './futures/FuturesPositionService';
@@ -60,6 +62,8 @@ const coinGeckoService = new CoinGeckoService(
 );
 const arbitrageService = new ArbitrageService(marketDataService);
 const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY);
+const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
+const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 
@@ -119,7 +123,7 @@ app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
-app.use('/api/v1', cfdRouter(cfdDataService));
+app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
@@ -156,6 +160,7 @@ async function start() {
 
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
+  cfdLiquidationEngine.startScheduler();
   priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
@@ -169,6 +174,7 @@ start().catch((err) => {
 process.on('SIGTERM', async () => {
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();
+  cfdLiquidationEngine.stopScheduler();
   priceWatcherService.stopScheduler();
   await prisma.$disconnect();
   process.exit(0);

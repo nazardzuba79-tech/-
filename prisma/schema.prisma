@@ -82,6 +82,7 @@ model User {
   futuresPositions FuturesPosition[]
   futuresBalances  FuturesBalance[]
   futuresOrders    FuturesOrder[]
+  cfdPositions     CfdPosition[]
   /// Set the first time this user confirms the futures risk disclaimer
   /// (see /futures/risk-ack). Must be non-null before any position can be
   /// opened — enforced server-side, not just hidden behind a frontend gate.
@@ -504,6 +505,36 @@ model FundingPayment {
 
   @@index([positionId])
   @@index([userId])
+}
+
+/// One row per open or closed CFD position (gold/oil/indices/EUR-USD —
+/// see CFD_INSTRUMENTS). Dealer-model, not matched against other users'
+/// orders like FuturesPosition: there's no realistic peer liquidity for
+/// "gold" among our own traders, so every open/close fills instantly
+/// against the live Twelve Data mark price, same as how real retail CFD
+/// brokers actually work (the broker is the counterparty). Shares the
+/// FuturesBalance USDT wallet as its margin account — same "leveraged
+/// trading balance" concept as futures, just a different instrument
+/// class, and gated behind the same futuresRiskAckAt disclaimer.
+model CfdPosition {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  symbol           String    // "XAUUSD" etc — CFD_INSTRUMENTS symbol, not a "/"-pair
+  side             String    // LONG | SHORT
+  size             Decimal   @db.Decimal(36, 18) // instrument units
+  entryPrice       Decimal   @db.Decimal(36, 18)
+  leverage         Int
+  initialMargin    Decimal   @db.Decimal(36, 18) // USDT locked from FuturesBalance
+  liquidationPrice Decimal   @db.Decimal(36, 18)
+  status           String    @default("OPEN") // OPEN | CLOSED | LIQUIDATED
+  realizedPnl      Decimal   @default(0) @db.Decimal(36, 18)
+  openedAt         DateTime  @default(now())
+  closedAt         DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([symbol, status])
 }
 
 /// Per-asset insurance fund balance — absorbs the shortfall when a
