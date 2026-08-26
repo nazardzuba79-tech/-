@@ -20,6 +20,7 @@ import { marketRouter } from './api/routes/market';
 import { CoinGeckoService } from './services/CoinGeckoService';
 import { ArbitrageService } from './services/ArbitrageService';
 import { arbitrageRouter } from './api/routes/arbitrage';
+import { cfdRouter } from './api/routes/cfd';
 import { referralRouter } from './api/routes/referral';
 import { accountRouter } from './api/routes/account';
 import { kycRouter } from './api/routes/kyc';
@@ -35,6 +36,7 @@ import { SupportEmailService } from './services/SupportEmailService';
 import { KycEmailService } from './services/KycEmailService';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
+import { CfdMarketDataService } from './services/CfdMarketDataService';
 import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
 import { MarkPriceService } from './futures/MarkPriceService';
 import { FuturesPositionService } from './futures/FuturesPositionService';
@@ -57,6 +59,7 @@ const coinGeckoService = new CoinGeckoService(
   process.env.COINGECKO_API_KEY
 );
 const arbitrageService = new ArbitrageService(marketDataService);
+const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 
@@ -116,6 +119,7 @@ app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
+app.use('/api/v1', cfdRouter(cfdDataService));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
