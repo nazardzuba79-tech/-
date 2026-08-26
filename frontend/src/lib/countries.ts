@@ -205,16 +205,28 @@ const COUNTRIES: { code: string; ru: string; en: string; zh: string }[] = [
   { code: 'ZW', ru: 'Зимбабве', en: 'Zimbabwe', zh: '津巴布韦' },
 ];
 
-// The country list itself is only translated into ru/en/zh — es/hi fall
-// back to the English names below rather than claiming a translation that
-// doesn't exist yet.
+// The country list itself is only translated into ru/en/zh — es/hi/ja/ko
+// fall back to the English names below rather than claiming a translation
+// that doesn't exist yet.
 type CountryLang = 'ru' | 'en' | 'zh';
 function countryLangOf(lang: Lang): CountryLang {
   return lang === 'ru' || lang === 'zh' ? lang : 'en';
 }
 
 function collationLocale(lang: Lang): string {
-  return lang === 'ru' ? 'ru' : lang === 'zh' ? 'zh' : lang === 'es' ? 'es' : lang === 'hi' ? 'hi' : 'en';
+  return lang === 'ru'
+    ? 'ru'
+    : lang === 'zh'
+    ? 'zh'
+    : lang === 'es'
+    ? 'es'
+    : lang === 'hi'
+    ? 'hi'
+    : lang === 'ja'
+    ? 'ja'
+    : lang === 'ko'
+    ? 'ko'
+    : 'en';
 }
 
 export function getCountries(lang: Lang): { code: string; name: string }[] {
