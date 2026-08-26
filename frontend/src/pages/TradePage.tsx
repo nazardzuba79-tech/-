@@ -22,7 +22,6 @@ import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
-import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 type MarketType = 'spot' | 'cfd';
@@ -130,30 +129,26 @@ export function TradePage() {
             )}
           </div>
 
-          <div className="trading-col trading-col-book" style={styles.bookColumn}>
-            {marketType === 'spot' ? (
-              <>
-                <div style={styles.bookTabs}>
-                  <button
-                    onClick={() => setBookTab('book')}
-                    style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
-                  >
-                    {t('trade.orderBook')}
-                  </button>
-                  <button
-                    onClick={() => setBookTab('trades')}
-                    style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
-                  >
-                    {t('trade.trades')}
-                  </button>
-                </div>
-                {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
-                {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
-              </>
-            ) : (
-              <CfdSpreadPanel ticker={cfdTicker} configured={cfdConfigured} />
-            )}
-          </div>
+          {marketType === 'spot' && (
+            <div className="trading-col trading-col-book" style={styles.bookColumn}>
+              <div style={styles.bookTabs}>
+                <button
+                  onClick={() => setBookTab('book')}
+                  style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
+                >
+                  {t('trade.orderBook')}
+                </button>
+                <button
+                  onClick={() => setBookTab('trades')}
+                  style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
+                >
+                  {t('trade.trades')}
+                </button>
+              </div>
+              {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
+              {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
+            </div>
+          )}
 
           <div className="trading-col trading-col-form" style={styles.formColumn}>
             {marketType === 'spot' ? (
@@ -206,51 +201,6 @@ export function TradePage() {
     </div>
   );
 }
-
-// Stands in for the order-book column in CFD mode — a real broker-style
-// bid/ask spread (0.02% either side of the live mark price), not a fake
-// multi-level depth chart claiming liquidity that doesn't exist. Real CFD
-// brokers show exactly this, not a public order book, since there isn't
-// one for an OTC instrument like gold or an index.
-function CfdSpreadPanel({ ticker, configured }: { ticker: CfdTickerRow | undefined; configured: boolean }) {
-  const { t } = useLanguage();
-  if (!ticker) {
-    return (
-      <div style={spreadStyles.wrap}>
-        <p style={spreadStyles.hint}>{configured ? t('trade.loading') : t('trade.cfdUnavailable')}</p>
-      </div>
-    );
-  }
-  const price = parseFloat(ticker.price);
-  const spread = price * 0.0002;
-  return (
-    <div style={spreadStyles.wrap}>
-      <div style={spreadStyles.row}>
-        <span style={spreadStyles.label}>{t('trade.bid')}</span>
-        <span className="mono text-sell" style={spreadStyles.value}>
-          {(price - spread).toFixed(2)}
-        </span>
-      </div>
-      <div style={spreadStyles.divider} />
-      <div style={spreadStyles.row}>
-        <span style={spreadStyles.label}>{t('trade.ask')}</span>
-        <span className="mono text-buy" style={spreadStyles.value}>
-          {(price + spread).toFixed(2)}
-        </span>
-      </div>
-      <p style={spreadStyles.hint}>{t('trade.cfdBookUnavailable')}</p>
-    </div>
-  );
-}
-
-const spreadStyles: Record<string, React.CSSProperties> = {
-  wrap: { display: 'flex', flexDirection: 'column', gap: 4, padding: 16 },
-  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px' },
-  label: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' },
-  value: { fontSize: 16, fontWeight: 800 },
-  divider: { height: 1, background: 'var(--border)', margin: '2px 0' },
-  hint: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.5, marginTop: 10 },
-};
 
 // v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
 // scoped to just this page the same way FuturesPage/MarketsPage re-theme
