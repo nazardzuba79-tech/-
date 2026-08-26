@@ -87,8 +87,8 @@ export function CardPage() {
 
         <div style={styles.cardsRow}>
           <div style={styles.productCol}>
-            <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
-              <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" />
+            <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
+              <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" imageSrc="/cards/voltex-card-gold.png" imageWidth={300} />
             </div>
 
             <div style={styles.vipBox}>
@@ -123,7 +123,7 @@ export function CardPage() {
 
           <div style={styles.productCol}>
             <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
-              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" imageSrc="/cards/voltex-card-dark.png" />
+              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" imageSrc="/cards/voltex-card-dark.png" imageWidth={300} />
             </div>
 
             <div style={styles.icyBox}>
