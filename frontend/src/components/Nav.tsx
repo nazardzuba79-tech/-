@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -31,6 +31,7 @@ export function Nav({
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showDeposit, setShowDeposit] = useState(false);
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
+  const tradeMenuCloseTimer = useRef<number | null>(null);
 
   // Ordered to match a real exchange's own nav (Markets, then Trade, then
   // Futures right after the primary deposit CTA), with the rest following.
@@ -42,6 +43,12 @@ export function Nav({
     { to: '/copy-trading', label: t('nav.copyTrading') },
     { to: '/arbitrage', label: t('nav.arbitrage') },
   ];
+
+  useEffect(() => {
+    return () => {
+      if (tradeMenuCloseTimer.current) window.clearTimeout(tradeMenuCloseTimer.current);
+    };
+  }, []);
 
   // A stale open drawer surviving a navigation (tap a link, land on the new
   // page with the menu still up) would look broken — close it on every route
@@ -89,11 +96,22 @@ export function Nav({
             <div
               key={l.to}
               style={styles.tradeMenuWrap}
-              onMouseEnter={() => setTradeMenuOpen(true)}
-              onMouseLeave={() => setTradeMenuOpen(false)}
+              onMouseEnter={() => {
+                if (tradeMenuCloseTimer.current) window.clearTimeout(tradeMenuCloseTimer.current);
+                setTradeMenuOpen(true);
+              }}
+              onMouseLeave={() => {
+                // A short grace period, not an instant close — without it,
+                // crossing the small gap between the link and the panel
+                // below (or just not moving in a perfectly straight line)
+                // reads as "left the menu" and closes it before the pointer
+                // ever reaches CFD.
+                tradeMenuCloseTimer.current = window.setTimeout(() => setTradeMenuOpen(false), 250);
+              }}
             >
-              <Link to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+              <Link to={l.to} style={{ ...styles.link, ...styles.tradeMenuTrigger, ...(active === l.to ? styles.linkActive : {}) }}>
                 {l.label}
+                <ChevronIcon />
               </Link>
               {tradeMenuOpen && (
                 <div style={styles.tradeMenu}>
@@ -279,6 +297,17 @@ function CardIcon({ active }: { active: boolean }) {
   );
 }
 
+// Small down-chevron next to "Торговля" — the only signal (besides
+// discovering it by accident) that hovering opens a menu instead of just
+// being a plain link like its neighbors.
+function ChevronIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 function UserIcon({ active }: { active: boolean }) {
   return (
     <svg
@@ -341,11 +370,16 @@ const styles: Record<string, React.CSSProperties> = {
   tradeMenuWrap: {
     position: 'relative',
   },
+  tradeMenuTrigger: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 5,
+  },
   tradeMenu: {
     position: 'absolute',
     top: '100%',
     left: 0,
-    marginTop: 12,
+    marginTop: 8,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 12,
