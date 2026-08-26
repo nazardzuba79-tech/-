@@ -121,7 +121,7 @@ export function App() {
             UX-only gate; every request underneath is independently
             re-checked for role ADMIN on the server (see requireAdmin). */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="wallets" replace />} />
+          <Route index element={<Navigate to="users" replace />} />
           <Route path="wallets" element={<AdminWalletsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />

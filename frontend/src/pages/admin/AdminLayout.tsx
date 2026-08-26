@@ -19,8 +19,8 @@ import {
 } from './AdminIcons';
 
 const SECTIONS = [
-  { to: '/admin/wallets', label: 'Кошельки', icon: WalletIcon },
   { to: '/admin/users', label: 'Пользователи', icon: UsersIcon },
+  { to: '/admin/wallets', label: 'Кошельки', icon: WalletIcon },
   { to: '/admin/kyc', label: 'Верификация', icon: ShieldCheckIcon },
   { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon },
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon },
@@ -99,7 +99,9 @@ export function AdminLayout() {
           </button>
         </div>
 
-        <div style={styles.sidebarSectionLabel}>Management</div>
+        <Link to="/" className="admin-nav-link" style={styles.backToExchange}>
+          ← На биржу
+        </Link>
         <nav style={styles.nav}>
           {SECTIONS.map((s) => {
             const Icon = s.icon;
@@ -132,9 +134,6 @@ export function AdminLayout() {
               </div>
             </div>
           </div>
-          <Link to="/" className="admin-nav-link" style={styles.backToExchange}>
-            ← На биржу
-          </Link>
         </div>
       </aside>
 
