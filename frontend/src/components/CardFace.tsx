@@ -19,13 +19,15 @@ export interface CardTheme {
   borderGradient?: string;
 }
 
-// Warm rose-gold brushed metal — the base Voltex Crypto Card.
+// True gold brushed metal — the same #ffd166->#f7a600 family as the
+// VIP-cashback badge sitting right below the card on CardPage, instead of
+// the earlier rose-gold/salmon tone that didn't actually read as "gold".
 export const BASE_CARD_THEME: CardTheme = {
-  background: 'linear-gradient(125deg, #f6d9c9 0%, #eab89e 22%, #f9e3d6 40%, #dfa084 58%, #f2c7ae 76%, #e6ab8e 100%)',
-  border: '1px solid rgba(120,70,45,0.18)',
-  boxShadow: '0 24px 50px rgba(120,70,45,0.22), 0 8px 20px rgba(120,70,45,0.12)',
+  background: 'linear-gradient(125deg, #fce8b0 0%, #f3c968 22%, #ffdf8c 40%, #d9a53a 58%, #f6d488 76%, #e0a83c 100%)',
+  border: '1px solid rgba(140,100,10,0.22)',
+  boxShadow: '0 24px 50px rgba(150,110,10,0.22), 0 8px 20px rgba(150,110,10,0.12)',
   chipTone: 'gold',
-  hexTint: 'rgba(120,70,45,0.16)',
+  hexTint: 'rgba(120,80,10,0.16)',
   textColor: '#2b1a0c',
 };
 
@@ -170,7 +172,12 @@ export function CardFace({
       <div style={styles.cardVisualBottom}>
         <div style={styles.cardVisualBrand}>
           <span style={{ ...styles.cardVisualWordmark, color: theme.textColor }}>
-            VO<span style={styles.cardVisualWordmarkL}>L</span>TEX
+            VO
+            {/* The gold-gradient "L" only reads correctly against a dark
+                finish (it's how the Icy White card's L pops) — on the gold
+                card itself, a gold-on-gold gradient would just vanish, so
+                that card's L stays plain like the rest of the wordmark. */}
+            <span style={theme.chipTone === 'silver' ? styles.cardVisualWordmarkL : undefined}>L</span>TEX
           </span>
           <span style={{ ...styles.cardVisualHolder, color: theme.textColor }} className="mono">
             {holderName}

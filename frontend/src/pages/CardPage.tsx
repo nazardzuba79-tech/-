@@ -15,6 +15,12 @@ export function CardPage() {
     { title: t('card.feature3.title'), text: t('card.feature3.text'), icon: <ConvertIcon /> },
     { title: t('card.feature4.title'), text: t('card.feature4.text'), icon: <AtmIcon /> },
     { title: t('card.feature5.title'), text: t('card.feature5.text'), icon: <CashbackIcon /> },
+    { title: t('card.feature6.title'), text: t('card.feature6.text'), icon: <SubscriptionIcon /> },
+  ];
+  const STEPS = [
+    { num: '01', title: t('card.step1.title'), text: t('card.step1.text') },
+    { num: '02', title: t('card.step2.title'), text: t('card.step2.text') },
+    { num: '03', title: t('card.step3.title'), text: t('card.step3.text') },
   ];
   const FAQ = [
     { q: t('card.faq.order.q'), a: t('card.faq.order.a') },
@@ -55,7 +61,7 @@ export function CardPage() {
           </h1>
           <p style={styles.lead}>{t('card.lead')}</p>
 
-          <div style={styles.ctaBox}>
+          <div id="card-hero-cta" style={styles.ctaBox}>
             {!waitlist ? (
               <Skeleton width={200} height={44} radius={24} />
             ) : waitlist.joined ? (
@@ -87,8 +93,8 @@ export function CardPage() {
 
         <div style={styles.cardsRow}>
           <div style={styles.productCol}>
-            <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
-              <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" imageSrc="/cards/voltex-card-gold.png" imageWidth={300} />
+            <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
+              <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" />
             </div>
 
             <div style={styles.vipBox}>
@@ -122,8 +128,8 @@ export function CardPage() {
           </div>
 
           <div style={styles.productCol}>
-            <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
-              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" imageSrc="/cards/voltex-card-dark.png" imageWidth={300} />
+            <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
+              <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" />
             </div>
 
             <div style={styles.icyBox}>
@@ -159,6 +165,19 @@ export function CardPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div style={styles.stepsSection}>
+          <h2 style={styles.stepsTitle}>{t('card.howItWorksTitle')}</h2>
+          <div style={styles.stepsGrid}>
+            {STEPS.map((s) => (
+              <div key={s.num} style={styles.stepItem}>
+                <span style={styles.stepNum}>{s.num}</span>
+                <h3 style={styles.stepItemTitle}>{s.title}</h3>
+                <p style={styles.stepItemText}>{s.text}</p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -215,6 +234,14 @@ export function CardPage() {
           </div>
         </div>
 
+        <div style={styles.closingCta}>
+          <h2 style={styles.closingCtaTitle}>{t('card.ctaTitle')}</h2>
+          <p style={styles.closingCtaText}>{t('card.ctaText')}</p>
+          <a href="#card-hero-cta" style={styles.closingCtaBtn}>
+            {t('card.joinBtn')}
+          </a>
+        </div>
+
         <Footer />
       </main>
     </div>
@@ -237,6 +264,15 @@ function PayIcon() {
       <rect x="5" y="2" width="14" height="20" rx="3" />
       <path d="M9 18h6" />
       <path d="M3 9c1.2 1.2 1.2 3 0 4.2M1.2 7.2c2.2 2.2 2.2 5.6 0 7.8" />
+    </svg>
+  );
+}
+
+function SubscriptionIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <path d="M12 8v4l2.5 2.5" />
     </svg>
   );
 }
@@ -406,6 +442,13 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: 'var(--text-primary)',
   },
+  stepsSection: { marginBottom: 32 },
+  stepsTitle: { fontSize: 19, margin: '0 0 20px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
+  stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 },
+  stepItem: { display: 'flex', flexDirection: 'column', gap: 6 },
+  stepNum: { fontSize: 13, fontWeight: 800, letterSpacing: '0.1em', color: 'var(--accent)' },
+  stepItemTitle: { fontSize: 15, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700 },
+  stepItemText: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
   compareSection: { marginBottom: 28 },
   compareTitle: { fontSize: 19, margin: '0 0 16px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   compareTable: {
@@ -502,6 +545,42 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '13px 26px',
     fontWeight: 800,
     fontSize: 14,
+    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
+  },
+  closingCta: {
+    textAlign: 'center',
+    background: 'linear-gradient(135deg, #12151a 0%, #1d222b 100%)',
+    borderRadius: 20,
+    padding: '48px 32px',
+    marginBottom: 32,
+  },
+  closingCtaTitle: {
+    fontSize: 24,
+    margin: '0 auto 10px',
+    maxWidth: 560,
+    fontFamily: 'var(--font-display)',
+    fontWeight: 800,
+    letterSpacing: '-0.01em',
+    color: '#ffffff',
+  },
+  closingCtaText: {
+    fontSize: 14,
+    margin: '0 auto 24px',
+    maxWidth: 460,
+    lineHeight: 1.6,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  closingCtaBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    borderRadius: 24,
+    padding: '13px 28px',
+    fontWeight: 800,
+    fontSize: 14,
+    textDecoration: 'none',
     boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
   },
 };
