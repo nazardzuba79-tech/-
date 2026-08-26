@@ -789,6 +789,79 @@ a:hover > .nav-card-icon {
   flex-shrink: 0;
 }
 
+/* A richer version of the hero background — a soft pulsing glow blob
+   sitting directly behind the phone, a faint concentric-ring orb, and a
+   handful of small glowing "star" dots — same idea as the Bolt reference's
+   backdrop the owner supplied, adapted to this site's own hero-glow
+   tokens rather than a new palette. Used behind both the login/register
+   hero's phone and the marketing hero's phone. */
+.hero-phone-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 60%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #6e5bff;
+  opacity: 0.16;
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+  animation: hero-phone-glow-pulse 5s ease-in-out infinite;
+}
+@keyframes hero-phone-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.13;
+  }
+  50% {
+    opacity: 0.22;
+  }
+}
+.hero-grid-orb {
+  position: absolute;
+  top: 4%;
+  right: -6%;
+  width: 180px;
+  height: 180px;
+  opacity: 0.4;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 17px, rgba(126, 118, 243, 0.16) 18px 19px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #a89bff;
+  box-shadow: 0 0 8px #a89bff;
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-star-1 {
+  left: 8%;
+  top: 20%;
+}
+.hero-star-2 {
+  right: 4%;
+  top: 30%;
+}
+.hero-star-3 {
+  left: 12%;
+  bottom: 22%;
+}
+.hero-star-4 {
+  right: 14%;
+  bottom: 10%;
+}
+.hero-star-5 {
+  left: 46%;
+  top: 6%;
+}
+
 /* Same "liquid glass" family as .nav-liquid-glass, sized down for other
    elevated surfaces that float above page content — data-panel cards,
    modal sheets, the bottom tab bar. Deliberately NOT used on dense

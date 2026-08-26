@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { CryptoIcon } from '../components/CryptoIcon';
+import { CryptoIcon, assetColor } from '../components/CryptoIcon';
 import { Sparkline } from '../components/Sparkline';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
@@ -209,167 +209,135 @@ export function MarketingPage() {
             })}
           </div>
 
-          <div style={styles.trendCfdRow}>
-            <div style={styles.trendCard}>
-              <span style={styles.trendCardLabel}>🔥 {t('marketing.trending')}</span>
-              {trendingPair && (
-                <Link to="/login" style={styles.trendCardBody} className="row-hover">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={22} />
-                    <span style={{ fontSize: 14, fontWeight: 700 }}>{trendingPair.pair}</span>
-                  </div>
-                  {(() => {
-                    const tk = tickers.get(trendingPair.pair);
-                    const change = tk ? parseChangePercent(tk.changePercent24h, trendingPair.pair) : 0;
-                    const points = history.get(trendingPair.pair) ?? [];
-                    return (
-                      <>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                          <span className="mono" style={{ fontSize: 22, fontWeight: 800 }}>
-                            {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
-                          </span>
-                          <span className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 13, fontWeight: 700 }}>
-                            {tk ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : ''}
-                          </span>
-                        </div>
-                        {points.length > 1 && <Sparkline points={points} width={220} height={48} />}
-                      </>
-                    );
-                  })()}
-                </Link>
-              )}
+          <div style={styles.dashboardTopGrid}>
+            <div className="accent-edge surface-raised" style={styles.dashboardCard}>
+              <h3 style={styles.dashboardCardHeading}>
+                <span style={styles.flameIcon}>🔥</span> {t('marketing.trending')}
+              </h3>
+              {trendingPair &&
+                (() => {
+                  const tk = tickers.get(trendingPair.pair);
+                  const change = tk ? parseChangePercent(tk.changePercent24h, trendingPair.pair) : 0;
+                  const points = history.get(trendingPair.pair) ?? [];
+                  const positive = change >= 0;
+                  return (
+                    <Link to="/login" style={styles.dashboardFeaturedLink} className="row-hover">
+                      <div style={styles.dashboardFeaturedAsset}>
+                        <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={36} />
+                        <strong>{trendingPair.pair}</strong>
+                      </div>
+                      <div style={styles.dashboardFeaturedPrice}>
+                        <strong className="mono">{tk ? fmt(parseFloat(tk.lastPrice)) : '—'}</strong>
+                        <span className={positive ? 'text-buy' : 'text-sell'}>
+                          {tk ? `${positive ? '+' : ''}${change.toFixed(2)}%` : ''}
+                        </span>
+                      </div>
+                      {points.length > 1 && <Sparkline points={points} width={400} height={90} />}
+                    </Link>
+                  );
+                })()}
             </div>
 
-            <div style={styles.cfdTrendCard}>
+            <div className="accent-edge surface-raised" style={styles.dashboardCard}>
               <span style={styles.cfdTrendBadge}>CFD</span>
-              <div style={styles.cfdTrendList}>
+              <div style={styles.dashboardRowList}>
                 {cfdTickers.slice(0, 3).map((tk) => {
                   const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+                  const positive = change >= 0;
                   return (
-                    <div key={tk.symbol} style={styles.cfdTrendRow}>
-                      <div>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
-                          {tk.symbol}
-                        </div>
-                        <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{tk.name}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
-                          {tk.price}
-                        </div>
-                        <div className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 11 }}>
-                          {change >= 0 ? '+' : ''}
-                          {change.toFixed(2)}%
-                        </div>
-                      </div>
-                    </div>
+                    <Link key={tk.symbol} to="/trade" style={styles.dashboardRow} className="row-hover">
+                      <span style={{ ...styles.dashboardCoin, background: assetColor(tk.symbol).solid }}>
+                        {CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}
+                      </span>
+                      <span style={styles.dashboardRowLabel}>
+                        <strong>{tk.symbol}</strong>
+                        <small>{tk.name}</small>
+                      </span>
+                      <span className="mono" style={styles.dashboardRowPrice}>
+                        {tk.price}
+                      </span>
+                      <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.dashboardRowChange}>
+                        {positive ? '+' : ''}
+                        {change.toFixed(2)}%
+                      </span>
+                    </Link>
                   );
                 })}
-                {cfdTickers.length === 0 && <p style={{ fontSize: 11, color: 'var(--text-tertiary)', padding: '8px 0' }}>{t('trade.cfdUnavailable')}</p>}
+                {cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
               </div>
             </div>
           </div>
 
           <div style={styles.overviewInner}>
-            <div style={styles.overviewHeaderRow}>
-              <div>
-                <span style={styles.eyebrow}>
-                  <span style={styles.eyebrowDot} />
-                  {t('marketing.liveMarkets')}
-                </span>
-                <div style={styles.popularTabs}>
-                  <button
-                    onClick={() => setPopularTab('crypto')}
-                    style={{ ...styles.popularTab, ...(popularTab === 'crypto' ? styles.popularTabActive : {}) }}
-                  >
-                    {t('marketing.popularPairs')}
-                  </button>
-                  <button
-                    onClick={() => setPopularTab('cfd')}
-                    style={{ ...styles.popularTab, ...(popularTab === 'cfd' ? styles.popularTabActive : {}) }}
-                  >
-                    {t('marketing.popularDerivatives')}
-                  </button>
-                </div>
-              </div>
+            <div style={styles.dashboardTabsRow}>
+              <button
+                onClick={() => setPopularTab('crypto')}
+                style={{ ...styles.dashboardTabBtn, ...(popularTab === 'crypto' ? styles.dashboardTabBtnActive : {}) }}
+              >
+                {t('marketing.popularPairs')}
+              </button>
+              <button
+                onClick={() => setPopularTab('cfd')}
+                style={{ ...styles.dashboardTabBtn, ...(popularTab === 'cfd' ? styles.dashboardTabBtnActive : {}) }}
+              >
+                {t('marketing.popularDerivatives')}
+              </button>
               <Link to="/login" style={styles.viewAllLink}>
                 {t('marketing.viewAllMarkets')} <ArrowIcon small />
               </Link>
             </div>
 
-            {popularTab === 'crypto' && (
-            <div style={styles.overviewGrid}>
-              {OVERVIEW_PAIRS.map((pair) => {
-                const tk = tickers.get(pair);
-                const change = tk ? parseChangePercent(tk.changePercent24h, pair) : 0;
-                const base = pair.split('/')[0];
-                const positive = change >= 0;
-                const points = history.get(pair) ?? [];
-                return (
-                  <Link key={pair} to="/login" style={styles.overviewCard} className="row-hover">
-                    <div style={styles.overviewCardTop}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <CryptoIcon symbol={base} size={28} />
-                        <div>
-                          <div style={{ fontSize: 14, fontWeight: 700 }}>{pair}</div>
-                        </div>
-                      </div>
-                      <div style={{ width: 80, height: 32 }}>
-                        {points.length > 1 && <Sparkline points={points} width={80} height={32} />}
-                      </div>
-                    </div>
-                    <div style={styles.overviewCardBottom}>
-                      <span className="mono" style={{ fontSize: 17, fontWeight: 800 }}>
-                        {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
-                      </span>
-                      <div style={{ textAlign: 'right' }}>
-                        <div className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 13, fontWeight: 700 }}>
+            <div className="accent-edge surface-raised" style={styles.dashboardPopularCard}>
+              <div style={styles.dashboardRowList}>
+                {popularTab === 'crypto' &&
+                  OVERVIEW_PAIRS.map((pair) => {
+                    const tk = tickers.get(pair);
+                    const change = tk ? parseChangePercent(tk.changePercent24h, pair) : 0;
+                    const base = pair.split('/')[0];
+                    const positive = change >= 0;
+                    return (
+                      <Link key={pair} to="/login" style={styles.dashboardRow} className="row-hover">
+                        <CryptoIcon symbol={base} size={36} />
+                        <span style={styles.dashboardRowLabel}>
+                          <strong>{pair}</strong>
+                          <small>{tk ? `Vol ${fmtCompact(parseFloat(tk.quoteVolume24h))}` : ''}</small>
+                        </span>
+                        <span className="mono" style={styles.dashboardRowPrice}>
+                          {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
+                        </span>
+                        <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.dashboardRowChange}>
                           {tk ? `${positive ? '+' : ''}${change.toFixed(2)}%` : ''}
-                        </div>
-                        <div className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                          {tk ? `Vol ${fmtCompact(parseFloat(tk.quoteVolume24h))}` : ''}
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-            )}
+                        </span>
+                      </Link>
+                    );
+                  })}
 
-            {popularTab === 'cfd' && (
-            <div style={styles.overviewGrid}>
-              {cfdTickers.map((tk) => {
-                const change = parseChangePercent(tk.changePercent24h, tk.symbol);
-                const positive = change >= 0;
-                return (
-                  <Link key={tk.symbol} to="/trade" style={styles.overviewCard} className="row-hover">
-                    <div style={styles.overviewCardTop}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 22 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
-                        <div>
-                          <div className="mono" style={{ fontSize: 14, fontWeight: 700 }}>
-                            {tk.symbol}
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{tk.name}</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div style={styles.overviewCardBottom}>
-                      <span className="mono" style={{ fontSize: 17, fontWeight: 800 }}>
-                        {tk.price}
-                      </span>
-                      <div className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 13, fontWeight: 700 }}>
-                        {positive ? '+' : ''}
-                        {change.toFixed(2)}%
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-              {cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+                {popularTab === 'cfd' &&
+                  cfdTickers.map((tk) => {
+                    const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+                    const positive = change >= 0;
+                    return (
+                      <Link key={tk.symbol} to="/trade" style={styles.dashboardRow} className="row-hover">
+                        <span style={{ ...styles.dashboardCoin, background: assetColor(tk.symbol).solid }}>
+                          {CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}
+                        </span>
+                        <span style={styles.dashboardRowLabel}>
+                          <strong>{tk.symbol}</strong>
+                          <small>{tk.name}</small>
+                        </span>
+                        <span className="mono" style={styles.dashboardRowPrice}>
+                          {tk.price}
+                        </span>
+                        <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.dashboardRowChange}>
+                          {positive ? '+' : ''}
+                          {change.toFixed(2)}%
+                        </span>
+                      </Link>
+                    );
+                  })}
+                {popularTab === 'cfd' && cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+              </div>
             </div>
-            )}
           </div>
         </section>
 
@@ -767,6 +735,13 @@ function HeroPreviewPanel({
     <div style={styles.previewWrap} className="marketing-phone">
       <span className="hero-orbit hero-orbit-a" />
       <span className="hero-orbit hero-orbit-b" />
+      <span className="hero-phone-glow" />
+      <span className="hero-grid-orb" />
+      <span className="hero-star hero-star-1" />
+      <span className="hero-star hero-star-2" />
+      <span className="hero-star hero-star-3" />
+      <span className="hero-star hero-star-4" />
+      <span className="hero-star hero-star-5" />
 
       {btc && (
         <div style={{ ...styles.floatChip, ...styles.floatChipTicker }}>
@@ -1135,56 +1110,28 @@ const styles: Record<string, React.CSSProperties> = {
   overviewHeaderRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16 },
   overviewTitle: { fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 800, margin: '10px 0 0', letterSpacing: '-0.01em' },
   viewAllLink: { display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--accent)', fontSize: 14, fontWeight: 700 },
-  overviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12, marginTop: 28 },
-  overviewCard: {
-    display: 'block',
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    padding: 16,
-  },
-  overviewCardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  overviewCardBottom: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 14 },
   hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
-  popularTabs: { display: 'flex', gap: 6, marginTop: 10 },
-  popularTab: {
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '6px 14px',
-    fontSize: 12.5,
-    fontWeight: 700,
-    color: 'var(--text-secondary)',
-  },
-  popularTabActive: { color: 'var(--on-accent)', background: 'var(--accent)', borderColor: 'var(--accent)' },
-  trendCfdRow: {
+  dashboardTopGrid: {
     maxWidth: 1280,
     margin: '0 auto',
     padding: '28px 20px 0',
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: 16,
+    gap: 20,
   },
-  trendCard: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 16,
-    padding: 20,
+  dashboardCard: { borderRadius: 20, padding: 26, background: 'var(--panel)', border: '1px solid var(--border)' },
+  dashboardCardHeading: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: 14,
+    alignItems: 'center',
+    gap: 10,
+    margin: '0 0 20px',
+    fontSize: 15,
+    fontWeight: 700,
   },
-  trendCardLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' },
-  trendCardBody: { display: 'flex', flexDirection: 'column', gap: 10 },
-  cfdTrendCard: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 16,
-    padding: 20,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
+  flameIcon: { fontSize: 18 },
+  dashboardFeaturedLink: { display: 'flex', flexDirection: 'column', gap: 14, borderRadius: 12, margin: -8, padding: 8 },
+  dashboardFeaturedAsset: { display: 'flex', alignItems: 'center', gap: 12 },
+  dashboardFeaturedPrice: { display: 'flex', alignItems: 'baseline', gap: 12, fontSize: 15, fontWeight: 700 },
   cfdTrendBadge: {
     alignSelf: 'flex-start',
     background: 'var(--accent)',
@@ -1194,9 +1141,48 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.04em',
     borderRadius: 6,
     padding: '4px 10px',
+    marginBottom: 14,
   },
-  cfdTrendList: { display: 'flex', flexDirection: 'column', gap: 10 },
-  cfdTrendRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  dashboardRowList: { display: 'flex', flexDirection: 'column', gap: 4 },
+  dashboardRow: {
+    display: 'grid',
+    gridTemplateColumns: '36px 1fr auto auto',
+    alignItems: 'center',
+    gap: 12,
+    padding: '10px 10px',
+    borderRadius: 12,
+  },
+  dashboardCoin: {
+    width: 36,
+    height: 36,
+    borderRadius: '50% / 40%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 15,
+    color: '#fff',
+    flexShrink: 0,
+  },
+  dashboardRowLabel: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 },
+  dashboardRowPrice: { fontSize: 14, fontWeight: 700, textAlign: 'right' },
+  dashboardRowChange: { fontSize: 13, fontWeight: 700, textAlign: 'right' },
+  dashboardTabsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 20,
+    marginBottom: 16,
+  },
+  dashboardTabBtn: {
+    background: 'transparent',
+    border: 'none',
+    padding: '0 0 4px',
+    fontSize: 14,
+    fontWeight: 700,
+    color: 'var(--text-tertiary)',
+    borderBottom: '2px solid transparent',
+  },
+  dashboardTabBtnActive: { color: 'var(--text-primary)', borderBottomColor: 'var(--accent)' },
+  dashboardPopularCard: { borderRadius: 20, padding: '18px 24px', background: 'var(--panel)', border: '1px solid var(--border)' },
   perksSection: { maxWidth: 1280, margin: '0 auto', padding: '20px 20px 64px' },
   perksBanner: {
     display: 'flex',

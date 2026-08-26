@@ -346,7 +346,7 @@ const styles: Record<string, CSSProperties> = {
   coinBadge: {
     width: 24,
     height: 24,
-    borderRadius: '50%',
+    borderRadius: '50% / 40%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

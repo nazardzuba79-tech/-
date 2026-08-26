@@ -186,7 +186,14 @@ export function AuthPage() {
         </div>
 
         <div className="auth-phone" style={styles.phoneCol}>
-          <PhoneMockup style={{ width: 240 }} />
+          <div className="hero-phone-glow" />
+          <div className="hero-grid-orb" />
+          <div className="hero-star hero-star-1" />
+          <div className="hero-star hero-star-2" />
+          <div className="hero-star hero-star-3" />
+          <div className="hero-star hero-star-4" />
+          <div className="hero-star hero-star-5" />
+          <PhoneMockup style={{ width: 240, position: 'relative', zIndex: 1 }} />
         </div>
 
         <div style={{ ...styles.card, ...(mode === 'register' && !pendingToken ? styles.cardRegisterGlow : {}) }}>
@@ -541,6 +548,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   phoneCol: {
     flexShrink: 0,
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
