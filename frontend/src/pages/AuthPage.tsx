@@ -9,6 +9,7 @@ import { Skeleton } from '../components/Skeleton';
 import { parseChangePercent } from '../lib/priceChange';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
+import { CfdMarketsSection } from '../components/CfdMarketsSection';
 import { REFERRAL_CODE_STORAGE_KEY } from './ReferralRedirectPage';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { CFD_ICON_BY_SYMBOL } from '../components/CfdInstrumentList';
@@ -338,6 +339,8 @@ export function AuthPage() {
       </div>
 
       <PerksSection t={t} />
+
+      <CfdMarketsSection />
 
       <div style={styles.legalRow}>
         <Link to="/legal/terms" style={styles.legalLink}>
