@@ -29,16 +29,17 @@ export interface CardTheme {
   flatSubtitle?: string;
 }
 
-// Flat, true gold — the same #ffd166->#f7a600 family as the VIP-cashback
-// badge sitting right below the card on CardPage. Minimal face (see `flat`
-// above) instead of the brushed-metal treatment the black card keeps.
+// Direct port of the Bolt.new reference's own "crypto" BankCard colors —
+// a light cream card, not solid gold (only the chip and sheen carry a gold
+// tint). Minimal face (see `flat` above) instead of the brushed-metal
+// treatment the black card keeps.
 export const BASE_CARD_THEME: CardTheme = {
-  background: '#f0cd74',
-  border: '1px solid rgba(140,100,10,0.16)',
-  boxShadow: '0 20px 44px rgba(150,110,10,0.18), 0 6px 16px rgba(150,110,10,0.1)',
+  background: '#F4F4F2',
+  border: '1px solid #E2E0DC',
+  boxShadow: '0 18px 40px -12px rgba(17,17,17,0.18)',
   chipTone: 'gold',
   hexTint: 'rgba(120,80,10,0.16)',
-  textColor: '#231704',
+  textColor: '#111111',
   flat: true,
   flatSubtitle: 'CRYPTO CARD',
 };
@@ -99,14 +100,15 @@ function VisaMark({ color }: { color: string }) {
   return <span style={{ ...styles.visaMark, color }}>VISA</span>;
 }
 
-// Plain 3x3-dot chip for the flat card face — matches the reference's
-// minimal chip instead of the etched-EMV-outline ChipIcon above.
-function SimpleChip({ textColor }: { textColor: string }) {
+// Gold-gradient chip block for the flat card face — a direct port of the
+// reference's own chip (gradient fill + translucent 3x3 grid overlay),
+// not tied to the card's text color like the etched ChipIcon above.
+function SimpleChip() {
   return (
-    <div style={{ ...styles.simpleChip, borderColor: textColor }}>
+    <div style={styles.simpleChip}>
       <div style={styles.simpleChipGrid}>
         {Array.from({ length: 9 }).map((_, i) => (
-          <div key={i} style={{ ...styles.simpleChipCell, background: textColor }} />
+          <div key={i} style={styles.simpleChipCell} />
         ))}
       </div>
     </div>
@@ -192,27 +194,25 @@ export function CardFace({
         <div style={styles.flatSheen} />
         <div style={styles.cardVisualTop}>
           <div style={styles.flatBrand}>
-            <span style={{ ...styles.cardVisualWordmark, color: theme.textColor }}>
-              VO<span style={styles.flatWordmarkL}>L</span>TEX
-            </span>
+            <span style={{ ...styles.flatWordmark, color: theme.textColor }}>VOLTEX</span>
             {theme.flatSubtitle && <span style={{ ...styles.flatSubtitle, color: theme.textColor }}>{theme.flatSubtitle}</span>}
           </div>
-          <SimpleChip textColor={theme.textColor} />
+          <SimpleChip />
         </div>
         <div style={{ flex: 1 }} />
-        <div style={{ ...styles.cardVisualNumber, color: theme.textColor }} className="mono">
+        <div style={{ ...styles.flatNumber, color: theme.textColor }} className="mono">
           •••• •••• •••• {last4}
         </div>
         <div style={{ height: 16 }} />
         <div style={styles.cardVisualBottom}>
           <div style={styles.flatHolderStack}>
             <span style={{ ...styles.flatHolderLabel, color: theme.textColor }}>Card Holder</span>
-            <span style={{ ...styles.cardVisualHolder, color: theme.textColor, marginTop: 1 }} className="mono">
+            <span style={{ ...styles.flatHolderName, color: theme.textColor }} className="mono">
               {holderName}
             </span>
           </div>
           <div style={styles.cardNetworkStack}>
-            {network === 'mastercard' ? <MastercardMark /> : <VisaMark color={theme.textColor} />}
+            {network === 'mastercard' ? <MastercardMark /> : <span style={{ ...styles.flatVisaMark, color: theme.textColor }}>VISA</span>}
           </div>
         </div>
       </div>
@@ -305,37 +305,39 @@ const styles: Record<string, CSSProperties> = {
       'linear-gradient(115deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0) 34%, rgba(15,18,22,0.03) 55%, rgba(255,255,255,0.55) 76%, rgba(255,255,255,0) 100%)',
     pointerEvents: 'none',
   },
-  // Subtle radial highlight for the flat card face — the reference's own
-  // sheen, not the brushed card's diagonal streak+wide sweep.
+  // Gold-tinted radial sheen — the reference's own crypto-card sheen
+  // (rgba(232,185,49,0.10)), not the brushed card's diagonal streak+sweep.
   flatSheen: {
     position: 'absolute',
     inset: 0,
-    background: 'radial-gradient(120% 80% at 85% 10%, rgba(255,255,255,0.4), transparent 55%)',
+    background: 'radial-gradient(120% 80% at 85% 10%, rgba(232,185,49,0.10), transparent 55%)',
     pointerEvents: 'none',
   },
   flatBrand: { display: 'flex', flexDirection: 'column', gap: 2 },
-  flatSubtitle: { fontSize: 9, fontWeight: 700, letterSpacing: '0.24em', opacity: 0.6, marginTop: 1 },
-  flatWordmarkL: { opacity: 0.85 },
+  flatWordmark: { fontWeight: 700, fontSize: 15, letterSpacing: '0.18em' },
+  flatSubtitle: { fontSize: 9, fontWeight: 400, letterSpacing: '0.32em', opacity: 0.6, marginTop: 2, textTransform: 'uppercase' },
+  flatNumber: { fontSize: 17, fontWeight: 500, letterSpacing: '0.18em' },
   flatHolderStack: { display: 'flex', flexDirection: 'column', gap: 2 },
-  flatHolderLabel: { fontSize: 8, fontWeight: 600, letterSpacing: '0.14em', opacity: 0.55, textTransform: 'uppercase' },
+  flatHolderLabel: { fontSize: 8, fontWeight: 400, letterSpacing: '0.2em', opacity: 0.55, textTransform: 'uppercase' },
+  flatHolderName: { fontSize: 12, fontWeight: 500, marginTop: 2 },
+  flatVisaMark: { fontFamily: 'Georgia, serif', fontWeight: 700, fontStyle: 'italic', fontSize: 20, letterSpacing: '0.01em' },
   simpleChip: {
-    width: 32,
-    height: 24,
-    borderRadius: 5,
-    border: '1px solid',
-    opacity: 0.9,
+    width: 48,
+    height: 36,
+    borderRadius: 6,
     position: 'relative',
-    background: 'rgba(255,255,255,0.12)',
+    overflow: 'hidden',
+    background: 'linear-gradient(135deg, #D4B860, #A8841F)',
   },
   simpleChipGrid: {
     position: 'absolute',
-    inset: 3,
+    inset: 4,
     display: 'grid',
     gridTemplateColumns: 'repeat(3, 1fr)',
     gridTemplateRows: 'repeat(3, 1fr)',
     gap: 1.5,
   },
-  simpleChipCell: { opacity: 0.35, borderRadius: 0.5 },
+  simpleChipCell: { background: 'rgba(232,201,122,0.4)' },
   cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardVisualNumber: { fontSize: 16, fontWeight: 700, letterSpacing: '0.08em' },
   cardVisualHolder: { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
