@@ -407,14 +407,6 @@ export const api = {
 
   getCfdPositionHistory: () => request<CfdPosition[]>('/cfd/positions/history'),
 
-  getCfdCandles: (symbol: string, interval: string) =>
-    request<{
-      source: string;
-      symbol: string;
-      interval: string;
-      candles: { time: number; open: number; high: number; low: number; close: number }[];
-    }>(`/cfd/candles/${symbol}?interval=${interval}`),
-
   closeCfdPosition: (positionId: string) => request<{ position: CfdPosition }>(`/cfd/positions/${positionId}/close`, { method: 'POST' }),
 
   getExternalTicker: (pair: string) =>

@@ -55,20 +55,6 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     }
   });
 
-  router.get('/cfd/candles/:symbol', async (req, res) => {
-    try {
-      const interval = typeof req.query.interval === 'string' ? req.query.interval : '15m';
-      const candles = await cfdDataService.getCandles(req.params.symbol, interval);
-      res.json({ source: 'twelvedata', symbol: req.params.symbol, interval, candles });
-    } catch (err) {
-      if (err instanceof ExternalCfdDataError) {
-        return res.status(502).json({ error: err.message });
-      }
-      console.error(err);
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  });
-
   router.post('/cfd/positions', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
     const parsed = openSchema.safeParse(req.body);
     if (!parsed.success) {
