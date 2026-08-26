@@ -530,6 +530,7 @@ const RU = {
   'marketing.popularDerivatives': 'Популярное на деривативах',
   'marketing.trending': 'В тренде',
   'marketing.viewAllMarkets': 'Все рынки',
+  'marketing.heroVolumeLabel': 'Оборот за 24ч',
   'marketing.liveMarkets': 'Актуальные рынки',
 
   'marketing.statFeeValue': '0%',
@@ -1239,6 +1240,7 @@ const EN: Record<Key, string> = {
   'marketing.popularDerivatives': 'Popular on derivatives',
   'marketing.trending': 'Trending',
   'marketing.viewAllMarkets': 'View all markets',
+  'marketing.heroVolumeLabel': '24h volume',
   'marketing.liveMarkets': 'Live markets',
 
   'marketing.statFeeValue': '0%',
@@ -1934,6 +1936,7 @@ const ZH: Record<Key, string> = {
   'marketing.popularDerivatives': '衍生品热门',
   'marketing.trending': '热门趋势',
   'marketing.viewAllMarkets': '查看所有市场',
+  'marketing.heroVolumeLabel': '24小时交易量',
   'marketing.liveMarkets': '实时市场',
 
   'marketing.statFeeValue': '0%',

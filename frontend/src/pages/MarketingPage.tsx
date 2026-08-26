@@ -170,7 +170,7 @@ export function MarketingPage() {
             </div>
 
             <div style={styles.heroRight}>
-              <HeroPreviewPanel tickers={tickers} fmt={fmt} />
+              <HeroPreviewPanel tickers={tickers} t={t} />
             </div>
           </div>
         </section>
@@ -743,53 +743,53 @@ function SiteFooterSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
   );
 }
 
+/** The hero's whole visual: a big tilted phone (PhoneMockup — same
+ * component used on the login hero) as the centerpiece, with two small
+ * floating chips of real data orbiting it (BTC/USDT price/change, and
+ * this batch's combined 24h quote volume) — same spirit as the phone's own
+ * "illustrative but honest" numbers, just pulled from the same live
+ * ticker feed the rest of this page already polls. */
 function HeroPreviewPanel({
   tickers,
-  fmt,
+  t,
 }: {
   tickers: Map<string, Ticker>;
-  fmt: (n: number) => string;
+  t: ReturnType<typeof useLanguage>['t'];
 }) {
-  return (
-    <div style={styles.previewWrap}>
-      <div style={styles.previewCard}>
-        <div style={styles.previewTabs}>
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>Spot</span>
-          <span>Perps</span>
-        </div>
-        <div style={styles.previewListHeader}>
-          <span>Contract</span>
-          <span>Last price</span>
-        </div>
-        {HERO_COINS.map((pair) => {
-          const tk = tickers.get(pair);
-          const change = tk ? parseChangePercent(tk.changePercent24h, pair) : 0;
-          const base = pair.split('/')[0];
-          return (
-            <div key={pair} style={styles.previewRow}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <CryptoIcon symbol={base} size={30} />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{pair}</div>
-                  <span style={styles.previewLevBadge}>100x</span>
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="mono" style={{ fontSize: 14, fontWeight: 700 }}>
-                  {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
-                </div>
-                <div className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 12 }}>
-                  {tk ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : ''}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  const btc = tickers.get('BTC/USDT');
+  const btcChange = btc ? parseChangePercent(btc.changePercent24h, 'BTC/USDT') : 0;
+  const totalQuoteVolume = HERO_COINS.reduce((sum, pair) => {
+    const tk = tickers.get(pair);
+    return sum + (tk ? parseFloat(tk.quoteVolume24h) : 0);
+  }, 0);
 
-      {/* Phone mockup — a generic illustrative app preview, same convention
-          as v0's own mockup; numbers are not tied to any real account. */}
-      <PhoneMockup className="marketing-phone" style={{ position: 'absolute', right: -70, bottom: -90 }} />
+  return (
+    <div style={styles.previewWrap} className="marketing-phone">
+      <span className="hero-orbit hero-orbit-a" />
+      <span className="hero-orbit hero-orbit-b" />
+
+      {btc && (
+        <div style={{ ...styles.floatChip, ...styles.floatChipTicker }}>
+          <span className="live-pulse-dot" />
+          <span style={{ fontWeight: 700 }}>BTC/USDT</span>
+          <span className={btcChange >= 0 ? 'text-buy' : 'text-sell'}>
+            {btcChange >= 0 ? '+' : ''}
+            {btcChange.toFixed(2)}%
+          </span>
+        </div>
+      )}
+      {totalQuoteVolume > 0 && (
+        <div style={{ ...styles.floatChip, ...styles.floatChipVolume }}>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{t('marketing.heroVolumeLabel')}</span>
+          <strong className="mono" style={{ fontSize: 16 }}>
+            ${totalQuoteVolume.toLocaleString('en-US', { notation: 'compact', maximumFractionDigits: 2 })}
+          </strong>
+        </div>
+      )}
+
+      <div style={styles.phoneTiltWrap}>
+        <PhoneMockup style={{ width: 320 }} />
+      </div>
     </div>
   );
 }
@@ -1088,12 +1088,13 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 8,
-    background: 'var(--accent)',
+    background: 'linear-gradient(135deg, #7c5cff 0%, var(--accent) 100%)',
     color: 'var(--on-accent)',
     fontSize: 15,
     fontWeight: 700,
     padding: '13px 24px',
     borderRadius: 12,
+    boxShadow: '0 12px 30px -8px rgba(124,92,255,0.55)',
   },
   heroSecondaryBtn: {
     display: 'inline-flex',
@@ -1110,41 +1111,23 @@ const styles: Record<string, React.CSSProperties> = {
   heroStatValue: { fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.01em' },
   heroStatLabel: { marginTop: 4, fontSize: 12.5, color: 'var(--text-tertiary)' },
   heroRight: { position: 'relative', minHeight: 700, marginRight: 10 },
-  previewWrap: { position: 'relative', maxWidth: 680 },
-  previewCard: {
+  previewWrap: { position: 'relative', maxWidth: 680, height: 640, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  phoneTiltWrap: { transform: 'rotate(-7deg)', position: 'relative', zIndex: 2 },
+  floatChip: {
+    position: 'absolute',
+    zIndex: 3,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 20,
-    overflow: 'hidden',
-    boxShadow: '0 30px 80px rgba(0,0,0,0.45)',
+    borderRadius: 14,
+    padding: '10px 16px',
+    fontSize: 13,
+    boxShadow: '0 20px 50px rgba(0,0,0,0.35)',
   },
-  previewTabs: {
-    display: 'flex',
-    gap: 20,
-    padding: '18px 24px',
-    borderBottom: '1px solid var(--border)',
-    fontSize: 14,
-    color: 'var(--text-tertiary)',
-    fontWeight: 600,
-  },
-  previewListHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '12px 24px',
-    fontSize: 12,
-    color: 'var(--text-tertiary)',
-  },
-  previewRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 24px' },
-  previewLevBadge: {
-    display: 'inline-block',
-    marginTop: 3,
-    fontSize: 10,
-    fontWeight: 700,
-    color: 'var(--text-tertiary)',
-    background: 'var(--panel-alt)',
-    borderRadius: 4,
-    padding: '1px 6px',
-  },
+  floatChipTicker: { top: '30%', left: 0 },
+  floatChipVolume: { flexDirection: 'column', alignItems: 'flex-start', gap: 2, bottom: '18%', right: 10 },
   overview: { borderTop: '1px solid var(--border)', background: 'var(--panel-alt)' },
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },
