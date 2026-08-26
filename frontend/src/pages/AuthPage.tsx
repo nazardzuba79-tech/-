@@ -549,6 +549,7 @@ const styles: Record<string, React.CSSProperties> = {
   phoneCol: {
     flexShrink: 0,
     position: 'relative',
+    width: 380,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

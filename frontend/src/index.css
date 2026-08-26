@@ -799,13 +799,13 @@ a:hover > .nav-card-icon {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 60%;
-  height: 70%;
+  width: 80%;
+  height: 88%;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: #6e5bff;
-  opacity: 0.16;
-  filter: blur(70px);
+  background: #7c5cff;
+  opacity: 0.32;
+  filter: blur(60px);
   pointer-events: none;
   z-index: 0;
   animation: hero-phone-glow-pulse 5s ease-in-out infinite;
@@ -813,31 +813,31 @@ a:hover > .nav-card-icon {
 @keyframes hero-phone-glow-pulse {
   0%,
   100% {
-    opacity: 0.13;
+    opacity: 0.26;
   }
   50% {
-    opacity: 0.22;
+    opacity: 0.42;
   }
 }
 .hero-grid-orb {
   position: absolute;
-  top: 4%;
-  right: -6%;
-  width: 180px;
-  height: 180px;
-  opacity: 0.4;
+  top: 2%;
+  right: -10%;
+  width: 220px;
+  height: 220px;
+  opacity: 0.6;
   border-radius: 50%;
-  background: repeating-radial-gradient(circle, transparent 0 17px, rgba(126, 118, 243, 0.16) 18px 19px);
+  background: repeating-radial-gradient(circle, transparent 0 17px, rgba(148, 138, 255, 0.28) 18px 19px);
   pointer-events: none;
   z-index: 0;
 }
 .hero-star {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: #a89bff;
-  box-shadow: 0 0 8px #a89bff;
+  background: #c2b6ff;
+  box-shadow: 0 0 12px 2px #a78bfa;
   pointer-events: none;
   z-index: 0;
 }
