@@ -114,6 +114,21 @@ async function requestBlobUrl(path: string): Promise<{ url: string; contentType:
   return { url: URL.createObjectURL(blob), contentType: blob.type };
 }
 
+export interface CfdPosition {
+  id: string;
+  symbol: string;
+  side: 'LONG' | 'SHORT';
+  size: string;
+  entryPrice: string;
+  leverage: number;
+  initialMargin: string;
+  liquidationPrice: string;
+  status: string;
+  realizedPnl: string;
+  openedAt: string;
+  closedAt: string | null;
+}
+
 export const api = {
   register: (email: string, password: string, ref?: string) =>
     request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, ref }) }),
@@ -372,6 +387,27 @@ export const api = {
       configured: boolean;
       tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];
     }>('/cfd/tickers'),
+
+  getCfdConfig: () =>
+    request<{
+      symbols: string[];
+      minLeverage: number;
+      maxLeverage: number;
+      newAccountMaxLeverage: number;
+      newAccountPeriodDays: number;
+      highLeverageWarningThreshold: number;
+      leverageTiers: { notionalCap: number; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
+    }>('/cfd/config'),
+
+  openCfdPosition: (params: { symbol: string; side: 'BUY' | 'SELL'; quantity: string; leverage: number }) =>
+    request<{ position: CfdPosition }>('/cfd/positions', { method: 'POST', body: JSON.stringify(params) }),
+
+  getCfdPositions: () =>
+    request<(CfdPosition & { markPrice: string | null; unrealizedPnl: string | null; roe: string | null })[]>('/cfd/positions'),
+
+  getCfdPositionHistory: () => request<CfdPosition[]>('/cfd/positions/history'),
+
+  closeCfdPosition: (positionId: string) => request<{ position: CfdPosition }>(`/cfd/positions/${positionId}/close`, { method: 'POST' }),
 
   getExternalTicker: (pair: string) =>
     request<{

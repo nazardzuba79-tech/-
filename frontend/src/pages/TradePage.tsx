@@ -19,7 +19,10 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
 import { CfdPricePanel } from '../components/CfdPricePanel';
+import { CfdOrderForm } from '../components/CfdOrderForm';
+import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 type MarketType = 'spot' | 'cfd';
@@ -161,10 +164,7 @@ export function TradePage() {
                 {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
               </>
             ) : (
-              <div style={styles.cfdNotice}>
-                <div style={styles.cfdNoticeIcon}>◆</div>
-                <p style={styles.cfdNoticeText}>{t('trade.cfdBookUnavailable')}</p>
-              </div>
+              <CfdSpreadPanel ticker={cfdTicker} />
             )}
           </div>
 
@@ -172,52 +172,98 @@ export function TradePage() {
             {marketType === 'spot' ? (
               <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
             ) : (
-              <div style={styles.cfdNotice}>
-                <div style={styles.cfdNoticeIcon}>◆</div>
-                <h3 style={styles.cfdNoticeTitle}>{t('trade.cfdTitle')}</h3>
-                <p style={styles.cfdNoticeText}>{t('trade.cfdDisclaimer')}</p>
-                <p style={styles.cfdNoticeHint}>{t('trade.cfdContact')}</p>
-              </div>
+              <CfdOrderForm symbol={cfdSymbol} ticker={cfdTicker} onPlaced={handleOrderPlaced} />
             )}
           </div>
         </main>
 
         <div className="trading-orders-row" style={styles.ordersRow}>
-          <div style={styles.bottomTabs}>
-            <button
-              onClick={() => setBottomTab('open')}
-              style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
-            >
-              {t('trade.tabOpenOrders')}
-            </button>
-            <button
-              onClick={() => setBottomTab('orderHistory')}
-              style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
-            >
-              {t('trade.tabOrderHistory')}
-            </button>
-            <button
-              onClick={() => setBottomTab('tradeHistory')}
-              style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
-            >
-              {t('trade.tabTradeHistory')}
-            </button>
-            <button
-              onClick={() => setBottomTab('assets')}
-              style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
-            >
-              {t('trade.tabAssets')}
-            </button>
-          </div>
-          {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
-          {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-          {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-          {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
+          {marketType === 'cfd' ? (
+            <CfdPositionsPanel refreshKey={ordersRefreshKey} />
+          ) : (
+            <>
+              <div style={styles.bottomTabs}>
+                <button
+                  onClick={() => setBottomTab('open')}
+                  style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
+                >
+                  {t('trade.tabOpenOrders')}
+                </button>
+                <button
+                  onClick={() => setBottomTab('orderHistory')}
+                  style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
+                >
+                  {t('trade.tabOrderHistory')}
+                </button>
+                <button
+                  onClick={() => setBottomTab('tradeHistory')}
+                  style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
+                >
+                  {t('trade.tabTradeHistory')}
+                </button>
+                <button
+                  onClick={() => setBottomTab('assets')}
+                  style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
+                >
+                  {t('trade.tabAssets')}
+                </button>
+              </div>
+              {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
+              {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+              {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+              {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 }
+
+// Stands in for the order-book column in CFD mode — a real broker-style
+// bid/ask spread (0.02% either side of the live mark price), not a fake
+// multi-level depth chart claiming liquidity that doesn't exist. Real CFD
+// brokers show exactly this, not a public order book, since there isn't
+// one for an OTC instrument like gold or an index.
+function CfdSpreadPanel({ ticker }: { ticker: CfdTickerRow | undefined }) {
+  const { t } = useLanguage();
+  if (!ticker) {
+    return (
+      <div style={spreadStyles.wrap}>
+        <p style={spreadStyles.hint}>{t('trade.loading')}</p>
+      </div>
+    );
+  }
+  const price = parseFloat(ticker.price);
+  const spread = price * 0.0002;
+  return (
+    <div style={spreadStyles.wrap}>
+      <div style={spreadStyles.row}>
+        <span style={spreadStyles.label}>{t('trade.bid')}</span>
+        <span className="mono text-sell" style={spreadStyles.value}>
+          {(price - spread).toFixed(2)}
+        </span>
+      </div>
+      <div style={spreadStyles.divider} />
+      <div style={spreadStyles.row}>
+        <span style={spreadStyles.label}>{t('trade.ask')}</span>
+        <span className="mono text-buy" style={spreadStyles.value}>
+          {(price + spread).toFixed(2)}
+        </span>
+      </div>
+      <p style={spreadStyles.hint}>{t('trade.cfdBookUnavailable')}</p>
+    </div>
+  );
+}
+
+const spreadStyles: Record<string, React.CSSProperties> = {
+  wrap: { display: 'flex', flexDirection: 'column', gap: 4, padding: 16 },
+  row: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 4px' },
+  label: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em' },
+  value: { fontSize: 16, fontWeight: 800 },
+  divider: { height: 1, background: 'var(--border)', margin: '2px 0' },
+  hint: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.5, marginTop: 10 },
+};
 
 // v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
 // scoped to just this page the same way FuturesPage/MarketsPage re-theme

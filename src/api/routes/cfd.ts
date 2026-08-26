@@ -5,7 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { CfdMarketDataService, ExternalCfdDataError, CFD_INSTRUMENTS } from '../../services/CfdMarketDataService';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
-import { MIN_LEVERAGE, MAX_LEVERAGE } from '../../config/futuresConfig';
+import { MIN_LEVERAGE, MAX_LEVERAGE, NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
 const CFD_SYMBOLS = CFD_INSTRUMENTS.map((i) => i.symbol) as [string, ...string[]];
@@ -28,6 +28,18 @@ const openSchema = z.object({
  */
 export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService): Router {
   const router = Router();
+
+  router.get('/cfd/config', (_req, res) => {
+    res.json({
+      symbols: CFD_SYMBOLS,
+      minLeverage: MIN_LEVERAGE,
+      maxLeverage: MAX_LEVERAGE,
+      newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
+      newAccountPeriodDays: NEW_ACCOUNT_PERIOD_DAYS,
+      highLeverageWarningThreshold: HIGH_LEVERAGE_WARNING_THRESHOLD,
+      leverageTiers: LEVERAGE_TIERS,
+    });
+  });
 
   router.get('/cfd/tickers', async (_req, res) => {
     try {
