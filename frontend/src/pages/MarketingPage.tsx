@@ -9,6 +9,8 @@ import { Sparkline } from '../components/Sparkline';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
 import { parseChangePercent } from '../lib/priceChange';
+import { useCfdTickers } from '../lib/useCfdTickers';
+import { CFD_ICON_BY_SYMBOL } from '../components/CfdInstrumentList';
 
 const NAV_LINKS = [
   { to: '/markets', key: 'nav.markets' as const },
@@ -37,6 +39,8 @@ export function MarketingPage() {
   const [tickers, setTickers] = useState<Map<string, Ticker>>(new Map());
   const [history, setHistory] = useState<Map<string, number[]>>(new Map());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [popularTab, setPopularTab] = useState<'crypto' | 'cfd'>('crypto');
+  const { tickers: cfdTickers } = useCfdTickers();
 
   useEffect(() => {
     function load() {
@@ -75,6 +79,17 @@ export function MarketingPage() {
 
   const fmt = (n: number) => n.toLocaleString(localeOf(lang), { maximumFractionDigits: n < 1 ? 6 : 2 });
   const fmtCompact = (n: number) => n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 });
+
+  // Biggest 24h mover among the pairs already on screen — for the "В
+  // тренде" trending card. Real data, just picked rather than fetched
+  // separately (no dedicated "top movers" endpoint).
+  const trendingPair = OVERVIEW_PAIRS.reduce<{ pair: string; change: number } | null>((best, pair) => {
+    const tk = tickers.get(pair);
+    if (!tk) return best;
+    const change = Math.abs(parseChangePercent(tk.changePercent24h, pair));
+    if (!best || change > best.change) return { pair, change };
+    return best;
+  }, null);
 
   return (
     <div style={{ ...styles.page, ...MARKETING_V0_VARS }}>
@@ -177,6 +192,82 @@ export function MarketingPage() {
                 </div>
               );
             })}
+            {cfdTickers.slice(0, 4).map((tk) => {
+              const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+              return (
+                <div key={tk.symbol} style={styles.tickerStripItem}>
+                  <span style={{ fontWeight: 700 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'} {tk.symbol}</span>
+                  <span className="mono" style={{ color: 'var(--text-secondary)' }}>
+                    {tk.price}
+                  </span>
+                  <span className={change >= 0 ? 'text-buy' : 'text-sell'}>
+                    {change >= 0 ? '+' : ''}
+                    {change.toFixed(2)}%
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={styles.trendCfdRow}>
+            <div style={styles.trendCard}>
+              <span style={styles.trendCardLabel}>🔥 {t('marketing.trending')}</span>
+              {trendingPair && (
+                <Link to="/login" style={styles.trendCardBody} className="row-hover">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={22} />
+                    <span style={{ fontSize: 14, fontWeight: 700 }}>{trendingPair.pair}</span>
+                  </div>
+                  {(() => {
+                    const tk = tickers.get(trendingPair.pair);
+                    const change = tk ? parseChangePercent(tk.changePercent24h, trendingPair.pair) : 0;
+                    const points = history.get(trendingPair.pair) ?? [];
+                    return (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                          <span className="mono" style={{ fontSize: 22, fontWeight: 800 }}>
+                            {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
+                          </span>
+                          <span className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 13, fontWeight: 700 }}>
+                            {tk ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : ''}
+                          </span>
+                        </div>
+                        {points.length > 1 && <Sparkline points={points} width={220} height={48} />}
+                      </>
+                    );
+                  })()}
+                </Link>
+              )}
+            </div>
+
+            <div style={styles.cfdTrendCard}>
+              <span style={styles.cfdTrendBadge}>CFD</span>
+              <div style={styles.cfdTrendList}>
+                {cfdTickers.slice(0, 3).map((tk) => {
+                  const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+                  return (
+                    <div key={tk.symbol} style={styles.cfdTrendRow}>
+                      <div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
+                          {tk.symbol}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{tk.name}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 700 }}>
+                          {tk.price}
+                        </div>
+                        <div className={`mono ${change >= 0 ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 11 }}>
+                          {change >= 0 ? '+' : ''}
+                          {change.toFixed(2)}%
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {cfdTickers.length === 0 && <p style={{ fontSize: 11, color: 'var(--text-tertiary)', padding: '8px 0' }}>{t('trade.cfdUnavailable')}</p>}
+              </div>
+            </div>
           </div>
 
           <div style={styles.overviewInner}>
@@ -186,13 +277,27 @@ export function MarketingPage() {
                   <span style={styles.eyebrowDot} />
                   {t('marketing.liveMarkets')}
                 </span>
-                <h2 style={styles.overviewTitle}>{t('marketing.popularPairs')}</h2>
+                <div style={styles.popularTabs}>
+                  <button
+                    onClick={() => setPopularTab('crypto')}
+                    style={{ ...styles.popularTab, ...(popularTab === 'crypto' ? styles.popularTabActive : {}) }}
+                  >
+                    {t('marketing.popularPairs')}
+                  </button>
+                  <button
+                    onClick={() => setPopularTab('cfd')}
+                    style={{ ...styles.popularTab, ...(popularTab === 'cfd' ? styles.popularTabActive : {}) }}
+                  >
+                    {t('marketing.popularDerivatives')}
+                  </button>
+                </div>
               </div>
               <Link to="/login" style={styles.viewAllLink}>
                 {t('marketing.viewAllMarkets')} <ArrowIcon small />
               </Link>
             </div>
 
+            {popularTab === 'crypto' && (
             <div style={styles.overviewGrid}>
               {OVERVIEW_PAIRS.map((pair) => {
                 const tk = tickers.get(pair);
@@ -230,10 +335,48 @@ export function MarketingPage() {
                 );
               })}
             </div>
+            )}
+
+            {popularTab === 'cfd' && (
+            <div style={styles.overviewGrid}>
+              {cfdTickers.map((tk) => {
+                const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+                const positive = change >= 0;
+                return (
+                  <Link key={tk.symbol} to="/trade" style={styles.overviewCard} className="row-hover">
+                    <div style={styles.overviewCardTop}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 22 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
+                        <div>
+                          <div className="mono" style={{ fontSize: 14, fontWeight: 700 }}>
+                            {tk.symbol}
+                          </div>
+                          <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{tk.name}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={styles.overviewCardBottom}>
+                      <span className="mono" style={{ fontSize: 17, fontWeight: 800 }}>
+                        {tk.price}
+                      </span>
+                      <div className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ fontSize: 13, fontWeight: 700 }}>
+                        {positive ? '+' : ''}
+                        {change.toFixed(2)}%
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+              {cfdTickers.length === 0 && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+            </div>
+            )}
           </div>
         </section>
 
         <FeaturesSection t={t} />
+
+        <GlobalStatsSection t={t} />
+        <SupportedAssetsSection tickers={tickers} fmt={fmt} t={t} />
 
         <section style={styles.perksSection}>
           <div style={styles.perksBanner}>
@@ -261,9 +404,6 @@ export function MarketingPage() {
             <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
           </div>
         </section>
-
-        <GlobalStatsSection t={t} />
-        <SupportedAssetsSection tickers={tickers} fmt={fmt} t={t} />
 
         <FaqSection t={t} />
         <FinalCtaSection t={t} />
@@ -1022,6 +1162,58 @@ const styles: Record<string, React.CSSProperties> = {
   },
   overviewCardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   overviewCardBottom: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 14 },
+  hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
+  popularTabs: { display: 'flex', gap: 6, marginTop: 10 },
+  popularTab: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: '6px 14px',
+    fontSize: 12.5,
+    fontWeight: 700,
+    color: 'var(--text-secondary)',
+  },
+  popularTabActive: { color: 'var(--on-accent)', background: 'var(--accent)', borderColor: 'var(--accent)' },
+  trendCfdRow: {
+    maxWidth: 1280,
+    margin: '0 auto',
+    padding: '28px 20px 0',
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 16,
+  },
+  trendCard: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+  },
+  trendCardLabel: { fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' },
+  trendCardBody: { display: 'flex', flexDirection: 'column', gap: 10 },
+  cfdTrendCard: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: 20,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  },
+  cfdTrendBadge: {
+    alignSelf: 'flex-start',
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: '0.04em',
+    borderRadius: 6,
+    padding: '4px 10px',
+  },
+  cfdTrendList: { display: 'flex', flexDirection: 'column', gap: 10 },
+  cfdTrendRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   perksSection: { maxWidth: 1280, margin: '0 auto', padding: '20px 20px 64px' },
   perksBanner: {
     display: 'flex',

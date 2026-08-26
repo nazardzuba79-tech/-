@@ -12,7 +12,7 @@ export interface CfdTickerRow {
 
 // Fixed emoji badge per instrument — same spirit as PairListSidebar's
 // CryptoIcon, just without needing per-symbol artwork for a 7-item list.
-const ICON_BY_SYMBOL: Record<string, string> = {
+export const CFD_ICON_BY_SYMBOL: Record<string, string> = {
   XAUUSD: '🥇',
   XAGUSD: '🥈',
   USOUSD: '🛢️',
@@ -66,7 +66,7 @@ export function CfdInstrumentList({
               style={{ ...styles.option, ...(tk.symbol === symbol ? styles.optionActive : {}) }}
             >
               <span style={styles.optionLeft}>
-                <span style={{ fontSize: 16 }}>{ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
+                <span style={{ fontSize: 16 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
                 <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <span className="mono" style={styles.optionSymbol}>
                     {tk.symbol}

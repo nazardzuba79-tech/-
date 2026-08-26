@@ -527,6 +527,8 @@ const RU = {
   'marketing.startTrading': 'Начать торговлю',
   'marketing.exploreMarkets': 'Смотреть рынки',
   'marketing.popularPairs': 'Популярные торговые пары',
+  'marketing.popularDerivatives': 'Популярное на деривативах',
+  'marketing.trending': 'В тренде',
   'marketing.viewAllMarkets': 'Все рынки',
   'marketing.liveMarkets': 'Актуальные рынки',
 
@@ -1234,6 +1236,8 @@ const EN: Record<Key, string> = {
   'marketing.startTrading': 'Start Trading',
   'marketing.exploreMarkets': 'Explore Markets',
   'marketing.popularPairs': 'Popular trading pairs',
+  'marketing.popularDerivatives': 'Popular on derivatives',
+  'marketing.trending': 'Trending',
   'marketing.viewAllMarkets': 'View all markets',
   'marketing.liveMarkets': 'Live markets',
 
@@ -1927,6 +1931,8 @@ const ZH: Record<Key, string> = {
   'marketing.startTrading': '开始交易',
   'marketing.exploreMarkets': '浏览市场',
   'marketing.popularPairs': '热门交易对',
+  'marketing.popularDerivatives': '衍生品热门',
+  'marketing.trending': '热门趋势',
   'marketing.viewAllMarkets': '查看所有市场',
   'marketing.liveMarkets': '实时市场',
 
