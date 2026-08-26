@@ -10,6 +10,8 @@ import { parseChangePercent } from '../lib/priceChange';
 import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
 import { PhoneMockup } from '../components/PhoneMockup';
 import { REFERRAL_CODE_STORAGE_KEY } from './ReferralRedirectPage';
+import { useCfdTickers } from '../lib/useCfdTickers';
+import { CFD_ICON_BY_SYMBOL } from '../components/CfdInstrumentList';
 
 const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
 
@@ -24,6 +26,7 @@ export function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tickers, setTickers] = useState<HeroTicker[]>([]);
+  const { tickers: cfdTickers } = useCfdTickers();
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [twoFaCode, setTwoFaCode] = useState('');
   const navigate = useNavigate();
@@ -152,6 +155,33 @@ export function AuthPage() {
                   <Skeleton width={50} height={13} />
                 </div>
               ))}
+
+            {cfdTickers.length > 0 && (
+              <>
+                <div style={styles.tickerDivider}>{t('trade.cfdTab')}</div>
+                {cfdTickers.slice(0, 3).map((tk) => {
+                  const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+                  const positive = change >= 0;
+                  return (
+                    <div key={tk.symbol} style={styles.tickerRow}>
+                      <span style={styles.tickerLeft}>
+                        <span style={{ fontSize: 16 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
+                        <span className="mono" style={styles.tickerPair}>
+                          {tk.symbol}
+                        </span>
+                      </span>
+                      <span className="mono" style={styles.tickerPrice}>
+                        {tk.price}
+                      </span>
+                      <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.tickerChange}>
+                        {positive ? '+' : ''}
+                        {change.toFixed(2)}%
+                      </span>
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
         </div>
 
@@ -549,6 +579,13 @@ const styles: Record<string, React.CSSProperties> = {
   tickerPair: { fontSize: 13, fontWeight: 700 },
   tickerPrice: { fontSize: 13, color: 'var(--text-secondary)', flex: 1, textAlign: 'right', paddingRight: 16 },
   tickerChange: { fontSize: 13, fontWeight: 700, width: 70, textAlign: 'right' },
+  tickerDivider: {
+    fontSize: 10,
+    fontWeight: 800,
+    letterSpacing: '0.08em',
+    color: 'var(--text-tertiary)',
+    padding: '6px 4px 2px',
+  },
   card: {
     width: 380,
     flexShrink: 0,
