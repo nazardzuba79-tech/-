@@ -52,7 +52,7 @@ export function PortfolioValueChart({
       : '';
 
   return (
-    <div style={styles.card}>
+    <div className="accent-edge surface-raised" style={styles.card}>
       <div style={styles.headerRow}>
         <div>
           <h3 style={styles.title}>Прибыль портфеля</h3>
@@ -104,9 +104,9 @@ export function PortfolioValueChart({
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  card: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 8, padding: 20 },
+  card: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, padding: 22 },
   headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12, flexWrap: 'wrap', gap: 10 },
-  title: { fontSize: 14, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)' },
+  title: { fontSize: 15, fontWeight: 700, margin: '0 0 4px', color: 'var(--text-primary)', letterSpacing: '-0.01em' },
   change: { fontSize: 13, fontWeight: 600 },
   rangeRow: { display: 'flex', gap: 6 },
   rangeBtn: {

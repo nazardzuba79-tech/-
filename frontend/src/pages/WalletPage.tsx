@@ -512,13 +512,13 @@ export function WalletPage() {
 
           <div style={styles.headerBtnCol}>
             <button onClick={() => setShowDeposit(true)} style={styles.depositBtn}>
-              {t('wallet.deposit')}
+              {t('wallet.deposit')} <DepositIcon />
             </button>
             <button onClick={() => setShowTransfer(true)} style={styles.secondaryBtn}>
-              {t('wallet.actionTransfer')}
+              <TransferIcon /> {t('wallet.actionTransfer')}
             </button>
             <button onClick={() => setTab('history')} style={styles.secondaryBtn}>
-              {t('wallet.tab.history')}
+              <HistoryIcon /> {t('wallet.tab.history')}
             </button>
           </div>
         </div>
@@ -533,6 +533,9 @@ export function WalletPage() {
           <div className="accent-edge surface-raised" style={styles.activityCard}>
             <div style={styles.activityHeaderRow}>
               <h2 style={styles.cardHeading}>{t('dashboard.recentActivity')}</h2>
+              <button className="row-hover" onClick={() => setTab('history')} style={styles.textBtn}>
+                {t('wallet.viewAllActivity')}
+              </button>
             </div>
             {activity.map((a) => (
               <div key={a.id} style={styles.activityRow}>
@@ -549,6 +552,9 @@ export function WalletPage() {
                 <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                   {new Date(a.timestamp).toLocaleString(localeOf(lang), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </div>
+                <span style={{ color: 'var(--text-tertiary)', display: 'flex' }}>
+                  <ActivityTypeIcon type={a.type} />
+                </span>
               </div>
             ))}
           </div>
@@ -859,6 +865,33 @@ function WithdrawIcon() {
   );
 }
 
+function HistoryIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  );
+}
+
+function BuySellIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v10M9 10l3-3 3 3M9 14l3 3 3-3" />
+    </svg>
+  );
+}
+
+// Per-type glyph next to each activity row's timestamp — same idea as the
+// v0 mockup's transaction-type-icon, mapped onto the real ActivityType
+// values this feed actually produces (deposit/withdraw/buy/sell).
+function ActivityTypeIcon({ type }: { type: ActivityType }) {
+  if (type === 'DEPOSIT') return <DepositIcon />;
+  if (type === 'WITHDRAW') return <WithdrawIcon />;
+  return <BuySellIcon />;
+}
+
 // v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
 // scoped to just this page's content (everything inside <main>, below the
 // shared Nav bar) the same way FuturesPage/MarketsPage/TradePage/
@@ -899,8 +932,16 @@ const styles: Record<string, React.CSSProperties> = {
     flexWrap: 'wrap',
   },
   activityCard: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', marginBottom: 24 },
-  activityHeaderRow: { padding: '16px 20px', borderBottom: '1px solid var(--border)' },
+  activityHeaderRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: '16px 20px',
+    borderBottom: '1px solid var(--border)',
+  },
   cardHeading: { fontSize: 14, margin: 0, fontWeight: 700 },
+  textBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 700, padding: '4px 8px', borderRadius: 6 },
   activityRow: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   demoCard: {
     background: 'var(--panel)',
@@ -970,22 +1011,32 @@ const styles: Record<string, React.CSSProperties> = {
   legend: { display: 'flex', flexDirection: 'column', gap: 6, minWidth: 108 },
   legendRow: { display: 'flex', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0 },
-  headerBtnCol: { display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0, alignSelf: 'flex-start' },
+  headerBtnCol: { display: 'flex', flexDirection: 'column', gap: 9, flexShrink: 0, alignSelf: 'flex-start', minWidth: 150 },
   depositBtn: {
+    height: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     background: 'var(--accent)',
     color: 'var(--on-accent)',
-    border: 'none',
+    border: '1px solid var(--accent)',
     borderRadius: 10,
-    padding: '11px 22px',
+    padding: '0 20px',
     fontWeight: 800,
     fontSize: 13,
   },
   secondaryBtn: {
+    height: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     background: 'transparent',
     color: 'var(--text-secondary)',
     border: '1px solid var(--border)',
     borderRadius: 10,
-    padding: '11px 22px',
+    padding: '0 20px',
     fontWeight: 700,
     fontSize: 13,
   },
