@@ -1,0 +1,62 @@
+name: Android build
+
+# Builds the Capacitor-wrapped Android app on GitHub's own runners — this
+# repo's own sandbox environments have their outbound network locked down
+# to an allowlist that excludes dl.google.com (the Android Gradle Plugin's
+# host), so the APK can never be compiled there. GitHub Actions runners
+# have unrestricted internet access, so this is where the actual build
+# happens; download the result from this run's "Summary" page under
+# Artifacts once it finishes.
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Backend API base URL the app should call (VITE_API_URL)'
+        required: false
+        default: 'https://exchange-api-mo5g.onrender.com/api/v1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web bundle
+        env:
+          VITE_API_URL: ${{ inputs.api_url || 'https://exchange-api-mo5g.onrender.com/api/v1' }}
+        run: npm run build
+
+      - name: Sync into the Android project
+        run: npx cap sync android
+
+      - name: Assemble debug APK
+        working-directory: frontend/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: voltex-debug-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
