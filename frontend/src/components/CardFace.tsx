@@ -32,11 +32,15 @@ export interface CardTheme {
 // Direct port of the Bolt.new reference's own "crypto" BankCard colors —
 // a light cream card, not solid gold (only the chip and sheen carry a gold
 // tint). Minimal face (see `flat` above) instead of the brushed-metal
-// treatment the black card keeps.
+// treatment the black card keeps. The reference renders this card as its
+// default-selected one, which adds a `ring-2 ring-voltex-gold` outline on
+// top of its own border+shadow — reproduced here as a second box-shadow
+// layer (a solid gold ring sits flush on the card edge, drawn outside the
+// 1px #E2E0DC border so it fully covers it, exactly as in the reference).
 export const BASE_CARD_THEME: CardTheme = {
   background: '#F4F4F2',
   border: '1px solid #E2E0DC',
-  boxShadow: '0 18px 40px -12px rgba(17,17,17,0.18)',
+  boxShadow: '0 0 0 2px #E8B931, 0 18px 40px -12px rgba(17,17,17,0.18)',
   chipTone: 'gold',
   hexTint: 'rgba(120,80,10,0.16)',
   textColor: '#111111',
@@ -190,7 +194,7 @@ export function CardFace({
     // rest of the time. (The brushed/photo cards below keep `.card-tilt`'s
     // permanent resting angle — that's the black card's own established look.)
     return (
-      <div style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+      <div style={{ ...CARD_VISUAL_BASE, borderRadius: 16, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
         <div style={styles.flatSheen} />
         <div style={styles.cardVisualTop}>
           <div style={styles.flatBrand}>
