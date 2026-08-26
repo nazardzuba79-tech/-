@@ -3,7 +3,10 @@ services:
     name: exchange-api
     runtime: docker
     plan: free
-    region: frankfurt # closest/best-connected Render region to Russia/CIS/Europe
+    region: oregon # matches the region the service was actually created in —
+    # Render doesn't allow changing an existing service's region via
+    # Blueprint sync, so this field must always mirror reality, not an
+    # aspiration; a mismatch here is what was making every sync fail
     dockerfilePath: ./Dockerfile
     dockerContext: .
     envVars:
@@ -46,9 +49,8 @@ services:
     name: exchange-frontend
     runtime: docker
     plan: free
-    region: frankfurt # keep both services in the same region — matters less
-    # for this one (it's just static files behind Render's own CDN either
-    # way) but no reason not to match the backend
+    region: oregon # must match the backend's actual region above — see that
+    # service's comment for why this can't just be an aspirational value
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
