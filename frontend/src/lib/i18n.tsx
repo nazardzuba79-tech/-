@@ -725,6 +725,13 @@ const RU = {
   'futures.availableMargin': 'Доступная маржа',
   'futures.lockedMargin': 'В марже',
   'futures.myOrders': 'Мои ордера',
+  'trade.lastPriceBtn': 'Посл. цена',
+  'futures.accountTitle': 'Единый торговый счёт',
+  'futures.marginBalance': 'Маржинальный баланс',
+  'futures.initialMarginPct': 'Начальная маржа',
+  'futures.maintenanceMarginPct': 'Поддерживающая маржа',
+  'futures.depositAction': 'Депозит',
+  'futures.transferAction': 'Перевести',
 } as const;
 
 export type Key = keyof typeof RU;
@@ -1425,6 +1432,13 @@ const EN: Record<Key, string> = {
   'futures.availableMargin': 'Available margin',
   'futures.lockedMargin': 'In margin',
   'futures.myOrders': 'My orders',
+  'trade.lastPriceBtn': 'Last price',
+  'futures.accountTitle': 'Unified trading account',
+  'futures.marginBalance': 'Margin balance',
+  'futures.initialMarginPct': 'Initial margin',
+  'futures.maintenanceMarginPct': 'Maintenance margin',
+  'futures.depositAction': 'Deposit',
+  'futures.transferAction': 'Transfer',
 };
 
 const ZH: Record<Key, string> = {
@@ -2118,6 +2132,13 @@ const ZH: Record<Key, string> = {
   'futures.availableMargin': '可用保证金',
   'futures.lockedMargin': '占用保证金',
   'futures.myOrders': '我的订单',
+  'trade.lastPriceBtn': '最新价',
+  'futures.accountTitle': '统一交易账户',
+  'futures.marginBalance': '保证金余额',
+  'futures.initialMarginPct': '起始保证金',
+  'futures.maintenanceMarginPct': '维持保证金',
+  'futures.depositAction': '充值',
+  'futures.transferAction': '划转',
 };
 
 const DICTS: Record<Lang, Record<Key, string>> = { ru: RU, en: EN, zh: ZH };

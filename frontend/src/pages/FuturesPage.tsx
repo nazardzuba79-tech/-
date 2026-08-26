@@ -79,7 +79,7 @@ export function FuturesPage() {
             <PriceChart pair={symbol} />
           </div>
           <div className="trading-col trading-col-form" style={styles.formColumn}>
-            <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} />
+            <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} onOpenTransfer={() => setShowTransfer(true)} />
           </div>
         </main>
 

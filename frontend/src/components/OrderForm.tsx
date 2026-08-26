@@ -2,8 +2,8 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
+import { PercentSlider } from './PercentSlider';
 
-const PERCENT_STOPS = [0, 25, 50, 75, 100];
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
 // honest 0.00, not a fabricated rate.
@@ -277,16 +277,27 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
             {family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? (
               <label style={styles.label}>
                 {isConditional ? t('trade.limitExecutionPrice') : t('trade.price')}
-                <input
-                  className="mono"
-                  type="number"
-                  step="any"
-                  required
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  style={styles.input}
-                  placeholder="0.00"
-                />
+                <div style={styles.priceInputRow}>
+                  <input
+                    className="mono"
+                    type="number"
+                    step="any"
+                    required
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    style={{ ...styles.input, flex: 1 }}
+                    placeholder="0.00"
+                  />
+                  {marketPrice !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setPrice(String(marketPrice))}
+                      style={styles.lastPriceBtn}
+                    >
+                      {t('trade.lastPriceBtn')}
+                    </button>
+                  )}
+                </div>
               </label>
             ) : (
               <label style={styles.label}>
@@ -325,28 +336,7 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
           </div>
         </label>
 
-        <input
-          type="range"
-          min={0}
-          max={100}
-          step={1}
-          value={percent}
-          onChange={(e) => applyPercent(Number(e.target.value))}
-          style={styles.slider}
-        />
-
-        <div style={styles.percentRow}>
-          {PERCENT_STOPS.map((pct) => (
-            <button
-              key={pct}
-              type="button"
-              onClick={() => applyPercent(pct)}
-              style={{ ...styles.percentBtn, ...(percent === pct ? styles.percentBtnActive : {}) }}
-            >
-              {pct}%
-            </button>
-          ))}
-        </div>
+        <PercentSlider value={percent} onChange={applyPercent} />
 
         <div style={styles.totalsBox}>
           <div style={styles.total}>
@@ -491,25 +481,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontSize: 13,
   },
-  slider: { width: '100%', cursor: 'pointer', margin: '2px 0' },
-  percentRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: 8,
-  },
-  percentBtn: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
-    padding: '6px 0',
-    color: 'var(--text-secondary)',
+  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  lastPriceBtn: {
+    flexShrink: 0,
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--accent)',
     fontSize: 11,
-    fontWeight: 600,
-  },
-  percentBtnActive: {
-    background: 'var(--accent)',
-    borderColor: 'var(--accent)',
-    color: 'var(--on-accent)',
+    fontWeight: 700,
+    padding: '0 4px',
   },
   totalsBox: {
     display: 'flex',

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Key } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -126,6 +126,7 @@ function saveFlag(key: string, value: boolean) {
 export function WalletPage() {
   const { t, lang } = useLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [spotBalances, setSpotBalances] = useState<Balance[]>([]);
   const [futuresBalances, setFuturesBalances] = useState<Balance[]>([]);
   const [demoBalances, setDemoBalances] = useState<Balance[]>([]);
@@ -133,8 +134,8 @@ export function WalletPage() {
   const [rankings, setRankings] = useState<CoinRanking[]>([]);
   const [rankingsLoaded, setRankingsLoaded] = useState(false);
   const [rankingsError, setRankingsError] = useState(false);
-  const [showDeposit, setShowDeposit] = useState(false);
-  const [showTransfer, setShowTransfer] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(() => searchParams.get('action') === 'deposit');
+  const [showTransfer, setShowTransfer] = useState(() => searchParams.get('action') === 'transfer');
   const [withdrawAsset, setWithdrawAsset] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [hideBalance, setHideBalance] = useState(() => loadFlag(HIDE_BALANCE_KEY));

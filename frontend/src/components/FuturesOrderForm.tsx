@@ -4,11 +4,19 @@ import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
 import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
+import { PercentSlider } from './PercentSlider';
+import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 
-const PERCENT_STOPS = [0, 25, 50, 75, 100];
-
-export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlaced: () => void }) {
+export function FuturesOrderForm({
+  symbol,
+  onPlaced,
+  onOpenTransfer,
+}: {
+  symbol: string;
+  onPlaced: () => void;
+  onOpenTransfer?: () => void;
+}) {
   const { t } = useLanguage();
   const toast = useToast();
   const [, quoteAsset] = symbol.split('/');
@@ -173,16 +181,23 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
         {type === 'LIMIT' ? (
           <label style={styles.label}>
             {t('trade.price')}
-            <input
-              className="mono"
-              type="number"
-              step="any"
-              required
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              style={styles.input}
-              placeholder="0.00"
-            />
+            <div style={styles.priceInputRow}>
+              <input
+                className="mono"
+                type="number"
+                step="any"
+                required
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                style={{ ...styles.input, flex: 1 }}
+                placeholder="0.00"
+              />
+              {markPrice !== null && (
+                <button type="button" onClick={() => setPrice(String(markPrice))} style={styles.lastPriceBtn}>
+                  {t('trade.lastPriceBtn')}
+                </button>
+              )}
+            </div>
           </label>
         ) : (
           <label style={styles.label}>
@@ -215,18 +230,7 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
           />
         </label>
 
-        <div style={styles.percentRow}>
-          {PERCENT_STOPS.map((pct) => (
-            <button
-              key={pct}
-              type="button"
-              onClick={() => applyPercent(pct)}
-              style={{ ...styles.percentBtn, ...(percent === pct ? styles.percentBtnActive : {}) }}
-            >
-              {pct}%
-            </button>
-          ))}
-        </div>
+        <PercentSlider value={percent} onChange={applyPercent} />
 
         <label style={styles.reduceOnlyRow}>
           <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />
@@ -245,6 +249,10 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
             <span className="mono">
               {requiredMargin.toFixed(2)} {quoteAsset}
             </span>
+          </div>
+          <div style={styles.infoRow}>
+            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
+            <span className="mono">0.00 {quoteAsset} (0%)</span>
           </div>
           <div style={styles.infoRow}>
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
@@ -268,6 +276,8 @@ export function FuturesOrderForm({ symbol, onPlaced }: { symbol: string; onPlace
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
         </button>
       </form>
+
+      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
         <div style={styles.tiersBox}>
@@ -366,24 +376,15 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-primary)',
     fontSize: 13,
   },
-  percentRow: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: 8,
-  },
-  percentBtn: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
-    padding: '6px 0',
-    color: 'var(--text-secondary)',
+  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  lastPriceBtn: {
+    flexShrink: 0,
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--accent)',
     fontSize: 11,
-    fontWeight: 600,
-  },
-  percentBtnActive: {
-    background: 'var(--accent)',
-    borderColor: 'var(--accent)',
-    color: 'var(--on-accent)',
+    fontWeight: 700,
+    padding: '0 4px',
   },
   reduceOnlyRow: {
     display: 'flex',
