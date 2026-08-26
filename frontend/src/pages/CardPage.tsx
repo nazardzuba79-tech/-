@@ -76,9 +76,14 @@ export function CardPage() {
             ) : waitlist.kycStatus === 'APPROVED' ? (
               <>
                 {error && <div style={styles.errorBox}>{error}</div>}
-                <button onClick={handleJoin} disabled={joining} style={styles.joinBtn}>
-                  {joining ? t('auth.wait') : t('card.joinBtn')}
-                </button>
+                <div style={styles.heroBtnRow}>
+                  <button onClick={handleJoin} disabled={joining} style={styles.joinBtn}>
+                    {joining ? t('auth.wait') : t('card.joinBtn')}
+                  </button>
+                  <a href="#card-compare" style={styles.heroSecondaryBtn}>
+                    {t('card.learnMore')}
+                  </a>
+                </div>
               </>
             ) : (
               <div style={styles.joinedRow}>
@@ -93,54 +98,56 @@ export function CardPage() {
 
         <div style={styles.cardsRow}>
           <div style={styles.productCol}>
-            <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
+            <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
               <CardFace theme={BASE_CARD_THEME} last4="8860" holderName="JOHN JOHNSON" />
             </div>
 
-            <div style={styles.vipBox}>
-              <div style={styles.vipGlow} />
-              <div style={styles.vipHeaderRow}>
-                <h3 style={styles.vipTitle}>{t('card.vipTitle')}</h3>
-                <span style={styles.vipRate}>8%</span>
+            <div style={styles.productBox}>
+              <div style={styles.productBoxHeadRow}>
+                <span style={{ ...styles.productDot, background: '#e0a83c' }} />
+                <h3 style={styles.productBoxTitle}>{t('card.baseProductLabel')}</h3>
+                <span style={{ ...styles.productBoxBadge, background: 'var(--accent-dim)', color: 'var(--accent)' }}>8%</span>
               </div>
-              <p style={styles.vipLead}>{t('card.vipLead')}</p>
+              <p style={{ ...styles.productBoxSubtitle, color: 'var(--accent)' }}>{t('card.vipTitle')}</p>
+              <p style={styles.productBoxLead}>{t('card.vipLead')}</p>
 
-              <div style={styles.vipCashbackRow}>
-                <div style={styles.vipCashbackItem}>
+              <div style={styles.productBoxList}>
+                <div style={styles.productBoxListItem}>
                   <CashbackIcon small />
                   <span>{t('card.vipCashbackPurchases')}</span>
                 </div>
-                <div style={styles.vipCashbackItem}>
+                <div style={styles.productBoxListItem}>
                   <CashbackIcon small />
                   <span>{t('card.vipCashbackDeposits')}</span>
                 </div>
               </div>
 
-              <div style={styles.vipEligibility}>
-                <span style={styles.vipEligibilityTitle}>{t('card.vipEligibilityTitle')}</span>
-                <div style={styles.vipEligibilityRow}>
-                  <span style={styles.vipChip}>{t('card.vipEligibilityDeposit')}</span>
-                  <span style={styles.vipOr}>{t('card.vipOr')}</span>
-                  <span style={styles.vipChip}>{t('card.vipEligibilityVolume')}</span>
+              <div style={styles.productBoxFooter}>
+                <span style={styles.productBoxFooterLabel}>{t('card.vipEligibilityTitle')}</span>
+                <div style={styles.productBoxFooterRow}>
+                  <span style={styles.productBoxChip}>{t('card.vipEligibilityDeposit')}</span>
+                  <span style={styles.productBoxOr}>{t('card.vipOr')}</span>
+                  <span style={styles.productBoxChip}>{t('card.vipEligibilityVolume')}</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div style={styles.productCol}>
-            <div className="card-tilt-wrap" style={styles.cardTiltWrap}>
+            <div className="card-tilt-wrap-photo" style={styles.cardTiltWrap}>
               <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="JOHN JOHNSON" network="mastercard" />
             </div>
 
-            <div style={styles.icyBox}>
-              <div style={styles.icyGlow} />
-              <div style={styles.vipHeaderRow}>
-                <h3 style={styles.icyTitle}>{t('card.icyProductLabel')}</h3>
-                <span style={styles.icyRate}>{t('card.icyRateBadge')}</span>
+            <div style={styles.productBox}>
+              <div style={styles.productBoxHeadRow}>
+                <span style={{ ...styles.productDot, background: '#1d2027' }} />
+                <h3 style={styles.productBoxTitle}>{t('card.icyProductLabel')}</h3>
+                <span style={{ ...styles.productBoxBadge, background: 'rgba(47,102,144,0.12)', color: '#2f6690' }}>{t('card.icyRateBadge')}</span>
               </div>
-              <p style={styles.vipLead}>{t('card.icyLead')}</p>
+              <p style={{ ...styles.productBoxSubtitle, color: '#2f6690' }}>{t('card.icyProductLabel')}</p>
+              <p style={styles.productBoxLead}>{t('card.icyLead')}</p>
 
-              <div style={styles.icyBenefitsList}>
+              <div style={styles.productBoxList}>
                 {[
                   t('card.icyBenefitCashback'),
                   t('card.icyBenefitLounge'),
@@ -149,19 +156,19 @@ export function CardPage() {
                   t('card.icyBenefitEvents'),
                   t('card.icyBenefitConcierge'),
                 ].map((text) => (
-                  <div key={text} style={styles.icyBenefitItem}>
+                  <div key={text} style={styles.productBoxListItem}>
                     <CashbackIcon small icy />
                     <span>{text}</span>
                   </div>
                 ))}
               </div>
 
-              <div style={styles.vipEligibility}>
-                <span style={styles.vipEligibilityTitle}>{t('card.icyEligibilityTitle')}</span>
-                <div style={styles.vipEligibilityRow}>
-                  <span style={styles.icyChip}>{t('card.icyEligibilityStake')}</span>
-                  <span style={styles.vipOr}>{t('card.vipOr')}</span>
-                  <span style={styles.icyChip}>{t('card.icyEligibilityVolume')}</span>
+              <div style={styles.productBoxFooter}>
+                <span style={styles.productBoxFooterLabel}>{t('card.icyEligibilityTitle')}</span>
+                <div style={styles.productBoxFooterRow}>
+                  <span style={styles.productBoxChip}>{t('card.icyEligibilityStake')}</span>
+                  <span style={styles.productBoxOr}>{t('card.vipOr')}</span>
+                  <span style={styles.productBoxChip}>{t('card.icyEligibilityVolume')}</span>
                 </div>
               </div>
             </div>
@@ -181,7 +188,7 @@ export function CardPage() {
           </div>
         </div>
 
-        <div style={styles.compareSection}>
+        <div id="card-compare" style={styles.compareSection}>
           <h2 style={styles.compareTitle}>{t('card.compareTitle')}</h2>
           <div className="accent-edge surface-raised" style={styles.compareTable}>
             <div style={styles.compareHeaderRow}>
@@ -207,14 +214,42 @@ export function CardPage() {
           </div>
         </div>
 
+        <h2 style={styles.benefitsTitle}>{t('card.benefitsTitle')}</h2>
         <div style={styles.grid}>
           {FEATURES.map((f) => (
-            <div key={f.title} className="card-hover" style={styles.card}>
+            <div key={f.title} className="row-hover" style={styles.card}>
               <div style={styles.cardIconBadge}>{f.icon}</div>
               <h3 style={styles.cardTitle}>{f.title}</h3>
               <p style={styles.cardText}>{f.text}</p>
             </div>
           ))}
+        </div>
+
+        <div className="card-security-grid" style={styles.securitySection}>
+          <div style={styles.securityCopy}>
+            <div style={styles.securityIconBadge}>
+              <ShieldIcon />
+            </div>
+            <h2 style={styles.securityTitle}>{t('card.securityTitle')}</h2>
+            <p style={styles.securityLead}>{t('card.securityText')}</p>
+          </div>
+          <div style={styles.securityGrid}>
+            <div style={styles.securityCard}>
+              <LockIcon />
+              <p style={styles.securityCardTitle}>{t('card.securitySecureTitle')}</p>
+              <p style={styles.securityCardText}>{t('card.securitySecureText')}</p>
+            </div>
+            <div style={styles.securityCard}>
+              <EyeIcon />
+              <p style={styles.securityCardTitle}>{t('card.securityTransparentTitle')}</p>
+              <p style={styles.securityCardText}>{t('card.securityTransparentText')}</p>
+            </div>
+            <div style={styles.securityCard}>
+              <GlobeIcon />
+              <p style={styles.securityCardTitle}>{t('card.securityGlobalTitle')}</p>
+              <p style={styles.securityCardText}>{t('card.securityGlobalText')}</p>
+            </div>
+          </div>
         </div>
 
         <div style={styles.kycNotice}>
@@ -245,6 +280,41 @@ export function CardPage() {
         <Footer />
       </main>
     </div>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l7 3v6c0 5-3 8-7 10-4-2-7-5-7-10V6l7-3z" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.5 2.5 3.8 5.7 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.7-3.8-9S9.5 5.5 12 3z" />
+    </svg>
   );
 }
 
@@ -325,73 +395,64 @@ const LIGHT_PAGE_VARS = {
 const styles: Record<string, React.CSSProperties> = {
   page: { minHeight: '100vh', background: 'linear-gradient(180deg, #ffffff 0%, #f2f3f6 100%)' },
   main: { padding: 32, maxWidth: 960, margin: '0 auto', ...LIGHT_PAGE_VARS },
-  hero: { marginBottom: 32, maxWidth: 640 },
+  hero: { marginBottom: 40, maxWidth: 680, marginInline: 'auto', textAlign: 'center' },
   title: {
-    fontSize: 30,
+    fontSize: 32,
     margin: '0 0 14px',
     fontFamily: 'var(--font-display)',
     fontWeight: 800,
     letterSpacing: '-0.01em',
-    lineHeight: 1.25,
+    lineHeight: 1.2,
   },
   titleDash: { color: 'var(--text-tertiary)', fontWeight: 400 },
-  lead: { color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, marginBottom: 24, maxWidth: 480 },
-  ctaBox: { minHeight: 44 },
-  cardsRow: { display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 32, alignItems: 'flex-start' },
-  productCol: { flex: '1 1 340px', minWidth: 300, display: 'flex', flexDirection: 'column', gap: 16 },
-  cardTiltWrap: { width: 300 },
-  vipBox: {
-    position: 'relative',
-    background: 'linear-gradient(135deg, rgba(255,209,102,0.14) 0%, rgba(247,166,0,0.04) 100%)',
-    border: '1px solid transparent',
-    backgroundClip: 'padding-box',
+  lead: { color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.6, margin: '0 auto 26px', maxWidth: 480 },
+  ctaBox: { minHeight: 44, display: 'flex', justifyContent: 'center' },
+  heroBtnRow: { display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' },
+  heroSecondaryBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    border: '1px solid var(--border)',
+    borderRadius: 24,
+    padding: '13px 24px',
+    fontWeight: 700,
+    fontSize: 14,
+    color: 'var(--text-primary)',
+    textDecoration: 'none',
+  },
+  cardsRow: { display: 'flex', gap: 32, flexWrap: 'wrap', marginBottom: 32, alignItems: 'flex-start', justifyContent: 'center' },
+  productCol: { flex: '1 1 340px', minWidth: 300, maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 },
+  cardTiltWrap: { width: 300, marginInline: 'auto' },
+  // Plain bordered card matching the Bolt reference's product-description
+  // cards — a colored dot + name instead of a gradient glow box, matching
+  // the flat card face style above.
+  productBox: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
     borderRadius: 14,
     padding: 26,
-    marginBottom: 28,
-    overflow: 'hidden',
-    boxShadow: '0 0 0 1px rgba(255,209,102,0.5), 0 12px 32px rgba(247,166,0,0.12)',
-  },
-  vipGlow: {
-    position: 'absolute',
-    top: -60,
-    right: -60,
-    width: 200,
-    height: 200,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(255,209,102,0.35), transparent 70%)',
-    pointerEvents: 'none',
-  },
-  vipHeaderRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 },
-  vipTitle: { fontSize: 18, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800 },
-  vipRate: {
-    background: 'linear-gradient(135deg, #ffd166, #f7a600)',
-    color: '#3a2400',
-    fontSize: 22,
-    fontWeight: 900,
-    padding: '2px 16px',
-    borderRadius: 999,
-    boxShadow: '0 4px 14px rgba(247,166,0,0.4)',
-  },
-  vipLead: { color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: '0 0 18px', maxWidth: 640 },
-  vipCashbackRow: { display: 'flex', gap: 24, marginBottom: 18, flexWrap: 'wrap' },
-  vipCashbackItem: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    fontSize: 13,
-    fontWeight: 600,
-    color: 'var(--text-primary)',
+    flexDirection: 'column',
+    gap: 4,
   },
-  vipEligibility: {
-    borderTop: '1px solid rgba(255,209,102,0.3)',
+  productBoxHeadRow: { display: 'flex', alignItems: 'center', gap: 9 },
+  productDot: { width: 10, height: 10, borderRadius: '50%', flex: 'none' },
+  productBoxTitle: { fontSize: 16, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800 },
+  productBoxBadge: { marginLeft: 'auto', fontSize: 12, fontWeight: 800, padding: '3px 11px', borderRadius: 999 },
+  productBoxSubtitle: { fontSize: 12, fontWeight: 700, margin: '2px 0 0' },
+  productBoxLead: { color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: '8px 0 4px' },
+  productBoxList: { display: 'flex', flexDirection: 'column', gap: 9, margin: '10px 0 4px' },
+  productBoxListItem: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 },
+  productBoxFooter: {
+    borderTop: '1px solid var(--border)',
+    marginTop: 14,
     paddingTop: 16,
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
   },
-  vipEligibilityTitle: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' },
-  vipEligibilityRow: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  vipChip: {
+  productBoxFooterLabel: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' },
+  productBoxFooterRow: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
+  productBoxChip: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 999,
@@ -400,48 +461,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     color: 'var(--text-primary)',
   },
-  vipOr: { fontSize: 11, color: 'var(--text-tertiary)', fontStyle: 'italic' },
-  icyBox: {
-    position: 'relative',
-    background: 'linear-gradient(135deg, rgba(173,216,240,0.18) 0%, rgba(47,102,144,0.05) 100%)',
-    border: '1px solid transparent',
-    backgroundClip: 'padding-box',
-    borderRadius: 14,
-    padding: 26,
-    overflow: 'hidden',
-    boxShadow: '0 0 0 1px rgba(173,216,240,0.6), 0 12px 32px rgba(47,102,144,0.12)',
-  },
-  icyGlow: {
-    position: 'absolute',
-    top: -60,
-    right: -60,
-    width: 200,
-    height: 200,
-    borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(173,216,240,0.4), transparent 70%)',
-    pointerEvents: 'none',
-  },
-  icyTitle: { fontSize: 18, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 800 },
-  icyRate: {
-    background: 'linear-gradient(135deg, #cfe6f5, #2f6690)',
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 900,
-    padding: '2px 16px',
-    borderRadius: 999,
-    boxShadow: '0 4px 14px rgba(47,102,144,0.35)',
-  },
-  icyBenefitsList: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 },
-  icyBenefitItem: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.4 },
-  icyChip: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 999,
-    padding: '8px 16px',
-    fontSize: 12,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-  },
+  productBoxOr: { fontSize: 11, color: 'var(--text-tertiary)', fontStyle: 'italic' },
   stepsSection: { marginBottom: 32 },
   stepsTitle: { fontSize: 19, margin: '0 0 20px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
   stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24 },
@@ -477,12 +497,23 @@ const styles: Record<string, React.CSSProperties> = {
     borderTop: '1px solid var(--border)',
   },
   compareRowLabel: { fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.03em' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16, marginBottom: 28 },
+  benefitsTitle: { fontSize: 19, margin: '0 0 16px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
+  // Hairline-divided mosaic (1px gaps filled by --border, showing through
+  // as grid lines) instead of individually shadowed cards — matches the
+  // reference's benefits grid.
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+    gap: 1,
+    background: 'var(--border)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    marginBottom: 28,
+  },
   card: {
     background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: 20,
+    padding: 22,
   },
   cardIconBadge: {
     width: 36,
@@ -502,6 +533,38 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: '0.01em',
   },
   cardText: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
+  securitySection: {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.1fr)',
+    gap: 32,
+    alignItems: 'center',
+    marginBottom: 28,
+  },
+  securityCopy: { display: 'flex', flexDirection: 'column', gap: 4 },
+  securityIconBadge: {
+    width: 42,
+    height: 42,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    background: 'var(--accent-dim)',
+    marginBottom: 8,
+  },
+  securityTitle: { fontSize: 22, margin: '0 0 8px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
+  securityLead: { color: 'var(--text-secondary)', fontSize: 13, lineHeight: 1.6, margin: 0, maxWidth: 380 },
+  securityGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 },
+  securityCard: {
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    padding: 18,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  securityCardTitle: { fontSize: 13, fontWeight: 700, margin: 0 },
+  securityCardText: { fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 },
   kycNotice: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',

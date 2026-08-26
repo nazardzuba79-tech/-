@@ -147,7 +147,7 @@ export function MarketingPage() {
 
         <section style={styles.perksSection}>
           <div style={styles.perksBanner}>
-            <div className="card-tilt-wrap" style={{ ...styles.perksBannerCard, transform: 'translate(-18px, -20px)' }}>
+            <div className="card-tilt-wrap-photo" style={{ ...styles.perksBannerCard, transform: 'translate(-18px, -20px)' }}>
               <CardFace theme={ICY_CARD_THEME} last4="4417" holderName="YOUR NAME HERE" network="mastercard" />
             </div>
             <div style={styles.perksBannerText}>

@@ -17,18 +17,30 @@ export interface CardTheme {
   // CSS `border` (a single flat color) reads too faint — e.g. the Dark
   // card's neon cyan-to-purple rim. When set, this takes over from `border`.
   borderGradient?: string;
+  // Flat, minimal face (single-tone fill, no brushed-metal streaks, no
+  // hex/bolt watermark, a plain 3x3-dot chip, a small product-name label
+  // under the wordmark) — a direct port of a Bolt.new reference's BankCard
+  // design, used only by the gold VIP card. Icy White/VIP keeps the
+  // original brushed-metal + neon-ring face.
+  flat?: boolean;
+  // Small uppercase label under the wordmark in flat mode (e.g. "CRYPTO
+  // CARD") — a fixed card-face convention, not translated, same spirit as
+  // "DEBIT"/"VISA" already being fixed English elsewhere on the face.
+  flatSubtitle?: string;
 }
 
-// True gold brushed metal — the same #ffd166->#f7a600 family as the
-// VIP-cashback badge sitting right below the card on CardPage, instead of
-// the earlier rose-gold/salmon tone that didn't actually read as "gold".
+// Flat, true gold — the same #ffd166->#f7a600 family as the VIP-cashback
+// badge sitting right below the card on CardPage. Minimal face (see `flat`
+// above) instead of the brushed-metal treatment the black card keeps.
 export const BASE_CARD_THEME: CardTheme = {
-  background: 'linear-gradient(125deg, #fce8b0 0%, #f3c968 22%, #ffdf8c 40%, #d9a53a 58%, #f6d488 76%, #e0a83c 100%)',
-  border: '1px solid rgba(140,100,10,0.22)',
-  boxShadow: '0 24px 50px rgba(150,110,10,0.22), 0 8px 20px rgba(150,110,10,0.12)',
+  background: '#f0cd74',
+  border: '1px solid rgba(140,100,10,0.16)',
+  boxShadow: '0 20px 44px rgba(150,110,10,0.18), 0 6px 16px rgba(150,110,10,0.1)',
   chipTone: 'gold',
   hexTint: 'rgba(120,80,10,0.16)',
-  textColor: '#2b1a0c',
+  textColor: '#231704',
+  flat: true,
+  flatSubtitle: 'CRYPTO CARD',
 };
 
 // Dark graphite metal with a genuine neon violet-to-cyan gradient ring — the
@@ -85,6 +97,20 @@ function HexEmblem({ tint }: { tint: string }) {
 // once the card partnership is finalized.
 function VisaMark({ color }: { color: string }) {
   return <span style={{ ...styles.visaMark, color }}>VISA</span>;
+}
+
+// Plain 3x3-dot chip for the flat card face — matches the reference's
+// minimal chip instead of the etched-EMV-outline ChipIcon above.
+function SimpleChip({ textColor }: { textColor: string }) {
+  return (
+    <div style={{ ...styles.simpleChip, borderColor: textColor }}>
+      <div style={styles.simpleChipGrid}>
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} style={{ ...styles.simpleChipCell, background: textColor }} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // Classic dual-circle Mastercard mark — same placeholder spirit as
@@ -153,6 +179,39 @@ export function CardFace({
         className="card-tilt"
         style={{ position: 'relative', width: imageWidth, aspectRatio: '530 / 440', borderRadius: 18, display: 'block', objectFit: 'contain' }}
       />
+    );
+  }
+
+  if (theme.flat) {
+    return (
+      <div className="card-tilt" style={{ ...CARD_VISUAL_BASE, background: theme.background, border: theme.border, boxShadow: theme.boxShadow }}>
+        <div style={styles.flatSheen} />
+        <div style={styles.cardVisualTop}>
+          <div style={styles.flatBrand}>
+            <span style={{ ...styles.cardVisualWordmark, color: theme.textColor }}>
+              VO<span style={styles.flatWordmarkL}>L</span>TEX
+            </span>
+            {theme.flatSubtitle && <span style={{ ...styles.flatSubtitle, color: theme.textColor }}>{theme.flatSubtitle}</span>}
+          </div>
+          <SimpleChip textColor={theme.textColor} />
+        </div>
+        <div style={{ flex: 1 }} />
+        <div style={{ ...styles.cardVisualNumber, color: theme.textColor }} className="mono">
+          •••• •••• •••• {last4}
+        </div>
+        <div style={{ height: 16 }} />
+        <div style={styles.cardVisualBottom}>
+          <div style={styles.flatHolderStack}>
+            <span style={{ ...styles.flatHolderLabel, color: theme.textColor }}>Card Holder</span>
+            <span style={{ ...styles.cardVisualHolder, color: theme.textColor, marginTop: 1 }} className="mono">
+              {holderName}
+            </span>
+          </div>
+          <div style={styles.cardNetworkStack}>
+            {network === 'mastercard' ? <MastercardMark /> : <VisaMark color={theme.textColor} />}
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -242,6 +301,37 @@ const styles: Record<string, CSSProperties> = {
       'linear-gradient(115deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.15) 15%, rgba(255,255,255,0) 34%, rgba(15,18,22,0.03) 55%, rgba(255,255,255,0.55) 76%, rgba(255,255,255,0) 100%)',
     pointerEvents: 'none',
   },
+  // Subtle radial highlight for the flat card face — the reference's own
+  // sheen, not the brushed card's diagonal streak+wide sweep.
+  flatSheen: {
+    position: 'absolute',
+    inset: 0,
+    background: 'radial-gradient(120% 80% at 85% 10%, rgba(255,255,255,0.4), transparent 55%)',
+    pointerEvents: 'none',
+  },
+  flatBrand: { display: 'flex', flexDirection: 'column', gap: 2 },
+  flatSubtitle: { fontSize: 9, fontWeight: 700, letterSpacing: '0.24em', opacity: 0.6, marginTop: 1 },
+  flatWordmarkL: { opacity: 0.85 },
+  flatHolderStack: { display: 'flex', flexDirection: 'column', gap: 2 },
+  flatHolderLabel: { fontSize: 8, fontWeight: 600, letterSpacing: '0.14em', opacity: 0.55, textTransform: 'uppercase' },
+  simpleChip: {
+    width: 32,
+    height: 24,
+    borderRadius: 5,
+    border: '1px solid',
+    opacity: 0.9,
+    position: 'relative',
+    background: 'rgba(255,255,255,0.12)',
+  },
+  simpleChipGrid: {
+    position: 'absolute',
+    inset: 3,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(3, 1fr)',
+    gridTemplateRows: 'repeat(3, 1fr)',
+    gap: 1.5,
+  },
+  simpleChipCell: { opacity: 0.35, borderRadius: 0.5 },
   cardVisualTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardVisualNumber: { fontSize: 16, fontWeight: 700, letterSpacing: '0.08em' },
   cardVisualHolder: { fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', marginTop: 8 },
