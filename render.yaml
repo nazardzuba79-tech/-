@@ -45,14 +45,12 @@ services:
       - key: ETHEREUM_API_KEY
         sync: false # optional — free key from https://etherscan.io/apis, powers the admin's incoming-transfers feed
 
-  - type: web
-    name: exchange-frontend
-    runtime: docker
-    plan: free
-    region: oregon # must match the backend's actual region above — see that
-    # service's comment for why this can't just be an aspirational value
-    dockerfilePath: ./frontend/Dockerfile
-    dockerContext: ./frontend
-    envVars:
-      - key: VITE_API_URL
-        sync: false # set manually to https://exchange-api-xxxx.onrender.com/api/v1
+# The frontend ("voltex-exchange" in the Render dashboard, live at
+# exchange-frontend-3qd1.onrender.com) is intentionally NOT declared here.
+# It was originally created via this Blueprint too, then a second,
+# identically-configured web service ("exchange-frontend",
+# exchange-frontend-5fbj.onrender.com) ended up coexisting with it — same
+# repo/branch, same Dockerfile, both auto-deploying independently. Since
+# the real production frontend link (3qd1) was already shared publicly,
+# that one was kept as the sole frontend and this Blueprint block for the
+# duplicate was removed so Render stops trying to keep it alive.
