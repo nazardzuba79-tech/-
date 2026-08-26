@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -30,6 +30,7 @@ export function Nav({
   const [isAdmin, setIsAdmin] = useState(false);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [showDeposit, setShowDeposit] = useState(false);
+  const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
 
   // Ordered to match a real exchange's own nav (Markets, then Trade, then
   // Futures right after the primary deposit CTA), with the rest following.
@@ -83,11 +84,36 @@ export function Nav({
         <button onClick={() => setShowDeposit(true)} style={styles.navDepositBtn}>
           {t('wallet.deposit')}
         </button>
-        {LINKS.map((l) => (
-          <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
-            {l.label}
-          </Link>
-        ))}
+        {LINKS.map((l) =>
+          l.to === '/trade' ? (
+            <div
+              key={l.to}
+              style={styles.tradeMenuWrap}
+              onMouseEnter={() => setTradeMenuOpen(true)}
+              onMouseLeave={() => setTradeMenuOpen(false)}
+            >
+              <Link to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+                {l.label}
+              </Link>
+              {tradeMenuOpen && (
+                <div style={styles.tradeMenu}>
+                  <Link to="/trade" style={styles.tradeMenuItem} className="row-hover">
+                    <span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span>
+                    <span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span>
+                  </Link>
+                  <Link to="/trade?market=cfd" style={styles.tradeMenuItem} className="row-hover">
+                    <span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span>
+                    <span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+              {l.label}
+            </Link>
+          )
+        )}
         <Link
           to="/card"
           style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
@@ -147,13 +173,19 @@ export function Nav({
           {t('wallet.deposit')}
         </button>
         {LINKS.map((l) => (
-          <Link
-            key={l.to}
-            to={l.to}
-            style={{ ...styles.mobileLink, ...(active === l.to ? styles.linkActive : {}) }}
-          >
-            {l.label}
-          </Link>
+          <Fragment key={l.to}>
+            <Link
+              to={l.to}
+              style={{ ...styles.mobileLink, ...(active === l.to ? styles.linkActive : {}) }}
+            >
+              {l.label}
+            </Link>
+            {l.to === '/trade' && (
+              <Link to="/trade?market=cfd" style={{ ...styles.mobileLink, paddingLeft: 20, fontSize: 13 }}>
+                {t('trade.cfdTab')}
+              </Link>
+            )}
+          </Fragment>
         ))}
         <Link to="/card" style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}>
           <CardIcon active={active === '/card'} />
@@ -305,6 +337,41 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 24,
+  },
+  tradeMenuWrap: {
+    position: 'relative',
+  },
+  tradeMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    marginTop: 12,
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    boxShadow: '0 16px 32px rgba(0,0,0,0.35)',
+    padding: 6,
+    width: 220,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    zIndex: 20,
+  },
+  tradeMenuItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    padding: '10px 12px',
+    borderRadius: 8,
+  },
+  tradeMenuItemTitle: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+  },
+  tradeMenuItemDesc: {
+    fontSize: 11,
+    color: 'var(--text-tertiary)',
   },
   burgerBtn: {
     display: 'none',

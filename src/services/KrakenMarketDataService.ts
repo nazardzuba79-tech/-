@@ -89,6 +89,7 @@ const INTERVAL_MAP: Record<string, number> = {
   '1h': 60,
   '4h': 240,
   '1d': 1440,
+  '1w': 10080,
 };
 
 interface KrakenAssetPair {

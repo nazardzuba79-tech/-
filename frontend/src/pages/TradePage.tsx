@@ -42,7 +42,9 @@ export function TradePage() {
   const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
-  const [marketType, setMarketType] = useState<MarketType>('spot');
+  // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
+  // Nav.tsx's TradeMenu.
+  const [marketType, setMarketType] = useState<MarketType>(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
   const [cfdSymbol, setCfdSymbol] = useState('XAUUSD');
   const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
   const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);
@@ -98,21 +100,6 @@ export function TradePage() {
       <TopGainersTicker onSelect={setPair} />
 
       <div className="trading-content" style={styles.content}>
-        <div style={styles.marketTypeTabs}>
-          <button
-            onClick={() => setMarketType('spot')}
-            style={{ ...styles.marketTypeTab, ...(marketType === 'spot' ? styles.marketTypeTabActive : {}) }}
-          >
-            {t('trade.spotTab')}
-          </button>
-          <button
-            onClick={() => setMarketType('cfd')}
-            style={{ ...styles.marketTypeTab, ...(marketType === 'cfd' ? styles.marketTypeTabActive : {}) }}
-          >
-            {t('trade.cfdTab')}
-          </button>
-        </div>
-
         {marketType === 'spot' && (
           <div style={styles.tickerCard}>
             <TickerBar pair={pair} />

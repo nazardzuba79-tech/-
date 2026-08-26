@@ -21,6 +21,8 @@ export function localeOf(lang: Lang): string {
 // anywhere in the UI (including the KYC country list, see countries.ts).
 const RU = {
   'nav.trade': 'Торговля',
+  'nav.tradeSpotDesc': 'Спотовая торговля криптовалютой',
+  'nav.tradeCfdDesc': 'Золото, нефть, индексы с плечом',
   'nav.wallet': 'Кошелёк',
   'nav.markets': 'Рынки',
   'nav.products': 'Товары',
@@ -733,6 +735,8 @@ export type Key = keyof typeof RU;
 
 const EN: Record<Key, string> = {
   'nav.trade': 'Trade',
+  'nav.tradeSpotDesc': 'Spot crypto trading',
+  'nav.tradeCfdDesc': 'Gold, oil, indices with leverage',
   'nav.wallet': 'Wallet',
   'nav.markets': 'Markets',
   'nav.products': 'Products',
@@ -1433,6 +1437,8 @@ const EN: Record<Key, string> = {
 
 const ZH: Record<Key, string> = {
   'nav.trade': '交易',
+  'nav.tradeSpotDesc': '现货加密货币交易',
+  'nav.tradeCfdDesc': '黄金、原油、指数杠杆交易',
   'nav.wallet': '钱包',
   'nav.markets': '行情',
   'nav.products': '商品',
