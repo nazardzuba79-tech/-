@@ -437,6 +437,100 @@ button:not(:disabled):active {
   background: currentColor;
 }
 
+/* Settings profile-hub reskin: sidebar nav links, avatar circle, quick-
+   action cards, verification progress bar — built from the site's own
+   tokens (not a pixel-fidelity port), needed because inline styles can't
+   express :hover/::after states. */
+.settings-nav-link {
+  position: relative;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.settings-nav-link:hover {
+  background-color: var(--panel-alt) !important;
+  color: var(--text-primary) !important;
+}
+.settings-nav-link.active {
+  background: linear-gradient(90deg, var(--accent-dim), transparent);
+  box-shadow: inset 2px 0 var(--accent);
+}
+.settings-nav-link.active svg {
+  color: var(--accent) !important;
+}
+.settings-nav-pip {
+  position: absolute;
+  right: 12px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.settings-avatar {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--accent-hover), var(--accent));
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+.settings-avatar-shine {
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(120deg, transparent 40%, rgba(255, 255, 255, 0.35), transparent 62%);
+  transform: translateX(-80%) rotate(10deg);
+  animation: settings-shine 5s ease-in-out infinite;
+}
+@keyframes settings-shine {
+  0%, 65% { transform: translateX(-80%) rotate(10deg); }
+  85%, 100% { transform: translateX(100%) rotate(10deg); }
+}
+.settings-quick-card {
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.settings-quick-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent) !important;
+  background-color: var(--panel-alt) !important;
+}
+.settings-quick-card:hover .settings-quick-arrow {
+  color: var(--accent) !important;
+  transform: translateX(3px);
+}
+.settings-quick-arrow {
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+.settings-progress-track {
+  height: 4px;
+  border-radius: 5px;
+  background: var(--buy-dim);
+  overflow: hidden;
+}
+.settings-progress-value {
+  height: 100%;
+  background: linear-gradient(90deg, var(--buy), #6ed19c);
+  box-shadow: 0 0 12px var(--buy-dim);
+  transition: width 0.3s ease;
+}
+@media (max-width: 860px) {
+  .settings-layout {
+    display: flex !important;
+    flex-direction: column;
+  }
+  .settings-sidebar {
+    position: static !important;
+    width: 100%;
+  }
+  .settings-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .settings-quick-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+@media (max-width: 520px) {
+  .settings-quick-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Skeleton loading placeholder — a softly shimmering block standing in for
    content that hasn't arrived yet, instead of bare "Загрузка..." text that
    reads as an empty/broken panel while a request is in flight. */

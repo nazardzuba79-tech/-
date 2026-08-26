@@ -10,6 +10,88 @@ import { Skeleton, SkeletonRow } from '../components/Skeleton';
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'referral';
 type T = ReturnType<typeof useLanguage>['t'];
 
+/* Small inline-SVG icon set for the settings sidebar/quick-actions —
+   lucide-react isn't a project dependency (see BottomNav.tsx for the same
+   pattern), so these are hand-drawn on the same 24x24 stroke grid. */
+function iconProps(size = 17) {
+  return {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none' as const,
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+}
+function UserRoundIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="12" cy="8" r="3.5" />
+      <path d="M4.5 20c1.5-4.5 5-7 7.5-7s6 2.5 7.5 7" />
+    </svg>
+  );
+}
+function ShieldIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
+      <path d="M9 12l2 2 4-4" />
+    </svg>
+  );
+}
+function BadgeCheckIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8.5 12l2.3 2.3 4.7-4.7" />
+    </svg>
+  );
+}
+function KeyIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="8" cy="16" r="3" />
+      <path d="M10.3 13.7 20 4" />
+      <path d="M15 9l2 2M18 6l2 2" />
+    </svg>
+  );
+}
+function UsersIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="9" cy="8.5" r="3" />
+      <path d="M3 20c1-3.7 3.5-5.7 6-5.7s5 2 6 5.7" />
+      <circle cx="17.5" cy="9.5" r="2.3" />
+      <path d="M16.3 14.6c2 .3 3.6 2.1 4.2 5.4" />
+    </svg>
+  );
+}
+function HelpCircleIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.3 9.2a2.7 2.7 0 1 1 3.9 2.4c-.9.5-1.2 1-1.2 2.1" />
+      <circle cx="12" cy="17.3" r="0.2" fill="currentColor" />
+    </svg>
+  );
+}
+function ChevronRightIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+function ArrowUpRightIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M7 17L17 7M8 7h9v9" />
+    </svg>
+  );
+}
+
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
   return {
     NOT_STARTED: { text: t('settings.kyc.NOT_STARTED'), color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' },
@@ -28,26 +110,57 @@ function docTypeLabel(t: T): Record<string, string> {
 }
 
 export function SettingsPage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>('profile');
+
+  const TABS: { key: Tab; icon: (p: { size?: number }) => JSX.Element }[] = [
+    { key: 'profile', icon: UserRoundIcon },
+    { key: 'security', icon: ShieldIcon },
+    { key: 'verification', icon: BadgeCheckIcon },
+    { key: 'api', icon: KeyIcon },
+    { key: 'referral', icon: UsersIcon },
+  ];
+  const TAB_LABEL: Record<Tab, string> = {
+    profile: t('settings.tab.profile'),
+    security: t('settings.tab.security'),
+    verification: t('settings.tab.verification'),
+    api: t('settings.tab.api'),
+    referral: t('settings.tab.referral'),
+  };
 
   return (
     <div className="page-mesh" style={styles.page}>
       <Nav active="/settings" />
-      <main style={{ ...styles.main, maxWidth: tab === 'api' ? 1080 : 760 }}>
-        <h1 style={styles.title}>{t('settings.title')}</h1>
-
-        <div style={styles.layout}>
-          <div style={styles.tabs}>
-            <TabButton label={t('settings.tab.profile')} active={tab === 'profile'} onClick={() => setTab('profile')} />
-            <TabButton label={t('settings.tab.security')} active={tab === 'security'} onClick={() => setTab('security')} />
-            <TabButton label={t('settings.tab.verification')} active={tab === 'verification'} onClick={() => setTab('verification')} />
-            <TabButton label={t('settings.tab.api')} active={tab === 'api'} onClick={() => setTab('api')} />
-            <TabButton label={t('settings.tab.referral')} active={tab === 'referral'} onClick={() => setTab('referral')} />
-          </div>
+      <main style={{ ...styles.main, maxWidth: tab === 'api' ? 1080 : 940 }}>
+        <div className="settings-layout" style={styles.layout}>
+          <aside className="settings-sidebar" style={styles.sidebar}>
+            <p style={styles.eyebrow}>{t('settings.accountCenter')}</p>
+            <h1 style={styles.title}>{t('settings.title')}</h1>
+            <nav style={styles.settingsNav}>
+              {TABS.map(({ key, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={`settings-nav-link${tab === key ? ' active' : ''}`}
+                  style={{ ...styles.navLink, color: tab === key ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                >
+                  <Icon />
+                  <span>{TAB_LABEL[key]}</span>
+                  {tab === key && <span className="settings-nav-pip" />}
+                </button>
+              ))}
+            </nav>
+            <div style={styles.sidebarHelp}>
+              <HelpCircleIcon />
+              <div>
+                <strong style={styles.sidebarHelpTitle}>{t('settings.needHelp')}</strong>
+                <span style={styles.sidebarHelpDesc}>{t('settings.needHelpDesc')}</span>
+              </div>
+            </div>
+          </aside>
 
           <div style={styles.content}>
-            {tab === 'profile' && <ProfileTab />}
+            {tab === 'profile' && <ProfileTab onNavigate={setTab} />}
             {tab === 'security' && <SecurityTab />}
             {tab === 'verification' && <VerificationTab />}
             {tab === 'api' && <ApiKeysTab />}
@@ -61,19 +174,25 @@ export function SettingsPage() {
   );
 }
 
-function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="row-hover" style={{ ...styles.tabBtn, ...(active ? styles.tabBtnActive : {}) }}>
-      {label}
-    </button>
-  );
+function kycProgressPct(status: string): number {
+  if (status === 'APPROVED') return 100;
+  if (status === 'PENDING') return 60;
+  if (status === 'REJECTED') return 20;
+  return 8;
 }
 
-function ProfileTab() {
+function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
+  const [lastActivity, setLastActivity] = useState<string | null>(null);
 
   useEffect(() => {
     api.getMe().then(setMe).catch(() => {});
+    api
+      .getSecurityLog()
+      .then((entries) => {
+        if (entries[0]) setLastActivity(entries[0].createdAt);
+      })
+      .catch(() => {});
   }, []);
 
   const { t, lang } = useLanguage();
@@ -93,24 +212,181 @@ function ProfileTab() {
   }
 
   const kyc = KYC_STATUS_LABEL[me.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
+  const displayName = me.displayName || me.email.split('@')[0];
+  const progressPct = kycProgressPct(me.kycStatus);
 
   return (
-    <div className="accent-edge surface-raised" style={styles.card}>
-      <Row label={t('settings.email')} value={me.email} />
-      <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
-      <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
-      <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
-      <Row
-        label={t('settings.twoFactor')}
-        value={
-          me.twoFactorEnabled ? (
-            <Badge text={t('settings.enabled')} color="var(--buy)" bg="var(--buy-dim)" />
-          ) : (
-            <Badge text={t('settings.disabled')} color="var(--text-tertiary)" bg="var(--neutral-dim)" />
-          )
-        }
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="accent-edge surface-raised" style={styles.profileCard}>
+        <div style={styles.profileMain}>
+          <div className="settings-avatar" style={styles.avatarLarge}>
+            {displayName.charAt(0).toUpperCase()}
+            <span className="settings-avatar-shine" />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={styles.profileNameRow}>
+              <h2 style={styles.profileName}>{displayName}</h2>
+              {kyc.text === KYC_STATUS_LABEL.APPROVED.text && (
+                <span style={{ color: 'var(--buy)', display: 'inline-flex' }}>
+                  <BadgeCheckIcon size={16} />
+                </span>
+              )}
+              {me.isAdmin && <span style={styles.rolePill}>{t('settings.roleAdmin')}</span>}
+            </div>
+            <p style={styles.profileEmail}>{me.email}</p>
+            <div style={styles.profileStatusRow}>
+              <Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />
+              <span style={styles.statusDivider} />
+              <span style={styles.profileMeta}>{t('settings.activeAccount')}</span>
+            </div>
+          </div>
+        </div>
+        <div style={styles.memberSince}>
+          <span style={styles.memberSinceLabel}>{t('settings.memberSince')}</span>
+          <strong style={styles.memberSinceValue}>{new Date(me.createdAt).toLocaleDateString(localeOf(lang))}</strong>
+        </div>
+      </div>
+
+      <div className="settings-detail-grid" style={styles.detailGrid}>
+        <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
+          <div className="surface-raised" style={styles.card}>
+            <div style={styles.sectionHeading}>
+              <p style={styles.eyebrowSmall}>{t('settings.personalDetails')}</p>
+              <h3 style={styles.cardTitle}>{t('settings.accountInfoTitle')}</h3>
+            </div>
+            <div style={styles.infoList}>
+              <Row label={t('settings.email')} value={me.email} />
+              <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
+              <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
+              <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
+              <Row
+                label={t('settings.twoFactor')}
+                value={
+                  me.twoFactorEnabled ? (
+                    <Badge text={t('settings.enabled')} color="var(--buy)" bg="var(--buy-dim)" />
+                  ) : (
+                    <Badge text={t('settings.disabled')} color="var(--text-tertiary)" bg="var(--neutral-dim)" />
+                  )
+                }
+              />
+            </div>
+          </div>
+
+          <div className="surface-raised" style={styles.verificationCard}>
+            <span style={styles.verificationIcon}>
+              <BadgeCheckIcon />
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={styles.verificationTitleRow}>
+                <div>
+                  <p style={styles.eyebrowSmall}>{t('settings.accountStatusEyebrow')}</p>
+                  <h3 style={styles.cardTitle}>{t('settings.tab.verification')}</h3>
+                </div>
+                <span style={styles.verifiedLabel}>{kyc.text}</span>
+              </div>
+              <p style={styles.verificationDesc}>
+                {me.kycStatus === 'APPROVED' ? t('settings.alreadyVerified') : t('settings.pendingReview')}
+              </p>
+              <div>
+                <div style={styles.progressLabelRow}>
+                  <span>{t('settings.accessLevel')}</span>
+                  <strong style={{ color: 'var(--buy)' }}>{progressPct}%</strong>
+                </div>
+                <div className="settings-progress-track">
+                  <div className="settings-progress-value" style={{ width: `${progressPct}%` }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="surface-raised" style={styles.securityCard}>
+          <div style={styles.sectionHeading}>
+            <div>
+              <p style={styles.eyebrowSmall}>{t('settings.protectionLayer')}</p>
+              <h3 style={styles.cardTitle}>{t('settings.accountSecurityTitle')}</h3>
+            </div>
+            <span style={styles.securityIcon}>
+              <ShieldIcon />
+            </span>
+          </div>
+          <div style={styles.securityList}>
+            <div style={styles.securityRow}>
+              <span>{t('settings.twoFactor')}</span>
+              {me.twoFactorEnabled ? (
+                <Badge text={t('settings.enabled')} color="var(--buy)" bg="var(--buy-dim)" />
+              ) : (
+                <Badge text={t('settings.disabled')} color="var(--accent)" bg="var(--accent-dim)" />
+              )}
+            </div>
+            {lastActivity && (
+              <div style={styles.securityRow}>
+                <span>{t('settings.lastActivity')}</span>
+                <strong style={styles.securityRowValue}>{new Date(lastActivity).toLocaleString(localeOf(lang))}</strong>
+              </div>
+            )}
+          </div>
+          <button style={styles.submitBtn} onClick={() => onNavigate('security')}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              <ShieldIcon size={15} /> {me.twoFactorEnabled ? t('settings.tab.security') : t('settings.enable2fa')}{' '}
+              <ArrowUpRightIcon size={14} />
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div style={styles.sectionHeading}>
+          <div>
+            <p style={styles.eyebrowSmall}>{t('settings.shortcuts')}</p>
+            <h3 style={styles.cardTitle}>{t('settings.quickActionsTitle')}</h3>
+          </div>
+        </div>
+        <div className="settings-quick-grid" style={styles.quickGrid}>
+          <QuickActionCard icon={ShieldIcon} title={t('settings.tab.security')} desc={t('settings.quickAction.security.desc')} onClick={() => onNavigate('security')} />
+          <QuickActionCard
+            icon={BadgeCheckIcon}
+            title={t('settings.tab.verification')}
+            desc={t('settings.quickAction.verification.desc')}
+            onClick={() => onNavigate('verification')}
+          />
+          <QuickActionCard icon={KeyIcon} title={t('settings.tab.api')} desc={t('settings.quickAction.api.desc')} onClick={() => onNavigate('api')} />
+          <QuickActionCard
+            icon={UsersIcon}
+            title={t('settings.tab.referral')}
+            desc={t('settings.quickAction.referral.desc')}
+            onClick={() => onNavigate('referral')}
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function QuickActionCard({
+  icon: Icon,
+  title,
+  desc,
+  onClick,
+}: {
+  icon: (p: { size?: number }) => JSX.Element;
+  title: string;
+  desc: string;
+  onClick: () => void;
+}) {
+  return (
+    <button className="settings-quick-card surface-raised" style={styles.quickCard} onClick={onClick}>
+      <span style={styles.quickIcon}>
+        <Icon />
+      </span>
+      <span style={styles.quickCopy}>
+        <strong style={{ fontSize: 12 }}>{title}</strong>
+        <span style={{ color: 'var(--text-tertiary)', fontSize: 10, lineHeight: 1.4 }}>{desc}</span>
+      </span>
+      <span className="settings-quick-arrow" style={styles.quickArrow}>
+        <ChevronRightIcon size={16} />
+      </span>
+    </button>
   );
 }
 
@@ -971,24 +1247,179 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: 'auto',
     lineHeight: 1.6,
   },
-  title: { fontSize: 22, marginBottom: 20, fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.01em' },
-  layout: { display: 'grid', gridTemplateColumns: '180px 1fr', gap: 24, alignItems: 'start' },
-  tabs: { display: 'flex', flexDirection: 'column', gap: 4 },
-  tabBtn: {
-    textAlign: 'left',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 8,
-    padding: '9px 12px',
-    fontSize: 13,
-    color: 'var(--text-secondary)',
+  title: { fontSize: 24, margin: '0 0 28px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' },
+  layout: { display: 'grid', gridTemplateColumns: '220px 1fr', gap: 32, alignItems: 'start' },
+  sidebar: { position: 'sticky', top: 88 },
+  eyebrow: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 10,
+    letterSpacing: '0.16em',
+    color: 'var(--text-tertiary)',
+    margin: '0 0 8px',
+    textTransform: 'uppercase',
   },
-  tabBtnActive: {
+  eyebrowSmall: {
+    fontFamily: 'var(--font-mono)',
+    fontSize: 9,
+    letterSpacing: '0.14em',
+    color: 'var(--text-tertiary)',
+    margin: '0 0 6px',
+    textTransform: 'uppercase',
+  },
+  settingsNav: { display: 'grid', gap: 5 },
+  navLink: {
+    minHeight: 42,
+    padding: '0 13px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    background: 'transparent',
+    borderRadius: 9,
+    fontSize: 13,
+    fontWeight: 600,
+    textAlign: 'left',
+  },
+  sidebarHelp: {
+    display: 'flex',
+    gap: 10,
+    alignItems: 'flex-start',
+    marginTop: 48,
+    paddingTop: 16,
+    borderTop: '1px solid var(--border)',
+    color: 'var(--text-tertiary)',
+  },
+  sidebarHelpTitle: { display: 'block', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 3 },
+  sidebarHelpDesc: { display: 'block', fontSize: 10 },
+  content: { minWidth: 0 },
+  profileCard: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 20,
+    padding: '26px 28px',
+    background: 'var(--panel)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+  },
+  profileMain: { display: 'flex', alignItems: 'center', gap: 18 },
+  avatarLarge: {
+    position: 'relative',
+    width: 68,
+    height: 68,
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: '50%',
+    fontSize: 28,
+    fontWeight: 800,
+    color: 'var(--on-accent)',
+  },
+  profileNameRow: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  profileName: { fontSize: 20, margin: 0, letterSpacing: '-0.02em' },
+  profileEmail: { margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 12 },
+  profileStatusRow: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 },
+  statusDivider: { width: 1, height: 12, background: 'var(--border)' },
+  profileMeta: { color: 'var(--text-tertiary)', fontSize: 11 },
+  rolePill: {
+    border: '1px solid var(--accent-dim)',
+    background: 'var(--accent-dim)',
+    color: 'var(--accent)',
+    borderRadius: 5,
+    fontSize: 10,
+    padding: '3px 7px',
+    fontFamily: 'var(--font-mono)',
+  },
+  memberSince: {
+    minWidth: 130,
+    paddingLeft: 24,
+    borderLeft: '1px solid var(--border)',
+    display: 'grid',
+    gap: 6,
+  },
+  memberSinceLabel: { color: 'var(--text-tertiary)', fontSize: 10 },
+  memberSinceValue: { fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 400 },
+  detailGrid: { display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(260px, 0.9fr)', gap: 16 },
+  sectionHeading: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
+  infoList: { borderTop: '1px solid var(--border)' },
+  verificationCard: {
+    display: 'flex',
+    gap: 14,
+    alignItems: 'flex-start',
+    padding: 22,
+    borderRadius: 12,
+    border: '1px solid var(--buy-dim)',
+    background: 'linear-gradient(135deg, rgba(0,214,143,0.06), var(--panel))',
+  },
+  verificationIcon: {
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 9,
+    color: 'var(--buy)',
+    background: 'var(--buy-dim)',
+  },
+  verificationTitleRow: { display: 'flex', justifyContent: 'space-between', gap: 10, marginBottom: 6 },
+  verifiedLabel: { fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.08em', color: 'var(--buy)', whiteSpace: 'nowrap' },
+  verificationDesc: { color: 'var(--text-secondary)', fontSize: 11, lineHeight: 1.6, margin: '0 0 14px', maxWidth: 460 },
+  progressLabelRow: { display: 'flex', justifyContent: 'space-between', color: 'var(--text-tertiary)', fontSize: 10, marginBottom: 6 },
+  securityCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    padding: 22,
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    background: 'var(--panel)',
+  },
+  securityIcon: {
+    display: 'grid',
+    placeItems: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 9,
+    color: 'var(--accent)',
+    background: 'var(--accent-dim)',
+  },
+  securityList: { borderTop: '1px solid var(--border)' },
+  securityRow: {
+    minHeight: 46,
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    borderBottom: '1px solid var(--border)',
+    color: 'var(--text-secondary)',
+    fontSize: 11,
+  },
+  securityRowValue: { fontFamily: 'var(--font-mono)', fontWeight: 400, fontSize: 11, color: 'var(--text-primary)' },
+  quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
+  quickCard: {
+    minHeight: 130,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    textAlign: 'left',
+    padding: 16,
+    borderRadius: 11,
+    border: '1px solid var(--border)',
     background: 'var(--panel)',
     color: 'var(--text-primary)',
-    fontWeight: 600,
+    position: 'relative',
   },
-  content: { minWidth: 0 },
+  quickIcon: {
+    width: 30,
+    height: 30,
+    display: 'grid',
+    placeItems: 'center',
+    borderRadius: 8,
+    marginBottom: 12,
+    color: 'var(--accent)',
+    background: 'var(--accent-dim)',
+  },
+  quickCopy: { display: 'grid', gap: 4, paddingRight: 14, fontSize: 11 },
+  quickArrow: { position: 'absolute', right: 14, bottom: 16, color: 'var(--text-tertiary)' },
   card: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
