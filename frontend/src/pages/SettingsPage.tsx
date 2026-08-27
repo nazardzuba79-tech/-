@@ -1120,7 +1120,7 @@ function ReferralTab() {
   // subdomain until a custom domain is pointed at it, whatever real domain
   // after that. Never hardcoded, since a hardcoded name here could easily
   // end up not being the domain the app is actually running on.
-  const link = data ? `${window.location.origin}/r/${data.referralCode}` : '';
+  const link = data ? `${window.location.origin}/${data.referralCode}` : '';
 
   async function handleCopy() {
     if (!link) return;

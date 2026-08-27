@@ -113,8 +113,11 @@ export function App() {
             login screen, without requiring auth like every other page. */}
         <Route path="/legal/:doc" element={<LegalPage />} />
         {/* A referral link (see Settings' Referral tab) — public, no auth,
-            since it has to work for someone who's never signed up yet. */}
-        <Route path="/r/:code" element={<ReferralRedirectPage />} />
+            since it has to work for someone who's never signed up yet. Bare
+            /:code (no "/r/" prefix) since the code itself already reads as
+            a referral code; react-router ranks every static route above
+            this dynamic one, so it never shadows /trade, /wallet, etc. */}
+        <Route path="/:code" element={<ReferralRedirectPage />} />
 
         {/* Admin panel — deliberately not linked from anywhere in the
             normal UI, reachable only by a direct visit. AdminLayout is a

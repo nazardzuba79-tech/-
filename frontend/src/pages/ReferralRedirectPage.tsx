@@ -4,7 +4,8 @@ import { useParams, Navigate } from 'react-router-dom';
 export const REFERRAL_CODE_STORAGE_KEY = 'exchange_referral_code';
 
 /**
- * The clean, shareable link a referral code turns into: /r/:code. Stores
+ * The clean, shareable link a referral code turns into: /:code — no "/r/"
+ * prefix, since the code itself already reads as a referral code. Stores
  * the code locally and hands off to the marketing landing page — AuthPage
  * reads the code back out at registration time (reached from there via
  * its own "Начать торговлю" links) and sends it along as `ref` (see
