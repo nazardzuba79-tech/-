@@ -253,27 +253,30 @@ export const styles: Record<string, CSSProperties> = {
   badgeBuy: { color: 'var(--buy)', background: 'var(--buy-dim)' },
   badgeSell: { color: 'var(--sell)', background: 'var(--sell-dim)' },
 
-  // Stat-card row (Users page KPI strip — total/verified/active/pending).
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 },
+  // Stat-card row (Users page KPI strip — total/active/pending).
+  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 14 },
   statCard: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
     borderRadius: 14,
     boxShadow: '0 1px 2px 0 rgba(16,24,40,0.04), 0 1px 3px 0 rgba(16,24,40,0.05)',
-    padding: 20,
+    padding: '14px 16px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
   },
   statIcon: {
-    width: 36,
-    height: 36,
+    width: 30,
+    height: 30,
     borderRadius: 8,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    flex: 'none',
   },
-  statLabel: { fontSize: 13, fontWeight: 500, color: 'var(--text-tertiary)' },
-  statValue: { fontSize: 26, fontWeight: 700, letterSpacing: '-0.01em', marginTop: 4 },
-  statSub: { fontSize: 12, color: 'var(--text-tertiary)', marginTop: 4 },
+  statLabel: { fontSize: 12, fontWeight: 500, color: 'var(--text-tertiary)' },
+  statValue: { fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em' },
+  statSub: { fontSize: 11, color: 'var(--text-tertiary)' },
 
   // Search + filter bar.
   searchBarRow: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 16 },

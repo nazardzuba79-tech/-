@@ -5,10 +5,9 @@ import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { SkeletonRow } from '../../components/Skeleton';
 import { AdminStatCard } from './AdminStatCard';
-import { AdminSearchBar } from './AdminSearchBar';
 import { AdminPagination } from './AdminPagination';
 import { AdminToastContainer, useAdminToasts } from './AdminToast';
-import { UsersIcon, ShieldCheckIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon, PauseCircleIcon, BanIcon } from './AdminIcons';
+import { UsersIcon, ActivityIcon, ClockIcon, MoreHorizontalIcon, EyeIcon, PauseCircleIcon, BanIcon } from './AdminIcons';
 
 type User = Awaited<ReturnType<typeof api.getAdminUsers>>[number];
 
@@ -45,10 +44,6 @@ function initials(email: string): string {
  * таблица (карточки на мобильных) со сменой блокировки прямо из списка. */
 export function AdminUsersPage() {
   const [users, setUsers] = useState<User[] | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [kycFilter, setKycFilter] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
   const [page, setPage] = useState(1);
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
@@ -60,33 +55,17 @@ export function AdminUsersPage() {
       .catch(() => setUsers([]));
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!users) return [];
-    return users.filter((u) => {
-      if (search) {
-        const q = search.toLowerCase();
-        if (!u.email.toLowerCase().includes(q) && !u.id.toLowerCase().includes(q)) return false;
-      }
-      if (statusFilter === 'active' && u.isBlocked) return false;
-      if (statusFilter === 'blocked' && !u.isBlocked) return false;
-      if (kycFilter && u.kycStatus !== kycFilter) return false;
-      if (roleFilter === 'admin' && !u.isAdmin) return false;
-      if (roleFilter === 'user' && u.isAdmin) return false;
-      return true;
-    });
-  }, [users, search, statusFilter, kycFilter, roleFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const list = users ?? [];
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const paged = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const stats = useMemo(() => {
     if (!users) return null;
     const total = users.length;
-    const verified = users.filter((u) => u.kycStatus === 'APPROVED').length;
     const active = users.filter((u) => !u.isBlocked).length;
     const pending = users.filter((u) => u.kycStatus === 'PENDING').length;
-    return { total, verified, active, pending };
+    return { total, active, pending };
   }, [users]);
 
   function pct(n: number, total: number): string {
@@ -115,59 +94,10 @@ export function AdminUsersPage() {
       {stats && (
         <div style={styles.statGrid}>
           <AdminStatCard label="Всего пользователей" value={stats.total.toLocaleString('ru-RU')} sub="Зарегистрировано" icon={UsersIcon} accent="brand" />
-          <AdminStatCard label="Верифицировано" value={stats.verified.toLocaleString('ru-RU')} sub={`${pct(stats.verified, stats.total)}% пользователей`} icon={ShieldCheckIcon} accent="buy" />
           <AdminStatCard label="Активные" value={stats.active.toLocaleString('ru-RU')} sub={`${pct(stats.active, stats.total)}% пользователей`} icon={ActivityIcon} accent="brand" />
           <AdminStatCard label="Ожидают верификации" value={stats.pending.toLocaleString('ru-RU')} sub="Требуют внимания" icon={ClockIcon} accent="warning" />
         </div>
       )}
-
-      <div style={{ ...styles.card, padding: 16, marginBottom: 16 }}>
-        <AdminSearchBar
-          value={search}
-          onChange={(v) => {
-            setSearch(v);
-            setPage(1);
-          }}
-          placeholder="Поиск по email или ID..."
-          filters={[
-            {
-              id: 'status',
-              label: 'Статус',
-              value: statusFilter,
-              options: [
-                { value: 'active', label: 'Активен' },
-                { value: 'blocked', label: 'Заблокирован' },
-              ],
-            },
-            {
-              id: 'kyc',
-              label: 'Верификация',
-              value: kycFilter,
-              options: [
-                { value: 'APPROVED', label: 'Подтверждена' },
-                { value: 'PENDING', label: 'На проверке' },
-                { value: 'NOT_STARTED', label: 'Не начата' },
-                { value: 'REJECTED', label: 'Отклонена' },
-              ],
-            },
-            {
-              id: 'role',
-              label: 'Роль',
-              value: roleFilter,
-              options: [
-                { value: 'admin', label: 'Admin' },
-                { value: 'user', label: 'User' },
-              ],
-            },
-          ]}
-          onFilterChange={(id, v) => {
-            setPage(1);
-            if (id === 'status') setStatusFilter(v);
-            if (id === 'kyc') setKycFilter(v);
-            if (id === 'role') setRoleFilter(v);
-          }}
-        />
-      </div>
 
       <div style={styles.table} className="admin-table-desktop">
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 900 }}>
@@ -189,7 +119,7 @@ export function AdminUsersPage() {
         {paged.map((u) => (
           <UserRow key={u.id} user={u} onOpen={() => navigate(`/admin/users/${u.id}`)} onBlock={handleBlock} onUnblock={handleUnblock} />
         ))}
-        {users && filtered.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Никого не найдено.</p>}
+        {users && list.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Пользователей пока нет.</p>}
       </div>
 
       <div className="admin-table-mobile" style={{ display: 'grid', gap: 12 }}>
@@ -198,8 +128,8 @@ export function AdminUsersPage() {
         ))}
       </div>
 
-      {users && filtered.length > 0 && (
-        <AdminPagination page={safePage} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} itemLabel="из" onPageChange={setPage} />
+      {users && list.length > 0 && (
+        <AdminPagination page={safePage} totalPages={totalPages} total={list.length} pageSize={PAGE_SIZE} itemLabel="из" onPageChange={setPage} />
       )}
 
       <AdminToastContainer toasts={toasts} onDismiss={dismiss} />

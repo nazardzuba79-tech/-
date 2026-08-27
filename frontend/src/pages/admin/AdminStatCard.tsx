@@ -27,19 +27,21 @@ export function AdminStatCard({
 }) {
   return (
     <div className="admin-card-hover" style={styles.statCard}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div style={{ ...styles.statIcon, ...ACCENT_STYLE[accent] }}>
-          <Icon size={18} />
-        </div>
-        {trend && (
-          <span style={{ display: 'inline-flex', alignItems: 'center', color: trend === 'up' ? 'var(--buy)' : 'var(--sell)' }}>
-            {trend === 'up' ? <ArrowUpRightIcon size={14} /> : <ArrowDownRightIcon size={14} />}
-          </span>
-        )}
+      <div style={{ ...styles.statIcon, ...ACCENT_STYLE[accent] }}>
+        <Icon size={16} />
       </div>
-      <div style={styles.statLabel}>{label}</div>
-      <div style={styles.statValue}>{value}</div>
-      <div style={styles.statSub}>{sub}</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={styles.statLabel}>{label}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span style={styles.statValue}>{value}</span>
+          {trend && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', color: trend === 'up' ? 'var(--buy)' : 'var(--sell)' }}>
+              {trend === 'up' ? <ArrowUpRightIcon size={13} /> : <ArrowDownRightIcon size={13} />}
+            </span>
+          )}
+        </div>
+        <div style={styles.statSub}>{sub}</div>
+      </div>
     </div>
   );
 }
