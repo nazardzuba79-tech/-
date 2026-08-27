@@ -122,6 +122,46 @@ function ArrowUpRightIcon(props: { size?: number }) {
     </svg>
   );
 }
+function MailIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M4 7l8 6 8-6" />
+    </svg>
+  );
+}
+function CalendarIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+      <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" />
+    </svg>
+  );
+}
+function LogInIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5" />
+      <path d="M15 8l4 4-4 4M9 12h10" />
+    </svg>
+  );
+}
+function SettingsGearIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4.8a7.6 7.6 0 0 0-1.7-1L15 3h-6l-.3 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-.8-2 3.4L4.6 11a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-.8a7.6 7.6 0 0 0 1.7 1L9 21h6l.3-2.5a7.6 7.6 0 0 0 1.7-1l2.4.8 2-3.4z" />
+    </svg>
+  );
+}
+function EyeIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
 
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
   return {
@@ -138,6 +178,25 @@ function docTypeLabel(t: T): Record<string, string> {
     ID_CARD: t('settings.doc.ID_CARD'),
     DRIVERS_LICENSE: t('settings.doc.DRIVERS_LICENSE'),
   };
+}
+
+// Shared by SecurityLogSection (full log) and ProfileTab's recent-activity
+// list (top 3) — one label/icon mapping instead of two copies drifting apart.
+function securityEventLabel(t: T): Record<string, string> {
+  return {
+    USER_LOGGED_IN: t('settings.securityLog.USER_LOGGED_IN'),
+    USER_REGISTERED: t('settings.securityLog.USER_REGISTERED'),
+    PASSWORD_CHANGED: t('settings.securityLog.PASSWORD_CHANGED'),
+    TWO_FACTOR_ENABLED: t('settings.securityLog.TWO_FACTOR_ENABLED'),
+    TWO_FACTOR_DISABLED: t('settings.securityLog.TWO_FACTOR_DISABLED'),
+    TWO_FACTOR_BACKUP_CODE_USED: t('settings.securityLog.TWO_FACTOR_BACKUP_CODE_USED'),
+  };
+}
+function securityEventIcon(action: string): (p: { size?: number }) => JSX.Element {
+  if (action === 'USER_LOGGED_IN' || action === 'USER_REGISTERED') return LogInIcon;
+  if (action === 'PASSWORD_CHANGED') return KeyIcon;
+  if (action.startsWith('TWO_FACTOR')) return ShieldIcon;
+  return EyeIcon;
 }
 
 export function SettingsPage() {
@@ -214,20 +273,19 @@ function kycProgressPct(status: string): number {
 
 function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
-  const [lastActivity, setLastActivity] = useState<string | null>(null);
+  const [recentActivity, setRecentActivity] = useState<Awaited<ReturnType<typeof api.getSecurityLog>>>([]);
 
   useEffect(() => {
     api.getMe().then(setMe).catch(() => {});
     api
       .getSecurityLog()
-      .then((entries) => {
-        if (entries[0]) setLastActivity(entries[0].createdAt);
-      })
+      .then((entries) => setRecentActivity(entries.slice(0, 3)))
       .catch(() => {});
   }, []);
 
   const { t, lang } = useLanguage();
   const KYC_STATUS_LABEL = kycStatusLabel(t);
+  const EVENT_LABEL = securityEventLabel(t);
 
   if (!me) {
     return (
@@ -250,9 +308,16 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div className="accent-edge surface-raised" style={styles.profileCard}>
         <div style={styles.profileMain}>
-          <div className="settings-avatar" style={styles.avatarLarge}>
-            {displayName.charAt(0).toUpperCase()}
-            <span className="settings-avatar-shine" />
+          <div style={{ position: 'relative', flex: 'none' }}>
+            <div className="settings-avatar" style={styles.avatarLarge}>
+              {displayName.charAt(0).toUpperCase()}
+              <span className="settings-avatar-shine" />
+            </div>
+            {me.kycStatus === 'APPROVED' && (
+              <span style={styles.avatarCheck}>
+                <BadgeCheckIcon size={13} />
+              </span>
+            )}
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={styles.profileNameRow}>
@@ -288,11 +353,12 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
               <h3 style={styles.cardTitle}>{t('settings.accountInfoTitle')}</h3>
             </div>
             <div style={styles.infoList}>
-              <Row label={t('settings.email')} value={me.email} />
-              <Row label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
-              <Row label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
-              <Row label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
-              <Row
+              <IconRow icon={MailIcon} label={t('settings.email')} value={me.email} />
+              <IconRow icon={CalendarIcon} label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
+              <IconRow icon={ShieldIcon} label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
+              <IconRow icon={BadgeCheckIcon} label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
+              <IconRow
+                icon={ShieldIcon}
                 label={t('settings.twoFactor')}
                 value={
                   me.twoFactorEnabled ? (
@@ -352,14 +418,34 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
                 <Badge text={t('settings.disabled')} color="var(--accent)" bg="var(--accent-dim)" />
               )}
             </div>
-            {lastActivity && (
-              <div style={styles.securityRow}>
-                <span>{t('settings.lastActivity')}</span>
-                <strong style={styles.securityRowValue}>{new Date(lastActivity).toLocaleString(localeOf(lang))}</strong>
-              </div>
-            )}
           </div>
-          <button style={styles.submitBtn} onClick={() => onNavigate('security')}>
+
+          {recentActivity.length > 0 && (
+            <div style={{ marginTop: 4 }}>
+              <p style={styles.eyebrowSmall}>{t('settings.lastActivity')}</p>
+              <ol style={styles.activityList}>
+                {recentActivity.map((entry, i) => {
+                  const Icon = securityEventIcon(entry.action);
+                  return (
+                    <li key={entry.id} style={styles.activityItem}>
+                      <span style={styles.activityIconCol}>
+                        <span style={styles.activityIconWrap}>
+                          <Icon size={14} />
+                        </span>
+                        {i < recentActivity.length - 1 && <span style={styles.activityLine} />}
+                      </span>
+                      <span style={{ minWidth: 0, flex: 1 }}>
+                        <span style={styles.activityTitle}>{EVENT_LABEL[entry.action] ?? entry.action}</span>
+                        <span style={styles.activityTime}>{new Date(entry.createdAt).toLocaleString(localeOf(lang))}</span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+
+          <button style={{ ...styles.submitBtn, marginTop: 'auto' }} onClick={() => onNavigate('security')}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
               <ShieldIcon size={15} /> {me.twoFactorEnabled ? t('settings.tab.security') : t('settings.enable2fa')}{' '}
               <ArrowUpRightIcon size={14} />
@@ -668,14 +754,7 @@ function SecurityLogSection() {
   const { t, lang } = useLanguage();
   const [entries, setEntries] = useState<Awaited<ReturnType<typeof api.getSecurityLog>> | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const EVENT_LABEL: Record<string, string> = {
-    USER_LOGGED_IN: t('settings.securityLog.USER_LOGGED_IN'),
-    USER_REGISTERED: t('settings.securityLog.USER_REGISTERED'),
-    PASSWORD_CHANGED: t('settings.securityLog.PASSWORD_CHANGED'),
-    TWO_FACTOR_ENABLED: t('settings.securityLog.TWO_FACTOR_ENABLED'),
-    TWO_FACTOR_DISABLED: t('settings.securityLog.TWO_FACTOR_DISABLED'),
-    TWO_FACTOR_BACKUP_CODE_USED: t('settings.securityLog.TWO_FACTOR_BACKUP_CODE_USED'),
-  };
+  const EVENT_LABEL = securityEventLabel(t);
 
   useEffect(() => {
     api
@@ -1299,6 +1378,31 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+// Same info as Row, laid out with a small icon chip on the left — used on
+// the Profile tab's Account Info card only (Row itself stays plain/compact
+// for the other tabs that reuse it: API keys, referral stats, ...).
+function IconRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: (p: { size?: number }) => JSX.Element;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div style={styles.iconRow}>
+      <span style={styles.iconRowChip}>
+        <Icon size={16} />
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={styles.iconRowLabel}>{label}</p>
+        <p style={styles.iconRowValue}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   // color/fontWeight set fresh here (not just the --text-* variable
   // overrides above) because index.css's `body { color: var(--text-
@@ -1386,6 +1490,7 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     background: 'transparent',
+    border: 'none',
     borderRadius: 12,
     fontSize: 13.5,
     fontWeight: 500,
@@ -1454,6 +1559,55 @@ const styles: Record<string, React.CSSProperties> = {
   detailGrid: { display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(260px, 0.9fr)', gap: 16 },
   sectionHeading: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
   infoList: { borderTop: '1px solid var(--border)' },
+  iconRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 14,
+    padding: '13px 0',
+    borderBottom: '1px solid var(--border)',
+  },
+  iconRowChip: {
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    background: 'var(--panel-alt)',
+    color: 'var(--text-secondary)',
+  },
+  iconRowLabel: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-tertiary)' },
+  iconRowValue: { margin: '2px 0 0', fontSize: 13.5, color: 'var(--text-primary)' },
+  avatarCheck: {
+    position: 'absolute',
+    right: -2,
+    bottom: -2,
+    display: 'grid',
+    placeItems: 'center',
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    background: 'var(--panel)',
+    color: 'var(--buy)',
+    boxShadow: '0 0 0 1px var(--border)',
+  },
+  activityList: { display: 'flex', flexDirection: 'column', marginTop: 4 },
+  activityItem: { display: 'flex', gap: 12, paddingBottom: 14 },
+  activityIconCol: { flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  activityIconWrap: {
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    width: 26,
+    height: 26,
+    borderRadius: '50%',
+    border: '1px solid var(--border)',
+    background: 'var(--panel)',
+    color: 'var(--text-secondary)',
+  },
+  activityLine: { width: 1, flex: 1, marginTop: 2, background: 'var(--border)' },
+  activityTitle: { display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)' },
+  activityTime: { display: 'block', fontSize: 11, color: 'var(--text-tertiary)', marginTop: 1 },
   verificationCard: {
     display: 'flex',
     gap: 14,
