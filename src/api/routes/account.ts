@@ -13,6 +13,15 @@ const changePasswordSchema = z.object({
   newPassword: z.string().min(10, 'password must be at least 10 characters'),
 });
 
+// All optional — the profile form lets someone save just the field they
+// filled in. Empty string clears a field (matches how the form's own
+// "leave blank to clear" inputs behave); undefined leaves it untouched.
+const updateProfileSchema = z.object({
+  displayName: z.string().trim().max(80).optional(),
+  phone: z.string().trim().max(32).optional(),
+  country: z.string().trim().max(2).optional(),
+});
+
 const twoFactorCodeSchema = z.object({
   code: z.string().min(6).max(64),
 });
@@ -40,12 +49,25 @@ export function accountRouter(prisma: PrismaClient): Router {
       id: user.id,
       email: user.email,
       displayName: user.displayName,
+      phone: user.phone,
+      country: user.country,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
       kycStatus: user.kycStatus,
       twoFactorEnabled: user.twoFactorEnabled,
       createdAt: user.createdAt,
     });
+  });
+
+  // Self-service profile fields — name/phone/country the user enters
+  // themselves in Settings. Purely informational, distinct from the
+  // identity-document country submitted for KYC review.
+  router.patch('/me/profile', requireAuth, async (req: AuthedRequest, res) => {
+    const parsed = updateProfileSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+    const user = await prisma.user.update({ where: { id: req.userId }, data: parsed.data });
+    res.json({ displayName: user.displayName, phone: user.phone, country: user.country });
   });
 
   router.patch('/me/password', requireAuth, async (req: AuthedRequest, res) => {

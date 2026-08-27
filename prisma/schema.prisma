@@ -48,10 +48,19 @@ model User {
   /// (JWT_EXPIRES_IN) rather than being revoked mid-flight.
   blockedAt     DateTime?
   blockedReason String?
-  /// Optional display name shown instead of the raw email in the nav/header.
-  /// Purely cosmetic — never used for auth, lookups, or anywhere the email
-  /// itself is the actual identifier.
+  /// Optional display name, set by the user themselves in Settings →
+  /// Profile. Purely cosmetic — never used for auth, lookups, or anywhere
+  /// the email itself is the actual identifier.
   displayName   String?
+  /// Optional contact phone number, set by the user themselves in Settings
+  /// → Profile. Free-form (no format validation) — purely informational,
+  /// never used for auth, 2FA, or notifications.
+  phone         String?
+  /// Optional country, set by the user themselves in Settings → Profile —
+  /// ISO 3166-1 alpha-2, e.g. "UA". Distinct from KycSubmission.country:
+  /// that one is the country declared on a submitted identity document for
+  /// verification, this one is just a self-reported profile field.
+  country       String?
   /// Assigned to every user at registration (see src/api/routes/auth.ts) —
   /// the short code their own referral link embeds (/r/:code). Unique so a
   /// link unambiguously identifies exactly one referrer.

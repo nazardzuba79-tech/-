@@ -247,6 +247,8 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
         </div>
       </div>
 
+      <PersonalInfoForm me={me} onSaved={(patch) => setMe((prev) => (prev ? { ...prev, ...patch } : prev))} />
+
       <div className="settings-detail-grid" style={styles.detailGrid}>
         <div style={{ display: 'grid', gap: 16, minWidth: 0 }}>
           <div className="surface-raised" style={styles.card}>
@@ -359,6 +361,79 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Self-service name/phone/country — the only place these get set (the nav
+// header deliberately never shows the name, see Nav.tsx, since until this
+// form exists there was no way for a user to have set one themselves).
+function PersonalInfoForm({
+  me,
+  onSaved,
+}: {
+  me: { displayName: string | null; phone: string | null; country: string | null };
+  onSaved: (patch: { displayName: string | null; phone: string | null; country: string | null }) => void;
+}) {
+  const { t, lang } = useLanguage();
+  const [name, setName] = useState(me.displayName ?? '');
+  const [phone, setPhone] = useState(me.phone ?? '');
+  const [country, setCountry] = useState(me.country ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    setSaving(true);
+    try {
+      const result = await api.updateProfile({ displayName: name, phone, country });
+      onSaved(result);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('settings.profileSaveError'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="surface-raised" style={styles.card}>
+      <div style={styles.sectionHeading}>
+        <p style={styles.eyebrowSmall}>{t('settings.personalDetails')}</p>
+        <h3 style={styles.cardTitle}>{t('settings.editProfileTitle')}</h3>
+      </div>
+      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', margin: '-6px 0 4px' }}>{t('settings.editProfileDesc')}</p>
+      <form onSubmit={handleSubmit} style={styles.form}>
+        <label style={styles.label}>
+          {t('settings.name')}
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={styles.input} maxLength={80} />
+        </label>
+        <label style={styles.label}>
+          {t('settings.phone')}
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} style={styles.input} maxLength={32} />
+        </label>
+        <label style={styles.label}>
+          {t('settings.country')}
+          <select value={country} onChange={(e) => setCountry(e.target.value)} style={styles.input}>
+            <option value="">{t('settings.notSpecified')}</option>
+            {getCountries(lang).map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {error && <div style={styles.errorBox}>{error}</div>}
+        {saved && <div style={styles.successBox}>{t('settings.profileSaved')}</div>}
+
+        <button type="submit" disabled={saving} style={styles.submitBtn}>
+          {saving ? t('auth.wait') : t('settings.save')}
+        </button>
+      </form>
     </div>
   );
 }

@@ -124,6 +124,59 @@ describe('account routes', () => {
     });
   });
 
+  describe('PATCH /me/profile', () => {
+    it('updates name, phone, and country', async () => {
+      const updateMock = jest.fn().mockResolvedValue({ displayName: 'Ксения', phone: '+7 900 123-45-67', country: 'RU' });
+      const prisma = { user: { update: updateMock } } as any;
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .patch('/api/v1/me/profile')
+        .set('Authorization', authHeader('user-1'))
+        .send({ displayName: 'Ксения', phone: '+7 900 123-45-67', country: 'RU' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ displayName: 'Ксения', phone: '+7 900 123-45-67', country: 'RU' });
+      expect(updateMock).toHaveBeenCalledWith({
+        where: { id: 'user-1' },
+        data: { displayName: 'Ксения', phone: '+7 900 123-45-67', country: 'RU' },
+      });
+    });
+
+    it('accepts a partial update (only one field)', async () => {
+      const updateMock = jest.fn().mockResolvedValue({ displayName: 'Ксения', phone: null, country: null });
+      const prisma = { user: { update: updateMock } } as any;
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .patch('/api/v1/me/profile')
+        .set('Authorization', authHeader('user-1'))
+        .send({ displayName: 'Ксения' });
+
+      expect(res.status).toBe(200);
+      expect(updateMock).toHaveBeenCalledWith({ where: { id: 'user-1' }, data: { displayName: 'Ксения' } });
+    });
+
+    it('rejects a name over 80 characters', async () => {
+      const updateMock = jest.fn();
+      const app = buildApp({ user: { update: updateMock } } as any);
+
+      const res = await request(app)
+        .patch('/api/v1/me/profile')
+        .set('Authorization', authHeader('user-1'))
+        .send({ displayName: 'x'.repeat(81) });
+
+      expect(res.status).toBe(400);
+      expect(updateMock).not.toHaveBeenCalled();
+    });
+
+    it('requires authentication', async () => {
+      const app = buildApp({ user: { update: jest.fn() } } as any);
+      const res = await request(app).patch('/api/v1/me/profile').send({ displayName: 'Ксения' });
+      expect(res.status).toBe(401);
+    });
+  });
+
   describe('GET /account/security-log', () => {
     it('returns only this account\'s security-relevant audit entries, newest first', async () => {
       const entries = [

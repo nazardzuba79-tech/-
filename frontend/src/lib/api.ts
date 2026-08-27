@@ -452,11 +452,19 @@ export const api = {
       id: string;
       email: string;
       displayName: string | null;
+      phone: string | null;
+      country: string | null;
       isAdmin: boolean;
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       twoFactorEnabled: boolean;
       createdAt: string;
     }>('/me'),
+
+  updateProfile: (data: { displayName?: string; phone?: string; country?: string }) =>
+    request<{ displayName: string | null; phone: string | null; country: string | null }>('/me/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     request<{ status: string }>('/me/password', {

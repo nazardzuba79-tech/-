@@ -28,7 +28,6 @@ export function Nav({
   const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const [showDeposit, setShowDeposit] = useState(false);
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const tradeMenuCloseTimer = useRef<number | null>(null);
@@ -68,7 +67,6 @@ export function Nav({
       .getMe()
       .then((me) => {
         setIsAdmin(me.isAdmin);
-        setDisplayName(me.displayName);
       })
       .catch(() => {});
   }, []);
@@ -191,7 +189,7 @@ export function Nav({
             <span className="top-nav-profile-avatar">
               <UserIcon active={active === '/settings'} />
             </span>
-            <span>{displayName || t('nav.profile')}</span>
+            <span>{t('nav.profile')}</span>
             <ChevronIcon />
           </button>
           {profileMenuOpen && (
@@ -266,7 +264,7 @@ export function Nav({
           style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
         >
           <UserIcon active={active === '/settings'} />
-          {displayName || t('nav.profile')}
+          {t('nav.profile')}
         </Link>
 
         {rightExtra && <div style={styles.mobileRightExtra}>{rightExtra}</div>}
