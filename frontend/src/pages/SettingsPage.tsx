@@ -162,6 +162,40 @@ function EyeIcon(props: { size?: number }) {
     </svg>
   );
 }
+function CopyIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <rect x="9" y="9" width="12" height="12" rx="2" />
+      <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+    </svg>
+  );
+}
+function IdCardIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <rect x="2.5" y="5" width="19" height="14" rx="2.5" />
+      <circle cx="8" cy="12" r="2" />
+      <path d="M5.5 16.5c.5-1.8 1.6-2.7 2.5-2.7s2 .9 2.5 2.7" />
+      <path d="M13.5 9.5h5M13.5 13h5M13.5 16h3" />
+    </svg>
+  );
+}
+function MapPinIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z" />
+      <circle cx="12" cy="9.5" r="2.3" />
+    </svg>
+  );
+}
+function FileTextIcon(props: { size?: number }) {
+  return (
+    <svg {...iconProps(props.size)}>
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v4h4M9 12h6M9 16h6" />
+    </svg>
+  );
+}
 
 function kycStatusLabel(t: T): Record<string, { text: string; color: string; bg: string }> {
   return {
@@ -353,7 +387,13 @@ function ProfileTab({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
               <h3 style={styles.cardTitle}>{t('settings.accountInfoTitle')}</h3>
             </div>
             <div style={styles.infoList}>
-              <IconRow icon={MailIcon} label={t('settings.email')} value={me.email} />
+              <IconRow icon={MailIcon} label={t('settings.email')} value={me.email} copyValue={me.email} />
+              <IconRow
+                icon={IdCardIcon}
+                label={t('settings.accountId')}
+                value={<span className="mono">{me.id.slice(0, 8)}…</span>}
+                copyValue={me.id}
+              />
               <IconRow icon={CalendarIcon} label={t('settings.memberSince')} value={new Date(me.createdAt).toLocaleDateString(localeOf(lang))} />
               <IconRow icon={ShieldIcon} label={t('settings.role')} value={me.isAdmin ? t('settings.roleAdmin') : t('settings.roleUser')} />
               <IconRow icon={BadgeCheckIcon} label={t('settings.verification')} value={<Badge text={kyc.text} color={kyc.color} bg={kyc.bg} />} />
@@ -607,7 +647,7 @@ function SecurityTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="surface-raised" style={styles.card}>
-        <h3 style={styles.cardTitle}>{t('settings.changePassword')}</h3>
+        <PanelHeader title={t('settings.changePassword')} />
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label}>
             {t('settings.currentPassword')}
@@ -673,10 +713,7 @@ function ReservesSection() {
 
   return (
     <div className="surface-raised" style={styles.card}>
-      <h3 style={styles.cardTitle}>{t('settings.reserves')}</h3>
-      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.6, margin: 0 }}>
-        {t('settings.reservesDisclaimer')}
-      </p>
+      <PanelHeader title={t('settings.reserves')} subtitle={t('settings.reservesDisclaimer')} />
 
       {error && <div style={styles.errorBox}>{error}</div>}
       {!error && !rows && (
@@ -766,7 +803,7 @@ function SecurityLogSection() {
 
   return (
     <div className="surface-raised" style={styles.card}>
-      <h3 style={styles.cardTitle}>{t('settings.securityLog')}</h3>
+      <PanelHeader title={t('settings.securityLog')} />
 
       {error && <div style={styles.errorBox}>{error}</div>}
       {!error && !entries && (
@@ -1040,23 +1077,66 @@ function VerificationTab() {
   const badge = KYC_STATUS_LABEL[status.kycStatus] ?? KYC_STATUS_LABEL.NOT_STARTED;
   const canSubmit = status.kycStatus === 'NOT_STARTED' || status.kycStatus === 'REJECTED';
   const DOC_TYPE_LABEL = docTypeLabel(t);
+  const approved = status.kycStatus === 'APPROVED';
+  const progressPct = kycProgressPct(status.kycStatus);
+  const sub = status.latestSubmission;
+  const subtitle =
+    status.kycStatus === 'APPROVED'
+      ? t('settings.alreadyVerified')
+      : status.kycStatus === 'PENDING'
+        ? t('settings.pendingReview')
+        : t('settings.verifyStartPrompt');
+  const STEPS: { icon: (p: { size?: number }) => JSX.Element; label: string; value: string | null }[] = [
+    { icon: UserRoundIcon, label: t('settings.verifyStepPersonal'), value: sub?.fullName ?? null },
+    { icon: FileTextIcon, label: t('settings.verifyStepDocument'), value: sub ? DOC_TYPE_LABEL[sub.documentType as keyof typeof DOC_TYPE_LABEL] ?? sub.documentType : null },
+    { icon: MapPinIcon, label: t('settings.country'), value: sub?.country ?? null },
+  ];
 
   return (
     <div className="surface-raised" style={styles.card}>
-      <div style={styles.kycStatusRow}>
-        <span style={{ color: 'var(--text-secondary)' }}>{t('settings.verificationStatus')}</span>
-        <Badge text={badge.text} color={badge.color} bg={badge.bg} />
+      <PanelHeader title={t('settings.tab.verification')} subtitle={subtitle} action={<Badge text={badge.text} color={badge.color} bg={badge.bg} />} />
+
+      <div>
+        <div style={styles.progressLabelRow}>
+          <span>{t('settings.verificationLevel')}</span>
+          <strong style={{ color: approved ? 'var(--buy)' : 'var(--accent)' }}>{progressPct}%</strong>
+        </div>
+        <div className="settings-progress-track">
+          <div className="settings-progress-value" style={{ width: `${progressPct}%` }} />
+        </div>
+      </div>
+
+      <div style={styles.verifyStepsGrid}>
+        {STEPS.map((s) => (
+          <div key={s.label} style={styles.verifyStepCard}>
+            <span style={{ ...styles.verifyStepIcon, ...(approved ? styles.verifyStepIconDone : {}) }}>
+              <s.icon size={17} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <p style={styles.verifyStepLabel}>{s.label}</p>
+              <p style={styles.verifyStepValue}>
+                {s.value ? (
+                  approved ? (
+                    <span style={{ color: 'var(--buy)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <BadgeCheckIcon size={12} /> {s.value}
+                    </span>
+                  ) : (
+                    s.value
+                  )
+                ) : (
+                  t('settings.notSpecified')
+                )}
+              </p>
+            </div>
+          </div>
+        ))}
       </div>
 
       {status.latestSubmission?.status === 'REJECTED' && status.latestSubmission.rejectionReason && (
         <div style={styles.errorBox}>{t('settings.rejectionReason', { reason: status.latestSubmission.rejectionReason })}</div>
       )}
 
-      {!canSubmit ? (
-        <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
-          {status.kycStatus === 'APPROVED' ? t('settings.alreadyVerified') : t('settings.pendingReview')}
-        </p>
-      ) : (
+      {canSubmit && (
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.label}>
             {t('settings.country')}
@@ -1163,10 +1243,7 @@ function ApiKeysTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="surface-raised" style={styles.card}>
-        <h3 style={styles.cardTitle}>{t('settings.apiKeys')}</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
-          {t('settings.apiKeysDesc')}
-        </p>
+        <PanelHeader title={t('settings.apiKeys')} subtitle={t('settings.apiKeysDesc')} />
 
         {justCreated && (
           <div style={styles.secretBox}>
@@ -1247,7 +1324,7 @@ function ApiKeysTab() {
       </div>
 
       <div className="surface-raised" style={styles.card}>
-        <h3 style={styles.cardTitle}>{t('settings.howToConnectBot')}</h3>
+        <PanelHeader title={t('settings.howToConnectBot')} />
         <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {t('settings.hmacExplainer1')}{' '}
           <code style={styles.code}>X-API-KEY</code>, <code style={styles.code}>X-API-TIMESTAMP</code> {t('settings.hmacExplainer2')}{' '}
@@ -1310,10 +1387,7 @@ function ReferralTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div className="surface-raised" style={styles.card}>
-        <h3 style={styles.cardTitle}>{t('settings.referral')}</h3>
-        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
-          {t('settings.referralDesc', { percent: data.rewardPercent })}
-        </p>
+        <PanelHeader title={t('settings.referral')} subtitle={t('settings.referralDesc', { percent: data.rewardPercent })} />
 
         <div style={styles.infoBox}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1344,7 +1418,7 @@ function ReferralTab() {
 
       {data.recentRewards.length > 0 && (
         <div className="surface-raised" style={styles.card}>
-          <h3 style={styles.cardTitle}>{t('settings.referralRecentRewards')}</h3>
+          <PanelHeader title={t('settings.referralRecentRewards')} />
           <table style={styles.keyTable}>
             <thead>
               <tr>
@@ -1380,16 +1454,26 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 // Same info as Row, laid out with a small icon chip on the left — used on
 // the Profile tab's Account Info card only (Row itself stays plain/compact
-// for the other tabs that reuse it: API keys, referral stats, ...).
+// for the other tabs that reuse it: API keys, referral stats, ...). An
+// optional copyValue adds a per-row copy button, same as the archive.
 function IconRow({
   icon: Icon,
   label,
   value,
+  copyValue,
 }: {
   icon: (p: { size?: number }) => JSX.Element;
   label: string;
   value: React.ReactNode;
+  copyValue?: string;
 }) {
+  const [copied, setCopied] = useState(false);
+  async function handleCopy() {
+    if (!copyValue) return;
+    await navigator.clipboard.writeText(copyValue);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
   return (
     <div style={styles.iconRow}>
       <span style={styles.iconRowChip}>
@@ -1399,6 +1483,28 @@ function IconRow({
         <p style={styles.iconRowLabel}>{label}</p>
         <p style={styles.iconRowValue}>{value}</p>
       </div>
+      {copyValue && (
+        <button type="button" onClick={handleCopy} style={styles.iconRowCopyBtn} aria-label={`Copy ${label}`}>
+          {copied ? <BadgeCheckIcon size={15} /> : <CopyIcon size={15} />}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Header block matching the archive's Panel/PanelHeader — a title (+
+// optional subtitle) separated from the card body by a border, with an
+// optional right-aligned action (a status badge, typically). Every tab's
+// cards use this now instead of a bare <h3>, for the same bordered-header
+// look the archive uses everywhere.
+function PanelHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+  return (
+    <div style={styles.panelHeader}>
+      <div style={{ minWidth: 0 }}>
+        <h3 style={styles.cardTitle}>{title}</h3>
+        {subtitle && <p style={styles.panelHeaderSubtitle}>{subtitle}</p>}
+      </div>
+      {action && <div style={{ flex: 'none' }}>{action}</div>}
     </div>
   );
 }
@@ -1578,6 +1684,26 @@ const styles: Record<string, React.CSSProperties> = {
   },
   iconRowLabel: { margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-tertiary)' },
   iconRowValue: { margin: '2px 0 0', fontSize: 13.5, color: 'var(--text-primary)' },
+  iconRowCopyBtn: {
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-tertiary)',
+  },
+  panelHeader: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+    paddingBottom: 16,
+    borderBottom: '1px solid var(--border)',
+  },
+  panelHeaderSubtitle: { margin: '4px 0 0', fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: 480 },
   avatarCheck: {
     position: 'absolute',
     right: -2,
@@ -1716,6 +1842,29 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: 'space-between',
     fontSize: 13,
   },
+  verifyStepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 },
+  verifyStepCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    padding: '13px 14px',
+    borderRadius: 12,
+    border: '1px solid var(--border)',
+    background: 'var(--panel-alt)',
+  },
+  verifyStepIcon: {
+    flex: 'none',
+    display: 'grid',
+    placeItems: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    color: 'var(--text-tertiary)',
+    background: 'var(--neutral-dim)',
+  },
+  verifyStepIconDone: { color: 'var(--buy)', background: 'var(--buy-dim)' },
+  verifyStepLabel: { margin: 0, fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)' },
+  verifyStepValue: { margin: '2px 0 0', fontSize: 11.5, color: 'var(--text-tertiary)' },
   form: { display: 'flex', flexDirection: 'column', gap: 14 },
   label: { display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' },
   input: {
