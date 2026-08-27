@@ -19,8 +19,14 @@ const KYC_LABEL: Record<string, { text: string; color: string; bg: string }> = {
 };
 
 const PAGE_SIZE = 20;
-const GRID = '1.7fr 0.9fr 0.9fr 0.9fr 0.9fr 1.1fr 44px';
+// One fewer column than before — Статус dropped (an "Активен" badge on
+// almost every row said nothing; blocked users now get a badge next to
+// their email instead, same spot the ADMIN badge already uses).
+const GRID = '1.8fr 0.9fr 1.1fr 0.9fr 1.4fr 44px';
 const AVATAR_COLORS = ['#4f46e5', '#039855', '#0284c7', '#dc6803', '#e11d48', '#7c3aed', '#0e7490', '#475467'];
+// A deposit credited within this window still counts as "new" for the
+// highlight in the Баланс column.
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 function lastSeenLabel(lastLoginAt: string | null): string {
   if (!lastLoginAt) return '—';
@@ -28,6 +34,35 @@ function lastSeenLabel(lastLoginAt: string | null): string {
   if (days <= 0) return 'Сегодня';
   if (days === 1) return 'Вчера';
   return `${days} дн. назад`;
+}
+
+// Green while recently active, gray once it's been a couple of days —
+// lets admin scan the column for who's actually around instead of reading
+// every date.
+function LastSeenBadge({ lastLoginAt }: { lastLoginAt: string | null }) {
+  const recent = lastLoginAt !== null && Date.now() - new Date(lastLoginAt).getTime() <= ONE_DAY_MS;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-tertiary)' }}>
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: lastLoginAt === null ? 'var(--text-tertiary)' : recent ? 'var(--buy)' : 'var(--text-tertiary)',
+          flex: 'none',
+        }}
+      />
+      {lastSeenLabel(lastLoginAt)}
+    </span>
+  );
+}
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours < 1) return `${Math.max(1, Math.floor(ms / 60_000))} мин. назад`;
+  if (hours < 24) return `${hours} ч. назад`;
+  return `${Math.floor(hours / 24)} дн. назад`;
 }
 
 function avatarColor(email: string): string {
@@ -44,6 +79,7 @@ function initials(email: string): string {
  * таблица (карточки на мобильных) со сменой блокировки прямо из списка. */
 export function AdminUsersPage() {
   const [users, setUsers] = useState<User[] | null>(null);
+  const [recentDeposits, setRecentDeposits] = useState<Map<string, { amount: string; asset: string; createdAt: string }>>(new Map());
   const [page, setPage] = useState(1);
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
@@ -53,6 +89,21 @@ export function AdminUsersPage() {
       .getAdminUsers()
       .then(setUsers)
       .catch(() => setUsers([]));
+    // Already sorted newest-first by the API — first hit per userId is
+    // that user's most recent deposit, which is all the highlight needs.
+    api
+      .getAdminDeposits()
+      .then((deposits) => {
+        const map = new Map<string, { amount: string; asset: string; createdAt: string }>();
+        const cutoff = Date.now() - ONE_DAY_MS;
+        for (const d of deposits) {
+          if (map.has(d.userId)) continue;
+          if (new Date(d.createdAt).getTime() < cutoff) continue;
+          map.set(d.userId, { amount: d.amount, asset: d.asset, createdAt: d.createdAt });
+        }
+        setRecentDeposits(map);
+      })
+      .catch(() => {});
   }, []);
 
   const list = users ?? [];
@@ -105,26 +156,39 @@ export function AdminUsersPage() {
           <span>Регистрация</span>
           <span>Посл. вход</span>
           <span>Верификация</span>
-          <span>Статус</span>
-          <span>Баланс</span>
+          <span style={styles.balanceHeaderCell}>Баланс</span>
           <span />
         </div>
         {users === null && (
           <>
-            <SkeletonRow columns={[1.7, 0.9, 0.9, 0.9, 0.9, 1.1]} />
-            <SkeletonRow columns={[1.7, 0.9, 0.9, 0.9, 0.9, 1.1]} />
-            <SkeletonRow columns={[1.7, 0.9, 0.9, 0.9, 0.9, 1.1]} />
+            <SkeletonRow columns={[1.8, 0.9, 1.1, 0.9, 1.4]} />
+            <SkeletonRow columns={[1.8, 0.9, 1.1, 0.9, 1.4]} />
+            <SkeletonRow columns={[1.8, 0.9, 1.1, 0.9, 1.4]} />
           </>
         )}
         {paged.map((u) => (
-          <UserRow key={u.id} user={u} onOpen={() => navigate(`/admin/users/${u.id}`)} onBlock={handleBlock} onUnblock={handleUnblock} />
+          <UserRow
+            key={u.id}
+            user={u}
+            recentDeposit={recentDeposits.get(u.id)}
+            onOpen={() => navigate(`/admin/users/${u.id}`)}
+            onBlock={handleBlock}
+            onUnblock={handleUnblock}
+          />
         ))}
         {users && list.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Пользователей пока нет.</p>}
       </div>
 
       <div className="admin-table-mobile" style={{ display: 'grid', gap: 12 }}>
         {paged.map((u) => (
-          <MobileUserCard key={u.id} user={u} onOpen={() => navigate(`/admin/users/${u.id}`)} onBlock={handleBlock} onUnblock={handleUnblock} />
+          <MobileUserCard
+            key={u.id}
+            user={u}
+            recentDeposit={recentDeposits.get(u.id)}
+            onOpen={() => navigate(`/admin/users/${u.id}`)}
+            onBlock={handleBlock}
+            onUnblock={handleUnblock}
+          />
         ))}
       </div>
 
@@ -142,7 +206,33 @@ function balanceSummary(u: User): string {
   return nonZero.length === 0 ? '—' : nonZero.map((b) => `${b.available} ${b.asset}`).join(', ');
 }
 
-function UserRow({ user: u, onOpen, onBlock, onUnblock }: { user: User; onOpen: () => void; onBlock: (u: User) => void; onUnblock: (u: User) => void }) {
+type RecentDeposit = { amount: string; asset: string; createdAt: string } | undefined;
+
+// The eye-catching part of the ask: a glowing badge with the actual amount
+// and how long ago it landed, right where the admin is already looking —
+// no separate trip to the Пополнения tab just to notice something happened.
+function RecentDepositBadge({ deposit }: { deposit: RecentDeposit }) {
+  if (!deposit) return null;
+  return (
+    <span style={styles.recentDepositBadge}>
+      +{deposit.amount} {deposit.asset} · {relativeTime(deposit.createdAt)}
+    </span>
+  );
+}
+
+function UserRow({
+  user: u,
+  recentDeposit,
+  onOpen,
+  onBlock,
+  onUnblock,
+}: {
+  user: User;
+  recentDeposit: RecentDeposit;
+  onOpen: () => void;
+  onBlock: (u: User) => void;
+  onUnblock: (u: User) => void;
+}) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
     <div
@@ -159,18 +249,21 @@ function UserRow({ user: u, onOpen, onBlock, onUnblock }: { user: User; onOpen: 
               <Badge text="ADMIN" color="var(--admin-brand)" bg="var(--admin-brand-dim)" />
             </span>
           )}
+          {u.isBlocked && (
+            <span style={{ marginLeft: 6 }}>
+              <Badge text="Заблокирован" color="var(--sell)" bg="var(--sell-dim)" />
+            </span>
+          )}
         </span>
       </span>
       <span style={{ color: 'var(--text-secondary)' }}>{new Date(u.createdAt).toLocaleDateString('ru-RU')}</span>
-      <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{lastSeenLabel(u.lastLoginAt)}</span>
+      <LastSeenBadge lastLoginAt={u.lastLoginAt} />
       <span>
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
       </span>
-      <span>
-        {u.isBlocked ? <Badge text="Заблокирован" color="var(--sell)" bg="var(--sell-dim)" /> : <Badge text="Активен" color="var(--buy)" bg="var(--buy-dim)" />}
-      </span>
-      <span className="mono" style={{ fontSize: 12 }}>
-        {balanceSummary(u)}
+      <span className="mono" style={{ ...styles.balanceCell, fontSize: 12 }}>
+        <span style={{ fontWeight: 600 }}>{balanceSummary(u)}</span>
+        <RecentDepositBadge deposit={recentDeposit} />
       </span>
       <span onClick={(e) => e.stopPropagation()}>
         <ActionsMenu user={u} onOpen={onOpen} onBlock={onBlock} onUnblock={onUnblock} />
@@ -179,7 +272,19 @@ function UserRow({ user: u, onOpen, onBlock, onUnblock }: { user: User; onOpen: 
   );
 }
 
-function MobileUserCard({ user: u, onOpen, onBlock, onUnblock }: { user: User; onOpen: () => void; onBlock: (u: User) => void; onUnblock: (u: User) => void }) {
+function MobileUserCard({
+  user: u,
+  recentDeposit,
+  onOpen,
+  onBlock,
+  onUnblock,
+}: {
+  user: User;
+  recentDeposit: RecentDeposit;
+  onOpen: () => void;
+  onBlock: (u: User) => void;
+  onUnblock: (u: User) => void;
+}) {
   const badge = KYC_LABEL[u.kycStatus] ?? KYC_LABEL.NOT_STARTED;
   return (
     <div className="admin-card-hover" style={styles.card} onClick={onOpen}>
@@ -194,13 +299,16 @@ function MobileUserCard({ user: u, onOpen, onBlock, onUnblock }: { user: User; o
         </span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-        {u.isBlocked ? <Badge text="Заблокирован" color="var(--sell)" bg="var(--sell-dim)" /> : <Badge text="Активен" color="var(--buy)" bg="var(--buy-dim)" />}
+        {u.isBlocked && <Badge text="Заблокирован" color="var(--sell)" bg="var(--sell-dim)" />}
         <Badge text={badge.text} color={badge.color} bg={badge.bg} />
         {u.isAdmin && <Badge text="ADMIN" color="var(--admin-brand)" bg="var(--admin-brand-dim)" />}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12 }}>
-        <span style={{ color: 'var(--text-tertiary)' }}>Посл. вход: {lastSeenLabel(u.lastLoginAt)}</span>
-        <span className="mono">{balanceSummary(u)}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)', fontSize: 12 }}>
+        <LastSeenBadge lastLoginAt={u.lastLoginAt} />
+        <span className="mono" style={{ ...styles.balanceCell, alignItems: 'flex-end' }}>
+          <span style={{ fontWeight: 600 }}>{balanceSummary(u)}</span>
+          <RecentDepositBadge deposit={recentDeposit} />
+        </span>
       </div>
     </div>
   );

@@ -193,6 +193,32 @@ export const styles: Record<string, CSSProperties> = {
     borderTop: '1px solid var(--border)',
     gap: 8,
   },
+  // Баланс column — bold border box to set it apart from the rest of the row,
+  // per the request to visually call it out ("виділи Баланси жирними лініями").
+  balanceHeaderCell: {
+    borderLeft: '2px solid var(--text-primary)',
+    paddingLeft: 10,
+  },
+  balanceCell: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    alignItems: 'flex-start',
+    borderLeft: '2px solid var(--text-primary)',
+    paddingLeft: 10,
+  },
+  // A recently-credited deposit (last 24h) — meant to catch the eye at a glance.
+  recentDepositBadge: {
+    display: 'inline-block',
+    color: 'var(--buy)',
+    background: 'var(--buy-dim)',
+    border: '1px solid var(--buy)',
+    borderRadius: 6,
+    padding: '2px 7px',
+    fontSize: 11,
+    fontWeight: 700,
+    whiteSpace: 'nowrap',
+  },
   row: { display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderBottom: '1px solid var(--border)' },
   form: { display: 'flex', flexDirection: 'column', gap: 14 },
   label: { display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' },
