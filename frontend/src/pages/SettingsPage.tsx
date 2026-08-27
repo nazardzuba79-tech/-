@@ -3,7 +3,7 @@ import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { Badge } from '../components/Badge';
-import { getCountries } from '../lib/countries';
+import { CountrySelect } from '../components/CountrySelect';
 import { Footer } from '../components/Footer';
 import { Skeleton, SkeletonRow } from '../components/Skeleton';
 
@@ -375,7 +375,7 @@ function PersonalInfoForm({
   me: { displayName: string | null; phone: string | null; country: string | null };
   onSaved: (patch: { displayName: string | null; phone: string | null; country: string | null }) => void;
 }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [name, setName] = useState(me.displayName ?? '');
   const [phone, setPhone] = useState(me.phone ?? '');
   const [country, setCountry] = useState(me.country ?? '');
@@ -415,17 +415,14 @@ function PersonalInfoForm({
           {t('settings.phone')}
           <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} style={styles.input} maxLength={32} />
         </label>
-        <label style={styles.label}>
+        {/* A real <label> here would forward every click inside the
+            dropdown (which has its own buttons) to the first labelable
+            descendant — the trigger button — re-toggling it open right
+            after a selection closes it. Plain div instead. */}
+        <div style={styles.label}>
           {t('settings.country')}
-          <select value={country} onChange={(e) => setCountry(e.target.value)} style={styles.input}>
-            <option value="">{t('settings.notSpecified')}</option>
-            {getCountries(lang).map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <CountrySelect value={country} onChange={setCountry} placeholder={t('settings.notSpecified')} />
+        </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}
         {saved && <div style={styles.successBox}>{t('settings.profileSaved')}</div>}
@@ -881,7 +878,7 @@ function TwoFactorSection() {
 }
 
 function VerificationTab() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const KYC_STATUS_LABEL = kycStatusLabel(t);
   const [status, setStatus] = useState<Awaited<ReturnType<typeof api.getMyKyc>> | null>(null);
   const [country, setCountry] = useState('RU');
@@ -951,16 +948,10 @@ function VerificationTab() {
         </p>
       ) : (
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>
+          <div style={styles.label}>
             {t('settings.country')}
-            <select value={country} onChange={(e) => setCountry(e.target.value)} style={styles.input}>
-              {getCountries(lang).map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+            <CountrySelect value={country} onChange={setCountry} placeholder={t('settings.notSpecified')} />
+          </div>
           <label style={styles.label}>
             {t('settings.fullName')}
             <input
