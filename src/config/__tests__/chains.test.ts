@@ -65,14 +65,28 @@ describe('loadChainConfig', () => {
     expect(config.rpcUrl).toBe('https://my-own-node.example');
   });
 
-  // Other EVM chains (Polygon, BSC, ...) have no universal free default the
-  // way Ethereum does — they still need their own explicit *_RPC_URL.
-  it('throws when a non-Ethereum EVM chain is missing its RPC URL', () => {
+  // BSC and Polygon get the same zero-config RPC default treatment as
+  // Ethereum (see DEFAULT_RPC_URL) — verified below. Other EVM chains
+  // (Avalanche, Arbitrum, ...) have no universal free default and still
+  // need their own explicit *_RPC_URL.
+  it('throws when an EVM chain with no built-in default is missing its RPC URL', () => {
+    process.env.AVALANCHE_TREASURY_ADDRESS = '0xabc';
+    process.env.AVALANCHE_NATIVE_ASSET = 'AVAX';
+    delete process.env.AVALANCHE_RPC_URL;
+
+    expect(() => loadChainConfig('avalanche')).toThrow('AVALANCHE_RPC_URL');
+  });
+
+  it('defaults BSC and Polygon to their own free public RPC endpoints, same as Ethereum', () => {
+    process.env.BSC_TREASURY_ADDRESS = '0xabc';
+    process.env.BSC_NATIVE_ASSET = 'BNB';
+    delete process.env.BSC_RPC_URL;
     process.env.POLYGON_TREASURY_ADDRESS = '0xabc';
     process.env.POLYGON_NATIVE_ASSET = 'MATIC';
     delete process.env.POLYGON_RPC_URL;
 
-    expect(() => loadChainConfig('polygon')).toThrow('POLYGON_RPC_URL');
+    expect(loadChainConfig('bsc').rpcUrl).toBe('https://bsc-dataseed.binance.org');
+    expect(loadChainConfig('polygon').rpcUrl).toBe('https://polygon-rpc.com');
   });
 
   it('infers type "bitcoin" and defaults the API URL and confirmations', () => {

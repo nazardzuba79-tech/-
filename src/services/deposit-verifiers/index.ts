@@ -3,6 +3,8 @@ import { DepositVerifier } from './types';
 import { EvmDepositVerifier } from './EvmDepositVerifier';
 import { BitcoinDepositVerifier } from './BitcoinDepositVerifier';
 import { TronDepositVerifier } from './TronDepositVerifier';
+import { SolanaDepositVerifier } from './SolanaDepositVerifier';
+import { TonDepositVerifier } from './TonDepositVerifier';
 
 export function createVerifier(chainConfig: ChainConfig): DepositVerifier {
   switch (chainConfig.type) {
@@ -12,6 +14,10 @@ export function createVerifier(chainConfig: ChainConfig): DepositVerifier {
       return new BitcoinDepositVerifier(chainConfig);
     case 'tron':
       return new TronDepositVerifier(chainConfig);
+    case 'solana':
+      return new SolanaDepositVerifier(chainConfig);
+    case 'ton':
+      return new TonDepositVerifier(chainConfig);
   }
 }
 

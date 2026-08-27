@@ -5,14 +5,33 @@ import { Skeleton } from '../../components/Skeleton';
 
 type Wallet = Awaited<ReturnType<typeof api.getAdminWallets>>[number];
 
-const CHAIN_LABEL: Record<string, string> = { bitcoin: 'Bitcoin', tron: 'Tron — USDT (TRC-20)', ethereum: 'Ethereum' };
+const CHAIN_LABEL: Record<string, string> = {
+  bitcoin: 'Bitcoin',
+  tron: 'Tron',
+  ethereum: 'Ethereum',
+  bsc: 'BNB Smart Chain',
+  polygon: 'Polygon',
+  solana: 'Solana',
+  ton: 'TON',
+};
 
-// Tron deposits only support TRC-20 tokens (USDT) — native TRX deposits
-// aren't implemented (see TronDepositVerifier), so showing the native
-// asset here would incorrectly suggest sending plain TRX works.
+// The token-standard suffix shown after each NON-native asset, so
+// "USDT (ERC-20)" reads unambiguously as "USDT, on this network" — without
+// it, a card listing "ETH, USDT" looks like two native coins instead of one
+// native coin plus one token riding on it.
+const TOKEN_STANDARD_LABEL: Record<string, string> = {
+  ethereum: 'ERC-20',
+  bsc: 'BEP-20',
+  polygon: 'ERC-20',
+  tron: 'TRC-20',
+  solana: 'SPL',
+  ton: 'Jetton',
+};
+
 function supportedAssetsLabel(chain: string, nativeAsset: string, tokens: string[]): string {
-  if (chain === 'tron') return tokens.length ? tokens.join(', ') + ' (TRC-20)' : 'нет поддерживаемых активов';
-  return `${nativeAsset}${tokens.length ? `, ${tokens.join(', ')}` : ''}`;
+  const standard = TOKEN_STANDARD_LABEL[chain];
+  const tokenLabels = tokens.map((token) => (standard ? `${token} (${standard})` : token));
+  return [nativeAsset, ...tokenLabels].join(', ');
 }
 
 /** Кошельки для пополнения — один адрес приёма депозитов на каждую сеть.

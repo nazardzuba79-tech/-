@@ -19,6 +19,10 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
     ethereum: t('deposit.chain.ethereum'),
+    bsc: t('deposit.chain.bsc'),
+    polygon: t('deposit.chain.polygon'),
+    solana: t('deposit.chain.solana'),
+    ton: t('deposit.chain.ton'),
   };
   const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
   const [chainsLoaded, setChainsLoaded] = useState(false);

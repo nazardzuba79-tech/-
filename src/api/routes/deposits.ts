@@ -14,20 +14,24 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 // is what stops the deposit UI from ever inventing a chain/asset combo
 // nobody configured a treasury address for.
 //
-// Bitcoin, Tron, and Ethereum — each configured (or not) purely via env
-// vars, see config/chains.ts. Adding another EVM chain (Polygon, BSC, ...)
-// later is the same env-var setup, no code change needed here; add its
-// chain name to this list.
+// Bitcoin, Tron, Ethereum, BSC, Polygon, Solana, and TON — each configured
+// (or not) purely via env vars, see config/chains.ts. Adding another EVM
+// chain (Avalanche, Arbitrum, ...) later is the same env-var setup, no code
+// change needed here; add its chain name to this list.
 // Exported so adminDeposits.ts (the manual-credit feed) walks the exact
 // same set of chains — one list, not two that could drift apart.
-export const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum'];
+export const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'polygon', 'solana', 'ton'];
 
-// Bitcoin/Tron tx hashes are plain 64 hex chars (as shown by their block
-// explorers); EVM chains prefix the same 64 hex chars with "0x".
+// Bitcoin/Tron/TON tx hashes are plain 64 hex chars (as shown by their
+// block explorers); EVM chains prefix the same 64 hex chars with "0x".
+// Solana signatures are base58-encoded (64-byte signature), typically 87-88
+// characters, never containing 0/O/I/l.
 export const TX_HASH_PATTERN: Record<ChainConfig['type'], RegExp> = {
   evm: /^0x[a-fA-F0-9]{64}$/,
   bitcoin: /^[a-fA-F0-9]{64}$/,
   tron: /^[a-fA-F0-9]{64}$/,
+  solana: /^[1-9A-HJ-NP-Za-km-z]{64,100}$/,
+  ton: /^(0x)?[a-fA-F0-9]{64}$/,
 };
 
 /** Thin re-export of TreasuryWalletService.resolve() — kept here since every
@@ -70,11 +74,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
       res.json({
         chain: config.chain,
         address: config.treasuryAddress,
-        // Tron's native asset (TRX) is deliberately excluded — TronDepositVerifier
-        // only checks TRC-20 token transfers, so a native TRX send would never
-        // verify or even show up in the admin's incoming feed. Every other
-        // chain type here (bitcoin, evm) actually supports its native asset.
-        supportedAssets: config.type === 'tron' ? Object.keys(config.tokens) : [config.nativeAsset, ...Object.keys(config.tokens)],
+        supportedAssets: [config.nativeAsset, ...Object.keys(config.tokens)],
         note: 'Send only the listed assets on this exact network. After sending, submit the tx hash to /deposits/claim.',
       });
     } catch {

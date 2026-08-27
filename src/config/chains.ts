@@ -15,23 +15,30 @@
  * strong seed backup, never approving unknown signature requests) matters a
  * lot more now that it holds the whole team's funds.
  *
- * Three chain "types" are supported, each verified completely differently
+ * Five chain "types" are supported, each verified completely differently
  * on deposit claim (see src/services/deposit-verifiers/):
  *   - "evm"     Ethereum, Polygon, BSC, ... — a free public RPC endpoint
  *               (no signup) verifies a specific tx at credit time; for
- *               Ethereum specifically this defaults automatically (same
- *               zero-config treatment as Bitcoin/Tron below) — other EVM
- *               chains still need their own *_RPC_URL. A free Etherscan-
- *               style API key (2-minute signup, no payment) powers the
- *               admin's incoming-transfers feed — see EvmDepositVerifier
+ *               Ethereum, BSC and Polygon specifically this defaults
+ *               automatically (same zero-config treatment as Bitcoin/Tron
+ *               below) — other EVM chains still need their own *_RPC_URL.
+ *               A free Etherscan-style API key (2-minute signup, no
+ *               payment) powers the admin's incoming-transfers feed — see
+ *               EvmDepositVerifier
  *   - "bitcoin" Bitcoin — via a public Esplora-style block explorer API
- *   - "tron"    Tron (e.g. USDT-TRC20) — via the TronGrid API
+ *   - "tron"    Tron — native TRX and TRC-20 tokens (e.g. USDT-TRC20) —
+ *               via the TronGrid API
+ *   - "solana"  Solana — native SOL and SPL tokens (e.g. USDT-SPL) — via a
+ *               free public JSON-RPC endpoint (also used for the admin
+ *               incoming-transfers feed, no separate explorer API needed)
+ *   - "ton"     TON — native TON and jettons (e.g. USDT-TON) — via the
+ *               tonapi.io REST API
  *
  * Set real values via environment variables — never hardcode a real address
  * or RPC/API key in source control.
  */
 
-export type ChainType = 'evm' | 'bitcoin' | 'tron';
+export type ChainType = 'evm' | 'bitcoin' | 'tron' | 'solana' | 'ton';
 
 // Chains whose type isn't inferable from their name are assumed "evm" —
 // that covers every EVM-compatible chain (ethereum, polygon, bsc, ...)
@@ -39,6 +46,8 @@ export type ChainType = 'evm' | 'bitcoin' | 'tron';
 const CHAIN_TYPE_OVERRIDES: Record<string, ChainType> = {
   bitcoin: 'bitcoin',
   tron: 'tron',
+  solana: 'solana',
+  ton: 'ton',
 };
 
 export interface ChainConfig {
@@ -46,8 +55,8 @@ export interface ChainConfig {
   type: ChainType;
   treasuryAddress: string; // YOUR wallet (e.g. Trust Wallet) that receives all deposits
   minConfirmations: number;
-  nativeAsset: string; // "ETH", "BTC", "TRX", ...
-  /** ERC-20 / TRC-20 tokens supported for deposit on this chain. */
+  nativeAsset: string; // "ETH", "BTC", "TRX", "SOL", "TON", ...
+  /** ERC-20 / TRC-20 / SPL / jetton tokens supported for deposit on this chain. */
   tokens: Record<string, { contractAddress: string; decimals: number }>;
   /** EVM only — JSON-RPC endpoint, used only for the authoritative
    * single-transaction check at credit time. A free public endpoint (e.g.
@@ -55,12 +64,16 @@ export interface ChainConfig {
    * no API key. */
   rpcUrl?: string;
   /** Bitcoin/Tron/EVM — REST API base URL (Blockstream Esplora / TronGrid /
-   * Etherscan) that powers the admin's incoming-transfers feed. */
+   * Etherscan) that powers the admin's incoming-transfers feed. Solana/TON —
+   * the ONLY endpoint (JSON-RPC / tonapi.io REST), used for both the
+   * per-tx verify() check and the incoming-transfers feed. */
   apiUrl?: string;
   /** Tron: optional, raises TronGrid's free rate limit. EVM: required for
    * the incoming-transfers feed — Etherscan's API key is free (signup at
    * https://etherscan.io/apis, no payment), just not automatic like the
-   * TronGrid/Blockstream defaults below. */
+   * TronGrid/Blockstream defaults below. TON: optional, raises tonapi.io's
+   * free rate limit (get one at https://tonconsole.com). Solana: unused —
+   * the public RPC endpoint needs no key. */
   apiKey?: string;
 }
 
@@ -68,22 +81,35 @@ const DEFAULT_MIN_CONFIRMATIONS: Record<ChainType, number> = {
   evm: 12,
   bitcoin: 2,
   tron: 19,
+  solana: 32, // ~roughly Solana's "finalized" commitment level
+  ton: 3,
 };
 
 const DEFAULT_API_URL: Partial<Record<ChainType, string>> = {
   bitcoin: 'https://blockstream.info/api',
   tron: 'https://api.trongrid.io',
   evm: 'https://api.etherscan.io/api',
+  // Solana's own JSON-RPC doubles as the "explorer" API here — a single
+  // free public endpoint answers both the per-tx verify() check and the
+  // listIncoming() feed, unlike EVM/Bitcoin/Tron which split those across
+  // an RPC and a separate explorer API.
+  solana: 'https://api.mainnet-beta.solana.com',
+  // tonapi.io — free tier, no signup required for light use; set
+  // TON_API_KEY (from https://tonconsole.com) to raise the rate limit.
+  ton: 'https://tonapi.io',
 };
 
-// Bitcoin/Tron get a zero-config default API above; Ethereum gets the same
-// treatment here for its RPC endpoint — a genuinely free, no-signup public
-// node, so ETH deposits work out of the box exactly like BTC/TRON, without
-// an admin having to paste an RPC URL into env vars first. Other EVM chains
-// (Polygon, BSC, ...) still require their own *_RPC_URL — there's no single
-// universal default that makes sense for an arbitrary chain.
+// Bitcoin/Tron get a zero-config default API above; Ethereum, BSC and
+// Polygon get the same treatment here for their RPC endpoints — genuinely
+// free, no-signup public nodes, so deposits on these three work out of the
+// box exactly like BTC/TRON, without an admin having to paste an RPC URL
+// into env vars first. Other EVM chains (Avalanche, Arbitrum, ...) still
+// require their own *_RPC_URL — there's no single universal default that
+// makes sense for an arbitrary chain.
 const DEFAULT_RPC_URL: Partial<Record<string, string>> = {
   ethereum: 'https://ethereum.publicnode.com',
+  bsc: 'https://bsc-dataseed.binance.org',
+  polygon: 'https://polygon-rpc.com',
 };
 
 function requireEnv(name: string): string {

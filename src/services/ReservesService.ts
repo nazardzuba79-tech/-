@@ -26,7 +26,7 @@ export interface ReserveRow {
 
 // Same narrow list deposits.ts actually accepts claims on — a reserves row
 // for a chain nobody can deposit through would be misleading, not honest.
-const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum'];
+const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'polygon', 'solana', 'ton'];
 
 const ERC20_BALANCE_OF_ABI = ['function balanceOf(address) view returns (uint256)'];
 
@@ -108,6 +108,107 @@ async function fetchEvmTokenBalance(
   return new BigNumber(raw.toString()).dividedBy(new BigNumber(10).pow(decimals));
 }
 
+// Same base58check decode SolanaDepositVerifier/TronDepositVerifier don't
+// need but Tron's native balance lookup does — TronGrid reports account
+// balances against the plain base58 address directly, so no conversion is
+// actually needed there. Kept isolated to fetchTronNativeBalance below.
+interface TronGridAccountBalanceResponse {
+  data: { balance?: number }[];
+}
+
+async function fetchTronNativeBalance(apiUrl: string, apiKey: string | undefined, address: string, fetchFn: typeof fetch): Promise<BigNumber> {
+  const res = await fetchFn(`${apiUrl}/v1/accounts/${address}`, {
+    headers: apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {},
+  });
+  if (!res.ok) throw new Error(`TronGrid API responded with HTTP ${res.status}`);
+  const body = (await res.json()) as TronGridAccountBalanceResponse;
+  const sun = body.data?.[0]?.balance ?? 0;
+  return new BigNumber(sun).dividedBy(new BigNumber(10).pow(6));
+}
+
+interface SolanaRpcBalanceResponse {
+  result?: { value: number };
+  error?: { message: string };
+}
+
+async function solanaRpc<T>(apiUrl: string, method: string, params: unknown[], fetchFn: typeof fetch): Promise<T> {
+  const res = await fetchFn(apiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  if (!res.ok) throw new Error(`Solana RPC endpoint responded with HTTP ${res.status}`);
+  const body = (await res.json()) as { result?: T; error?: { message: string } };
+  if (body.error) throw new Error(`Solana RPC error: ${body.error.message}`);
+  return body.result as T;
+}
+
+async function fetchSolanaNativeBalance(apiUrl: string, address: string, fetchFn: typeof fetch): Promise<BigNumber> {
+  const result = await solanaRpc<{ value: number }>(apiUrl, 'getBalance', [address], fetchFn);
+  return new BigNumber(result.value).dividedBy(new BigNumber(10).pow(9));
+}
+
+interface SolanaTokenAccountsResponse {
+  value: { account: { data: { parsed: { info: { tokenAmount: { amount: string } } } } } }[];
+}
+
+async function fetchSolanaTokenBalance(
+  apiUrl: string,
+  address: string,
+  mint: string,
+  decimals: number,
+  fetchFn: typeof fetch
+): Promise<BigNumber> {
+  const result = await solanaRpc<SolanaTokenAccountsResponse>(
+    apiUrl,
+    'getTokenAccountsByOwner',
+    [address, { mint }, { encoding: 'jsonParsed' }],
+    fetchFn
+  );
+  const total = result.value.reduce(
+    (sum, acc) => sum + BigInt(acc.account.data.parsed.info.tokenAmount.amount),
+    BigInt(0)
+  );
+  return new BigNumber(total.toString()).dividedBy(new BigNumber(10).pow(decimals));
+}
+
+interface TonApiAccountResponse {
+  balance: string; // nanotons, as a string
+}
+
+async function fetchTonNativeBalance(apiUrl: string, apiKey: string | undefined, address: string, fetchFn: typeof fetch): Promise<BigNumber> {
+  const res = await fetchFn(`${apiUrl}/v2/accounts/${address}`, {
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+  });
+  if (!res.ok) throw new Error(`tonapi.io responded with HTTP ${res.status}`);
+  const body = (await res.json()) as TonApiAccountResponse;
+  return new BigNumber(body.balance).dividedBy(new BigNumber(10).pow(9));
+}
+
+interface TonApiJettonBalanceResponse {
+  balance: string; // raw jetton units, as a string
+}
+
+async function fetchTonJettonBalance(
+  apiUrl: string,
+  apiKey: string | undefined,
+  address: string,
+  jettonAddress: string,
+  decimals: number,
+  fetchFn: typeof fetch
+): Promise<BigNumber> {
+  const res = await fetchFn(`${apiUrl}/v2/accounts/${address}/jettons/${jettonAddress}`, {
+    headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+  });
+  // tonapi returns 404 when the treasury has never held this jetton (no
+  // jetton-wallet contract deployed for it yet) — that's a real zero
+  // balance, not an error.
+  if (res.status === 404) return new BigNumber(0);
+  if (!res.ok) throw new Error(`tonapi.io responded with HTTP ${res.status}`);
+  const body = (await res.json()) as TonApiJettonBalanceResponse;
+  return new BigNumber(body.balance).dividedBy(new BigNumber(10).pow(decimals));
+}
+
 /**
  * A self-reported reserves check, not an independent audit: it compares
  * this deployment's own database (what it owes every user, per asset)
@@ -161,8 +262,34 @@ export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = 
     }
 
     if (config.type === 'tron') {
-      // Native TRX deposits aren't creditable in this deployment (see
-      // TronDepositVerifier) — only the configured TRC-20 tokens are.
+      const nativeLiabilities = await internalLiabilities(prisma, config.nativeAsset);
+      try {
+        const onChain = await fetchTronNativeBalance(
+          config.apiUrl ?? 'https://api.trongrid.io',
+          config.apiKey,
+          config.treasuryAddress,
+          fetchFn
+        );
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: onChain.toFixed(),
+          coverageRatio: coverageRatio(onChain, nativeLiabilities),
+        });
+      } catch (err: any) {
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: null,
+          coverageRatio: null,
+          error: err.message,
+        });
+      }
+
       for (const [asset, token] of Object.entries(config.tokens)) {
         const liabilities = await internalLiabilities(prisma, asset);
         try {
@@ -224,6 +351,113 @@ export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = 
         const liabilities = await internalLiabilities(prisma, asset);
         try {
           const onChain = await fetchEvmTokenBalance(config.rpcUrl!, config.treasuryAddress, token.contractAddress, token.decimals);
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: onChain.toFixed(),
+            coverageRatio: coverageRatio(onChain, liabilities),
+          });
+        } catch (err: any) {
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: null,
+            coverageRatio: null,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    if (config.type === 'solana') {
+      const nativeLiabilities = await internalLiabilities(prisma, config.nativeAsset);
+      try {
+        const onChain = await fetchSolanaNativeBalance(config.apiUrl!, config.treasuryAddress, fetchFn);
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: onChain.toFixed(),
+          coverageRatio: coverageRatio(onChain, nativeLiabilities),
+        });
+      } catch (err: any) {
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: null,
+          coverageRatio: null,
+          error: err.message,
+        });
+      }
+
+      for (const [asset, token] of Object.entries(config.tokens)) {
+        const liabilities = await internalLiabilities(prisma, asset);
+        try {
+          const onChain = await fetchSolanaTokenBalance(config.apiUrl!, config.treasuryAddress, token.contractAddress, token.decimals, fetchFn);
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: onChain.toFixed(),
+            coverageRatio: coverageRatio(onChain, liabilities),
+          });
+        } catch (err: any) {
+          rows.push({
+            chain: config.chain,
+            asset,
+            treasuryAddress: config.treasuryAddress,
+            internalLiabilities: liabilities.toFixed(),
+            onChainBalance: null,
+            coverageRatio: null,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    if (config.type === 'ton') {
+      const nativeLiabilities = await internalLiabilities(prisma, config.nativeAsset);
+      try {
+        const onChain = await fetchTonNativeBalance(config.apiUrl ?? 'https://tonapi.io', config.apiKey, config.treasuryAddress, fetchFn);
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: onChain.toFixed(),
+          coverageRatio: coverageRatio(onChain, nativeLiabilities),
+        });
+      } catch (err: any) {
+        rows.push({
+          chain: config.chain,
+          asset: config.nativeAsset,
+          treasuryAddress: config.treasuryAddress,
+          internalLiabilities: nativeLiabilities.toFixed(),
+          onChainBalance: null,
+          coverageRatio: null,
+          error: err.message,
+        });
+      }
+
+      for (const [asset, token] of Object.entries(config.tokens)) {
+        const liabilities = await internalLiabilities(prisma, asset);
+        try {
+          const onChain = await fetchTonJettonBalance(
+            config.apiUrl ?? 'https://tonapi.io',
+            config.apiKey,
+            config.treasuryAddress,
+            token.contractAddress,
+            token.decimals,
+            fetchFn
+          );
           rows.push({
             chain: config.chain,
             asset,

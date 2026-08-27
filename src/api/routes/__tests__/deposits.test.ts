@@ -81,11 +81,9 @@ describe('deposits routes', () => {
       expect(res.body.supportedAssets).toEqual(['BTC']);
     });
 
-    // The real bug this guards against: TronDepositVerifier only ever
-    // checks TRC-20 token transfers, never native TRX — offering TRX here
-    // would let a client "deposit" something that can never be verified or
-    // even show up in the admin's incoming-transfers feed.
-    it('excludes the native asset (TRX) for tron, offering only its TRC-20 tokens', async () => {
+    // TronDepositVerifier verifies both native TRX (via TransferContract)
+    // and TRC-20 token transfers, so both should be offered here.
+    it('includes both the native asset (TRX) and TRC-20 tokens for tron', async () => {
       process.env.TRON_TREASURY_ADDRESS = 'Texample';
       process.env.TRON_NATIVE_ASSET = 'TRX';
       process.env.TRON_TOKENS = 'USDT:TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t:6';
@@ -94,7 +92,7 @@ describe('deposits routes', () => {
       const res = await request(app).get('/api/v1/deposit-address/tron').set('Authorization', authHeader('user-1'));
 
       expect(res.status).toBe(200);
-      expect(res.body.supportedAssets).toEqual(['USDT']);
+      expect(res.body.supportedAssets).toEqual(['TRX', 'USDT']);
     });
 
     it('includes both the native asset and any tokens for an EVM chain', async () => {
