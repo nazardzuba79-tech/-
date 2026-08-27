@@ -10,6 +10,37 @@ import { Skeleton, SkeletonRow } from '../components/Skeleton';
 type Tab = 'profile' | 'security' | 'verification' | 'api' | 'referral';
 type T = ReturnType<typeof useLanguage>['t'];
 
+// "Arctic Blue" — a light, warm-white theme for the whole Profile/Settings
+// section, ported from a user-supplied reference (oklch values copied
+// verbatim from its globals.css, not hand-guessed hex). Re-points the same
+// custom properties every style below already reads (var(--panel), var(--
+// text-primary), var(--accent), ...) so the whole page — sidebar, cards,
+// badges, buttons, hover states in index.css's .settings-* rules — re-
+// themes from this one object, same technique as the admin panel's own
+// LIGHT_THEME_VARS (see adminStyles.ts). Scoped to this page only; the
+// global Nav above it (dark) is untouched on purpose.
+const ARCTIC_THEME_VARS = {
+  '--bg': 'oklch(0.977 0.0018 247)',
+  '--panel': 'oklch(1 0 0)',
+  '--panel-alt': 'oklch(0.968 0.002 247)',
+  '--panel-alt-hover': 'oklch(0.945 0.004 247)',
+  '--border': 'oklch(0.918 0.0035 258)',
+  '--text-primary': 'oklch(0.223 0.0086 264)',
+  '--text-secondary': 'oklch(0.532 0.017 258)',
+  '--text-tertiary': 'oklch(0.62 0.014 258)',
+  '--buy': 'oklch(0.5 0.13 155)',
+  '--buy-dim': 'oklch(0.955 0.03 158)',
+  '--sell': 'oklch(0.577 0.245 27.325)',
+  '--sell-dim': 'oklch(0.96 0.03 27)',
+  '--accent': 'oklch(0.62 0.16 245)',
+  '--accent-hover': 'oklch(0.56 0.17 245)',
+  '--accent-dim': 'oklch(0.965 0.02 236)',
+  '--neutral-dim': 'oklch(0.968 0.002 247)',
+  '--on-accent': 'oklch(0.99 0 0)',
+  '--shadow-sm': '0 1px 2px -1px oklch(0.5 0.02 258 / 0.06), 0 2px 8px -2px oklch(0.5 0.02 258 / 0.06)',
+  '--shadow-md': '0 1px 2px -1px oklch(0.5 0.02 258 / 0.05), 0 8px 24px -6px oklch(0.4 0.03 258 / 0.1)',
+} as React.CSSProperties;
+
 /* Small inline-SVG icon set for the settings sidebar/quick-actions —
    lucide-react isn't a project dependency (see BottomNav.tsx for the same
    pattern), so these are hand-drawn on the same 24x24 stroke grid. */
@@ -129,7 +160,7 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="page-mesh" style={styles.page}>
+    <div style={{ ...styles.page, ...ARCTIC_THEME_VARS }}>
       <Nav active="/settings" />
       <main style={{ ...styles.main, maxWidth: tab === 'api' ? 1080 : 940 }}>
         <div className="settings-layout" style={styles.layout}>
@@ -1205,7 +1236,7 @@ function ReferralTab() {
           {t('settings.referralDesc', { percent: data.rewardPercent })}
         </p>
 
-        <div style={styles.secretBox}>
+        <div style={styles.infoBox}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="mono" style={{ flex: 1, fontSize: 13, wordBreak: 'break-all' }}>
               {link}
@@ -1269,12 +1300,27 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: '100vh', background: 'var(--bg)' },
+  // color/fontWeight set fresh here (not just the --text-* variable
+  // overrides above) because index.css's `body { color: var(--text-
+  // primary) }` resolves against the dark theme's value at body's own
+  // scope — a descendant redefining the custom property doesn't
+  // retroactively change what body already inherited down. Declaring
+  // `color` again at this root re-anchors inheritance for every child
+  // that doesn't set its own (card titles, labels, ...), which is most of
+  // them — same trick adminStyles.ts uses for the same reason.
+  page: { minHeight: '100vh', background: 'var(--bg)', color: 'var(--text-primary)', fontWeight: 400 },
   main: { padding: 32, maxWidth: 760, margin: '0 auto' },
   secretBox: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--sell)',
-    borderRadius: 6,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  infoBox: {
+    background: 'var(--panel-alt)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 20,
   },
@@ -1313,8 +1359,8 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: 'auto',
     lineHeight: 1.6,
   },
-  title: { fontSize: 24, margin: '0 0 28px', fontFamily: 'var(--font-display)', fontWeight: 800, letterSpacing: '-0.02em' },
-  layout: { display: 'grid', gridTemplateColumns: '220px 1fr', gap: 32, alignItems: 'start' },
+  title: { fontSize: 24, margin: '0 0 28px', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '-0.03em' },
+  layout: { display: 'grid', gridTemplateColumns: '240px 1fr', gap: 32, alignItems: 'start' },
   sidebar: { position: 'sticky', top: 88 },
   eyebrow: {
     fontFamily: 'var(--font-mono)',
@@ -1340,9 +1386,9 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 12,
     background: 'transparent',
-    borderRadius: 9,
-    fontSize: 13,
-    fontWeight: 600,
+    borderRadius: 12,
+    fontSize: 13.5,
+    fontWeight: 500,
     textAlign: 'left',
   },
   sidebarHelp: {
@@ -1366,24 +1412,24 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '26px 28px',
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 12,
+    borderRadius: 18,
   },
   profileMain: { display: 'flex', alignItems: 'center', gap: 18 },
   avatarLarge: {
     position: 'relative',
-    width: 68,
-    height: 68,
+    width: 72,
+    height: 72,
     flex: 'none',
     display: 'grid',
     placeItems: 'center',
     borderRadius: '50%',
     fontSize: 28,
-    fontWeight: 800,
+    fontWeight: 700,
     color: 'var(--on-accent)',
   },
   profileNameRow: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  profileName: { fontSize: 20, margin: 0, letterSpacing: '-0.02em' },
-  profileEmail: { margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 12 },
+  profileName: { fontSize: 22, margin: 0, letterSpacing: '-0.02em', fontWeight: 600 },
+  profileEmail: { margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 12.5 },
   profileStatusRow: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 },
   statusDivider: { width: 1, height: 12, background: 'var(--border)' },
   profileMeta: { color: 'var(--text-tertiary)', fontSize: 11 },
@@ -1391,9 +1437,9 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid var(--accent-dim)',
     background: 'var(--accent-dim)',
     color: 'var(--accent)',
-    borderRadius: 5,
+    borderRadius: 999,
     fontSize: 10,
-    padding: '3px 7px',
+    padding: '3px 8px',
     fontFamily: 'var(--font-mono)',
   },
   memberSince: {
@@ -1413,9 +1459,9 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 14,
     alignItems: 'flex-start',
     padding: 22,
-    borderRadius: 12,
-    border: '1px solid var(--buy-dim)',
-    background: 'linear-gradient(135deg, rgba(0,214,143,0.06), var(--panel))',
+    borderRadius: 16,
+    border: '1px solid var(--border)',
+    background: 'var(--panel)',
   },
   verificationIcon: {
     flex: 'none',
@@ -1423,7 +1469,7 @@ const styles: Record<string, React.CSSProperties> = {
     placeItems: 'center',
     width: 36,
     height: 36,
-    borderRadius: 9,
+    borderRadius: 10,
     color: 'var(--buy)',
     background: 'var(--buy-dim)',
   },
@@ -1435,7 +1481,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     padding: 22,
-    borderRadius: 12,
+    borderRadius: 16,
     border: '1px solid var(--border)',
     background: 'var(--panel)',
   },
@@ -1444,7 +1490,7 @@ const styles: Record<string, React.CSSProperties> = {
     placeItems: 'center',
     width: 34,
     height: 34,
-    borderRadius: 9,
+    borderRadius: 10,
     color: 'var(--accent)',
     background: 'var(--accent-dim)',
   },
@@ -1460,42 +1506,42 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
   },
   securityRowValue: { fontFamily: 'var(--font-mono)', fontWeight: 400, fontSize: 11, color: 'var(--text-primary)' },
-  quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 },
+  quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 },
   quickCard: {
-    minHeight: 130,
+    minHeight: 118,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
     textAlign: 'left',
-    padding: 16,
-    borderRadius: 11,
+    padding: 18,
+    borderRadius: 16,
     border: '1px solid var(--border)',
     background: 'var(--panel)',
     color: 'var(--text-primary)',
     position: 'relative',
   },
   quickIcon: {
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
     display: 'grid',
     placeItems: 'center',
-    borderRadius: 8,
+    borderRadius: 10,
     marginBottom: 12,
     color: 'var(--accent)',
     background: 'var(--accent-dim)',
   },
-  quickCopy: { display: 'grid', gap: 4, paddingRight: 14, fontSize: 11 },
-  quickArrow: { position: 'absolute', right: 14, bottom: 16, color: 'var(--text-tertiary)' },
+  quickCopy: { display: 'grid', gap: 4, paddingRight: 14, fontSize: 12 },
+  quickArrow: { position: 'absolute', right: 16, top: 16, color: 'var(--text-tertiary)' },
   card: {
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 24,
     display: 'flex',
     flexDirection: 'column',
     gap: 16,
   },
-  cardTitle: { fontSize: 14, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.01em' },
+  cardTitle: { fontSize: 15, margin: 0, fontFamily: 'var(--font-display)', fontWeight: 600, letterSpacing: '-0.01em' },
   referralAssetChip: {
     background: 'var(--buy-dim)',
     color: 'var(--buy)',
@@ -1517,11 +1563,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
   },
   form: { display: 'flex', flexDirection: 'column', gap: 14 },
-  label: { display: 'flex', flexDirection: 'column', gap: 5, fontSize: 11, color: 'var(--text-secondary)' },
+  label: { display: 'flex', flexDirection: 'column', gap: 5, fontSize: 12, fontWeight: 500, color: 'var(--text-secondary)' },
   input: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 10,
     padding: '9px 10px',
     color: 'var(--text-primary)',
     fontSize: 13,
@@ -1529,7 +1575,7 @@ const styles: Record<string, React.CSSProperties> = {
   fileInput: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 10,
     padding: '9px 10px',
     color: 'var(--text-primary)',
     fontSize: 12,
@@ -1539,42 +1585,51 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--sell-dim)',
     color: 'var(--sell)',
     padding: '8px 10px',
-    borderRadius: 8,
+    borderRadius: 10,
     fontSize: 12,
   },
   successBox: {
     background: 'var(--buy-dim)',
     color: 'var(--buy)',
     padding: '8px 10px',
-    borderRadius: 8,
+    borderRadius: 10,
     fontSize: 12,
   },
-  submitBtn: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
+  copyBtn: {
+    background: 'var(--text-primary)',
+    color: 'var(--panel)',
     border: 'none',
-    borderRadius: 24,
+    borderRadius: 10,
+    padding: '8px 14px',
+    fontWeight: 600,
+    fontSize: 12,
+    whiteSpace: 'nowrap',
+  },
+  submitBtn: {
+    background: 'var(--text-primary)',
+    color: 'var(--panel)',
+    border: 'none',
+    borderRadius: 12,
     padding: '11px 0',
-    fontWeight: 800,
-    fontSize: 14,
-    boxShadow: '0 4px 16px rgba(247,166,0,0.3)',
+    fontWeight: 600,
+    fontSize: 13.5,
   },
   cancelBtn: {
-    background: 'transparent',
-    color: 'var(--text-secondary)',
+    background: 'var(--panel)',
+    color: 'var(--text-primary)',
     border: '1px solid var(--border)',
-    borderRadius: 24,
+    borderRadius: 12,
     padding: '11px 0',
-    fontWeight: 700,
-    fontSize: 14,
+    fontWeight: 600,
+    fontSize: 13.5,
   },
   dangerBtn: {
     background: 'transparent',
     color: 'var(--sell)',
     border: '1px solid var(--sell)',
-    borderRadius: 24,
+    borderRadius: 12,
     padding: '11px 22px',
-    fontWeight: 800,
+    fontWeight: 600,
     fontSize: 13,
   },
   twoFaBlock: {
