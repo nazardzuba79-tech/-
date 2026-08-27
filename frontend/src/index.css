@@ -187,25 +187,151 @@ body {
   z-index: 1;
 }
 
-/* Frosted-glass surface — used for the nav bar so it reads as floating
-   above the mesh rather than a flat opaque strip. */
-.glass-panel {
-  background: rgba(20, 23, 29, 0.72);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+/* Top nav — ported from a Bolt.new reference's own header design (dark,
+   near-black with a faint cyan glow, hard bottom border) in place of the
+   earlier frosted "liquid glass" panel. Colors here are literal (not the
+   site's gold --accent) and scoped to just this bar, same spirit as the
+   admin panel's own --admin-brand tokens kept separate from --accent. */
+.top-nav-bar {
+  background: radial-gradient(circle at 42% -100%, rgba(20, 70, 93, 0.18), transparent 41%), #080a0e;
+  border-bottom: 1px solid rgba(151, 168, 185, 0.14);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025) inset, 0 8px 24px rgba(0, 0, 0, 0.16);
 }
 
-/* "Liquid glass" treatment for the top nav — a soft light catching the top
-   edge (like a real pane of glass) plus a crisper, brighter border and
-   stronger blur than the base .glass-panel, closer to iOS's frosted-glass
-   material than a flat semi-transparent panel. */
-.nav-liquid-glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 35%, rgba(18, 21, 27, 0.84) 100%),
-    rgba(18, 21, 27, 0.6);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 0 44px rgba(255, 255, 255, 0.05), 0 8px 30px -10px rgba(0, 0, 0, 0.6);
+.top-nav-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(147, 163, 179, 0.22);
+  flex: none;
+}
+
+.top-nav-fund-btn {
+  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+.top-nav-fund-btn:hover {
+  background: #84e6f8;
+  box-shadow: 0 0 18px rgba(71, 211, 241, 0.21);
+  transform: translateY(-1px);
+}
+.top-nav-fund-btn:active {
+  transform: translateY(1px);
+}
+
+.top-nav-link {
+  position: relative;
+  color: #87919f;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 180ms ease, background 180ms ease;
+}
+.top-nav-link::after {
+  content: '';
+  position: absolute;
+  right: 9px;
+  bottom: 0;
+  left: 9px;
+  height: 2px;
+  background: #56d7f5;
+  border-radius: 2px 2px 0 0;
+  box-shadow: 0 -2px 10px rgba(78, 211, 242, 0.22);
+  opacity: 0;
+  transform: scaleX(0.3);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.top-nav-link:hover,
+.top-nav-link.is-active {
+  color: #f2f7fb;
+  background: rgba(133, 162, 177, 0.07);
+}
+.top-nav-link.is-active {
+  color: #65def7;
+}
+.top-nav-link.is-active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.top-nav-pill-btn {
+  transition: color 180ms ease;
+}
+.top-nav-pill-btn:hover {
+  color: #ffffff;
+}
+
+.top-nav-profile-wrap {
+  position: relative;
+}
+.top-nav-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 2px 0 4px;
+  color: #bac4cf;
+  font-size: 12px;
+  font-weight: 650;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.top-nav-profile-btn:hover {
+  color: #ffffff;
+}
+.top-nav-profile-avatar {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  color: #b8e9f4;
+  background: #162a32;
+  border: 1px solid rgba(108, 215, 238, 0.28);
+  border-radius: 50%;
+}
+.top-nav-profile-menu {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  min-width: 146px;
+  padding: 6px;
+  background: #111820;
+  border: 1px solid rgba(148, 172, 188, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  z-index: 30;
+  animation: topNavMenuIn 160ms ease-out;
+}
+.top-nav-profile-menu a,
+.top-nav-profile-menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+  padding: 9px 10px;
+  color: #cbd4dc;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.top-nav-profile-menu a:hover,
+.top-nav-profile-menu button:hover {
+  color: #ffffff;
+  background: rgba(128, 165, 182, 0.11);
+}
+@keyframes topNavMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 button {
@@ -1074,12 +1200,13 @@ a:hover > .nav-card-icon {
   top: 6%;
 }
 
-/* Same "liquid glass" family as .nav-liquid-glass, sized down for other
-   elevated surfaces that float above page content — data-panel cards,
-   modal sheets, the bottom tab bar. Deliberately NOT used on dense
-   in-panel content (order-book rows, form fields) — the backdrop blur is
-   for whatever sits between the panel and the page, not a substitute for
-   a plain, fully opaque background where numbers need to stay crisp. */
+/* "Liquid glass" treatment for elevated surfaces that float above page
+   content — data-panel cards, modal sheets, the bottom tab bar. Deliberately
+   NOT used on dense in-panel content (order-book rows, form fields) — the
+   backdrop blur is for whatever sits between the panel and the page, not a
+   substitute for a plain, fully opaque background where numbers need to
+   stay crisp. (The top nav has since moved to a solid dark treatment —
+   see .top-nav-bar — this family now covers everything else.) */
 .card-liquid-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 30%, rgba(18, 21, 27, 0.86) 100%),
     rgba(18, 21, 27, 0.7);

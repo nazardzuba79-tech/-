@@ -3,11 +3,15 @@ import { useLanguage } from '../lib/i18n';
 import { LANGUAGES } from '../lib/i18n';
 
 /** Globe-icon language switcher (Binance-style) — opens a small dropdown
- * listing RU / EN / 中文 instead of always showing two buttons inline. */
-export function LanguageSwitcher() {
+ * listing RU / EN / 中文 instead of always showing two buttons inline.
+ * `variant="pill"` also shows the current language code + a chevron next
+ * to the globe (used by the top nav); the default `"icon"` variant is the
+ * plain icon-only button used on Marketing/Auth. */
+export function LanguageSwitcher({ variant = 'icon' }: { variant?: 'icon' | 'pill' }) {
   const { lang, setLang } = useLanguage();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentLabel = LANGUAGES.find((l) => l.code === lang)?.label ?? lang.toUpperCase();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -19,8 +23,19 @@ export function LanguageSwitcher() {
 
   return (
     <div ref={containerRef} style={styles.container}>
-      <button onClick={() => setOpen((o) => !o)} style={styles.button} aria-label="Language / Язык / 语言">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={variant === 'pill' ? 'top-nav-pill-btn' : undefined}
+        style={variant === 'pill' ? styles.pillButton : styles.button}
+        aria-label="Language / Язык / 语言"
+      >
         <GlobeIcon />
+        {variant === 'pill' && (
+          <>
+            <span>{currentLabel}</span>
+            <ChevronDownIcon />
+          </>
+        )}
       </button>
       {open && (
         <div style={styles.dropdown}>
@@ -53,6 +68,14 @@ function GlobeIcon() {
   );
 }
 
+function ChevronDownIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
 const styles: Record<string, React.CSSProperties> = {
   container: { position: 'relative' },
   button: {
@@ -65,6 +88,19 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     color: 'var(--text-secondary)',
     borderRadius: 6,
+  },
+  pillButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 34,
+    padding: '0 5px',
+    background: 'transparent',
+    border: 'none',
+    color: '#bac4cf',
+    fontSize: 11,
+    fontWeight: 650,
+    transition: 'color 180ms ease',
   },
   dropdown: {
     position: 'absolute',

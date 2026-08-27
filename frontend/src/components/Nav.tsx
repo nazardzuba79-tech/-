@@ -32,6 +32,8 @@ export function Nav({
   const [showDeposit, setShowDeposit] = useState(false);
   const [tradeMenuOpen, setTradeMenuOpen] = useState(false);
   const tradeMenuCloseTimer = useRef<number | null>(null);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   // Ordered to match a real exchange's own nav (Markets, then Trade, then
   // Futures right after the primary deposit CTA), with the rest following.
@@ -75,6 +77,15 @@ export function Nav({
   // in the app — not just while sitting on /admin. See useAdminAlerts.ts.
   useAdminAlertSound(isAdmin);
 
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function handler(e: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) setProfileMenuOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [profileMenuOpen]);
+
   function handleLogout() {
     clearToken();
     navigate('/');
@@ -82,14 +93,16 @@ export function Nav({
 
   return (
     <>
-    <nav className="glass-panel nav-liquid-glass" style={styles.nav}>
+    <nav className="top-nav-bar" style={styles.nav}>
       <Link to="/trade" style={styles.logo}>
         <Logo />
       </Link>
+      <span className="top-nav-divider" aria-hidden="true" />
 
       <div className="nav-desktop-links" style={styles.desktopLinks}>
-        <button onClick={() => setShowDeposit(true)} style={styles.navDepositBtn}>
-          {t('wallet.deposit')}
+        <button onClick={() => setShowDeposit(true)} className="top-nav-fund-btn" style={styles.navDepositBtn}>
+          <span>{t('wallet.deposit')}</span>
+          <ArrowUpRightIcon />
         </button>
         {LINKS.map((l) =>
           l.to === '/trade' ? (
@@ -109,7 +122,11 @@ export function Nav({
                 tradeMenuCloseTimer.current = window.setTimeout(() => setTradeMenuOpen(false), 250);
               }}
             >
-              <Link to={l.to} style={{ ...styles.link, ...styles.tradeMenuTrigger, ...(active === l.to ? styles.linkActive : {}) }}>
+              <Link
+                to={l.to}
+                className={`top-nav-link${active === l.to ? ' is-active' : ''}`}
+                style={{ ...styles.link, ...styles.tradeMenuTrigger }}
+              >
                 {l.label}
                 <ChevronIcon />
               </Link>
@@ -127,19 +144,25 @@ export function Nav({
               )}
             </div>
           ) : (
-            <Link key={l.to} to={l.to} style={{ ...styles.link, ...(active === l.to ? styles.linkActive : {}) }}>
+            <Link
+              key={l.to}
+              to={l.to}
+              className={`top-nav-link${active === l.to ? ' is-active' : ''}`}
+              style={styles.link}
+            >
               {l.label}
             </Link>
           )
         )}
         <Link
           to="/card"
-          style={{ ...styles.link, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}
+          className={`top-nav-link${active === '/card' ? ' is-active' : ''}`}
+          style={{ ...styles.link, ...styles.cardLink }}
         >
           <CardIcon active={active === '/card'} />
           {t('nav.card')}
         </Link>
-        <Link to="/otc" style={{ ...styles.link, ...(active === '/otc' ? styles.linkActive : {}) }}>
+        <Link to="/otc" className={`top-nav-link${active === '/otc' ? ' is-active' : ''}`} style={styles.link}>
           {t('nav.otc')}
         </Link>
         {isAdmin && (
@@ -152,22 +175,36 @@ export function Nav({
       </div>
 
       <div className="nav-desktop-right" style={styles.right}>
-        {/* Replaces both the old bare display-name text and the separate
-            Settings tab — Settings/Profile is one destination now, entered
-            through the name itself (SettingsPage's own Profile tab is
-            already its default tab, so this lands exactly where it reads). */}
-        <Link
-          to="/settings"
-          style={{ ...styles.profileLink, ...(active === '/settings' ? styles.linkActive : {}) }}
-        >
-          <UserIcon active={active === '/settings'} />
-          {displayName || t('nav.profile')}
-        </Link>
         {rightExtra}
-        <LanguageSwitcher />
-        <button onClick={handleLogout} style={styles.logoutBtn}>
-          {t('nav.logout')}
-        </button>
+        <LanguageSwitcher variant="pill" />
+        {/* Settings/Profile is one destination (SettingsPage's own Profile
+            tab is already its default tab), entered through the name
+            itself; logout lives in the same dropdown instead of its own
+            always-visible button. */}
+        <div className="top-nav-profile-wrap" ref={profileMenuRef}>
+          <button
+            type="button"
+            className="top-nav-profile-btn"
+            onClick={() => setProfileMenuOpen((o) => !o)}
+            aria-expanded={profileMenuOpen}
+          >
+            <span className="top-nav-profile-avatar">
+              <UserIcon active={active === '/settings'} />
+            </span>
+            <span>{displayName || t('nav.profile')}</span>
+            <ChevronIcon />
+          </button>
+          {profileMenuOpen && (
+            <div className="top-nav-profile-menu">
+              <Link to="/settings" onClick={() => setProfileMenuOpen(false)}>
+                {t('nav.profile')}
+              </Link>
+              <button type="button" onClick={handleLogout}>
+                <LogOutIcon /> {t('nav.logout')}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <button
@@ -308,6 +345,25 @@ function ChevronIcon() {
   );
 }
 
+function ArrowUpRightIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="7" y1="17" x2="17" y2="7" />
+      <polyline points="7 7 17 7 17 17" />
+    </svg>
+  );
+}
+
+function LogOutIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 function UserIcon({ active }: { active: boolean }) {
   return (
     <svg
@@ -348,9 +404,9 @@ const styles: Record<string, React.CSSProperties> = {
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: 24,
-    padding: '0 20px',
-    height: 64,
+    gap: 18,
+    padding: '0 28px',
+    height: 70,
     position: 'sticky',
     top: 0,
     zIndex: 10,
@@ -365,7 +421,8 @@ const styles: Record<string, React.CSSProperties> = {
   desktopLinks: {
     display: 'flex',
     alignItems: 'center',
-    gap: 24,
+    gap: 2,
+    marginLeft: 4,
   },
   tradeMenuWrap: {
     position: 'relative',
@@ -419,16 +476,16 @@ const styles: Record<string, React.CSSProperties> = {
   mobileMenu: {
     display: 'none',
     position: 'absolute',
-    top: 64,
+    top: 70,
     left: 0,
     right: 0,
     flexDirection: 'column',
     gap: 4,
     padding: 16,
-    background: 'var(--panel)',
-    borderBottom: '1px solid var(--border)',
+    background: '#0c1116',
+    borderBottom: '1px solid rgba(151,168,185,0.14)',
     boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
-    maxHeight: 'calc(100vh - 64px)',
+    maxHeight: 'calc(100vh - 70px)',
     overflowY: 'auto',
   },
   mobileLink: {
@@ -449,13 +506,23 @@ const styles: Record<string, React.CSSProperties> = {
   mobileLangRow: {
     padding: '10px 6px',
   },
+  // Color/hover/underline now live in the .top-nav-link CSS class (needs a
+  // real :hover pseudo-class + ::after underline bar, which inline styles
+  // can't express) — this only carries layout.
   link: {
-    fontSize: 13,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 70,
+    padding: '0 9px',
+    fontSize: 12,
     fontWeight: 600,
-    color: 'var(--text-secondary)',
+    letterSpacing: '-0.01em',
+    whiteSpace: 'nowrap',
   },
+  // Still used by the mobile drawer, which doesn't use .top-nav-link.
   linkActive: {
-    color: 'var(--accent)',
+    color: '#65def7',
   },
   cardLink: {
     display: 'flex',
@@ -470,13 +537,14 @@ const styles: Record<string, React.CSSProperties> = {
   adminBadge: {
     display: 'flex',
     alignItems: 'center',
+    minHeight: 34,
     gap: 7,
     background: 'rgba(79,70,229,0.14)',
     border: '1px solid rgba(129,140,248,0.5)',
     borderRadius: 8,
-    padding: '6px 12px',
-    fontSize: 13,
-    fontWeight: 700,
+    padding: '0 11px',
+    fontSize: 12,
+    fontWeight: 650,
     color: '#a5b4fc',
   },
   adminBadgeActive: {
@@ -488,30 +556,30 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
-    gap: 16,
-  },
-  profileLink: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 7,
-    fontSize: 13,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
+    gap: 10,
   },
   // Deliberately the one filled/glowing button among plain text nav links —
   // same idea as a real exchange's "Buy crypto" nav CTA: it's the
   // highest-value action, so it should read as a button, not a link.
+  // Cyan, matching the reference top-nav design (not the site's own
+  // gold --accent) — scoped to just this component, see .top-nav-bar above.
   navDepositBtn: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    border: 'none',
-    borderRadius: 10,
-    padding: '9px 18px',
-    fontWeight: 800,
-    fontSize: 13,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 7,
+    minHeight: 36,
+    background: '#5edbf4',
+    color: '#071217',
+    border: '1px solid rgba(139,239,255,0.75)',
+    borderRadius: 9,
+    padding: '0 13px 0 15px',
+    fontWeight: 750,
+    fontSize: 12,
     letterSpacing: '0.01em',
-    boxShadow: '0 4px 16px -2px var(--accent-dim), inset 0 1px 0 rgba(255,255,255,0.18)',
+    boxShadow: '0 0 0 1px rgba(57,185,218,0.08), 0 5px 16px rgba(35,161,192,0.12)',
   },
+  // Only used by the mobile drawer now — the desktop logout lives inside
+  // the profile dropdown menu (.top-nav-profile-menu).
   logoutBtn: {
     background: 'transparent',
     border: '1px solid var(--border)',
