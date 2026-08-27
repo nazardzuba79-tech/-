@@ -26,7 +26,7 @@ export interface ReserveRow {
 
 // Same narrow list deposits.ts actually accepts claims on — a reserves row
 // for a chain nobody can deposit through would be misleading, not honest.
-const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'polygon', 'solana', 'ton'];
+const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'solana', 'ton'];
 
 const ERC20_BALANCE_OF_ABI = ['function balanceOf(address) view returns (uint256)'];
 
@@ -106,24 +106,6 @@ async function fetchEvmTokenBalance(
   const contract = new ethers.Contract(contractAddress, ERC20_BALANCE_OF_ABI, provider);
   const raw: bigint = await contract.balanceOf(treasuryAddress);
   return new BigNumber(raw.toString()).dividedBy(new BigNumber(10).pow(decimals));
-}
-
-// Same base58check decode SolanaDepositVerifier/TronDepositVerifier don't
-// need but Tron's native balance lookup does — TronGrid reports account
-// balances against the plain base58 address directly, so no conversion is
-// actually needed there. Kept isolated to fetchTronNativeBalance below.
-interface TronGridAccountBalanceResponse {
-  data: { balance?: number }[];
-}
-
-async function fetchTronNativeBalance(apiUrl: string, apiKey: string | undefined, address: string, fetchFn: typeof fetch): Promise<BigNumber> {
-  const res = await fetchFn(`${apiUrl}/v1/accounts/${address}`, {
-    headers: apiKey ? { 'TRON-PRO-API-KEY': apiKey } : {},
-  });
-  if (!res.ok) throw new Error(`TronGrid API responded with HTTP ${res.status}`);
-  const body = (await res.json()) as TronGridAccountBalanceResponse;
-  const sun = body.data?.[0]?.balance ?? 0;
-  return new BigNumber(sun).dividedBy(new BigNumber(10).pow(6));
 }
 
 interface SolanaRpcBalanceResponse {
@@ -262,34 +244,8 @@ export async function getReserves(prisma: PrismaClient, fetchFn: typeof fetch = 
     }
 
     if (config.type === 'tron') {
-      const nativeLiabilities = await internalLiabilities(prisma, config.nativeAsset);
-      try {
-        const onChain = await fetchTronNativeBalance(
-          config.apiUrl ?? 'https://api.trongrid.io',
-          config.apiKey,
-          config.treasuryAddress,
-          fetchFn
-        );
-        rows.push({
-          chain: config.chain,
-          asset: config.nativeAsset,
-          treasuryAddress: config.treasuryAddress,
-          internalLiabilities: nativeLiabilities.toFixed(),
-          onChainBalance: onChain.toFixed(),
-          coverageRatio: coverageRatio(onChain, nativeLiabilities),
-        });
-      } catch (err: any) {
-        rows.push({
-          chain: config.chain,
-          asset: config.nativeAsset,
-          treasuryAddress: config.treasuryAddress,
-          internalLiabilities: nativeLiabilities.toFixed(),
-          onChainBalance: null,
-          coverageRatio: null,
-          error: err.message,
-        });
-      }
-
+      // Native TRX deposits aren't creditable in this deployment (see
+      // TronDepositVerifier) — only the configured TRC-20 tokens are.
       for (const [asset, token] of Object.entries(config.tokens)) {
         const liabilities = await internalLiabilities(prisma, asset);
         try {

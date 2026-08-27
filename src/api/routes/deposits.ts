@@ -14,13 +14,13 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 // is what stops the deposit UI from ever inventing a chain/asset combo
 // nobody configured a treasury address for.
 //
-// Bitcoin, Tron, Ethereum, BSC, Polygon, Solana, and TON — each configured
-// (or not) purely via env vars, see config/chains.ts. Adding another EVM
-// chain (Avalanche, Arbitrum, ...) later is the same env-var setup, no code
-// change needed here; add its chain name to this list.
+// Bitcoin, Tron, Ethereum, BSC, Solana, and TON — each configured (or not)
+// purely via env vars, see config/chains.ts. Adding another EVM chain
+// (Polygon, Avalanche, Arbitrum, ...) later is the same env-var setup, no
+// code change needed here; add its chain name to this list.
 // Exported so adminDeposits.ts (the manual-credit feed) walks the exact
 // same set of chains — one list, not two that could drift apart.
-export const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'polygon', 'solana', 'ton'];
+export const KNOWN_CHAINS = ['bitcoin', 'tron', 'ethereum', 'bsc', 'solana', 'ton'];
 
 // Bitcoin/Tron/TON tx hashes are plain 64 hex chars (as shown by their
 // block explorers); EVM chains prefix the same 64 hex chars with "0x".
@@ -74,7 +74,11 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
       res.json({
         chain: config.chain,
         address: config.treasuryAddress,
-        supportedAssets: [config.nativeAsset, ...Object.keys(config.tokens)],
+        // Tron's native asset (TRX) is deliberately excluded — TronDepositVerifier
+        // only checks TRC-20 token transfers, so a native TRX send would never
+        // verify or even show up in the admin's incoming feed. Every other
+        // chain type here actually supports its native asset.
+        supportedAssets: config.type === 'tron' ? Object.keys(config.tokens) : [config.nativeAsset, ...Object.keys(config.tokens)],
         note: 'Send only the listed assets on this exact network. After sending, submit the tx hash to /deposits/claim.',
       });
     } catch {

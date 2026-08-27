@@ -94,27 +94,23 @@ describe('getReserves', () => {
     expect(rows[0].error).toContain('503');
   });
 
-  it('checks native TRX and each configured Tron TRC-20 token against the treasury balance', async () => {
+  it('checks each configured Tron TRC-20 token against the treasury balance', async () => {
     process.env.TRON_TREASURY_ADDRESS = 'Ttreasury';
     process.env.TRON_NATIVE_ASSET = 'TRX';
     process.env.TRON_TOKENS = 'USDT:TR7contract:6';
     const prisma = makePrisma({ USDT: [{ available: '1000', locked: '0' }] });
     const fetchFn = jest.fn().mockResolvedValue(
-      jsonResponse({ data: [{ balance: 2_000_000, trc20: [{ TR7contract: '1000000000' }] }] }) // 2 TRX, 1000 USDT at 6 decimals
+      jsonResponse({ data: [{ trc20: [{ TR7contract: '1000000000' }] }] }) // 1000 USDT at 6 decimals
     );
 
     const rows = await getReserves(prisma, fetchFn);
 
-    expect(rows).toHaveLength(2);
+    expect(rows).toHaveLength(1);
     expect(rows[0].chain).toBe('tron');
-    expect(rows[0].asset).toBe('TRX');
-    expect(rows[0].internalLiabilities).toBe('0'); // no TRX balances in the prisma mock
-    expect(rows[0].onChainBalance).toBe('2');
-    expect(rows[1].chain).toBe('tron');
-    expect(rows[1].asset).toBe('USDT');
-    expect(rows[1].internalLiabilities).toBe('1000');
-    expect(rows[1].onChainBalance).toBe('1000');
-    expect(rows[1].coverageRatio).toBe(1);
+    expect(rows[0].asset).toBe('USDT');
+    expect(rows[0].internalLiabilities).toBe('1000');
+    expect(rows[0].onChainBalance).toBe('1000');
+    expect(rows[0].coverageRatio).toBe(1);
   });
 
   it('flags under-collateralization with a coverage ratio below 1', async () => {
@@ -126,8 +122,7 @@ describe('getReserves', () => {
 
     const rows = await getReserves(prisma, fetchFn);
 
-    expect(rows[1].asset).toBe('USDT');
-    expect(rows[1].coverageRatio).toBe(0.5);
+    expect(rows[0].coverageRatio).toBe(0.5);
   });
 
   describe('Ethereum (evm)', () => {

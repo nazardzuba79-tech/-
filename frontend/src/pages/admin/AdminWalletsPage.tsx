@@ -10,28 +10,34 @@ const CHAIN_LABEL: Record<string, string> = {
   tron: 'Tron',
   ethereum: 'Ethereum',
   bsc: 'BNB Smart Chain',
-  polygon: 'Polygon',
   solana: 'Solana',
   ton: 'TON',
 };
 
 // The token-standard suffix shown after each NON-native asset, so
-// "USDT (ERC-20)" reads unambiguously as "USDT, on this network" — without
-// it, a card listing "ETH, USDT" looks like two native coins instead of one
-// native coin plus one token riding on it.
+// "USDT (ERC-20)" reads unambiguously as "USDT, on this network".
 const TOKEN_STANDARD_LABEL: Record<string, string> = {
   ethereum: 'ERC-20',
   bsc: 'BEP-20',
-  polygon: 'ERC-20',
   tron: 'TRC-20',
   solana: 'SPL',
   ton: 'Jetton',
 };
 
-function supportedAssetsLabel(chain: string, nativeAsset: string, tokens: string[]): string {
+// One row per asset this ONE address accepts, each tagged with what it
+// actually is — "монета сети" (native coin) vs "токен на этой сети"
+// (a token riding on the same network) — instead of a flat "ETH, USDT"
+// list that reads as two native coins on two different addresses. Tron
+// deposits only support TRC-20 tokens (USDT) — native TRX deposits aren't
+// implemented (see TronDepositVerifier), so its native asset is omitted.
+function supportedAssetRows(chain: string, nativeAsset: string, tokens: string[]): { label: string; note: string }[] {
   const standard = TOKEN_STANDARD_LABEL[chain];
-  const tokenLabels = tokens.map((token) => (standard ? `${token} (${standard})` : token));
-  return [nativeAsset, ...tokenLabels].join(', ');
+  const tokenRows = tokens.map((token) => ({
+    label: standard ? `${token} (${standard})` : token,
+    note: `токен на этой же сети${standard ? `, стандарт ${standard}` : ''}`,
+  }));
+  if (chain === 'tron') return tokenRows;
+  return [{ label: nativeAsset, note: 'монета этой сети' }, ...tokenRows];
 }
 
 /** Кошельки для пополнения — один адрес приёма депозитов на каждую сеть.
@@ -97,14 +103,32 @@ export function AdminWalletsPage() {
 
       {wallets && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {wallets.map((w) => (
+          {wallets.map((w) => {
+            const assetRows = w.nativeAsset ? supportedAssetRows(w.chain, w.nativeAsset, w.tokens) : [];
+            return (
             <div key={w.chain} style={styles.card}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>{CHAIN_LABEL[w.chain] ?? w.chain}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-                    {w.nativeAsset ? supportedAssetsLabel(w.chain, w.nativeAsset, w.tokens) : 'Сеть не настроена на бэкенде'}
-                  </div>
+                  {!w.nativeAsset && <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Сеть не настроена на бэкенде</div>}
+                  {assetRows.length === 0 && w.nativeAsset && (
+                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>нет поддерживаемых активов</div>
+                  )}
+                  {assetRows.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+                      {assetRows.length > 1 && (
+                        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+                          Один и тот же адрес принимает {assetRows.length === 2 ? 'оба актива' : 'все активы'} ниже:
+                        </div>
+                      )}
+                      {assetRows.map((row) => (
+                        <div key={row.label} style={{ fontSize: 12.5 }}>
+                          <span className="mono" style={{ fontWeight: 700 }}>{row.label}</span>
+                          <span style={{ color: 'var(--text-tertiary)' }}> — {row.note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {w.isOverridden ? (
                   <span style={{ ...styles.badgeAccent, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>
@@ -148,7 +172,8 @@ export function AdminWalletsPage() {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

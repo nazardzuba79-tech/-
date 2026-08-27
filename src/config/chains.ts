@@ -17,17 +17,15 @@
  *
  * Five chain "types" are supported, each verified completely differently
  * on deposit claim (see src/services/deposit-verifiers/):
- *   - "evm"     Ethereum, Polygon, BSC, ... — a free public RPC endpoint
- *               (no signup) verifies a specific tx at credit time; for
- *               Ethereum, BSC and Polygon specifically this defaults
- *               automatically (same zero-config treatment as Bitcoin/Tron
- *               below) — other EVM chains still need their own *_RPC_URL.
- *               A free Etherscan-style API key (2-minute signup, no
- *               payment) powers the admin's incoming-transfers feed — see
- *               EvmDepositVerifier
+ *   - "evm"     Ethereum, BSC, ... — a free public RPC endpoint (no signup)
+ *               verifies a specific tx at credit time; for Ethereum and BSC
+ *               specifically this defaults automatically (same zero-config
+ *               treatment as Bitcoin/Tron below) — other EVM chains still
+ *               need their own *_RPC_URL. A free Etherscan-style API key
+ *               (2-minute signup, no payment) powers the admin's
+ *               incoming-transfers feed — see EvmDepositVerifier
  *   - "bitcoin" Bitcoin — via a public Esplora-style block explorer API
- *   - "tron"    Tron — native TRX and TRC-20 tokens (e.g. USDT-TRC20) —
- *               via the TronGrid API
+ *   - "tron"    Tron (e.g. USDT-TRC20) — via the TronGrid API
  *   - "solana"  Solana — native SOL and SPL tokens (e.g. USDT-SPL) — via a
  *               free public JSON-RPC endpoint (also used for the admin
  *               incoming-transfers feed, no separate explorer API needed)
@@ -41,8 +39,8 @@
 export type ChainType = 'evm' | 'bitcoin' | 'tron' | 'solana' | 'ton';
 
 // Chains whose type isn't inferable from their name are assumed "evm" —
-// that covers every EVM-compatible chain (ethereum, polygon, bsc, ...)
-// without needing a per-chain env var for the common case.
+// that covers every EVM-compatible chain (ethereum, bsc, ...) without
+// needing a per-chain env var for the common case.
 const CHAIN_TYPE_OVERRIDES: Record<string, ChainType> = {
   bitcoin: 'bitcoin',
   tron: 'tron',
@@ -99,17 +97,16 @@ const DEFAULT_API_URL: Partial<Record<ChainType, string>> = {
   ton: 'https://tonapi.io',
 };
 
-// Bitcoin/Tron get a zero-config default API above; Ethereum, BSC and
-// Polygon get the same treatment here for their RPC endpoints — genuinely
-// free, no-signup public nodes, so deposits on these three work out of the
-// box exactly like BTC/TRON, without an admin having to paste an RPC URL
-// into env vars first. Other EVM chains (Avalanche, Arbitrum, ...) still
-// require their own *_RPC_URL — there's no single universal default that
-// makes sense for an arbitrary chain.
+// Bitcoin/Tron get a zero-config default API above; Ethereum and BSC get
+// the same treatment here for their RPC endpoints — genuinely free,
+// no-signup public nodes, so deposits on these two work out of the box
+// exactly like BTC/TRON, without an admin having to paste an RPC URL into
+// env vars first. Other EVM chains (Polygon, Avalanche, Arbitrum, ...)
+// still require their own *_RPC_URL — there's no single universal default
+// that makes sense for an arbitrary chain.
 const DEFAULT_RPC_URL: Partial<Record<string, string>> = {
   ethereum: 'https://ethereum.publicnode.com',
   bsc: 'https://bsc-dataseed.binance.org',
-  polygon: 'https://polygon-rpc.com',
 };
 
 function requireEnv(name: string): string {

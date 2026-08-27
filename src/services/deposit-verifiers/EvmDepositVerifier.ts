@@ -30,7 +30,7 @@ interface EtherscanTokenTx {
 }
 
 /**
- * Ethereum and other EVM-compatible chains (Polygon, BSC, ...).
+ * Ethereum and other EVM-compatible chains (BSC, Polygon, ...).
  *
  * Two independent, deliberately different data sources — not one API doing
  * both jobs:

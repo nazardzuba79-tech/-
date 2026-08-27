@@ -20,7 +20,6 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     tron: t('deposit.chain.tron'),
     ethereum: t('deposit.chain.ethereum'),
     bsc: t('deposit.chain.bsc'),
-    polygon: t('deposit.chain.polygon'),
     solana: t('deposit.chain.solana'),
     ton: t('deposit.chain.ton'),
   };
