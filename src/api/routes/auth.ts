@@ -75,8 +75,17 @@ const twoFactorLimiter = rateLimit({
   message: { error: 'Too many attempts, try again later' },
 });
 
-function issueToken(userId: string): string {
-  return jwt.sign({ sub: userId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
+// Creates the real Session row a token's `sid` claim points at (see
+// requireAuth) — one per register/login/login-2fa, carrying the actual
+// request's IP/UA so Settings → Security's "Active sessions" list and the
+// sign-out-this-device button have real data and real effect, not a mock.
+async function createSession(prisma: PrismaClient, userId: string, req: Request) {
+  const meta = loginMetadata(req);
+  return prisma.session.create({ data: { userId, ip: meta.ip, userAgent: meta.userAgent } });
+}
+
+function issueToken(userId: string, sessionId: string): string {
+  return jwt.sign({ sub: userId, sid: sessionId }, JWT_SECRET!, { expiresIn: JWT_EXPIRES_IN });
 }
 
 function issuePendingToken(userId: string): string {
@@ -132,7 +141,8 @@ export function authRouter(prisma: PrismaClient): Router {
       data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email, ...loginMetadata(req) } },
     });
 
-    res.status(201).json({ token: issueToken(user.id) });
+    const session = await createSession(prisma, user.id, req);
+    res.status(201).json({ token: issueToken(user.id, session.id) });
   });
 
   router.post('/auth/login', loginLimiter, async (req, res) => {
@@ -164,7 +174,8 @@ export function authRouter(prisma: PrismaClient): Router {
       data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
     });
 
-    res.json({ token: issueToken(user.id) });
+    const session = await createSession(prisma, user.id, req);
+    res.json({ token: issueToken(user.id, session.id) });
   });
 
   router.post('/auth/login/2fa', twoFactorLimiter, async (req, res) => {
@@ -211,7 +222,8 @@ export function authRouter(prisma: PrismaClient): Router {
       data: { userId: user.id, action: 'USER_LOGGED_IN', metadata: loginMetadata(req) },
     });
 
-    res.json({ token: issueToken(user.id) });
+    const session = await createSession(prisma, user.id, req);
+    res.json({ token: issueToken(user.id, session.id) });
   });
 
   return router;

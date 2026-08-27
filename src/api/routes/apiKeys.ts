@@ -19,13 +19,13 @@ export function apiKeysRouter(prisma: PrismaClient): Router {
   const router = Router();
   const service = new ApiKeyService(prisma);
 
-  router.get('/api-keys', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/api-keys', requireAuth(prisma), async (req: AuthedRequest, res) => {
     res.json(await service.listKeys(req.userId!));
   });
 
   // The plaintext secret is returned ONLY in this response — it's never
   // retrievable again after this.
-  router.post('/api-keys', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/api-keys', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = createSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -33,7 +33,7 @@ export function apiKeysRouter(prisma: PrismaClient): Router {
     res.status(201).json(key);
   });
 
-  router.delete('/api-keys/:id', requireAuth, async (req: AuthedRequest, res) => {
+  router.delete('/api-keys/:id', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const revoked = await service.revokeKey(req.userId!, req.params.id);
     if (!revoked) return res.status(404).json({ error: 'API key not found' });
     res.status(204).send();

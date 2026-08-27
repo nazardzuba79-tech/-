@@ -21,4 +21,36 @@
   text-align: inherit;
 }
 
+/* Same story for <ul>/<ol> — without preflight they keep the browser's
+   default bullets/numbers and left margin/padding (used for plain layout
+   lists here, e.g. ProfileSidebar's nav, RecentActivity's timeline,
+   SecuritySection's 2FA step list — none of which want list styling). */
+:where(.settings-arctic-root) ul,
+:where(.settings-arctic-root) ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Same reasoning again: headings/paragraphs keep the browser's default
+   margins without preflight, adding gaps every text-size/weight utility
+   here was written assuming away — spacing between title/subtitle pairs
+   is set explicitly (mt- and gap classes), not left to the UA default. */
+:where(.settings-arctic-root) h1,
+:where(.settings-arctic-root) h2,
+:where(.settings-arctic-root) h3,
+:where(.settings-arctic-root) h4,
+:where(.settings-arctic-root) p {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* The 2FA QR <img> is inline by default, leaving a few px of baseline gap
+   below it inside its flex row. */
+:where(.settings-arctic-root) img {
+  display: block;
+  max-width: 100%;
+}
+
 @tailwind utilities;

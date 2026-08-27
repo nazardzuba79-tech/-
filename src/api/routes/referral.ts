@@ -13,7 +13,7 @@ import { REFERRAL_REWARD_PERCENT } from '../../config/limits';
 export function referralRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/referral/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/referral/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 

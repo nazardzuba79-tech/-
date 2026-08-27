@@ -65,7 +65,7 @@ const reviewSchema = z.object({
 export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): Router {
   const router = Router();
 
-  router.post('/kyc/submit', requireAuth, handleUpload, async (req: AuthedRequest, res) => {
+  router.post('/kyc/submit', requireAuth(prisma), handleUpload, async (req: AuthedRequest, res) => {
     const parsed = submitSchema.safeParse(req.body);
     if (!parsed.success) {
       if (req.file) fs.unlink(req.file.path, () => {});
@@ -124,7 +124,7 @@ export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): 
     res.status(201).json({ id: submission.id, status: submission.status });
   });
 
-  router.get('/kyc/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/kyc/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const [user, latest] = await Promise.all([
       prisma.user.findUnique({ where: { id: req.userId }, select: { kycStatus: true } }),
       prisma.kycSubmission.findFirst({ where: { userId: req.userId }, orderBy: { createdAt: 'desc' } }),
@@ -147,7 +147,7 @@ export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): 
   });
 
   // Admin-only: stream the uploaded document image/PDF for review.
-  router.get('/kyc/:id/document', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.get('/kyc/:id/document', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const submission = await prisma.kycSubmission.findUnique({ where: { id: req.params.id } });
     if (!submission) return res.status(404).json({ error: 'Not found' });
     res.sendFile(submission.documentImagePath, (err) => {
@@ -155,7 +155,7 @@ export function kycRouter(prisma: PrismaClient, emailService: KycEmailService): 
     });
   });
 
-  router.post('/kyc/:id/review', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/kyc/:id/review', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = reviewSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 

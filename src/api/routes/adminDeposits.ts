@@ -25,7 +25,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
 
   // Every deposit ever recorded, across every user — GET /deposits/me is
   // deliberately scoped to the caller only, this is the admin-wide view.
-  router.get('/admin/deposits', requireAuth, requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/deposits', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const deposits = await prisma.deposit.findMany({
       orderBy: { createdAt: 'desc' },
       take: 200,
@@ -50,7 +50,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // Recent transfers to the treasury address that aren't recorded as a
   // Deposit yet — real on-chain data (see each verifier's listIncoming),
   // not anything the client submitted.
-  router.get('/admin/deposits/incoming', requireAuth, requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/deposits/incoming', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const results: Array<{ chain: string; txHash: string; asset: string; amount: string; confirmations: number }> = [];
 
     for (const chain of KNOWN_CHAINS) {
@@ -96,7 +96,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // reused treasury address) as permanently excluded from the feed above —
   // for entries that will never get credited because they aren't actually
   // this exchange's deposits.
-  router.post('/admin/deposits/ignore', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.post('/admin/deposits/ignore', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const parsed = ignoreSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { chain, txHash } = parsed.data;
@@ -120,7 +120,7 @@ export function adminDepositsRouter(prisma: PrismaClient, priceSource: PriceSour
   // Admin picks a user + the tx hash they found (from the feed above, or
   // their own wallet) — re-verified on-chain via the same DepositService
   // path self-service claims use, just crediting an arbitrary target user.
-  router.post('/admin/deposits/manual-credit', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/deposits/manual-credit', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = manualCreditSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { userId, chain, asset, txHash } = parsed.data;

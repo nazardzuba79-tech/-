@@ -18,7 +18,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
   const router = Router();
   const service = new WithdrawalService(prisma);
 
-  router.get('/admin/withdrawals', requireAuth, requireAdmin(prisma), async (_req, res) => {
+  router.get('/admin/withdrawals', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       orderBy: { createdAt: 'desc' },
       take: 200,
@@ -43,7 +43,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
     );
   });
 
-  router.post('/admin/withdrawals/:id/approve', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/withdrawals/:id/approve', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     try {
       const result = await service.approveWithdrawal({ withdrawalId: req.params.id, performedByAdminId: req.userId! });
       res.json(result);
@@ -56,7 +56,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
 
   const markSentSchema = z.object({ txHash: z.string().trim().min(1).max(256) });
 
-  router.post('/admin/withdrawals/:id/mark-sent', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/withdrawals/:id/mark-sent', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = markSentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -76,7 +76,7 @@ export function adminWithdrawalsRouter(prisma: PrismaClient): Router {
 
   const rejectSchema = z.object({ reason: z.string().optional() });
 
-  router.post('/admin/withdrawals/:id/reject', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/withdrawals/:id/reject', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = rejectSchema.safeParse(req.body ?? {});
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 

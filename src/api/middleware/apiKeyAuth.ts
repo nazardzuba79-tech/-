@@ -29,7 +29,7 @@ export function requireAuthOrApiKey(prisma: PrismaClient) {
   return async (req: ApiAuthedRequest, res: Response, next: NextFunction) => {
     const apiKeyHeader = req.header('X-API-KEY');
     if (!apiKeyHeader) {
-      return requireAuth(req, res, next);
+      return requireAuth(prisma)(req, res, next);
     }
 
     const timestamp = req.header('X-API-TIMESTAMP');

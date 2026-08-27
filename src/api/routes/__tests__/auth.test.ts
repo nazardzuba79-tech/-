@@ -16,6 +16,10 @@ function makePrismaMock(overrides: Partial<any> = {}) {
       ...overrides.user,
     },
     auditLog: { create: jest.fn() },
+    session: {
+      create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'session-1', ...data })),
+      ...overrides.session,
+    },
   } as any;
 }
 

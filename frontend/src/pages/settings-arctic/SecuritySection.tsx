@@ -1,10 +1,11 @@
-import { useState, type FormEvent } from 'react';
-import { CheckCircle2, KeyRound, ShieldAlert, ShieldCheck, Smartphone, X } from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { CheckCircle2, KeyRound, LogOut, MonitorSmartphone, ShieldAlert, ShieldCheck, Smartphone, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '../../lib/api';
-import { useLanguage } from '../../lib/i18n';
+import { useLanguage, localeOf } from '../../lib/i18n';
 import { Panel, PanelHeader } from './Panel';
 import { StatusBadge } from './StatusBadge';
+import { summarizeUserAgent } from './deviceLabel';
 
 const inputClass =
   'h-11 rounded-xl border border-border bg-card px-3.5 text-[13.5px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-brand focus:ring-2 focus:ring-brand/20';
@@ -15,10 +16,11 @@ type SetupState = { secret: string; otpauthUrl: string; qrCodeDataUrl: string };
 // enable-2fa-modal.tsx, but real end to end: the archive's modal accepts
 // any 6-digit code and always "succeeds" — this one calls the actual
 // setup2FA/verify2FA/disable2FA endpoints and shows the actual QR code.
-// The archive's "Email verification" and "Active sessions" rows are
-// dropped: this app has no email-verification step and no session
-// tracking, so those rows would be fabricated status claims on a security
-// page — exactly what shouldn't be faked here.
+// The archive's "Active sessions" row is real too — see the Session model
+// and requireAuth on the backend: "sign out this device" actually revokes
+// that device's token, not just a row in a list. The archive's "Email
+// verification" row is still dropped: this app has no email-verification
+// step, so showing "Verified" there would be a fabricated status claim.
 export function SecuritySection({
   twoFactorEnabled,
   lastPasswordChange,
@@ -28,9 +30,27 @@ export function SecuritySection({
   lastPasswordChange: string | null;
   onChanged: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [twoFaOpen, setTwoFaOpen] = useState(false);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [sessions, setSessions] = useState<Awaited<ReturnType<typeof api.getSessions>> | null>(null);
+
+  function reloadSessions() {
+    api.getSessions().then(setSessions).catch(() => {});
+  }
+  useEffect(reloadSessions, []);
+
+  async function handleRevoke(id: string, isCurrent: boolean) {
+    if (isCurrent && !confirm(t('settings.signOutSelfConfirm'))) return;
+    try {
+      await api.revokeSession(id);
+      toast.success(t('settings.sessionSignedOut'));
+      reloadSessions();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('settings.twoFaGenericError'));
+    }
+  }
 
   return (
     <>
@@ -91,6 +111,59 @@ export function SecuritySection({
           </div>
 
           {passwordOpen && <PasswordForm onDone={() => { setPasswordOpen(false); onChanged(); }} />}
+
+          <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:px-6">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-muted-foreground">
+              <MonitorSmartphone className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2.5">
+                <p className="text-[14.5px] font-medium text-foreground">{t('settings.activeSessions')}</p>
+                <StatusBadge tone="neutral">{t('settings.sessionsCount', { count: sessions ? String(sessions.length) : '…' })}</StatusBadge>
+              </div>
+              <p className="mt-1 truncate text-[13px] text-muted-foreground">{t('settings.activeSessionsDesc')}</p>
+            </div>
+            <button
+              onClick={() => setSessionsOpen((v) => !v)}
+              className="shrink-0 rounded-lg border border-border bg-card px-4 py-2 text-[13px] font-medium text-foreground transition-all duration-150 hover:border-foreground/20 hover:bg-secondary active:scale-[0.98]"
+            >
+              {t('settings.review')}
+            </button>
+          </div>
+
+          {sessionsOpen && (
+            <div className="flex flex-col divide-y divide-border bg-secondary/40">
+              {!sessions ? (
+                <div className="px-5 py-4 sm:px-6">
+                  <div className="h-10 animate-pulse rounded-lg bg-secondary" />
+                </div>
+              ) : (
+                sessions.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-card text-muted-foreground">
+                      <Smartphone className="size-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-2 text-[13px] font-medium text-foreground">
+                        {summarizeUserAgent(s.userAgent) ?? t('settings.securityLog.unknown')}
+                        {s.current && <StatusBadge tone="brand">{t('settings.thisDevice')}</StatusBadge>}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px] text-muted-foreground">
+                        {s.ip ?? t('settings.securityLog.unknown')} · {t('settings.lastSeen', { date: new Date(s.lastSeenAt).toLocaleString(localeOf(lang)) })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRevoke(s.id, s.current)}
+                      className="flex shrink-0 items-center gap-1.5 rounded-lg border border-danger px-3 py-1.5 text-[11px] font-medium text-danger hover:bg-danger-soft"
+                    >
+                      <LogOut className="size-3.5" />
+                      {t('settings.signOut')}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       </Panel>
 

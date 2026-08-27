@@ -3,25 +3,7 @@ import { api } from '../../lib/api';
 import { useLanguage, localeOf } from '../../lib/i18n';
 import { Panel, PanelHeader } from './Panel';
 import { securityEventLabel } from './eventLabels';
-
-function summarizeUserAgent(ua: string | null | undefined): string | null {
-  if (!ua) return null;
-  let browser = 'Unknown';
-  if (/Edg\//.test(ua)) browser = 'Edge';
-  else if (/OPR\//.test(ua)) browser = 'Opera';
-  else if (/Chrome\//.test(ua)) browser = 'Chrome';
-  else if (/Firefox\//.test(ua)) browser = 'Firefox';
-  else if (/Safari\//.test(ua)) browser = 'Safari';
-
-  let os = 'Unknown OS';
-  if (/Windows/.test(ua)) os = 'Windows';
-  else if (/Mac OS X/.test(ua)) os = 'macOS';
-  else if (/Android/.test(ua)) os = 'Android';
-  else if (/iPhone|iPad/.test(ua)) os = 'iOS';
-  else if (/Linux/.test(ua)) os = 'Linux';
-
-  return `${browser} · ${os}`;
-}
+import { summarizeUserAgent } from './deviceLabel';
 
 export function SecurityLogPanel() {
   const { t, lang } = useLanguage();

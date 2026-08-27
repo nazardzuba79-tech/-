@@ -35,13 +35,14 @@ const SECURITY_LOG_ACTIONS = [
   'TWO_FACTOR_ENABLED',
   'TWO_FACTOR_DISABLED',
   'TWO_FACTOR_BACKUP_CODE_USED',
+  'SESSION_REVOKED',
 ];
 const SECURITY_LOG_LIMIT = 50;
 
 export function accountRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
 
@@ -62,7 +63,7 @@ export function accountRouter(prisma: PrismaClient): Router {
   // Self-service profile fields — name/phone/country the user enters
   // themselves in Settings. Purely informational, distinct from the
   // identity-document country submitted for KYC review.
-  router.patch('/me/profile', requireAuth, async (req: AuthedRequest, res) => {
+  router.patch('/me/profile', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = updateProfileSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -70,7 +71,7 @@ export function accountRouter(prisma: PrismaClient): Router {
     res.json({ displayName: user.displayName, phone: user.phone, country: user.country });
   });
 
-  router.patch('/me/password', requireAuth, async (req: AuthedRequest, res) => {
+  router.patch('/me/password', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = changePasswordSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { currentPassword, newPassword } = parsed.data;
@@ -92,7 +93,7 @@ export function accountRouter(prisma: PrismaClient): Router {
 
   // The account's own login/security event history — real AuditLog rows,
   // scoped to req.userId so no one can read another account's log.
-  router.get('/account/security-log', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/account/security-log', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const entries = await prisma.auditLog.findMany({
       where: { userId: req.userId, action: { in: SECURITY_LOG_ACTIONS } },
       orderBy: { createdAt: 'desc' },
@@ -108,13 +109,58 @@ export function accountRouter(prisma: PrismaClient): Router {
     );
   });
 
+  // Real devices/browsers with a live (non-revoked) session — see the
+  // Session model's doc comment. req.sessionId (set by requireAuth only
+  // when the bearer token carries a `sid` claim) marks which row belongs
+  // to the request making this very call, so the frontend can label
+  // "This device" and the sign-out button can warn before ending it.
+  router.get('/me/sessions', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    const sessions = await prisma.session.findMany({
+      where: { userId: req.userId, revokedAt: null },
+      orderBy: { lastSeenAt: 'desc' },
+    });
+    res.json(
+      sessions.map((s) => ({
+        id: s.id,
+        ip: s.ip,
+        userAgent: s.userAgent,
+        createdAt: s.createdAt,
+        lastSeenAt: s.lastSeenAt,
+        current: s.id === req.sessionId,
+      }))
+    );
+  });
+
+  // "Sign out this device" — sets revokedAt, which requireAuth checks on
+  // every subsequent request carrying that session's token, so this has
+  // an immediate, real effect instead of just removing a row from a list.
+  // Revoking the session making THIS very request is allowed on purpose:
+  // it just signs the caller out right now, same as clicking logout.
+  router.delete('/me/sessions/:id', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    const session = await prisma.session.findUnique({ where: { id: req.params.id } });
+    if (!session || session.userId !== req.userId) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    if (!session.revokedAt) {
+      await prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+      await prisma.auditLog.create({
+        data: {
+          userId: req.userId!,
+          action: 'SESSION_REVOKED',
+          metadata: { sessionId: session.id, self: session.id === req.sessionId },
+        },
+      });
+    }
+    res.json({ status: 'ok' });
+  });
+
   // Step 1 of enabling 2FA: mint a new TOTP secret and hand back a QR code
   // (plus the raw base32 key for manual entry). Stored on the user record
   // immediately, but twoFactorEnabled stays false until /2fa/verify proves
   // the user actually has it loaded in an authenticator app — otherwise a
   // dropped request here could silently half-enable 2FA with a secret
   // nobody possesses, locking the account out.
-  router.post('/account/2fa/setup', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/setup', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.twoFactorEnabled) {
@@ -131,7 +177,7 @@ export function accountRouter(prisma: PrismaClient): Router {
   // Step 2: prove possession of the secret with a live code. On success,
   // issues a fresh set of backup codes (returned exactly once — only the
   // bcrypt hashes are ever stored) and flips twoFactorEnabled on.
-  router.post('/account/2fa/verify', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/verify', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = twoFactorCodeSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -165,7 +211,7 @@ export function accountRouter(prisma: PrismaClient): Router {
   // Disabling requires a live code (TOTP or backup) too — otherwise anyone
   // who hijacks an already-open session could strip 2FA protection off the
   // account without ever having to defeat it.
-  router.post('/account/2fa/disable', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/account/2fa/disable', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = twoFactorCodeSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 

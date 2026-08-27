@@ -88,7 +88,7 @@ export function supportRouter(prisma: PrismaClient, emailService: SupportEmailSe
   // Resume the logged-in user's most recent conversation (if any) without
   // needing a localStorage id — guests don't get this, they have no
   // account-level identity to look one up by.
-  router.get('/support/conversations/mine', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/support/conversations/mine', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const conversation = await prisma.supportConversation.findFirst({
       where: { userId: req.userId },
       orderBy: { updatedAt: 'desc' },

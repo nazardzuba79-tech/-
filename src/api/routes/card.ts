@@ -12,13 +12,13 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 export function cardRouter(prisma: PrismaClient): Router {
   const router = Router();
 
-  router.get('/card/waitlist/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/card/waitlist/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ joined: user.cardWaitlistJoinedAt != null, joinedAt: user.cardWaitlistJoinedAt, kycStatus: user.kycStatus });
   });
 
-  router.post('/card/waitlist/join', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/card/waitlist/join', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     if (user.kycStatus !== 'APPROVED') {

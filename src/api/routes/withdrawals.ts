@@ -18,7 +18,7 @@ export function withdrawalsRouter(prisma: PrismaClient): Router {
 
   // The account's own withdrawal-request history, scoped to the caller —
   // same pattern as GET /deposits/me.
-  router.get('/withdrawals/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/withdrawals/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const withdrawals = await prisma.withdrawal.findMany({
       where: { userId: req.userId },
       orderBy: { createdAt: 'desc' },
@@ -38,7 +38,7 @@ export function withdrawalsRouter(prisma: PrismaClient): Router {
     );
   });
 
-  router.post('/withdrawals', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/withdrawals', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = requestSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 

@@ -25,7 +25,7 @@ export function portfolioRouter(prisma: PrismaClient): Router {
     totalValueUsd: z.string().refine((v) => Number.isFinite(Number(v)) && Number(v) >= 0, 'must be a non-negative number'),
   });
 
-  router.post('/wallet/portfolio-snapshot', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/wallet/portfolio-snapshot', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const parsed = snapshotSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -45,7 +45,7 @@ export function portfolioRouter(prisma: PrismaClient): Router {
     res.json({ recorded: true });
   });
 
-  router.get('/wallet/portfolio-history', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/wallet/portfolio-history', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const range = typeof req.query.range === 'string' ? req.query.range : '30d';
     const days = RANGE_DAYS[range];
     if (!days) return res.status(400).json({ error: 'range must be one of: 7d, 30d, 90d' });

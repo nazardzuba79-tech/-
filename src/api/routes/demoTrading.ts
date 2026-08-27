@@ -28,12 +28,12 @@ const placeOrderSchema = z
 export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTradingService): Router {
   const router = Router();
 
-  router.get('/demo/balances', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.get('/demo/balances', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const balances = await demoTrading.getBalances(req.userId!);
     res.json(balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })));
   });
 
-  router.post('/demo/orders', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/demo/orders', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { pair, side, type, price, quantity } = parsed.data;
@@ -62,7 +62,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     }
   });
 
-  router.get('/demo/orders/open', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.get('/demo/orders/open', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const orders = await demoTrading.getOpenOrders(req.userId!);
     res.json(
       orders.map((o) => ({
@@ -79,13 +79,13 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     );
   });
 
-  router.delete('/demo/orders/:orderId', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/demo/orders/:orderId', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const cancelled = await demoTrading.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) return res.status(404).json({ error: 'Order not found or not cancellable' });
     res.status(204).send();
   });
 
-  router.get('/demo/orderbook/:pair', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.get('/demo/orderbook/:pair', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const snapshot = demoTrading.getOrderBook(req.params.pair.toUpperCase());
     res.json({
       pair: snapshot.pair,
@@ -95,7 +95,7 @@ export function demoTradingRouter(prisma: PrismaClient, demoTrading: DemoTrading
     });
   });
 
-  router.get('/demo/trades/:pair', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.get('/demo/trades/:pair', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const trades = await demoTrading.getRecentTrades(req.params.pair.toUpperCase());
     res.json(trades.map((t) => ({ ...t, price: t.price.toString(), quantity: t.quantity.toString() })));
   });

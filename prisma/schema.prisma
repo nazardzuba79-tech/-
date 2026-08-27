@@ -88,6 +88,7 @@ model User {
   purchases     Purchase[]
   kycSubmissions KycSubmission[]
   apiKeys       ApiKey[]
+  sessions      Session[]
   futuresPositions FuturesPosition[]
   futuresBalances  FuturesBalance[]
   futuresOrders    FuturesOrder[]
@@ -388,6 +389,29 @@ model ApiKey {
   lastUsedAt       DateTime?
   createdAt        DateTime  @default(now())
   revokedAt        DateTime?
+
+  @@index([userId])
+}
+
+/// One row per issued login (register/login/login-2fa) — the JWT carries
+/// this row's id as its `sid` claim, so requireAuth can check `revokedAt`
+/// on every request and actually invalidate a token mid-lifetime, not just
+/// let it expire naturally after JWT_EXPIRES_IN. Powers the real
+/// "Active sessions" list in Settings → Security (device/IP/last seen,
+/// sign-out-this-device). A token issued before this model existed simply
+/// has no `sid` claim and skips the check — old sessions keep working
+/// until they expire on their own, nothing is force-logged-out on deploy.
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  /// Bumped (throttled — see requireAuth) on use, so "last seen" is
+  /// meaningful instead of frozen at login time.
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
 
   @@index([userId])
 }

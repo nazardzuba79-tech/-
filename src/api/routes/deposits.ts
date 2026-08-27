@@ -51,7 +51,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // treasury address configured for), with the exact assets supported on
   // each — the deposit UI should only ever offer these, so a user can't
   // send something the backend has no way to credit.
-  router.get('/deposit-chains', requireAuth, async (_req, res) => {
+  router.get('/deposit-chains', requireAuth(prisma), async (_req, res) => {
     const chains: { chain: string; nativeAsset: string; tokens: string[] }[] = [];
     for (const chain of KNOWN_CHAINS) {
       try {
@@ -68,7 +68,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // for every user, on every chain you've configured. Reflects whatever an
   // admin most recently set via Settings → Кошельки, falling back to the
   // env-var default when no override has ever been set.
-  router.get('/deposit-address/:chain', requireAuth, async (req, res) => {
+  router.get('/deposit-address/:chain', requireAuth(prisma), async (req, res) => {
     try {
       const config = await resolveChainConfig(treasuryWallets, req.params.chain);
       res.json({
@@ -89,7 +89,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // The account's own deposit history — real Deposit rows written by
   // DepositService on every claim attempt (PENDING/CONFIRMED/CREDITED),
   // scoped to req.userId so no one can read another account's deposits.
-  router.get('/deposits/me', requireAuth, async (req: AuthedRequest, res) => {
+  router.get('/deposits/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const deposits = await prisma.deposit.findMany({
       where: { userId: req.userId },
       orderBy: { createdAt: 'desc' },
@@ -109,7 +109,7 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
     );
   });
 
-  router.post('/deposits/claim/:chain', requireAuth, async (req: AuthedRequest, res) => {
+  router.post('/deposits/claim/:chain', requireAuth(prisma), async (req: AuthedRequest, res) => {
     let config: ChainConfig;
     try {
       config = await resolveChainConfig(treasuryWallets, req.params.chain);

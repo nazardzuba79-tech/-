@@ -17,7 +17,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   const router = Router();
   const balanceAdjustments = new BalanceAdjustmentService(prisma);
 
-  router.get('/admin/users', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.get('/admin/users', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
 
     const [users, registrations, balances, lastLogins] = await Promise.all([
@@ -70,7 +70,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
 
   // Full activity history for one client — deposits, withdrawals, orders,
   // and purchases, plus every KYC submission (not just the latest one).
-  router.get('/admin/users/:id', requireAuth, requireAdmin(prisma), async (req, res) => {
+  router.get('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const { id } = req.params;
 
     const user = await prisma.user.findUnique({ where: { id } });
@@ -169,7 +169,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   // reason, which lands in AuditLog alongside the admin who made it (see
   // BalanceAdjustmentService). Not for routine crediting: that's what the
   // deposit-claim and manual-credit flows are for.
-  router.post('/admin/users/:id/adjust-balance', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/adjust-balance', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = adjustBalanceSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -200,7 +200,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   // Balance table or ReservesService. Single explicit :id from the form,
   // admin-only: no bulk/broadcast path exists here. Always logs to
   // AuditLog with reason "demo top-up" (see DemoTradingService.topUp).
-  router.post('/admin/users/:id/demo-topup', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/demo-topup', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = demoTopupSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -228,7 +228,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   // long-dormant accounts an admin decides to shut down without deleting
   // their history. Existing sessions still expire naturally rather than
   // being revoked mid-flight.
-  router.post('/admin/users/:id/block', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/block', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const parsed = blockSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -246,7 +246,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
     res.json({ ok: true });
   });
 
-  router.post('/admin/users/:id/unblock', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.post('/admin/users/:id/unblock', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) return res.status(404).json({ error: 'User not found' });
 
@@ -264,7 +264,7 @@ export function adminUsersRouter(prisma: PrismaClient, demoTrading: DemoTradingS
   // movement keeps its trail (compliance, disputes) and must be blocked
   // instead. AuditLog rows are left in place either way — they carry no DB
   // relation to User, so nothing here can orphan-break them.
-  router.delete('/admin/users/:id', requireAuth, requireAdmin(prisma), async (req: AuthedRequest, res) => {
+  router.delete('/admin/users/:id', requireAuth(prisma), requireAdmin(prisma), async (req: AuthedRequest, res) => {
     const target = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!target) return res.status(404).json({ error: 'User not found' });
     if (target.role === 'ADMIN') return res.status(400).json({ error: 'Cannot delete an admin account' });

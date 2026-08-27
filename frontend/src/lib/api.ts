@@ -477,6 +477,17 @@ export const api = {
       { id: string; action: string; createdAt: string; metadata: { ip?: string | null; userAgent?: string | null } }[]
     >('/account/security-log'),
 
+  // Real devices/browsers with a live session — see the backend's Session
+  // model. `current` marks the one this very request is authenticated
+  // with, so the frontend can label "This device" and guard the sign-out
+  // button.
+  getSessions: () =>
+    request<
+      { id: string; ip: string | null; userAgent: string | null; createdAt: string; lastSeenAt: string; current: boolean }[]
+    >('/me/sessions'),
+
+  revokeSession: (id: string) => request<void>(`/me/sessions/${id}`, { method: 'DELETE' }),
+
   getReserves: () =>
     request<
       {
