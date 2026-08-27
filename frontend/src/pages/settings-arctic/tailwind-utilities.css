@@ -1,0 +1,24 @@
+/* Only the `utilities` layer — no `base`/`components`, so nothing here
+   resets or restyles a plain element anywhere else in the app. Only
+   imported by SettingsPage.tsx. */
+
+/* preflight is off (see tailwind.config.js), so plain <button>s here fall
+   back to the browser's default outset border/background — invisible on
+   the old dark theme, but a visible box on this page's light cards. This
+   re-implements just that one slice of preflight, scoped to
+   .settings-arctic-root via :where() (zero specificity) so a button that
+   *does* set its own border/bg via a Tailwind class (higher specificity:
+   one class) still wins — only buttons with no such class fall back to
+   this instead of the UA default. Plain CSS (not @layer base), so it
+   still can't leak into any other page: `button` alone has too little
+   specificity to touch anything outside :where(.settings-arctic-root). */
+:where(.settings-arctic-root) button {
+  border-width: 0;
+  background-color: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+@tailwind utilities;
