@@ -20,6 +20,7 @@ export function CopyTradingPage() {
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
   const [tick, setTick] = useState(0);
   const [depositUsd, setDepositUsd] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const interval = window.setInterval(() => setTick((c) => c + 1), 30_000);
@@ -42,6 +43,16 @@ export function CopyTradingPage() {
       .catch(() => setDepositUsd(0));
   }, []);
 
+  // Admins review this page without necessarily funding the account it
+  // runs under — don't make them stare at the $20,000 deposit gate to see
+  // what a real copier would see.
+  useEffect(() => {
+    api
+      .getMe()
+      .then((me) => setIsAdmin(me.isAdmin))
+      .catch(() => {});
+  }, []);
+
   function openProfile(trader: Trader) {
     setSelectedTrader(trader);
     setView('profile');
@@ -58,7 +69,7 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
-          <CopyEligibilityProvider depositUsd={depositUsd}>
+          <CopyEligibilityProvider depositUsd={depositUsd} isAdmin={isAdmin}>
             {view === 'marketplace' ? <Marketplace onOpen={openProfile} /> : <Profile trader={selectedTrader} onBack={backToMarketplace} tick={tick} />}
           </CopyEligibilityProvider>
         </div>

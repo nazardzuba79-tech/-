@@ -20,12 +20,19 @@ const CopyEligibilityContext = createContext<CopyEligibility | null>(null);
 
 export function CopyEligibilityProvider({
   depositUsd,
+  isAdmin = false,
   children,
 }: {
   depositUsd: number;
+  // Admins review this page without necessarily funding the account it
+  // runs under, so the $20,000 gate (built for real depositors) shouldn't
+  // block them from seeing what a copier would see. depositUsd itself
+  // stays the real, possibly-zero figure — only the derived `eligible`
+  // flag is overridden.
+  isAdmin?: boolean;
   children: React.ReactNode;
 }) {
-  const value: CopyEligibility = { depositUsd, eligible: depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };
+  const value: CopyEligibility = { depositUsd, eligible: isAdmin || depositUsd >= COPY_ELIGIBILITY_THRESHOLD_USD };
   return <CopyEligibilityContext.Provider value={value}>{children}</CopyEligibilityContext.Provider>;
 }
 

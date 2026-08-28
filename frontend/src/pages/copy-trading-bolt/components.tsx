@@ -17,7 +17,6 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Star,
-  TrendingUp,
   Users,
   WalletCards,
   Zap,
@@ -120,6 +119,8 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
 }
 
 function EligibilityGate({ compact = false }: { compact?: boolean }) {
+  const { eligible } = useCopyEligibility();
+  if (eligible) return null;
   return (
     <div className={`eligibility ${compact ? 'eligibility-compact' : ''}`}>
       <div className="eligibility-icon"><ShieldCheck size={17} /></div>
@@ -517,15 +518,9 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
 
       <section className="featured-section">
         <div className="section-title">
-          <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 трейдер биржи' : 'Рекомендуемая стратегия'}</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
+          <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 по прибыли подписчиков' : 'Рекомендуемая стратегия'}</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
           <button className="text-button" onClick={() => onOpen(nazarTrader)}>Профиль трейдера <ChevronRight size={15} /></button>
         </div>
-        {isTopPerformer && (
-          <p className="featured-rank-note">
-            <TrendingUp size={14} />
-            Показан первым, потому что приносит подписчикам больше прибыли, чем любой другой трейдер на Voltex — {formatPercent(nazarTrader.roi90)} за 90 дней и ${getCopierProfit(nazarTrader).toLocaleString()} USDT прибыли подписчиков.
-          </p>
-        )}
         <div className="featured-card" onClick={() => onOpen(nazarTrader)}>
           <div className="featured-copy">
             <div className="featured-person">
