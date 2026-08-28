@@ -1,0 +1,326 @@
+/* Ported from the approved Bolt.new archive's src/index.css — every rule
+   kept, only mechanically rescoped: every selector prefixed with
+   .copytrading-bolt-root (the archive's own :root, universal-selector, and
+   h1-h3/p/button/input resets would otherwise leak into every other page,
+   since this file is
+   imported globally like the rest of the app's CSS, not build-scoped like
+   a CSS module). @tailwind directives dropped — the JSX never uses a
+   Tailwind utility class, and the explicit resets already in this file
+   cover what preflight would have. Some rules here (.topbar*, .footer*,
+   .brand-mark, .network, .mobile-menu, .content-wrap) target markup the
+   archive's own App.tsx rendered that this integration replaces with the
+   site's real Nav/Footer (see CopyTradingPage.tsx) — left in rather than
+   pruned, since they're harmless unused CSS under this scope and cutting
+   them would mean editing the archive's file by hand. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+.copytrading-bolt-root { font-family: 'Manrope', sans-serif; color: #f2f1ee; background: #090a0c; font-synthesis: none; text-rendering: optimizeLegibility; }
+.copytrading-bolt-root * { box-sizing: border-box; }
+.copytrading-bolt-root { margin: 0; min-width: 320px; background: #090a0c; }
+.copytrading-bolt-root button,
+.copytrading-bolt-root input { font: inherit; }
+.copytrading-bolt-root button { cursor: pointer; }
+.copytrading-bolt-root button:disabled { cursor: not-allowed; }
+.copytrading-bolt-root .app { min-height: 100vh; background: radial-gradient(circle at 74% 0%, rgba(145, 94, 31, .08), transparent 30%), #090a0c; }
+.copytrading-bolt-root .topbar { position: sticky; top: 0; z-index: 10; height: 64px; border-bottom: 1px solid #22252a; background: rgba(9,10,12,.93); backdrop-filter: blur(16px); }
+.copytrading-bolt-root .topbar-inner { max-width: 1400px; height: 100%; margin: auto; padding: 0 32px; display: flex; align-items: center; gap: 48px; }
+.copytrading-bolt-root .brand-mark { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .15em; color: #f1ede5; white-space: nowrap; }
+.copytrading-bolt-root .brand-mark span { display: grid; place-items: center; width: 25px; height: 25px; color: #0c0d0e; background: #d49a4b; clip-path: polygon(0 0, 100% 0, 76% 100%, 0 100%); font-weight: 800; }
+.copytrading-bolt-root .primary-nav { display: flex; align-items: center; gap: 4px; flex: 1; }
+.copytrading-bolt-root .primary-nav button,
+.copytrading-bolt-root .topbar-actions button { color: #969ba3; background: none; border: 0; padding: 10px 12px; font-size: 12px; transition: color .2s, background .2s; }
+.copytrading-bolt-root .primary-nav button:hover,
+.copytrading-bolt-root .primary-nav button.active { color: #f1ede5; }
+.copytrading-bolt-root .primary-nav button.active { background: #17191d; border-radius: 6px; }
+.copytrading-bolt-root .primary-nav svg { vertical-align: middle; margin-left: 4px; }
+.copytrading-bolt-root .new-badge { margin-left: 4px; color: #d99b4a; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .topbar-actions { display: flex; align-items: center; gap: 8px; }
+.copytrading-bolt-root .network { font-family: 'DM Mono', monospace; color: #a9adb2; font-size: 10px; padding-right: 10px; border-right: 1px solid #2a2d31; }
+.copytrading-bolt-root .network i { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #57b982; box-shadow: 0 0 8px rgba(87,185,130,.5); }
+.copytrading-bolt-root .icon-button { display: grid; place-items: center; border: 0; color: #92979e; background: transparent; transition: color .2s, background .2s; }
+.copytrading-bolt-root .icon-button:hover { color: #eee9e0; background: #1a1c20; }
+.copytrading-bolt-root .avatar-small { width: 28px; height: 28px; padding: 0 !important; border-radius: 50%; color: #0c0d0e !important; background: #c7ccd0 !important; font-weight: 800; font-size: 10px !important; }
+.copytrading-bolt-root .mobile-menu { display: none; }
+.copytrading-bolt-root .content-wrap { border-bottom: 1px solid #1c1f23; }
+.copytrading-bolt-root .page-shell { max-width: 1400px; margin: auto; padding: 64px 32px 84px; }
+.copytrading-bolt-root .eyebrow { color: #858b94; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+.copytrading-bolt-root .live-dot { display: inline-block; width: 6px; height: 6px; margin: 0 4px 1px; border-radius: 50%; background: #5cbf88; box-shadow: 0 0 9px rgba(92,191,136,.6); }
+.copytrading-bolt-root h1,
+.copytrading-bolt-root h2,
+.copytrading-bolt-root h3,
+.copytrading-bolt-root p { margin: 0; }
+.copytrading-bolt-root h1 { letter-spacing: -.04em; font-size: clamp(40px, 5vw, 64px); line-height: 1.04; }
+.copytrading-bolt-root h2 { letter-spacing: -.035em; font-size: 25px; line-height: 1.15; }
+.copytrading-bolt-root h3 { letter-spacing: -.02em; }
+.copytrading-bolt-root .page-heading { display: flex; align-items: end; justify-content: space-between; gap: 32px; margin-bottom: 52px; }
+.copytrading-bolt-root .page-heading p { max-width: 560px; color: #90959c; font-size: 14px; line-height: 1.7; margin-top: 18px; }
+.copytrading-bolt-root .deposit-status { display: flex; align-items: center; gap: 12px; min-width: 240px; padding: 14px 16px; border: 1px solid #2b2e33; border-radius: 8px; background: #111316; }
+.copytrading-bolt-root .deposit-status svg { color: #d49a4b; }
+.copytrading-bolt-root .deposit-status div { display: grid; gap: 3px; flex: 1; }
+.copytrading-bolt-root .deposit-status span { color: #787e86; font-size: 10px; }
+.copytrading-bolt-root .deposit-status strong { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.copytrading-bolt-root .status-pill { color: #db9d4f !important; padding: 5px 7px; border: 1px solid #5b4225; border-radius: 4px; font-size: 9px !important; }
+.copytrading-bolt-root .market-nav { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 0 14px; border-bottom: 1px solid #23262b; }
+.copytrading-bolt-root .search-box { width: 300px; display: flex; align-items: center; gap: 8px; padding: 9px 10px; color: #70767f; border: 1px solid #2b2e33; border-radius: 6px; background: #111316; }
+.copytrading-bolt-root .search-box input { width: 100%; color: #e5e2dc; outline: 0; border: 0; background: transparent; font-size: 11px; }
+.copytrading-bolt-root .search-box input::placeholder { color: #686e76; }
+.copytrading-bolt-root kbd { color: #737981; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root .sort-wrapper { display: flex; align-items: center; gap: 14px; }
+.copytrading-bolt-root .sort-button { position: relative; display: flex; align-items: center; gap: 6px; color: #8d9299; padding: 8px 12px; border: 1px solid #292c31; border-radius: 5px; background: #111316; font-size: 10px; cursor: pointer; user-select: none; }
+.copytrading-bolt-root .sort-button:hover { color: #ddd9d1; border-color: #5f492d; }
+.copytrading-bolt-root .sort-button b { color: #d4d0c8; font-weight: 600; }
+.copytrading-bolt-root .sort-button .chevron-up { transform: rotate(180deg); }
+.copytrading-bolt-root .period-group { display: flex; gap: 2px; padding: 3px; border: 1px solid #292c31; border-radius: 5px; background: #111316; }
+.copytrading-bolt-root .period-group button { color: #777d84; border: 0; background: transparent; padding: 5px 9px; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root .period-group button.active { color: #0e0f10; background: #d49a4b; }
+.copytrading-bolt-root .filter-row { display: flex; align-items: center; gap: 8px; padding: 16px 0 32px; flex-wrap: wrap; }
+.copytrading-bolt-root .filter-label { display: flex; align-items: center; gap: 6px; color: #d4d0c8; margin-right: 5px; font-size: 11px; font-weight: 700; }
+.copytrading-bolt-root .filter-button { position: relative; display: flex; align-items: center; gap: 8px; color: #8d9299; padding: 8px 10px; border: 1px solid #292c31; border-radius: 5px; background: #111316; font-size: 10px; cursor: pointer; user-select: none; outline: none; }
+.copytrading-bolt-root .filter-button:hover,
+.copytrading-bolt-root .filter-button.filter-button-open { color: #ddd9d1; border-color: #5f492d; }
+.copytrading-bolt-root .filter-button-label b { color: #d4d0c8; font-weight: 600; }
+.copytrading-bolt-root .filter-button .chevron-up { transform: rotate(180deg); }
+.copytrading-bolt-root .filter-clear { color: #c9954e; border: 1px solid #5b4225; border-radius: 5px; background: transparent; padding: 8px 10px; font-size: 10px; }
+.copytrading-bolt-root .filter-clear:hover { background: #231c13; }
+.copytrading-bolt-root .filter-dropdown { position: absolute; top: calc(100% + 4px); left: 0; z-index: 20; min-width: 160px; display: grid; gap: 2px; padding: 6px; border: 1px solid #3a3d42; border-radius: 6px; background: #16181c; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.copytrading-bolt-root .sort-dropdown { right: 0; left: auto; min-width: 200px; }
+.copytrading-bolt-root .filter-dropdown button { display: flex; align-items: center; justify-content: space-between; color: #92979e; border: 0; background: transparent; padding: 7px 9px; border-radius: 4px; font-size: 11px; text-align: left; }
+.copytrading-bolt-root .filter-dropdown button:hover { color: #e5e1d9; background: #1e2024; }
+.copytrading-bolt-root .filter-dropdown button.active { color: #d7a05a; background: #231c13; }
+.copytrading-bolt-root .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: 5px; padding: 11px 15px; font-size: 11px; font-weight: 700; transition: .2s; }
+.copytrading-bolt-root .button-copy { color: #0e0f10; background: #d49a4b; }
+.copytrading-bolt-root .button-copy:hover:not(:disabled) { background: #e3ae5f; transform: translateY(-1px); }
+.copytrading-bolt-root .button-copy:disabled { color: #9b7d52; border-color: #5b4225; background: #221c14; }
+.copytrading-bolt-root .button-outline { color: #d5a15a; border-color: #644a2d; background: transparent; white-space: nowrap; }
+.copytrading-bolt-root .button-outline:hover { background: #231c13; }
+.copytrading-bolt-root .button-small { width: 100%; padding: 9px 8px; font-size: 10px; }
+.copytrading-bolt-root .eligibility { display: flex; align-items: center; gap: 12px; padding: 17px 20px; margin-bottom: 48px; border: 1px solid #3f3425; border-radius: 7px; background: linear-gradient(90deg, rgba(94,64,30,.2), rgba(29,23,17,.14)); }
+.copytrading-bolt-root .eligibility-icon { display: grid; place-items: center; width: 31px; height: 31px; color: #d79e52; border: 1px solid #62482b; border-radius: 50%; }
+.copytrading-bolt-root .eligibility strong { display: block; color: #e6d6bd; font-size: 12px; }
+.copytrading-bolt-root .eligibility p { margin-top: 4px; color: #9b8d7b; font-size: 11px; }
+.copytrading-bolt-root .eligibility .button { margin-left: auto; }
+.copytrading-bolt-root .featured-section { margin-bottom: 66px; }
+.copytrading-bolt-root .section-title { display: flex; align-items: end; justify-content: space-between; margin-bottom: 18px; }
+.copytrading-bolt-root .section-title h2 { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.copytrading-bolt-root .vip-badge { display: inline-flex; align-items: center; gap: 4px; color: #ddb06c; padding: 4px 7px; border: 1px solid #765529; border-radius: 3px; background: #241b10; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; }
+.copytrading-bolt-root .text-button { display: inline-flex; align-items: center; gap: 4px; color: #c9954e; padding: 5px 0; border: 0; background: transparent; font-size: 11px; }
+.copytrading-bolt-root .featured-card { display: grid; grid-template-columns: 1.35fr 1fr auto; align-items: center; gap: 28px; padding: 24px; border: 1px solid #6a512e; border-radius: 8px; background: linear-gradient(110deg, #171719, #111214 68%); box-shadow: 0 12px 40px rgba(0,0,0,.18); cursor: pointer; transition: transform .2s, border-color .2s; }
+.copytrading-bolt-root .featured-card:hover { transform: translateY(-2px); border-color: #aa773d; }
+.copytrading-bolt-root .featured-person { display: flex; align-items: center; gap: 13px; }
+.copytrading-bolt-root .profile-avatar-wrap { position: relative; display: inline-flex; }
+.copytrading-bolt-root .avatar { display: grid; place-items: center; width: 42px; height: 42px; color: #e8e5de; border: 1px solid #4e5258; border-radius: 50%; background: #2d3238; font-size: 14px; font-weight: 800; }
+.copytrading-bolt-root .avatar-gold { color: #1d140a; border-color: #b98441; background: radial-gradient(circle at 34% 28%, #f8d68e, #b6772f 70%); }
+.copytrading-bolt-root .avatar-blue { background: linear-gradient(145deg, #4f7594, #1e3546); }
+.copytrading-bolt-root .avatar-slate { background: linear-gradient(145deg, #808994, #343b45); }
+.copytrading-bolt-root .avatar-rose { background: linear-gradient(145deg, #c48c8c, #643c46); }
+.copytrading-bolt-root .avatar-orange { background: linear-gradient(145deg, #b9855e, #563423); }
+.copytrading-bolt-root .avatar-green { background: linear-gradient(145deg, #73a183, #26493d); }
+.copytrading-bolt-root .avatar-large { width: 58px; height: 58px; font-size: 20px; }
+.copytrading-bolt-root .verified-dot,
+.copytrading-bolt-root .profile-verified { position: absolute; right: -2px; bottom: 1px; display: grid; place-items: center; width: 15px; height: 15px; color: #07120c; border: 2px solid #111214; border-radius: 50%; background: #5dbe86; }
+.copytrading-bolt-root .profile-verified { width: 17px; height: 17px; right: -2px; }
+.copytrading-bolt-root .profile-title-row { display: flex; align-items: center; gap: 9px; }
+.copytrading-bolt-root .profile-title-row h3,
+.copytrading-bolt-root .profile-title-row h1 { font-size: 20px; }
+.copytrading-bolt-root .featured-person p,
+.copytrading-bolt-root .trader-name-row p { color: #858a92; margin-top: 4px; font-size: 11px; }
+.copytrading-bolt-root .dot-separator { display: inline-block; width: 3px; height: 3px; margin: 0 6px 3px; border-radius: 50%; background: #6c7177; }
+.copytrading-bolt-root .featured-description { max-width: 470px; margin: 22px 0 18px; color: #9da1a7; font-size: 12px; line-height: 1.7; }
+.copytrading-bolt-root .featured-footer,
+.copytrading-bolt-root .profile-meta { display: flex; gap: 18px; color: #80868e; font-size: 10px; }
+.copytrading-bolt-root .featured-footer span,
+.copytrading-bolt-root .profile-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.copytrading-bolt-root .featured-footer svg { color: #b58a51; }
+.copytrading-bolt-root .featured-performance { display: grid; grid-template-columns: repeat(2, 1fr); gap: 17px 28px; padding: 5px 25px; border-left: 1px solid #2f3031; border-right: 1px solid #2f3031; }
+.copytrading-bolt-root .featured-performance div,
+.copytrading-bolt-root .metric-card { display: grid; gap: 5px; }
+.copytrading-bolt-root .featured-performance span,
+.copytrading-bolt-root .metric-card span,
+.copytrading-bolt-root .card-stats span,
+.copytrading-bolt-root .card-return span,
+.copytrading-bolt-root .risk-metric span,
+.copytrading-bolt-root .copier-grid span,
+.copytrading-bolt-root .card-meta span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+.copytrading-bolt-root .featured-performance strong { color: #67c38e; font-family: 'DM Mono', monospace; font-size: 19px; font-weight: 500; letter-spacing: -.05em; }
+.copytrading-bolt-root .featured-performance div:nth-child(4) strong,
+.copytrading-bolt-root .featured-performance div:nth-child(5) strong { color: #ece9e3; font-size: 15px; }
+.copytrading-bolt-root .featured-action { display: grid; gap: 10px; min-width: 150px; }
+.copytrading-bolt-root .featured-action small { color: #777b80; text-align: center; font-size: 9px; line-height: 1.4; }
+.copytrading-bolt-root .featured-copier-profit { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding: 14px 18px; border: 1px solid #4a3a22; border-radius: 6px; background: #141210; }
+.copytrading-bolt-root .featured-copier-profit span { color: #8a7c64; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+.copytrading-bolt-root .featured-copier-profit strong { color: #d9b876; font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 500; letter-spacing: -.04em; }
+.copytrading-bolt-root .marketplace-section { margin-top: 30px; }
+.copytrading-bolt-root .results-count { color: #777d84; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root .trader-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.copytrading-bolt-root .trader-card { position: relative; padding: 17px; border: 1px solid #282b30; border-radius: 7px; background: #121417; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+.copytrading-bolt-root .trader-card:hover { transform: translateY(-3px); border-color: #58534a; background: #17191c; }
+.copytrading-bolt-root .card-topline,
+.copytrading-bolt-root .trader-name-row { display: flex; align-items: center; justify-content: space-between; }
+.copytrading-bolt-root .card-topline { margin-bottom: 13px; }
+.copytrading-bolt-root .icon-button { padding: 6px; border-radius: 5px; }
+.copytrading-bolt-root .trader-name-row { align-items: start; margin-bottom: 20px; }
+.copytrading-bolt-root .trader-name-row h3 { font-size: 14px; }
+.copytrading-bolt-root .trader-name-row .vip-badge { margin-top: 1px; }
+.copytrading-bolt-root .card-return { position: relative; padding: 12px 0 16px; border-top: 1px solid #25282c; border-bottom: 1px solid #25282c; }
+.copytrading-bolt-root .card-return strong { display: block; margin-top: 6px; font-family: 'DM Mono', monospace; font-size: 23px; font-weight: 500; letter-spacing: -.07em; }
+.copytrading-bolt-root .card-return strong.positive { color: #61c48c; }
+.copytrading-bolt-root .card-return strong.negative { color: #c97970; }
+.copytrading-bolt-root .card-return strong.neutral { color: #999da2; }
+.copytrading-bolt-root .mini-chart { position: absolute; right: 0; bottom: 18px; display: flex; align-items: end; gap: 3px; height: 24px; }
+.copytrading-bolt-root .mini-chart i { display: block; width: 4px; background: #39835f; border-radius: 2px; transform: skewY(-24deg); }
+.copytrading-bolt-root .mini-chart i:nth-child(1) { height: 8px; }.copytrading-bolt-root .mini-chart i:nth-child(2) { height: 13px; }.copytrading-bolt-root .mini-chart i:nth-child(3) { height: 11px; }.copytrading-bolt-root .mini-chart i:nth-child(4) { height: 18px; }.copytrading-bolt-root .mini-chart i:nth-child(5) { height: 23px; }
+.copytrading-bolt-root .card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 16px 0; }
+.copytrading-bolt-root .card-stats strong { display: block; margin-top: 5px; color: #d4d5d2; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; }
+.copytrading-bolt-root .card-stats strong.positive { color: #66c28e; }
+.copytrading-bolt-root .card-stats strong.negative { color: #c97970; }
+.copytrading-bolt-root .card-stats strong.neutral { color: #999da2; }
+.copytrading-bolt-root .card-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding-bottom: 14px; }
+.copytrading-bolt-root .card-meta div { display: grid; gap: 4px; }
+.copytrading-bolt-root .card-meta b { color: #d3d2cf; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500; }
+.copytrading-bolt-root .card-footer-row { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; }
+.copytrading-bolt-root .card-id { color: #5a5f66; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .risk { padding: 4px 6px; border-radius: 3px; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .risk-low { color: #6fc397; background: #12271e; }
+.copytrading-bolt-root .risk-moderate { color: #d8ad6c; background: #2c2113; }
+.copytrading-bolt-root .risk-high { color: #cf8277; background: #2b1817; }
+.copytrading-bolt-root .risk-very-high { color: #b85a6a; background: #2b1419; }
+.copytrading-bolt-root .card-view-button { width: 100%; padding: 9px 8px; color: #d4d0c8; border: 1px solid #35383d; border-radius: 5px; background: #1a1c20; font-size: 10px; font-weight: 600; transition: .2s; }
+.copytrading-bolt-root .card-view-button:hover { color: #f1ede5; border-color: #5f492d; background: #232019; }
+.copytrading-bolt-root .card-cta-area { display: grid; gap: 8px; }
+.copytrading-bolt-root .premium-eligibility { display: flex; align-items: flex-start; gap: 8px; padding: 9px 11px; border: 1px solid #4a3a22; border-radius: 5px; background: #141210; }
+.copytrading-bolt-root .premium-eligibility-lock { color: #c99a4e; flex-shrink: 0; margin-top: 1px; }
+.copytrading-bolt-root .premium-eligibility strong { display: block; color: #d9b876; font-size: 9px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.copytrading-bolt-root .premium-eligibility p { margin-top: 2px; color: #8a7c64; font-size: 9px; line-height: 1.4; }
+.copytrading-bolt-root .premium-eligibility-compact { padding: 7px 9px; }
+.copytrading-bolt-root .premium-eligibility-compact strong { font-size: 8px; }
+.copytrading-bolt-root .premium-eligibility-compact p { font-size: 8px; }
+.copytrading-bolt-root .profile-cta-area { display: grid; gap: 8px; }
+.copytrading-bolt-root .empty-state { display: grid; place-items: center; gap: 8px; min-height: 200px; color: #81868e; border: 1px solid #292c31; border-radius: 8px; }
+.copytrading-bolt-root .empty-state strong { color: #d5d2cc; }
+.copytrading-bolt-root .empty-state span { font-size: 12px; }
+.copytrading-bolt-root .pagination { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 28px; padding-top: 24px; border-top: 1px solid #23262b; }
+.copytrading-bolt-root .pagination-info { color: #777d84; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root .pagination-controls { display: flex; align-items: center; gap: 4px; }
+.copytrading-bolt-root .page-button { display: inline-flex; align-items: center; gap: 4px; color: #8d9299; border: 1px solid #292c31; border-radius: 4px; background: #111316; padding: 7px 10px; font-size: 10px; }
+.copytrading-bolt-root .page-button:hover:not(:disabled) { color: #ddd9d1; border-color: #5f492d; }
+.copytrading-bolt-root .page-button:disabled { opacity: .4; }
+.copytrading-bolt-root .page-number { color: #8d9299; border: 0; background: transparent; padding: 7px 11px; border-radius: 4px; font-family: 'DM Mono', monospace; font-size: 11px; }
+.copytrading-bolt-root .page-number:hover { color: #ddd9d1; background: #1a1c20; }
+.copytrading-bolt-root .page-number.active { color: #0e0f10; background: #d49a4b; }
+.copytrading-bolt-root .profile-page { padding-top: 36px; }
+.copytrading-bolt-root .back-button { display: inline-flex; align-items: center; gap: 7px; padding: 0; margin-bottom: 32px; color: #888d94; border: 0; background: transparent; font-size: 11px; }
+.copytrading-bolt-root .back-button:hover { color: #e2ded5; }
+.copytrading-bolt-root .profile-hero { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 30px; border-bottom: 1px solid #24272b; }
+.copytrading-bolt-root .profile-identity { display: flex; align-items: center; gap: 17px; }
+.copytrading-bolt-root .profile-title-row h1 { font-size: 36px; }
+.copytrading-bolt-root .profile-identity > div > p { display: flex; align-items: center; gap: 4px; color: #9b9fa4; font-size: 12px; margin-top: 7px; }
+.copytrading-bolt-root .profile-meta { margin-top: 17px; }
+.copytrading-bolt-root .profile-meta svg { color: #aa7b40; }
+.copytrading-bolt-root .profile-actions { display: flex; gap: 8px; align-items: center; }
+.copytrading-bolt-root .large-icon { width: 40px; height: 40px; border: 1px solid #292c31; border-radius: 5px; }
+.copytrading-bolt-root .overview-grid { display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+.copytrading-bolt-root .overview-intro { padding: 21px 12px 18px 0; }
+.copytrading-bolt-root .overview-intro h2 { margin-top: 12px; font-size: 29px; }
+.copytrading-bolt-root .overview-intro em { color: #d7a25c; font-style: normal; }
+.copytrading-bolt-root .overview-intro p { max-width: 390px; margin-top: 14px; color: #838990; font-size: 11px; line-height: 1.7; }
+.copytrading-bolt-root .metric-card { min-height: 132px; padding: 19px; border: 1px solid #292c31; border-radius: 7px; background: #121417; }
+.copytrading-bolt-root .metric-card strong { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 500; letter-spacing: -.08em; }
+.copytrading-bolt-root .metric-card strong.positive { color: #65c58d; }
+.copytrading-bolt-root .metric-card strong.negative { color: #c97970; }
+.copytrading-bolt-root .metric-card strong.neutral { color: #999da2; }
+.copytrading-bolt-root .metric-alltime { border-color: #5b4225; }
+.copytrading-bolt-root .metric-card small { color: #727880; font-size: 10px; }
+.copytrading-bolt-root .panel { padding: 25px; margin-top: 18px; border: 1px solid #292c31; border-radius: 7px; background: #111316; }
+.copytrading-bolt-root .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+.copytrading-bolt-root .panel-header h2 { margin-top: 7px; }
+.copytrading-bolt-root .panel-icon { color: #8a6a3e; }
+.copytrading-bolt-root .chart-tools { display: flex; align-items: center; gap: 25px; }
+.copytrading-bolt-root .tab-group,
+.copytrading-bolt-root .comparison-group { display: flex; gap: 4px; }
+.copytrading-bolt-root .tab-group button,
+.copytrading-bolt-root .comparison-group button { color: #777d84; border: 0; background: transparent; padding: 7px 8px; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root .tab-group button.active { color: #d7a05a; border-bottom: 1px solid #d7a05a; }
+.copytrading-bolt-root .comparison-group { padding-left: 14px; border-left: 1px solid #292c31; }
+.copytrading-bolt-root .comparison-group button { display: flex; align-items: center; gap: 5px; }
+.copytrading-bolt-root .comparison-group button.active { color: #ddd9d1; }
+.copytrading-bolt-root .comparison-group i { display: inline-block; width: 7px; height: 2px; background: #d69d51; }
+.copytrading-bolt-root .comparison-group .legend-btc { background: #6a9dba; }
+.copytrading-bolt-root .comparison-group .legend-market { background: #60666e; }
+.copytrading-bolt-root .chart-wrap { position: relative; height: 300px; padding: 0 12px 32px 50px; }
+.copytrading-bolt-root .chart-y { position: absolute; left: 0; top: 2px; bottom: 35px; display: flex; flex-direction: column; justify-content: space-between; color: #676d74; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .performance-svg { width: 100%; height: 260px; overflow: visible; }
+.copytrading-bolt-root .chart-grid { fill: none; stroke: #272b30; stroke-width: 1; stroke-dasharray: 3 4; }
+.copytrading-bolt-root .chart-area { fill: url(#area); }
+.copytrading-bolt-root .chart-line { fill: none; stroke: #dda155; stroke-width: 2.3; }
+.copytrading-bolt-root .chart-line.chart-btc { stroke: #5d91aa; stroke-width: 1.4; stroke-dasharray: 5 4; }
+.copytrading-bolt-root .chart-line.chart-market { stroke: #676c73; stroke-width: 1.2; stroke-dasharray: 3 4; }
+.copytrading-bolt-root .chart-point { fill: #dda155; stroke: #291d0f; stroke-width: 4; }
+.copytrading-bolt-root .chart-x { position: absolute; left: 50px; right: 12px; bottom: 5px; display: flex; justify-content: space-between; color: #676d74; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .chart-note { display: flex; justify-content: space-between; color: #656b72; padding-top: 14px; border-top: 1px solid #23262a; font-size: 10px; }
+.copytrading-bolt-root .chart-note span:first-child { display: inline-flex; align-items: center; gap: 4px; }
+.copytrading-bolt-root .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.copytrading-bolt-root .controlled-badge { display: inline-flex; align-items: center; gap: 6px; color: #68bb8b; padding: 7px 9px; border-radius: 4px; background: #12281e; font-size: 10px; }
+.copytrading-bolt-root .risk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 24px; }
+.copytrading-bolt-root .risk-metric { display: grid; gap: 8px; padding-bottom: 13px; border-bottom: 1px solid #272a2e; }
+.copytrading-bolt-root .risk-metric strong { color: #e5e1da; font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; }
+.copytrading-bolt-root .risk-metric strong.risk-moderate { color: #d5a35f; }
+.copytrading-bolt-root .risk-metric strong.risk-high { color: #cf8277; }
+.copytrading-bolt-root .risk-metric strong.risk-very-high { color: #b85a6a; }
+.copytrading-bolt-root .risk-metric strong.risk-low { color: #6fc397; }
+.copytrading-bolt-root .risk-track { width: 100%; height: 3px; margin-top: 2px; background: #272b2f; }
+.copytrading-bolt-root .risk-track i { display: block; height: 100%; background: #62bc87; }
+.copytrading-bolt-root .stat-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
+.copytrading-bolt-root .stat-rows div { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #272a2e; color: #858a91; font-size: 11px; }
+.copytrading-bolt-root .stat-rows strong { color: #e1ded8; font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500; }
+.copytrading-bolt-root .positive { color: #66c28e !important; }
+.copytrading-bolt-root .negative { color: #c97970 !important; }
+.copytrading-bolt-root .neutral { color: #999da2 !important; }
+.copytrading-bolt-root .table-scroll { overflow-x: auto; }
+.copytrading-bolt-root table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
+.copytrading-bolt-root th { color: #70767d; padding: 0 10px 13px; border-bottom: 1px solid #292c30; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 400; text-transform: uppercase; }
+.copytrading-bolt-root td { padding: 15px 10px; border-bottom: 1px solid #24272b; color: #999da2; font-family: 'DM Mono', monospace; font-size: 10px; }
+.copytrading-bolt-root td:first-child,
+.copytrading-bolt-root th:first-child { padding-left: 0; }
+.copytrading-bolt-root td:last-child,
+.copytrading-bolt-root th:last-child { padding-right: 0; }
+.copytrading-bolt-root td strong { color: #e0ddd6; font-weight: 500; }
+.copytrading-bolt-root .direction { display: inline-flex; align-items: center; gap: 3px; }
+.copytrading-bolt-root .direction-long { color: #65bd89; }
+.copytrading-bolt-root .direction-short { color: #cc7a70; }
+.copytrading-bolt-root .copiers-panel { margin-bottom: 18px; }
+.copytrading-bolt-root .copier-grid { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr); gap: 14px; }
+.copytrading-bolt-root .copier-grid > div { display: grid; align-content: center; gap: 8px; min-height: 76px; padding-left: 17px; border-left: 1px solid #2a2d31; }
+.copytrading-bolt-root .copier-grid .copier-lead { padding-left: 0; border: 0; }
+.copytrading-bolt-root .copier-grid strong { color: #e6e1d9; font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; }
+.copytrading-bolt-root .copier-lead > strong { color: #d8a15b; font-size: 30px; }
+.copytrading-bolt-root .copier-avatars { display: flex; }
+.copytrading-bolt-root .copier-avatars span { display: grid; place-items: center; width: 22px; height: 22px; margin-right: -4px; color: #d7b47c; border: 2px solid #111316; border-radius: 50%; background: #4c4031; font-size: 8px; }
+.copytrading-bolt-root .info-note { display: flex; align-items: center; gap: 6px; margin-top: 20px; color: #746f66; font-size: 10px; }
+.copytrading-bolt-root .info-note svg { color: #ae8048; }
+.copytrading-bolt-root .earnings-panel { border-color: #3a3328; }
+.copytrading-bolt-root .earnings-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
+.copytrading-bolt-root .earnings-lead { display: grid; gap: 8px; padding: 18px; border: 1px solid #2e3329; border-radius: 6px; background: #131512; }
+.copytrading-bolt-root .earnings-lead span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-lead strong { color: #66c28e; font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; letter-spacing: -.05em; }
+.copytrading-bolt-root .earnings-lead small { color: #6e7479; font-size: 10px; line-height: 1.5; }
+.copytrading-bolt-root .earnings-row { display: flex; align-items: center; gap: 12px; padding: 18px; border: 1px solid #2e3329; border-radius: 6px; background: #131512; }
+.copytrading-bolt-root .earnings-row > div { display: grid; gap: 6px; flex: 1; }
+.copytrading-bolt-root .earnings-row span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-row strong { color: #e5e1da; font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
+.copytrading-bolt-root .earnings-row strong.positive { color: #66c28e; }
+.copytrading-bolt-root .earnings-arrow { display: grid; place-items: center; color: #5a544a; flex: 0 0 auto !important; }
+.copytrading-bolt-root .earnings-calc { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 16px; border-radius: 5px; background: #181a1d; }
+.copytrading-bolt-root .earnings-calc span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-calc code { color: #c9c4b8; font-family: 'DM Mono', monospace; font-size: 11px; }
+.copytrading-bolt-root .earnings-note { margin-top: 12px; color: #746f66; font-size: 10px; }
+.copytrading-bolt-root .profile-page > .eligibility { margin-top: 20px; margin-bottom: 0; }
+.copytrading-bolt-root .footer { max-width: 1400px; margin: auto; padding: 24px 32px; display: flex; align-items: center; gap: 22px; color: #686e75; font-family: 'DM Mono', monospace; font-size: 9px; }
+.copytrading-bolt-root .footer div { display: flex; gap: 16px; margin-left: auto; }
+.copytrading-bolt-root .footer a { color: #868b91; text-decoration: none; }
+@media (max-width: 1200px) { .copytrading-bolt-root .trader-grid { grid-template-columns: repeat(3, 1fr); } .copytrading-bolt-root .overview-grid { grid-template-columns: 1fr repeat(4, minmax(100px, 1fr)); } }
+@media (max-width: 1080px) { .copytrading-bolt-root .topbar-inner { gap: 22px; } .copytrading-bolt-root .primary-nav { gap: 0; } .copytrading-bolt-root .primary-nav button { padding: 10px 7px; font-size: 11px; } .copytrading-bolt-root .page-heading { align-items: start; flex-direction: column; } .copytrading-bolt-root .deposit-status { align-self: stretch; } .copytrading-bolt-root .featured-card { grid-template-columns: 1fr 1fr; } .copytrading-bolt-root .featured-action { grid-column: 1 / -1; } .copytrading-bolt-root .featured-action .button { width: 100%; } .copytrading-bolt-root .featured-action small { display: none; } .copytrading-bolt-root .trader-grid { grid-template-columns: repeat(2, 1fr); } .copytrading-bolt-root .overview-grid { grid-template-columns: 1fr 1fr 1fr; } .copytrading-bolt-root .overview-intro { grid-column: 1 / -1; } .copytrading-bolt-root .copier-grid { grid-template-columns: repeat(3, 1fr); } .copytrading-bolt-root .copier-grid .copier-lead { grid-row: span 2; } .copytrading-bolt-root .earnings-grid { grid-template-columns: 1fr; } .copytrading-bolt-root .featured-copier-profit { margin-top: 14px; } }
+@media (max-width: 760px) { .copytrading-bolt-root .topbar { height: 56px; } .copytrading-bolt-root .topbar-inner,
+.copytrading-bolt-root .page-shell { padding-left: 18px; padding-right: 18px; } .copytrading-bolt-root .primary-nav,
+.copytrading-bolt-root .network { display: none; } .copytrading-bolt-root .topbar-actions { margin-left: auto; } .copytrading-bolt-root .mobile-menu { display: grid !important; } .copytrading-bolt-root .page-shell { padding-top: 38px; padding-bottom: 58px; } .copytrading-bolt-root .page-heading { margin-bottom: 34px; } .copytrading-bolt-root .page-heading p { font-size: 12px; } .copytrading-bolt-root .market-nav { align-items: stretch; flex-direction: column; } .copytrading-bolt-root .search-box { width: 100%; } .copytrading-bolt-root .sort-wrapper { flex-wrap: wrap; } .copytrading-bolt-root .period-group { flex: 1; justify-content: center; } .copytrading-bolt-root .filter-row { padding-bottom: 25px; } .copytrading-bolt-root .eligibility { align-items: flex-start; flex-wrap: wrap; padding: 15px; } .copytrading-bolt-root .eligibility .button { width: 100%; margin-left: 43px; } .copytrading-bolt-root .eligibility-compact { display: none; } .copytrading-bolt-root .featured-card { grid-template-columns: 1fr; gap: 22px; padding: 17px; } .copytrading-bolt-root .featured-performance { grid-template-columns: repeat(3, 1fr); padding: 17px 0; border-right: 0; border-left: 0; } .copytrading-bolt-root .featured-performance div:nth-child(4),
+.copytrading-bolt-root .featured-performance div:nth-child(5) { display: none; } .copytrading-bolt-root .featured-copier-profit { flex-direction: column; align-items: flex-start; gap: 6px; } .copytrading-bolt-root .featured-action { grid-column: auto; } .copytrading-bolt-root .trader-grid { grid-template-columns: 1fr; } .copytrading-bolt-root .section-title { align-items: start; } .copytrading-bolt-root .profile-hero { align-items: flex-start; flex-direction: column; } .copytrading-bolt-root .profile-actions { width: 100%; } .copytrading-bolt-root .profile-actions .button-copy { flex: 1; } .copytrading-bolt-root .profile-meta { flex-wrap: wrap; gap: 10px 14px; } .copytrading-bolt-root .overview-grid { grid-template-columns: 1fr 1fr; } .copytrading-bolt-root .overview-intro { grid-column: 1 / -1; padding-right: 0; } .copytrading-bolt-root .metric-card { min-height: 112px; padding: 15px; } .copytrading-bolt-root .metric-card strong { font-size: 22px; } .copytrading-bolt-root .chart-panel { padding: 17px; } .copytrading-bolt-root .panel-header { align-items: flex-start; gap: 14px; flex-direction: column; } .copytrading-bolt-root .chart-tools { align-items: flex-start; gap: 14px; flex-direction: column; } .copytrading-bolt-root .comparison-group { padding-left: 0; border-left: 0; } .copytrading-bolt-root .chart-wrap { height: 260px; padding-left: 37px; } .copytrading-bolt-root .performance-svg { height: 225px; } .copytrading-bolt-root .chart-x { left: 37px; font-size: 8px; } .copytrading-bolt-root .chart-x span:nth-child(even) { display: none; } .copytrading-bolt-root .chart-note { gap: 10px; align-items: flex-start; flex-direction: column; } .copytrading-bolt-root .two-column { grid-template-columns: 1fr; gap: 0; } .copytrading-bolt-root .panel { padding: 17px; } .copytrading-bolt-root .risk-grid { grid-template-columns: 1fr 1fr; gap: 14px; } .copytrading-bolt-root .stat-rows { gap: 0 15px; } .copytrading-bolt-root .stat-rows div { font-size: 10px; } .copytrading-bolt-root .copier-grid { grid-template-columns: 1fr 1fr; } .copytrading-bolt-root .copier-grid .copier-lead { grid-column: 1 / -1; grid-row: auto; } .copytrading-bolt-root .copier-grid > div:nth-child(4),
+.copytrading-bolt-root .copier-grid > div:nth-child(5) { min-height: 65px; } .copytrading-bolt-root .earnings-row { flex-direction: column; align-items: flex-start; gap: 10px; } .copytrading-bolt-root .earnings-arrow { transform: rotate(90deg); } .copytrading-bolt-root .pagination { flex-direction: column; gap: 14px; align-items: stretch; } .copytrading-bolt-root .pagination-controls { justify-content: center; flex-wrap: wrap; } .copytrading-bolt-root .footer { align-items: flex-start; flex-direction: column; padding: 22px 18px; } .copytrading-bolt-root .footer div { margin-left: 0; } .copytrading-bolt-root .profile-page > .eligibility .button { margin-left: 0; } }
