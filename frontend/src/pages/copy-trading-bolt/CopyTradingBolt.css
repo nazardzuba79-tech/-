@@ -300,19 +300,19 @@
 .copytrading-bolt-root .earnings-panel { border-color: #3a3328; }
 .copytrading-bolt-root .earnings-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 18px; }
 .copytrading-bolt-root .earnings-lead { display: grid; gap: 8px; padding: 18px; border: 1px solid #2e3329; border-radius: 6px; background: #131512; }
-.copytrading-bolt-root .earnings-lead span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
-.copytrading-bolt-root .earnings-lead strong { color: #66c28e; font-family: 'DM Mono', monospace; font-size: 26px; font-weight: 500; letter-spacing: -.05em; }
-.copytrading-bolt-root .earnings-lead small { color: #6e7479; font-size: 10px; line-height: 1.5; }
+.copytrading-bolt-root .earnings-lead span { color: #9199a1; font-family: 'DM Mono', monospace; font-size: 10.5px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-lead strong { color: #6fd39c; font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root .earnings-lead small { color: #9199a1; font-size: 11px; line-height: 1.5; }
 .copytrading-bolt-root .earnings-row { display: flex; align-items: center; gap: 12px; padding: 18px; border: 1px solid #2e3329; border-radius: 6px; background: #131512; }
 .copytrading-bolt-root .earnings-row > div { display: grid; gap: 6px; flex: 1; }
-.copytrading-bolt-root .earnings-row span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
-.copytrading-bolt-root .earnings-row strong { color: #e5e1da; font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; }
-.copytrading-bolt-root .earnings-row strong.positive { color: #66c28e; }
+.copytrading-bolt-root .earnings-row span { color: #9199a1; font-family: 'DM Mono', monospace; font-size: 10.5px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-row strong { color: #f0ede6; font-family: 'Manrope', sans-serif; font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root .earnings-row strong.positive { color: #6fd39c; }
 .copytrading-bolt-root .earnings-arrow { display: grid; place-items: center; color: #5a544a; flex: 0 0 auto !important; }
 .copytrading-bolt-root .earnings-calc { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 16px; border-radius: 5px; background: #181a1d; }
-.copytrading-bolt-root .earnings-calc span { color: #767c84; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
-.copytrading-bolt-root .earnings-calc code { color: #c9c4b8; font-family: 'DM Mono', monospace; font-size: 11px; }
-.copytrading-bolt-root .earnings-note { margin-top: 12px; color: #746f66; font-size: 10px; }
+.copytrading-bolt-root .earnings-calc span { color: #9199a1; font-family: 'DM Mono', monospace; font-size: 10.5px; text-transform: uppercase; }
+.copytrading-bolt-root .earnings-calc code { color: #f0ede6; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root .earnings-note { margin-top: 12px; color: #9199a1; font-size: 11px; }
 .copytrading-bolt-root .profile-page > .eligibility { margin-top: 20px; margin-bottom: 0; }
 .copytrading-bolt-root .footer { max-width: 1400px; margin: auto; padding: 24px 32px; display: flex; align-items: center; gap: 22px; color: #686e75; font-family: 'DM Mono', monospace; font-size: 9px; }
 .copytrading-bolt-root .footer div { display: flex; gap: 16px; margin-left: auto; }

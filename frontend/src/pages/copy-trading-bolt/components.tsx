@@ -3,7 +3,6 @@ import {
   ArrowDownRight,
   ArrowLeft,
   ArrowUpRight,
-  BarChart3,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -271,33 +270,6 @@ function RiskMetrics({ trader }: { trader: Trader }) {
   );
 }
 
-function TradingStatistics({ trader }: { trader: Trader }) {
-  const data = generateProfileData(trader);
-  const rows: [string, string][] = [
-    ['Всего сделок', String(data.totalTrades)],
-    ['Прибыльных сделок', String(data.winningTrades)],
-    ['Убыточных сделок', String(data.losingTrades)],
-    ['Средняя прибыль', data.avgProfit],
-    ['Средний убыток', data.avgLoss],
-    ['Профит-фактор', data.profitFactor],
-    ['Среднее время удержания', data.holdingTime],
-    ['Объём торгов', data.volume],
-  ];
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <div><span className="eyebrow">Качество исполнения</span><h2>Торговая статистика</h2></div>
-        <BarChart3 size={20} className="panel-icon" />
-      </div>
-      <div className="stat-rows">
-        {rows.map(([label, value]) => (
-          <div key={label}><span>{label}</span><strong className={value.startsWith('+') ? 'positive' : value.startsWith('-') ? 'negative' : ''}>{value}</strong></div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function RecentTrades({ trader }: { trader: Trader }) {
   const trades = useMemo(() => generateTrades(trader), [trader]);
   return (
@@ -407,7 +379,7 @@ export function Profile({ trader, onBack, tick }: { trader: Trader; onBack: () =
       <PerformanceOverview trader={trader} tick={tick} />
       <PerformanceChart />
       <PerformanceEarnings trader={trader} />
-      <div className="two-column"><RiskMetrics trader={trader} /><TradingStatistics trader={trader} /></div>
+      <RiskMetrics trader={trader} />
       <RecentTrades trader={trader} />
       <Copiers trader={trader} />
       <EligibilityGate />
