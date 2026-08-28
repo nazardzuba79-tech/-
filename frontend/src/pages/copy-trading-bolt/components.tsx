@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Star,
+  TrendingUp,
   Users,
   WalletCards,
   Zap,
@@ -466,6 +467,11 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
 
   useEffect(() => { setPage(1); }, [query, filters, sortBy, period]);
 
+  // The featured slot always shows Nazar first, so explain why rather than
+  // just placing him there: verify against the actual roster instead of
+  // asserting it, so the claim stays true if the data ever changes.
+  const isTopPerformer = marketplaceTraders.every((t) => nazarTrader.roi90 >= t.roi90);
+
   return (
     <main className="page-shell">
       <section className="page-heading">
@@ -511,9 +517,15 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
 
       <section className="featured-section">
         <div className="section-title">
-          <div><span className="eyebrow">Рекомендуемая стратегия</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
+          <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 трейдер биржи' : 'Рекомендуемая стратегия'}</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
           <button className="text-button" onClick={() => onOpen(nazarTrader)}>Профиль трейдера <ChevronRight size={15} /></button>
         </div>
+        {isTopPerformer && (
+          <p className="featured-rank-note">
+            <TrendingUp size={14} />
+            Показан первым, потому что приносит подписчикам больше прибыли, чем любой другой трейдер на Voltex — {formatPercent(nazarTrader.roi90)} за 90 дней и ${getCopierProfit(nazarTrader).toLocaleString()} USDT прибыли подписчиков.
+          </p>
+        )}
         <div className="featured-card" onClick={() => onOpen(nazarTrader)}>
           <div className="featured-copy">
             <div className="featured-person">
