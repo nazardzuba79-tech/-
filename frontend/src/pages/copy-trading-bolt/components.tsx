@@ -31,9 +31,12 @@ import {
   formatAccountSize,
   generateProfileData,
   generateTrades,
+  getChartData,
+  getCopierProfit,
   getStrategyDescription,
   getTraderEarnings,
   formatUsd,
+  compositeScore,
   sortTraders,
   filterTraders,
   searchTraders,
@@ -209,9 +212,12 @@ function PerformanceOverview({ trader, tick }: { trader: Trader; tick: number })
   );
 }
 
-function PerformanceChart() {
+function PerformanceChart({ trader }: { trader: Trader }) {
   const [activeTab, setActiveTab] = useState('90D');
   const [comparison, setComparison] = useState('Trader');
+  const chart = useMemo(() => getChartData(trader, activeTab), [trader, activeTab]);
+  const showMarket = comparison === 'Market' || comparison === 'Trader';
+  const showBtc = comparison === 'BTC' || comparison === 'Trader';
   return (
     <section className="panel chart-panel">
       <div className="panel-header">
@@ -222,20 +228,20 @@ function PerformanceChart() {
         </div>
       </div>
       <div className="chart-wrap">
-        <div className="chart-y"><span>$95k</span><span>$70k</span><span>$45k</span><span>$20k</span></div>
+        <div className="chart-y">{chart.yLabels.map((label) => <span key={label}>{label}</span>)}</div>
         <svg viewBox="0 0 900 280" preserveAspectRatio="none" className="performance-svg" role="img" aria-label="Upward performance chart">
           <defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#d99b4a" stopOpacity=".18" /><stop offset="100%" stopColor="#d99b4a" stopOpacity="0" /></linearGradient></defs>
           <path className="chart-grid" d="M0 30H900M0 100H900M0 170H900M0 240H900" />
-          <path className="chart-area" d="M0 230 C65 220 82 202 138 211 S220 168 278 178 S360 126 420 145 S508 87 560 105 S650 61 712 71 S788 28 900 34 V280 H0Z" />
-          <path className="chart-line chart-market" d="M0 235 C110 226 190 230 260 207 S420 220 500 194 S650 199 730 167 S820 176 900 151" />
-          <path className="chart-line chart-btc" d="M0 240 C80 238 140 215 230 220 S360 185 455 187 S570 169 660 152 S790 134 900 117" />
-          <path className="chart-line" d="M0 230 C65 220 82 202 138 211 S220 168 278 178 S360 126 420 145 S508 87 560 105 S650 61 712 71 S788 28 900 34" />
-          <circle cx="900" cy="34" r="5" className="chart-point" />
+          <path className="chart-area" d={chart.areaPath} />
+          {showMarket && <path className="chart-line chart-market" d={chart.marketPath} />}
+          {showBtc && <path className="chart-line chart-btc" d={chart.btcPath} />}
+          <path className="chart-line" d={chart.linePath} />
+          <circle cx="900" cy={chart.endY.toFixed(1)} r="5" className="chart-point" />
         </svg>
-        <div className="chart-x"><span>Jun 01</span><span>Jun 18</span><span>Jul 05</span><span>Jul 22</span><span>Aug 08</span><span>Aug 28</span></div>
+        <div className="chart-x">{chart.xLabels.map((label, i) => <span key={`${label}-${i}`}>{label}</span>)}</div>
       </div>
       <div className="chart-note">
-        <span><span className="live-dot" /> Данные обновляются каждые 30 секунд</span>
+        <span><span className="live-dot" /> Данные обновляются раз в 24 часа</span>
         <span>Прошлые результаты не гарантируют будущую доходность.</span>
       </div>
     </section>
@@ -244,16 +250,20 @@ function PerformanceChart() {
 
 function RiskMetrics({ trader }: { trader: Trader }) {
   const data = generateProfileData(trader);
+  const returnToRisk = trader.drawdown > 0 ? trader.roi90 / trader.drawdown : trader.roi90;
   const metrics: [string, string, string?][] = [
     ['Максимальная просадка', `${trader.drawdown.toFixed(1)}%`],
     ['Винрейт', `${trader.winRate}%`],
     ['Профит-фактор', data.profitFactor],
     ['Уровень риска', RISK_LABEL_RU[trader.risk], trader.risk.toLowerCase().replace(' ', '-')],
     ['Среднее время сделки', data.holdingTime],
-    ['Наибольшая просадка', `${trader.drawdown.toFixed(1)}%`],
+    ['Доходность/риск', `${returnToRisk.toFixed(1)}x`],
+    ['Рейтинг стратегии', compositeScore(trader).toFixed(1)],
+    ['Размер счёта', formatAccountSize(trader.accountSize)],
+    ['Стаж на платформе', `${trader.activeMonths} мес.`],
   ];
   return (
-    <section className="panel">
+    <section className="panel risk-panel">
       <div className="panel-header">
         <div><span className="eyebrow">Управление риском</span><h2>Риск-метрики</h2></div>
         <span className="controlled-badge"><ShieldCheck size={14} /> Контролируемый риск</span>
@@ -329,6 +339,7 @@ function RecentTrades({ trader }: { trader: Trader }) {
 
 function PerformanceEarnings({ trader }: { trader: Trader }) {
   if (!trader.copierProfit || !trader.performanceFee) return null;
+  const copierProfit = getCopierProfit(trader);
   const earnings = getTraderEarnings(trader);
   const feePct = Math.round(trader.performanceFee * 100);
   return (
@@ -340,7 +351,7 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
       <div className="earnings-grid">
         <div className="earnings-lead">
           <span>Прибыль, полученная подписчиками</span>
-          <strong className="positive">${trader.copierProfit.toLocaleString()} USDT</strong>
+          <strong className="positive">${copierProfit.toLocaleString()} USDT</strong>
           <small>Общая прибыль, распределённая между всеми активными аккаунтами подписчиков</small>
         </div>
         <div className="earnings-row">
@@ -351,7 +362,7 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
       </div>
       <div className="earnings-calc">
         <span>Расчёт</span>
-        <code>${trader.copierProfit.toLocaleString()} × {feePct}% = ${earnings.toLocaleString()} USDT</code>
+        <code>${copierProfit.toLocaleString()} × {feePct}% = ${earnings.toLocaleString()} USDT</code>
       </div>
       <p className="earnings-note">{feePct}% комиссии от прибыли, полученной подписчиками.</p>
     </section>
@@ -405,7 +416,7 @@ export function Profile({ trader, onBack, tick }: { trader: Trader; onBack: () =
         </div>
       </section>
       <PerformanceOverview trader={trader} tick={tick} />
-      <PerformanceChart />
+      <PerformanceChart trader={trader} />
       <PerformanceEarnings trader={trader} />
       <div className="two-column"><RiskMetrics trader={trader} /><TradingStatistics trader={trader} /></div>
       <RecentTrades trader={trader} />
@@ -529,7 +540,7 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
           </div>
           <div className="featured-copier-profit">
             <span>Прибыль подписчиков</span>
-            <strong>{formatUsd(nazarTrader.copierProfit!)} USDT</strong>
+            <strong>{formatUsd(getCopierProfit(nazarTrader))} USDT</strong>
           </div>
           <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton /><small>Требуется депозит от $20 000</small></div>
         </div>

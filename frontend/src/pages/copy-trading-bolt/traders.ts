@@ -149,9 +149,43 @@ const strategyDescriptions: Record<StrategyCategory, string> = {
   'multi-asset': 'A diversified multi-asset strategy that allocates across the crypto spectrum to balance risk and return.',
 };
 
+function hashId(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  return Math.abs(hash);
+}
+
+// UTC-day index — the basis for every "changes once a day" figure below
+// (copier profit, the growth chart). Changes at UTC midnight, stable for
+// the rest of the day.
+function dayIndex(): number {
+  return Math.floor(Date.now() / 86_400_000);
+}
+
+// Deterministic pseudo-random in [0, 1), seeded by an integer — same seed
+// always produces the same value, so a given trader's jitter is stable
+// for as long as dayIndex() doesn't change, then moves to a new value the
+// next day. Not cryptographic; just needs to look non-repeating.
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+// A trader's copierProfit in the data set is a round headline figure
+// (520_000). A real platform's actual distributed-profit total would
+// never land on an exact round number — this adds a small, deterministic,
+// once-a-day-changing offset (a few hundred dollars either way) so it
+// reads as a real running total instead of a marketing rounding.
+export function getCopierProfit(trader: Trader): number {
+  if (!trader.copierProfit) return 0;
+  const seed = hashId(trader.id) + dayIndex() * 97;
+  const offset = Math.round((seededRandom(seed) * 2 - 1) * 900);
+  return trader.copierProfit + offset;
+}
+
 export function getTraderEarnings(trader: Trader): number {
   if (!trader.copierProfit || !trader.performanceFee) return 0;
-  return Math.round(trader.copierProfit * trader.performanceFee);
+  return Math.round(getCopierProfit(trader) * trader.performanceFee);
 }
 
 export function formatUsd(value: number): string {
@@ -207,12 +241,6 @@ const ASSET_DATA = [
   { symbol: 'AVAX/USDT', base: 28.4 },
 ];
 
-function hashId(id: string): number {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
-  return Math.abs(hash);
-}
-
 function formatPrice(price: number): string {
   if (price < 1) return `$${price.toFixed(3)}`;
   if (price < 100) return `$${price.toFixed(2)}`;
@@ -251,6 +279,134 @@ export function generateTrades(trader: Trader): Trade[] {
     });
   }
   return trades;
+}
+
+export type ChartData = {
+  linePath: string;
+  areaPath: string;
+  marketPath: string;
+  btcPath: string;
+  yLabels: string[];
+  xLabels: string[];
+  endY: number;
+};
+
+const CHART_PERIOD_DAYS: Record<string, number> = { '7D': 7, '30D': 30, '90D': 90, '1Y': 365, 'ALL': 730 };
+
+// Matches the fixed "today" the rest of this file's mock data (trade
+// dates in generateTrades) is anchored to, so a period's date labels and
+// its trade log stay on the same calendar.
+const CHART_TODAY = new Date(2026, 7, 28);
+
+function buildSmoothSeries(startValue: number, endValue: number, seed: number, points = 11): number[] {
+  const series: number[] = [];
+  for (let i = 0; i <= points; i++) {
+    if (i === 0) { series.push(startValue); continue; }
+    if (i === points) { series.push(endValue); continue; }
+    const t = i / points;
+    const eased = t * t * (3 - 2 * t);
+    const trend = startValue + (endValue - startValue) * eased;
+    const noiseScale = Math.abs(endValue - startValue) * 0.05 + Math.abs(startValue) * 0.008;
+    const noise = (seededRandom(seed + i * 53) - 0.5) * 2 * noiseScale;
+    series.push(trend + noise);
+  }
+  return series;
+}
+
+// The chart's own period->ROI mapping: same as getRoiForPeriod for
+// 7D/30D/90D/1Y, but ALL means the trader's actual all-time return
+// (computeAllTime) rather than getRoiForPeriod's 90D fallback, so the
+// ALL tab visibly differs from 90D instead of drawing an identical line.
+function chartRoiForPeriod(trader: Trader, period: string): number {
+  if (period === 'ALL') return computeAllTime(trader);
+  return getRoiForPeriod(trader, period);
+}
+
+function seriesToPath(series: number[], min: number, max: number): { line: string; area: string } {
+  const width = 900;
+  const top = 20;
+  const bottom = 245;
+  const range = Math.max(1, max - min);
+  const pts = series.map((v, i) => {
+    const x = (i / (series.length - 1)) * width;
+    const y = bottom - ((v - min) / range) * (bottom - top);
+    return [x, y] as const;
+  });
+  let line = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i];
+    const [x1, y1] = pts[i + 1];
+    const mx = (x0 + x1) / 2;
+    const my = (y0 + y1) / 2;
+    line += ` Q${x0.toFixed(1)} ${y0.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+  }
+  const last = pts[pts.length - 1];
+  line += ` L${last[0].toFixed(1)} ${last[1].toFixed(1)}`;
+  const area = `${line} V280 H0 Z`;
+  return { line, area };
+}
+
+function formatChartAxisValue(value: number): string {
+  if (Math.abs(value) >= 1000) return `$${Math.round(value / 1000)}k`;
+  return `$${Math.round(value)}`;
+}
+
+function xLabelsForPeriod(period: string): string[] {
+  const days = CHART_PERIOD_DAYS[period] ?? 90;
+  const labels: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const daysAgo = Math.round(days * (1 - i / 5));
+    const date = new Date(CHART_TODAY.getTime() - daysAgo * 86_400_000);
+    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: '2-digit' }));
+  }
+  return labels;
+}
+
+// Growth-of-$10,000 chart data for a trader's Performance panel — unlike
+// the archive's own chart (a single hardcoded SVG path regardless of
+// which period tab was active), this actually derives a different curve
+// per period from the trader's own ROI figures, plus two comparison
+// lines (a fraction of the trader's own excess return, so they trail
+// visibly rather than being independently random) and axis labels scaled
+// to match. Regenerates once a day (dayIndex(), via buildSmoothSeries'
+// seed) rather than on every render, so the chart doesn't jump around
+// while someone's looking at it.
+export function getChartData(trader: Trader, period: string): ChartData {
+  const seedBase = hashId(trader.id) + (CHART_PERIOD_DAYS[period] ?? 90) * 31 + dayIndex();
+  const startValue = 10_000;
+  const endValue = startValue * (1 + chartRoiForPeriod(trader, period) / 100);
+  const traderSeries = buildSmoothSeries(startValue, endValue, seedBase);
+  const marketEnd = startValue + (endValue - startValue) * 0.16;
+  const btcEnd = startValue + (endValue - startValue) * 0.42;
+  const marketSeries = buildSmoothSeries(startValue, marketEnd, seedBase + 4001);
+  const btcSeries = buildSmoothSeries(startValue, btcEnd, seedBase + 7919);
+
+  const allValues = [...traderSeries, ...marketSeries, ...btcSeries];
+  const rawMin = Math.min(...allValues);
+  const rawMax = Math.max(...allValues);
+  const pad = (rawMax - rawMin) * 0.1 || rawMax * 0.05;
+  const min = rawMin - pad;
+  const max = rawMax + pad;
+
+  const trader_ = seriesToPath(traderSeries, min, max);
+  const market = seriesToPath(marketSeries, min, max);
+  const btc = seriesToPath(btcSeries, min, max);
+
+  const yLabels: string[] = [];
+  for (let i = 0; i < 4; i++) yLabels.push(formatChartAxisValue(max - ((max - min) * i) / 3));
+
+  const range = Math.max(1, max - min);
+  const endY = 245 - ((traderSeries[traderSeries.length - 1] - min) / range) * (245 - 20);
+
+  return {
+    linePath: trader_.line,
+    areaPath: trader_.area,
+    marketPath: market.line,
+    btcPath: btc.line,
+    yLabels,
+    xLabels: xLabelsForPeriod(period),
+    endY,
+  };
 }
 
 export function sortTraders(traders: Trader[], sortBy: string, period: string): Trader[] {

@@ -231,6 +231,7 @@
 .copytrading-bolt-root .metric-alltime { border-color: #5b4225; }
 .copytrading-bolt-root .metric-card small { color: #8b9198; font-size: 11px; }
 .copytrading-bolt-root .panel { padding: 25px; margin-top: 18px; border: 1px solid #292c31; border-radius: 7px; background: #111316; }
+.copytrading-bolt-root .risk-panel { border-color: #33373d; background: #191c21; }
 .copytrading-bolt-root .panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
 .copytrading-bolt-root .panel-header h2 { margin-top: 7px; }
 .copytrading-bolt-root .panel-icon { color: #8a6a3e; }
