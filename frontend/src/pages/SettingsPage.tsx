@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
-import { Nav } from '../components/Nav';
+import { BottomNav } from '../components/BottomNav';
 import { Footer } from '../components/Footer';
 import './settings-arctic/tailwind-utilities.css';
 import type { Tab } from './settings-arctic/types';
+import { ArcticTopNav } from './settings-arctic/ArcticTopNav';
 import { ProfileSidebar } from './settings-arctic/ProfileSidebar';
 import { ProfileHeaderCard } from './settings-arctic/ProfileHeaderCard';
 import { PersonalInfoForm } from './settings-arctic/PersonalInfoForm';
@@ -26,8 +27,10 @@ import { ReferralSection } from './settings-arctic/ReferralSection';
 // points its color tokens (border/card/foreground/brand/...) at these same
 // variables, so both the Tailwind utilities used throughout
 // pages/settings-arctic/*.tsx and any leftover var(--x) references
-// resolve consistently. The global Nav above it (dark) is untouched on
-// purpose — logo/exchange name stay as they are.
+// resolve consistently. This page renders its own ArcticTopNav (a
+// structural port of the archive's header, see that file's doc comment)
+// instead of the shared dark Nav every other page uses — logo/exchange
+// name stay the site's own Logo component either way.
 const ARCTIC_THEME_VARS = {
   '--bg': 'oklch(0.977 0.0018 247)',
   '--panel': 'oklch(1 0 0)',
@@ -75,7 +78,7 @@ export function SettingsPage() {
     // change what body already inherited.
     <div style={{ ...ARCTIC_THEME_VARS, color: 'var(--text-primary)', fontWeight: 400 }} className="settings-arctic-root min-h-screen bg-background">
       <Toaster position="top-right" richColors />
-      <Nav active="/settings" />
+      <ArcticTopNav />
       <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground sm:text-[34px]">{t('settings.title')}</h1>
@@ -102,6 +105,7 @@ export function SettingsPage() {
 
         <Footer />
       </main>
+      <BottomNav />
     </div>
   );
 }
