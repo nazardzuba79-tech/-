@@ -9,7 +9,7 @@ import type { Tab } from './settings-arctic/types';
 import { ArcticTopNav } from './settings-arctic/ArcticTopNav';
 import { ProfileSidebar } from './settings-arctic/ProfileSidebar';
 import { ProfileHeaderCard } from './settings-arctic/ProfileHeaderCard';
-import { PersonalInfoForm } from './settings-arctic/PersonalInfoForm';
+import { EditProfileModal } from './settings-arctic/EditProfileModal';
 import { AccountOverview } from './settings-arctic/AccountOverview';
 import { RecentActivity } from './settings-arctic/RecentActivity';
 import { QuickActions } from './settings-arctic/QuickActions';
@@ -114,6 +114,7 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
   const { t, lang } = useLanguage();
   const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
   const [recentActivity, setRecentActivity] = useState<Awaited<ReturnType<typeof api.getSecurityLog>>>([]);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     api.getMe().then(setMe).catch(() => {});
@@ -147,12 +148,15 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
         verified={verified}
         statusText={statusText}
         memberSince={memberSince}
-        onEdit={() => document.getElementById('personal-info-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        onEdit={() => setEditOpen(true)}
       />
 
-      <div id="personal-info-form">
-        <PersonalInfoForm me={me} onSaved={(patch) => setMe((prev) => (prev ? { ...prev, ...patch } : prev))} />
-      </div>
+      <EditProfileModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        me={me}
+        onSaved={(patch) => setMe((prev) => (prev ? { ...prev, ...patch } : prev))}
+      />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <AccountOverview email={me.email} accountId={me.id} roleLabel={roleLabel} verifiedLabel={statusText} verified={verified} memberSince={memberSince} />
