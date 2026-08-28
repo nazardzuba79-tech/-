@@ -53,4 +53,75 @@
   max-width: 100%;
 }
 
+/* The shared top Nav/BottomNav (components/Nav.tsx, BottomNav.tsx) style
+   themselves with hardcoded dark literals, not the shared --panel/--border/
+   --text-* tokens every other rule in this file re-points — deliberate,
+   since every other page keeps the dark nav (only this page went light).
+   The archive's own reference design shows a fully light header too
+   though, so it's re-themed here to match: same Nav component, same logo,
+   same "VOLTEX" name (both already read var(--text-primary) themselves,
+   see Logo.tsx, so they re-theme for free) — just recolored for the light
+   page it now sits on instead of overridden with new markup. Real
+   ancestor-class selectors (not :where()), since these intentionally
+   outrank the plain single-class rules in index.css, not defer to them. */
+.settings-arctic-root .top-nav-bar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 8px 24px rgba(20, 20, 40, 0.05);
+}
+.settings-arctic-root .top-nav-divider {
+  background: var(--border);
+}
+.settings-arctic-root .top-nav-link {
+  color: var(--text-secondary);
+}
+.settings-arctic-root .top-nav-link:hover,
+.settings-arctic-root .top-nav-link.is-active {
+  color: var(--text-primary);
+  background: var(--panel-alt);
+}
+.settings-arctic-root .top-nav-link.is-active {
+  color: var(--accent);
+}
+.settings-arctic-root .top-nav-link.is-active::after {
+  background: var(--accent);
+  box-shadow: 0 -2px 10px oklch(0.62 0.16 245 / 0.22);
+}
+.settings-arctic-root .top-nav-profile-btn {
+  color: var(--text-secondary);
+}
+.settings-arctic-root .top-nav-profile-btn:hover {
+  color: var(--text-primary);
+}
+.settings-arctic-root .top-nav-profile-avatar {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--border);
+}
+.settings-arctic-root .top-nav-profile-menu {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: 0 14px 30px rgba(20, 20, 40, 0.12);
+}
+.settings-arctic-root .top-nav-profile-menu a,
+.settings-arctic-root .top-nav-profile-menu button {
+  color: var(--text-secondary);
+}
+.settings-arctic-root .top-nav-profile-menu a:hover,
+.settings-arctic-root .top-nav-profile-menu button:hover {
+  color: var(--text-primary);
+  background: var(--panel-alt);
+}
+.settings-arctic-root .bottom-nav-liquid-glass {
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 -8px 30px -10px rgba(20, 20, 40, 0.08);
+}
+/* .nav-mobile-menu's dark background is an inline style (Nav.tsx), which
+   only an !important rule can beat. */
+.settings-arctic-root .nav-mobile-menu {
+  background: var(--panel) !important;
+  border-bottom: 1px solid var(--border);
+}
+
 @tailwind utilities;
