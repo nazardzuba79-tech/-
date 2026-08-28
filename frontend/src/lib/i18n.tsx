@@ -247,7 +247,7 @@ const RU = {
   'settings.withdrawals.noHistory': 'Заявок на вывод пока нет.',
   'settings.withdrawals.actionError': 'Не удалось выполнить действие.',
   'settings.email': 'Email',
-  'settings.memberSince': 'Участник с',
+  'settings.memberSince': 'Зарегистрирован с',
   'settings.role': 'Роль',
   'settings.roleAdmin': 'Администратор',
   'settings.roleUser': 'Пользователь',
