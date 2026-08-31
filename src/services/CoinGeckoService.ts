@@ -20,7 +20,7 @@
 
 export class ExternalRankingError extends Error {}
 
-export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN';
+export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN' | 'AI' | 'GAMING' | 'RWA';
 
 export interface CoinRanking {
   symbol: string; // e.g. "BTC" — matches our internal asset codes
@@ -69,6 +69,9 @@ const CATEGORY_SLUGS: Record<CoinCategory, string> = {
   LAYER_1: 'layer-1',
   MEME: 'meme-token',
   STABLECOIN: 'stablecoins',
+  AI: 'artificial-intelligence',
+  GAMING: 'gaming',
+  RWA: 'real-world-assets-rwa',
 };
 
 // Hand-maintained fallback for well-known coins, merged into whatever the
@@ -87,7 +90,7 @@ const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
   UNI: ['DEFI'], AAVE: ['DEFI'], MKR: ['DEFI'], CRV: ['DEFI'], LDO: ['DEFI'],
   SNX: ['DEFI'], COMP: ['DEFI'], SUSHI: ['DEFI'], CAKE: ['DEFI'], DYDX: ['DEFI'],
   GMX: ['DEFI'], RUNE: ['DEFI'], BAL: ['DEFI'], YFI: ['DEFI'], '1INCH': ['DEFI'],
-  ENA: ['DEFI'], JUP: ['DEFI'], ONDO: ['DEFI'], RAY: ['DEFI'], PENDLE: ['DEFI'],
+  ENA: ['DEFI'], JUP: ['DEFI'], ONDO: ['DEFI', 'RWA'], RAY: ['DEFI'], PENDLE: ['DEFI'],
   FXS: ['DEFI'], KAVA: ['DEFI'], MORPHO: ['DEFI'], JTO: ['DEFI'], PYTH: ['DEFI'],
   ZRO: ['DEFI'], EIGEN: ['DEFI'], OSMO: ['DEFI'], SPELL: ['DEFI'], ENS: ['DEFI'],
   // Layer 1
@@ -106,6 +109,15 @@ const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
   USDT: ['STABLECOIN'], USDC: ['STABLECOIN'], DAI: ['STABLECOIN'], TUSD: ['STABLECOIN'],
   USDG: ['STABLECOIN'], FDUSD: ['STABLECOIN'], USDP: ['STABLECOIN'], PYUSD: ['STABLECOIN'],
   GUSD: ['STABLECOIN'],
+  // AI
+  FET: ['AI'], RENDER: ['AI'], TAO: ['AI'], AGIX: ['AI'], OCEAN: ['AI'],
+  AKT: ['AI'], WLD: ['AI'], GRT: ['AI'], NMR: ['AI'], RLC: ['AI'],
+  // Gaming
+  AXS: ['GAMING'], SAND: ['GAMING'], GALA: ['GAMING'], ENJ: ['GAMING'], ILV: ['GAMING'],
+  IMX: ['GAMING'], BEAM: ['GAMING'], YGG: ['GAMING'], GODS: ['GAMING'], MAGIC: ['GAMING'],
+  // RWA (real-world assets — tokenized gold, treasuries, on-chain funds)
+  XAUT: ['RWA'], PAXG: ['RWA'], POLYX: ['RWA'], CFG: ['RWA'],
+  TRU: ['RWA'], RIO: ['RWA'], OM: ['RWA'],
 };
 
 interface CoinGeckoMarketRow {

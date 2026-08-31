@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
@@ -16,7 +16,11 @@ const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 export function FuturesPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [symbol, setSymbol] = useState('BTC/USDT');
+  const [searchParams] = useSearchParams();
+  const [symbol, setSymbol] = useState(() => {
+    const requested = searchParams.get('pair');
+    return requested && FUTURES_SYMBOLS.includes(requested) ? requested : 'BTC/USDT';
+  });
   const [newAccountNotice, setNewAccountNotice] = useState<{ max: number; days: number } | null>(null);
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);

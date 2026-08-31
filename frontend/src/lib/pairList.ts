@@ -11,7 +11,7 @@ export interface TickerRow {
   quoteVolume24h: string;
 }
 
-export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN';
+export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN' | 'AI' | 'GAMING' | 'RWA';
 
 export interface CoinRanking {
   symbol: string;
@@ -30,7 +30,7 @@ export interface CoinRanking {
   sparkline: number[];
 }
 
-export const CATEGORIES: CoinCategory[] = ['DEFI', 'LAYER_1', 'MEME', 'STABLECOIN'];
+export const CATEGORIES: CoinCategory[] = ['DEFI', 'LAYER_1', 'MEME', 'STABLECOIN', 'AI', 'GAMING', 'RWA'];
 
 const FAVORITES_KEY = 'exchange_favorite_pairs';
 // Preferred order for the quote-asset filter chips — whichever of these

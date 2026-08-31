@@ -22,6 +22,9 @@ const CATEGORY_LABEL_KEY: Record<CoinCategory, Key> = {
   LAYER_1: 'markets.category.layer1',
   MEME: 'markets.category.meme',
   STABLECOIN: 'markets.category.stablecoin',
+  AI: 'markets.category.ai',
+  GAMING: 'markets.category.gaming',
+  RWA: 'markets.category.rwa',
 };
 
 /**
