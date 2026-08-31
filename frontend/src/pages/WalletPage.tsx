@@ -152,15 +152,23 @@ export function WalletPage() {
   const [openOrdersCount, setOpenOrdersCount] = useState<number | null>(null);
   const [openPositionsCount, setOpenPositionsCount] = useState<number | null>(null);
   const [activity, setActivity] = useState<ActivityItem[] | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const snapshotRecordedRef = useRef(false);
+
+  // Whether to poll the admin-only demo-sandbox balance below at all. Same
+  // UX-only role check the nav already does; the endpoint itself is
+  // independently re-checked server-side (see requireAdmin).
+  useEffect(() => {
+    api
+      .getMe()
+      .then((me) => setIsAdmin(me.isAdmin))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     function load() {
       api.getBalances().then(setSpotBalances).catch(() => {});
       api.getFuturesBalances().then(setFuturesBalances).catch(() => {});
-      // 403s silently for any non-admin account — this is the admin-only
-      // demo sandbox's balance, shown here only when it's actually non-empty.
-      api.getDemoBalances().then(setDemoBalances).catch(() => {});
       // Kraken-mirrored USDT prices — used for the header's total portfolio
       // value (actually tradable, our-exchange pricing) and to tell whether
       // an asset has a real pair here at all (gates the "Buy" action below).
@@ -183,6 +191,20 @@ export function WalletPage() {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, []);
+
+  // The admin-only demo sandbox's balance, shown here only when it's
+  // actually non-empty. Gated on the role check above rather than fired
+  // for everyone and letting it 403 — unconditionally polling it logged a
+  // 403 to every non-admin user's console every 8 seconds.
+  useEffect(() => {
+    if (!isAdmin) return;
+    function load() {
+      api.getDemoBalances().then(setDemoBalances).catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 8000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
 
   // Top-200-by-market-cap coin browser data (price/24h%/volume/market cap/
   // sparkline) — polled on its own cadence since it's backed by the
