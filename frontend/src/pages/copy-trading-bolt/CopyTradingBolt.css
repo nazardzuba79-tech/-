@@ -350,6 +350,13 @@
 .copytrading-bolt-root .earnings-periods small { color: #81868e; font-size: 10.5px; }
 .copytrading-bolt-root .earnings-detail-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 18px; background: #23262b; border: 1px solid #23262b; border-radius: 6px; overflow: hidden; }
 .copytrading-bolt-root .earnings-detail-grid div { display: grid; gap: 5px; padding: 13px 14px; background: #131519; }
+/* The grid draws its separators as 1px gaps over the container's darker
+   background, so a partly-filled last row would show that background as a
+   bare block. This empty filler takes the one trailing slot instead — the
+   cell count (11) leaves exactly one hole at each of the grid's three
+   column counts (4, 3 and 2). It carries no content; if a cell is ever
+   added or removed here, check that assumption still holds. */
+.copytrading-bolt-root .earnings-detail-grid::after { content: ''; background: #131519; }
 .copytrading-bolt-root .earnings-detail-grid span { color: #9199a1; font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; }
 .copytrading-bolt-root .earnings-detail-grid strong { color: #f0ede6; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 /* The reconciliation strip: deposited + earned - withdrawn = managed. */
@@ -373,3 +380,211 @@
 /* The featured leader's real photo fills the same circle the initials
    avatar occupies, so no layout shifts when one replaces the other. */
 .copytrading-bolt-root .avatar-photo { object-fit: cover; }
+
+/* ===== LIGHT PROFILE VIEW =====================================
+   The trader profile reads as a light page, the way Bybit's own trader
+   pages do — the dark grid of numbers above was hard to read. The class
+   is set by CopyTradingPage only while the profile view is open, so the
+   marketplace listing keeps the dark look it already had.
+
+   The archive's colours are hardcoded rather than tokenised, so this is
+   an override layer rather than a token swap: every rule below restates
+   one the archive already declared, with `.light` added to win on
+   specificity. Only colours change — no size, spacing, radius or weight
+   is touched, so the layout is identical to the dark view.
+
+   The site's own <Nav> stays dark (it is the same bar on every page);
+   the <Footer> gets its three tokens remapped at the bottom of this
+   block, the same way the Markets page does it. */
+.copytrading-bolt-root.light {
+  --l-page: #f5f6f8;
+  --l-surface: #ffffff;
+  --l-surface-2: #fafbfc;
+  --l-border: #eaecef;
+  --l-border-strong: #dfe2e7;
+  --l-title: #17181e;
+  --l-body: #3d434d;
+  --l-secondary: #5e6673;
+  --l-muted: #848e9c;
+  --l-dim: #a7aeb8;
+  --l-accent: #f7a600;
+  /* Amber TEXT needs to be darker than the amber fill: #ffc75c on white
+     is about 1.5:1 and effectively invisible. */
+  --l-accent-text: #a86e00;
+  --l-accent-soft: #fff5e0;
+  --l-accent-border: #f3ce8e;
+  /* The dark theme's #6fd39c / #c97970 are tuned for a near-black ground
+     and wash out on white. */
+  --l-positive: #00a870;
+  --l-negative: #e33d51;
+  --l-neutral: #5e6673;
+
+  color: var(--l-title);
+  background: var(--l-page);
+}
+.copytrading-bolt-root.light .app { background: var(--l-page); }
+.copytrading-bolt-root.light .content-wrap { border-bottom-color: var(--l-border); }
+
+/* Hero */
+.copytrading-bolt-root.light .eyebrow { color: var(--l-secondary); }
+.copytrading-bolt-root.light .back-button { color: var(--l-secondary); }
+.copytrading-bolt-root.light .back-button:hover { color: var(--l-title); }
+.copytrading-bolt-root.light .profile-hero { border-bottom-color: var(--l-border); }
+.copytrading-bolt-root.light .profile-identity > div > p { color: var(--l-secondary); }
+.copytrading-bolt-root.light .featured-footer,
+.copytrading-bolt-root.light .profile-meta { color: var(--l-secondary); }
+.copytrading-bolt-root.light .profile-meta svg { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .dot-separator { background: var(--l-dim); }
+/* The avatar discs stay as they are — coloured discs read on either
+   ground — but their verified tick is ringed in the card colour behind
+   it, which is now white. */
+.copytrading-bolt-root.light .verified-dot,
+.copytrading-bolt-root.light .profile-verified { border-color: var(--l-surface); background: var(--l-positive); color: #ffffff; }
+.copytrading-bolt-root.light .vip-badge { color: var(--l-accent-text); border-color: var(--l-accent-border); background: var(--l-accent-soft); }
+.copytrading-bolt-root.light .large-icon { border-color: var(--l-border-strong); }
+.copytrading-bolt-root.light .icon-button { color: var(--l-secondary); }
+.copytrading-bolt-root.light .icon-button:hover { color: var(--l-title); background: var(--l-page); }
+.copytrading-bolt-root.light .icon-button-active { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .icon-button-active:hover { color: var(--l-accent); }
+
+/* Buttons */
+.copytrading-bolt-root.light .button-copy { color: var(--l-title); background: var(--l-accent); }
+.copytrading-bolt-root.light .button-copy:hover:not(:disabled) { background: #e09600; }
+.copytrading-bolt-root.light .button-copy:disabled { color: #8a6510; border-color: var(--l-accent-border); background: var(--l-accent-soft); }
+.copytrading-bolt-root.light .button-outline { color: var(--l-accent-text); border-color: var(--l-accent-border); }
+.copytrading-bolt-root.light .button-outline:hover { background: var(--l-accent-soft); }
+.copytrading-bolt-root.light .button-copy-active { color: var(--l-positive); border-color: rgba(0, 168, 112, .35); background: rgba(0, 168, 112, .1); }
+.copytrading-bolt-root.light .button-copy-active:hover:not(:disabled) { background: rgba(0, 168, 112, .16); }
+.copytrading-bolt-root.light .following-pill { color: var(--l-positive); border-color: rgba(0, 168, 112, .3); background: rgba(0, 168, 112, .1); }
+.copytrading-bolt-root.light .premium-eligibility { border-color: var(--l-accent-border); background: var(--l-accent-soft); }
+.copytrading-bolt-root.light .premium-eligibility-lock { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .premium-eligibility strong { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .premium-eligibility p { color: var(--l-secondary); }
+
+/* Overview metrics */
+.copytrading-bolt-root.light .overview-intro em { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .overview-intro p { color: var(--l-secondary); }
+.copytrading-bolt-root.light .metric-card { border-color: var(--l-border); background: var(--l-surface); }
+.copytrading-bolt-root.light .metric-alltime { border-color: var(--l-accent-border); }
+.copytrading-bolt-root.light .metric-card small { color: var(--l-muted); }
+.copytrading-bolt-root.light .featured-performance span,
+.copytrading-bolt-root.light .metric-card span,
+.copytrading-bolt-root.light .card-stats span,
+.copytrading-bolt-root.light .card-return span,
+.copytrading-bolt-root.light .risk-metric span,
+.copytrading-bolt-root.light .copier-grid span,
+.copytrading-bolt-root.light .card-meta span { color: var(--l-muted); }
+
+/* Panels */
+.copytrading-bolt-root.light .panel { border-color: var(--l-border); background: var(--l-surface); }
+.copytrading-bolt-root.light .risk-panel { border-color: var(--l-border); background: var(--l-surface-2); }
+.copytrading-bolt-root.light .panel-icon { color: var(--l-accent-text); }
+
+/* Performance chart */
+.copytrading-bolt-root.light .tab-group button,
+.copytrading-bolt-root.light .comparison-group button { color: var(--l-secondary); }
+.copytrading-bolt-root.light .tab-group button.active { color: var(--l-accent-text); border-bottom-color: var(--l-accent-text); }
+.copytrading-bolt-root.light .comparison-group { border-left-color: var(--l-border); }
+.copytrading-bolt-root.light .comparison-group button.active { color: var(--l-title); }
+.copytrading-bolt-root.light .comparison-group i { background: var(--l-accent); }
+.copytrading-bolt-root.light .comparison-group .legend-btc { background: #4f7594; }
+.copytrading-bolt-root.light .comparison-group .legend-market { background: var(--l-dim); }
+.copytrading-bolt-root.light .chart-y,
+.copytrading-bolt-root.light .chart-x { color: var(--l-muted); }
+.copytrading-bolt-root.light .chart-grid { stroke: var(--l-border); }
+.copytrading-bolt-root.light .chart-line { stroke: var(--l-accent); }
+.copytrading-bolt-root.light .chart-line.chart-btc { stroke: #4f7594; }
+.copytrading-bolt-root.light .chart-line.chart-market { stroke: var(--l-dim); }
+/* The point's thick stroke is a halo in the ground colour, not an outline. */
+.copytrading-bolt-root.light .chart-point { fill: var(--l-accent); stroke: var(--l-surface); }
+.copytrading-bolt-root.light .chart-note { color: var(--l-muted); border-top-color: var(--l-border); }
+
+/* Earnings */
+.copytrading-bolt-root.light .earnings-panel { border-color: var(--l-accent-border); }
+.copytrading-bolt-root.light .earnings-lead,
+.copytrading-bolt-root.light .earnings-row { border-color: var(--l-border); background: var(--l-surface-2); }
+.copytrading-bolt-root.light .earnings-lead span,
+.copytrading-bolt-root.light .earnings-lead small,
+.copytrading-bolt-root.light .earnings-row span,
+.copytrading-bolt-root.light .earnings-calc span,
+.copytrading-bolt-root.light .earnings-note { color: var(--l-muted); }
+.copytrading-bolt-root.light .earnings-lead strong,
+.copytrading-bolt-root.light .earnings-row strong.positive { color: var(--l-positive); }
+.copytrading-bolt-root.light .earnings-row strong,
+.copytrading-bolt-root.light .earnings-calc code { color: var(--l-title); }
+.copytrading-bolt-root.light .earnings-arrow { color: var(--l-dim); }
+.copytrading-bolt-root.light .earnings-calc { background: var(--l-page); }
+.copytrading-bolt-root.light .earnings-periods div { border-color: var(--l-border); background: var(--l-surface); }
+.copytrading-bolt-root.light .earnings-periods span,
+.copytrading-bolt-root.light .earnings-periods small,
+.copytrading-bolt-root.light .earnings-detail-grid span,
+.copytrading-bolt-root.light .earnings-reconcile span { color: var(--l-muted); }
+.copytrading-bolt-root.light .earnings-detail-grid { border-color: var(--l-border); background: var(--l-border); }
+.copytrading-bolt-root.light .earnings-detail-grid div,
+.copytrading-bolt-root.light .earnings-detail-grid::after { background: var(--l-surface); }
+.copytrading-bolt-root.light .earnings-detail-grid strong { color: var(--l-title); }
+.copytrading-bolt-root.light .earnings-reconcile { border-color: var(--l-border-strong); }
+.copytrading-bolt-root.light .earnings-reconcile strong { color: var(--l-body); }
+
+/* Risk metrics & trading statistics */
+.copytrading-bolt-root.light .controlled-badge { color: var(--l-positive); background: rgba(0, 168, 112, .1); }
+.copytrading-bolt-root.light .risk-metric { border-bottom-color: var(--l-border); }
+.copytrading-bolt-root.light .risk-metric strong { color: var(--l-title); }
+.copytrading-bolt-root.light .risk-metric strong.risk-low { color: var(--l-positive); }
+.copytrading-bolt-root.light .risk-metric strong.risk-moderate { color: #b07400; }
+.copytrading-bolt-root.light .risk-metric strong.risk-high { color: var(--l-negative); }
+.copytrading-bolt-root.light .risk-metric strong.risk-very-high { color: #c0203a; }
+.copytrading-bolt-root.light .risk-track { background: #e9ebef; }
+.copytrading-bolt-root.light .risk-track i { background: var(--l-positive); }
+.copytrading-bolt-root.light .stat-rows div { color: var(--l-secondary); border-bottom-color: var(--l-border); }
+.copytrading-bolt-root.light .stat-rows strong { color: var(--l-title); }
+
+/* Recent trades table */
+.copytrading-bolt-root.light th { color: var(--l-muted); border-bottom-color: var(--l-border); }
+.copytrading-bolt-root.light td { color: var(--l-body); border-bottom-color: var(--l-border); }
+.copytrading-bolt-root.light td strong { color: var(--l-title); }
+.copytrading-bolt-root.light .direction-long { color: var(--l-positive); }
+.copytrading-bolt-root.light .direction-short { color: var(--l-negative); }
+.copytrading-bolt-root.light .risk-low { color: var(--l-positive); background: rgba(0, 168, 112, .1); }
+.copytrading-bolt-root.light .risk-moderate { color: #b07400; background: var(--l-accent-soft); }
+.copytrading-bolt-root.light .risk-high { color: var(--l-negative); background: rgba(227, 61, 81, .1); }
+.copytrading-bolt-root.light .risk-very-high { color: #c0203a; background: rgba(227, 61, 81, .14); }
+
+/* Copiers */
+.copytrading-bolt-root.light .copier-grid > div { border-left-color: var(--l-border); }
+.copytrading-bolt-root.light .copier-grid strong { color: var(--l-title); }
+.copytrading-bolt-root.light .copier-lead > strong { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .copier-avatars span { color: var(--l-accent-text); border-color: var(--l-surface); background: #ffeecb; }
+.copytrading-bolt-root.light .info-note { color: var(--l-muted); }
+.copytrading-bolt-root.light .info-note svg { color: var(--l-accent-text); }
+
+/* Eligibility banner */
+.copytrading-bolt-root.light .eligibility { border-color: var(--l-accent-border); background: linear-gradient(90deg, rgba(247, 166, 0, .14), rgba(247, 166, 0, .04)); }
+.copytrading-bolt-root.light .eligibility-icon { color: var(--l-accent-text); border-color: var(--l-accent-border); }
+.copytrading-bolt-root.light .eligibility strong { color: var(--l-accent-text); }
+.copytrading-bolt-root.light .eligibility p { color: var(--l-secondary); }
+.copytrading-bolt-root.light .status-pill { color: var(--l-accent-text) !important; border-color: var(--l-accent-border); background: var(--l-accent-soft); }
+
+/* Shared value colours */
+.copytrading-bolt-root.light .positive { color: var(--l-positive) !important; }
+.copytrading-bolt-root.light .negative { color: var(--l-negative) !important; }
+.copytrading-bolt-root.light .neutral { color: var(--l-neutral) !important; }
+.copytrading-bolt-root.light .metric-card strong.positive,
+.copytrading-bolt-root.light .card-return strong.positive,
+.copytrading-bolt-root.light .card-stats strong.positive { color: var(--l-positive); }
+.copytrading-bolt-root.light .metric-card strong.negative,
+.copytrading-bolt-root.light .card-return strong.negative,
+.copytrading-bolt-root.light .card-stats strong.negative { color: var(--l-negative); }
+.copytrading-bolt-root.light .metric-card strong.neutral,
+.copytrading-bolt-root.light .card-return strong.neutral,
+.copytrading-bolt-root.light .card-stats strong.neutral { color: var(--l-neutral); }
+
+/* The global <Footer> is a separate component with its own tokens; the
+   same three-token remap the Markets page uses puts it on the light
+   ground. Scoped to the footer on purpose — <Nav> also sits inside this
+   root and keeps its dark bar. */
+.copytrading-bolt-root.light footer {
+  --text-primary: var(--l-title);
+  --text-tertiary: var(--l-dim);
+  --bg: var(--l-page);
+}

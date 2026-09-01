@@ -502,7 +502,6 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
         <div><span>Прибыльных</span><strong className="positive">{data.winningTrades.toLocaleString('ru-RU')}</strong></div>
         <div><span>Убыточных</span><strong className="negative">{data.losingTrades.toLocaleString('ru-RU')}</strong></div>
         <div><span>Средняя прибыль</span><strong className="positive">{data.avgProfit}</strong></div>
-        <div><span>Средний убыток</span><strong className="negative">{data.avgLoss}</strong></div>
         <div><span>Профит-фактор</span><strong>{data.profitFactor}</strong></div>
         <div><span>Уровень риска</span><strong>{RISK_LABEL_RU[trader.risk]}</strong></div>
         <div><span>Среднее время сделки</span><strong>{data.holdingTime}</strong></div>
