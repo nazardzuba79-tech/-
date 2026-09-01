@@ -95,13 +95,8 @@ export function Nav({
       <Link to="/trade" style={styles.logo}>
         <Logo />
       </Link>
-      <span className="top-nav-divider" aria-hidden="true" />
 
       <div className="nav-desktop-links" style={styles.desktopLinks}>
-        <button onClick={() => setShowDeposit(true)} className="top-nav-fund-btn" style={styles.navDepositBtn}>
-          <span>{t('wallet.deposit')}</span>
-          <ArrowUpRightIcon />
-        </button>
         {LINKS.map((l) =>
           l.to === '/trade' ? (
             <div
@@ -174,6 +169,13 @@ export function Nav({
 
       <div className="nav-desktop-right" style={styles.right}>
         {rightExtra}
+        {/* The one filled button in the bar, parked at the right end the
+            way every exchange parks its primary CTA — it used to sit
+            immediately after the logo, which crowded the link row. */}
+        <button onClick={() => setShowDeposit(true)} className="top-nav-fund-btn" style={styles.navDepositBtn}>
+          <span>{t('wallet.deposit')}</span>
+          <ArrowUpRightIcon />
+        </button>
         <LanguageSwitcher variant="pill" />
         {/* Settings/Profile is one destination (SettingsPage's own Profile
             tab is already its default tab), entered through the name
@@ -402,9 +404,11 @@ const styles: Record<string, React.CSSProperties> = {
   nav: {
     display: 'flex',
     alignItems: 'center',
-    gap: 18,
-    padding: '0 28px',
-    height: 70,
+    gap: 14,
+    padding: '0 20px',
+    // 56px, matching the compact header height real exchanges use — the
+    // old 70px bar cost a tenth of the viewport on a laptop for nothing.
+    height: 56,
     position: 'sticky',
     top: 0,
     zIndex: 10,
@@ -420,7 +424,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: 2,
-    marginLeft: 4,
+    marginLeft: 10,
   },
   tradeMenuWrap: {
     position: 'relative',
@@ -474,7 +478,7 @@ const styles: Record<string, React.CSSProperties> = {
   mobileMenu: {
     display: 'none',
     position: 'absolute',
-    top: 70,
+    top: 56,
     left: 0,
     right: 0,
     flexDirection: 'column',
@@ -483,7 +487,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: '#0c1116',
     borderBottom: '1px solid rgba(151,168,185,0.14)',
     boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
-    maxHeight: 'calc(100vh - 70px)',
+    maxHeight: 'calc(100vh - 56px)',
     overflowY: 'auto',
   },
   mobileLink: {
@@ -511,16 +515,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    minHeight: 70,
-    padding: '0 9px',
-    fontSize: 12,
+    minHeight: 56,
+    padding: '0 11px',
+    fontSize: 13,
     fontWeight: 600,
     letterSpacing: '-0.01em',
     whiteSpace: 'nowrap',
   },
   // Still used by the mobile drawer, which doesn't use .top-nav-link.
   linkActive: {
-    color: '#65def7',
+    color: '#f7a600',
   },
   cardLink: {
     display: 'flex',
@@ -556,25 +560,25 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 10,
   },
-  // Deliberately the one filled/glowing button among plain text nav links —
-  // same idea as a real exchange's "Buy crypto" nav CTA: it's the
-  // highest-value action, so it should read as a button, not a link.
-  // Cyan, matching the reference top-nav design (not the site's own
-  // gold --accent) — scoped to just this component, see .top-nav-bar above.
+  // Deliberately the one filled button among plain text nav links — same
+  // idea as a real exchange's "Buy crypto" nav CTA: it's the highest-value
+  // action, so it should read as a button, not a link. Brand orange with a
+  // near-black label, flat and borderless: the bar previously ran on a cyan
+  // borrowed from an old reference design, which was the last cyan left
+  // anywhere on the site once Copy Trading and Markets moved to orange.
   navDepositBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 7,
-    minHeight: 36,
-    background: '#5edbf4',
-    color: '#071217',
-    border: '1px solid rgba(139,239,255,0.75)',
-    borderRadius: 9,
-    padding: '0 13px 0 15px',
-    fontWeight: 750,
-    fontSize: 12,
+    gap: 6,
+    minHeight: 32,
+    background: '#f7a600',
+    color: '#17181e',
+    border: 0,
+    borderRadius: 8,
+    padding: '0 12px 0 14px',
+    fontWeight: 700,
+    fontSize: 13,
     letterSpacing: '0.01em',
-    boxShadow: '0 0 0 1px rgba(57,185,218,0.08), 0 5px 16px rgba(35,161,192,0.12)',
   },
   // Only used by the mobile drawer now — the desktop logout lives inside
   // the profile dropdown menu (.top-nav-profile-menu).

@@ -77,6 +77,57 @@ function Sparkline({ points, positive }: { points: number[]; positive: boolean }
   );
 }
 
+/** Semicircular Fear & Greed dial: a grey track, a red-to-green progress
+ * arc filled to the reading, and a marker where it lands — the shape every
+ * tracker draws this index in. Replaces the ported archive's trick of a
+ * full circle with two coloured borders rotated 45deg and clipped, which
+ * read as a broken ring rather than a gauge once the card grew. */
+function GaugeArc({ value }: { value: number | null }) {
+  const ARC = 'M 20 100 A 80 80 0 0 1 180 100';
+  const LENGTH = Math.PI * 80;
+  const pct = value === null ? 0 : Math.min(100, Math.max(0, value)) / 100;
+  const angle = Math.PI * (1 - pct);
+  return (
+    <svg className="gauge-arc" viewBox="0 0 200 112" aria-hidden="true">
+      <defs>
+        <linearGradient id="fear-greed-arc" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#f6465d" />
+          <stop offset="50%" stopColor="#f7a600" />
+          <stop offset="100%" stopColor="#00a870" />
+        </linearGradient>
+      </defs>
+      <path d={ARC} fill="none" stroke="var(--gauge-track)" strokeWidth="12" strokeLinecap="round" />
+      <path
+        d={ARC}
+        fill="none"
+        stroke="url(#fear-greed-arc)"
+        strokeWidth="12"
+        strokeLinecap="round"
+        strokeDasharray={LENGTH}
+        strokeDashoffset={LENGTH * (1 - pct)}
+      />
+      {value !== null && (
+        <circle
+          cx={100 + 80 * Math.cos(angle)}
+          cy={100 - 80 * Math.sin(angle)}
+          r="6.5"
+          fill="var(--bg-card-1)"
+          stroke={zoneColor(value)}
+          strokeWidth="3"
+        />
+      )}
+    </svg>
+  );
+}
+
+/** The index's own colour bands, same split as its Extreme Fear / Fear /
+ * Neutral / Greed / Extreme Greed buckets. */
+function zoneColor(value: number): string {
+  if (value < 45) return '#f6465d';
+  if (value < 55) return '#f7a600';
+  return '#00a870';
+}
+
 /**
  * Integration of the uploaded Bolt.new Markets archive into the real
  * Voltex app, same approach as copy-trading-bolt: the archive's own
@@ -271,12 +322,20 @@ export function MarketsBoltPage() {
             <div className="card-heading"><span>Индекс страха и жадности</span><span className="card-heading-tag">Крипторынок</span></div>
             <div className="sentiment-content">
               <div className="gauge">
-                <div className="gauge-track" />
-                <div className="gauge-value">{fearGreed ? fearGreed.value : '—'}</div>
-                <span>{fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}</span>
+                <GaugeArc value={fearGreed ? fearGreed.value : null} />
+                <div className="gauge-value" style={fearGreed ? { color: zoneColor(fearGreed.value) } : undefined}>
+                  {fearGreed ? fearGreed.value : '—'}
+                </div>
+                <span style={fearGreed ? { color: zoneColor(fearGreed.value) } : undefined}>
+                  {fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}
+                </span>
               </div>
               <div className="sentiment-side">
-                <div className="score-label"><strong>{fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}</strong></div>
+                <div className="score-label">
+                  <strong style={fearGreed ? { color: zoneColor(fearGreed.value) } : undefined}>
+                    {fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}
+                  </strong>
+                </div>
                 <div className="progress-track"><span style={{ width: `${fearGreed ? fearGreed.value : 0}%` }} /></div>
                 <div className="long-short">
                   <span><i className="dot-green" /> Растут <b>{breadth.longPct}%</b></span>

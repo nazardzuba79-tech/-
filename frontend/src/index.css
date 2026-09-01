@@ -187,68 +187,43 @@ body {
   z-index: 1;
 }
 
-/* Top nav — ported from a Bolt.new reference's own header design (dark,
-   near-black with a faint cyan glow, hard bottom border) in place of the
-   earlier frosted "liquid glass" panel. Colors here are literal (not the
-   site's gold --accent) and scoped to just this bar, same spirit as the
-   admin panel's own --admin-brand tokens kept separate from --accent. */
+/* Top nav — a flat, compact dark bar in the shape every major exchange
+   uses: near-black ground, one hairline bottom border, no glow, plain text
+   links with the active one in brand orange, and the single filled CTA
+   parked at the right end. It previously carried a cyan accent and a
+   glowing underline bar inherited from an old reference design; that cyan
+   was the last of its kind on the site once Copy Trading and Markets moved
+   to the brand orange, and the glow read as decoration on what should be
+   the quietest surface on the page. */
 .top-nav-bar {
-  background: radial-gradient(circle at 42% -100%, rgba(20, 70, 93, 0.18), transparent 41%), #080a0e;
-  border-bottom: 1px solid rgba(151, 168, 185, 0.14);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025) inset, 0 8px 24px rgba(0, 0, 0, 0.16);
-}
-
-.top-nav-divider {
-  width: 1px;
-  height: 24px;
-  background: rgba(147, 163, 179, 0.22);
-  flex: none;
+  background: #0b0e11;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .top-nav-fund-btn {
-  transition: background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: background 160ms ease;
 }
 .top-nav-fund-btn:hover {
-  background: #84e6f8;
-  box-shadow: 0 0 18px rgba(71, 211, 241, 0.21);
-  transform: translateY(-1px);
+  background: #ffb524;
 }
 .top-nav-fund-btn:active {
-  transform: translateY(1px);
+  background: #e09600;
 }
 
 .top-nav-link {
   position: relative;
-  color: #87919f;
-  border-radius: 6px;
+  color: #9aa1ac;
   text-decoration: none;
-  transition: color 180ms ease, background 180ms ease;
+  transition: color 160ms ease;
 }
-.top-nav-link::after {
-  content: '';
-  position: absolute;
-  right: 9px;
-  bottom: 0;
-  left: 9px;
-  height: 2px;
-  background: #56d7f5;
-  border-radius: 2px 2px 0 0;
-  box-shadow: 0 -2px 10px rgba(78, 211, 242, 0.22);
-  opacity: 0;
-  transform: scaleX(0.3);
-  transition: opacity 180ms ease, transform 180ms ease;
-}
-.top-nav-link:hover,
-.top-nav-link.is-active {
-  color: #f2f7fb;
-  background: rgba(133, 162, 177, 0.07);
+/* No hover pill and no underline bar: on a row of eight links either one
+   turns the bar into the busiest strip on the page. Colour alone carries
+   both states, which is what the reference exchanges do. */
+.top-nav-link:hover {
+  color: #eaecef;
 }
 .top-nav-link.is-active {
-  color: #65def7;
-}
-.top-nav-link.is-active::after {
-  opacity: 1;
-  transform: scaleX(1);
+  color: #f7a600;
 }
 
 .top-nav-pill-btn {
@@ -265,11 +240,11 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
+  min-height: 34px;
   padding: 0 2px 0 4px;
-  color: #bac4cf;
-  font-size: 12px;
-  font-weight: 650;
+  color: #b7bdc6;
+  font-size: 13px;
+  font-weight: 600;
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -280,12 +255,12 @@ body {
 }
 .top-nav-profile-avatar {
   display: grid;
-  width: 29px;
-  height: 29px;
+  width: 26px;
+  height: 26px;
   place-items: center;
-  color: #b8e9f4;
-  background: #162a32;
-  border: 1px solid rgba(108, 215, 238, 0.28);
+  color: #b7bdc6;
+  background: #1e2329;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
 }
 .top-nav-profile-menu {
