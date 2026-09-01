@@ -473,11 +473,22 @@ export const api = {
       displayName: string | null;
       phone: string | null;
       country: string | null;
+      avatarUrl: string | null;
       isAdmin: boolean;
       kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
       twoFactorEnabled: boolean;
       createdAt: string;
     }>('/me'),
+
+  // Profile photo, as a self-contained data URL. The caller downscales
+  // before sending (see resizeImageToDataUrl) — the server caps the
+  // decoded size and re-checks that the bytes really are the image type
+  // they claim to be, so an oversized or bogus payload is rejected there
+  // regardless of what the client did.
+  updateAvatar: (image: string) =>
+    request<{ avatarUrl: string | null }>('/me/avatar', { method: 'PUT', body: JSON.stringify({ image }) }),
+
+  deleteAvatar: () => request<{ avatarUrl: string | null }>('/me/avatar', { method: 'DELETE' }),
 
   updateProfile: (data: { displayName?: string; phone?: string; country?: string }) =>
     request<{ displayName: string | null; phone: string | null; country: string | null }>('/me/profile', {

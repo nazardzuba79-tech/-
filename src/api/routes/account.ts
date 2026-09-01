@@ -22,6 +22,56 @@ const updateProfileSchema = z.object({
   country: z.string().trim().max(2).optional(),
 });
 
+// A profile photo is stored as a self-contained data URL on the User row
+// (see schema.prisma) rather than a file, so these bounds are what keep a
+// cosmetic field from becoming a way to write megabytes into the database.
+// 512KB of decoded image is generous for the 256x256 the client downscales
+// to before uploading (~30-60KB in practice), while still rejecting an
+// unresized phone photo outright.
+const AVATAR_MAX_BYTES = 512 * 1024;
+const AVATAR_MIME_PREFIX = /^data:image\/(png|jpeg|webp);base64,/;
+
+// The first bytes of each format this accepts. The declared MIME type in a
+// data URL is attacker-controlled — it's whatever the client typed — so it
+// alone is no guarantee the payload is an image, and this string is handed
+// straight to an <img src>. Sniffing the actual signature is what makes
+// the declared type meaningful.
+const IMAGE_SIGNATURES: [string, number[]][] = [
+  ['image/png', [0x89, 0x50, 0x4e, 0x47]],
+  ['image/jpeg', [0xff, 0xd8, 0xff]],
+  ['image/webp', [0x52, 0x49, 0x46, 0x46]], // "RIFF"; bytes 8-11 are "WEBP"
+];
+
+const avatarSchema = z.object({
+  image: z.string().max(AVATAR_MAX_BYTES * 2),
+});
+
+/** Decodes and validates an uploaded avatar data URL, returning the error
+ * to report or null when it's a real, in-budget image of a declared type. */
+function rejectAvatar(dataUrl: string): string | null {
+  const match = AVATAR_MIME_PREFIX.exec(dataUrl);
+  if (!match) return 'Image must be a base64 data URL of type PNG, JPEG, or WebP';
+
+  const declaredMime = `image/${match[1]}`;
+  let bytes: Buffer;
+  try {
+    bytes = Buffer.from(dataUrl.slice(match[0].length), 'base64');
+  } catch {
+    return 'Image is not valid base64';
+  }
+  if (bytes.length === 0) return 'Image is empty';
+  if (bytes.length > AVATAR_MAX_BYTES) return 'Image is too large — maximum 512KB';
+
+  const signature = IMAGE_SIGNATURES.find(([mime]) => mime === declaredMime);
+  if (!signature || !signature[1].every((byte, i) => bytes[i] === byte)) {
+    return `Image content does not look like ${declaredMime}`;
+  }
+  if (declaredMime === 'image/webp' && bytes.subarray(8, 12).toString('ascii') !== 'WEBP') {
+    return 'Image content does not look like image/webp';
+  }
+  return null;
+}
+
 const twoFactorCodeSchema = z.object({
   code: z.string().min(6).max(64),
 });
@@ -52,6 +102,7 @@ export function accountRouter(prisma: PrismaClient): Router {
       displayName: user.displayName,
       phone: user.phone,
       country: user.country,
+      avatarUrl: user.avatarUrl,
       role: user.role,
       isAdmin: user.role === 'ADMIN',
       kycStatus: user.kycStatus,
@@ -69,6 +120,30 @@ export function accountRouter(prisma: PrismaClient): Router {
 
     const user = await prisma.user.update({ where: { id: req.userId }, data: parsed.data });
     res.json({ displayName: user.displayName, phone: user.phone, country: user.country });
+  });
+
+  // Profile photo. A base64 image can exceed the app-wide 100KB JSON body
+  // limit on its own, so index.ts mounts a wider parser for this one path
+  // ahead of the global one — see the comment there. Without that mount
+  // this endpoint 413s before ever reaching the size check below, so the
+  // two limits have to be kept in step.
+  router.put('/me/avatar', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    const parsed = avatarSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Missing image' });
+
+    const rejection = rejectAvatar(parsed.data.image);
+    if (rejection) return res.status(400).json({ error: rejection });
+
+    const user = await prisma.user.update({
+      where: { id: req.userId },
+      data: { avatarUrl: parsed.data.image },
+    });
+    res.json({ avatarUrl: user.avatarUrl });
+  });
+
+  router.delete('/me/avatar', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    await prisma.user.update({ where: { id: req.userId }, data: { avatarUrl: null } });
+    res.json({ avatarUrl: null });
   });
 
   router.patch('/me/password', requireAuth(prisma), async (req: AuthedRequest, res) => {

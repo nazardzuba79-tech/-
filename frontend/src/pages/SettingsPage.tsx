@@ -148,6 +148,8 @@ function ProfileTabContent({ onNavigate }: { onNavigate: (tab: Tab) => void }) {
         verified={verified}
         statusText={statusText}
         memberSince={memberSince}
+        avatarUrl={me.avatarUrl}
+        onAvatarChange={(avatarUrl) => setMe((prev) => (prev ? { ...prev, avatarUrl } : prev))}
         onEdit={() => setEditOpen(true)}
       />
 

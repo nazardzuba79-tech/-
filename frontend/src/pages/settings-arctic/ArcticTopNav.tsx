@@ -16,9 +16,9 @@ import { Logo } from '../../components/Logo';
 //
 // Three unavoidable technical substitutions, not design choices:
 //   - next/link -> react-router's Link, real routes instead of href="#".
-//   - the archive's <img src="/avatar-ksenia.png"> -> an initials circle,
-//     since no real user has a photo (same fallback ProfileHeaderCard
-//     already uses elsewhere on this page).
+//   - the archive's <img src="/avatar-ksenia.png"> -> the account's own
+//     uploaded photo when it has one (see AvatarPicker), falling back to
+//     an initials circle when it doesn't.
 //   - the archive's language button and notification bell are static
 //     markup with no handler in the archive itself (it's a design mock).
 //     The bell stays exactly as inert here, matching it 1:1. The language
@@ -137,9 +137,17 @@ export function ArcticTopNav() {
           <div className="mx-1 hidden h-6 w-px bg-border sm:block" />
 
           <div className="flex items-center gap-2.5 rounded-full py-1 pl-1 pr-1 sm:pr-3">
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-[13px] font-bold text-primary-foreground ring-1 ring-border">
-              {displayName ? displayName.charAt(0).toUpperCase() : ''}
-            </span>
+            {me?.avatarUrl ? (
+              <img
+                src={me.avatarUrl}
+                alt=""
+                className="size-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+              />
+            ) : (
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand text-[13px] font-bold text-primary-foreground ring-1 ring-border">
+                {displayName ? displayName.charAt(0).toUpperCase() : ''}
+              </span>
+            )}
             <span className="hidden leading-tight sm:block">
               <p className="text-[13px] font-medium text-foreground">{displayName}</p>
               <p className="text-[11px] text-muted-foreground">{roleLabel}</p>

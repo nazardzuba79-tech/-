@@ -99,6 +99,13 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
+// A base64 profile photo does not fit in the app-wide limit below, and
+// raising that limit would lift the ceiling on every other endpoint too.
+// Mounted BEFORE the global parser on purpose: whichever runs first parses
+// the body, and the later one then skips it — so this order is what makes
+// the wider limit apply, and only on this path. The size the endpoint
+// itself accepts is capped separately (AVATAR_MAX_BYTES in account.ts).
+app.use('/api/v1/me/avatar', express.json({ limit: '1mb' }));
 app.use(express.json({ limit: '100kb' }));
 
 // Global rate limit; tighten further per-route (esp. auth, withdrawals) in production.

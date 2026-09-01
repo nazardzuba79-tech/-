@@ -12,6 +12,10 @@ function authHeader(userId: string) {
 
 function buildApp(prisma: any) {
   const app = express();
+  // Mirrors src/index.ts's parser order — the avatar route's wider body
+  // limit only applies because it is mounted ahead of the global parser,
+  // so a test app without it would 413 before reaching the route.
+  app.use('/api/v1/me/avatar', express.json({ limit: '1mb' }));
   app.use(express.json());
   app.use('/api/v1', accountRouter(prisma));
   return app;
@@ -383,4 +387,93 @@ describe('account routes', () => {
       expect(res.status).toBe(400);
     });
   });
+
+  describe('avatar', () => {
+    // Smallest valid images of each accepted type, so the signature check
+    // below is exercised against real bytes rather than a stub.
+    const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
+    const pngDataUrl = `data:image/png;base64,${PNG_BYTES.toString('base64')}`;
+
+    function prismaWithUpdate() {
+      return {
+        user: {
+          findUnique: jest.fn().mockResolvedValue({ id: 'user-1' }),
+          update: jest.fn().mockImplementation(({ data }: any) => Promise.resolve({ id: 'user-1', ...data })),
+        },
+      } as any;
+    }
+
+    it('PUT /me/avatar stores a valid image and returns it', async () => {
+      const prisma = prismaWithUpdate();
+      const app = buildApp(prisma);
+
+      const res = await request(app)
+        .put('/api/v1/me/avatar')
+        .set('Authorization', authHeader('user-1'))
+        .send({ image: pngDataUrl });
+
+      expect(res.status).toBe(200);
+      expect(res.body.avatarUrl).toBe(pngDataUrl);
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'user-1' }, data: { avatarUrl: pngDataUrl } });
+    });
+
+    it('PUT /me/avatar rejects a non-data-URL string', async () => {
+      const prisma = prismaWithUpdate();
+      const res = await request(buildApp(prisma))
+        .put('/api/v1/me/avatar')
+        .set('Authorization', authHeader('user-1'))
+        .send({ image: 'https://example.com/photo.png' });
+
+      expect(res.status).toBe(400);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('PUT /me/avatar rejects content whose bytes do not match the declared type', async () => {
+      const prisma = prismaWithUpdate();
+      const notAnImage = `data:image/png;base64,${Buffer.from('<script>alert(1)</script>').toString('base64')}`;
+
+      const res = await request(buildApp(prisma))
+        .put('/api/v1/me/avatar')
+        .set('Authorization', authHeader('user-1'))
+        .send({ image: notAnImage });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/does not look like/);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('PUT /me/avatar rejects an image over the size cap', async () => {
+      const prisma = prismaWithUpdate();
+      const huge = Buffer.concat([PNG_BYTES, Buffer.alloc(600 * 1024)]);
+
+      const res = await request(buildApp(prisma))
+        .put('/api/v1/me/avatar')
+        .set('Authorization', authHeader('user-1'))
+        .send({ image: `data:image/png;base64,${huge.toString('base64')}` });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/too large/);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('PUT /me/avatar requires authentication', async () => {
+      const prisma = prismaWithUpdate();
+      const res = await request(buildApp(prisma)).put('/api/v1/me/avatar').send({ image: pngDataUrl });
+
+      expect(res.status).toBe(401);
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('DELETE /me/avatar clears the stored photo', async () => {
+      const prisma = prismaWithUpdate();
+      const res = await request(buildApp(prisma))
+        .delete('/api/v1/me/avatar')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      expect(res.body.avatarUrl).toBeNull();
+      expect(prisma.user.update).toHaveBeenCalledWith({ where: { id: 'user-1' }, data: { avatarUrl: null } });
+    });
+  });
+
 });

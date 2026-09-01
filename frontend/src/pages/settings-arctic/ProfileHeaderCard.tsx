@@ -1,12 +1,12 @@
 import { CheckCircle2, Pencil } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
 import { StatusBadge } from './StatusBadge';
+import { AvatarPicker } from './AvatarPicker';
 
-// Ported from the archive's components/voltex/profile-header-card.tsx.
-// No avatar photo exists for real users, so the initials circle from the
-// old design stays instead of the archive's <img>; the verified checkmark
-// badge is real (me.kycStatus === 'APPROVED'), not always-on like the
-// archive's mock.
+// Ported from the archive's components/voltex/profile-header-card.tsx. The
+// avatar is a real upload (see AvatarPicker), falling back to the initials
+// circle when no photo is set; the verified checkmark badge is real
+// (me.kycStatus === 'APPROVED'), not always-on like the archive's mock.
 export function ProfileHeaderCard({
   name,
   email,
@@ -14,6 +14,8 @@ export function ProfileHeaderCard({
   verified,
   statusText,
   memberSince,
+  avatarUrl,
+  onAvatarChange,
   onEdit,
 }: {
   name: string;
@@ -22,6 +24,8 @@ export function ProfileHeaderCard({
   verified: boolean;
   statusText: string;
   memberSince: string;
+  avatarUrl: string | null;
+  onAvatarChange: (avatarUrl: string | null) => void;
   onEdit: () => void;
 }) {
   const { t } = useLanguage();
@@ -30,16 +34,7 @@ export function ProfileHeaderCard({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/40 to-transparent" />
 
       <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:p-7">
-        <div className="relative shrink-0">
-          <div className="grid size-20 place-items-center rounded-full bg-brand text-[26px] font-bold text-primary-foreground ring-1 ring-border sm:size-24">
-            {name.charAt(0).toUpperCase()}
-          </div>
-          {verified && (
-            <span className="absolute -bottom-0.5 -right-0.5 flex size-7 items-center justify-center rounded-full bg-card ring-1 ring-border">
-              <CheckCircle2 className="size-5 fill-success text-card" />
-            </span>
-          )}
-        </div>
+        <AvatarPicker name={name} avatarUrl={avatarUrl} verified={verified} onChange={onAvatarChange} />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">

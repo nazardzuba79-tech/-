@@ -262,6 +262,14 @@ body {
   background: #1e2329;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
+  overflow: hidden;
+}
+/* A profile photo fills the circle; without a photo the placeholder icon
+   sits inside it at its own size (see Nav's avatar branch). */
+.top-nav-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .top-nav-profile-menu {
   position: absolute;

@@ -52,6 +52,16 @@ model User {
   /// Profile. Purely cosmetic — never used for auth, lookups, or anywhere
   /// the email itself is the actual identifier.
   displayName   String?
+  /// Optional profile photo, set by the user themselves in Settings →
+  /// Profile, stored as a self-contained `data:image/...;base64,` URL
+  /// rather than a path into uploads/ — this deployment's disk is
+  /// ephemeral (see KycSubmission's own note), so a file on it disappears
+  /// on the next redeploy while a DB column survives. Capped server-side
+  /// at AVATAR_MAX_BYTES and downscaled client-side before upload, so this
+  /// stays tens of kilobytes, not megabytes. Purely cosmetic — never used
+  /// for auth or identity verification (KYC documents are a separate,
+  /// reviewed submission).
+  avatarUrl     String?   @db.Text
   /// Optional contact phone number, set by the user themselves in Settings
   /// → Profile. Free-form (no format validation) — purely informational,
   /// never used for auth, 2FA, or notifications.
