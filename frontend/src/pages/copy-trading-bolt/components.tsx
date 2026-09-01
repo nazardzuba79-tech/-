@@ -450,8 +450,11 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
         <WalletCards size={20} className="panel-icon" />
       </div>
 
-      {/* Doubling as the ROI ladder: every period the page offers, in one
-          row, so they can be compared rather than paged through. */}
+      {/* The ROI ladder: every period in one row, so they can be compared
+          rather than paged through. Percentages only — the per-period
+          copier-profit line that used to sit under each one put the 90-day
+          and all-time totals next to each other, which reads as an error
+          (see the featured card's comment for why they are that close). */}
       <div className="earnings-periods">
         {PERIODS.map((period) => {
           const roi = getRoiForPeriod(trader, period);
@@ -459,7 +462,6 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
             <div key={period}>
               <span>ROI · {PERIOD_LABEL_RU[period]}</span>
               <strong className={roiClass(roi)}>{formatPercent(roi)}</strong>
-              <small>Прибыль подписчиков {formatAccountSize(getCopierProfit(trader, period))}</small>
             </div>
           );
         })}
@@ -737,10 +739,16 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
             <div><span>Винрейт</span><strong>{nazarTrader.winRate}%</strong></div>
             <div><span>Макс. просадка</span><strong>{nazarTrader.drawdown}%</strong></div>
           </div>
+          {/* One period's figure, not two. A 90-day and an all-time total
+              side by side ($7.4M and $7.7M) read as a mistake, even though
+              they are correct: +841% in 90 days out of +3741% in a year
+              means the last quarter multiplied capital ~9.4x, so almost
+              every copier earned most of their profit inside it. The
+              lifetime total still has its own place in the profile, where
+              nothing invites the comparison. */}
           <div className="featured-copier-profit">
             <span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span>
             <strong>{formatUsd(getCopierProfit(nazarTrader, period))} USDT</strong>
-            <small>За всё время: {formatUsd(getLifetimeCopierProfit(nazarTrader))} USDT</small>
           </div>
           <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton trader={nazarTrader} /></div>
         </div>

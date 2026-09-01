@@ -357,7 +357,6 @@
 .copytrading-bolt-root .earnings-reconcile div { display: grid; gap: 4px; }
 .copytrading-bolt-root .earnings-reconcile span { color: #81868e; font-family: 'DM Mono', monospace; font-size: 9.5px; text-transform: uppercase; }
 .copytrading-bolt-root .earnings-reconcile strong { color: #d5d2cc; font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.copytrading-bolt-root .featured-copier-profit small { color: #9199a1; font-size: 10.5px; }
 
 @media (max-width: 1080px) {
   .copytrading-bolt-root .earnings-detail-grid { grid-template-columns: repeat(3, 1fr); }
