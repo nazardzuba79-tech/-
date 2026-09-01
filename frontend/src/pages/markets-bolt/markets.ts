@@ -3,11 +3,13 @@
 // sources the previous MarketsPage.tsx already used — api.getExternalTickers
 // (live Kraken-mirrored spot tickers) and api.getExternalRankings (CoinGecko
 // rank/category/7d-sparkline/market-wide change) — never synthetic data.
-// Where the Bolt archive's own seed data invented a figure with no real
-// counterpart in this app (a single "Fear & Greed" number, a fake
-// spot/derivatives volume split, a "New" listing flag with no underlying
-// listing-date field), the figure below is either computed from real data
-// instead or dropped — see the doc comment on each function for which.
+// The market-WIDE headline figures (total 24h volume, market cap, and the
+// published Fear & Greed Index) come from a third real source,
+// api.getGlobalMarket. Where the Bolt archive's own seed data invented a
+// figure with no real counterpart in this app (a fake spot/derivatives
+// volume split, a "New" listing flag with no underlying listing-date
+// field), the figure below is either computed from real data instead or
+// dropped — see the doc comment on each function for which.
 
 import { parseChangePercent } from '../../lib/priceChange';
 import { QUOTE_PRIORITY, type CoinCategory, type CoinRanking as PairListCoinRanking } from '../../lib/pairList';
@@ -49,10 +51,13 @@ export function formatPrice(value: number): string {
 }
 
 // Compact $ formatting for aggregate figures (total volume, market cap) —
-// picks B/M/K the same way the rest of the site's ticker bars already do.
+// picks T/B/M/K the same way the rest of the site's ticker bars already do.
+// The trillions step matters now that this also formats total market cap,
+// which is well past $1T: without it the card read "$2410.00B".
 export function formatCompactUsd(value: number): string {
   if (!Number.isFinite(value)) return '—';
   const abs = Math.abs(value);
+  if (abs >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
   if (abs >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(2)}B`;
   if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(2)}M`;
   if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
@@ -80,30 +85,48 @@ export function deriveQuoteList(tickers: Ticker[]): string[] {
   return [...prioritized, ...rest];
 }
 
-// "Market sentiment" — Bybit's own version of this widget is built from
-// order-flow data we don't have (this app mirrors Kraken's public tickers,
-// not a derivatives long/short book). Rather than show a static invented
-// number, this computes a real, live composite from the same tickers the
-// table already renders: the share of tracked pairs currently green vs red
-// over the last 24h. Simplified, but genuinely derived from live data and
-// updates every refresh like the table does.
-export function computeSentiment(tickers: Ticker[]): { score: number; label: 'Жадность' | 'Страх'; longPct: number; shortPct: number } {
-  if (tickers.length === 0) return { score: 50, label: 'Жадность', longPct: 50, shortPct: 50 };
+// Market breadth: the share of tracked pairs currently green vs red over
+// the last 24h, computed from the same tickers the table below renders.
+//
+// This is NOT the Fear & Greed Index and is no longer labelled as one. The
+// published index (see FearGreedService on the backend) is a composite of
+// volatility, momentum/volume, social sentiment, BTC dominance and search
+// trends; breadth measures one of those inputs, so the two numbers
+// routinely sit tens of points apart — showing breadth under a "Fear &
+// Greed" label is what made this card read 43 while every other exchange
+// showed 71. Both are now shown, each under its own honest label.
+export function computeBreadth(tickers: Ticker[]): { longPct: number; shortPct: number } {
+  if (tickers.length === 0) return { longPct: 0, shortPct: 0 };
   const positive = tickers.filter((tk) => parseChangePercent(tk.changePercent24h, tk.pair) >= 0).length;
   const longPct = Math.round((positive / tickers.length) * 100);
-  return {
-    score: longPct,
-    label: longPct >= 50 ? 'Жадность' : 'Страх',
-    longPct,
-    shortPct: 100 - longPct,
-  };
+  return { longPct, shortPct: 100 - longPct };
 }
 
-// Real total 24h spot turnover across every tracked pair (sum of each
-// pair's own quoteVolume24h) — this exchange has no separate derivatives
-// ticker feed, so unlike the archive's fabricated "Spot $42.8B /
-// Derivatives $33.5B" split, this reports the one real total plus how many
-// pairs it's summed from rather than inventing a second figure.
+// alternative.me publishes the index bucket in English; this is the only
+// place it's translated, so the number and its label always agree.
+export function fearGreedLabelRu(classification: string): string {
+  switch (classification.toLowerCase()) {
+    case 'extreme fear':
+      return 'Крайний страх';
+    case 'fear':
+      return 'Страх';
+    case 'neutral':
+      return 'Нейтрально';
+    case 'greed':
+      return 'Жадность';
+    case 'extreme greed':
+      return 'Крайняя жадность';
+    default:
+      return classification;
+  }
+}
+
+// Turnover across the pairs THIS exchange lists (sum of each pair's own
+// quoteVolume24h), used for the card's secondary "по нашим парам" line and
+// its pair count. The card's headline 24h figure is market-wide instead
+// (api.getGlobalMarket) — that's the ~$76B number every other exchange
+// shows, whereas this sum only ever covers the pairs listed here and so
+// lands one to two orders of magnitude lower.
 export function computeVolumeSummary(tickers: Ticker[]): { totalVolume: number; pairCount: number } {
   const totalVolume = tickers.reduce((sum, tk) => sum + (parseFloat(tk.quoteVolume24h) || 0), 0);
   return { totalVolume, pairCount: tickers.length };

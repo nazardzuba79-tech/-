@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { KrakenMarketDataService, ExternalMarketDataError } from '../../services/KrakenMarketDataService';
 import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
+import { FearGreedService } from '../../services/FearGreedService';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -13,8 +14,37 @@ import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGecko
  * Express path params can't contain "/" — the handler converts it back to
  * our internal "BTC/USDT" format.
  */
-export function marketRouter(marketDataService: KrakenMarketDataService, coinGeckoService: CoinGeckoService): Router {
+export function marketRouter(
+  marketDataService: KrakenMarketDataService,
+  coinGeckoService: CoinGeckoService,
+  fearGreedService: FearGreedService
+): Router {
   const router = Router();
+
+  // Market-WIDE headline figures for the Markets page: total 24h volume
+  // and market cap across every exchange (CoinGecko /global), plus the
+  // published Crypto Fear & Greed Index (alternative.me). Both are the
+  // same numbers other exchanges show, which is the whole point — see
+  // FearGreedService's doc comment for why the index can't be derived from
+  // our own tickers. The two sources are independent, so one being
+  // rate-limited leaves the other's figure intact rather than blanking the
+  // whole card; only both failing is an error.
+  router.get('/market/global', async (_req, res) => {
+    const [globalResult, fearGreedResult] = await Promise.allSettled([
+      coinGeckoService.getGlobalMarket(),
+      fearGreedService.getIndex(),
+    ]);
+
+    if (globalResult.status === 'rejected' && fearGreedResult.status === 'rejected') {
+      return res.status(502).json({ error: 'Market-wide data is temporarily unavailable' });
+    }
+
+    res.json({
+      source: 'coingecko+alternative.me',
+      global: globalResult.status === 'fulfilled' ? globalResult.value : null,
+      fearGreed: fearGreedResult.status === 'fulfilled' ? fearGreedResult.value : null,
+    });
+  });
 
   // Market-cap rank + category metadata (DeFi/Layer 1/Meme/Stablecoin) for
   // sorting and filtering the pair list — Kraken's own AssetPairs endpoint

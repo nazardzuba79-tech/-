@@ -54,6 +54,12 @@ export interface CoinRanking {
 // sustained traffic (worst case ~6 * 24 * 31 ≈ 4,464/month, versus 10,000
 // available).
 const RANKINGS_TTL_MS = 60 * 60_000;
+// Market-wide totals (see getGlobalMarket) are a single, cheap call and are
+// the headline figure on the Markets page, so they refresh far more often
+// than the hourly rankings above — 5 minutes still costs at most ~9,000
+// calls/month, comfortably inside the free Demo plan's 10,000 cap even
+// before the shared cache below dedupes concurrent visitors.
+const GLOBAL_TTL_MS = 5 * 60_000;
 // CoinGecko caps per_page at 250 for this endpoint, so reaching TOP_N above
 // that means paging — see the loop in getRankings() below. Pulling more
 // than the bare top-200/250 matters because that's where most of the
@@ -134,8 +140,34 @@ interface CoinGeckoMarketRow {
   sparkline_in_7d?: { price: number[] };
 }
 
+/**
+ * Market-WIDE totals across every exchange and every coin CoinGecko
+ * tracks — deliberately not this exchange's own turnover, and not a sum of
+ * our Kraken-mirrored pairs either. This is the "$76B 24h volume" figure
+ * every major exchange shows on its markets page; summing our own tracked
+ * pairs instead produced a number one to two orders of magnitude smaller,
+ * because it only ever covered the handful of pairs listed here.
+ */
+export interface GlobalMarketData {
+  totalVolume24hUsd: number;
+  totalMarketCapUsd: number;
+  /** BTC's share of total market cap, in percent. */
+  btcDominancePercent: number | null;
+  marketCapChangePercent24h: number | null;
+}
+
+interface CoinGeckoGlobalResponse {
+  data?: {
+    total_volume?: Record<string, number>;
+    total_market_cap?: Record<string, number>;
+    market_cap_percentage?: Record<string, number>;
+    market_cap_change_percentage_24h_usd?: number;
+  };
+}
+
 export class CoinGeckoService {
   private cache: { rankings: CoinRanking[]; expiresAt: number } | null = null;
+  private globalCache: { data: GlobalMarketData; expiresAt: number } | null = null;
 
   constructor(
     private readonly baseUrl = 'https://api.coingecko.com/api/v3',
@@ -246,6 +278,41 @@ export class CoinGeckoService {
     const rankings = Array.from(bySymbol.values()).sort((a, b) => a.rank - b.rank);
     this.cache = { rankings, expiresAt: Date.now() + RANKINGS_TTL_MS };
     return rankings;
+  }
+
+  /** Market-wide 24h volume, total market cap and BTC dominance from
+   * CoinGecko's /global endpoint. Same serve-stale-on-failure policy as
+   * getRankings above: a rate-limited refresh returns the last good
+   * snapshot rather than blanking the headline figure, and only a
+   * genuinely first-ever call throws. */
+  async getGlobalMarket(): Promise<GlobalMarketData> {
+    if (this.globalCache && this.globalCache.expiresAt > Date.now()) return this.globalCache.data;
+
+    let payload: CoinGeckoGlobalResponse;
+    try {
+      payload = (await this.request('/global')) as CoinGeckoGlobalResponse;
+    } catch (err) {
+      if (this.globalCache) return this.globalCache.data;
+      throw err;
+    }
+
+    const totalVolume24hUsd = Number(payload?.data?.total_volume?.usd);
+    const totalMarketCapUsd = Number(payload?.data?.total_market_cap?.usd);
+    if (!Number.isFinite(totalVolume24hUsd) || !Number.isFinite(totalMarketCapUsd)) {
+      if (this.globalCache) return this.globalCache.data;
+      throw new ExternalRankingError('CoinGecko /global returned no usable USD totals');
+    }
+
+    const btcDominance = Number(payload?.data?.market_cap_percentage?.btc);
+    const capChange = Number(payload?.data?.market_cap_change_percentage_24h_usd);
+    const data: GlobalMarketData = {
+      totalVolume24hUsd,
+      totalMarketCapUsd,
+      btcDominancePercent: Number.isFinite(btcDominance) ? btcDominance : null,
+      marketCapChangePercent24h: Number.isFinite(capChange) ? capChange : null,
+    };
+    this.globalCache = { data, expiresAt: Date.now() + GLOBAL_TTL_MS };
+    return data;
   }
 
   private async request(path: string): Promise<unknown> {

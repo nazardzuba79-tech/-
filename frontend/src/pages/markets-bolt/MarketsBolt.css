@@ -2,52 +2,67 @@
    structure and class names kept, values adapted: every selector scoped
    under .markets-bolt-root (this file is imported globally, not
    build-scoped), the archive's own light/dark theme-picker system dropped
-   (this app is dark-only, "don't change global colors"), and every color
-   token pointed at the site's own real palette (index.css's --bg/--panel/
-   --buy/--sell/--accent) instead of the archive's separate lime-green
-   accent, so this page matches the rest of Voltex rather than introducing
-   a third look next to the site accent and copy-trading-bolt's orange. */
+   in favour of the single fixed palette below, and the accent pointed at
+   the site's own orange instead of the archive's lime green.
+
+   This page is deliberately LIGHT while the rest of Voltex is dark —
+   matching how Bybit itself renders Markets: a dark global header and
+   footer (both are separate global components with their own styling, so
+   they are untouched here) over a light content area. Every colour is a
+   token on .markets-bolt-root below, so the whole page themes from this
+   one block and nothing leaks out to any other page. */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 .markets-bolt-root {
-  --bg-page: #0a0c10;
-  --bg-card-1: #14171d;
-  --bg-card-2: #101319;
-  --bg-surface: #111316;
-  --bg-surface-2: #0e1015;
-  --bg-hover: #1a1c22;
-  --bg-input: #111316;
-  --border: #262b34;
-  --border-soft: #1d2128;
-  --border-section: #1d2128;
-  --border-input: #2e343f;
-  --text-title: #f5f7fa;
-  --text-heading: #e2e6ee;
-  --text-body: #b7c0cc;
-  --text-secondary: #8992a3;
-  --text-muted: #6d7889;
-  --text-dim: #4d5766;
+  --bg-page: #f5f6f8;
+  --bg-card-1: #ffffff;
+  --bg-card-2: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #fafbfc;
+  --bg-hover: #f5f6f8;
+  --bg-input: #ffffff;
+  --border: #eaecef;
+  --border-soft: #f0f1f3;
+  --border-section: #eaecef;
+  --border-input: #dfe2e7;
+  --text-title: #17181e;
+  --text-heading: #1f2229;
+  --text-body: #3d434d;
+  --text-secondary: #5e6673;
+  --text-muted: #848e9c;
+  --text-dim: #a7aeb8;
   --accent: #f7a600;
-  --accent-contrast: #171200;
-  --accent-hover: #ffb524;
+  /* Text drawn ON the accent — near-black, the way Bybit sets type on its
+     own orange buttons; the dark-page version of this token was a very
+     dark brown, which reads muddy against white surroundings. */
+  --accent-contrast: #17181e;
+  /* On a light ground an accent hover has to darken, not brighten. */
+  --accent-hover: #e09600;
   --accent-soft: rgba(247, 166, 0, .12);
-  --accent-soft-border: #7a4e00;
-  --accent-badge-border: #7a4e00;
-  --accent-tab-bg: #2a1a00;
-  --accent-focus: rgba(247, 166, 0, .14);
-  --positive: #00d68f;
-  --negative: #ff4d6a;
-  --gauge-track: #242c37;
+  --accent-soft-border: #f3ce8e;
+  --accent-badge-border: #f3ce8e;
+  --accent-tab-bg: #fff5e0;
+  --accent-focus: rgba(247, 166, 0, .18);
+  /* Darker than the site's dark-theme green/red: #00d68f and #ff4d6a are
+     tuned for a near-black background and fall to roughly 2:1 contrast on
+     white, which is unreadable for the change column this page is mostly
+     made of. */
+  --positive: #00a870;
+  --negative: #e33d51;
+  --gauge-track: #e9ebef;
   --gauge-warm: #f5a75b;
-  --progress-track: #242c37;
-  --spark-opacity: .12;
-  --card-shadow: 0 10px 30px rgba(0,0,0,.25);
-  --spinner-track: #2d3847;
-  --status-ring: rgba(0,214,143,.14);
+  --progress-track: #e9ebef;
+  --spark-opacity: .14;
+  --card-shadow: 0 1px 3px rgba(16, 24, 40, .06);
+  --spinner-track: #e4e7eb;
+  --status-ring: rgba(0, 168, 112, .16);
 
   font-family: 'DM Sans', sans-serif;
   color: var(--text-body);
   background: var(--bg-page);
+  /* The app shell behind this page is dark; without a full-height ground
+     the dark body would show through under a short page. */
+  min-height: 100vh;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -69,7 +84,7 @@
 .markets-bolt-root .market-status { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; }
 .markets-bolt-root .status-dot { background: var(--positive); border-radius: 50%; width: 7px; height: 7px; box-shadow: 0 0 0 4px var(--status-ring); }
 .markets-bolt-root .status-divider { height: 14px; width: 1px; background: var(--border-soft); margin: 0 4px; }
-.markets-bolt-root .markets-error-banner { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; background: rgba(255,77,106,.12); color: var(--negative); }
+.markets-bolt-root .markets-error-banner { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; background: rgba(227,61,81,.10); color: var(--negative); }
 
 /* ===== OVERVIEW CARDS ===== */
 .markets-bolt-root .overview-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 16px; margin-bottom: 52px; }
@@ -262,4 +277,19 @@
   .markets-bolt-root .pagination { display: block; }
   .markets-bolt-root .pagination-info { display: block; margin-bottom: 13px; }
   .markets-bolt-root .page-controls { justify-content: center; }
+}
+
+/* The shared global <Footer> (and the <Logo> inside it) is rendered on
+   this page but styles itself from the app-wide tokens, which are tuned
+   for the dark shell: --text-primary is near-white and --bg near-black,
+   so on the light ground the brand mark's disc vanished and only its
+   "crossed-out" cut stayed visible, and the disclaimer text washed out.
+   Remapping just those three tokens on the footer fixes it without
+   touching the component. Scoped to the footer on purpose — the global
+   <Nav> also sits inside .markets-bolt-root but keeps its own dark bar,
+   where the original values are the correct ones. */
+.markets-bolt-root footer {
+  --text-primary: var(--text-title);
+  --text-tertiary: var(--text-dim);
+  --bg: var(--bg-page);
 }

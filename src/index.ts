@@ -18,6 +18,7 @@ import { productsRouter } from './api/routes/products';
 import { balancesRouter } from './api/routes/balances';
 import { marketRouter } from './api/routes/market';
 import { CoinGeckoService } from './services/CoinGeckoService';
+import { FearGreedService } from './services/FearGreedService';
 import { ArbitrageService } from './services/ArbitrageService';
 import { arbitrageRouter } from './api/routes/arbitrage';
 import { cfdRouter } from './api/routes/cfd';
@@ -60,6 +61,7 @@ const coinGeckoService = new CoinGeckoService(
   fetch,
   process.env.COINGECKO_API_KEY
 );
+const fearGreedService = new FearGreedService(process.env.FEAR_GREED_API_BASE_URL || 'https://api.alternative.me');
 const arbitrageService = new ArbitrageService(marketDataService);
 const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY);
 const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
@@ -121,7 +123,7 @@ app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
-app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
+app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
 app.use('/api/v1', referralRouter(prisma));

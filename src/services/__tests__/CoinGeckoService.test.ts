@@ -227,3 +227,68 @@ describe('CoinGeckoService', () => {
     expect(rankings[0]).toMatchObject({ price: 0, changePercent24h: null, volume24h: 0, marketCap: null, sparkline: [] });
   });
 });
+
+describe('CoinGeckoService.getGlobalMarket', () => {
+  const GLOBAL_BODY = {
+    data: {
+      total_volume: { usd: 76_360_000_000, btc: 1_200_000 },
+      total_market_cap: { usd: 2_410_000_000_000 },
+      market_cap_percentage: { btc: 57.4, eth: 12.1 },
+      market_cap_change_percentage_24h_usd: 1.83,
+    },
+  };
+
+  it('returns the market-wide USD totals, dominance and 24h cap change', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(GLOBAL_BODY));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    const data = await service.getGlobalMarket();
+
+    expect(data).toEqual({
+      totalVolume24hUsd: 76_360_000_000,
+      totalMarketCapUsd: 2_410_000_000_000,
+      btcDominancePercent: 57.4,
+      marketCapChangePercent24h: 1.83,
+    });
+    expect(fetchFn.mock.calls[0][0]).toBe('https://mock-coingecko/global');
+  });
+
+  it('caches within the TTL instead of refetching on every request', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(GLOBAL_BODY));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await service.getGlobalMarket();
+    await service.getGlobalMarket();
+
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves the last good snapshot when a later refresh fails', async () => {
+    const fetchFn = jest
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(GLOBAL_BODY))
+      .mockResolvedValue(jsonResponse({}, false, 429));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await service.getGlobalMarket();
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 60 * 60_000);
+    const data = await service.getGlobalMarket();
+
+    expect(data.totalVolume24hUsd).toBe(76_360_000_000);
+    jest.restoreAllMocks();
+  });
+
+  it('throws when the very first call fails, with nothing cached to serve', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse({}, false, 429));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await expect(service.getGlobalMarket()).rejects.toBeInstanceOf(ExternalRankingError);
+  });
+
+  it('rejects a response with no usable USD totals rather than reporting NaN', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse({ data: { total_volume: {} } }));
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+
+    await expect(service.getGlobalMarket()).rejects.toBeInstanceOf(ExternalRankingError);
+  });
+});

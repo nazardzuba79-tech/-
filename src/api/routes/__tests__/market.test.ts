@@ -4,12 +4,71 @@ import { marketRouter } from '../market';
 import { ExternalMarketDataError } from '../../../services/KrakenMarketDataService';
 import { ExternalRankingError } from '../../../services/CoinGeckoService';
 
-function buildApp(marketDataService: any, coinGeckoService: any = { getRankings: jest.fn().mockResolvedValue([]) }) {
+function buildApp(
+  marketDataService: any,
+  coinGeckoService: any = { getRankings: jest.fn().mockResolvedValue([]), getGlobalMarket: jest.fn().mockResolvedValue(null) },
+  fearGreedService: any = { getIndex: jest.fn().mockResolvedValue(null) }
+) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', marketRouter(marketDataService, coinGeckoService));
+  app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService));
   return app;
 }
+
+describe('GET /market/global', () => {
+  const globalData = {
+    totalVolume24hUsd: 76_360_000_000,
+    totalMarketCapUsd: 2_410_000_000_000,
+    btcDominancePercent: 57.4,
+    marketCapChangePercent24h: 1.8,
+  };
+
+  it('returns the market-wide totals and the published Fear & Greed reading', async () => {
+    const coinGecko = { getRankings: jest.fn(), getGlobalMarket: jest.fn().mockResolvedValue(globalData) };
+    const fearGreed = { getIndex: jest.fn().mockResolvedValue({ value: 71, classification: 'Greed', updatedAt: 1_735_689_600 }) };
+    const app = buildApp({}, coinGecko, fearGreed);
+
+    const res = await request(app).get('/api/v1/market/global');
+
+    expect(res.status).toBe(200);
+    expect(res.body.global.totalVolume24hUsd).toBe(76_360_000_000);
+    expect(res.body.fearGreed).toEqual({ value: 71, classification: 'Greed', updatedAt: 1_735_689_600 });
+  });
+
+  it('still serves the volume totals when only the Fear & Greed source fails', async () => {
+    const coinGecko = { getRankings: jest.fn(), getGlobalMarket: jest.fn().mockResolvedValue(globalData) };
+    const fearGreed = { getIndex: jest.fn().mockRejectedValue(new Error('rate limited')) };
+    const app = buildApp({}, coinGecko, fearGreed);
+
+    const res = await request(app).get('/api/v1/market/global');
+
+    expect(res.status).toBe(200);
+    expect(res.body.global.totalVolume24hUsd).toBe(76_360_000_000);
+    expect(res.body.fearGreed).toBeNull();
+  });
+
+  it('still serves the Fear & Greed reading when only CoinGecko fails', async () => {
+    const coinGecko = { getRankings: jest.fn(), getGlobalMarket: jest.fn().mockRejectedValue(new Error('rate limited')) };
+    const fearGreed = { getIndex: jest.fn().mockResolvedValue({ value: 71, classification: 'Greed', updatedAt: 1 }) };
+    const app = buildApp({}, coinGecko, fearGreed);
+
+    const res = await request(app).get('/api/v1/market/global');
+
+    expect(res.status).toBe(200);
+    expect(res.body.global).toBeNull();
+    expect(res.body.fearGreed.value).toBe(71);
+  });
+
+  it('502s only when both sources fail', async () => {
+    const coinGecko = { getRankings: jest.fn(), getGlobalMarket: jest.fn().mockRejectedValue(new Error('down')) };
+    const fearGreed = { getIndex: jest.fn().mockRejectedValue(new Error('down')) };
+    const app = buildApp({}, coinGecko, fearGreed);
+
+    const res = await request(app).get('/api/v1/market/global');
+
+    expect(res.status).toBe(502);
+  });
+});
 
 describe('market routes', () => {
   it('GET /market/external/symbols returns the mirrored symbol list', async () => {

@@ -23,7 +23,8 @@ import {
   formatPrice,
   formatCompactUsd,
   deriveQuoteList,
-  computeSentiment,
+  computeBreadth,
+  fearGreedLabelRu,
   computeVolumeSummary,
   computeSectorSummaries,
   topMovers,
@@ -34,6 +35,16 @@ import {
   quoteOf,
 } from './markets';
 import './MarketsBolt.css';
+
+// Mirrors api.getGlobalMarket's payload — market-WIDE figures, not this
+// exchange's own turnover (see markets.ts's computeVolumeSummary).
+type GlobalMarket = {
+  totalVolume24hUsd: number;
+  totalMarketCapUsd: number;
+  btcDominancePercent: number | null;
+  marketCapChangePercent24h: number | null;
+};
+type FearGreedReading = { value: number; classification: string; updatedAt: number };
 
 type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume';
 type MarketKind = 'Spot' | 'Futures' | 'Options';
@@ -81,6 +92,8 @@ export function MarketsBoltPage() {
   const navigate = useNavigate();
   const [tickers, setTickers] = useState<Ticker[]>([]);
   const [rankByBase, setRankByBase] = useState<Map<string, CoinRanking> | null>(null);
+  const [globalMarket, setGlobalMarket] = useState<GlobalMarket | null>(null);
+  const [fearGreed, setFearGreed] = useState<FearGreedReading | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('Cryptocurrency');
@@ -122,6 +135,26 @@ export function MarketsBoltPage() {
     }
     load();
     const interval = setInterval(load, 10_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Market-wide totals + the published Fear & Greed Index. Both are cached
+  // server-side (5 min / 15 min) and the index itself only moves once a
+  // day, so a one-minute poll here is already far more often than the data
+  // changes — it exists to recover from a rate-limited first load, not to
+  // stream anything.
+  useEffect(() => {
+    function load() {
+      api
+        .getGlobalMarket()
+        .then((res) => {
+          if (res.global) setGlobalMarket(res.global);
+          if (res.fearGreed) setFearGreed(res.fearGreed);
+        })
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 60_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -207,7 +240,7 @@ export function MarketsBoltPage() {
     document.getElementById('markets-table-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  const sentiment = useMemo(() => computeSentiment(tickers), [tickers]);
+  const breadth = useMemo(() => computeBreadth(tickers), [tickers]);
   const volumeSummary = useMemo(() => computeVolumeSummary(tickers), [tickers]);
   const sectorSummaries = useMemo(
     () => (rankByBase ? computeSectorSummaries(rankByBase, SECTOR_CARD_CATEGORIES) : []),
@@ -235,19 +268,19 @@ export function MarketsBoltPage() {
 
         <section className="overview-grid">
           <article className="overview-card sentiment-card">
-            <div className="card-heading"><span>Настроение рынка</span></div>
+            <div className="card-heading"><span>Индекс страха и жадности</span><span className="card-heading-tag">Крипторынок</span></div>
             <div className="sentiment-content">
               <div className="gauge">
                 <div className="gauge-track" />
-                <div className="gauge-value">{sentiment.score}</div>
-                <span>{sentiment.label}</span>
+                <div className="gauge-value">{fearGreed ? fearGreed.value : '—'}</div>
+                <span>{fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}</span>
               </div>
               <div className="sentiment-side">
-                <div className="score-label"><strong>{sentiment.label}</strong></div>
-                <div className="progress-track"><span style={{ width: `${sentiment.score}%` }} /></div>
+                <div className="score-label"><strong>{fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}</strong></div>
+                <div className="progress-track"><span style={{ width: `${fearGreed ? fearGreed.value : 0}%` }} /></div>
                 <div className="long-short">
-                  <span><i className="dot-green" /> Растут <b>{sentiment.longPct}%</b></span>
-                  <span><i className="dot-red" /> Падают <b>{sentiment.shortPct}%</b></span>
+                  <span><i className="dot-green" /> Растут <b>{breadth.longPct}%</b></span>
+                  <span><i className="dot-red" /> Падают <b>{breadth.shortPct}%</b></span>
                 </div>
               </div>
             </div>
@@ -256,13 +289,14 @@ export function MarketsBoltPage() {
             <div className="card-heading"><span>Рыночные данные</span><span className="card-heading-tag">24ч</span></div>
             <div className="metric-line">
               <div>
-                <span className="muted-label">Объём торгов (спот)</span>
-                <strong>{formatCompactUsd(volumeSummary.totalVolume)}</strong>
+                <span className="muted-label">Объём торгов</span>
+                <strong>{globalMarket ? formatCompactUsd(globalMarket.totalVolume24hUsd) : '—'}</strong>
               </div>
             </div>
             <div className="volume-footer">
-              <span>Торговых пар <b>{volumeSummary.pairCount}</b></span>
-              <span>Избранное <b>{favorites.size}</b></span>
+              <span>Капитализация <b>{globalMarket ? formatCompactUsd(globalMarket.totalMarketCapUsd) : '—'}</b></span>
+              <span>Доминация BTC <b>{globalMarket?.btcDominancePercent != null ? `${globalMarket.btcDominancePercent.toFixed(1)}%` : '—'}</b></span>
+              <span>Наши пары <b>{volumeSummary.pairCount}</b></span>
             </div>
           </article>
           <article className="overview-card sectors-card">

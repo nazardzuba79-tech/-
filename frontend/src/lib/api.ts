@@ -319,6 +319,25 @@ export const api = {
   // itself. Powers the category filters, the rank badge, and the Wallet
   // page's full coin browser (which lists every one of these regardless
   // of whether the account holds any).
+  // Market-WIDE headline figures (total 24h volume / market cap across
+  // every exchange, plus the published Crypto Fear & Greed Index) — see
+  // the backend's /market/global route. Deliberately separate from
+  // getExternalTickers below, which is this exchange's own pair data.
+  // Either half can be null independently when its upstream source is
+  // rate-limited; callers render "—" for whichever is missing rather than
+  // substituting a locally-derived stand-in.
+  getGlobalMarket: () =>
+    request<{
+      source: string;
+      global: {
+        totalVolume24hUsd: number;
+        totalMarketCapUsd: number;
+        btcDominancePercent: number | null;
+        marketCapChangePercent24h: number | null;
+      } | null;
+      fearGreed: { value: number; classification: string; updatedAt: number } | null;
+    }>('/market/global'),
+
   getExternalRankings: () =>
     request<{
       source: string;
