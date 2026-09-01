@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { krakenSocket } from '../lib/krakenSocket';
-import { SkeletonRow } from './Skeleton';
 
 interface Trade {
   id: string;
@@ -15,10 +14,13 @@ interface Trade {
 const MAX_TRADES = 60;
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
-// Live-scrolling trade tape, streamed from Kraken's public WebSocket — real
-// prints arriving as they happen, not a 2s poll. Falls back to REST polling
-// (the previous behavior) if the socket doesn't deliver anything within a
-// few seconds, so a blocked/failed connection degrades instead of freezing.
+/**
+ * The reference's `.trades-section`: a header, three column headers, and a
+ * live tape of `.trade-row`s that fade in as prints arrive.
+ *
+ * The data path is unchanged — Kraken's public WebSocket with a REST poll
+ * as a fallback when the socket delivers nothing.
+ */
 export function RecentTradesPanel({ pair }: { pair: string }) {
   const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
@@ -26,6 +28,8 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
   // trades for this pair) — a separate flag is the only honest way to tell
   // "loading" apart from "loaded, empty" and pick the right placeholder.
   const [loading, setLoading] = useState(true);
+  const [, quoteAsset] = pair.split('/');
+  const [baseAsset] = pair.split('/');
 
   useEffect(() => {
     setTrades([]);
@@ -67,23 +71,20 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
   }, [pair]);
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.columnLabels}>
-        <span>{t('trade.price')}</span>
-        <span style={{ textAlign: 'right' }}>{t('trade.quantity')}</span>
-        <span style={{ textAlign: 'right' }}>{t('trade.time')}</span>
+    <div className="trades-section">
+      <div className="trades-header">{t('trade.marketTrades')}</div>
+      <div className="trades-col-headers">
+        <span className="ob-col">{`${t('trade.price')}(${quoteAsset})`}</span>
+        <span className="ob-col">{`${t('trade.quantity')}(${baseAsset})`}</span>
+        <span className="ob-col">{t('trade.time')}</span>
       </div>
-      <div style={styles.rows}>
-        {trades.map((t) => (
-          <div key={t.id} style={styles.row}>
-            <span className="mono" style={{ color: t.side === 'BUY' ? 'var(--buy)' : 'var(--sell)' }}>
-              {parseFloat(t.price).toFixed(2)}
-            </span>
-            <span className="mono" style={{ textAlign: 'right', color: 'var(--text-primary)' }}>
-              {parseFloat(t.quantity).toFixed(5)}
-            </span>
-            <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
-              {new Date(t.time).toLocaleTimeString(localeOf(lang), {
+      <div className="trades-list">
+        {trades.map((tr) => (
+          <div key={tr.id} className="trade-row">
+            <span className={`t-price ${tr.side === 'BUY' ? 'buy' : 'sell'}`}>{parseFloat(tr.price).toFixed(2)}</span>
+            <span className="t-amount">{parseFloat(tr.quantity).toFixed(5)}</span>
+            <span className="t-time">
+              {new Date(tr.time).toLocaleTimeString(localeOf(lang), {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
@@ -91,48 +92,8 @@ export function RecentTradesPanel({ pair }: { pair: string }) {
             </span>
           </div>
         ))}
-        {trades.length === 0 && loading && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <SkeletonRow key={i} columns={[1, 1, 1]} />
-            ))}
-          </div>
-        )}
-        {trades.length === 0 && !loading && <p style={styles.hint}>{t('trade.noTrades')}</p>}
+        {trades.length === 0 && !loading && <div className="empty-state">{t('trade.noTrades')}</div>}
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    background: 'var(--panel)',
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
-    flex: 1,
-    overflow: 'auto',
-  },
-  columnLabels: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    padding: '8px 14px',
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-  },
-  rows: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr',
-    padding: '3px 14px',
-    fontSize: 12,
-  },
-  hint: {
-    padding: 16,
-    color: 'var(--text-tertiary)',
-    fontSize: 12,
-  },
-};

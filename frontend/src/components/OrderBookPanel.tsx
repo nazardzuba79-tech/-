@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 
 interface Level {
   price: string;
@@ -23,13 +23,24 @@ function withDepth(levels: Level[]): (Level & { cumulative: number })[] {
 // Real order-book DOMs don't scroll through the whole book by default —
 // they show a fixed window of levels closest to the spread, so the
 // buy/sell split is always visible together without the trader having to
-// scroll past a wall of asks first. `bids`/`asks` arrive best-price-first
-// (see withDepth's caller below), so the first N of each is exactly that
-// near-spread window.
+// scroll past a wall of asks first. `bids`/`asks` arrive best-price-first,
+// so the first N of each is exactly that near-spread window.
 const VISIBLE_LEVELS_PER_SIDE = 15;
 
-export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] }) {
-  const { t } = useLanguage();
+/**
+ * The reference's `.orderbook-area`, whole: header with the display-mode
+ * buttons, the three column headers (Price / Amount / Sum), the ask stack
+ * laid out bottom-up, the spread band, and the bid stack — with the
+ * reference's own depth bars behind each row.
+ *
+ * The data and its maths are unchanged from before: real Kraken depth,
+ * cumulative-from-the-spread bars, the same near-spread window.
+ */
+export function OrderBookPanel({ bids, asks, onPickPrice }: { bids: Level[]; asks: Level[]; onPickPrice?: (price: string) => void }) {
+  const { t, lang } = useLanguage();
+  // The reference's three display modes: both sides, bids only, asks only.
+  const [mode, setMode] = useState<'both' | 'bids' | 'asks'>('both');
+
   const asksDepth = withDepth(asks).slice(0, VISIBLE_LEVELS_PER_SIDE);
   const bidsDepth = withDepth(bids).slice(0, VISIBLE_LEVELS_PER_SIDE);
   const maxDepth = Math.max(
@@ -40,59 +51,48 @@ export function OrderBookPanel({ bids, asks }: { bids: Level[]; asks: Level[] })
 
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
-  const spread = bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
-  const spreadPct = spread !== null && bestBid ? (spread / bestBid) * 100 : null;
   const midPrice = bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
 
-  // Buy/sell pressure within the visible window — real, derived from the
-  // same depth already on screen, same idea as the reference's B/S bar.
-  const visibleBuyVolume = bidsDepth.length ? bidsDepth[bidsDepth.length - 1].cumulative : 0;
-  const visibleSellVolume = asksDepth.length ? asksDepth[asksDepth.length - 1].cumulative : 0;
-  const totalVisibleVolume = visibleBuyVolume + visibleSellVolume;
-  const buyPct = totalVisibleVolume > 0 ? (visibleBuyVolume / totalVisibleVolume) * 100 : 50;
-
   return (
-    <div style={styles.panel}>
-      <div style={styles.columnLabels}>
-        <span>{t('trade.price')}</span>
-        <span style={{ textAlign: 'right' }}>{t('trade.quantity')}</span>
+    <>
+      <div className="orderbook-header">
+        <span className="orderbook-title">{t('trade.orderBook')}</span>
+        <div className="orderbook-modes">
+          <button className={`ob-mode-btn ${mode === 'both' ? 'active' : ''}`} onClick={() => setMode('both')} title={t('trade.orderBook')}>▦</button>
+          <button className={`ob-mode-btn ${mode === 'bids' ? 'active' : ''}`} onClick={() => setMode('bids')} title={t('trade.buy')}>▪</button>
+          <button className={`ob-mode-btn ${mode === 'asks' ? 'active' : ''}`} onClick={() => setMode('asks')} title={t('trade.sell')}>▭</button>
+        </div>
       </div>
 
-      <div style={{ ...styles.rows, ...styles.asksRows }}>
-        {asksDepth
-          .slice()
-          .reverse()
-          .map((level) => (
-            <Row key={level.price} level={level} side="SELL" maxDepth={maxDepth} />
+      <div className="orderbook-col-headers">
+        <span className="ob-col">{t('trade.price')}</span>
+        <span className="ob-col">{t('trade.quantity')}</span>
+        <span className="ob-col">{t('trade.sum')}</span>
+      </div>
+
+      {mode !== 'bids' && (
+        <div className="orderbook-asks">
+          {asksDepth.map((level) => (
+            <Row key={level.price} level={level} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
           ))}
-      </div>
+        </div>
+      )}
 
-      <div style={styles.midBand}>
+      <div className="orderbook-spread">
+        {midPrice !== null ? midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
         {midPrice !== null && (
-          <span className="mono" style={styles.midPrice}>
-            {midPrice.toFixed(2)}
-          </span>
+          <span className="usd">≈ ${midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
         )}
-        <span style={styles.spread}>
-          {spread !== null && spreadPct !== null
-            ? `${t('trade.spread')}: ${spread.toFixed(2)} (${spreadPct.toFixed(3)}%)`
-            : '—'}
-        </span>
       </div>
 
-      <div style={styles.rows}>
-        {bidsDepth.map((level) => (
-          <Row key={level.price} level={level} side="BUY" maxDepth={maxDepth} />
-        ))}
-      </div>
-
-      <div style={styles.ratioBar}>
-        <div style={{ ...styles.ratioFill, width: `${buyPct}%`, background: 'var(--buy)' }} />
-        <div style={{ ...styles.ratioFill, width: `${100 - buyPct}%`, background: 'var(--sell)' }} />
-        <span style={styles.ratioLabelLeft}>B {buyPct.toFixed(0)}%</span>
-        <span style={styles.ratioLabelRight}>{(100 - buyPct).toFixed(0)}% S</span>
-      </div>
-    </div>
+      {mode !== 'asks' && (
+        <div className="orderbook-bids">
+          {bidsDepth.map((level) => (
+            <Row key={level.price} level={level} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -100,10 +100,7 @@ const FLASH_DURATION_MS = 450;
 
 /** True for a brief moment right after this row's quantity changes — same
  * per-row-hook pattern as usePriceFlash, needed here since it must isolate
- * state per price level, not just per side. Fires on ANY change (up or
- * down), unlike the ticker price flash which is directional — a depth
- * level updating at all is the signal a real order-book DOM highlights,
- * regardless of which way its size moved. */
+ * state per price level, not just per side. */
 function useRowFlash(quantity: number): boolean {
   const prevRef = useRef<number | null>(null);
   const [flashing, setFlashing] = useState(false);
@@ -127,131 +124,25 @@ function Row({
   level,
   side,
   maxDepth,
+  onPick,
 }: {
   level: Level & { cumulative: number };
   side: 'BUY' | 'SELL';
   maxDepth: number;
+  onPick?: (price: string) => void;
 }) {
   const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
-  const color = side === 'BUY' ? 'var(--buy)' : 'var(--sell)';
-  const gradientColor = side === 'BUY' ? 'rgba(0,214,143,0.28)' : 'rgba(255,77,106,0.28)';
   const flashing = useRowFlash(parseFloat(level.quantity));
   const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
+  const price = parseFloat(level.price);
+  const quantity = parseFloat(level.quantity);
 
   return (
-    <div className={`row-hover ${flashClass}`} style={styles.row}>
-      <div
-        style={{
-          ...styles.depthBar,
-          width: `${pct}%`,
-          background: `linear-gradient(to left, ${gradientColor}, transparent)`,
-        }}
-      />
-      <span className="mono" style={{ color, position: 'relative' }}>
-        {parseFloat(level.price).toFixed(2)}
-      </span>
-      <span className="mono" style={{ textAlign: 'right', position: 'relative', color: 'var(--text-primary)' }}>
-        {parseFloat(level.quantity).toFixed(5)}
-      </span>
+    <div className={`ob-row ${flashClass}`} onClick={() => onPick?.(price.toFixed(2))}>
+      <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ width: `${pct}%` }} />
+      <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`}>{price.toFixed(2)}</span>
+      <span className="cell">{quantity.toFixed(5)}</span>
+      <span className="cell">{(price * quantity).toFixed(2)}</span>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  // No background of its own — every caller already renders this inside a
-  // panel that supplies one (var(--panel) normally, or a translucent
-  // liquid-glass background on Markets' book column), so this only needs
-  // to lay its rows out, not paint over whatever's behind it.
-  panel: {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: 0,
-    flex: 1,
-    overflow: 'hidden',
-  },
-  columnLabels: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    padding: '8px 14px',
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-    flexShrink: 0,
-  },
-  // Each half gets an equal share of whatever vertical room is actually
-  // available and clips the far end first (never the end nearest the
-  // spread) — so both the ask half and the bid half stay visible together
-  // without scrolling, on any panel height, instead of one side pushing
-  // the other off-screen.
-  rows: {
-    flex: 1,
-    minHeight: 0,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-  },
-  asksRows: {
-    justifyContent: 'flex-end',
-  },
-  row: {
-    position: 'relative',
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    padding: '3px 14px',
-    fontSize: 12,
-    flexShrink: 0,
-  },
-  depthBar: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-  },
-  midBand: {
-    flexShrink: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    padding: '8px 14px',
-    borderTop: '1px solid var(--border)',
-    borderBottom: '1px solid var(--border)',
-  },
-  midPrice: {
-    fontSize: 15,
-    fontWeight: 800,
-    color: 'var(--text-primary)',
-  },
-  spread: {
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-  },
-  ratioBar: {
-    position: 'relative',
-    flexShrink: 0,
-    display: 'flex',
-    height: 22,
-    overflow: 'hidden',
-  },
-  ratioFill: {
-    height: '100%',
-    opacity: 0.5,
-  },
-  ratioLabelLeft: {
-    position: 'absolute',
-    left: 10,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    fontSize: 10,
-    fontWeight: 700,
-    color: 'var(--buy)',
-  },
-  ratioLabelRight: {
-    position: 'absolute',
-    right: 10,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    fontSize: 10,
-    fontWeight: 700,
-    color: 'var(--sell)',
-  },
-};

@@ -1,0 +1,491 @@
+/* Trading terminal design, transcribed from the supplied
+   trading_terminal_binance_style.html. Every value here — colour, size,
+   padding, radius, weight, transition, breakpoint — is the reference's own,
+   unchanged. The only edits are structural, and only two of them:
+
+   1. Every selector is prefixed with `.trade-terminal`. This file is
+      imported globally (Vite has no build-time scoping here), and names
+      like `.logo`, `.avatar`, `.empty-state` and `.badge` already exist
+      elsewhere in the app; without the prefix this would repaint half the
+      site.
+   2. The reference's `body { overflow: hidden; height: 100vh }` lives on
+      the terminal root instead, since the app's body is shared.
+
+   The reference's own `.top-bar` (a "CryptoEx" logo, its nav and a user
+   menu) is deliberately NOT ported: that is the site header, and VOLTEX
+   has its own. Everything from the ticker bar down is the terminal, and
+   that is what this file covers. */
+
+.trade-terminal {
+  --bg-primary: #0b0e11;
+  --bg-secondary: #1e2329;
+  --bg-tertiary: #2b3139;
+  --bg-hover: #2b3139;
+  --border-color: #2b3139;
+  --text-primary: #eaecef;
+  --text-secondary: #848e9c;
+  --accent-yellow: #f0b90b;
+  --color-buy: #0ecb81;
+  --color-buy-hover: #0bc179;
+  --color-sell: #f6465d;
+  --color-sell-hover: #e03e53;
+  --color-buy-bg: rgba(14, 203, 129, 0.08);
+  --color-sell-bg: rgba(246, 70, 93, 0.08);
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 13px;
+  /* The reference's `overflow: hidden`, as `clip`: visually identical, but
+     it is not a scroll container, so focusing or clicking a control near
+     the bottom of the order form (which scrolls inside itself) can never
+     shove the whole terminal up under the ticker bar. */
+  overflow: clip;
+  height: 100vh;
+  width: 100%;
+  /* The site header and the two strips above the terminal share this
+     viewport height with it; `.terminal` below takes whatever is left.
+     This lives here rather than in an inline style so the 1024px block at
+     the bottom of this file can release the fixed height — an inline style
+     always beats a media query. */
+  display: flex;
+  flex-direction: column;
+}
+
+.trade-terminal *,
+.trade-terminal *::before,
+.trade-terminal *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Scrollbar */
+.trade-terminal ::-webkit-scrollbar { width: 4px; height: 4px; }
+.trade-terminal ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+.trade-terminal ::-webkit-scrollbar-thumb { background: var(--bg-tertiary); border-radius: 2px; }
+
+/* Layout. The reference gives .terminal height:100vh because its own top
+   bar is inside it; here the site header sits above, so the terminal takes
+   the remaining height instead. Same result — a viewport-height terminal
+   that never scrolls the page. */
+.trade-terminal .terminal { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+/* === TICKER BAR === */
+.trade-terminal .ticker-bar {
+  display: flex; align-items: center; gap: 20px;
+  padding: 0 16px; height: 52px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.trade-terminal .pair-selector {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 4px 8px; border-radius: 4px; transition: background 0.2s;
+}
+.trade-terminal .pair-selector:hover { background: var(--bg-tertiary); }
+.trade-terminal .pair-name { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.trade-terminal .pair-arrow { color: var(--text-secondary); font-size: 10px; }
+.trade-terminal .ticker-item { display: flex; flex-direction: column; gap: 2px; }
+.trade-terminal .ticker-item .label { font-size: 11px; color: var(--text-secondary); }
+.trade-terminal .ticker-item .value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+.trade-terminal .ticker-item .value.price { font-size: 22px; font-weight: 700; }
+.trade-terminal .ticker-item .value.up { color: var(--color-buy); }
+.trade-terminal .ticker-item .value.down { color: var(--color-sell); }
+.trade-terminal .ticker-item .value.mark { font-size: 12px; }
+.trade-terminal .ticker-actions { margin-left: auto; display: flex; gap: 8px; }
+.trade-terminal .btn-icon {
+  background: transparent; border: none; color: var(--text-secondary);
+  cursor: pointer; padding: 6px; border-radius: 4px; font-size: 16px; line-height: 1;
+  transition: background 0.2s;
+}
+.trade-terminal .btn-icon:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+
+/* === MAIN GRID === */
+.trade-terminal .main-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px 320px;
+  grid-template-rows: 1fr 340px;
+  flex: 1;
+  min-height: 0;
+  /* The reference's `overflow: hidden`, as `clip` — same reason as on the
+     root above: the grid must clip its panels but must never become a
+     scroll container itself, or clicking a control low in the order form
+     slides the whole grid up under the ticker bar. */
+  overflow: clip;
+}
+
+/* Chart Area */
+.trade-terminal .chart-area {
+  grid-row: 1; grid-column: 1;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+  background: var(--bg-primary);
+  display: flex; flex-direction: column;
+  min-width: 0;
+}
+.trade-terminal .chart-toolbar {
+  display: flex; align-items: center; gap: 2px;
+  padding: 6px 12px; border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+.trade-terminal .chart-tabs { display: flex; gap: 2px; }
+.trade-terminal .chart-tab {
+  background: transparent; border: none; color: var(--text-secondary);
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;
+  transition: all 0.2s;
+}
+.trade-terminal .chart-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.trade-terminal .chart-tab.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-tools { margin-left: auto; display: flex; gap: 4px; }
+.trade-terminal .chart-tool-btn {
+  background: transparent; border: none; color: var(--text-secondary);
+  padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  transition: all 0.2s;
+}
+.trade-terminal .chart-tool-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.trade-terminal .chart-tool-btn.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-view { flex: 1; position: relative; overflow: hidden; min-height: 0; }
+.trade-terminal .chart-placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); font-size: 14px;
+}
+.trade-terminal .chart-watermark {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 48px; font-weight: 900; color: rgba(255,255,255,0.03);
+  pointer-events: none; user-select: none;
+}
+
+/* Order Form */
+.trade-terminal .order-form-area {
+  grid-row: 2; grid-column: 1;
+  border-right: 1px solid var(--border-color);
+  display: flex; flex-direction: column;
+  background: var(--bg-secondary);
+  min-width: 0;
+}
+.trade-terminal .order-form-tabs {
+  display: flex; border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .order-form-tab {
+  flex: 1; background: transparent; border: none;
+  padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; color: var(--text-secondary);
+}
+.trade-terminal .order-form-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #fff; }
+.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #fff; }
+.trade-terminal .order-type-tabs {
+  display: flex; gap: 8px; padding: 10px 16px;
+}
+.trade-terminal .order-type-tab {
+  background: transparent; border: none; color: var(--text-secondary);
+  font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 0;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.trade-terminal .order-type-tab:hover { color: var(--text-primary); }
+.trade-terminal .order-type-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+/* min-height: 0 is the one property added to this rule. Without it a flex
+   item's automatic minimum size is its content height, so the reference's
+   own `overflow-y: auto` never engages: instead of scrolling inside the
+   340px form panel, the content grows past it and pushes the submit button
+   out of the panel entirely. Everything else here is the reference's. */
+.trade-terminal .order-form-content { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
+.trade-terminal .form-group { display: flex; flex-direction: column; gap: 4px; }
+.trade-terminal .form-label { font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; }
+.trade-terminal .form-label .max-btn { color: var(--accent-yellow); cursor: pointer; font-weight: 600; background: transparent; border: none; font-size: 11px; padding: 0; }
+.trade-terminal .input-group {
+  display: flex; align-items: center;
+  background: var(--bg-tertiary); border-radius: 4px;
+  border: 1px solid var(--bg-tertiary); transition: border-color 0.2s;
+}
+.trade-terminal .input-group:focus-within { border-color: var(--accent-yellow); }
+.trade-terminal .input-group input {
+  flex: 1; background: transparent; border: none; color: var(--text-primary);
+  padding: 10px 12px; font-size: 14px; outline: none; width: 100%;
+  font-family: inherit;
+}
+.trade-terminal .input-group input::placeholder { color: var(--text-secondary); }
+.trade-terminal .input-suffix {
+  padding: 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500;
+  border-left: 1px solid var(--border-color);
+}
+.trade-terminal .slider-container { padding: 4px 0; }
+.trade-terminal .slider-track {
+  display: flex; gap: 4px; align-items: center;
+}
+.trade-terminal .slider-step {
+  flex: 1; height: 4px; background: var(--bg-tertiary); border-radius: 2px;
+  cursor: pointer; transition: background 0.2s; position: relative;
+  border: none; padding: 0;
+}
+.trade-terminal .slider-step.active { background: var(--color-buy); }
+.trade-terminal .slider-step.active.sell { background: var(--color-sell); }
+.trade-terminal .slider-step:hover::after {
+  content: attr(data-label); position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary);
+  padding: 2px 4px; border-radius: 2px; white-space: nowrap;
+}
+.trade-terminal .available-balance {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; color: var(--text-secondary); padding: 4px 0;
+}
+.trade-terminal .available-balance .amount { color: var(--text-primary); font-weight: 600; }
+.trade-terminal .submit-btn {
+  width: 100%; padding: 12px; border: none; border-radius: 4px;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  margin-top: auto;
+}
+.trade-terminal .submit-btn.buy { background: var(--color-buy); color: #fff; }
+.trade-terminal .submit-btn.buy:hover { background: var(--color-buy-hover); }
+.trade-terminal .submit-btn.sell { background: var(--color-sell); color: #fff; }
+.trade-terminal .submit-btn.sell:hover { background: var(--color-sell-hover); }
+.trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* TP/SL Checkbox */
+.trade-terminal .form-options { display: flex; gap: 16px; padding: 4px 0; }
+.trade-terminal .checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+.trade-terminal .checkbox-label input { accent-color: var(--accent-yellow); cursor: pointer; }
+
+/* === ORDER BOOK === */
+.trade-terminal .orderbook-area {
+  grid-row: 1 / 3; grid-column: 2;
+  border-right: 1px solid var(--border-color);
+  display: flex; flex-direction: column;
+  background: var(--bg-primary);
+  min-width: 0;
+}
+.trade-terminal .orderbook-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.trade-terminal .orderbook-modes { display: flex; gap: 4px; }
+.trade-terminal .ob-mode-btn {
+  background: transparent; border: none; color: var(--text-secondary);
+  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 12px;
+}
+.trade-terminal .ob-mode-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
+.trade-terminal .ob-mode-btn.active { color: var(--accent-yellow); }
+.trade-terminal .orderbook-col-headers {
+  display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .ob-col { flex: 1; }
+.trade-terminal .ob-col:last-child { text-align: right; }
+.trade-terminal .ob-col:nth-child(2) { text-align: center; }
+.trade-terminal .orderbook-asks {
+  flex: 1; overflow: hidden; display: flex; flex-direction: column-reverse;
+  padding: 0; position: relative;
+}
+.trade-terminal .orderbook-bids {
+  flex: 1; overflow: hidden; padding: 0; position: relative;
+}
+.trade-terminal .ob-row {
+  display: flex; padding: 2px 12px; font-size: 12px;
+  position: relative; cursor: pointer; transition: background 0.1s;
+}
+.trade-terminal .ob-row:hover { background: var(--bg-tertiary); }
+.trade-terminal .ob-row .cell { flex: 1; position: relative; z-index: 1; }
+.trade-terminal .ob-row .cell:nth-child(2) { text-align: center; color: var(--text-primary); }
+.trade-terminal .ob-row .cell:last-child { text-align: right; color: var(--text-secondary); }
+.trade-terminal .ob-row .cell.ask-price { color: var(--color-sell); font-weight: 500; }
+.trade-terminal .ob-row .cell.bid-price { color: var(--color-buy); font-weight: 500; }
+.trade-terminal .ob-depth-bar {
+  position: absolute; top: 0; right: 0; bottom: 0;
+  opacity: 0.15; z-index: 0; transition: width 0.3s ease;
+}
+.trade-terminal .ob-depth-bar.ask { background: var(--color-sell); }
+.trade-terminal .ob-depth-bar.bid { background: var(--color-buy); }
+.trade-terminal .orderbook-spread {
+  padding: 8px 12px; text-align: center;
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+.trade-terminal .orderbook-spread .usd { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+
+/* === RIGHT PANEL === */
+.trade-terminal .right-panel {
+  grid-row: 1 / 3; grid-column: 3;
+  display: flex; flex-direction: column;
+  background: var(--bg-secondary);
+  overflow: hidden;
+  min-width: 0;
+}
+.trade-terminal .pairs-section { border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 45%; }
+.trade-terminal .pairs-search { padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+.trade-terminal .pairs-search input {
+  width: 100%; background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
+  color: var(--text-primary); padding: 8px 12px; border-radius: 4px;
+  font-size: 12px; outline: none; transition: border-color 0.2s;
+  font-family: inherit;
+}
+.trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
+.trade-terminal .pairs-search input::placeholder { color: var(--text-secondary); }
+.trade-terminal .pairs-tabs {
+  display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .pairs-tab {
+  background: transparent; border: none; color: var(--text-secondary);
+  padding: 8px 10px; font-size: 12px; font-weight: 500; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.trade-terminal .pairs-tab:hover { color: var(--text-primary); }
+.trade-terminal .pairs-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+.trade-terminal .pairs-list { overflow-y: auto; flex: 1; }
+.trade-terminal .pair-row {
+  display: flex; padding: 8px 12px; font-size: 12px; cursor: pointer;
+  transition: background 0.15s; align-items: center;
+  width: 100%; background: transparent; border: none; text-align: left;
+  font-family: inherit;
+}
+.trade-terminal .pair-row:hover { background: var(--bg-tertiary); }
+.trade-terminal .pair-row.active { background: rgba(240, 185, 11, 0.08); }
+.trade-terminal .pair-row .p-name { flex: 1; font-weight: 600; color: var(--text-primary); }
+.trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
+.trade-terminal .pair-row .p-price { flex: 1; text-align: right; color: var(--text-primary); }
+.trade-terminal .pair-row .p-change { flex: 1; text-align: right; font-weight: 500; }
+.trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
+.trade-terminal .pair-row .p-change.down { color: var(--color-sell); }
+.trade-terminal .sparkline { width: 60px; height: 20px; margin-left: 8px; }
+
+.trade-terminal .trades-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.trade-terminal .trades-header { padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-color); }
+.trade-terminal .trades-col-headers {
+  display: flex; padding: 6px 12px; font-size: 11px; color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .trades-list { flex: 1; overflow-y: auto; padding: 0 12px; }
+.trade-terminal .trade-row {
+  display: flex; padding: 3px 0; font-size: 12px; animation: tradeTerminalFadeIn 0.2s ease;
+}
+.trade-terminal .trade-row .t-price { flex: 1; font-weight: 500; }
+.trade-terminal .trade-row .t-price.buy { color: var(--color-buy); }
+.trade-terminal .trade-row .t-price.sell { color: var(--color-sell); }
+.trade-terminal .trade-row .t-amount { flex: 1; text-align: center; color: var(--text-primary); }
+.trade-terminal .trade-row .t-time { flex: 1; text-align: right; color: var(--text-secondary); }
+
+@keyframes tradeTerminalFadeIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === BOTTOM PANEL === */
+.trade-terminal .bottom-panel {
+  height: 180px; background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+.trade-terminal .bottom-tabs {
+  display: flex; padding: 0 16px; border-bottom: 1px solid var(--border-color);
+  align-items: center;
+}
+.trade-terminal .bottom-tab {
+  background: transparent; border: none; color: var(--text-secondary);
+  padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.2s; position: relative;
+}
+.trade-terminal .bottom-tab:hover { color: var(--text-primary); }
+.trade-terminal .bottom-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+.trade-terminal .bottom-tab .badge {
+  position: absolute; top: 6px; right: 2px;
+  background: var(--accent-yellow); color: var(--bg-primary);
+  font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 8px;
+}
+.trade-terminal .bottom-actions { margin-left: auto; display: flex; gap: 12px; }
+.trade-terminal .bottom-action-btn {
+  background: transparent; border: none; color: var(--accent-yellow);
+  font-size: 12px; cursor: pointer; padding: 4px 8px; border-radius: 4px;
+}
+.trade-terminal .bottom-action-btn:hover { background: rgba(240, 185, 11, 0.1); }
+.trade-terminal .bottom-content { flex: 1; overflow: auto; }
+.trade-terminal .orders-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.trade-terminal .orders-table th {
+  text-align: left; padding: 8px 16px; color: var(--text-secondary);
+  font-weight: 400; border-bottom: 1px solid var(--border-color); white-space: nowrap;
+}
+.trade-terminal .orders-table td {
+  padding: 10px 16px; color: var(--text-primary); border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+.trade-terminal .orders-table tr:hover { background: var(--bg-tertiary); }
+.trade-terminal .orders-table .side-buy { color: var(--color-buy); font-weight: 500; }
+.trade-terminal .orders-table .side-sell { color: var(--color-sell); font-weight: 500; }
+.trade-terminal .orders-table .cancel-btn {
+  background: transparent; border: none; color: var(--accent-yellow);
+  cursor: pointer; font-size: 12px; padding: 2px 6px; border-radius: 3px;
+}
+.trade-terminal .orders-table .cancel-btn:hover { background: rgba(240, 185, 11, 0.1); }
+.trade-terminal .empty-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: var(--text-secondary); font-size: 13px;
+}
+
+/* Responsive helpers */
+@media (max-width: 1400px) {
+  .trade-terminal .main-grid { grid-template-columns: 1fr 240px 280px; }
+}
+@media (max-width: 1200px) {
+  .trade-terminal .main-grid { grid-template-columns: 1fr 220px 260px; }
+  .trade-terminal .ticker-bar { gap: 12px; font-size: 12px; }
+}
+
+/* Below the reference's own breakpoints.
+
+   The supplied design stops at 1200px: it is a desktop terminal, and its
+   grid keeps 220px + 260px side columns at any width below that, which on
+   a phone means a page several screens wide. Since VOLTEX has to stay
+   usable on a phone, the columns stack here instead. Nothing about the
+   look changes — same colours, type, padding and borders as above; only
+   the grid placement and the two fixed panel heights give way, because a
+   340px form row and a 180px bottom panel cannot both fit a phone. */
+@media (max-width: 1024px) {
+  .trade-terminal,
+  .trade-terminal .terminal { height: auto; overflow: visible; }
+  .trade-terminal .main-grid {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .trade-terminal .chart-area,
+  .trade-terminal .order-form-area,
+  .trade-terminal .orderbook-area,
+  .trade-terminal .right-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+  .trade-terminal .chart-area { height: 340px; }
+  .trade-terminal .orderbook-area { height: 420px; }
+  .trade-terminal .right-panel { height: 480px; }
+  .trade-terminal .pairs-section { max-height: 60%; }
+  .trade-terminal .bottom-panel { height: auto; min-height: 180px; }
+  .trade-terminal .ticker-bar {
+    height: auto;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .trade-terminal .ticker-actions { margin-left: 0; }
+  .trade-terminal .bottom-tabs { overflow-x: auto; }
+  .trade-terminal .bottom-tab { white-space: nowrap; }
+  /* Same reason as the bottom tabs: the interval/type/indicator row is a
+     single line of buttons that no longer fits a phone. It scrolls rather
+     than wrapping, so the buttons keep the reference's own height. */
+  .trade-terminal .chart-toolbar { overflow-x: auto; }
+  .trade-terminal .chart-tabs,
+  .trade-terminal .chart-tools { flex-shrink: 0; }
+  .trade-terminal .chart-tab,
+  .trade-terminal .chart-tool-btn { white-space: nowrap; }
+}
+
+/* Below 900px the app's fixed bottom tab bar appears (see .bottom-nav in
+   index.css). Same allowance the rest of the site makes for it, so the
+   last row of the terminal is not covered by the bar. */
+@media (max-width: 900px) {
+  .trade-terminal { padding-bottom: 64px; }
+}

@@ -1,9 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { api, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { Badge } from './Badge';
-import { SkeletonRow } from './Skeleton';
 
 interface Order {
   id: string;
@@ -19,163 +17,148 @@ interface Order {
   createdAt: string;
 }
 
-function OrderTypeBadge({ order }: { order: Order }) {
-  const { t } = useLanguage();
-  if (order.ocoGroupId) return <Badge text={t('trade.orderType.OCO')} color="#5b8def" bg="rgba(91,141,239,0.14)" />;
+export interface OpenOrdersHandle {
+  cancelAll: () => Promise<void>;
+}
+
+function typeLabel(order: Order, t: (k: any) => string): string {
+  if (order.ocoGroupId) return t('trade.orderType.OCO');
   switch (order.type) {
     case 'STOP_LIMIT':
     case 'STOP_MARKET':
-      return <Badge text={t('trade.orderType.STOP_LIMIT')} color="var(--sell)" bg="var(--sell-dim)" />;
+      return t('trade.orderType.STOP_LIMIT');
     case 'TAKE_PROFIT_LIMIT':
     case 'TAKE_PROFIT_MARKET':
-      return <Badge text={t('trade.orderType.TAKE_PROFIT_LIMIT')} color="var(--buy)" bg="var(--buy-dim)" />;
+      return t('trade.orderType.TAKE_PROFIT_LIMIT');
     case 'MARKET':
-      return <Badge text={t('trade.orderType.MARKET')} color="var(--text-secondary)" bg="var(--neutral-dim)" />;
+      return t('trade.orderType.MARKET');
     default:
-      return <Badge text={t('trade.orderType.LIMIT')} color="var(--text-secondary)" bg="var(--neutral-dim)" />;
+      return t('trade.orderType.LIMIT');
   }
 }
 
-function OrderStatusBadge({ status }: { status: string }) {
-  const { t } = useLanguage();
-  if (status === 'PENDING_TRIGGER') return <Badge text={t('trade.status.PENDING_TRIGGER')} color="#5b8def" bg="rgba(91,141,239,0.14)" />;
-  if (status === 'OPEN') return <Badge text={t('trade.status.OPEN')} color="var(--accent)" bg="var(--accent-dim)" />;
-  return <Badge text={t('trade.status.PARTIALLY_FILLED')} color="var(--text-secondary)" bg="var(--neutral-dim)" />;
-}
+/**
+ * The reference's Open Orders table: Time, Pair, Type, Side, Price, Amount,
+ * Filled, Total, Trigger, Action — rendered as its `.orders-table`.
+ *
+ * Behaviour is unchanged (4s poll, per-row cancel through the same
+ * endpoint); it now also reports its row count so the tab can show the
+ * reference's badge, and exposes cancelAll for the reference's "Cancel All"
+ * action, which loops the same per-order endpoint rather than needing a new
+ * one.
+ */
+export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refreshKey: number; onCount?: (n: number) => void }>(
+  function OpenOrdersPanel({ pair, refreshKey, onCount }, ref) {
+    const { t, lang } = useLanguage();
+    const toast = useToast();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-export function OpenOrdersPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
-  const { t } = useLanguage();
-  const toast = useToast();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+    const load = useCallback(() => {
+      api
+        .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')
+        .then(setOrders)
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
 
-  const load = useCallback(() => {
-    api
-      .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')
-      .then(setOrders)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    load();
-    const interval = setInterval(load, 4000);
-    return () => clearInterval(interval);
-  }, [load, refreshKey]);
-
-  async function handleCancel(orderId: string) {
-    setCancellingId(orderId);
-    setError(null);
-    try {
-      await api.cancelOrder(orderId);
+    useEffect(() => {
       load();
-      toast.success(t('trade.orderCancelled'));
-    } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('trade.cancelOrderError');
-      setError(message);
-      toast.error(message);
-    } finally {
-      setCancellingId(null);
+      const interval = setInterval(load, 4000);
+      return () => clearInterval(interval);
+    }, [load, refreshKey]);
+
+    const pairOrders = orders.filter((o) => o.pair === pair);
+
+    useEffect(() => {
+      onCount?.(pairOrders.length);
+    }, [pairOrders.length, onCount]);
+
+    async function handleCancel(orderId: string) {
+      setCancellingId(orderId);
+      try {
+        await api.cancelOrder(orderId);
+        load();
+        toast.success(t('trade.orderCancelled'));
+      } catch (err) {
+        toast.error(err instanceof ApiError ? err.message : t('trade.cancelOrderError'));
+      } finally {
+        setCancellingId(null);
+      }
     }
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        async cancelAll() {
+          // Sequential rather than parallel: these all hit the same account
+          // and the same book, and a burst of concurrent cancels is exactly
+          // the shape a rate limiter rejects.
+          for (const order of pairOrders) {
+            try {
+              await api.cancelOrder(order.id);
+            } catch {
+              // One failure must not abandon the rest; the reload below
+              // shows whatever actually survived.
+            }
+          }
+          load();
+          toast.success(t('trade.orderCancelled'));
+        },
+      }),
+      [pairOrders, load, toast, t]
+    );
+
+    if (!loading && pairOrders.length === 0) {
+      return <div className="empty-state">{t('trade.noOrdersForPair')}</div>;
+    }
+
+    return (
+      <table className="orders-table">
+        <thead>
+          <tr>
+            <th>{t('trade.time')}</th>
+            <th>{t('markets.pair')}</th>
+            <th>{t('trade.orderTypeCol')}</th>
+            <th>{t('trade.side')}</th>
+            <th>{t('trade.price')}</th>
+            <th>{t('trade.quantity')}</th>
+            <th>{t('trade.filled')}</th>
+            <th>{t('trade.total')}</th>
+            <th>{t('trade.trigger')}</th>
+            <th>{t('trade.action')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pairOrders.map((o) => {
+            const original = parseFloat(o.originalQuantity);
+            const remaining = parseFloat(o.remainingQuantity);
+            const price = o.price ? parseFloat(o.price) : null;
+            const [, quoteAsset] = o.pair.split('/');
+            return (
+              <tr key={o.id}>
+                <td>{new Date(o.createdAt).toLocaleString(localeOf(lang))}</td>
+                <td>{o.pair}</td>
+                <td>{typeLabel(o, t)}</td>
+                <td className={o.side === 'BUY' ? 'side-buy' : 'side-sell'}>
+                  {o.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
+                </td>
+                <td>{price !== null ? price.toFixed(2) : t('trade.market')}</td>
+                <td>{original.toFixed(4)}</td>
+                <td>{(original - remaining).toFixed(4)}</td>
+                <td>{price !== null ? `${(price * original).toFixed(2)} ${quoteAsset}` : '—'}</td>
+                <td>{o.triggerPrice ? parseFloat(o.triggerPrice).toFixed(2) : '—'}</td>
+                <td>
+                  <button className="cancel-btn" onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id}>
+                    {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
   }
-
-  const pairOrders = orders.filter((o) => o.pair === pair);
-
-  return (
-    <div style={styles.panel}>
-      {error && <div style={styles.error}>{error}</div>}
-      <div style={styles.columns}>
-        <span>{t('trade.side')}</span>
-        <span></span>
-        <span>{t('trade.price')}</span>
-        <span>{t('trade.remaining')}</span>
-        <span>{t('trade.status')}</span>
-        <span></span>
-      </div>
-      <div style={styles.rows}>
-        {pairOrders.map((o) => (
-          <div key={o.id} style={styles.row}>
-            <span className={o.side === 'BUY' ? 'text-buy' : 'text-sell'} style={{ fontWeight: 600 }}>
-              {o.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
-            </span>
-            <OrderTypeBadge order={o} />
-            <span className="mono">
-              {o.triggerPrice ? (
-                <>
-                  ⚡{parseFloat(o.triggerPrice).toFixed(2)}
-                  {o.price ? ` / ${parseFloat(o.price).toFixed(2)}` : ''}
-                </>
-              ) : o.price ? (
-                parseFloat(o.price).toFixed(2)
-              ) : (
-                t('trade.market')
-              )}
-            </span>
-            <span className="mono">
-              {parseFloat(o.remainingQuantity).toFixed(5)} / {parseFloat(o.originalQuantity).toFixed(5)}
-            </span>
-            <OrderStatusBadge status={o.status} />
-            <button onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id} style={styles.cancelBtn}>
-              {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
-            </button>
-          </div>
-        ))}
-        {loading &&
-          pairOrders.length === 0 &&
-          [1, 2, 3].map((i) => <SkeletonRow key={i} columns={[0.7, 0.6, 1.4, 1.4, 1, 0.8]} />)}
-        {!loading && pairOrders.length === 0 && (
-          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noOrdersForPair')}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: 1,
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  error: {
-    margin: '10px 14px 0',
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    padding: '6px 10px',
-    borderRadius: 8,
-    fontSize: 11,
-    flexShrink: 0,
-  },
-  columns: {
-    display: 'grid',
-    gridTemplateColumns: '0.7fr 0.6fr 1.4fr 1.4fr 1fr 0.8fr',
-    padding: '8px 14px',
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-    flexShrink: 0,
-    gap: 6,
-  },
-  rows: { display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '0.7fr 0.6fr 1.4fr 1.4fr 1fr 0.8fr',
-    padding: '7px 14px',
-    fontSize: 12,
-    alignItems: 'center',
-    borderTop: '1px solid var(--border)',
-    gap: 6,
-  },
-  cancelBtn: {
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-secondary)',
-    borderRadius: 8,
-    padding: '4px 8px',
-    fontSize: 11,
-    justifySelf: 'start',
-  },
-};
+);

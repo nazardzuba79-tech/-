@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage, localeOf, Lang } from '../lib/i18n';
-import { CryptoIcon } from './CryptoIcon';
-import { Badge } from './Badge';
 import { parseChangePercent } from '../lib/priceChange';
-import { btcTurnover } from '../lib/turnover';
-import { useCoinGeckoStats } from '../lib/useCoinGeckoStats';
 
 interface Stats {
   lastPrice: number;
@@ -16,15 +12,20 @@ interface Stats {
   quoteVolume24h: number;
 }
 
-/** Bybit/Binance-style stats strip: live Kraken ticker data (real 24h high/low/volume/turnover, not something we approximate from our own thin trade history). */
-export function TickerBar({ pair }: { pair: string }) {
+/**
+ * The terminal's ticker bar, built to the supplied reference's `.ticker-bar`
+ * markup: a pair selector followed by six `.ticker-item`s — last price, 24h
+ * change, high, low, base volume, quote volume — in that order, with the
+ * reference's own sizes and colours (see TradeTerminal.css).
+ *
+ * Data is unchanged: live Kraken ticker figures, the same 3s poll as before.
+ * Labels stay translated rather than hard-coded English, since the app ships
+ * seven languages.
+ */
+export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?: () => void }) {
   const { t, lang } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
-  const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
-  const [fundingRate, setFundingRate] = useState<number | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
-  const geckoStats = useCoinGeckoStats(baseAsset);
-  const globalVolumeUsd = geckoStats?.volume24h ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -44,30 +45,6 @@ export function TickerBar({ pair }: { pair: string }) {
           });
         })
         .catch(() => {});
-      // Needed both to express turnover in BTC for a non-BTC pair (see
-      // btcTurnover()) and to convert the global USD volume below into BTC
-      // terms — fetched unconditionally since either use needs it.
-      api
-        .getExternalTicker('BTC/USDT')
-        .then((res) => {
-          if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
-        })
-        .catch(() => {});
-      // Real funding-rate history exists only for pairs with an actual
-      // futures market (FUTURES_SYMBOLS on the backend) — for every other
-      // spot pair this just comes back with an empty history, which we
-      // show as '—' rather than fabricating a rate for a market that
-      // doesn't exist.
-      api
-        .getFuturesFundingRate(pair, 1)
-        .then((res) => {
-          if (cancelled) return;
-          const latest = res.history[0];
-          setFundingRate(latest ? parseFloat(latest.rate) : null);
-        })
-        .catch(() => {
-          if (!cancelled) setFundingRate(null);
-        });
     }
     load();
     const interval = setInterval(load, 3000);
@@ -75,107 +52,87 @@ export function TickerBar({ pair }: { pair: string }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [pair, baseAsset, quoteAsset]);
+  }, [pair]);
 
   const positive = (stats?.changePercent ?? 0) >= 0;
+  const dir = positive ? 'up' : 'down';
+  const num = (v: number, digits = 2) => v.toLocaleString(localeOf(lang), { maximumFractionDigits: digits });
+
+  // The reference prints the change as an absolute move and a percentage.
+  // The absolute move is derived from the same two live figures rather than
+  // fetched separately, so it can never disagree with the percentage.
+  const absoluteChange =
+    stats !== null ? stats.lastPrice - stats.lastPrice / (1 + stats.changePercent / 100) : null;
 
   return (
-    <div style={styles.bar}>
-      <div style={styles.pairBlock}>
-        <CryptoIcon symbol={baseAsset} size={28} />
-        <span style={styles.pairName} className="mono">
-          {pair}
-        </span>
-        <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.lastPrice}>
-          {stats ? stats.lastPrice.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'}
-        </span>
-        {stats && (
-          <Badge
-            text={`${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%`}
-            color={positive ? 'var(--buy)' : 'var(--sell)'}
-            bg={positive ? 'var(--buy-dim)' : 'var(--sell-dim)'}
-          />
-        )}
+    <div className="ticker-bar">
+      <div
+        className="pair-selector"
+        role={onSelectPair ? 'button' : undefined}
+        tabIndex={onSelectPair ? 0 : undefined}
+        onClick={onSelectPair}
+        onKeyDown={(e) => {
+          if (onSelectPair && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onSelectPair();
+          }
+        }}
+      >
+        <span className="pair-name">{pair}</span>
+        <span className="pair-arrow">▼</span>
       </div>
 
-      <div style={styles.divider} />
+      <div className="ticker-item">
+        <span className="label">{t('trade.lastPrice')}</span>
+        <span className={`value price ${dir}`}>{stats ? num(stats.lastPrice) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('markets.change24h')}</span>
+        <span className={`value ${dir}`}>
+          {stats && absoluteChange !== null
+            ? `${positive ? '+' : ''}${num(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
+            : '—'}
+        </span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('trade.high24h')}</span>
+        <span className="value">{stats ? num(stats.high24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('trade.low24h')}</span>
+        <span className="value">{stats ? num(stats.low24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
+        <span className="value">{stats ? num(stats.volume24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
+        <span className="value">{stats ? compact(stats.quoteVolume24h, lang) : '—'}</span>
+      </div>
 
-      <Stat label={t('trade.high24h')} value={stats ? stats.high24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
-      <Stat label={t('trade.low24h')} value={stats ? stats.low24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
-      <Stat label={`${t('trade.volume24h')} (${baseAsset})`} value={stats ? stats.volume24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'} />
-      <Stat
-        label={`${t('trade.turnover24h')} (${globalVolumeUsd !== null ? 'USD' : quoteAsset})`}
-        value={(() => {
-          // Prefer CoinGecko's global 24h volume (real, aggregated across
-          // every exchange it tracks) — our own Kraken mirror only reflects
-          // Kraken's own liquidity for this one pair, which reads
-          // unrealistically small (millions, not billions) for a major coin.
-          // Falls back to the pair's own Kraken turnover when the asset
-          // isn't in CoinGecko's top-500 or the rankings fetch failed.
-          if (globalVolumeUsd !== null) return formatCompact(globalVolumeUsd, lang);
-          return stats ? formatCompact(stats.quoteVolume24h, lang) : '—';
-        })()}
-      />
-      <Stat
-        label={`${t('trade.turnover24h')} (BTC)`}
-        value={(() => {
-          if (globalVolumeUsd !== null && btcUsdtPrice) return formatCompact(globalVolumeUsd / btcUsdtPrice, lang);
-          if (!stats) return '—';
-          const btc = btcTurnover({ baseAsset, quoteAsset, volume24h: stats.volume24h, quoteVolume24h: stats.quoteVolume24h, btcUsdtPrice });
-          return btc !== null ? formatCompact(btc, lang) : '—';
-        })()}
-      />
-      <Stat
-        label={t('futures.fundingRate')}
-        value={fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
-        color={fundingRate !== null ? (fundingRate >= 0 ? 'var(--buy)' : 'var(--sell)') : undefined}
-      />
-      <Stat
-        label={t('wallet.marketCap')}
-        value={geckoStats?.marketCap != null ? formatCompact(geckoStats.marketCap, lang) : '—'}
-      />
+      {/* The reference's right-hand cluster is a margin-mode chip and two
+          icon buttons. Only the fullscreen one has anything real behind it
+          on a spot terminal — cross-margin does not exist here, so a chip
+          claiming "Cross 20x" would be decoration. */}
+      <div className="ticker-actions">
+        <button
+          className="btn-icon"
+          title={t('trade.fullscreen')}
+          onClick={() => {
+            const el = document.querySelector('.trade-terminal');
+            if (!el) return;
+            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+            else el.requestFullscreen?.().catch(() => {});
+          }}
+        >
+          ⛶
+        </button>
+      </div>
     </div>
   );
 }
 
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div style={styles.stat}>
-      <span style={styles.statLabel}>{label}</span>
-      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--text-primary)' }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function formatCompact(n: number, lang: Lang): string {
+function compact(n: number, lang: Lang): string {
   return n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 });
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  bar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 28,
-    padding: '12px 20px',
-    background: 'var(--panel)',
-    flexShrink: 0,
-    overflowX: 'auto',
-  },
-  pairBlock: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-  },
-  divider: {
-    width: 1,
-    height: 28,
-    background: 'var(--border)',
-    flexShrink: 0,
-  },
-  pairName: { fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)' },
-  lastPrice: { fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' },
-  stat: { display: 'flex', flexDirection: 'column', gap: 3, whiteSpace: 'nowrap' },
-  statLabel: { fontSize: 10, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 },
-};

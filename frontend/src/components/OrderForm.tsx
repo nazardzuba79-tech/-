@@ -2,7 +2,6 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { PercentSlider } from './PercentSlider';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -12,7 +11,21 @@ const FEE_RATE = 0;
 type OrderFamily = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'OCO';
 type Execution = 'LIMIT' | 'MARKET';
 
-export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => void }) {
+export interface PickedPrice {
+  value: string;
+  /** Bumped on every pick so clicking the same level twice still applies. */
+  seq: number;
+}
+
+export function OrderForm({
+  pair,
+  onPlaced,
+  pickedPrice,
+}: {
+  pair: string;
+  onPlaced: () => void;
+  pickedPrice?: PickedPrice | null;
+}) {
   const { t } = useLanguage();
   const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
@@ -44,6 +57,17 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
       : execution === 'LIMIT'
       ? 'TAKE_PROFIT_LIMIT'
       : 'TAKE_PROFIT_MARKET';
+
+  // Clicking a level in the order book fills the price here — the reason
+  // the reference gives every `.ob-row` a pointer cursor. A picked price is
+  // a limit price, so the form switches to LIMIT rather than silently
+  // setting a field the active order type would ignore.
+  useEffect(() => {
+    if (!pickedPrice) return;
+    setPrice(pickedPrice.value);
+    setFamily('LIMIT');
+    setExecution('LIMIT');
+  }, [pickedPrice]);
 
   useEffect(() => {
     api
@@ -158,169 +182,156 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
     { id: 'OCO', label: t('trade.ocoOrder') },
   ];
 
+  const lastPriceLabel = t('trade.lastPriceBtn');
+  const sideClass = side === 'BUY' ? 'buy' : 'sell';
+
+  // The reference's Total field is editable and back-computes Amount from
+  // it. Our Total was previously read-only; making it writable here is the
+  // designed control, driven by the same price/quantity state the rest of
+  // the form already uses — no new order concept.
+  function applyTotal(value: string) {
+    const totalValue = parseFloat(value) || 0;
+    if (!effectivePrice || effectivePrice <= 0) return;
+    setQuantity((totalValue / effectivePrice).toFixed(8));
+    setPercent(0);
+  }
+
+  // The reference's slider is five discrete steps, filled up to the one
+  // clicked. Same percentages the previous drag slider offered.
+  const SLIDER_STEPS = [0, 25, 50, 75, 100];
+
   return (
-    <div style={styles.panel}>
-      <div style={styles.sideTabs}>
+    <>
+      <div className="order-form-tabs">
         <button
           type="button"
+          className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
           onClick={() => setSide('BUY')}
-          style={{ ...styles.sideTab, ...(side === 'BUY' ? styles.sideTabBuy : {}) }}
         >
-          {t('trade.buy')}
+          {t('trade.buy')} {baseAsset}
         </button>
         <button
           type="button"
+          className={`order-form-tab sell ${side === 'SELL' ? 'active' : ''}`}
           onClick={() => setSide('SELL')}
-          style={{ ...styles.sideTab, ...(side === 'SELL' ? styles.sideTabSell : {}) }}
         >
-          {t('trade.sell')}
+          {t('trade.sell')} {baseAsset}
         </button>
       </div>
 
-      <div style={styles.typeTabs}>
+      <div className="order-type-tabs">
         {FAMILY_TABS.map((f) => (
           <button
             key={f.id}
             type="button"
+            className={`order-type-tab ${family === f.id ? 'active' : ''}`}
             onClick={() => setFamily(f.id)}
-            style={{ ...styles.typeTab, ...(family === f.id ? styles.typeTabActive : {}) }}
           >
             {f.label}
           </button>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleSubmit} className="order-form-content">
+        {/* Stop and take-profit orders can execute as either a limit or a
+            market order — the reference has no equivalent control because
+            it has no conditional orders, so this reuses its order-type tab
+            styling rather than introducing a third look. */}
         {isConditional && (
-          <div style={styles.executionToggle}>
+          <div className="order-type-tabs" style={{ padding: 0 }}>
             <button
               type="button"
+              className={`order-type-tab ${execution === 'LIMIT' ? 'active' : ''}`}
               onClick={() => setExecution('LIMIT')}
-              style={{ ...styles.execBtn, ...(execution === 'LIMIT' ? styles.execBtnActive : {}) }}
             >
               {t('trade.limitOrder')}
             </button>
             <button
               type="button"
+              className={`order-type-tab ${execution === 'MARKET' ? 'active' : ''}`}
               onClick={() => setExecution('MARKET')}
-              style={{ ...styles.execBtn, ...(execution === 'MARKET' ? styles.execBtnActive : {}) }}
             >
               {t('trade.marketOrder')}
             </button>
           </div>
         )}
 
-        {family === 'OCO' ? (
+        {family === 'OCO' && (
           <>
-            <label style={styles.label}>
-              {t('trade.takeProfitPrice')}
-              <input
-                className="mono"
-                type="number"
-                step="any"
-                required
-                value={ocoTakeProfitPrice}
-                onChange={(e) => setOcoTakeProfitPrice(e.target.value)}
-                style={styles.input}
-                placeholder="0.00"
-              />
-              {triggerHint('TAKE_PROFIT') && <span style={styles.hint}>{triggerHint('TAKE_PROFIT')}</span>}
-            </label>
-            <label style={styles.label}>
-              {t('trade.stopTriggerPrice')}
-              <input
-                className="mono"
-                type="number"
-                step="any"
-                required
-                value={ocoStopTriggerPrice}
-                onChange={(e) => setOcoStopTriggerPrice(e.target.value)}
-                style={styles.input}
-                placeholder="0.00"
-              />
-              {triggerHint('STOP') && <span style={styles.hint}>{triggerHint('STOP')}</span>}
-            </label>
-            <label style={styles.label}>
-              {t('trade.stopLimitPrice')}
-              <input
-                className="mono"
-                type="number"
-                step="any"
-                required
-                value={ocoStopLimitPrice}
-                onChange={(e) => setOcoStopLimitPrice(e.target.value)}
-                style={styles.input}
-                placeholder="0.00"
-              />
-            </label>
+            <div className="form-group">
+              <div className="form-label"><span>{t('trade.takeProfitPrice')}</span></div>
+              <div className="input-group">
+                <input type="number" step="any" required value={ocoTakeProfitPrice} onChange={(e) => setOcoTakeProfitPrice(e.target.value)} placeholder="0.00" />
+                <span className="input-suffix">{quoteAsset}</span>
+              </div>
+              {triggerHint('TAKE_PROFIT') && <div className="form-label"><span>{triggerHint('TAKE_PROFIT')}</span></div>}
+            </div>
+            <div className="form-group">
+              <div className="form-label"><span>{t('trade.stopTriggerPrice')}</span></div>
+              <div className="input-group">
+                <input type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
+                <span className="input-suffix">{quoteAsset}</span>
+              </div>
+              {triggerHint('STOP') && <div className="form-label"><span>{triggerHint('STOP')}</span></div>}
+            </div>
+            <div className="form-group">
+              <div className="form-label"><span>{t('trade.stopLimitPrice')}</span></div>
+              <div className="input-group">
+                <input type="number" step="any" required value={ocoStopLimitPrice} onChange={(e) => setOcoStopLimitPrice(e.target.value)} placeholder="0.00" />
+                <span className="input-suffix">{quoteAsset}</span>
+              </div>
+            </div>
           </>
-        ) : (
+        )}
+
+        {family !== 'OCO' && (
           <>
             {isConditional && (
-              <label style={styles.label}>
-                {t('trade.triggerPrice')}
-                <input
-                  className="mono"
-                  type="number"
-                  step="any"
-                  required
-                  value={triggerPrice}
-                  onChange={(e) => setTriggerPrice(e.target.value)}
-                  style={styles.input}
-                  placeholder="0.00"
-                />
+              <div className="form-group">
+                <div className="form-label"><span>{t('trade.triggerPrice')}</span></div>
+                <div className="input-group">
+                  <input type="number" step="any" required value={triggerPrice} onChange={(e) => setTriggerPrice(e.target.value)} placeholder="0.00" />
+                  <span className="input-suffix">{quoteAsset}</span>
+                </div>
                 {triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT') && (
-                  <span style={styles.hint}>{triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT')}</span>
+                  <div className="form-label"><span>{triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT')}</span></div>
                 )}
-              </label>
+              </div>
             )}
-            {family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? (
-              <label style={styles.label}>
-                {isConditional ? t('trade.limitExecutionPrice') : t('trade.price')}
-                <div style={styles.priceInputRow}>
-                  <input
-                    className="mono"
-                    type="number"
-                    step="any"
-                    required
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    style={{ ...styles.input, flex: 1 }}
-                    placeholder="0.00"
-                  />
+
+            {(family === 'LIMIT' || (isConditional && execution === 'LIMIT')) && (
+              <div className="form-group">
+                <div className="form-label">
+                  <span>{t('trade.price')}</span>
                   {marketPrice !== null && (
-                    <button
-                      type="button"
-                      onClick={() => setPrice(String(marketPrice))}
-                      style={styles.lastPriceBtn}
-                    >
-                      {t('trade.lastPriceBtn')}
+                    <button type="button" className="max-btn" onClick={() => setPrice(String(marketPrice))}>
+                      {lastPriceLabel}
                     </button>
                   )}
                 </div>
-              </label>
-            ) : (
-              <label style={styles.label}>
-                {t('trade.price')}
-                <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
-                  {marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} {quoteAsset}
+                <div className="input-group">
+                  <input type="number" step="any" required value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+                  <span className="input-suffix">{quoteAsset}</span>
                 </div>
-              </label>
+              </div>
+            )}
+
+            {(family === 'MARKET' || (isConditional && execution === 'MARKET')) && (
+              <div className="form-group">
+                <div className="form-label"><span>{t('trade.price')}</span></div>
+                <div className="input-group">
+                  <input readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
+                  <span className="input-suffix">{quoteAsset}</span>
+                </div>
+              </div>
             )}
           </>
         )}
 
-        <label style={styles.label}>
-          <span style={styles.qtyLabelRow}>
-            {t('trade.quantity')}
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
-              {t('trade.available')}: {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
-              {side === 'BUY' ? quoteAsset : baseAsset}
-            </span>
-          </span>
-          <div style={styles.qtyInputRow}>
+        <div className="form-group">
+          <div className="form-label"><span>{t('trade.quantity')}</span></div>
+          <div className="input-group">
             <input
-              className="mono"
               type="number"
               step="any"
               required
@@ -329,193 +340,59 @@ export function OrderForm({ pair, onPlaced }: { pair: string; onPlaced: () => vo
                 setQuantity(e.target.value);
                 setPercent(0);
               }}
-              style={{ ...styles.input, flex: 1 }}
-              placeholder="0.00000"
+              placeholder="0.00"
             />
-            <span style={styles.qtyAsset}>{baseAsset}</span>
-          </div>
-        </label>
-
-        <PercentSlider value={percent} onChange={applyPercent} />
-
-        <div style={styles.totalsBox}>
-          <div style={styles.total}>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.total')}</span>
-            <span className="mono">
-              {total} {quoteAsset}
-            </span>
-          </div>
-          <div style={styles.total}>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
-            <span className="mono">
-              {feeAmount} {quoteAsset} (0%)
-            </span>
+            <span className="input-suffix">{baseAsset}</span>
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        <div className="form-group">
+          <div className="form-label"><span>{t('trade.total')}</span></div>
+          <div className="input-group">
+            <input type="number" step="any" value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
+            <span className="input-suffix">{quoteAsset}</span>
+          </div>
+        </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            ...styles.submit,
-            background: side === 'BUY' ? 'var(--buy)' : 'var(--sell)',
-            boxShadow: side === 'BUY' ? '0 4px 16px rgba(0,214,143,0.3)' : '0 4px 16px rgba(255,77,106,0.3)',
-          }}
-        >
-          {submitting
-            ? t('auth.wait')
-            : `${side === 'BUY' ? t('trade.buy') : t('trade.sell')} ${baseAsset}`}
+        <div className="slider-container">
+          <div className="slider-track">
+            {SLIDER_STEPS.map((step, idx) => (
+              <button
+                key={step}
+                type="button"
+                data-label={`${step}%`}
+                className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
+                onClick={() => applyPercent(SLIDER_STEPS[idx])}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="available-balance">
+          <span>{t('trade.available')}</span>
+          <span className="amount">
+            {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
+            {side === 'BUY' ? quoteAsset : baseAsset}
+          </span>
+        </div>
+
+        <div className="available-balance">
+          <span>{t('trade.fee')}</span>
+          <span className="amount">
+            {feeAmount} {quoteAsset} (0%)
+          </span>
+        </div>
+
+        {error && (
+          <div className="available-balance" style={{ color: 'var(--color-sell)' }}>
+            <span style={{ color: 'inherit' }}>{error}</span>
+          </div>
+        )}
+
+        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
+          {submitting ? t('auth.wait') : `${side === 'BUY' ? t('trade.buy') : t('trade.sell')} ${baseAsset}`}
         </button>
       </form>
-    </div>
+    </>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  sideTabs: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    background: 'var(--panel-alt)',
-    borderRadius: 10,
-    padding: 4,
-    margin: 10,
-    gap: 4,
-  },
-  sideTab: {
-    padding: '10px 0',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 8,
-    color: 'var(--text-secondary)',
-    fontWeight: 700,
-    fontSize: 13,
-  },
-  sideTabBuy: {
-    color: 'var(--on-accent)',
-    background: 'var(--buy)',
-  },
-  sideTabSell: {
-    color: 'var(--on-accent)',
-    background: 'var(--sell)',
-  },
-  typeTabs: {
-    display: 'flex',
-    gap: 12,
-    padding: '0 14px 10px',
-    borderBottom: '1px solid var(--border)',
-    overflowX: 'auto',
-  },
-  typeTab: {
-    background: 'transparent',
-    border: 'none',
-    padding: '2px 0',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--text-tertiary)',
-    whiteSpace: 'nowrap',
-  },
-  typeTabActive: {
-    color: 'var(--accent)',
-  },
-  form: {
-    padding: '14px 14px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-  },
-  executionToggle: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 6,
-    background: 'var(--panel-alt)',
-    borderRadius: 8,
-    padding: 3,
-  },
-  execBtn: {
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 6,
-    padding: '7px 0',
-    color: 'var(--text-secondary)',
-    fontSize: 11,
-    fontWeight: 700,
-  },
-  execBtnActive: {
-    background: 'var(--panel)',
-    color: 'var(--text-primary)',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    fontSize: 11,
-    color: 'var(--text-secondary)',
-  },
-  hint: {
-    fontSize: 10,
-    color: 'var(--text-tertiary)',
-    fontWeight: 400,
-  },
-  qtyLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
-  qtyInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
-  qtyAsset: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: 'var(--text-secondary)',
-    padding: '0 4px',
-  },
-  input: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
-  },
-  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
-  lastPriceBtn: {
-    flexShrink: 0,
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--accent)',
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '0 4px',
-  },
-  totalsBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-  },
-  total: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    fontSize: 12,
-    padding: '4px 0',
-  },
-  error: {
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    padding: '6px 10px',
-    borderRadius: 6,
-    fontSize: 11,
-  },
-  submit: {
-    border: 'none',
-    borderRadius: 10,
-    padding: '14px 0',
-    color: 'var(--on-accent)',
-    fontWeight: 800,
-    fontSize: 14,
-    letterSpacing: '0.01em',
-  },
-};

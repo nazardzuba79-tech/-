@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
-import { SkeletonRow } from './Skeleton';
 
 interface Trade {
   id: string;
@@ -12,10 +11,15 @@ interface Trade {
   executedAt: string;
 }
 
+/**
+ * The account's own fills, in the reference's `.orders-table`.
+ * Data and polling are unchanged from before.
+ */
 export function TradeHistoryPanel({ pair, refreshKey }: { pair: string; refreshKey: number }) {
   const { t, lang } = useLanguage();
   const [trades, setTrades] = useState<Trade[]>([]);
   const [loading, setLoading] = useState(true);
+  const [, quoteAsset] = pair.split('/');
 
   const load = useCallback(() => {
     api
@@ -31,53 +35,38 @@ export function TradeHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
     return () => clearInterval(interval);
   }, [load, refreshKey]);
 
+  if (!loading && trades.length === 0) {
+    return <div className="empty-state">{t('trade.noTradeHistory')}</div>;
+  }
+
   return (
-    <div style={styles.panel}>
-      <div style={styles.columns}>
-        <span>{t('trade.side')}</span>
-        <span>{t('trade.price')}</span>
-        <span>{t('trade.quantity')}</span>
-        <span style={{ textAlign: 'right' }}>{t('trade.time')}</span>
-      </div>
-      <div style={styles.rows}>
-        {trades.map((tr) => (
-          <div key={tr.id} style={styles.row}>
-            <span className={tr.side === 'BUY' ? 'text-buy' : 'text-sell'} style={{ fontWeight: 600 }}>
-              {tr.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
-            </span>
-            <span className="mono">{parseFloat(tr.price).toFixed(2)}</span>
-            <span className="mono">{parseFloat(tr.quantity).toFixed(5)}</span>
-            <span className="mono" style={{ textAlign: 'right', color: 'var(--text-tertiary)', fontSize: 11 }}>
-              {new Date(tr.executedAt).toLocaleString(localeOf(lang))}
-            </span>
-          </div>
-        ))}
-        {loading && trades.length === 0 && [1, 2, 3].map((i) => <SkeletonRow key={i} columns={[1, 1, 1, 1.4]} />)}
-        {!loading && trades.length === 0 && (
-          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noTradeHistory')}</p>
-        )}
-      </div>
-    </div>
+    <table className="orders-table">
+      <thead>
+        <tr>
+          <th>{t('trade.time')}</th>
+          <th>{t('trade.side')}</th>
+          <th>{t('trade.price')}</th>
+          <th>{t('trade.quantity')}</th>
+          <th>{t('trade.total')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {trades.map((tr) => {
+          const price = parseFloat(tr.price);
+          const quantity = parseFloat(tr.quantity);
+          return (
+            <tr key={tr.id}>
+              <td>{new Date(tr.executedAt).toLocaleString(localeOf(lang))}</td>
+              <td className={tr.side === 'BUY' ? 'side-buy' : 'side-sell'}>
+                {tr.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
+              </td>
+              <td>{price.toFixed(2)}</td>
+              <td>{quantity.toFixed(5)}</td>
+              <td>{`${(price * quantity).toFixed(2)} ${quoteAsset}`}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' },
-  columns: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1.4fr',
-    padding: '8px 14px',
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-    flexShrink: 0,
-  },
-  rows: { display: 'flex', flexDirection: 'column', overflowY: 'auto', minHeight: 0 },
-  row: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1.4fr',
-    padding: '7px 14px',
-    fontSize: 12,
-    alignItems: 'center',
-    borderTop: '1px solid var(--border)',
-  },
-};

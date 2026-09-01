@@ -1,16 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
 import { BotsComingSoon } from '../components/BotsComingSoon';
-import { PairListSidebar } from '../components/PairListSidebar';
+import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { RecentTradesPanel } from '../components/RecentTradesPanel';
-import { OrderForm } from '../components/OrderForm';
+import { OrderForm, PickedPrice } from '../components/OrderForm';
 import { PriceChart } from '../components/PriceChart';
-import { OpenOrdersPanel } from '../components/OpenOrdersPanel';
+import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
@@ -22,11 +22,19 @@ import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import './trade-terminal/TradeTerminal.css';
 
 type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
 type MarketType = 'spot' | 'cfd';
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 const PAIR_PATTERN = /^[A-Z0-9]+\/[A-Z0-9]+$/;
+
+const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tabOrderHistory' | 'trade.tabTradeHistory' | 'trade.tabAssets' }[] = [
+  { id: 'open', labelKey: 'trade.tabOpenOrders' },
+  { id: 'orderHistory', labelKey: 'trade.tabOrderHistory' },
+  { id: 'tradeHistory', labelKey: 'trade.tabTradeHistory' },
+  { id: 'assets', labelKey: 'trade.tabAssets' },
+];
 
 export function TradePage() {
   const { t } = useLanguage();
@@ -38,9 +46,14 @@ export function TradePage() {
   const requestedPair = searchParams.get('pair');
   const [pair, setPair] = useState(requestedPair && PAIR_PATTERN.test(requestedPair) ? requestedPair : 'BTC/USDT');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
-  const [bookTab, setBookTab] = useState<'book' | 'trades'>('book');
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
+  // Reference chrome: the tab badge and the Cancel All action both need the
+  // open-order count, which only the panel knows; the panel reports it up.
+  const [openOrderCount, setOpenOrderCount] = useState(0);
+  const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
+  const openOrdersRef = useRef<OpenOrdersHandle>(null);
+  const pairListRef = useRef<PairListHandle>(null);
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
   // Nav.tsx's TradeMenu. TradePage stays mounted across a /trade <-> /trade?market=cfd
   // navigation (same route, React Router doesn't remount it), so the
@@ -99,24 +112,19 @@ export function TradePage() {
     setOrdersRefreshKey((k) => k + 1);
   }
 
-  return (
-    <div className="page-mesh trading-page" style={styles.page}>
-      <Nav active="/trade" middle={<BotsComingSoon />} />
-      <ConnectionBanner />
-      <TopGainersTicker onSelect={setPair} />
+  // Spot renders the ported terminal; CFD keeps the page's previous layout,
+  // because the supplied design covers a spot terminal only and its
+  // instrument list, chart and position table have no slot in that grid.
+  if (marketType === 'cfd') {
+    return (
+      <div className="page-mesh trading-page" style={styles.page}>
+        <Nav active="/trade" middle={<BotsComingSoon />} />
+        <ConnectionBanner />
+        <TopGainersTicker onSelect={setPair} />
 
-      <div className="trading-content" style={styles.content}>
-        {marketType === 'spot' && (
-          <div style={styles.tickerCard}>
-            <TickerBar pair={pair} />
-          </div>
-        )}
-
-        <main className="trading-grid" style={styles.grid}>
-          <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
-            {marketType === 'spot' ? (
-              <PairListSidebar pair={pair} onChange={setPair} />
-            ) : (
+        <div className="trading-content" style={styles.content}>
+          <main className="trading-grid" style={styles.grid}>
+            <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
               <CfdInstrumentList
                 symbol={cfdSymbol}
                 onChange={setCfdSymbol}
@@ -125,84 +133,87 @@ export function TradePage() {
                 loadError={cfdLoadError}
                 onRetry={reloadCfd}
               />
-            )}
-          </div>
-
-          <div className="trading-col trading-col-chart" style={styles.chartColumn}>
-            {marketType === 'spot' ? (
-              <PriceChart pair={pair} />
-            ) : (
-              <CfdChart symbol={cfdSymbol} ticker={cfdTicker} />
-            )}
-          </div>
-
-          {marketType === 'spot' && (
-            <div className="trading-col trading-col-book" style={styles.bookColumn}>
-              <div style={styles.bookTabs}>
-                <button
-                  onClick={() => setBookTab('book')}
-                  style={{ ...styles.bookTab, ...(bookTab === 'book' ? styles.bookTabActive : {}) }}
-                >
-                  {t('trade.orderBook')}
-                </button>
-                <button
-                  onClick={() => setBookTab('trades')}
-                  style={{ ...styles.bookTab, ...(bookTab === 'trades' ? styles.bookTabActive : {}) }}
-                >
-                  {t('trade.trades')}
-                </button>
-              </div>
-              {bookTab === 'book' && <OrderBookPanel bids={book.bids} asks={book.asks} />}
-              {bookTab === 'trades' && <RecentTradesPanel pair={pair} />}
             </div>
-          )}
 
-          <div className="trading-col trading-col-form" style={styles.formColumn}>
-            {marketType === 'spot' ? (
-              <OrderForm pair={pair} onPlaced={handleOrderPlaced} />
-            ) : (
+            <div className="trading-col trading-col-chart" style={styles.chartColumn}>
+              <CfdChart symbol={cfdSymbol} ticker={cfdTicker} />
+            </div>
+
+            <div className="trading-col trading-col-form" style={styles.formColumn}>
               <CfdOrderForm symbol={cfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
-            )}
-          </div>
-        </main>
+            </div>
+          </main>
 
-        <div className="trading-orders-row" style={styles.ordersRow}>
-          {marketType === 'cfd' ? (
+          <div className="trading-orders-row" style={styles.ordersRow}>
             <CfdPositionsPanel refreshKey={ordersRefreshKey} />
-          ) : (
-            <>
-              <div style={styles.bottomTabs}>
-                <button
-                  onClick={() => setBottomTab('open')}
-                  style={{ ...styles.bottomTab, ...(bottomTab === 'open' ? styles.bottomTabActive : {}) }}
-                >
-                  {t('trade.tabOpenOrders')}
-                </button>
-                <button
-                  onClick={() => setBottomTab('orderHistory')}
-                  style={{ ...styles.bottomTab, ...(bottomTab === 'orderHistory' ? styles.bottomTabActive : {}) }}
-                >
-                  {t('trade.tabOrderHistory')}
-                </button>
-                <button
-                  onClick={() => setBottomTab('tradeHistory')}
-                  style={{ ...styles.bottomTab, ...(bottomTab === 'tradeHistory' ? styles.bottomTabActive : {}) }}
-                >
-                  {t('trade.tabTradeHistory')}
-                </button>
-                <button
-                  onClick={() => setBottomTab('assets')}
-                  style={{ ...styles.bottomTab, ...(bottomTab === 'assets' ? styles.bottomTabActive : {}) }}
-                >
-                  {t('trade.tabAssets')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="trade-terminal">
+      <Nav active="/trade" middle={<BotsComingSoon />} />
+      <ConnectionBanner />
+      <TopGainersTicker onSelect={setPair} />
+
+      <div className="terminal">
+        <TickerBar pair={pair} onSelectPair={() => pairListRef.current?.focusSearch()} />
+
+        <div className="main-grid">
+          <div className="chart-area">
+            <PriceChart pair={pair} chrome="terminal" />
+          </div>
+
+          <div className="order-form-area">
+            <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
+          </div>
+
+          <div className="orderbook-area">
+            <OrderBookPanel
+              bids={book.bids}
+              asks={book.asks}
+              onPickPrice={(value) => setPickedPrice((prev) => ({ value, seq: (prev?.seq ?? 0) + 1 }))}
+            />
+          </div>
+
+          <div className="right-panel">
+            <PairListSidebar ref={pairListRef} pair={pair} onChange={setPair} />
+            <RecentTradesPanel pair={pair} />
+          </div>
+        </div>
+
+        <div className="bottom-panel">
+          <div className="bottom-tabs">
+            {BOTTOM_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
+                onClick={() => setBottomTab(tab.id)}
+              >
+                {t(tab.labelKey)}
+                {tab.id === 'open' && openOrderCount > 0 && <span className="badge">{openOrderCount}</span>}
+              </button>
+            ))}
+
+            {bottomTab === 'open' && openOrderCount > 0 && (
+              <div className="bottom-actions">
+                <button className="bottom-action-btn" onClick={() => openOrdersRef.current?.cancelAll()}>
+                  {t('trade.cancelAll')}
                 </button>
               </div>
-              {bottomTab === 'open' && <OpenOrdersPanel pair={pair} refreshKey={ordersRefreshKey} />}
-              {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-              {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-              {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
-            </>
-          )}
+            )}
+          </div>
+
+          <div className="bottom-content">
+            {bottomTab === 'open' && (
+              <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} />
+            )}
+            {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+            {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
+            {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
+          </div>
         </div>
       </div>
     </div>
@@ -251,44 +262,6 @@ const styles: Record<string, React.CSSProperties> = {
     minHeight: 0,
     overflow: 'hidden',
   },
-  tickerCard: {
-    flexShrink: 0,
-    borderRadius: 12,
-    border: '1px solid var(--border)',
-    overflow: 'hidden',
-  },
-  marketTypeTabs: {
-    display: 'flex',
-    gap: 6,
-    flexShrink: 0,
-  },
-  marketTypeTab: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '7px 18px',
-    fontSize: 12,
-    fontWeight: 700,
-    color: 'var(--text-secondary)',
-  },
-  marketTypeTabActive: {
-    color: 'var(--on-accent)',
-    background: 'var(--accent)',
-    borderColor: 'var(--accent)',
-  },
-  cfdNotice: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    gap: 8,
-    padding: '32px 20px',
-    margin: 'auto',
-  },
-  cfdNoticeIcon: { fontSize: 22, color: 'var(--accent)' },
-  cfdNoticeTitle: { fontSize: 14, fontWeight: 800, margin: 0 },
-  cfdNoticeText: { fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
-  cfdNoticeHint: { fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.6, margin: 0 },
   grid: {
     flex: 1,
     display: 'flex',
@@ -314,33 +287,6 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 0,
     overflow: 'hidden',
   },
-  bookColumn: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    flex: '0 0 300px',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  bookTabs: {
-    display: 'flex',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  bookTab: {
-    flex: 1,
-    background: 'transparent',
-    border: 'none',
-    padding: '10px 0',
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-  },
-  bookTabActive: {
-    color: 'var(--text-primary)',
-    boxShadow: 'inset 0 -2px 0 var(--accent)',
-  },
   formColumn: {
     flex: '0 0 300px',
     overflowY: 'auto',
@@ -354,24 +300,5 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     minHeight: 0,
     overflow: 'hidden',
-  },
-  bottomTabs: {
-    display: 'flex',
-    gap: 4,
-    padding: '0 14px',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  bottomTab: {
-    background: 'transparent',
-    border: 'none',
-    padding: '12px 6px',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--text-secondary)',
-  },
-  bottomTabActive: {
-    color: 'var(--text-primary)',
-    boxShadow: 'inset 0 -2px 0 var(--accent)',
   },
 };

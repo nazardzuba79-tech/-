@@ -95,8 +95,18 @@ let nextDrawingId = 1;
  * chart's pan/zoom via its own coordinate-conversion APIs. No icon here is
  * decoration for a feature that doesn't work.
  */
-export function PriceChart({ pair }: { pair: string }) {
+/**
+ * `chrome` picks the frame drawn around the chart, not the chart itself.
+ *
+ * 'terminal' renders the supplied reference's `.chart-toolbar` /
+ * `.chart-tabs` / `.chart-tool-btn` / `.chart-view` markup, which is styled
+ * by TradeTerminal.css under `.trade-terminal`. Futures keeps 'default',
+ * the original inline-styled toolbar — those rules are scoped to the trade
+ * terminal, so a Futures chart rendering them would come out unstyled.
+ */
+export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?: 'default' | 'terminal' }) {
   const { t } = useLanguage();
+  const terminal = chrome === 'terminal';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The candlestick series stays the single coordinate-conversion
@@ -633,67 +643,88 @@ export function PriceChart({ pair }: { pair: string }) {
     [tool]
   );
 
-  return (
-    <div style={styles.wrapper}>
-      <div style={styles.topToolbar}>
-        {INTERVALS.map((i) => (
-          <button
-            key={i}
-            onClick={() => setInterval_(i)}
-            style={{ ...styles.intervalBtn, ...(interval === i ? styles.intervalBtnActive : {}) }}
-          >
-            {i}
-          </button>
-        ))}
+  const intervalButtons = INTERVALS.map((i) => (
+    <button
+      key={i}
+      onClick={() => setInterval_(i)}
+      className={terminal ? `chart-tab ${interval === i ? 'active' : ''}` : undefined}
+      style={terminal ? undefined : { ...styles.intervalBtn, ...(interval === i ? styles.intervalBtnActive : {}) }}
+    >
+      {i}
+    </button>
+  ));
 
-        <div style={styles.toolbarDivider} />
+  const typeButtons = (
+    [
+      ['candles', t('chart.type.candles')],
+      ['line', t('chart.type.line')],
+      ['area', t('chart.type.area')],
+    ] as [ChartType, string][]
+  ).map(([ct, label]) => (
+    <button
+      key={ct}
+      onClick={() => setChartType(ct)}
+      className={terminal ? `chart-tool-btn ${chartType === ct ? 'active' : ''}` : undefined}
+      style={terminal ? undefined : { ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
+    >
+      {label}
+    </button>
+  ));
 
-        {(
-          [
-            ['candles', t('chart.type.candles')],
-            ['line', t('chart.type.line')],
-            ['area', t('chart.type.area')],
-          ] as [ChartType, string][]
-        ).map(([ct, label]) => (
-          <button
-            key={ct}
-            onClick={() => setChartType(ct)}
-            style={{ ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
-          >
-            {label}
-          </button>
-        ))}
-
-        <div style={styles.toolbarDivider} />
-
-        {(
-          [
-            ['ma', showMA, setShowMA, INDICATOR_COLORS.ma, t('chart.indicator.ma')],
-            ['bollinger', showBollinger, setShowBollinger, INDICATOR_COLORS.bollinger, t('chart.indicator.bollinger')],
-            ['rsi', showRSI, setShowRSI, INDICATOR_COLORS.rsi, t('chart.indicator.rsi')],
-            ['macd', showMACD, setShowMACD, INDICATOR_COLORS.macd, t('chart.indicator.macd')],
-          ] as [string, boolean, (v: boolean) => void, string, string][]
-        ).map(([key, active, setter, color, label]) => (
-          <button
-            key={key}
-            onClick={() => setter(!active)}
-            style={{
+  const indicatorButtons = (
+    [
+      ['ma', showMA, setShowMA, INDICATOR_COLORS.ma, t('chart.indicator.ma')],
+      ['bollinger', showBollinger, setShowBollinger, INDICATOR_COLORS.bollinger, t('chart.indicator.bollinger')],
+      ['rsi', showRSI, setShowRSI, INDICATOR_COLORS.rsi, t('chart.indicator.rsi')],
+      ['macd', showMACD, setShowMACD, INDICATOR_COLORS.macd, t('chart.indicator.macd')],
+    ] as [string, boolean, (v: boolean) => void, string, string][]
+  ).map(([key, active, setter, color, label]) => (
+    <button
+      key={key}
+      onClick={() => setter(!active)}
+      className={terminal ? `chart-tool-btn ${active ? 'active' : ''}` : undefined}
+      style={
+        terminal
+          ? undefined
+          : {
               ...styles.indicatorToggle,
               ...(active ? styles.indicatorToggleActive : {}),
               color: active ? color : 'var(--text-secondary)',
-            }}
-          >
-            <span style={{ ...styles.indicatorDot, background: color, opacity: active ? 1 : 0.35 }} />
-            {label}
-          </button>
-        ))}
-      </div>
+            }
+      }
+    >
+      {!terminal && <span style={{ ...styles.indicatorDot, background: color, opacity: active ? 1 : 0.35 }} />}
+      {label}
+    </button>
+  ));
 
-      <div style={styles.body}>
+  return (
+    <div style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
+      {terminal ? (
+        <div className="chart-toolbar">
+          <div className="chart-tabs">{intervalButtons}</div>
+          <div className="chart-tools">
+            {typeButtons}
+            {indicatorButtons}
+          </div>
+        </div>
+      ) : (
+        <div style={styles.topToolbar}>
+          {intervalButtons}
+          <div style={styles.toolbarDivider} />
+          {typeButtons}
+          <div style={styles.toolbarDivider} />
+          {indicatorButtons}
+        </div>
+      )}
+
+      <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar tool={tool} onSelect={setTool} onClear={clearAll} onFit={fitContent} />
 
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
+
+          {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
           <svg
             style={{ ...styles.overlay, pointerEvents: tool === 'trendline' || tool === 'ruler' ? 'auto' : 'none' }}
@@ -949,6 +980,25 @@ function EraserIcon() {
     </svg>
   );
 }
+
+/* Terminal chrome. The reference has `.chart-toolbar` and `.chart-view` as
+   direct children of `.chart-area`; PriceChart is shared with the Futures
+   page, so it keeps its own wrapper element around them. The wrapper is a
+   flex column that simply fills `.chart-area` (itself a flex column), so
+   the rendered result is identical to the reference's — it only gives the
+   shared component one root to switch chrome on.
+
+   `.chart-view` in the reference styles a plain block; here it also holds
+   the drawing-tool rail beside the canvas, so display:flex is the one
+   property added — nothing the reference sets is overridden. */
+const TERMINAL_WRAPPER: React.CSSProperties = {
+  flex: 1,
+  display: 'flex',
+  flexDirection: 'column',
+  minHeight: 0,
+  overflow: 'hidden',
+};
+const TERMINAL_VIEW: React.CSSProperties = { display: 'flex' };
 
 const styles: Record<string, React.CSSProperties> = {
   wrapper: {
