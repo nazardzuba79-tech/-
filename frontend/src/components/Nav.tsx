@@ -510,18 +510,15 @@ const styles: Record<string, React.CSSProperties> = {
   mobileLangRow: {
     padding: '10px 6px',
   },
-  // Color/hover/underline now live in the .top-nav-link CSS class (needs a
-  // real :hover pseudo-class + ::after underline bar, which inline styles
-  // can't express) — this only carries layout.
+  // Colour, hover and — importantly — padding and type size live in the
+  // .top-nav-link CSS class rather than here. An inline style beats a
+  // media query no matter how specific the selector, so anything the
+  // responsive tiers need to shrink cannot be set from this object.
   link: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
     minHeight: 56,
-    padding: '0 11px',
-    fontSize: 13,
-    fontWeight: 600,
-    letterSpacing: '-0.01em',
     whiteSpace: 'nowrap',
   },
   // Still used by the mobile drawer, which doesn't use .top-nav-link.
@@ -560,7 +557,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
   },
   // Deliberately the one filled button among plain text nav links — same
   // idea as a real exchange's "Buy crypto" nav CTA: it's the highest-value
@@ -577,9 +573,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#17181e',
     border: 0,
     borderRadius: 8,
-    padding: '0 12px 0 14px',
     fontWeight: 700,
-    fontSize: 13,
     letterSpacing: '0.01em',
   },
   // Only used by the mobile drawer now — the desktop logout lives inside

@@ -201,7 +201,12 @@ body {
 }
 
 .top-nav-fund-btn {
+  padding: 0 12px 0 14px;
+  font-size: 13px;
   transition: background 160ms ease;
+}
+.nav-desktop-right {
+  gap: 10px;
 }
 .top-nav-fund-btn:hover {
   background: #ffb524;
@@ -212,7 +217,11 @@ body {
 
 .top-nav-link {
   position: relative;
+  padding: 0 11px;
   color: #9aa1ac;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-decoration: none;
   transition: color 160ms ease;
 }
@@ -957,6 +966,55 @@ a:hover > .nav-card-icon {
   }
   .card-security-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* The full-size nav row — logo, eight links, CTA and account cluster —
+   needs about 1310px. Below that it used to simply overflow the page, all
+   the way down to the 860px burger breakpoint, so every laptop and tablet
+   width in between scrolled sideways. This tier tightens the row instead:
+   smaller link padding and type, no icon on the CTA, and the profile
+   button reduced to its avatar. */
+@media (max-width: 1360px) {
+  .top-nav-link {
+    padding: 0 7px;
+    font-size: 12px;
+  }
+  .top-nav-fund-btn {
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .top-nav-fund-btn svg {
+    display: none;
+  }
+  /* The avatar is the first span; the name label is the second. */
+  .top-nav-profile-btn > span + span {
+    display: none;
+  }
+}
+
+/* One step tighter, so the last band above the burger breakpoint fits too
+   (it was still 16px over at 1200px). */
+@media (max-width: 1240px) {
+  .top-nav-link {
+    padding: 0 5px;
+    letter-spacing: -0.02em;
+  }
+  .nav-desktop-right {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 1160px) {
+  .nav-desktop-links,
+  .nav-desktop-right {
+    display: none !important;
+  }
+  .nav-burger {
+    display: flex !important;
+  }
+  .nav-mobile-menu.open {
+    display: flex !important;
   }
 }
 

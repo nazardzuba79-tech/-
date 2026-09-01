@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
@@ -13,19 +14,16 @@ import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityCont
 // (Next.js -> this Vite/react-router app) allows. Real site chrome (Nav,
 // with the site's own unchanged VOLTEX logo, and Footer) wraps it instead
 // of the archive's own placeholder topbar/footer; view/selectedTrader/tick
-// state and the 30s "live" tick are the same state machine the archive's
-// own App() component ran.
+// state is the same machine the archive's own App() component ran. The
+// archive also drifted every ROI upward on a 30s timer; that is gone,
+// because the drifted figures disagreed with the chart and the earnings
+// panel within minutes. Figures still move — once a UTC day, seeded, from
+// one place (see traders.ts) so every surface moves together.
 export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
-  const [tick, setTick] = useState(0);
   const [depositUsd, setDepositUsd] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => setTick((c) => c + 1), 30_000);
-    return () => window.clearInterval(interval);
-  }, []);
 
   // The archive hardcoded a USER_DEPOSIT constant to gate the $20,000
   // threshold; this account's real deposit is the most recent portfolio
@@ -70,11 +68,16 @@ export function CopyTradingPage() {
       <div className="app">
         <div className="content-wrap">
           <CopyEligibilityProvider depositUsd={depositUsd} isAdmin={isAdmin}>
-            {view === 'marketplace' ? <Marketplace onOpen={openProfile} /> : <Profile trader={selectedTrader} onBack={backToMarketplace} tick={tick} />}
+            {view === 'marketplace' ? <Marketplace onOpen={openProfile} /> : <Profile trader={selectedTrader} onBack={backToMarketplace} />}
           </CopyEligibilityProvider>
         </div>
       </div>
       <Footer />
+      {/* Copying a trader confirms with a toast, so this page needs its own
+          Toaster — sonner only renders toasts where one is mounted, and the
+          app mounts it per page rather than globally. Without it the Copy
+          button would act with no feedback at all. */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

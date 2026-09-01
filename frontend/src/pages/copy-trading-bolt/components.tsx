@@ -21,11 +21,17 @@ import {
   WalletCards,
   Zap,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   type Trader,
   type RiskLevel,
+  type Period,
+  PERIODS,
+  PERIOD_LABEL_RU,
   nazarTrader,
   marketplaceTraders,
+  allTraders,
+  nazarEconomics,
   formatPercent,
   roiClass,
   formatAccountSize,
@@ -33,6 +39,10 @@ import {
   generateTrades,
   getChartData,
   getCopierProfit,
+  getLifetimeCopierProfit,
+  getLifetimeTraderEarnings,
+  getRoiForPeriod,
+  MARKET_BENCHMARK,
   getStrategyDescription,
   getTraderEarnings,
   formatUsd,
@@ -42,6 +52,7 @@ import {
   searchTraders,
 } from './traders';
 import { useCopyEligibility } from './CopyEligibilityContext';
+import { useFavorites, useFollowing } from './useCopyLists';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -73,12 +84,22 @@ const SORT_LABEL_RU: Record<string, string> = {
   'Best Win Rate': 'Лучший винрейт',
   'Lowest Drawdown': 'Минимальная просадка',
   'Most Copied': 'Больше всего подписчиков',
-  'Highest Trading Volume': 'Максимальный объём торгов',
+  'Largest AUM': 'Крупнейший объём средств',
   'Newest Traders': 'Новые трейдеры',
 };
 
-const chartTabs = ['7D', '30D', '90D', '1Y', 'ALL'];
-const sortOptions = ['Top Performance', 'Highest ROI', 'Best Win Rate', 'Lowest Drawdown', 'Most Copied', 'Highest Trading Volume', 'Newest Traders'];
+// The four marketplace views. Leaderboard is the curated ranking (top
+// strategies by composite score); All Traders is the unranked roster;
+// Favorites and Following read the user's own two lists.
+type MarketTab = 'leaderboard' | 'all' | 'favorites' | 'following';
+const MARKET_TABS: { id: MarketTab; label: string }[] = [
+  { id: 'leaderboard', label: 'Лидерборд' },
+  { id: 'all', label: 'Все трейдеры' },
+  { id: 'favorites', label: 'Избранное' },
+  { id: 'following', label: 'Копирую' },
+];
+
+const sortOptions = ['Top Performance', 'Highest ROI', 'Best Win Rate', 'Lowest Drawdown', 'Most Copied', 'Largest AUM', 'Newest Traders'];
 const performanceFilters = [
   { label: 'Все', value: 'all' },
   { label: 'Положительная', value: 'positive' },
@@ -103,10 +124,10 @@ const strategyFilters = [
 ];
 const accountFilters = [
   { label: 'Все', value: 'all' },
-  { label: '<$10K', value: '<10k' },
-  { label: '$10K-$50K', value: '10k-50k' },
-  { label: '$50K-$100K', value: '50k-100k' },
-  { label: '$100K+', value: '100k+' },
+  { label: '<$100K', value: '<100k' },
+  { label: '$100K-$500K', value: '100k-500k' },
+  { label: '$500K-$2M', value: '500k-2m' },
+  { label: '$2M+', value: '2m+' },
 ];
 const PAGE_SIZE = 12;
 
@@ -147,58 +168,112 @@ function PremiumEligibilityBlock({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function CopyButton({ compact = false }: { compact?: boolean }) {
+/** Always rendered, never hidden. Below the $20,000 deposit it is present
+ * but disabled and says why; at or above it, it actually starts and stops
+ * copying — the Following tab reads the same list. */
+function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
   const { eligible } = useCopyEligibility();
-  if (eligible) {
-    return <button className={`button button-copy ${compact ? 'button-small' : ''}`}>Копировать трейдера</button>;
+  const { following, toggleFollowing } = useFollowing();
+  const isFollowing = following.has(trader.id);
+
+  if (!eligible) {
+    return (
+      <button
+        className={`button button-copy ${compact ? 'button-small' : ''}`}
+        disabled
+        title="Копитрейдинг доступен клиентам с депозитом от $20 000"
+      >
+        <Lock size={14} /> Депозит от $20 000
+      </button>
+    );
   }
-  return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled>Депозит от $20 000 для копирования</button>;
+
+  return (
+    <button
+      className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        toggleFollowing(trader.id);
+        toast.success(
+          isFollowing ? `Копирование ${trader.name} остановлено` : `Вы копируете ${trader.name}`,
+          { description: isFollowing ? undefined : `Комиссия за результат ${Math.round(trader.performanceFee * 100)}%. Средства остаются на вашем счёте VOLTEX.` }
+        );
+      }}
+    >
+      {isFollowing ? <><Check size={14} /> Копируется</> : 'Копировать трейдера'}
+    </button>
+  );
 }
 
-function TraderCard({ trader, onOpen }: { trader: Trader; onOpen: (trader: Trader) => void }) {
+/** The star, wired to the user's favourites list. Stops propagation so it
+ * never doubles as a click on the card underneath it. */
+function FavoriteButton({ trader, large = false }: { trader: Trader; large?: boolean }) {
+  const { favorites, toggleFavorite } = useFavorites();
+  const isFavorite = favorites.has(trader.id);
+  return (
+    <button
+      className={`icon-button ${large ? 'large-icon' : ''} ${isFavorite ? 'icon-button-active' : ''}`}
+      aria-pressed={isFavorite}
+      aria-label={isFavorite ? `Убрать ${trader.name} из избранного` : `Добавить ${trader.name} в избранное`}
+      title={isFavorite ? 'В избранном' : 'В избранное'}
+      onClick={(event) => {
+        event.stopPropagation();
+        toggleFavorite(trader.id);
+      }}
+    >
+      <Star size={large ? 18 : 16} fill={isFavorite ? 'currentColor' : 'none'} />
+    </button>
+  );
+}
+
+function TraderCard({ trader, period, onOpen }: { trader: Trader; period: Period; onOpen: (trader: Trader) => void }) {
+  const { following } = useFollowing();
+  const periodRoi = getRoiForPeriod(trader, period);
+  // Copiers' profit is shown for the SAME period as the ROI above it, and
+  // labelled with it — an unlabelled figure can't be checked against
+  // anything, and a lifetime figure next to a 30-day ROI reads as if the
+  // two belong together when they don't.
+  const copierProfit = getCopierProfit(trader, period);
   return (
     <article className={`trader-card ${trader.vip ? 'trader-card-vip' : ''}`} onClick={() => onOpen(trader)}>
       <div className="card-topline">
         <div className="avatar-wrap"><Avatar trader={trader} />{trader.verified && <span className="verified-dot"><Check size={9} /></span>}</div>
-        <button className="icon-button" onClick={(event) => event.stopPropagation()}><Star size={16} /></button>
+        <div className="card-topline-right">
+          {following.has(trader.id) && <span className="following-pill"><Check size={10} /> Копируется</span>}
+          <FavoriteButton trader={trader} />
+        </div>
       </div>
       <div className="trader-name-row">
-        <div><h3>{trader.name}</h3><p>{trader.strategy}</p></div>
+        <div><h3>{trader.name}</h3><p>{trader.strategy} <span className="dot-separator" /> {trader.region}</p></div>
         {trader.vip && <VipBadge />}
       </div>
       <div className="card-return">
-        <span>90Д ROI</span>
-        <strong className={roiClass(trader.roi90)}>{formatPercent(trader.roi90)}</strong>
+        <span>{PERIOD_LABEL_RU[period]} ROI</span>
+        <strong className={roiClass(periodRoi)}>{formatPercent(periodRoi)}</strong>
         <div className="mini-chart"><i /><i /><i /><i /><i /></div>
       </div>
       <div className="card-stats">
-        <div><span>7Д ROI</span><strong className={roiClass(trader.roi7)}>{formatPercent(trader.roi7)}</strong></div>
-        <div><span>30Д ROI</span><strong className={roiClass(trader.roi30)}>{formatPercent(trader.roi30)}</strong></div>
         <div><span>Винрейт</span><strong>{trader.winRate}%</strong></div>
+        <div><span>Просадка</span><strong>{trader.drawdown}%</strong></div>
+        <div><span>Подписчиков</span><strong>{trader.copiers.toLocaleString('ru-RU')}</strong></div>
       </div>
       <div className="card-meta">
-        <div><span>Просадка</span><b>{trader.drawdown}%</b></div>
-        <div><span>Подписки</span><b>{trader.copiers}</b></div>
-        <div><span>Счёт</span><b>{formatAccountSize(trader.accountSize)}</b></div>
+        <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>
+        <div><span>Средства в копировании</span><b>{formatAccountSize(trader.aum)}</b></div>
       </div>
       <div className="card-footer-row">
         <span className={`risk risk-${trader.risk.toLowerCase().replace(' ', '-')}`}>{RISK_LABEL_RU[trader.risk]} риск</span>
-        <span className="card-id">{trader.id}</span>
+        <span className="card-id">{Math.round(trader.performanceFee * 100)}% комиссия</span>
       </div>
       <div className="card-cta-area">
-        <PremiumEligibilityBlock compact />
         <button className="card-view-button" onClick={(event) => { event.stopPropagation(); onOpen(trader); }}>Профиль трейдера</button>
+        <CopyButton trader={trader} compact />
       </div>
     </article>
   );
 }
 
-function PerformanceOverview({ trader, tick }: { trader: Trader; tick: number }) {
-  const drift = trader.vip ? tick * 0.3 : tick * 0.05;
-  const roi7 = trader.roi7 + drift * 0.4;
-  const roi30 = trader.roi30 + drift * 0.7;
-  const roi90 = trader.roi90 + drift * 1.2;
-  const allTime = trader.vip ? 1240 + tick * 2 : Math.round(roi90 * 1.5 * 10) / 10;
+function PerformanceOverview({ trader }: { trader: Trader }) {
   return (
     <section className="overview-grid">
       <div className="overview-intro">
@@ -206,16 +281,28 @@ function PerformanceOverview({ trader, tick }: { trader: Trader; tick: number })
         <h2>{trader.strategy}.<br /><em>Контролируемый риск.</em></h2>
         <p>{getStrategyDescription(trader)}</p>
       </div>
-      <div className="metric-card"><span>7Д ROI</span><strong className={roiClass(roi7)}>{formatPercent(roi7)}</strong><small>против рынка +18.4%</small></div>
-      <div className="metric-card"><span>30Д ROI</span><strong className={roiClass(roi30)}>{formatPercent(roi30)}</strong><small>против рынка +42.7%</small></div>
-      <div className="metric-card"><span>90Д ROI</span><strong className={roiClass(roi90)}>{formatPercent(roi90)}</strong><small>против рынка +89.2%</small></div>
-      <div className="metric-card metric-alltime"><span>Всё время</span><strong className={roiClass(allTime)}>{formatPercent(allTime)}</strong><small>с начала работы</small></div>
+      {/* Straight from the trader record, including the all-time figure —
+          it used to be a literal 1240 for any VIP, which disagreed with the
+          same trader's own roiAll everywhere else on the page. The "vs
+          market" line is now a real subtraction rather than a fixed string
+          repeated on every card. */}
+      {PERIODS.map((period) => {
+        const roi = getRoiForPeriod(trader, period);
+        const vsMarket = roi - MARKET_BENCHMARK[period];
+        return (
+          <div key={period} className={`metric-card ${period === 'ALL' ? 'metric-alltime' : ''}`}>
+            <span>{PERIOD_LABEL_RU[period]} ROI</span>
+            <strong className={roiClass(roi)}>{formatPercent(roi)}</strong>
+            <small>против рынка {formatPercent(vsMarket)}</small>
+          </div>
+        );
+      })}
     </section>
   );
 }
 
 function PerformanceChart({ trader }: { trader: Trader }) {
-  const [activeTab, setActiveTab] = useState('90D');
+  const [activeTab, setActiveTab] = useState<Period>('90D');
   const [comparison, setComparison] = useState('Trader');
   const chart = useMemo(() => getChartData(trader, activeTab), [trader, activeTab]);
   const showMarket = comparison === 'Market' || comparison === 'Trader';
@@ -225,7 +312,7 @@ function PerformanceChart({ trader }: { trader: Trader }) {
       <div className="panel-header">
         <div><span className="eyebrow">Доходность</span><h2>Рост $10,000</h2></div>
         <div className="chart-tools">
-          <div className="tab-group">{chartTabs.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>)}</div>
+          <div className="tab-group">{PERIODS.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{PERIOD_LABEL_RU[tab]}</button>)}</div>
           <div className="comparison-group">{['Trader', 'BTC', 'Market'].map((item) => <button key={item} className={comparison === item ? 'active' : ''} onClick={() => setComparison(item)}><i className={`legend-${item.toLowerCase()}`} />{item}</button>)}</div>
         </div>
       </div>
@@ -261,7 +348,7 @@ function RiskMetrics({ trader }: { trader: Trader }) {
     ['Среднее время сделки', data.holdingTime],
     ['Доходность/риск', `${returnToRisk.toFixed(1)}x`],
     ['Рейтинг стратегии', compositeScore(trader).toFixed(1)],
-    ['Размер счёта', formatAccountSize(trader.accountSize)],
+    ['Средства под управлением', formatAccountSize(trader.aum)],
     ['Стаж на платформе', `${trader.activeMonths} мес.`],
   ];
   return (
@@ -340,33 +427,90 @@ function RecentTrades({ trader }: { trader: Trader }) {
 }
 
 function PerformanceEarnings({ trader }: { trader: Trader }) {
-  if (!trader.copierProfit || !trader.performanceFee) return null;
-  const copierProfit = getCopierProfit(trader);
-  const earnings = getTraderEarnings(trader);
+  const data = generateProfileData(trader);
   const feePct = Math.round(trader.performanceFee * 100);
+  const lifetimeProfit = getLifetimeCopierProfit(trader);
+  const lifetimeEarnings = getLifetimeTraderEarnings(trader);
+  const isNazar = trader.id === nazarTrader.id;
+
   return (
     <section className="panel earnings-panel">
       <div className="panel-header">
-        <div><span className="eyebrow">Структура комиссии</span><h2>Доходность и заработок</h2></div>
+        <div><span className="eyebrow">Результаты и вознаграждение</span><h2>Доходность и заработок</h2></div>
         <WalletCards size={20} className="panel-icon" />
       </div>
+
+      {/* Doubling as the ROI ladder: every period the page offers, in one
+          row, so they can be compared rather than paged through. */}
+      <div className="earnings-periods">
+        {PERIODS.map((period) => {
+          const roi = getRoiForPeriod(trader, period);
+          return (
+            <div key={period}>
+              <span>ROI · {PERIOD_LABEL_RU[period]}</span>
+              <strong className={roiClass(roi)}>{formatPercent(roi)}</strong>
+              <small>Прибыль подписчиков {formatAccountSize(getCopierProfit(trader, period))}</small>
+            </div>
+          );
+        })}
+      </div>
+
       <div className="earnings-grid">
         <div className="earnings-lead">
-          <span>Прибыль, полученная подписчиками</span>
-          <strong className="positive">${copierProfit.toLocaleString()} USDT</strong>
-          <small>Общая прибыль, распределённая между всеми активными аккаунтами подписчиков</small>
+          <span>Средства под управлением</span>
+          <strong>{formatUsd(trader.aum)} USDT</strong>
+          <small>Средства клиентов, копирующих стратегию прямо сейчас</small>
         </div>
-        <div className="earnings-row">
-          <div><span>Комиссия за результат</span><strong>{feePct}%</strong></div>
-          <div className="earnings-arrow"><ChevronRight size={18} /></div>
-          <div><span>Заработок {trader.name}</span><strong className="positive">${earnings.toLocaleString()} USDT</strong></div>
+        <div className="earnings-lead">
+          <span>Прибыль подписчиков за всё время</span>
+          <strong className={roiClass(lifetimeProfit)}>{formatUsd(lifetimeProfit)} USDT</strong>
+          <small>За {trader.activeMonths} мес. работы стратегии</small>
         </div>
+      </div>
+
+      <div className="earnings-row">
+        <div><span>Комиссия за результат</span><strong>{feePct}%</strong></div>
+        <div className="earnings-arrow"><ChevronRight size={18} /></div>
+        <div><span>Заработок {trader.name} за всё время</span><strong className={roiClass(lifetimeEarnings)}>{formatUsd(lifetimeEarnings)} USDT</strong></div>
       </div>
       <div className="earnings-calc">
         <span>Расчёт</span>
-        <code>${copierProfit.toLocaleString()} × {feePct}% = ${earnings.toLocaleString()} USDT</code>
+        <code>
+          {lifetimeProfit > 0
+            ? `${formatUsd(lifetimeProfit)} × ${feePct}% = ${formatUsd(lifetimeEarnings)} USDT`
+            : 'Комиссия за результат не начисляется при отрицательном результате'}
+        </code>
       </div>
-      <p className="earnings-note">{feePct}% комиссии от прибыли, полученной подписчиками.</p>
+
+      <div className="earnings-detail-grid">
+        <div><span>Подписчиков</span><strong>{trader.copiers.toLocaleString('ru-RU')}</strong></div>
+        <div><span>Винрейт</span><strong>{trader.winRate}%</strong></div>
+        <div><span>Макс. просадка</span><strong>{trader.drawdown}%</strong></div>
+        <div><span>Сделок</span><strong>{data.totalTrades.toLocaleString('ru-RU')}</strong></div>
+        <div><span>Прибыльных</span><strong className="positive">{data.winningTrades.toLocaleString('ru-RU')}</strong></div>
+        <div><span>Убыточных</span><strong className="negative">{data.losingTrades.toLocaleString('ru-RU')}</strong></div>
+        <div><span>Средняя прибыль</span><strong className="positive">{data.avgProfit}</strong></div>
+        <div><span>Средний убыток</span><strong className="negative">{data.avgLoss}</strong></div>
+        <div><span>Профит-фактор</span><strong>{data.profitFactor}</strong></div>
+        <div><span>Уровень риска</span><strong>{RISK_LABEL_RU[trader.risk]}</strong></div>
+        <div><span>Среднее время сделки</span><strong>{data.holdingTime}</strong></div>
+        <div><span>История</span><strong>{trader.activeMonths} мес.</strong></div>
+      </div>
+
+      {isNazar && (
+        // The one place the model is spelled out. AUM is lower than the
+        // profit generated because copiers have taken part of it off the
+        // table — stating that is what keeps the two figures from looking
+        // like they contradict each other.
+        <div className="earnings-reconcile">
+          <div><span>Внесено подписчиками</span><strong>{formatAccountSize(nazarEconomics.principal)}</strong></div>
+          <div><span>Заработано на счетах</span><strong className="positive">{formatAccountSize(nazarEconomics.lifetimeProfit)}</strong></div>
+          <div><span>Выведено подписчиками</span><strong>−{formatAccountSize(nazarEconomics.withdrawn)}</strong></div>
+          <div><span>Под управлением сейчас</span><strong>{formatAccountSize(nazarEconomics.aum)}</strong></div>
+        </div>
+      )}
+
+      <p className="earnings-note">{feePct}% от прибыли, полученной подписчиками. Средства остаются на счетах подписчиков в VOLTEX.</p>
     </section>
   );
 }
@@ -391,7 +535,7 @@ function Copiers({ trader }: { trader: Trader }) {
   );
 }
 
-export function Profile({ trader, onBack, tick }: { trader: Trader; onBack: () => void; tick: number }) {
+export function Profile({ trader, onBack }: { trader: Trader; onBack: () => void }) {
   return (
     <main className="page-shell profile-page">
       <button className="back-button" onClick={onBack}><ArrowLeft size={16} /> Назад к копитрейдингу</button>
@@ -405,19 +549,19 @@ export function Profile({ trader, onBack, tick }: { trader: Trader; onBack: () =
               <span><Users size={15} /> {trader.copiers} подписчиков</span>
               <span><Clock3 size={15} /> Активен {trader.activeMonths} мес.</span>
               <span><Zap size={15} /> {RISK_LABEL_RU[trader.risk]} риск</span>
-              <span><WalletCards size={15} /> {formatAccountSize(trader.accountSize)}</span>
+              <span><WalletCards size={15} /> {formatAccountSize(trader.aum)} под управлением</span>
             </div>
           </div>
         </div>
         <div className="profile-actions">
-          <button className="icon-button large-icon"><Star size={18} /></button>
+          <FavoriteButton trader={trader} large />
           <div className="profile-cta-area">
             <PremiumEligibilityBlock />
-            <CopyButton />
+            <CopyButton trader={trader} />
           </div>
         </div>
       </section>
-      <PerformanceOverview trader={trader} tick={tick} />
+      <PerformanceOverview trader={trader} />
       <PerformanceChart trader={trader} />
       <PerformanceEarnings trader={trader} />
       <div className="two-column"><RiskMetrics trader={trader} /><TradingStatistics trader={trader} /></div>
@@ -446,19 +590,36 @@ function FilterDropdown({ label, options, value, onChange }: { label: string; op
 
 export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
   const { depositUsd, eligible } = useCopyEligibility();
+  const { favorites } = useFavorites();
+  const { following } = useFollowing();
+  const [tab, setTab] = useState<MarketTab>('leaderboard');
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState('Top Performance');
   const [sortOpen, setSortOpen] = useState(false);
-  const [period, setPeriod] = useState('90D');
+  const [period, setPeriod] = useState<Period>('90D');
   const [filters, setFilters] = useState({ performance: 'all', risk: 'all', strategy: 'all', account: 'all' });
   const [page, setPage] = useState(1);
 
+  // Which roster each tab draws from. Leaderboard is the curated ranking
+  // and so excludes Nazar (he has his own featured slot directly above the
+  // grid — listing him twice on the same screen would be a duplicate);
+  // every other tab searches the full roster including him, which is what
+  // makes searching for "Nazar" or starring him actually work.
+  const tabRoster = useMemo(() => {
+    switch (tab) {
+      case 'favorites': return allTraders.filter((t) => favorites.has(t.id));
+      case 'following': return allTraders.filter((t) => following.has(t.id));
+      case 'all': return allTraders;
+      default: return marketplaceTraders;
+    }
+  }, [tab, favorites, following]);
+
   const visibleTraders = useMemo(() => {
-    let result = searchTraders(marketplaceTraders, query);
+    let result = searchTraders(tabRoster, query);
     result = filterTraders(result, filters);
     result = sortTraders(result, sortBy, period);
     return result;
-  }, [query, filters, sortBy, period]);
+  }, [tabRoster, query, filters, sortBy, period]);
 
   const totalPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -466,12 +627,13 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
   const startIdx = visibleTraders.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(currentPage * PAGE_SIZE, visibleTraders.length);
 
-  useEffect(() => { setPage(1); }, [query, filters, sortBy, period]);
+  useEffect(() => { setPage(1); }, [tab, query, filters, sortBy, period]);
 
   // The featured slot always shows Nazar first, so explain why rather than
   // just placing him there: verify against the actual roster instead of
   // asserting it, so the claim stays true if the data ever changes.
   const isTopPerformer = marketplaceTraders.every((t) => nazarTrader.roi90 >= t.roi90);
+  const hasActiveFilters = filters.performance !== 'all' || filters.risk !== 'all' || filters.strategy !== 'all' || filters.account !== 'all';
 
   return (
     <main className="page-shell">
@@ -488,6 +650,24 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
         </div>
       </section>
 
+      <div className="market-tabs" role="tablist">
+        {MARKET_TABS.map((t) => {
+          const count = t.id === 'favorites' ? favorites.size : t.id === 'following' ? following.size : null;
+          return (
+            <button
+              key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              className={tab === t.id ? 'active' : ''}
+              onClick={() => setTab(t.id)}
+            >
+              {t.label}
+              {count !== null && <span className="market-tab-count">{count}</span>}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="market-nav">
         <div className="search-box"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск трейдеров..." /><kbd>/</kbd></div>
         <div className="sort-wrapper">
@@ -499,7 +679,7 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
               </div>
             )}
           </div>
-          <div className="period-group">{['7D', '30D', '90D', '1Y'].map((p) => <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>{p}</button>)}</div>
+          <div className="period-group">{PERIODS.map((p) => <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>{PERIOD_LABEL_RU[p]}</button>)}</div>
         </div>
       </div>
 
@@ -509,13 +689,14 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
         <FilterDropdown label="Риск" options={riskFilters} value={filters.risk} onChange={(v) => setFilters({ ...filters, risk: v })} />
         <FilterDropdown label="Стратегия" options={strategyFilters} value={filters.strategy} onChange={(v) => setFilters({ ...filters, strategy: v })} />
         <FilterDropdown label="Размер счёта" options={accountFilters} value={filters.account} onChange={(v) => setFilters({ ...filters, account: v })} />
-        {(filters.performance !== 'all' || filters.risk !== 'all' || filters.strategy !== 'all' || filters.account !== 'all') && (
+        {hasActiveFilters && (
           <button className="filter-clear" onClick={() => setFilters({ performance: 'all', risk: 'all', strategy: 'all', account: 'all' })}>Сбросить</button>
         )}
       </div>
 
       <EligibilityGate />
 
+      {tab === 'leaderboard' && (
       <section className="featured-section">
         <div className="section-title">
           <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 по прибыли подписчиков' : 'Рекомендуемая стратегия'}</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
@@ -535,34 +716,48 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
               <span><Users size={15} /> {nazarTrader.copiers} подписчиков</span>
               <span><ShieldCheck size={15} /> {RISK_LABEL_RU[nazarTrader.risk]} риск</span>
               <span><LineChart size={15} /> {nazarTrader.activeMonths} мес. истории</span>
-              <span><WalletCards size={15} /> {formatAccountSize(nazarTrader.accountSize)}</span>
+              <span><WalletCards size={15} /> {formatAccountSize(nazarTrader.aum)} под управлением</span>
             </div>
           </div>
           <div className="featured-performance">
             <div><span>7Д</span><strong className="positive">{formatPercent(nazarTrader.roi7)}</strong></div>
             <div><span>30Д</span><strong className="positive">{formatPercent(nazarTrader.roi30)}</strong></div>
             <div><span>90Д</span><strong className="positive">{formatPercent(nazarTrader.roi90)}</strong></div>
+            <div><span>Всё время</span><strong className="positive">{formatPercent(nazarTrader.roiAll)}</strong></div>
             <div><span>Винрейт</span><strong>{nazarTrader.winRate}%</strong></div>
             <div><span>Макс. просадка</span><strong>{nazarTrader.drawdown}%</strong></div>
           </div>
           <div className="featured-copier-profit">
-            <span>Прибыль подписчиков</span>
-            <strong>{formatUsd(getCopierProfit(nazarTrader))} USDT</strong>
+            <span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span>
+            <strong>{formatUsd(getCopierProfit(nazarTrader, period))} USDT</strong>
+            <small>За всё время: {formatUsd(getLifetimeCopierProfit(nazarTrader))} USDT</small>
           </div>
-          <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton /><small>Требуется депозит от $20 000</small></div>
+          <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton trader={nazarTrader} /></div>
         </div>
       </section>
+      )}
 
       <section className="marketplace-section">
         <div className="section-title">
-          <div><span className="eyebrow">Подборка стратегий</span><h2>Профессиональные трейдеры</h2></div>
+          <div>
+            <span className="eyebrow">{MARKET_TABS.find((t) => t.id === tab)?.label}</span>
+            <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Вы копируете' : 'Профессиональные трейдеры'}</h2>
+          </div>
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
         <div className="trader-grid">
-          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} onOpen={onOpen} />)}
+          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} />)}
         </div>
         {visibleTraders.length === 0 && (
-          <div className="empty-state"><Search size={22} /><strong>Трейдеры не найдены</strong><span>Измените параметры поиска или фильтры.</span></div>
+          <div className="empty-state">
+            {tab === 'favorites' && favorites.size === 0 && !query && !hasActiveFilters ? (
+              <><Star size={22} /><strong>Избранное пусто</strong><span>Нажмите на звёздочку в карточке трейдера, чтобы сохранить его здесь.</span></>
+            ) : tab === 'following' && following.size === 0 && !query && !hasActiveFilters ? (
+              <><Users size={22} /><strong>Вы пока никого не копируете</strong><span>{eligible ? 'Откройте профиль трейдера и нажмите «Копировать трейдера».' : 'Копирование доступно клиентам с депозитом от $20 000.'}</span></>
+            ) : (
+              <><Search size={22} /><strong>Трейдеры не найдены</strong><span>Измените параметры поиска или фильтры.</span></>
+            )}
+          </div>
         )}
         {visibleTraders.length > 0 && (
           <div className="pagination">
