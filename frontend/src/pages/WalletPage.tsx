@@ -768,8 +768,8 @@ export function WalletPage() {
         {demoBalances.length > 0 && (
           <div style={styles.demoCard}>
             <div style={styles.demoCardHeader}>
-              <Badge text="DEMO" color="var(--accent)" bg="var(--accent-dim)" />
-              <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>Demo-баланс</h3>
+              <Badge text="ПЕСОЧНИЦА" color="var(--accent)" bg="var(--accent-dim)" />
+              <h3 style={{ fontSize: 13, fontWeight: 700, margin: 0 }}>Тестовый баланс</h3>
               <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>Тестовые средства — отдельно от реального баланса</span>
             </div>
             {demoBalances.map((b) => (

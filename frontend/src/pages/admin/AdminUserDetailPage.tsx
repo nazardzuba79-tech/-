@@ -136,13 +136,13 @@ export function AdminUserDetailPage() {
     setDemoBusy(true);
     try {
       const result = await api.demoTopUp(id, demoAsset.trim().toUpperCase(), demoAmount.trim(), demoNote.trim() || undefined);
-      setDemoSuccess(`Новый demo-баланс: ${result.available} ${result.asset}`);
+      setDemoSuccess(`Новый тестовый баланс: ${result.available} ${result.asset}`);
       setDemoAsset('');
       setDemoAmount('');
       setDemoNote('');
       reload();
     } catch (err) {
-      setDemoError(err instanceof ApiError ? err.message : 'Не удалось начислить demo-баланс.');
+      setDemoError(err instanceof ApiError ? err.message : 'Не удалось начислить тестовый баланс.');
     } finally {
       setDemoBusy(false);
     }
@@ -251,18 +251,18 @@ export function AdminUserDetailPage() {
 
       <div style={{ height: 16 }} />
 
-      <Section title="Demo-баланс (песочница)">
+      <Section title="Тестовый баланс (песочница)">
         <p style={styles.hint}>
-          Тестовые средства, полностью отдельные от реального баланса и резервов — только для проверки торговли на странице «Demo». Начисление всегда
-          логируется в журнал действий с пометкой «demo top-up».
+          Тестовые средства, полностью отдельные от реального баланса и резервов — только для проверки торговли. Начисление всегда
+          логируется в журнал действий.
         </p>
         {detail.demoBalances.length === 0 ? (
-          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Demo-баланс пуст.</p>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>Тестовый баланс пуст.</p>
         ) : (
           detail.demoBalances.map((b) => (
             <Row
               key={b.asset}
-              label={`DEMO · ${b.asset}`}
+              label={`ПЕСОЧНИЦА · ${b.asset}`}
               value={<span className="mono">{b.available} доступно, {b.locked} заблокировано</span>}
             />
           ))
@@ -281,7 +281,7 @@ export function AdminUserDetailPage() {
             <input style={styles.input} value={demoNote} onChange={(e) => setDemoNote(e.target.value)} placeholder="Например: первичное начисление" />
           </label>
           <button type="submit" style={styles.primaryBtn} disabled={demoBusy}>
-            Начислить demo
+            Начислить
           </button>
         </form>
         {demoError && <div style={styles.errorBox}>{demoError}</div>}

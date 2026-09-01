@@ -370,3 +370,7 @@
   .copytrading-bolt-root .earnings-periods { grid-template-columns: repeat(2, 1fr); }
   .copytrading-bolt-root .earnings-detail-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* The featured leader's real photo fills the same circle the initials
+   avatar occupies, so no layout shifts when one replaces the other. */
+.copytrading-bolt-root .avatar-photo { object-fit: cover; }

@@ -7,13 +7,55 @@ import { ExternalRankingError } from '../../../services/CoinGeckoService';
 function buildApp(
   marketDataService: any,
   coinGeckoService: any = { getRankings: jest.fn().mockResolvedValue([]), getGlobalMarket: jest.fn().mockResolvedValue(null) },
-  fearGreedService: any = { getIndex: jest.fn().mockResolvedValue(null) }
+  fearGreedService: any = { getIndex: jest.fn().mockResolvedValue(null) },
+  prisma: any = { user: { findFirst: jest.fn().mockResolvedValue(null) } }
 ) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService));
+  app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
   return app;
 }
+
+describe('GET /market/featured-trader', () => {
+  const photo = 'data:image/png;base64,iVBORw0KGgo=';
+
+  it('returns the featured account photo', async () => {
+    const prisma = { user: { findFirst: jest.fn().mockResolvedValue({ avatarUrl: photo }) } };
+    const res = await request(buildApp({}, undefined, undefined, prisma)).get('/api/v1/market/featured-trader');
+
+    expect(res.status).toBe(200);
+    expect(res.body.avatarUrl).toBe(photo);
+  });
+
+  it('reads exactly one designated account and only its photo', async () => {
+    const prisma = { user: { findFirst: jest.fn().mockResolvedValue({ avatarUrl: photo }) } };
+    await request(buildApp({}, undefined, undefined, prisma)).get('/api/v1/market/featured-trader');
+
+    // The route must not be usable as a general user lookup: no filter it
+    // accepts from the request, and only the avatar column selected.
+    expect(prisma.user.findFirst).toHaveBeenCalledWith({
+      where: { role: 'ADMIN' },
+      orderBy: { createdAt: 'asc' },
+      select: { avatarUrl: true },
+    });
+  });
+
+  it('returns null when no photo has been uploaded', async () => {
+    const prisma = { user: { findFirst: jest.fn().mockResolvedValue({ avatarUrl: null }) } };
+    const res = await request(buildApp({}, undefined, undefined, prisma)).get('/api/v1/market/featured-trader');
+
+    expect(res.status).toBe(200);
+    expect(res.body.avatarUrl).toBeNull();
+  });
+
+  it('returns null rather than failing when the lookup errors', async () => {
+    const prisma = { user: { findFirst: jest.fn().mockRejectedValue(new Error('db down')) } };
+    const res = await request(buildApp({}, undefined, undefined, prisma)).get('/api/v1/market/featured-trader');
+
+    expect(res.status).toBe(200);
+    expect(res.body.avatarUrl).toBeNull();
+  });
+});
 
 describe('GET /market/global', () => {
   const globalData = {

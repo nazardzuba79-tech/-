@@ -7,6 +7,7 @@ import './copy-trading-bolt/CopyTradingBolt.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
+import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -68,7 +69,9 @@ export function CopyTradingPage() {
       <div className="app">
         <div className="content-wrap">
           <CopyEligibilityProvider depositUsd={depositUsd} isAdmin={isAdmin}>
-            {view === 'marketplace' ? <Marketplace onOpen={openProfile} /> : <Profile trader={selectedTrader} onBack={backToMarketplace} />}
+            <FeaturedAvatarProvider>
+              {view === 'marketplace' ? <Marketplace onOpen={openProfile} /> : <Profile trader={selectedTrader} onBack={backToMarketplace} />}
+            </FeaturedAvatarProvider>
           </CopyEligibilityProvider>
         </div>
       </div>

@@ -326,6 +326,11 @@ export const api = {
   // Either half can be null independently when its upstream source is
   // rate-limited; callers render "—" for whichever is missing rather than
   // substituting a locally-derived stand-in.
+  // The featured strategy leader's photo for the Copy Trading marketplace
+  // — public, one field, no parameters (see the backend route's comment).
+  getFeaturedTraderAvatar: () =>
+    request<{ avatarUrl: string | null }>('/market/featured-trader'),
+
   getGlobalMarket: () =>
     request<{
       source: string;

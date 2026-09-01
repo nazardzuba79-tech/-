@@ -53,6 +53,7 @@ import {
 } from './traders';
 import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
+import { useFeaturedAvatar } from './FeaturedAvatarContext';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -135,8 +136,17 @@ function VipBadge() {
   return <span className="vip-badge"><Crown size={12} /> VIP</span>;
 }
 
+/** The featured leader shows the operator's real uploaded profile photo
+ * (Settings -> Profile); everyone else, and the featured leader before a
+ * photo exists, shows the initials circle. */
 function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) {
-  return <div className={`avatar avatar-${trader.tone} ${large ? 'avatar-large' : ''}`}>{trader.initials}</div>;
+  const featuredAvatar = useFeaturedAvatar();
+  const photo = trader.id === nazarTrader.id ? featuredAvatar : null;
+  const className = `avatar avatar-${trader.tone} ${large ? 'avatar-large' : ''}`;
+  if (photo) {
+    return <img className={`${className} avatar-photo`} src={photo} alt="" />;
+  }
+  return <div className={className}>{trader.initials}</div>;
 }
 
 function EligibilityGate({ compact = false }: { compact?: boolean }) {

@@ -130,7 +130,7 @@ app.use('/api/v1', authRouter(prisma));
 app.use('/api/v1', candlesRouter(prisma));
 app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
-app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService));
+app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
 app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
 app.use('/api/v1', referralRouter(prisma));

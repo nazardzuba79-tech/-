@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { KrakenMarketDataService, ExternalMarketDataError } from '../../services/KrakenMarketDataService';
 import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
 import { FearGreedService } from '../../services/FearGreedService';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -17,9 +18,35 @@ import { FearGreedService } from '../../services/FearGreedService';
 export function marketRouter(
   marketDataService: KrakenMarketDataService,
   coinGeckoService: CoinGeckoService,
-  fearGreedService: FearGreedService
+  fearGreedService: FearGreedService,
+  prisma: PrismaClient
 ): Router {
   const router = Router();
+
+  // The photo shown for the platform's featured strategy leader on the
+  // Copy Trading page. It is the operator's own profile photo, published
+  // deliberately: a strategy leader with a blank avatar is exactly what a
+  // marketplace should not look like.
+  //
+  // Public on purpose — every visitor to the marketplace has to see it —
+  // and therefore narrow on purpose: it returns one field for one
+  // designated account and nothing else. It is NOT a lookup that can be
+  // pointed at an arbitrary user, which is why it takes no parameters.
+  router.get('/market/featured-trader', async (_req, res) => {
+    try {
+      const featured = await prisma.user.findFirst({
+        where: { role: 'ADMIN' },
+        orderBy: { createdAt: 'asc' },
+        select: { avatarUrl: true },
+      });
+      res.json({ avatarUrl: featured?.avatarUrl ?? null });
+    } catch (err) {
+      // A missing photo must never break the marketplace — fall back to
+      // the initials avatar rather than failing the page.
+      console.error(err);
+      res.json({ avatarUrl: null });
+    }
+  });
 
   // Market-WIDE headline figures for the Markets page: total 24h volume
   // and market cap across every exchange (CoinGecko /global), plus the
