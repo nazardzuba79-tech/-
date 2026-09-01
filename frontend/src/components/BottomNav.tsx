@@ -17,7 +17,15 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="bottom-nav bottom-nav-liquid-glass" style={styles.nav}>
+    // gridTemplateColumns is derived from the list rather than written out:
+    // it said repeat(5, 1fr) against four items, leaving a dead column on
+    // the right. `display` is deliberately NOT set here — it belongs to the
+    // media query in index.css, and an inline value would beat it (which is
+    // exactly why this bar was showing on desktop).
+    <nav
+      className="bottom-nav bottom-nav-liquid-glass"
+      style={{ ...styles.nav, gridTemplateColumns: `repeat(${ITEMS.length}, 1fr)` }}
+    >
       {ITEMS.map(({ to, label, icon: Icon }) => {
         const active = location.pathname === to;
         return (
@@ -37,8 +45,6 @@ const styles: Record<string, React.CSSProperties> = {
     insetInline: 0,
     bottom: 0,
     zIndex: 90,
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
   },
   item: {
     display: 'flex',

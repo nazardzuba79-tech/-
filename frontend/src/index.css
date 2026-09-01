@@ -918,6 +918,10 @@ a:hover > .nav-card-icon {
   }
 }
 
+/* Phone-only tab bar. This pair of rules is the whole visibility
+   mechanism, so BottomNav.tsx must not set `display` inline — an inline
+   value outranks a media query and the bar then shows at every width,
+   which is what it used to do. */
 .bottom-nav {
   display: none;
 }
