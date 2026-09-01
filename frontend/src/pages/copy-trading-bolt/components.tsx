@@ -387,7 +387,6 @@ function TradingStatistics({ trader }: { trader: Trader }) {
     ['Прибыльных сделок', String(data.winningTrades)],
     ['Убыточных сделок', String(data.losingTrades)],
     ['Средняя прибыль', data.avgProfit],
-    ['Средний убыток', data.avgLoss],
     ['Профит-фактор', data.profitFactor],
     ['Среднее время удержания', data.holdingTime],
     ['Объём торгов', data.volume],
