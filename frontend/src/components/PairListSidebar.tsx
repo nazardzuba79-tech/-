@@ -9,6 +9,7 @@ import {
   TickerRow,
 } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
+import { CryptoIcon } from './CryptoIcon';
 
 export interface PairListHandle {
   focusSearch: () => void;
@@ -17,8 +18,11 @@ export interface PairListHandle {
 /**
  * The reference's `.pairs-section`: a search field, a row of quote tabs
  * (the reference's ⭐ Fav / USDT / BTC / ETH / NEW), and the pair list
- * itself — each row a name, a price and a signed change, with the active
- * pair tinted in the accent.
+ * itself — each row a favourite star, an asset logo, a name, a price and
+ * a signed change, with the active pair tinted in the accent. The logo is
+ * CryptoIcon, the same icon-set-with-letter-fallback component the rest
+ * of the app already uses (Futures' pair list, Wallet, CFD instruments) —
+ * not a new asset system.
  *
  * All the existing behaviour is kept: the 4s ticker poll, favourites in
  * localStorage, and the shared filter/sort helper in lib/pairList.
@@ -136,11 +140,14 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                 <span className="p-name">
                   <span
                     onClick={(e) => toggleFavorite(tk.pair, e)}
-                    style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : 'var(--text-secondary)', marginRight: 6 }}
+                    style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : 'var(--text-secondary)', marginRight: 4, flexShrink: 0 }}
                   >
                     ★
                   </span>
-                  {tk.pair}
+                  <span className="p-icon">
+                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={18} />
+                  </span>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
                 </span>
                 <span className="p-price">{parseFloat(tk.lastPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
