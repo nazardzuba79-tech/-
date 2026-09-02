@@ -105,8 +105,6 @@ export function OrderBookPanel({
   onPickPrice?: (price: string) => void;
 }) {
   const { t, lang } = useLanguage();
-  // The reference's three display modes: both sides, bids only, asks only.
-  const [mode, setMode] = useState<'both' | 'bids' | 'asks'>('both');
 
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
@@ -168,11 +166,6 @@ export function OrderBookPanel({
               </option>
             ))}
           </select>
-          <div className="orderbook-modes">
-            <button className={`ob-mode-btn ${mode === 'both' ? 'active' : ''}`} onClick={() => setMode('both')} title={t('trade.orderBook')}>▦</button>
-            <button className={`ob-mode-btn ${mode === 'bids' ? 'active' : ''}`} onClick={() => setMode('bids')} title={t('trade.buy')}>▪</button>
-            <button className={`ob-mode-btn ${mode === 'asks' ? 'active' : ''}`} onClick={() => setMode('asks')} title={t('trade.sell')}>▭</button>
-          </div>
         </div>
       </div>
 
@@ -182,13 +175,11 @@ export function OrderBookPanel({
         <span className="ob-col">{t('trade.sum')}</span>
       </div>
 
-      {mode !== 'bids' && (
-        <div className="orderbook-asks">
-          {asksDepth.map((level) => (
-            <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
-          ))}
-        </div>
-      )}
+      <div className="orderbook-asks">
+        {asksDepth.map((level) => (
+          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
+        ))}
+      </div>
 
       <div className="orderbook-spread">
         <div className="ob-spread-price">
@@ -204,13 +195,11 @@ export function OrderBookPanel({
         )}
       </div>
 
-      {mode !== 'asks' && (
-        <div className="orderbook-bids">
-          {bidsDepth.map((level) => (
-            <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
-          ))}
-        </div>
-      )}
+      <div className="orderbook-bids">
+        {bidsDepth.map((level) => (
+          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
+        ))}
+      </div>
     </>
   );
 }

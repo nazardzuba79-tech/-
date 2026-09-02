@@ -248,8 +248,11 @@
   transition: background 0.15s, color 0.15s; color: var(--text-secondary);
 }
 .trade-terminal .order-form-tab:hover { color: var(--text-primary); }
-.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #06120c; }
-.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #200507; }
+/* Bold white on the saturated fill — the same high-contrast treatment
+   every major exchange (Bybit included) uses on its Buy/Sell buttons.
+   Dark text here read as muted next to that reference. */
+.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #fff; }
+.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #fff; }
 .trade-terminal .order-type-tabs {
   display: flex; gap: 8px; padding: 10px 16px 8px;
   border-bottom: 1px solid var(--layer-border);
@@ -384,8 +387,6 @@
 }
 .trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 8px; }
-/* Matches .ob-mode-btn's own size/colour so the two controls read as one
-   cluster, not a mismatched dropdown bolted onto the header. */
 .trade-terminal .ob-group-select {
   background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary); color: var(--text-secondary);
   cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 11px;
@@ -393,13 +394,6 @@
 }
 .trade-terminal .ob-group-select:hover { color: var(--text-primary); }
 .trade-terminal .ob-group-select:focus { border-color: var(--accent-yellow); }
-.trade-terminal .orderbook-modes { display: flex; gap: 4px; }
-.trade-terminal .ob-mode-btn {
-  background: transparent; border: none; color: var(--text-secondary);
-  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 12px;
-}
-.trade-terminal .ob-mode-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .ob-mode-btn.active { color: var(--accent-yellow); }
 .trade-terminal .orderbook-col-headers {
   display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -479,6 +473,21 @@
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
 .trade-terminal .pairs-search input::placeholder { color: var(--text-secondary); }
+/* A compact "sort by" row under the search field — 24h/7d high/low, using
+   the same live ticker figures and CoinGecko sparkline (already fetched
+   for the row icons) rather than any new data. */
+.trade-terminal .pairs-sort-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 12px 8px; border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .pairs-sort-label { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
+.trade-terminal .pairs-sort-select {
+  flex: 1; min-width: 0;
+  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary); color: var(--text-primary);
+  padding: 4px 6px; border-radius: 4px; font-size: 11px; outline: none;
+  font-family: inherit; cursor: pointer; transition: border-color 0.2s;
+}
+.trade-terminal .pairs-sort-select:focus { border-color: var(--accent-yellow); }
 .trade-terminal .pairs-tabs {
   display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
 }

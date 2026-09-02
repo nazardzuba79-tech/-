@@ -9,6 +9,19 @@ export interface TickerRow {
   lastPrice: string;
   changePercent24h: string;
   quoteVolume24h: string;
+  // Optional: present on the live ticker feed (api.getExternalTickers)
+  // but not every caller populates them, so sorting by these falls back
+  // gracefully rather than throwing when they're absent.
+  high24h?: string;
+  low24h?: string;
+}
+
+/** A coin's high/low over the last 7 days, derived from CoinGecko's own
+ * 7-day sparkline (already fetched for other reasons — see
+ * PairListSidebar's useCoinIconMap) rather than a separate API call. */
+export interface SevenDayRange {
+  high7d: number;
+  low7d: number;
 }
 
 export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN' | 'AI' | 'GAMING' | 'RWA';
@@ -63,16 +76,26 @@ export function filterAndSortPairs(
     categoryFilter?: CoinCategory | null;
     rankByBase?: Map<string, CoinRanking>;
     sortByRank?: boolean;
+    // Only needed for the 'high7d'/'low7d' sort fields — 24h high/low
+    // comes straight off each TickerRow, but a 7-day range has to be
+    // derived from CoinGecko's sparkline, which lives in this side map
+    // rather than on the ticker itself.
+    sevenDayBySymbol?: Map<string, SevenDayRange>;
     // 'change' sorts by each pair's own live 24h% (gainers/losers), driven
     // by the same real Kraken-mirrored figure the visible column shows —
     // no CoinGecko dependency needed since every TickerRow already carries
-    // changePercent24h. Defaults to 'volume' (most-traded first), the
-    // existing behavior.
-    sortField?: 'volume' | 'change';
+    // changePercent24h. 'high24h'/'low24h' sort by the ticker's own 24h
+    // range (biggest high first, smallest low first — the natural reading
+    // of each, not configurable via sortDir). 'high7d'/'low7d' do the same
+    // over 7 days via sevenDayBySymbol; a pair missing from that map sorts
+    // to the end rather than looking broken. Defaults to 'volume'
+    // (most-traded first), the existing behavior.
+    sortField?: 'volume' | 'change' | 'high24h' | 'low24h' | 'high7d' | 'low7d';
     sortDir?: 1 | -1;
   }
 ): TickerRow[] {
   const rankByBase = opts.rankByBase;
+  const sevenDayBySymbol = opts.sevenDayBySymbol;
   const sortDir = opts.sortDir ?? -1;
   const search = opts.search.trim().toLowerCase();
   // A non-empty search overrides the quote-asset tab (USDT/BTC/ETH/…)
@@ -107,6 +130,23 @@ export function filterAndSortPairs(
         const changeA = parseChangePercent(a.changePercent24h, a.pair);
         const changeB = parseChangePercent(b.changePercent24h, b.pair);
         return (changeA - changeB) * sortDir;
+      }
+      if (opts.sortField === 'high24h' || opts.sortField === 'low24h') {
+        const isHigh = opts.sortField === 'high24h';
+        const rawA = isHigh ? a.high24h : a.low24h;
+        const rawB = isHigh ? b.high24h : b.low24h;
+        // Missing data sinks to the end regardless of direction, rather
+        // than a blank field sorting to the very top of "biggest highs".
+        const valA = rawA ? parseFloat(rawA) : isHigh ? -Infinity : Infinity;
+        const valB = rawB ? parseFloat(rawB) : isHigh ? -Infinity : Infinity;
+        return isHigh ? valB - valA : valA - valB;
+      }
+      if (opts.sortField === 'high7d' || opts.sortField === 'low7d') {
+        const isHigh = opts.sortField === 'high7d';
+        const base = (pair: string) => sevenDayBySymbol?.get(pair.split('/')[0]);
+        const valA = isHigh ? base(a.pair)?.high7d ?? -Infinity : base(a.pair)?.low7d ?? Infinity;
+        const valB = isHigh ? base(b.pair)?.high7d ?? -Infinity : base(b.pair)?.low7d ?? Infinity;
+        return isHigh ? valB - valA : valA - valB;
       }
       // Most-traded pairs first — sorting alphabetically (the API's raw
       // order) put obscure, barely-liquid tickers at the top just because

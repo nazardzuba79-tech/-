@@ -7,33 +7,48 @@ import {
   saveFavorites,
   filterAndSortPairs,
   TickerRow,
+  SevenDayRange,
 } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
 import { CryptoIcon } from './CryptoIcon';
 
-// CoinGecko's own per-coin logo — covers this app's newer/smaller listings
-// (SUI, TAO, ENA, …) that the static jsDelivr icon set CryptoIcon falls
-// back to has never had. One fetch, not polled: unlike price data, a
-// coin's logo doesn't change minute to minute, and the backend's own
-// rankings cache only refreshes hourly anyway (see CoinGeckoService).
-function useCoinIconMap(): Map<string, string> {
+// One CoinGecko rankings fetch feeds two otherwise-unrelated needs, so it's
+// done once here rather than twice:
+//  - per-coin logos (icons), covering this app's newer/smaller listings
+//    (SUI, TAO, ENA, …) that the static jsDelivr icon set CryptoIcon falls
+//    back to has never had;
+//  - 7-day high/low (sevenDay), derived from CoinGecko's own 7-day
+//    sparkline rather than a separate endpoint — nothing here is invented,
+//    just min/max over a series CoinGecko already reports.
+// Not polled: unlike price data, a coin's logo and week-old price history
+// don't change minute to minute, and the backend's own rankings cache only
+// refreshes hourly anyway (see CoinGeckoService).
+function useCoinGeckoIndex(): { icons: Map<string, string>; sevenDay: Map<string, SevenDayRange> } {
   const [icons, setIcons] = useState<Map<string, string>>(new Map());
+  const [sevenDay, setSevenDay] = useState<Map<string, SevenDayRange>>(new Map());
   useEffect(() => {
     let cancelled = false;
     api
       .getExternalRankings()
       .then((res) => {
         if (cancelled) return;
-        const map = new Map<string, string>();
-        for (const r of res.rankings) if (r.image) map.set(r.symbol, r.image);
-        setIcons(map);
+        const iconMap = new Map<string, string>();
+        const rangeMap = new Map<string, SevenDayRange>();
+        for (const r of res.rankings) {
+          if (r.image) iconMap.set(r.symbol, r.image);
+          if (r.sparkline.length > 0) {
+            rangeMap.set(r.symbol, { high7d: Math.max(...r.sparkline), low7d: Math.min(...r.sparkline) });
+          }
+        }
+        setIcons(iconMap);
+        setSevenDay(rangeMap);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, []);
-  return icons;
+  return { icons, sevenDay };
 }
 
 export interface PairListHandle {
@@ -60,10 +75,11 @@ const SORT_SNAPSHOT_INTERVAL_MS = 20000;
 export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChange: (pair: string) => void }>(
   function PairListSidebar({ pair, onChange }, ref) {
     const { t } = useLanguage();
-    const coinIcons = useCoinIconMap();
+    const { icons: coinIcons, sevenDay } = useCoinGeckoIndex();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
+    const [sortMode, setSortMode] = useState<'volume' | 'high24h' | 'low24h' | 'high7d' | 'low7d'>('volume');
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
@@ -137,8 +153,9 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       favoritesOnly,
       favorites,
       categoryFilter: null,
-      sortField: 'volume',
+      sortField: sortMode,
       sortDir: -1,
+      sevenDayBySymbol: sevenDay,
     });
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
@@ -156,6 +173,22 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('trade.searchPairPlaceholder')}
           />
+        </div>
+
+        <div className="pairs-sort-row">
+          <span className="pairs-sort-label">{t('trade.sortBy')}</span>
+          <select
+            className="pairs-sort-select"
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as typeof sortMode)}
+            aria-label={t('trade.sortBy')}
+          >
+            <option value="volume">{t('trade.sortVolume')}</option>
+            <option value="high24h">{t('trade.sortHigh24h')}</option>
+            <option value="low24h">{t('trade.sortLow24h')}</option>
+            <option value="high7d">{t('trade.sortHigh7d')}</option>
+            <option value="low7d">{t('trade.sortLow7d')}</option>
+          </select>
         </div>
 
         <div className="pairs-tabs">

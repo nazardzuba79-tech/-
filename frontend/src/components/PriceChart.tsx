@@ -57,7 +57,7 @@ const INTERVAL_SECONDS: Record<Interval, number> = {
   '1w': 604800,
 };
 
-type Tool = 'cursor' | 'trendline' | 'horizontal' | 'ruler' | 'text';
+type Tool = 'cursor' | 'trendline' | 'ray' | 'horizontal' | 'vertical' | 'rectangle' | 'fib' | 'brush' | 'ruler' | 'text';
 
 interface Point {
   time: number;
@@ -78,6 +78,34 @@ interface TextLabel {
   at: Point;
   text: string;
 }
+// A horizontal ray: unlike 'horizontal' (a native price line spanning the
+// full chart width), this only extends rightward from the point it was
+// drawn at — same distinction TradingView's own toolbar makes.
+interface RayLine {
+  id: number;
+  a: Point;
+}
+interface VerticalLine {
+  id: number;
+  time: number;
+}
+interface RectShape {
+  id: number;
+  a: Point;
+  b: Point;
+}
+interface FibShape {
+  id: number;
+  a: Point;
+  b: Point;
+}
+interface BrushStroke {
+  id: number;
+  points: Point[];
+}
+
+// Standard retracement levels — the same set every charting tool ships.
+const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 
 let nextDrawingId = 1;
 
@@ -90,8 +118,9 @@ let nextDrawingId = 1;
  * unfixable from our side. Here colors and timeframes are code we control
  * directly, fed by real Kraken candle data (/market/external/candles).
  *
- * The left-side drawing toolbar (trend line, horizontal line, ruler, text,
- * eraser, fit-to-content) is a deliberately smaller, honest subset of what
+ * The left-side drawing toolbar (trend line, ray, horizontal/vertical line,
+ * rectangle, fibonacci retracement, brush, ruler, text, eraser,
+ * fit-to-content) is a deliberately smaller, honest subset of what
  * TradingView's own licensed charting library ships — every tool here is
  * fully functional, drawn with a plain SVG overlay kept in sync with the
  * chart's pan/zoom via its own coordinate-conversion APIs. No icon here is
@@ -142,6 +171,12 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   const [trendLines, setTrendLines] = useState<TrendLine[]>([]);
   const [rulers, setRulers] = useState<Ruler[]>([]);
   const [labels, setLabels] = useState<TextLabel[]>([]);
+  const [rays, setRays] = useState<RayLine[]>([]);
+  const [verticals, setVerticals] = useState<VerticalLine[]>([]);
+  const [rectangles, setRectangles] = useState<RectShape[]>([]);
+  const [fibs, setFibs] = useState<FibShape[]>([]);
+  const [brushStrokes, setBrushStrokes] = useState<BrushStroke[]>([]);
+  const [pendingBrush, setPendingBrush] = useState<Point[] | null>(null);
   const [pendingPoint, setPendingPoint] = useState<Point | null>(null);
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
@@ -328,7 +363,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
 
     function handleClick(param: MouseEventParams<Time>) {
       const activeTool = toolRef.current;
-      if (activeTool !== 'horizontal' && activeTool !== 'text') return;
+      if (activeTool !== 'horizontal' && activeTool !== 'text' && activeTool !== 'ray' && activeTool !== 'vertical') return;
       const p = pointFromEvent(param);
       if (!p) return;
 
@@ -342,6 +377,16 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           title: p.price.toFixed(2),
         });
         priceLinesRef.current.push(line);
+        return;
+      }
+
+      if (activeTool === 'ray') {
+        setRays((prev) => [...prev, { id: nextDrawingId++, a: p }]);
+        return;
+      }
+
+      if (activeTool === 'vertical') {
+        setVerticals((prev) => [...prev, { id: nextDrawingId++, time: p.time }]);
         return;
       }
 
@@ -384,7 +429,13 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     setTrendLines([]);
     setRulers([]);
     setLabels([]);
+    setRays([]);
+    setVerticals([]);
+    setRectangles([]);
+    setFibs([]);
+    setBrushStrokes([]);
     setPendingPoint(null);
+    setPendingBrush(null);
     for (const line of priceLinesRef.current) {
       seriesRef.current?.removePriceLine(line);
     }
@@ -395,7 +446,13 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     setTrendLines([]);
     setRulers([]);
     setLabels([]);
+    setRays([]);
+    setVerticals([]);
+    setRectangles([]);
+    setFibs([]);
+    setBrushStrokes([]);
     setPendingPoint(null);
+    setPendingBrush(null);
     for (const line of priceLinesRef.current) {
       seriesRef.current?.removePriceLine(line);
     }
@@ -619,6 +676,12 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     return { x, y };
   }
 
+  // Vertical lines only need an x — unlike toScreen, this doesn't require a
+  // price to also be on-screen at that time.
+  function timeToX(time: number): number | null {
+    return chartRef.current?.timeScale().timeToCoordinate(time as unknown as Time) ?? null;
+  }
+
   function pointFromClientXY(clientX: number, clientY: number): Point | null {
     const container = containerRef.current;
     const chart = chartRef.current;
@@ -631,14 +694,37 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     return { time: time as unknown as number, price };
   }
 
-  // Trend line / ruler: a genuine press-drag-release gesture (like
-  // TradingView's own tools) instead of two separate clicks — mousedown
-  // sets the anchor, mousemove live-previews the shape, mouseup finalizes
-  // it. Native window listeners (not React handlers) so the drag keeps
-  // tracking even if the cursor leaves the chart area mid-gesture.
+  // Trend line / ruler / rectangle / fib: a genuine press-drag-release
+  // gesture (like TradingView's own tools) instead of two separate clicks —
+  // mousedown sets the anchor, mousemove live-previews the shape, mouseup
+  // finalizes it. Native window listeners (not React handlers) so the drag
+  // keeps tracking even if the cursor leaves the chart area mid-gesture.
   const handleOverlayMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (tool !== 'trendline' && tool !== 'ruler') return;
+      if (tool === 'brush') {
+        const start = pointFromClientXY(e.clientX, e.clientY);
+        if (!start) return;
+        let points: Point[] = [start];
+        setPendingBrush(points);
+        function handleMove(ev: MouseEvent) {
+          const p = pointFromClientXY(ev.clientX, ev.clientY);
+          if (p) {
+            points = [...points, p];
+            setPendingBrush(points);
+          }
+        }
+        function handleUp() {
+          window.removeEventListener('mousemove', handleMove);
+          window.removeEventListener('mouseup', handleUp);
+          setPendingBrush(null);
+          if (points.length > 1) setBrushStrokes((prev) => [...prev, { id: nextDrawingId++, points }]);
+        }
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp);
+        return;
+      }
+
+      if (tool !== 'trendline' && tool !== 'ruler' && tool !== 'rectangle' && tool !== 'fib') return;
       const startPoint = pointFromClientXY(e.clientX, e.clientY);
       if (!startPoint) return;
       const start: Point = startPoint;
@@ -666,6 +752,10 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           setTrendLines((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
         } else if (activeTool === 'ruler') {
           setRulers((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
+        } else if (activeTool === 'rectangle') {
+          setRectangles((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
+        } else if (activeTool === 'fib') {
+          setFibs((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
         }
       }
       window.addEventListener('mousemove', handleMove);
@@ -758,14 +848,17 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
           <svg
-            style={{ ...styles.overlay, pointerEvents: tool === 'trendline' || tool === 'ruler' ? 'auto' : 'none' }}
+            style={{
+              ...styles.overlay,
+              pointerEvents: ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) ? 'auto' : 'none',
+            }}
             onMouseDown={handleOverlayMouseDown}
           >
             {/* A bare <svg> only hit-tests its painted children, not its own
                 empty viewport — without this transparent (not "none") rect
                 covering the whole area, drags over blank chart space would
                 fall straight through to the canvas underneath. */}
-            {(tool === 'trendline' || tool === 'ruler') && (
+            {['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) && (
               <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
             )}
 
@@ -775,6 +868,76 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
               if (!a || !b) return null;
               return <line key={l.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f7a600" strokeWidth={1.5} />;
             })}
+
+            {rays.map((r) => {
+              const a = toScreen(r.a);
+              if (!a) return null;
+              return <line key={r.id} x1={a.x} y1={a.y} x2="100%" y2={a.y} stroke="#f7a600" strokeWidth={1.5} strokeDasharray="5 3" />;
+            })}
+
+            {verticals.map((v) => {
+              const x = timeToX(v.time);
+              if (x === null) return null;
+              return <line key={v.id} x1={x} y1={0} x2={x} y2="100%" stroke="#5b8def" strokeWidth={1.5} strokeDasharray="5 3" />;
+            })}
+
+            {rectangles.map((r) => {
+              const a = toScreen(r.a);
+              const b = toScreen(r.b);
+              if (!a || !b) return null;
+              const x = Math.min(a.x, b.x);
+              const y = Math.min(a.y, b.y);
+              return (
+                <rect
+                  key={r.id}
+                  x={x}
+                  y={y}
+                  width={Math.abs(b.x - a.x)}
+                  height={Math.abs(b.y - a.y)}
+                  fill="rgba(91,141,239,0.12)"
+                  stroke="#5b8def"
+                  strokeWidth={1.5}
+                />
+              );
+            })}
+
+            {fibs.map((f) => {
+              const a = toScreen(f.a);
+              const b = toScreen(f.b);
+              if (!a || !b) return null;
+              const x1 = Math.min(a.x, b.x);
+              const x2 = Math.max(a.x, b.x);
+              return (
+                <g key={f.id}>
+                  {FIB_LEVELS.map((level) => {
+                    const price = f.a.price + (f.b.price - f.a.price) * level;
+                    const y = priceToY(price);
+                    if (y === null) return null;
+                    return (
+                      <g key={level}>
+                        <line x1={x1} y1={y} x2={x2} y2={y} stroke="#c084fc" strokeWidth={1} strokeDasharray="3 3" />
+                        <text x={x2 + 4} y={y + 3} fontSize={10} fontWeight={600} fill="#c084fc">
+                          {level.toFixed(3)} ({price.toFixed(2)})
+                        </text>
+                      </g>
+                    );
+                  })}
+                </g>
+              );
+            })}
+
+            {brushStrokes.map((s) => {
+              const pts = s.points.map(toScreen).filter((p): p is { x: number; y: number } => p !== null);
+              if (pts.length < 2) return null;
+              return <polyline key={s.id} points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#00d68f" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
+            })}
+
+            {pendingBrush &&
+              (() => {
+                const pts = pendingBrush.map(toScreen).filter((p): p is { x: number; y: number } => p !== null);
+                if (pts.length < 2) return null;
+                return <polyline points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="none" stroke="#00d68f" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />;
+              })()}
 
             {rulers.map((r) => {
               const a = toScreen(r.a);
@@ -807,6 +970,36 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
                     <g>
                       <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="3 3" />
                       <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} />
+                    </g>
+                  );
+                }
+                if (tool === 'rectangle') {
+                  const x = Math.min(a.x, b.x);
+                  const y = Math.min(a.y, b.y);
+                  return (
+                    <rect
+                      x={x}
+                      y={y}
+                      width={Math.abs(b.x - a.x)}
+                      height={Math.abs(b.y - a.y)}
+                      fill="rgba(91,141,239,0.12)"
+                      stroke="#5b8def"
+                      strokeWidth={1.5}
+                      strokeDasharray="3 3"
+                    />
+                  );
+                }
+                if (tool === 'fib') {
+                  const x1 = Math.min(a.x, b.x);
+                  const x2 = Math.max(a.x, b.x);
+                  return (
+                    <g>
+                      {FIB_LEVELS.map((level) => {
+                        const price = pendingPoint.price + (cursorPoint.price - pendingPoint.price) * level;
+                        const y = priceToY(price);
+                        if (y === null) return null;
+                        return <line key={level} x1={x1} y1={y} x2={x2} y2={y} stroke="#c084fc" strokeWidth={1} strokeDasharray="3 3" />;
+                      })}
                     </g>
                   );
                 }
@@ -917,7 +1110,12 @@ function DrawToolbar({
   const TOOLS: { id: Tool; icon: JSX.Element; title: string }[] = [
     { id: 'cursor', icon: <CursorIcon />, title: 'Курсор' },
     { id: 'trendline', icon: <TrendLineIcon />, title: 'Линия тренда' },
+    { id: 'ray', icon: <RayIcon />, title: 'Горизонтальный луч' },
     { id: 'horizontal', icon: <HorizontalIcon />, title: 'Горизонтальная линия' },
+    { id: 'vertical', icon: <VerticalIcon />, title: 'Вертикальная линия' },
+    { id: 'rectangle', icon: <RectangleIcon />, title: 'Прямоугольник' },
+    { id: 'fib', icon: <FibIcon />, title: 'Уровни Фибоначчи' },
+    { id: 'brush', icon: <BrushIcon />, title: 'Кисть' },
     { id: 'ruler', icon: <RulerIcon />, title: 'Линейка' },
     { id: 'text', icon: <TextIcon />, title: 'Текст' },
   ];
@@ -996,6 +1194,46 @@ function HorizontalIcon() {
     <svg {...ICON_PROPS}>
       <line x1="3" y1="8" x2="21" y2="8" />
       <line x1="3" y1="16" x2="21" y2="16" strokeDasharray="3 3" />
+    </svg>
+  );
+}
+function RayIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <circle cx="5" cy="12" r="1.8" fill="currentColor" stroke="none" />
+      <line x1="7" y1="12" x2="20" y2="12" strokeDasharray="3 2" />
+    </svg>
+  );
+}
+function VerticalIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <line x1="12" y1="3" x2="12" y2="21" strokeDasharray="3 2" />
+    </svg>
+  );
+}
+function RectangleIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="6" width="16" height="12" rx="1" />
+    </svg>
+  );
+}
+function FibIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="11" x2="21" y2="11" strokeDasharray="3 2" />
+      <line x1="3" y1="16" x2="21" y2="16" strokeDasharray="3 2" />
+      <line x1="3" y1="21" x2="21" y2="21" />
+    </svg>
+  );
+}
+function BrushIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M4 20c2-5 3-8 8-13l3 3c-5 5-8 6-13 8z" />
+      <path d="M14 8l2-2a2 2 0 0 1 3 3l-2 2" />
     </svg>
   );
 }
