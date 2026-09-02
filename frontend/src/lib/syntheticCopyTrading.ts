@@ -78,12 +78,12 @@ function path(values: number[], min: number, max: number): { line: string; area:
     return [x, y] as const;
   });
   const line = points.map(([x, y], index) => `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
-  return { line, area: `${line} L900 ${bottom} L0 ${bottom} Z`, endY: points.at(-1)?.[1] ?? bottom };
+  return { line, area: `${line} L900 ${bottom} L0 ${bottom} Z`, endY: points[points.length - 1]?.[1] ?? bottom };
 }
 
 export function syntheticChartData(data: SyntheticCopyTradingResponse, period: Period): ChartData {
   const all = data.equityHistory;
-  const endDate = Date.parse(`${all.at(-1)!.date}T00:00:00Z`);
+  const endDate = Date.parse(`${all[all.length - 1].date}T00:00:00Z`);
   const cutoff = endDate - periodDays[period] * 86_400_000;
   const selected = period === 'ALL' ? all : all.filter((point) => Date.parse(`${point.date}T00:00:00Z`) >= cutoff);
   const base = selected[0].equity;
