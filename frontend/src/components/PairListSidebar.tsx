@@ -93,6 +93,9 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     // keeps rows in place while their price/% cells keep updating live.
     const sortSnapshotRef = useRef<Map<string, number>>(new Map());
     const lastSnapshotAtRef = useRef(0);
+    // True once the ticker feed has returned a non-empty list at least
+    // once — see loadTickers below.
+    const hasLoadedTickersRef = useRef(false);
 
     useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
 
@@ -101,6 +104,19 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       api
         .getExternalTickers()
         .then((res) => {
+          if (res.tickers.length === 0) {
+            // The feed can come back with an empty array instead of throwing
+            // (a real backend hiccup, not a thrown error). Before any real
+            // data has ever loaded that must still surface a retry state —
+            // otherwise the list just goes silently blank with nothing to
+            // click. Once we've shown a real list at least once, though,
+            // keep it on screen rather than wiping it for a likely-transient
+            // empty poll (same "keep last known good data" behavior TickerBar
+            // already uses on its own fetch failures).
+            if (!hasLoadedTickersRef.current) setLoadError(true);
+            return;
+          }
+          hasLoadedTickersRef.current = true;
           setTickers(res.tickers);
           const now = Date.now();
           if (sortSnapshotRef.current.size === 0 || now - lastSnapshotAtRef.current >= SORT_SNAPSHOT_INTERVAL_MS) {
