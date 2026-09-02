@@ -283,18 +283,22 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                 className={`pair-row ${tk.pair === pair ? 'active' : ''}`}
                 onClick={() => onChange(tk.pair)}
               >
-                <span className="p-name">
-                  <span
-                    onClick={(e) => toggleFavorite(tk.pair, e)}
-                    style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : 'var(--text-secondary)', marginRight: 4, flexShrink: 0 }}
-                  >
-                    ★
-                  </span>
-                  <span className="p-icon">
-                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={18} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
-                  </span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
+                {/* Five sibling grid cells, matching the reference's
+                    .market-row template (star | logo | pair | price |
+                    change) — nesting the first three inside one flex cell
+                    made the pair column's width depend on the icon's own
+                    layout instead of on the grid. */}
+                <span
+                  className="p-star"
+                  onClick={(e) => toggleFavorite(tk.pair, e)}
+                  style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : undefined }}
+                >
+                  ★
                 </span>
+                <span className="p-icon">
+                  <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
+                </span>
+                <span className="p-name">{tk.pair}</span>
                 <span className="p-price">{formatPrice(parseFloat(tk.lastPrice))}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}

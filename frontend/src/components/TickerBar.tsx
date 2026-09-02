@@ -3,14 +3,6 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
-import { krakenSocket, SocketStatus } from '../lib/krakenSocket';
-
-// Spot trading is 0% on this exchange — the same figure the registration
-// page and the marketing FAQ already state, and the same FEE_RATE the
-// order form charges. Shown here because it is real, not because the
-// space needed filling.
-const SPOT_MAKER_FEE = 0;
-const SPOT_TAKER_FEE = 0;
 
 interface Stats {
   lastPrice: number;
@@ -35,11 +27,6 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
   const { t } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
-  // Real market status, from the same live feed the connection banner
-  // watches — not a decorative "online" pill.
-  const [socketStatus, setSocketStatus] = useState<SocketStatus>(krakenSocket.getStatus());
-
-  useEffect(() => krakenSocket.subscribeStatus(setSocketStatus), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,36 +116,6 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
         <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
       </div>
 
-      {/* Contextual instrument data, in the reference's own .spot-metrics
-          slot at the end of this row.
-
-          This page trades spot (and CFD in its own mode), so what belongs
-          here is spot-specific: the real 0% maker/taker this exchange
-          charges, and the live status of the market feed. There is
-          deliberately NO funding rate, mark price or open interest — those
-          are perpetual-contract figures and would be fabricated on a spot
-          instrument. The futures terminal has its own ticker bar
-          (FuturesTickerBar) and already shows the real funding rate there.
-
-          Nothing else is added just to fill the space: this exchange has
-          no per-market minimum order size, so no minimum is shown rather
-          than inventing one. */}
-      <div className="spot-metrics">
-        <div>
-          <span>{t('trade.makerFee')}</span>
-          <strong>{SPOT_MAKER_FEE.toFixed(2)}%</strong>
-        </div>
-        <div>
-          <span>{t('trade.takerFee')}</span>
-          <strong>{SPOT_TAKER_FEE.toFixed(2)}%</strong>
-        </div>
-        <div>
-          <span>{t('trade.marketStatus')}</span>
-          <strong className={socketStatus === 'connected' ? 'live' : 'degraded'}>
-            {socketStatus === 'connected' ? t('trade.marketLive') : t('trade.marketDelayed')}
-          </strong>
-        </div>
-      </div>
     </div>
   );
 }
