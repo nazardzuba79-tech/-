@@ -87,7 +87,12 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
         <span className={`value price ${dir}`}>{stats ? num(stats.lastPrice) : '—'}</span>
       </div>
       <div className="ticker-item">
-        <span className="label">{t('markets.change24h')}</span>
+        {/* "Изменение 24ч", not "24ч %" — this cell leads with the absolute
+            move and only puts the percentage in brackets after it, so a
+            percent-only label made "-817,48" read as if it were itself a
+            percentage. The markets table's own column stays "24ч %"; it
+            really does show only a percentage. */}
+        <span className="label">{t('trade.change24h')}</span>
         <span className={`value ${dir}`}>
           {stats && absoluteChange !== null
             ? `${positive ? '+' : ''}${num(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`

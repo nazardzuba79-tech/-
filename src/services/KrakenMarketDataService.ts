@@ -271,6 +271,11 @@ export class KrakenMarketDataService {
     // only runs for entries that came from a real "/USD" pair.
     for (const info of Array.from(byPair.values())) {
       if (info.quoteAsset !== 'USD') continue;
+      // USDT/USD would relabel to "USDT/USDT" — an asset quoted against
+      // itself, which is not a market and showed up in the pair list as a
+      // junk row priced at ~1.00. Nothing else can collide this way: only
+      // USDT itself produces a self-pair under a "/USDT" label.
+      if (info.baseAsset === 'USDT') continue;
       const usdtPair = `${info.baseAsset}/USDT`;
       byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
     }

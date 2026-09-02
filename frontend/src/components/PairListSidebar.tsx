@@ -242,7 +242,10 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
 
         <div className="pairs-list">
           {filtered.map((tk) => {
-            const change = parseChangePercent(tk.changePercent24h, tk.pair);
+            // Rounded before the direction is picked from it, not after: a
+            // change of -0.001% otherwise printed as a red, downward
+            // "▼ -0.00%" — an arrow and a sign pointing at nothing.
+            const change = Number(parseChangePercent(tk.changePercent24h, tk.pair).toFixed(2));
             const up = change >= 0;
             return (
               <button

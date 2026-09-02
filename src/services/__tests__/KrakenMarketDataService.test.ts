@@ -135,6 +135,29 @@ describe('KrakenMarketDataService', () => {
     expect(book.bids[0]).toEqual({ price: '0.30', quantity: '1000' });
   });
 
+  it('never relabels USDT/USD into a USDT/USDT self-pair', async () => {
+    // Kraken really does list USDT against USD, and the "prefer the USD
+    // market" relabelling would otherwise turn it into "USDT/USDT" — an
+    // asset quoted against itself, which showed up in the pair list as a
+    // junk row priced at ~1.00.
+    const assetPairsWithUsdt = {
+      error: [],
+      result: {
+        USDTZUSD: { altname: 'USDTUSD', wsname: 'USDT/USD', base: 'USDT', quote: 'ZUSD' },
+        XXBTZUSD: { altname: 'XBTUSD', wsname: 'XBT/USD', base: 'XXBT', quote: 'ZUSD' },
+      },
+    };
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse(assetPairsWithUsdt));
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const symbols = await service.listSymbols();
+
+    expect(symbols.map((s) => s.pair)).not.toContain('USDT/USDT');
+    // The real USDT/USD market itself is still listed, and unrelated
+    // coins still get their USD market relabelled as before.
+    expect(symbols.map((s) => s.pair)).toEqual(expect.arrayContaining(['USDT/USD', 'BTC/USD', 'BTC/USDT']));
+  });
+
   it('caches the symbol list and does not refetch within the TTL', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(ASSET_PAIRS_BODY));
     const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
