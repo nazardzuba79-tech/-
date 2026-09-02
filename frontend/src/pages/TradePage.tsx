@@ -12,7 +12,6 @@ import { OrderForm, PickedPrice } from '../components/OrderForm';
 import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
-import { TradeHistoryPanel } from '../components/TradeHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { TopGainersTicker } from '../components/TopGainersTicker';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -24,15 +23,19 @@ import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import './trade-terminal/TradeTerminal.css';
 
-type BottomTab = 'open' | 'orderHistory' | 'tradeHistory' | 'assets';
+// 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
+// on request — it duplicated the account's own fills, which the Wallet
+// page already surfaces (via the same api.getMyTrades backend endpoint,
+// untouched here), and cluttered this terminal. Open Orders/Order
+// History/Assets are unaffected.
+type BottomTab = 'open' | 'orderHistory' | 'assets';
 type MarketType = 'spot' | 'cfd';
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 const PAIR_PATTERN = /^[A-Z0-9]+\/[A-Z0-9]+$/;
 
-const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tabOrderHistory' | 'trade.tabTradeHistory' | 'trade.tabAssets' }[] = [
+const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tabOrderHistory' | 'trade.tabAssets' }[] = [
   { id: 'open', labelKey: 'trade.tabOpenOrders' },
   { id: 'orderHistory', labelKey: 'trade.tabOrderHistory' },
-  { id: 'tradeHistory', labelKey: 'trade.tabTradeHistory' },
   { id: 'assets', labelKey: 'trade.tabAssets' },
 ];
 
@@ -161,13 +164,19 @@ export function TradePage() {
       <div className="terminal">
         <TickerBar pair={pair} onSelectPair={() => pairListRef.current?.focusSearch()} />
 
+        {/* Left to right: search/pair list, chart, order book, order-entry
+            form — the reference had the form under the chart and the pair
+            list on the far right; this is the requested reorder, done via
+            grid-column placement in TradeTerminal.css, not by moving
+            anything with absolute positioning or transforms. */}
         <div className="main-grid">
-          <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" />
+          <div className="left-panel">
+            <PairListSidebar ref={pairListRef} pair={pair} onChange={setPair} />
+            <RecentTradesPanel pair={pair} />
           </div>
 
-          <div className="order-form-area">
-            <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
+          <div className="chart-area">
+            <PriceChart pair={pair} chrome="terminal" />
           </div>
 
           <div className="orderbook-area">
@@ -178,9 +187,8 @@ export function TradePage() {
             />
           </div>
 
-          <div className="right-panel">
-            <PairListSidebar ref={pairListRef} pair={pair} onChange={setPair} />
-            <RecentTradesPanel pair={pair} />
+          <div className="order-form-area">
+            <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
           </div>
         </div>
 
@@ -211,7 +219,6 @@ export function TradePage() {
               <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} />
             )}
             {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-            {bottomTab === 'tradeHistory' && <TradeHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
           </div>
         </div>

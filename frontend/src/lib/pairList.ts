@@ -74,9 +74,19 @@ export function filterAndSortPairs(
 ): TickerRow[] {
   const rankByBase = opts.rankByBase;
   const sortDir = opts.sortDir ?? -1;
+  const search = opts.search.trim().toLowerCase();
+  // A non-empty search overrides the quote-asset tab (USDT/BTC/ETH/…)
+  // rather than being ANDed with it. Without this, typing a real, listed
+  // symbol quietly returned zero rows whenever that coin's pair happened
+  // to be quoted in something other than the currently selected tab (e.g.
+  // searching "pepe" while the USDT tab is active, when PEPE only trades
+  // against USD) — indistinguishable from search being broken. Favorites
+  // stays a real AND: unlike the quote tab, checking it is a deliberate
+  // "only my favorites" choice a search should still respect.
+  const quoteFilter = search ? null : opts.quoteFilter;
   return tickers
-    .filter((tk) => tk.pair.toLowerCase().includes(opts.search.toLowerCase()))
-    .filter((tk) => !opts.quoteFilter || tk.pair.split('/')[1] === opts.quoteFilter)
+    .filter((tk) => !search || tk.pair.toLowerCase().replace('/', '').includes(search.replace('/', '')))
+    .filter((tk) => !quoteFilter || tk.pair.split('/')[1] === quoteFilter)
     .filter((tk) => !opts.favoritesOnly || opts.favorites.has(tk.pair))
     .filter((tk) => {
       if (!opts.categoryFilter) return true;

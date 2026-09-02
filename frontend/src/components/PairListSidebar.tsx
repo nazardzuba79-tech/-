@@ -75,6 +75,12 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       sortField: 'volume',
       sortDir: -1,
     });
+    // filterAndSortPairs ignores quoteFilter once a search is typed (a real
+    // coin quoted outside the active tab must still be findable); the tab
+    // row mirrors that here so it never shows "USDT" highlighted while the
+    // results on screen actually span every quote asset.
+    const isSearching = search.trim().length > 0;
+    const effectiveQuoteFilter = isSearching ? null : quoteFilter;
 
     return (
       <div className="pairs-section">
@@ -97,7 +103,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
           {quoteChips.map((q) => (
             <button
               key={q}
-              className={`pairs-tab ${!favoritesOnly && quoteFilter === q ? 'active' : ''}`}
+              className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === q ? 'active' : ''}`}
               onClick={() => {
                 setFavoritesOnly(false);
                 setQuoteFilter(q);
@@ -107,7 +113,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             </button>
           ))}
           <button
-            className={`pairs-tab ${!favoritesOnly && quoteFilter === null ? 'active' : ''}`}
+            className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === null ? 'active' : ''}`}
             onClick={() => {
               setFavoritesOnly(false);
               setQuoteFilter(null);
