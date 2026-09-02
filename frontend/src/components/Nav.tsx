@@ -1,5 +1,6 @@
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { ArrowUpRight, ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
@@ -7,6 +8,7 @@ import { Logo } from './Logo';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
+import { TopGainersTicker } from './TopGainersTicker';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -18,10 +20,12 @@ export function Nav({
   active,
   middle,
   rightExtra,
+  onTickerSelect,
 }: {
   active: string;
   middle?: ReactNode;
   rightExtra?: ReactNode;
+  onTickerSelect?: (pair: string) => void;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,16 +97,29 @@ export function Nav({
 
   return (
     <>
-    <nav className="top-nav-bar" style={styles.nav}>
-      <Link to="/trade" style={styles.logo}>
-        <Logo />
-      </Link>
+    <header className="global-header top-nav-bar" style={styles.nav}>
+      <div className="header-left">
+        <button
+          className="mobile-menu nav-burger"
+          style={styles.burgerBtn}
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={t('nav.menu')}
+          aria-expanded={mobileOpen}
+        >
+          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
 
-      <div className="nav-desktop-links" style={styles.desktopLinks}>
+        <Link to="/trade" className="header-brand" style={styles.logo}>
+          <Logo />
+        </Link>
+        <span className="brand-separator top-nav-divider" aria-hidden="true" />
+
+        <nav className="main-nav nav-desktop-links" style={styles.desktopLinks} aria-label={t('nav.menu')}>
         {LINKS.map((l) =>
           l.to === '/trade' ? (
             <div
               key={l.to}
+              className="nav-item-wrap"
               style={styles.tradeMenuWrap}
               onMouseEnter={() => {
                 if (tradeMenuCloseTimer.current) window.clearTimeout(tradeMenuCloseTimer.current);
@@ -119,14 +136,16 @@ export function Nav({
             >
               <Link
                 to={l.to}
-                className={`top-nav-link${active === l.to ? ' is-active' : ''}`}
+                className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
                 style={{ ...styles.link, ...styles.tradeMenuTrigger }}
+                aria-haspopup="menu"
+                aria-expanded={tradeMenuOpen}
               >
                 {l.label}
-                <ChevronIcon />
+                <ChevronDown size={12} className={`nav-chevron${tradeMenuOpen ? ' nav-chevron-open' : ''}`} />
               </Link>
               {tradeMenuOpen && (
-                <div style={styles.tradeMenu}>
+                <div className="nav-dropdown" style={styles.tradeMenu} role="menu">
                   <Link to="/trade" style={styles.tradeMenuItem} className="row-hover">
                     <span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span>
                     <span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span>
@@ -142,7 +161,7 @@ export function Nav({
             <Link
               key={l.to}
               to={l.to}
-              className={`top-nav-link${active === l.to ? ' is-active' : ''}`}
+              className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
               style={styles.link}
             >
               {l.label}
@@ -151,33 +170,35 @@ export function Nav({
         )}
         <Link
           to="/card"
-          className={`top-nav-link${active === '/card' ? ' is-active' : ''}`}
+          className={`nav-item nav-secondary top-nav-link${active === '/card' ? ' nav-active is-active' : ''}`}
           style={{ ...styles.link, ...styles.cardLink }}
         >
-          <CardIcon active={active === '/card'} />
+          <CreditCard size={14} />
           {t('nav.card')}
         </Link>
-        <Link to="/otc" className={`top-nav-link${active === '/otc' ? ' is-active' : ''}`} style={styles.link}>
+        <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active === '/otc' ? ' nav-active is-active' : ''}`} style={styles.link}>
           {t('nav.otc')}
         </Link>
         {isAdmin && (
-          <Link to="/admin" style={{ ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}>
-            <ShieldIcon admin />
+          <Link
+            to="/admin"
+            className={`nav-item nav-admin${active === '/admin' ? ' nav-active' : ''}`}
+            style={{ ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}
+          >
+            <Landmark size={14} />
             {t('nav.admin')}
           </Link>
         )}
         {middle}
+        </nav>
       </div>
 
-      <div className="nav-desktop-right" style={styles.right}>
-        {rightExtra}
-        {/* The one filled button in the bar, parked at the right end the
-            way every exchange parks its primary CTA — it used to sit
-            immediately after the logo, which crowded the link row. */}
-        <button onClick={() => setShowDeposit(true)} className="top-nav-fund-btn" style={styles.navDepositBtn}>
+      <div className="header-actions nav-desktop-right" style={styles.right}>
+        <button onClick={() => setShowDeposit(true)} className="deposit-button top-nav-fund-btn" style={styles.navDepositBtn}>
           <span>{t('wallet.deposit')}</span>
-          <ArrowUpRightIcon />
+          <ArrowUpRight size={14} />
         </button>
+        {rightExtra && <div className="header-extra-action">{rightExtra}</div>}
         <LanguageSwitcher variant="pill" />
         {/* Settings/Profile is one destination (SettingsPage's own Profile
             tab is already its default tab), entered through the name
@@ -186,15 +207,15 @@ export function Nav({
         <div className="top-nav-profile-wrap" ref={profileMenuRef}>
           <button
             type="button"
-            className="top-nav-profile-btn"
+            className="header-icon profile-control top-nav-profile-btn"
             onClick={() => setProfileMenuOpen((o) => !o)}
             aria-expanded={profileMenuOpen}
           >
             <span className="top-nav-profile-avatar">
-              {avatarUrl ? <img src={avatarUrl} alt="" /> : <UserIcon active={active === '/settings'} />}
+              {avatarUrl ? <img src={avatarUrl} alt="" /> : <UserRound size={13} />}
             </span>
             <span>{t('nav.profile')}</span>
-            <ChevronIcon />
+            <ChevronDown size={11} className={`nav-chevron${profileMenuOpen ? ' nav-chevron-open' : ''}`} />
           </button>
           {profileMenuOpen && (
             <div className="top-nav-profile-menu">
@@ -202,22 +223,12 @@ export function Nav({
                 {t('nav.profile')}
               </Link>
               <button type="button" onClick={handleLogout}>
-                <LogOutIcon /> {t('nav.logout')}
+                <LogOut size={14} /> {t('nav.logout')}
               </button>
             </div>
           )}
         </div>
       </div>
-
-      <button
-        className="nav-burger"
-        style={styles.burgerBtn}
-        onClick={() => setMobileOpen((v) => !v)}
-        aria-label={t('nav.menu')}
-        aria-expanded={mobileOpen}
-      >
-        <BurgerIcon open={mobileOpen} />
-      </button>
 
       <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`} style={styles.mobileMenu}>
         <button
@@ -245,7 +256,7 @@ export function Nav({
           </Fragment>
         ))}
         <Link to="/card" style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}>
-          <CardIcon active={active === '/card'} />
+          <CreditCard size={14} />
           {t('nav.card')}
         </Link>
         <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
@@ -256,7 +267,7 @@ export function Nav({
             to="/admin"
             style={{ ...styles.mobileLink, ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}
           >
-            <ShieldIcon admin />
+            <Landmark size={14} />
             {t('nav.admin')}
           </Link>
         )}
@@ -267,7 +278,7 @@ export function Nav({
           to="/settings"
           style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/settings' ? styles.linkActive : {}) }}
         >
-          <UserIcon active={active === '/settings'} />
+          <UserRound size={15} />
           {t('nav.profile')}
         </Link>
 
@@ -276,147 +287,33 @@ export function Nav({
           <LanguageSwitcher />
         </div>
         <button onClick={handleLogout} style={{ ...styles.logoutBtn, width: '100%' }}>
-          {t('nav.logout')}
+          <LogOut size={14} /> {t('nav.logout')}
         </button>
       </div>
-    </nav>
+    </header>
+    <TopGainersTicker onSelect={onTickerSelect} />
     {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     <BottomNav />
     </>
   );
 }
 
-function BurgerIcon({ open }: { open: boolean }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-primary)" strokeWidth="2" strokeLinecap="round">
-      {open ? (
-        <>
-          <line x1="5" y1="5" x2="19" y2="19" />
-          <line x1="19" y1="5" x2="5" y2="19" />
-        </>
-      ) : (
-        <>
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </>
-      )}
-    </svg>
-  );
-}
-
-let cardIconGradientSeq = 0;
-
-// Its own gradient + glow, unlike the plain currentColor nav icons — the
-// card page is a real product to sell, so its nav entry should read as a
-// small preview of that card rather than blend in with Settings/gear.
-function CardIcon({ active }: { active: boolean }) {
-  const gradientId = useState(() => `nav-card-gradient-${cardIconGradientSeq++}`)[0];
-  return (
-    <svg
-      className="nav-card-icon"
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ filter: active ? 'drop-shadow(0 0 5px rgba(139,92,246,0.65))' : undefined }}
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="2" y1="5" x2="22" y2="19" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#8b5cf6" />
-          <stop offset="1" stopColor="#3b82f6" />
-        </linearGradient>
-      </defs>
-      <rect x="2" y="5" width="20" height="14" rx="2" stroke={`url(#${gradientId})`} />
-      <line x1="2" y1="10" x2="22" y2="10" stroke={`url(#${gradientId})`} />
-    </svg>
-  );
-}
-
-// Small down-chevron next to "Торговля" — the only signal (besides
-// discovering it by accident) that hovering opens a menu instead of just
-// being a plain link like its neighbors.
-function ChevronIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function ArrowUpRightIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="7" y1="17" x2="17" y2="7" />
-      <polyline points="7 7 17 7 17 17" />
-    </svg>
-  );
-}
-
-function LogOutIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  );
-}
-
-function UserIcon({ active }: { active: boolean }) {
-  return (
-    <svg
-      width="17"
-      height="17"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={active ? 'var(--text-primary)' : 'var(--text-secondary)'}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
-    </svg>
-  );
-}
-
-function ShieldIcon({ active, admin }: { active?: boolean; admin?: boolean }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={admin ? '#a5b4fc' : active ? 'var(--text-primary)' : 'var(--text-secondary)'}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-
 const styles: Record<string, React.CSSProperties> = {
   nav: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-    padding: '0 20px',
-    // 56px, matching the compact header height real exchanges use — the
-    // old 70px bar cost a tenth of the viewport on a laptop for nothing.
-    height: 56,
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+    gap: 0,
+    padding: '0 28px',
+    height: 64,
     position: 'sticky',
     top: 0,
-    zIndex: 10,
+    zIndex: 20,
     flexShrink: 0,
   },
   logo: {
+    display: 'inline-flex',
+    alignItems: 'center',
     fontFamily: 'var(--font-display)',
     fontSize: 16,
     fontWeight: 800,
@@ -424,9 +321,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   desktopLinks: {
     display: 'flex',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 2,
-    marginLeft: 10,
+    height: '100%',
   },
   tradeMenuWrap: {
     position: 'relative',
@@ -440,13 +337,13 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: '100%',
     left: 0,
-    marginTop: 8,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    boxShadow: '0 16px 32px rgba(0,0,0,0.35)',
-    padding: 6,
-    width: 220,
+    marginTop: 0,
+    background: '#11161f',
+    border: '1px solid #232c3a',
+    borderRadius: 8,
+    boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
+    padding: '12px 14px',
+    width: 224,
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
@@ -470,34 +367,36 @@ const styles: Record<string, React.CSSProperties> = {
   },
   burgerBtn: {
     display: 'none',
-    marginLeft: 'auto',
+    marginRight: 8,
     background: 'transparent',
     border: 'none',
-    padding: 6,
+    padding: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   mobileMenu: {
     display: 'none',
     position: 'absolute',
-    top: 56,
+    top: 64,
     left: 0,
     right: 0,
     flexDirection: 'column',
     gap: 4,
-    padding: 16,
-    background: '#0c1116',
-    borderBottom: '1px solid rgba(151,168,185,0.14)',
-    boxShadow: '0 12px 24px rgba(0,0,0,0.35)',
-    maxHeight: 'calc(100vh - 56px)',
+    padding: '10px 16px 14px',
+    background: '#0c1018',
+    borderBottom: '1px solid #1c2330',
+    boxShadow: '0 12px 28px rgba(0,0,0,0.3)',
+    maxHeight: 'calc(100vh - 64px)',
     overflowY: 'auto',
   },
   mobileLink: {
-    fontSize: 15,
-    fontWeight: 600,
-    color: 'var(--text-secondary)',
-    padding: '12px 6px',
-    borderBottom: '1px solid var(--border)',
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: 13.5,
+    fontWeight: 500,
+    color: '#d8dce6',
+    padding: '11px 12px',
+    borderRadius: 6,
   },
   mobileDivider: {
     height: 1,
@@ -518,12 +417,16 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: 6,
-    minHeight: 56,
+    padding: '0 11px',
+    fontSize: 13.5,
+    fontWeight: 500,
+    letterSpacing: 0,
     whiteSpace: 'nowrap',
   },
   // Still used by the mobile drawer, which doesn't use .top-nav-link.
   linkActive: {
-    color: '#f7a600',
+    color: '#ffffff',
+    background: 'rgba(240,196,63,0.06)',
   },
   cardLink: {
     display: 'flex',
@@ -538,47 +441,46 @@ const styles: Record<string, React.CSSProperties> = {
   adminBadge: {
     display: 'flex',
     alignItems: 'center',
-    minHeight: 34,
-    gap: 7,
-    background: 'rgba(79,70,229,0.14)',
-    border: '1px solid rgba(129,140,248,0.5)',
-    borderRadius: 8,
+    gap: 6,
+    background: 'transparent',
+    border: 0,
+    borderRadius: 6,
     padding: '0 11px',
-    fontSize: 12,
-    fontWeight: 650,
-    color: '#a5b4fc',
+    fontSize: 13,
+    fontWeight: 500,
+    color: '#8b8af6',
   },
   adminBadgeActive: {
-    background: 'rgba(79,70,229,0.28)',
-    borderColor: '#818cf8',
-    color: '#c7d2fe',
+    background: 'rgba(139,138,246,0.08)',
+    color: '#b6b5ff',
   },
   right: {
     marginLeft: 'auto',
     display: 'flex',
     alignItems: 'center',
   },
-  // Deliberately the one filled button among plain text nav links — same
-  // idea as a real exchange's "Buy crypto" nav CTA: it's the highest-value
-  // action, so it should read as a button, not a link. Brand orange with a
-  // near-black label, flat and borderless: the bar previously ran on a cyan
-  // borrowed from an old reference design, which was the last cyan left
-  // anywhere on the site once Copy Trading and Markets moved to orange.
   navDepositBtn: {
     display: 'inline-flex',
     alignItems: 'center',
-    gap: 6,
-    minHeight: 32,
-    background: '#f7a600',
-    color: '#17181e',
+    gap: 5,
+    minHeight: 34,
+    background: 'linear-gradient(135deg, #f0c43f, #e6b830)',
+    color: '#1a1410',
     border: 0,
-    borderRadius: 8,
+    borderRadius: 6,
+    padding: '0 14px',
     fontWeight: 700,
+    fontSize: 12.5,
     letterSpacing: '0.01em',
+    boxShadow: '0 2px 8px rgba(240,196,63,0.18)',
   },
   // Only used by the mobile drawer now — the desktop logout lives inside
   // the profile dropdown menu (.top-nav-profile-menu).
   logoutBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
     background: 'transparent',
     border: '1px solid var(--border)',
     color: 'var(--text-secondary)',

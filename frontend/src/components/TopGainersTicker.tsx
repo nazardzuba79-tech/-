@@ -9,7 +9,6 @@ interface Item {
   pair: string;
   changePercent: number;
 }
-
 /** Scrolling marquee of major-coin 24h movers, Binance/Bybit-style —
  * restricted to TOP_COINS (see that file's comment on why it's a curated
  * allowlist rather than a live market-cap ranking) so this never surfaces
@@ -50,39 +49,38 @@ export function TopGainersTicker({ onSelect }: { onSelect?: (pair: string) => vo
     };
   }, [lang]);
 
-  if (items.length === 0) return null;
-
-  const hottest = items.reduce((max, it) => (Math.abs(it.changePercent) > Math.abs(max.changePercent) ? it : max), items[0]);
+  const hottest = items.length > 0
+    ? items.reduce((max, it) => (Math.abs(it.changePercent) > Math.abs(max.changePercent) ? it : max), items[0])
+    : null;
   // Duplicated once so the CSS marquee can loop seamlessly from -50%.
   const loop = [...items, ...items];
 
   return (
-    <div style={styles.wrap}>
-      <div className="ticker-track" style={styles.track}>
+    <div className="market-ticker" aria-label="Market ticker">
+      <div className="ticker-track">
         {loop.map((it, i) => {
           const positive = it.changePercent >= 0;
           const display = it.pair.replace('/', '');
           const content = (
             <>
-              <span style={styles.symbol}>{display}</span>
-              <span style={{ color: positive ? 'var(--buy)' : 'var(--sell)', fontWeight: 700 }}>
+              <strong>{display}</strong>
+              <b className={positive ? 'positive' : 'negative'}>
                 {positive ? '+' : ''}
                 {it.changePercent.toFixed(2)}%
-              </span>
-              {it.pair === hottest.pair && <span style={styles.hotBadge}>HOT</span>}
+              </b>
+              {it.pair === hottest?.pair && <span className="ticker-hot">HOT</span>}
             </>
           );
           return onSelect ? (
             <button
               key={`${it.pair}-${i}`}
               onClick={() => onSelect(it.pair)}
-              className="row-hover"
-              style={{ ...styles.item, ...styles.itemBtn }}
+              className="ticker-item ticker-item-button"
             >
               {content}
             </button>
           ) : (
-            <span key={`${it.pair}-${i}`} style={styles.item}>
+            <span key={`${it.pair}-${i}`} className="ticker-item">
               {content}
             </span>
           );
@@ -91,43 +89,3 @@ export function TopGainersTicker({ onSelect }: { onSelect?: (pair: string) => vo
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  wrap: {
-    overflow: 'hidden',
-    borderBottom: '1px solid var(--border)',
-    background: 'var(--panel)',
-    padding: '8px 0',
-    flexShrink: 0,
-  },
-  track: {
-    display: 'flex',
-    width: 'max-content',
-  },
-  item: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: 12,
-    fontFamily: 'var(--font-mono)',
-    padding: '0 18px',
-    whiteSpace: 'nowrap',
-  },
-  itemBtn: {
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 6,
-    color: 'inherit',
-    cursor: 'pointer',
-  },
-  symbol: { color: 'var(--text-primary)', fontWeight: 700 },
-  hotBadge: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    fontSize: 9,
-    fontWeight: 800,
-    padding: '2px 6px',
-    borderRadius: 4,
-    letterSpacing: '0.02em',
-  },
-};
