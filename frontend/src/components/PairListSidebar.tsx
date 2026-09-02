@@ -15,6 +15,11 @@ export interface PairListHandle {
   focusSearch: () => void;
 }
 
+// How often the row-ranking snapshot below is allowed to refresh. Long
+// enough that the list doesn't visibly reorder while someone's looking at
+// it, short enough that ranking still tracks real volume shifts over time.
+const SORT_SNAPSHOT_INTERVAL_MS = 20000;
+
 /**
  * The reference's `.pairs-section`: a search field, a row of quote tabs
  * (the reference's ⭐ Fav / USDT / BTC / ETH / NEW), and the pair list
@@ -37,6 +42,15 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
     const searchRef = useRef<HTMLInputElement>(null);
+    // The row ORDER is driven by this snapshot of each pair's volume, not
+    // the live figure straight off every 4s poll. Real quoteVolume24h is a
+    // rolling window times the live price, so it never sits still — sorting
+    // by its live value re-ranks two close-volume pairs on almost every
+    // single poll, which is what read as the whole panel jumping. Freezing
+    // the ranking between snapshots (and only re-snapshotting every 20s)
+    // keeps rows in place while their price/% cells keep updating live.
+    const sortSnapshotRef = useRef<Map<string, number>>(new Map());
+    const lastSnapshotAtRef = useRef(0);
 
     useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
 
@@ -44,7 +58,16 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       setLoadError(false);
       api
         .getExternalTickers()
-        .then((res) => setTickers(res.tickers))
+        .then((res) => {
+          setTickers(res.tickers);
+          const now = Date.now();
+          if (sortSnapshotRef.current.size === 0 || now - lastSnapshotAtRef.current >= SORT_SNAPSHOT_INTERVAL_MS) {
+            const snapshot = new Map<string, number>();
+            for (const tk of res.tickers) snapshot.set(tk.pair, parseFloat(tk.quoteVolume24h || '0'));
+            sortSnapshotRef.current = snapshot;
+            lastSnapshotAtRef.current = now;
+          }
+        })
         .catch(() => setLoadError(true));
     }
 
@@ -70,7 +93,19 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       });
     }
 
-    const filtered = filterAndSortPairs(tickers, {
+    // Only quoteVolume24h is swapped for the frozen figure — lastPrice and
+    // changePercent24h (the only two fields a row actually displays) stay
+    // live, so prices keep ticking in place without moving rows around.
+    const tickersForSort = useMemo(() => {
+      const snapshot = sortSnapshotRef.current;
+      if (snapshot.size === 0) return tickers;
+      return tickers.map((tk) => {
+        const frozenVolume = snapshot.get(tk.pair);
+        return frozenVolume === undefined ? tk : { ...tk, quoteVolume24h: String(frozenVolume) };
+      });
+    }, [tickers]);
+
+    const filtered = filterAndSortPairs(tickersForSort, {
       search,
       quoteFilter,
       favoritesOnly,

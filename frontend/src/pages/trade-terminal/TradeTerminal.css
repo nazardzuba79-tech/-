@@ -114,7 +114,11 @@
 .trade-terminal .pair-arrow { color: var(--text-secondary); font-size: 10px; }
 .trade-terminal .ticker-item { display: flex; flex-direction: column; gap: 2px; }
 .trade-terminal .ticker-item .label { font-size: 11px; color: var(--text-secondary); }
-.trade-terminal .ticker-item .value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+/* tabular-nums: without it, a proportional-width digit set makes the ticker
+   bar's own price/high/low/volume figures reflow by a pixel or two on every
+   3s refresh — small, but exactly the kind of "reserve space for dynamic
+   values" gap the terminal's own live numbers shouldn't have either. */
+.trade-terminal .ticker-item .value { font-size: 13px; color: var(--text-primary); font-weight: 500; font-variant-numeric: tabular-nums; }
 .trade-terminal .ticker-item .value.price { font-size: 22px; font-weight: 700; }
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
 .trade-terminal .ticker-item .value.down { color: var(--color-sell); }
