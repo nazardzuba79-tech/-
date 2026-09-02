@@ -150,6 +150,15 @@
      have breathing room and the new per-row logo fits without crowding —
      the chart's 1fr share still easily dominates the layout. */
   grid-template-columns: 300px 1fr 280px 320px;
+  /* The single row must be exactly as tall as the grid, never as tall as
+     its tallest column's content. Left implicit (`auto`) it sized to
+     content instead and ran ~180px past the grid box, so the chart column
+     — which measures itself from its own box to size the canvas — thought
+     it had that extra height and drew the bottom of its canvas (where the
+     volume histogram lives) down in the clipped-off part. minmax(0, 1fr)
+     is what lets the row shrink to the container. The 1024px block below
+     switches this grid to flex, so it doesn't apply on mobile. */
+  grid-template-rows: minmax(0, 1fr);
   flex: 1;
   min-height: 0;
   /* The reference's `overflow: hidden`, as `clip` — same reason as on the
@@ -167,6 +176,14 @@
   background: var(--workspace-bg);
   display: flex; flex-direction: column;
   min-width: 0;
+  /* A grid item defaults to min-height:auto, i.e. it refuses to shrink
+     below its content — so this column grew past the grid row and ran on
+     underneath the bottom panel. The chart is sized from this element by
+     a ResizeObserver, so it was being told it had ~180px more height than
+     was actually on screen, and drew its volume histogram (the bottom
+     fifth of its own canvas) down in the clipped-off part. That is why
+     the volumes were invisible while the candles looked fine. */
+  min-height: 0;
 }
 .trade-terminal .chart-toolbar {
   display: flex; align-items: center; gap: 2px;

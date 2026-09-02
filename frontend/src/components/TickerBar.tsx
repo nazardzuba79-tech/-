@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage, localeOf, Lang } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
+import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 
 interface Stats {
   lastPrice: number;
@@ -23,7 +24,7 @@ interface Stats {
  * seven languages.
  */
 export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?: () => void }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
 
@@ -56,7 +57,6 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
 
   const positive = (stats?.changePercent ?? 0) >= 0;
   const dir = positive ? 'up' : 'down';
-  const num = (v: number, digits = 2) => v.toLocaleString(localeOf(lang), { maximumFractionDigits: digits });
 
   // The reference prints the change as an absolute move and a percentage.
   // The absolute move is derived from the same two live figures rather than
@@ -84,7 +84,7 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
 
       <div className="ticker-item">
         <span className="label">{t('trade.lastPrice')}</span>
-        <span className={`value price ${dir}`}>{stats ? num(stats.lastPrice) : '—'}</span>
+        <span className={`value price ${dir}`}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
       </div>
       <div className="ticker-item">
         {/* "Изменение 24ч", not "24ч %" — this cell leads with the absolute
@@ -95,30 +95,27 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
         <span className="label">{t('trade.change24h')}</span>
         <span className={`value ${dir}`}>
           {stats && absoluteChange !== null
-            ? `${positive ? '+' : ''}${num(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
+            ? `${positive ? '+' : ''}${formatPrice(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
             : '—'}
         </span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('trade.high24h')}</span>
-        <span className="value">{stats ? num(stats.high24h) : '—'}</span>
+        <span className="value">{stats ? formatPrice(stats.high24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('trade.low24h')}</span>
-        <span className="value">{stats ? num(stats.low24h) : '—'}</span>
+        <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
-        <span className="value">{stats ? num(stats.volume24h) : '—'}</span>
+        <span className="value">{stats ? formatAmount(stats.volume24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
-        <span className="value">{stats ? compact(stats.quoteVolume24h, lang) : '—'}</span>
+        <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
       </div>
     </div>
   );
 }
 
-function compact(n: number, lang: Lang): string {
-  return n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 });
-}

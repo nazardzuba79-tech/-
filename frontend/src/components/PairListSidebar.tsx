@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
+import { formatPrice } from '../lib/formatNumber';
 import { CryptoIcon } from './CryptoIcon';
 
 // Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
@@ -265,7 +266,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                   </span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
                 </span>
-                <span className="p-price">{parseFloat(tk.lastPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
+                <span className="p-price">{formatPrice(parseFloat(tk.lastPrice))}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}
                   {change.toFixed(2)}%

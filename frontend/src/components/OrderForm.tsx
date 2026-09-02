@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
+import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 import { useToast } from '../lib/toast';
 import { parseChangePercent } from '../lib/priceChange';
 
@@ -27,7 +28,7 @@ export function OrderForm({
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
 }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -433,7 +434,7 @@ export function OrderForm({
           <div className="info-row">
             <span className="info-label">{t('trade.lastPrice')}</span>
             <span className="info-value">
-              {marketPrice !== null ? marketPrice.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+              {marketPrice !== null ? formatPrice(marketPrice) : '—'}
             </span>
           </div>
           <div className="info-row">
@@ -447,26 +448,26 @@ export function OrderForm({
           <div className="info-row">
             <span className="info-label">{t('trade.high24h')}</span>
             <span className="info-value">
-              {marketStats ? marketStats.high24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+              {marketStats ? formatPrice(marketStats.high24h) : '—'}
             </span>
           </div>
           <div className="info-row">
             <span className="info-label">{t('trade.low24h')}</span>
             <span className="info-value">
-              {marketStats ? marketStats.low24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+              {marketStats ? formatPrice(marketStats.low24h) : '—'}
             </span>
           </div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
             <span className="info-value">
-              {marketStats ? marketStats.volume24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'}
+              {marketStats ? formatAmount(marketStats.volume24h) : '—'}
             </span>
           </div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
             <span className="info-value">
               {marketStats
-                ? marketStats.quoteVolume24h.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 })
+                ? formatCompact(marketStats.quoteVolume24h)
                 : '—'}
             </span>
           </div>
@@ -476,11 +477,11 @@ export function OrderForm({
           <div className="info-heading">{t('trade.accountInfo')}</div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span>
-            <span className="info-value">{available.base.toLocaleString(localeOf(lang), { maximumFractionDigits: 6 })}</span>
+            <span className="info-value">{formatPrice(available.base)}</span>
           </div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span>
-            <span className="info-value">{available.quote.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}</span>
+            <span className="info-value">{formatAmount(available.quote)}</span>
           </div>
         </div>
       </form>

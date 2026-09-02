@@ -1,5 +1,6 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
+import { formatPrice } from '../lib/formatNumber';
 
 interface Level {
   price: string;
@@ -104,7 +105,7 @@ export function OrderBookPanel({
   pair?: string;
   onPickPrice?: (price: string) => void;
 }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
 
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
@@ -183,14 +184,12 @@ export function OrderBookPanel({
 
       <div className="orderbook-spread">
         <div className="ob-spread-price">
-          {midPrice !== null ? midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
-          {showUsd && midPrice !== null && (
-            <span className="usd">≈ ${midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-          )}
+          {midPrice !== null ? formatPrice(midPrice) : '—'}
+          {showUsd && midPrice !== null && <span className="usd">≈ ${formatPrice(midPrice)}</span>}
         </div>
         {spread !== null && spreadPct !== null && (
           <div className="ob-spread-detail">
-            {t('trade.spread')} {spread.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({spreadPct.toFixed(3)}%)
+            {t('trade.spread')} {formatPrice(spread)} ({spreadPct.toFixed(3)}%)
           </div>
         )}
       </div>
