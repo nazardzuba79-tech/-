@@ -750,7 +750,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       )}
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
-        <DrawToolbar tool={tool} onSelect={setTool} onClear={clearAll} onFit={fitContent} />
+        <DrawToolbar tool={tool} onSelect={setTool} onClear={clearAll} onFit={fitContent} terminal={terminal} />
 
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
@@ -906,11 +906,13 @@ function DrawToolbar({
   onSelect,
   onClear,
   onFit,
+  terminal,
 }: {
   tool: Tool;
   onSelect: (t: Tool) => void;
   onClear: () => void;
   onFit: () => void;
+  terminal?: boolean;
 }) {
   const TOOLS: { id: Tool; icon: JSX.Element; title: string }[] = [
     { id: 'cursor', icon: <CursorIcon />, title: 'Курсор' },
@@ -920,23 +922,42 @@ function DrawToolbar({
     { id: 'text', icon: <TextIcon />, title: 'Текст' },
   ];
 
+  // Every other toolbar in the terminal (chart-tab, chart-tool-btn, …)
+  // already gets a `.trade-terminal`-scoped class in terminal mode instead
+  // of these inline styles — this one never had, which is why it read as
+  // visually off: its inline styles pull from the site's global --panel/
+  // --border/--accent tokens rather than the terminal's own darker,
+  // slightly different palette, and inline styles can't express :hover at
+  // all, so the buttons had no hover feedback. Non-terminal chrome (other
+  // pages embedding this same chart) is untouched.
   return (
-    <div style={styles.drawToolbar}>
+    <div className={terminal ? 'draw-toolbar' : undefined} style={terminal ? undefined : styles.drawToolbar}>
       {TOOLS.map((tl) => (
         <button
           key={tl.id}
           title={tl.title}
           onClick={() => onSelect(tl.id)}
-          style={{ ...styles.toolBtn, ...(tool === tl.id ? styles.toolBtnActive : {}) }}
+          className={terminal ? `tool-btn ${tool === tl.id ? 'active' : ''}` : undefined}
+          style={terminal ? undefined : { ...styles.toolBtn, ...(tool === tl.id ? styles.toolBtnActive : {}) }}
         >
           {tl.icon}
         </button>
       ))}
-      <div style={styles.toolDivider} />
-      <button title="Показать всё" onClick={onFit} style={styles.toolBtn}>
+      <div className={terminal ? 'tool-divider' : undefined} style={terminal ? undefined : styles.toolDivider} />
+      <button
+        title="Показать всё"
+        onClick={onFit}
+        className={terminal ? 'tool-btn' : undefined}
+        style={terminal ? undefined : styles.toolBtn}
+      >
         <FitIcon />
       </button>
-      <button title="Очистить рисунки" onClick={onClear} style={styles.toolBtn}>
+      <button
+        title="Очистить рисунки"
+        onClick={onClear}
+        className={terminal ? 'tool-btn' : undefined}
+        style={terminal ? undefined : styles.toolBtn}
+      >
         <EraserIcon />
       </button>
     </div>

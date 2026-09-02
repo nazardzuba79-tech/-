@@ -11,6 +11,31 @@ import {
 import { parseChangePercent } from '../lib/priceChange';
 import { CryptoIcon } from './CryptoIcon';
 
+// CoinGecko's own per-coin logo — covers this app's newer/smaller listings
+// (SUI, TAO, ENA, …) that the static jsDelivr icon set CryptoIcon falls
+// back to has never had. One fetch, not polled: unlike price data, a
+// coin's logo doesn't change minute to minute, and the backend's own
+// rankings cache only refreshes hourly anyway (see CoinGeckoService).
+function useCoinIconMap(): Map<string, string> {
+  const [icons, setIcons] = useState<Map<string, string>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getExternalRankings()
+      .then((res) => {
+        if (cancelled) return;
+        const map = new Map<string, string>();
+        for (const r of res.rankings) if (r.image) map.set(r.symbol, r.image);
+        setIcons(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  return icons;
+}
+
 export interface PairListHandle {
   focusSearch: () => void;
 }
@@ -35,6 +60,7 @@ const SORT_SNAPSHOT_INTERVAL_MS = 20000;
 export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChange: (pair: string) => void }>(
   function PairListSidebar({ pair, onChange }, ref) {
     const { t } = useLanguage();
+    const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
@@ -180,7 +206,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                     ★
                   </span>
                   <span className="p-icon">
-                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={18} />
+                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={18} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
                   </span>
                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
                 </span>

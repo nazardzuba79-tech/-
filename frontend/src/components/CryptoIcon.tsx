@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 // Well-known open icon set (MIT), mirrored on jsDelivr for reliability —
 // same approach most small/mid exchanges use rather than hosting or
@@ -74,10 +74,34 @@ export function assetColor(symbol: string): AssetColor {
   return BRAND_COLORS[symbol.toUpperCase()] ?? { solid: avatarColor(symbol) };
 }
 
-export function CryptoIcon({ symbol, size = 20 }: { symbol: string; size?: number }) {
-  const [failed, setFailed] = useState(false);
+export function CryptoIcon({
+  symbol,
+  size = 20,
+  imageUrl,
+}: {
+  symbol: string;
+  size?: number;
+  /** A real per-coin logo URL when the caller already has one (e.g. the
+   * CoinGecko rankings fetch's own `image` field) — CoinGecko's set covers
+   * far more of this app's newer/smaller listings than the static
+   * jsDelivr set below, which hasn't been updated in years. Falls through
+   * to that jsDelivr icon, then the letter avatar, on any load failure. */
+  imageUrl?: string | null;
+}) {
+  const [preferredFailed, setPreferredFailed] = useState(false);
+  const [fallbackFailed, setFallbackFailed] = useState(false);
 
-  if (failed) {
+  // A reused instance (symbol/imageUrl changing under the same element,
+  // rather than a fresh mount) must re-attempt both tiers instead of
+  // staying stuck on whichever one last failed for a different coin.
+  useEffect(() => {
+    setPreferredFailed(false);
+    setFallbackFailed(false);
+  }, [symbol, imageUrl]);
+
+  const usingFallback = !imageUrl || preferredFailed;
+
+  if (usingFallback && fallbackFailed) {
     return (
       <div
         style={{
@@ -101,12 +125,12 @@ export function CryptoIcon({ symbol, size = 20 }: { symbol: string; size?: numbe
 
   return (
     <img
-      src={iconUrl(symbol)}
+      src={usingFallback ? iconUrl(symbol) : imageUrl!}
       alt={symbol}
       width={size}
       height={size}
-      style={{ borderRadius: '50%', flexShrink: 0 }}
-      onError={() => setFailed(true)}
+      style={{ borderRadius: '50%', flexShrink: 0, objectFit: 'cover' }}
+      onError={() => (usingFallback ? setFallbackFailed(true) : setPreferredFailed(true))}
     />
   );
 }
