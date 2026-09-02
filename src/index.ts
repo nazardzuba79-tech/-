@@ -51,6 +51,7 @@ import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { portfolioRouter } from './api/routes/portfolio';
+import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -146,6 +147,7 @@ app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, 
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', portfolioRouter(prisma));
+app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

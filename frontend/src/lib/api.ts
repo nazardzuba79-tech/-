@@ -1,3 +1,5 @@
+import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
+
 const TOKEN_KEY = 'exchange_token';
 
 // On the docker-compose/VPS setup, Caddy serves frontend and backend under
@@ -484,6 +486,23 @@ export const api = {
       twoFactorEnabled: boolean;
       createdAt: string;
     }>('/me'),
+
+  getSyntheticCopyTrading: () => request<SyntheticCopyTradingResponse>('/copy-trading/synthetic'),
+
+  advanceSyntheticCopyTrading: (days: 1 | 7 | 30 | 90) =>
+    request<SyntheticCopyTradingResponse>('/admin/copy-trading/synthetic/advance', {
+      method: 'POST',
+      body: JSON.stringify({ days }),
+    }),
+
+  resetSyntheticCopyTrading: () =>
+    request<SyntheticCopyTradingResponse>('/admin/copy-trading/synthetic/reset', { method: 'POST' }),
+
+  setSyntheticCopyTradingMode: (mode: 'REAL_TIME' | 'FAST_FORWARD') =>
+    request<SyntheticCopyTradingResponse>('/admin/copy-trading/synthetic/mode', {
+      method: 'POST',
+      body: JSON.stringify({ mode }),
+    }),
 
   // Profile photo, as a self-contained data URL. The caller downscales
   // before sending (see resizeImageToDataUrl) — the server caps the

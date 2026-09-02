@@ -744,3 +744,18 @@ model DemoTrade {
 
   @@index([pair, executedAt])
 }
+
+/// A single persisted, reproducible synthetic Copy Trading simulation.
+/// It intentionally has no foreign keys to users, balances, orders, fills,
+/// deposits or withdrawals: generated history can never become executable
+/// exchange state. All domain data is one versioned JSON snapshot so a
+/// fast-forward is committed atomically.
+model SyntheticCopyTradingState {
+  id          String   @id
+  seed        Int
+  simulatedAt DateTime
+  mode        String
+  state       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
