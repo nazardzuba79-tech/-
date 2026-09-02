@@ -416,6 +416,120 @@ body {
   position: relative;
 }
 
+/* Compact account-balance control, to the Trade archive's own
+   `.wallet-balance` spec (38px tall, 168px wide, #141c25 on a #2b3946
+   hairline, a 29px gold icon tile, a 9px muted caption over a 12px/650
+   balance, and a small chevron). It is an account control, not an input:
+   no glow, no field styling. */
+.wallet-balance-wrap {
+  position: relative;
+}
+.wallet-balance {
+  min-height: 38px;
+  width: 168px;
+  padding: 5px 9px 5px 7px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aeb9c4;
+  background: #141c25;
+  border: 1px solid #2b3946;
+  border-radius: 7px;
+  text-align: left;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.wallet-balance:hover {
+  background: #172029;
+  border-color: #354554;
+}
+.wallet-icon {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #0f1419;
+  background: #d9b633;
+  border-radius: 5px;
+}
+.wallet-balance > div {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.wallet-balance small {
+  color: #7c8997;
+  font-size: 9px;
+  line-height: 1.1;
+}
+.wallet-balance strong {
+  color: #edf1f4;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.wallet-balance > svg:last-child {
+  color: #8995a2;
+  flex: 0 0 auto;
+}
+.wallet-balance-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  /* Wide enough that the label and the figure sit on one line — at 216px
+     the total wrapped onto two. */
+  min-width: 248px;
+  padding: 6px;
+  background: #11161f;
+  border: 1px solid #232c3a;
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  z-index: 30;
+  animation: topNavMenuIn 160ms ease-out;
+}
+.wallet-balance-menu .wbm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 10px;
+  color: var(--h-text-3);
+  font-size: 12px;
+}
+.wallet-balance-menu .wbm-row strong {
+  color: #e8ecf3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wallet-balance-menu .wbm-total {
+  border-bottom: 1px solid #232c3a;
+  margin-bottom: 4px;
+  padding-bottom: 9px;
+}
+.wallet-balance-menu .wbm-total strong {
+  color: #f0c43f;
+}
+.wallet-balance-menu .wbm-actions {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #232c3a;
+}
+.wallet-balance-menu .wbm-actions a {
+  display: block;
+  padding: 8px 10px;
+  color: var(--h-text-2);
+  font-size: 12px;
+  text-decoration: none;
+  border-radius: 6px;
+}
+.wallet-balance-menu .wbm-actions a:hover {
+  color: #ffffff;
+  background: var(--h-hover);
+}
+
 .top-nav-profile-wrap {
   position: relative;
 }
@@ -665,6 +779,12 @@ body {
   }
   .language-control span:not(.language-chevron),
   .profile-control > span:not(.top-nav-profile-avatar) {
+    display: none;
+  }
+  /* Same call the archive makes at its narrow tier: the balance control
+     steps aside rather than squeezing the deposit CTA. The figure is still
+     one tap away on the wallet page. */
+  .wallet-balance-wrap {
     display: none;
   }
   .nav-mobile-menu.open {

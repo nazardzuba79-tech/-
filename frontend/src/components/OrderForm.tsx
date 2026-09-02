@@ -196,12 +196,16 @@ export function OrderForm({
     }
   }
 
+  // OCO is deliberately absent from this row: five tabs crowded the panel,
+  // and the fifth is the one a trader reaches for least. Only the tab is
+  // gone — the OCO family, its form branch below, its validation and the
+  // backend's OCO placement and linkage are all untouched and still
+  // reachable, so nothing that already depends on OCO breaks.
   const FAMILY_TABS: { id: OrderFamily; label: string }[] = [
     { id: 'LIMIT', label: t('trade.limitOrder') },
     { id: 'MARKET', label: t('trade.marketOrder') },
     { id: 'STOP', label: t('trade.stopOrder') },
     { id: 'TAKE_PROFIT', label: t('trade.takeProfitOrder') },
-    { id: 'OCO', label: t('trade.ocoOrder') },
   ];
 
   const lastPriceLabel = t('trade.lastPriceBtn');

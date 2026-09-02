@@ -210,17 +210,54 @@
    explicitly on the terminal's sans — a last price must never end up in
    a monospaced/terminal face. */
 .trade-terminal .ticker-item .value.price {
-  font-size: 25px;
-  font-weight: 650;
+  font-size: 28px;
+  font-weight: 680;
   font-family: var(--font-family);
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  font-variant-numeric: tabular-nums;
 }
+/* The reference prints the last price in the brand gold, not in the
+   directional green/red (.stat.primary strong). Direction is not lost —
+   the signed "Изменение 24ч" cell sits immediately beside it and still
+   carries the colour — and holding the headline figure at one constant
+   colour stops the most prominent number on the page from flipping hue on
+   every tick. Needs the .up/.down qualifier to outrank .value.up/.down. */
+.trade-terminal .ticker-item .value.price.up,
+.trade-terminal .ticker-item .value.price.down { color: #e9c53d; }
 /* The signed move sits with the price, a step below it. */
 .trade-terminal .ticker-item .value.change { font-size: 13.5px; font-weight: 600; }
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
 .trade-terminal .ticker-item .value.down { color: var(--color-sell); }
 .trade-terminal .ticker-item .value.mark { font-size: 12px; }
+
+/* === CONTEXTUAL INSTRUMENT METRICS ===
+   The reference's own .spot-metrics block, in the premium space at the end
+   of the instrument row (its values: 3 equal columns, gap 7px 18px, a
+   hairline on the left, pushed right with margin-left:auto). Type is one
+   step up from the reference's 9/10px, which would read as broken beside
+   this bar's own 11px labels.
+
+   What goes in it is decided by the instrument, not by the layout — see
+   TickerBar for why a spot market shows fees and feed status here and
+   never a funding rate. */
+.trade-terminal .spot-metrics {
+  min-width: 310px;
+  margin-left: auto;
+  padding-left: 20px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px 18px;
+  border-left: 1px solid #2b3742;
+}
+.trade-terminal .spot-metrics div { display: grid; gap: 3px; }
+.trade-terminal .spot-metrics span { color: #778594; font-size: 10px; }
+.trade-terminal .spot-metrics strong {
+  color: #dce4e9; font-size: 12px; font-weight: 650;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.trade-terminal .spot-metrics strong.live { color: #18c58b; }
+.trade-terminal .spot-metrics strong.degraded { color: var(--accent-yellow); }
 
 /* === MAIN GRID ===
    Left to right: pair list/search, chart, order book, order-entry form.
@@ -232,7 +269,11 @@
   /* Left column widened ~15% (260px -> 300px) so pair name/price/change
      have breathing room and the new per-row logo fits without crowding —
      the chart's 1fr share still easily dominates the layout. */
-  grid-template-columns: 300px 1fr 280px 320px;
+  /* Left column +20px (300 -> 320) — the maximum allowed for this pass —
+     to give the now fixed-width Цена / 24ч % columns room without
+     squeezing the pair name. The order book (280) and order form (320)
+     keep their widths exactly; the chart's 1fr share still dominates. */
+  grid-template-columns: 320px 1fr 280px 320px;
   /* The single row must be exactly as tall as the grid, never as tall as
      its tallest column's content. Left implicit (`auto`) it sized to
      content instead and ran ~180px past the grid box, so the chart column
@@ -351,11 +392,29 @@
 /* Bold white on the saturated fill — the same high-contrast treatment
    every major exchange (Bybit included) uses on its Buy/Sell buttons.
    Dark text here read as muted next to that reference. */
-.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #fff; }
-.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #fff; }
+/* Reference's active fills (#12c98d / #ef5350 with the lighter #16d89a /
+   #ff6262 edge), carried as a shallow top-to-bottom gradient so the active
+   side reads as lit rather than a flat block. No glow, no outer shadow —
+   only the active side is strong; the inactive one stays the panel's own
+   graphite with muted-but-readable text. */
+.trade-terminal .order-form-tab.active.buy {
+  background: linear-gradient(180deg, #16d89a, #12c98d);
+  border: 1px solid #16d89a; color: #fff;
+}
+.trade-terminal .order-form-tab.active.sell {
+  background: linear-gradient(180deg, #ff6262, #ef5350);
+  border: 1px solid #ff6262; color: #fff;
+}
+/* The full-width hairline that used to close this row read as a scroll
+   track under the tabs. The reference marks the selection with a 2px bar
+   under the active tab alone (.order-types button.active::after) and draws
+   no rule across the row, so the border is gone. With OCO out of the row
+   the four remaining tabs are spread instead of packed, and they fit at
+   their natural width — nothing is clipped and there is nothing to
+   scroll. */
 .trade-terminal .order-type-tabs {
-  display: flex; gap: 8px; padding: 10px 16px 8px;
-  border-bottom: 1px solid var(--layer-border);
+  display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 6px; padding: 10px 16px 8px;
 }
 .trade-terminal .order-type-tab {
   background: transparent; border: none; color: var(--text-secondary);
@@ -439,10 +498,12 @@
   font-size: 15px; font-weight: 700; letter-spacing: 0.01em; cursor: pointer;
   transition: background 0.15s, transform 0.1s; flex-shrink: 0;
 }
-.trade-terminal .submit-btn.buy { background: var(--color-buy); color: #fff; }
-.trade-terminal .submit-btn.buy:hover { background: var(--color-buy-hover); }
-.trade-terminal .submit-btn.sell { background: var(--color-sell); color: #fff; }
-.trade-terminal .submit-btn.sell:hover { background: var(--color-sell-hover); }
+/* The primary CTA sits in the same colour family as the segmented control
+   above it, one step brighter — it is the stronger of the two controls. */
+.trade-terminal .submit-btn.buy { background: linear-gradient(180deg, #1ae0a2, #12c98d); color: #fff; }
+.trade-terminal .submit-btn.buy:hover { background: linear-gradient(180deg, #22ecad, #14d495); }
+.trade-terminal .submit-btn.sell { background: linear-gradient(180deg, #ff6b6b, #ef5350); color: #fff; }
+.trade-terminal .submit-btn.sell:hover { background: linear-gradient(180deg, #ff7d7d, #f45f5c); }
 .trade-terminal .submit-btn:active { transform: translateY(1px); }
 .trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
@@ -565,14 +626,26 @@
 }
 .trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .trade-terminal .pairs-search { padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+/* Only the four things asked for: horizontal padding, vertical centring (an
+   explicit height rather than padding alone), room for the leading search
+   glyph, and a placeholder a step brighter — the old one sat too close to
+   the field's own fill to read. */
 .trade-terminal .pairs-search input {
-  width: 100%; background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
-  color: var(--text-primary); padding: 8px 12px; border-radius: 4px;
+  width: 100%; height: 36px;
+  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
+  color: var(--text-primary); padding: 0 12px 0 32px; border-radius: 4px;
   font-size: 12px; outline: none; transition: border-color 0.2s;
   font-family: inherit;
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
-.trade-terminal .pairs-search input::placeholder { color: var(--text-secondary); }
+.trade-terminal .pairs-search input::placeholder { color: #97a1ae; }
+/* Leading search glyph, drawn in CSS so the panel gains no icon import. */
+.trade-terminal .pairs-search { position: relative; }
+.trade-terminal .pairs-search::before {
+  content: ''; position: absolute; left: 22px; top: 50%; width: 13px; height: 13px;
+  margin-top: -6.5px; pointer-events: none; opacity: 0.75;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397a1ae' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+}
 .trade-terminal .pairs-tabs {
   display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
 }
@@ -588,8 +661,13 @@
    control row with sort built directly into the Цена/24Ч% columns
    themselves, flex-matched to .pair-row's own p-price/p-change so the
    labels sit right above the values they sort. */
+/* Same grid as .pair-row, and the same left inset (the row's 12px padding
+   plus its 2px indicator border), so each label sits exactly over the
+   column it sorts. */
 .trade-terminal .pairs-col-headers {
-  display: flex; align-items: center; padding: 6px 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 70px 66px;
+  gap: 0 10px; align-items: center;
+  padding: 6px 12px 6px 14px;
   border-bottom: 1px solid var(--border-color);
 }
 /* Sits in the header's first slot, above the pair column, so the sort
@@ -597,7 +675,7 @@
    a form field: it is the readout of the current sort as much as it is
    the picker for it. */
 .trade-terminal .pairs-col-headers .pch-mode {
-  flex: 1.7; min-width: 0;
+  min-width: 0; text-align: left;
   background: transparent; border: none; outline: none;
   color: var(--text-secondary);
   font-size: 11px; font-weight: 600; font-family: inherit;
@@ -610,19 +688,28 @@
   background: var(--workspace-bg); color: var(--text-primary);
 }
 .trade-terminal .pairs-col-headers .pch-sort {
-  flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 3px;
+  display: flex; align-items: center; justify-content: flex-end; gap: 3px;
   background: transparent; border: none; color: var(--text-secondary);
   font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer;
   padding: 0; transition: color 0.15s;
 }
-.trade-terminal .pairs-col-headers .pch-sort:last-child { flex: 1.1; }
 .trade-terminal .pairs-col-headers .pch-sort:hover { color: var(--text-primary); }
 .trade-terminal .pairs-col-headers .pch-sort.active { color: var(--accent-yellow); }
 .trade-terminal .pairs-col-headers .pch-arrow { font-size: 9px; }
 .trade-terminal .pairs-col-headers .pch-arrow.idle { opacity: 0.4; }
 .trade-terminal .pairs-list { overflow-y: auto; flex: 1; }
+/* Fixed numeric columns, following the reference's own .market-row grid
+   (`15px 23px minmax(79px,1fr) 68px 47px`) — the star, logo and pair text
+   live inside .p-name here, so the same idea lands as one flexible name
+   column plus two fixed ones. Flex shares (1.7 / 1 / 1.1) sized the price
+   and change columns from their own text, so every live tick that changed
+   a digit count re-measured them and nudged the columns sideways. Fixed
+   widths plus tabular figures hold them still, and the 10px column gap
+   gives 24h % clear separation from Цена. */
 .trade-terminal .pair-row {
-  display: flex; padding: 9px 12px; font-size: 12px; cursor: pointer;
+  display: grid; grid-template-columns: minmax(0, 1fr) 70px 66px;
+  gap: 0 10px;
+  padding: 9px 12px; font-size: 12px; cursor: pointer;
   transition: background 0.15s, border-color 0.15s; align-items: center;
   width: 100%; background: transparent; border: none; text-align: left;
   font-family: inherit;
@@ -646,25 +733,34 @@
    names into an ellipsis on every row, which is the opposite of the
    "more readable" panel this was meant to be. */
 .trade-terminal .pair-row .p-name {
-  flex: 1.7; display: flex; align-items: center; min-width: 0;
+  display: flex; align-items: center; min-width: 0;
   font-weight: 700; color: var(--text-primary);
 }
 .trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
 .trade-terminal .pair-row .p-price {
-  flex: 1; text-align: right; color: var(--text-primary);
+  text-align: right; color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 .trade-terminal .pair-row .p-change {
-  flex: 1.1; text-align: right; font-weight: 600;
+  text-align: right; font-weight: 600;
   font-variant-numeric: tabular-nums;
+  /* The arrow and the percentage are one unit — never break them across
+     two lines, which is what a too-narrow column did before. */
+  white-space: nowrap;
 }
 .trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
 .trade-terminal .pair-row .p-change.down { color: var(--color-sell); }
 .trade-terminal .sparkline { width: 60px; height: 20px; margin-left: 8px; }
 
 /* === BOTTOM PANEL === */
+/* 180 -> 140px. The empty state was 141px of blank panel under a 40px tab
+   row; the reference gives it 102px (.empty-orders min-height), which is
+   the ~25% trim asked for, and the 40px recovered goes to the chart. The
+   height is a starting size, not a cap: `flex-shrink: 0` keeps it from
+   collapsing, and the panel body scrolls once real orders fill it, so a
+   populated panel still displays them. */
 .trade-terminal .bottom-panel {
-  height: 180px; background: var(--workspace-bg);
+  height: 140px; background: var(--workspace-bg);
   border-top: 1px solid var(--layer-border);
   display: flex; flex-direction: column;
   flex-shrink: 0;
@@ -730,6 +826,10 @@
 }
 @media (max-width: 1200px) {
   .trade-terminal .main-grid { grid-template-columns: 250px 1fr 240px 280px; }
+  /* Reference behaviour: below this the row needs its width for the price
+     and 24h stats, so the contextual block steps aside rather than
+     crushing them. */
+  .trade-terminal .spot-metrics { display: none; }
   .trade-terminal .ticker-bar { font-size: 12px; }
   .trade-terminal .ticker-item { padding: 0 14px; }
 }
