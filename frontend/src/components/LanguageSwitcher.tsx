@@ -22,10 +22,10 @@ export function LanguageSwitcher({ variant = 'icon' }: { variant?: 'icon' | 'pil
   }, []);
 
   return (
-    <div ref={containerRef} style={styles.container}>
+    <div ref={containerRef} className={variant === 'pill' ? 'language-control' : undefined} style={styles.container}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={variant === 'pill' ? 'top-nav-pill-btn' : undefined}
+        className={variant === 'pill' ? 'header-icon top-nav-pill-btn' : undefined}
         style={variant === 'pill' ? styles.pillButton : styles.button}
         aria-label="Language / Язык / 语言"
       >
@@ -70,7 +70,7 @@ function GlobeIcon() {
 
 function ChevronDownIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <svg className="language-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="6 9 12 15 18 9" />
     </svg>
   );
@@ -94,13 +94,14 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 6,
     height: 34,
-    padding: '0 5px',
+    padding: '0 9px',
     background: 'transparent',
-    border: 'none',
-    color: '#bac4cf',
-    fontSize: 11,
-    fontWeight: 650,
-    transition: 'color 180ms ease',
+    border: '1px solid transparent',
+    color: '#d8dce6',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 500,
+    transition: 'color 150ms ease, background 150ms ease, border-color 150ms ease',
   },
   dropdown: {
     position: 'absolute',
