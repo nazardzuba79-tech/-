@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, Key } from '../lib/i18n';
 import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
@@ -33,7 +33,21 @@ function useCoinIconMap(): Map<string, string> {
   return icons;
 }
 
-type SortField = 'volume' | 'price' | 'change';
+type SortField = 'volume' | 'price' | 'change' | 'symbol';
+
+/** The sort modes offered, in menu order. `volume` descending is the
+ * default: "which markets are actually being traded right now" is the
+ * first thing a trader wants from a pair list, and it sorts on the feed's
+ * real 24h quote turnover (see filterAndSortPairs' note on the field). */
+const SORT_MODES: { id: string; field: SortField; dir: 1 | -1; labelKey: Key }[] = [
+  { id: 'volume_desc', field: 'volume', dir: -1, labelKey: 'trade.sortVolumeDesc' },
+  { id: 'volume_asc', field: 'volume', dir: 1, labelKey: 'trade.sortVolumeAsc' },
+  { id: 'change_desc', field: 'change', dir: -1, labelKey: 'trade.sortChangeDesc' },
+  { id: 'change_asc', field: 'change', dir: 1, labelKey: 'trade.sortChangeAsc' },
+  { id: 'price_desc', field: 'price', dir: -1, labelKey: 'trade.sortPriceDesc' },
+  { id: 'price_asc', field: 'price', dir: 1, labelKey: 'trade.sortPriceAsc' },
+  { id: 'symbol_asc', field: 'symbol', dir: 1, labelKey: 'trade.sortSymbolAsc' },
+];
 
 export interface PairListHandle {
   focusSearch: () => void;
@@ -63,11 +77,10 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
-    // No sort column active (the default state) reads as "sorted by
-    // volume" — same behavior as before, just without a header highlighted
-    // for it, matching the reference: only a clicked column shows an arrow.
-    const [sortField, setSortField] = useState<SortField>('volume');
-    const [sortDir, setSortDir] = useState<1 | -1>(-1);
+    // Real 24h turnover, descending, until the trader picks otherwise.
+    const [sortId, setSortId] = useState('volume_desc');
+    const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
+    const { field: sortField, dir: sortDir } = sortMode;
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
@@ -128,17 +141,15 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       return QUOTE_PRIORITY.filter((q) => present.has(q));
     }, [tickers]);
 
-    // Bybit-style column-header sort: clicking a header that isn't already
-    // active switches to it (descending, "biggest first" — the more useful
-    // default reading for both price and % change); clicking the already-
-    // active header just flips direction.
+    // Clicking a column header that isn't already active switches to it
+    // descending ("biggest first", the more useful default reading for
+    // price and % change alike); clicking the active one flips direction.
+    // Both the headers and the sort menu drive the same single sortId, so
+    // they can never disagree about what the list is sorted by.
     function toggleSort(field: SortField) {
-      if (sortField === field) {
-        setSortDir((d) => (d === -1 ? 1 : -1));
-      } else {
-        setSortField(field);
-        setSortDir(-1);
-      }
+      const wantDir: 1 | -1 = sortField === field && sortDir === -1 ? 1 : -1;
+      const next = SORT_MODES.find((m) => m.field === field && m.dir === wantDir);
+      if (next) setSortId(next.id);
     }
 
     function toggleFavorite(p: string, e: React.MouseEvent) {
@@ -221,8 +232,26 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
           </button>
         </div>
 
+        {/* The header carries the sort itself rather than a separate panel
+            above the list. Цена / 24ч % are the two columns actually shown,
+            so they sort by being clicked; 24h volume has no column at this
+            panel width, so it lives in the menu on the left — which doubles
+            as the readout of what the list is currently sorted by, since
+            the default (volume, descending) has no column to mark. */}
         <div className="pairs-col-headers">
-          <span className="pch-name" />
+          <select
+            className={`pch-mode ${sortField === 'volume' || sortField === 'symbol' ? 'active' : ''}`}
+            value={sortId}
+            onChange={(e) => setSortId(e.target.value)}
+            aria-label={t('trade.sortBy')}
+            title={t('trade.sortBy')}
+          >
+            {SORT_MODES.map((m) => (
+              <option key={m.id} value={m.id}>
+                {t(m.labelKey)}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             className={`pch-sort ${sortField === 'price' ? 'active' : ''}`}

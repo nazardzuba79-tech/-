@@ -94,6 +94,62 @@
    that never scrolls the page. */
 .trade-terminal .terminal { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
+/* === STATIC MARKET STRIP ===
+   The site-wide marquee of 24h movers, held still on the trade page. A
+   strip sliding under a live chart and order book is motion competing
+   with the numbers a trader is reading, so here it is a plain list the
+   user scrolls by hand instead. The component drops its duplicated run
+   of items in this mode (see TopGainersTicker's `staticStrip`); the
+   animation itself is switched off here so the site's other pages keep
+   theirs untouched.
+
+   Surface: the global nav is --bg-primary (#0b0e11) and the toolbar
+   below is --toolbar-bg (#131920); this sits between them, so the three
+   layers step up in tone rather than the strip reading as a separate
+   near-black band pasted over the terminal. */
+.trade-terminal .market-ticker-static {
+  background: #0f141b;
+  border-bottom: 1px solid var(--layer-border);
+  /* Manual horizontal scrolling when the symbols outrun the width —
+     never automatic, and never a page-level overflow. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+.trade-terminal .market-ticker-static .ticker-track {
+  animation: none !important;
+  transform: none !important;
+  /* Fixed slot width per symbol: a percentage going from "+0.68%" to
+     "+12.61%" then must not shove its neighbours sideways. */
+  gap: 0;
+  padding: 0 8px;
+}
+.trade-terminal .market-ticker-static .ticker-item {
+  /* Explicitly a single row with no divider: the market-info panel below
+     styles this same class name as a stacked label/value pair with a
+     hairline separator, which is not what a symbol strip wants. */
+  flex-direction: row;
+  align-items: baseline;
+  border-left: none;
+  width: 132px;
+  flex-shrink: 0;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+.trade-terminal .market-ticker-static .ticker-item strong {
+  font-size: 11px;
+  font-weight: 700;
+  color: #cdd5e0;
+  letter-spacing: 0.02em;
+}
+.trade-terminal .market-ticker-static .ticker-item b {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 /* === TICKER BAR ===
    Its own tier between the near-black global nav above and the lighter
    workspace panels below — see --toolbar-bg's comment at the top of this
@@ -117,9 +173,18 @@
    flex `gap` alone, so the row reads as distinct scannable figures
    instead of one run-on strip of text (the reference's own complaint:
    "too narrow and cramped"). */
+/* index.css's global `.ticker-item` (the market strip's own class) puts
+   every item on --font-mono, and this panel reuses that same class name —
+   which is how its labels and figures ended up in a monospaced face. A
+   last price and its 24h stats belong on the interface sans, with
+   tabular-nums doing the digit-alignment job instead. */
+.trade-terminal .ticker-bar .ticker-item,
+.trade-terminal .market-ticker-static .ticker-item {
+  font-family: var(--font-family);
+}
 .trade-terminal .ticker-item {
-  display: flex; flex-direction: column; gap: 3px;
-  padding: 0 22px; border-left: 1px solid var(--layer-border);
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 0 18px; border-left: 1px solid var(--layer-border);
 }
 .trade-terminal .ticker-item:first-of-type { border-left: none; padding-left: 0; }
 .trade-terminal .ticker-item .label {
@@ -130,11 +195,29 @@
    bar's own price/high/low/volume figures reflow by a pixel or two on every
    3s refresh — small, but exactly the kind of "reserve space for dynamic
    values" gap the terminal's own live numbers shouldn't have either. */
+/* Two levels, not one: the secondary 24h stats read at 13px/600 so they
+   support the last price rather than competing with it. They were 15px
+   bold — the same visual weight as the headline figure, which is what
+   made the row look like six equally shouting numbers. */
 .trade-terminal .ticker-item .value {
-  font-size: 15px; color: var(--text-primary); font-weight: 700;
+  font-size: 13px; color: var(--text-primary); font-weight: 600;
   font-variant-numeric: tabular-nums; white-space: nowrap;
+  line-height: 1.35;
 }
-.trade-terminal .ticker-item .value.price { font-size: 22px; font-weight: 700; }
+/* The one primary metric: 25px/650 with slightly tightened tracking, the
+   proportions every major exchange gives its last-price readout. The
+   font stack is stated rather than inherited only to keep this figure
+   explicitly on the terminal's sans — a last price must never end up in
+   a monospaced/terminal face. */
+.trade-terminal .ticker-item .value.price {
+  font-size: 25px;
+  font-weight: 650;
+  font-family: var(--font-family);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+/* The signed move sits with the price, a step below it. */
+.trade-terminal .ticker-item .value.change { font-size: 13.5px; font-weight: 600; }
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
 .trade-terminal .ticker-item .value.down { color: var(--color-sell); }
 .trade-terminal .ticker-item .value.mark { font-size: 12px; }
@@ -509,7 +592,23 @@
   display: flex; align-items: center; padding: 6px 14px;
   border-bottom: 1px solid var(--border-color);
 }
-.trade-terminal .pairs-col-headers .pch-name { flex: 1.7; }
+/* Sits in the header's first slot, above the pair column, so the sort
+   control costs no extra row. Styled as a label with a caret rather than
+   a form field: it is the readout of the current sort as much as it is
+   the picker for it. */
+.trade-terminal .pairs-col-headers .pch-mode {
+  flex: 1.7; min-width: 0;
+  background: transparent; border: none; outline: none;
+  color: var(--text-secondary);
+  font-size: 11px; font-weight: 600; font-family: inherit;
+  padding: 0; margin: 0; cursor: pointer;
+  text-overflow: ellipsis;
+}
+.trade-terminal .pairs-col-headers .pch-mode:hover { color: var(--text-primary); }
+.trade-terminal .pairs-col-headers .pch-mode.active { color: var(--accent-yellow); }
+.trade-terminal .pairs-col-headers .pch-mode option {
+  background: var(--workspace-bg); color: var(--text-primary);
+}
 .trade-terminal .pairs-col-headers .pch-sort {
   flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 3px;
   background: transparent; border: none; color: var(--text-secondary);

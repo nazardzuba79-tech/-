@@ -9,15 +9,23 @@ interface Item {
   pair: string;
   changePercent: number;
 }
-/** Scrolling marquee of major-coin 24h movers, Binance/Bybit-style —
- * restricted to TOP_COINS (see that file's comment on why it's a curated
- * allowlist rather than a live market-cap ranking) so this never surfaces
- * an obscure microcap next to BTC/ETH. Each item is clickable when
- * `onSelect` is passed — it always receives the slash-separated pair (e.g.
- * "SOL/USDT"); the caller decides what "select" means for its own page
- * (switch the spot pair, switch the futures symbol, or navigate away for a
- * pair that page can't trade). */
-export function TopGainersTicker({ onSelect }: { onSelect?: (pair: string) => void }) {
+/** Strip of major-coin 24h movers, restricted to TOP_COINS (see that file's
+ * comment on why it's a curated allowlist rather than a live market-cap
+ * ranking) so this never surfaces an obscure microcap next to BTC/ETH.
+ * Each item is clickable when `onSelect` is passed — it always receives the
+ * slash-separated pair (e.g. "SOL/USDT"); the caller decides what "select"
+ * means for its own page (switch the spot pair, switch the futures symbol,
+ * or navigate away for a pair that page can't trade).
+ *
+ * `staticStrip` drops the marquee: no duplicated run of items and no
+ * "HOT" badge, just one plain list of symbol + 24h change that the user
+ * can scroll by hand. The trade terminal asks for this — a constantly
+ * moving strip above a live chart and order book is motion competing with
+ * the data a trader is actually reading. The animation itself is switched
+ * off in CSS (see `.trade-terminal .ticker-track` in TradeTerminal.css);
+ * the duplicate run has to go here, since without the animation it would
+ * just render every symbol twice. */
+export function TopGainersTicker({ onSelect, staticStrip }: { onSelect?: (pair: string) => void; staticStrip?: boolean }) {
   const { lang } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
 
@@ -49,14 +57,14 @@ export function TopGainersTicker({ onSelect }: { onSelect?: (pair: string) => vo
     };
   }, [lang]);
 
-  const hottest = items.length > 0
-    ? items.reduce((max, it) => (Math.abs(it.changePercent) > Math.abs(max.changePercent) ? it : max), items[0])
-    : null;
+  const hottest = staticStrip || items.length === 0
+    ? null
+    : items.reduce((max, it) => (Math.abs(it.changePercent) > Math.abs(max.changePercent) ? it : max), items[0]);
   // Duplicated once so the CSS marquee can loop seamlessly from -50%.
-  const loop = [...items, ...items];
+  const loop = staticStrip ? items : [...items, ...items];
 
   return (
-    <div className="market-ticker" aria-label="Market ticker">
+    <div className={`market-ticker${staticStrip ? ' market-ticker-static' : ''}`} aria-label="Market ticker">
       <div className="ticker-track">
         {loop.map((it, i) => {
           const positive = it.changePercent >= 0;

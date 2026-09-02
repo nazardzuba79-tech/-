@@ -22,6 +22,7 @@ export function Nav({
   rightExtra,
   onTickerSelect,
   hideTicker,
+  staticTicker,
 }: {
   active: string;
   middle?: ReactNode;
@@ -30,6 +31,8 @@ export function Nav({
   /** The Trade page's own terminal already surfaces live market data, so
    * the marquee would be pure duplication there — every other page keeps it. */
   hideTicker?: boolean;
+  /** Renders the strip without the marquee — see TopGainersTicker. */
+  staticTicker?: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -295,7 +298,7 @@ export function Nav({
         </button>
       </div>
     </header>
-    {!hideTicker && <TopGainersTicker onSelect={onTickerSelect} />}
+    {!hideTicker && <TopGainersTicker onSelect={onTickerSelect} staticStrip={staticTicker} />}
     {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     <BottomNav />
     </>

@@ -93,7 +93,7 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
             percentage. The markets table's own column stays "24ч %"; it
             really does show only a percentage. */}
         <span className="label">{t('trade.change24h')}</span>
-        <span className={`value ${dir}`}>
+        <span className={`value change ${dir}`}>
           {stats && absoluteChange !== null
             ? `${positive ? '+' : ''}${formatPrice(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
             : '—'}

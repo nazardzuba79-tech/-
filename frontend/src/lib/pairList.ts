@@ -64,11 +64,18 @@ export function filterAndSortPairs(
     rankByBase?: Map<string, CoinRanking>;
     sortByRank?: boolean;
     // 'price' and 'change' sort by each pair's own live figures (the exact
-    // values the Цена/24Ч% columns show), direction set by sortDir — the
-    // same clickable-column-header pattern Bybit's own pair list uses.
-    // Defaults to 'volume' (most-traded first, descending), the existing
-    // behavior, when neither column is actively sorted.
-    sortField?: 'volume' | 'change' | 'price';
+    // values the Цена/24Ч% columns show) and 'symbol' alphabetically by
+    // pair name, direction set by sortDir.
+    //
+    // 'volume' (the default) sorts on quoteVolume24h — the ticker feed's
+    // own 24h turnover in the quote asset, which the backend derives from
+    // Kraken's real base volume times its real 24h VWAP (see
+    // KrakenMarketDataService.getTickersMap). It is the field to sort on
+    // for "most actively traded": base volume alone is not comparable
+    // across pairs, since 1 BTC and 1 DOGE are not the same amount of
+    // trading. Nothing is fabricated and no pair is pinned — BTC and ETH
+    // appear at the top only when their real turnover puts them there.
+    sortField?: 'volume' | 'change' | 'price' | 'symbol';
     sortDir?: 1 | -1;
   }
 ): TickerRow[] {
@@ -110,6 +117,9 @@ export function filterAndSortPairs(
       }
       if (opts.sortField === 'price') {
         return (parseFloat(a.lastPrice || '0') - parseFloat(b.lastPrice || '0')) * sortDir;
+      }
+      if (opts.sortField === 'symbol') {
+        return a.pair.localeCompare(b.pair) * sortDir;
       }
       // Most-traded pairs first — sorting alphabetically (the API's raw
       // order) put obscure, barely-liquid tickers at the top just because
