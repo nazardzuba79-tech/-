@@ -754,6 +754,7 @@ export const api = {
       maxLeverage: number;
       newAccountMaxLeverage: number;
       newAccountPeriodDays: number;
+      fundingIntervalHours: number;
       highLeverageWarningThreshold: number;
       leverageTiers: { notionalCap: number; maxLeverage: number; maintenanceMarginRate: number; maintenanceAmount: number }[];
     }>('/futures/config'),

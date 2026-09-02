@@ -1,29 +1,64 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage, localeOf } from '../lib/i18n';
-import { CryptoIcon } from './CryptoIcon';
+import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
-import { btcTurnover } from '../lib/turnover';
-import { useCoinGeckoStats } from '../lib/useCoinGeckoStats';
+import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 
-/** Mark Price shown deliberately separate from Last Price (per the futures
- * spec) — mark price is what PnL/liquidation are computed off, last price
- * is just the most recent external trade print. Showing both side by side
- * makes that distinction visible instead of implicit. */
-export function FuturesTickerBar({ symbol }: { symbol: string }) {
-  const { t, lang } = useLanguage();
-  const [baseAsset] = symbol.split('/');
-  const [lastPrice, setLastPrice] = useState<number | null>(null);
-  const [changePercent, setChangePercent] = useState<number>(0);
+/**
+ * The futures instrument row, on the same `.ticker-bar` / `.stat` system the
+ * spot terminal uses — so switching Торговля -> Фьючерсы reads as the same
+ * terminal rather than a second application.
+ *
+ * What differs is the content, not the chrome. The hierarchy is:
+ *
+ *   primary     Last price (the .price stat)
+ *   derivatives Mark price, Funding rate, Next funding
+ *   secondary   Index price, 24h change/high/low/volume
+ *
+ * Every figure is real:
+ *
+ * - Last / 24h stats come from the same ticker feed the spot bar uses.
+ * - Mark and index price come from /futures/mark-price (MarkPriceService).
+ * - The funding rate is the latest settled FundingRateRecord.
+ * - Next funding is derived, not invented: funding settles on UTC multiples
+ *   of the backend's own FUNDING_INTERVAL_HOURS, which /futures/config now
+ *   reports, so the countdown is computed from that boundary rather than a
+ *   made-up timer. If the config request fails the row shows "—".
+ *
+ * Deliberately absent: open interest, long/short ratio and liquidation
+ * volume. Nothing in this exchange's data model records them, and a
+ * plausible-looking number in a derivatives header is worse than an honest
+ * omission — see the note in FuturesPage.
+ */
+export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; onSelectSymbol?: () => void }) {
+  const { t } = useLanguage();
+  const [baseAsset, quoteAsset] = symbol.split('/');
+  const [stats, setStats] = useState<{
+    lastPrice: number;
+    changePercent: number;
+    high24h: number;
+    low24h: number;
+    volume24h: number;
+    quoteVolume24h: number;
+  } | null>(null);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
-  const [volume24h, setVolume24h] = useState<number | null>(null);
-  const [quoteVolume24h, setQuoteVolume24h] = useState<number | null>(null);
-  const [btcUsdtPrice, setBtcUsdtPrice] = useState<number | null>(null);
-  const [, quoteAsset] = symbol.split('/');
-  const geckoStats = useCoinGeckoStats(baseAsset);
-  const globalVolumeUsd = geckoStats?.volume24h ?? null;
+  const [fundingIntervalHours, setFundingIntervalHours] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    api
+      .getFuturesConfig()
+      .then((c) => setFundingIntervalHours(c.fundingIntervalHours))
+      .catch(() => {});
+  }, []);
+
+  // Ticks the countdown only — the market data below keeps its own 4s poll.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -32,10 +67,15 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
         .getExternalTicker(symbol)
         .then((res) => {
           if (cancelled) return;
-          setLastPrice(parseFloat(res.ticker.lastPrice));
-          setChangePercent(parseChangePercent(res.ticker.changePercent24h, symbol));
-          setVolume24h(parseFloat(res.ticker.volume24h));
-          setQuoteVolume24h(parseFloat(res.ticker.quoteVolume24h));
+          const tk = res.ticker;
+          setStats({
+            lastPrice: parseFloat(tk.lastPrice),
+            changePercent: parseChangePercent(tk.changePercent24h, symbol),
+            high24h: parseFloat(tk.high24h),
+            low24h: parseFloat(tk.low24h),
+            volume24h: parseFloat(tk.volume24h),
+            quoteVolume24h: parseFloat(tk.quoteVolume24h),
+          });
         })
         .catch(() => {});
       api
@@ -54,15 +94,6 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
           setFundingRate(latest ? parseFloat(latest.rate) : null);
         })
         .catch(() => {});
-      // Same real-BTC-price-based conversion as the spot TickerBar — see
-      // btcTurnover() and useCoinGeckoStats() — fetched unconditionally
-      // since converting the global USD volume into BTC terms needs it too.
-      api
-        .getExternalTicker('BTC/USDT')
-        .then((res) => {
-          if (!cancelled) setBtcUsdtPrice(parseFloat(res.ticker.lastPrice));
-        })
-        .catch(() => {});
     }
     load();
     const interval = setInterval(load, 4000);
@@ -70,84 +101,87 @@ export function FuturesTickerBar({ symbol }: { symbol: string }) {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [symbol, baseAsset, quoteAsset]);
+  }, [symbol]);
 
-  const positive = changePercent >= 0;
-  const fmt = (n: number | null) => (n !== null ? n.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—');
-  const fmtCompact = (n: number | null) =>
-    n !== null ? n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 }) : '—';
-  // Prefer CoinGecko's global 24h volume (real, aggregated across every
-  // exchange it tracks) — this contract's own Kraken-mirrored turnover only
-  // reflects Kraken's own liquidity for one pair, which reads unrealistically
-  // small (millions, not billions) for a major coin. Falls back to the pair's
-  // own Kraken turnover when the asset isn't in CoinGecko's top-500.
-  const turnoverUsd = globalVolumeUsd ?? quoteVolume24h;
-  const turnoverUsdLabel = globalVolumeUsd !== null ? 'USD' : quoteAsset;
-  const turnoverBtc =
-    globalVolumeUsd !== null && btcUsdtPrice
-      ? globalVolumeUsd / btcUsdtPrice
-      : volume24h !== null && quoteVolume24h !== null
-        ? btcTurnover({ baseAsset, quoteAsset, volume24h, quoteVolume24h, btcUsdtPrice })
-        : null;
+  const positive = (stats?.changePercent ?? 0) >= 0;
+  const dir = positive ? 'up' : 'down';
+
+  // Funding settles at every UTC multiple of the interval, so the next
+  // boundary is a pure function of the clock — the same rule the backend's
+  // msUntilNextFundingBoundary applies when it actually settles.
+  const nextFunding = (() => {
+    if (fundingIntervalHours === null || fundingIntervalHours <= 0) return null;
+    const intervalMs = fundingIntervalHours * 60 * 60 * 1000;
+    const msLeft = intervalMs - (now % intervalMs);
+    const total = Math.floor(msLeft / 1000);
+    const hh = String(Math.floor(total / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((total % 3600) / 60)).padStart(2, '0');
+    const ss = String(total % 60).padStart(2, '0');
+    return `${hh}:${mm}:${ss}`;
+  })();
 
   return (
-    <div style={styles.bar}>
-      <div style={styles.pairBlock}>
-        <CryptoIcon symbol={baseAsset} size={28} />
-        <span style={styles.pairName} className="mono">
-          {symbol}
-        </span>
-        <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.lastPrice}>
-          {fmt(lastPrice)}
-        </span>
-        <span className={positive ? 'text-buy' : 'text-sell'} style={{ fontSize: 12, fontWeight: 700 }}>
-          {lastPrice !== null ? `${positive ? '+' : ''}${changePercent.toFixed(2)}%` : ''}
+    <div className="ticker-bar">
+      <div
+        className="pair-selector"
+        role={onSelectSymbol ? 'button' : undefined}
+        tabIndex={onSelectSymbol ? 0 : undefined}
+        onClick={onSelectSymbol}
+        onKeyDown={(e) => {
+          if (onSelectSymbol && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onSelectSymbol();
+          }
+        }}
+      >
+        <span className="pair-name">{symbol}</span>
+        <span className="pair-arrow">▼</span>
+      </div>
+
+      <div className="ticker-item">
+        <span className="label">{t('trade.lastPrice')}</span>
+        <span className={`value price ${dir}`}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('futures.markPrice')}</span>
+        <span className="value">{markPrice !== null ? formatPrice(markPrice) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('futures.fundingRate')}</span>
+        <span className={`value ${fundingRate !== null && fundingRate < 0 ? 'down' : 'up'}`}>
+          {fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
         </span>
       </div>
-      <div style={styles.divider} />
-      <Stat label={t('trade.price')} value={`${fmt(lastPrice)}`} />
-      <Stat label={t('futures.markPrice')} value={fmt(markPrice)} />
-      <Stat label={t('futures.indexPrice')} value={fmt(indexPrice)} />
-      <Stat
-        label={`${t('trade.turnover24h')} (${turnoverUsdLabel})`}
-        value={fmtCompact(turnoverUsd)}
-      />
-      <Stat label={`${t('trade.turnover24h')} (BTC)`} value={fmtCompact(turnoverBtc)} />
-      <Stat
-        label={t('futures.fundingRate')}
-        value={fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
-        color={fundingRate !== null ? (fundingRate >= 0 ? 'var(--buy)' : 'var(--sell)') : undefined}
-      />
-      <Stat label={t('wallet.marketCap')} value={geckoStats?.marketCap != null ? fmtCompact(geckoStats.marketCap) : '—'} />
+      <div className="ticker-item">
+        <span className="label">{t('futures.nextFunding')}</span>
+        <span className="value">{nextFunding ?? '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('futures.indexPrice')}</span>
+        <span className="value">{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('trade.change24h')}</span>
+        <span className={`value change ${dir}`}>
+          {stats ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
+        </span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('trade.high24h')}</span>
+        <span className="value">{stats ? formatPrice(stats.high24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{t('trade.low24h')}</span>
+        <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
+        <span className="value">{stats ? formatAmount(stats.volume24h) : '—'}</span>
+      </div>
+      <div className="ticker-item">
+        <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
+        <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
+      </div>
     </div>
   );
 }
-
-function Stat({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div style={styles.stat}>
-      <span style={styles.statLabel}>{label}</span>
-      <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: color ?? 'var(--text-primary)' }}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  bar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 28,
-    padding: '12px 20px',
-    background: 'var(--panel)',
-    flexShrink: 0,
-    overflowX: 'auto',
-  },
-  pairBlock: { display: 'flex', alignItems: 'center', gap: 12 },
-  divider: { width: 1, height: 28, background: 'var(--border)', flexShrink: 0 },
-  pairName: { fontSize: 16, fontWeight: 800, fontFamily: 'var(--font-display)' },
-  lastPrice: { fontSize: 22, fontWeight: 800, letterSpacing: '-0.01em' },
-  stat: { display: 'flex', flexDirection: 'column', gap: 3, whiteSpace: 'nowrap' },
-  statLabel: { fontSize: 10, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 },
-};

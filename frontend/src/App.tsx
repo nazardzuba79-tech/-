@@ -12,6 +12,7 @@ import { CopyTradingPage } from './pages/CopyTradingPage';
 import { ArbitragePage } from './pages/ArbitragePage';
 import { LegalPage } from './pages/LegalPage';
 import { ReferralRedirectPage } from './pages/ReferralRedirectPage';
+import { defaultTradingPath } from './lib/tradingMode';
 import { getToken } from './lib/api';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminWalletsPage } from './pages/admin/AdminWalletsPage';
@@ -31,8 +32,13 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={getToken() ? <Navigate to="/trade" replace /> : <MarketingPage />} />
-        <Route path="/login" element={getToken() ? <Navigate to="/trade" replace /> : <AuthPage />} />
+        {/* These two, and AuthPage's post-sign-in redirect, are the only
+            places the app picks a terminal without the user naming one, so
+            they are the only places the trading-mode preference applies —
+            see lib/tradingMode. A direct /trade or /futures URL is its own
+            route and is never rewritten. */}
+        <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <MarketingPage />} />
+        <Route path="/login" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <AuthPage />} />
         <Route
           path="/trade"
           element={

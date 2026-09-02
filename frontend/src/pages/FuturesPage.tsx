@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -6,12 +6,42 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList } from '../components/FuturesPairList';
 import { PriceChart } from '../components/PriceChart';
+import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
+import { AssetsPanel } from '../components/AssetsPanel';
+import { ConnectionBanner } from '../components/ConnectionBanner';
+import { krakenSocket } from '../lib/krakenSocket';
+import { rememberTradingMode } from '../lib/tradingMode';
+import './trade-terminal/TradeTerminal.css';
 
 const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+const WS_FALLBACK_TIMEOUT_MS = 4000;
 
+// Only tabs with a real endpoint behind them. Positions leads, because on a
+// futures terminal the open position is the thing a trader watches. There is
+// no separate futures order-history route, so no tab pretends there is.
+type BottomTab = 'positions' | 'positionHistory' | 'assets';
+const BOTTOM_TABS: { id: BottomTab; labelKey: 'futures.positions' | 'futures.positionHistory' | 'trade.tabAssets' }[] = [
+  { id: 'positions', labelKey: 'futures.positions' },
+  { id: 'positionHistory', labelKey: 'futures.positionHistory' },
+  { id: 'assets', labelKey: 'trade.tabAssets' },
+];
+
+/**
+ * The futures terminal. Same shell as the spot terminal — `.trade-terminal`
+ * and its grid, surfaces, typography and densities — with futures business
+ * logic inside it: mark/index price, funding, leverage, margin mode,
+ * positions. Switching Торговля <-> Фьючерсы should feel like changing
+ * instrument, not application, which is why this page no longer carries the
+ * separate cyan/purple palette and rounded cards it used to.
+ *
+ * The order book mirrors the same live external depth the spot terminal
+ * shows for this instrument, for the same reason and with the same caveat
+ * documented there: our own engine's book is where orders actually match,
+ * this is the market's depth, shown for reference.
+ */
 export function FuturesPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -20,74 +50,131 @@ export function FuturesPage() {
     const requested = searchParams.get('pair');
     return requested && FUTURES_SYMBOLS.includes(requested) ? requested : 'BTC/USDT';
   });
-  const [newAccountNotice, setNewAccountNotice] = useState<{ max: number; days: number } | null>(null);
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
+  const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
+  const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
+  const [pickedPrice, setPickedPrice] = useState<string | null>(null);
+  const pickedSeq = useRef(0);
 
-  // Surface the new-account leverage cap as an informational notice — the
-  // real enforcement is server-side (see the leverage checks in
-  // FuturesPositionService), this is just so the trader isn't surprised by
-  // a rejected order at 50x on day one.
+  // Same reason as the spot terminal: this page is not remounted when only
+  // the query string changes, so without this a second deep-link into
+  // /futures would leave the previous contract selected.
   useEffect(() => {
-    Promise.all([api.getFuturesConfig(), api.getMe()])
-      .then(([config, me]) => {
-        const accountAgeDays = (Date.now() - new Date(me.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-        if (accountAgeDays < config.newAccountPeriodDays) {
-          setNewAccountNotice({ max: config.newAccountMaxLeverage, days: config.newAccountPeriodDays });
-        }
-      })
+    const next = searchParams.get('pair');
+    if (next && FUTURES_SYMBOLS.includes(next)) setSymbol(next);
+  }, [searchParams]);
+
+  // Landing here is itself the signal that futures is this user's current
+  // trading mode — see lib/tradingMode.
+  useEffect(() => rememberTradingMode('futures'), []);
+
+  const refreshBook = useCallback(() => {
+    api
+      .getExternalOrderBook(symbol)
+      .then((res) => setBook({ bids: res.bids, asks: res.asks }))
       .catch(() => {});
-  }, []);
+  }, [symbol]);
+
+  useEffect(() => {
+    let gotWsData = false;
+    let restInterval: number | null = null;
+    const unsubscribe = krakenSocket.subscribeBook(symbol, (snapshot) => {
+      gotWsData = true;
+      if (restInterval !== null) {
+        clearInterval(restInterval);
+        restInterval = null;
+      }
+      setBook(snapshot);
+    });
+    refreshBook();
+    const fallbackTimer = window.setTimeout(() => {
+      if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
+    }, WS_FALLBACK_TIMEOUT_MS);
+    return () => {
+      unsubscribe();
+      clearTimeout(fallbackTimer);
+      if (restInterval !== null) clearInterval(restInterval);
+    };
+  }, [symbol, refreshBook]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
-  // A futures position can only ever be opened on FUTURES_SYMBOLS (see
-  // config/futuresConfig.ts on the backend — the order-placement route
-  // rejects anything else outright). Clicking a pair the marquee shows but
-  // futures doesn't support sends the trader to spot instead of pretending
-  // a futures market exists for it.
+  // A futures position can only ever be opened on FUTURES_SYMBOLS (the
+  // order-placement route rejects anything else outright). Clicking a symbol
+  // the strip shows but futures doesn't support sends the trader to spot
+  // instead of pretending a futures market exists for it.
   function handleTickerSelect(pair: string) {
     if (FUTURES_SYMBOLS.includes(pair)) setSymbol(pair);
-    else navigate(`/trade?pair=${pair}`);
+    else navigate(`/trade?pair=${encodeURIComponent(pair)}`);
   }
 
   return (
-    <div className="page-mesh trading-page" style={styles.page}>
+    <div className="trade-terminal">
       <Nav
         active="/futures"
         onTickerSelect={handleTickerSelect}
+        staticTicker
         rightExtra={
-          <button onClick={() => setShowTransfer(true)} style={styles.transferBtn}>
+          <button className="bottom-action-btn" onClick={() => setShowTransfer(true)}>
             {t('futures.transfer')}
           </button>
         }
       />
+      <ConnectionBanner />
 
-      <div className="trading-content" style={styles.content}>
-        <div style={styles.tickerCard}>
-          <FuturesTickerBar symbol={symbol} />
-        </div>
+      <div className="terminal">
+        <FuturesTickerBar symbol={symbol} />
 
-        {newAccountNotice && (
-          <div style={styles.notice}>
-            {t('futures.newAccountLimitNotice', { max: newAccountNotice.max, days: newAccountNotice.days })}
-          </div>
-        )}
-
-        <main className="trading-grid" style={styles.grid}>
-          <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
+        <div className="main-grid">
+          <div className="left-panel">
             <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
           </div>
-          <div className="trading-col trading-col-chart" style={styles.chartColumn}>
-            <PriceChart pair={symbol} />
-          </div>
-          <div className="trading-col trading-col-form" style={styles.formColumn}>
-            <FuturesOrderForm symbol={symbol} onPlaced={handleOrderPlaced} onOpenTransfer={() => setShowTransfer(true)} />
-          </div>
-        </main>
 
-        <div className="trading-orders-row" style={styles.positionsRow}>
-          <FuturesPositionsPanel refreshKey={positionsRefreshKey} />
+          <div className="chart-area">
+            <PriceChart pair={symbol} chrome="terminal" />
+          </div>
+
+          <div className="orderbook-area">
+            <OrderBookPanel
+              bids={book.bids}
+              asks={book.asks}
+              pair={symbol}
+              onPickPrice={(value) => {
+                pickedSeq.current += 1;
+                setPickedPrice(value);
+              }}
+            />
+          </div>
+
+          <div className="order-form-area">
+            <FuturesOrderForm
+              symbol={symbol}
+              onPlaced={handleOrderPlaced}
+              onOpenTransfer={() => setShowTransfer(true)}
+              pickedPrice={pickedPrice}
+            />
+          </div>
+        </div>
+
+        <div className="bottom-panel">
+          <div className="bottom-tabs">
+            {BOTTOM_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
+                onClick={() => setBottomTab(tab.id)}
+              >
+                {t(tab.labelKey)}
+              </button>
+            ))}
+          </div>
+
+          <div className="bottom-content">
+            {bottomTab === 'positions' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />}
+            {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
+            {bottomTab === 'assets' && <AssetsPanel refreshKey={positionsRefreshKey} />}
+          </div>
         </div>
       </div>
 
@@ -95,111 +182,3 @@ export function FuturesPage() {
     </div>
   );
 }
-
-// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
-// scoped to just this page the same way WalletPage/AdminLayout re-theme
-// themselves — every existing var(--panel)/var(--border)/var(--text-*)
-// rule below (and in the futures sub-components, and in the shared Nav
-// rendered above) picks this up automatically, nothing else on the site
-// changes. Cyan/purple brand accent replaces the site's default amber.
-const FUTURES_V0_VARS = {
-  ['--bg' as any]: '#080b12',
-  ['--panel' as any]: '#121925',
-  ['--panel-alt' as any]: '#0e131d',
-  ['--panel-alt-hover' as any]: '#172131',
-  ['--border' as any]: '#1c2735',
-  ['--text-primary' as any]: '#f5f7fa',
-  ['--text-secondary' as any]: '#8b96a8',
-  ['--text-tertiary' as any]: '#6b7789',
-  ['--buy' as any]: '#19d98b',
-  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
-  ['--sell' as any]: '#ff4d67',
-  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
-  ['--accent' as any]: '#18c8ff',
-  ['--accent-hover' as any]: '#3fd4ff',
-  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
-  ['--on-accent' as any]: '#04121b',
-} as React.CSSProperties;
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    height: '100vh',
-    background: 'var(--bg)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    ...FUTURES_V0_VARS,
-  },
-  transferBtn: {
-    background: 'transparent',
-    border: '1px solid var(--border)',
-    color: 'var(--text-secondary)',
-    borderRadius: 10,
-    padding: '8px 16px',
-    fontWeight: 700,
-    fontSize: 12,
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: '12px 16px 16px',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  tickerCard: {
-    flexShrink: 0,
-    borderRadius: 12,
-    border: '1px solid var(--border)',
-    overflow: 'hidden',
-  },
-  notice: {
-    padding: '8px 14px',
-    background: 'var(--buy-dim)',
-    color: 'var(--buy)',
-    fontSize: 12,
-    fontWeight: 600,
-    borderRadius: 10,
-    flexShrink: 0,
-  },
-  grid: {
-    flex: 1,
-    display: 'flex',
-    gap: 12,
-    minHeight: 0,
-  },
-  pairListColumn: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    flex: '0 0 220px',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  chartColumn: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    display: 'flex',
-    flex: '1 1 auto',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  formColumn: {
-    flex: '0 0 320px',
-    overflowY: 'auto',
-  },
-  positionsRow: {
-    flex: '0 0 260px',
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-};

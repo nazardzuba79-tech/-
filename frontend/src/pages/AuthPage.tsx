@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
+import { defaultTradingPath } from '../lib/tradingMode';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
@@ -83,7 +84,7 @@ export function AuthPage() {
           }
         }
         setToken(result.token);
-        navigate('/trade');
+        navigate(defaultTradingPath());
       }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
@@ -100,7 +101,7 @@ export function AuthPage() {
     try {
       const { token } = await api.loginWith2FA(pendingToken, twoFaCode);
       setToken(token);
-      navigate('/trade');
+      navigate(defaultTradingPath());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {

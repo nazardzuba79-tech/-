@@ -14,6 +14,7 @@ import {
   NEW_ACCOUNT_PERIOD_DAYS,
   HIGH_LEVERAGE_WARNING_THRESHOLD,
   LEVERAGE_TIERS,
+  FUNDING_INTERVAL_HOURS,
 } from '../../config/futuresConfig';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
@@ -65,6 +66,11 @@ export function futuresRouter(
       maxLeverage: MAX_LEVERAGE,
       newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
       newAccountPeriodDays: NEW_ACCOUNT_PERIOD_DAYS,
+      // Read-only constant, exposed so the terminal can show the next
+      // funding settlement without duplicating the interval client-side
+      // (funding lands on UTC multiples of it — see FundingRateService's
+      // msUntilNextFundingBoundary). No risk or liquidation logic here.
+      fundingIntervalHours: FUNDING_INTERVAL_HOURS,
       highLeverageWarningThreshold: HIGH_LEVERAGE_WARNING_THRESHOLD,
       leverageTiers: LEVERAGE_TIERS,
     });

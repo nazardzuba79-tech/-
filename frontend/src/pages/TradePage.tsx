@@ -18,6 +18,7 @@ import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import { rememberTradingMode } from '../lib/tradingMode';
 import './trade-terminal/TradeTerminal.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -74,6 +75,9 @@ export function TradePage() {
   useEffect(() => {
     setMarketType(searchParams.get('market') === 'cfd' ? 'cfd' : 'spot');
   }, [searchParams]);
+  // Landing here is the signal that spot is this user's current trading
+  // mode — see lib/tradingMode.
+  useEffect(() => rememberTradingMode('spot'), []);
   const [cfdSymbol, setCfdSymbol] = useState('XAUUSD');
   const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
   const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);

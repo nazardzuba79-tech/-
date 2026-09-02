@@ -12,10 +12,14 @@ export function FuturesOrderForm({
   symbol,
   onPlaced,
   onOpenTransfer,
+  pickedPrice,
 }: {
   symbol: string;
   onPlaced: () => void;
   onOpenTransfer?: () => void;
+  /** A level clicked in the order book — fills the price field, the same
+   *  affordance the spot terminal's form has. */
+  pickedPrice?: string | null;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -23,6 +27,12 @@ export function FuturesOrderForm({
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
   const [price, setPrice] = useState('');
+  useEffect(() => {
+    if (pickedPrice) {
+      setPrice(pickedPrice);
+      setType('LIMIT');
+    }
+  }, [pickedPrice]);
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
   const [leverage, setLeverage] = useState(10);

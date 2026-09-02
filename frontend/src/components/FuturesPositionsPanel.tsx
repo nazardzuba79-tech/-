@@ -4,9 +4,20 @@ import { useLanguage } from '../lib/i18n';
 
 type Tab = 'open' | 'history';
 
-export function FuturesPositionsPanel({ refreshKey }: { refreshKey: number }) {
+export function FuturesPositionsPanel({
+  refreshKey,
+  tab: controlledTab,
+}: {
+  refreshKey: number;
+  /** When the page owns the tab row (the futures terminal does, so there is
+   *  one row of tabs rather than two stacked), pass the active tab here and
+   *  this panel renders content only. Left out, it keeps its own tabs and
+   *  works standalone. */
+  tab?: 'open' | 'history';
+}) {
   const { t } = useLanguage();
-  const [tab, setTab] = useState<Tab>('open');
+  const [ownTab, setTab] = useState<Tab>('open');
+  const tab: Tab = controlledTab ?? ownTab;
   const [positions, setPositions] = useState<Awaited<ReturnType<typeof api.getFuturesPositions>>>([]);
   const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getFuturesPositionHistory>>>([]);
   const [closingId, setClosingId] = useState<string | null>(null);
@@ -45,7 +56,7 @@ export function FuturesPositionsPanel({ refreshKey }: { refreshKey: number }) {
 
   return (
     <div style={styles.wrap}>
-      <div style={styles.tabs}>
+      {controlledTab === undefined && <div style={styles.tabs}>
         <button
           onClick={() => setTab('open')}
           style={{ ...styles.tab, ...(tab === 'open' ? styles.tabActive : {}) }}
@@ -58,7 +69,7 @@ export function FuturesPositionsPanel({ refreshKey }: { refreshKey: number }) {
         >
           {t('futures.positionHistory')}
         </button>
-      </div>
+      </div>}
 
       {error && <div style={styles.error}>{error}</div>}
 

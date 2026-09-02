@@ -14,6 +14,7 @@ import { api } from '../../lib/api';
 import { Nav } from '../../components/Nav';
 import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
+import { CfdMarketsSection } from '../../components/CfdMarketsSection';
 import { parseChangePercent } from '../../lib/priceChange';
 import { CATEGORIES, type CoinCategory, loadFavorites, saveFavorites } from '../../lib/pairList';
 import {
@@ -48,7 +49,12 @@ type GlobalMarket = {
 type FearGreedReading = { value: number; classification: string; updatedAt: number };
 
 type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume' | 'marketCap' | 'symbol';
-type MarketKind = 'Spot' | 'Futures' | 'Options';
+// The three instrument types this exchange actually trades. "Options" used
+// to sit in this slot as a permanent coming-soon panel; CFD replaces it
+// because CFD is a real, live product here (CfdMarketDataService and the
+// /trade?market=cfd terminal), so the tab is a working discovery path
+// rather than a dead one.
+type MarketKind = 'Spot' | 'Futures' | 'CFD';
 type CategoryTab = 'Cryptocurrency' | 'Favorites' | 'TradFi';
 
 const PER_PAGE = 10;
@@ -233,7 +239,7 @@ export function MarketsBoltPage() {
   const quotes = useMemo(() => deriveQuoteList(tickers), [tickers]);
 
   const kindTickers = useMemo(() => {
-    if (activeKind === 'Options') return [];
+    if (activeKind === 'CFD') return [];
     if (activeKind === 'Futures') return tickers.filter((tk) => FUTURES_SYMBOLS.includes(tk.pair));
     return tickers;
   }, [tickers, activeKind]);
@@ -492,9 +498,9 @@ export function MarketsBoltPage() {
             ))}
           </div>
           <div className="tab-row type-tabs">
-            {(['Spot', 'Futures', 'Options'] as MarketKind[]).map((kind) => (
+            {(['Spot', 'Futures', 'CFD'] as MarketKind[]).map((kind) => (
               <button key={kind} className={activeKind === kind ? 'tab-active' : ''} onClick={() => setActiveKind(kind)}>
-                {kind === 'Spot' ? 'Спот' : kind === 'Futures' ? 'Фьючерсы' : 'Опционы'}
+                {kind === 'Spot' ? 'Спот' : kind === 'Futures' ? 'Фьючерсы' : 'CFD'}
               </button>
             ))}
           </div>
@@ -504,11 +510,8 @@ export function MarketsBoltPage() {
               <strong>TradFi скоро появится</strong>
               <span>Торговля традиционными активами станет доступна в одном из следующих обновлений.</span>
             </div>
-          ) : activeKind === 'Options' ? (
-            <div className="empty-state-panel">
-              <strong>Опционы скоро появятся</strong>
-              <span>Мы работаем над запуском опционов. Пока доступны спот и фьючерсы.</span>
-            </div>
+          ) : activeKind === 'CFD' ? (
+            <CfdMarketsSection />
           ) : (
             <>
               <div className="highlights-grid">
