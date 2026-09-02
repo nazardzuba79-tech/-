@@ -323,8 +323,29 @@ export class KrakenMarketDataService {
             o: string;
           }
         >;
+        type RawTicker = { c: [string, string]; b: [string, string, string]; a: [string, string, string]; h: [string, string]; l: [string, string]; v: [string, string]; p: [string, string]; o: string };
         for (const info of batch) {
-          const raw = resultByKrakenName.get(info.krakenName);
+          let raw: RawTicker | undefined = resultByKrakenName.get(info.krakenName);
+          if (!raw) {
+            // A batched request keys its response by whatever pair
+            // identifier Kraken's Ticker endpoint chooses to echo back —
+            // for most pairs that's the altname we requested, but for a
+            // handful of legacy-prefixed majors (this is what the "prefer
+            // the deeper USD market" substitution above tends to select
+            // for) it can differ, so the exact-key lookup above misses
+            // them even though the pair is perfectly valid. Every other
+            // endpoint here (Depth/OHLC/Trades) already sidesteps this by
+            // not caring about the response key at all — a single-pair
+            // retry can do the same (Object.values(...)[0] is
+            // unambiguous when only one pair was asked for), rather than
+            // silently dropping a pair that's actually fine.
+            try {
+              const singleBody = await this.request(`/0/public/Ticker?pair=${info.krakenName}`);
+              raw = Object.values(singleBody.result)[0] as RawTicker | undefined;
+            } catch {
+              // still unavailable — fall through to the skip below
+            }
+          }
           if (!raw) continue; // Kraken didn't return this pair (delisted/suspended) — just skip it
           const lastPrice = Number(raw.c[0]);
           const openPrice = Number(raw.o);

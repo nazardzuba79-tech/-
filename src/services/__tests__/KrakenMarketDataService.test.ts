@@ -168,6 +168,44 @@ describe('KrakenMarketDataService', () => {
     });
   });
 
+  it('retries as a single pair when a batched Ticker response keys an entry differently than the requested altname', async () => {
+    // The exact real-world quirk this guards against: Kraken's batched
+    // Ticker response can key an entry using its own canonical form (e.g.
+    // "XXBTZUSDT") instead of echoing back the altname we requested
+    // ("XBTUSDT") — an exact-key lookup in the batch then misses a pair
+    // that is perfectly valid. ETH is included alongside BTC in the same
+    // batch, keyed by its plain altname, to prove the mismatch is handled
+    // per-pair rather than by falling back for the whole batch.
+    const batchBody = {
+      error: [],
+      result: {
+        ETHUSDT: TICKER_BODY.result.XBTUSDT,
+        XXBTZUSDT: TICKER_BODY.result.XBTUSDT,
+      },
+    };
+    const fetchFn = jest.fn().mockImplementation((url: string) => {
+      if (url.includes('AssetPairs')) return Promise.resolve(jsonResponse(ASSET_PAIRS_BODY));
+      if (url.includes('pair=XBTUSDT,ETHUSDT')) return Promise.resolve(jsonResponse(batchBody));
+      return Promise.resolve(jsonResponse(TICKER_BODY)); // single-pair retry
+    });
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const tickers = await service.getTickers();
+
+    expect(tickers.find((t) => t.pair === 'BTC/USDT')).toEqual({
+      pair: 'BTC/USDT',
+      lastPrice: '60000',
+      bidPrice: '59999',
+      askPrice: '60001',
+      high24h: '61000',
+      low24h: '59000',
+      volume24h: '1234.5',
+      quoteVolume24h: '73699650.00',
+      changePercent24h: '2.0408',
+    });
+    expect(fetchFn.mock.calls.some(([url]) => url.includes('Ticker?pair=XBTUSDT') && !url.includes(','))).toBe(true);
+  });
+
   it('falls back to last price for turnover when Kraken omits the VWAP', async () => {
     const tickerBodyNoVwap = {
       error: [],
