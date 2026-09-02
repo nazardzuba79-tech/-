@@ -187,89 +187,181 @@ body {
   z-index: 1;
 }
 
-/* Top nav — a flat, compact dark bar in the shape every major exchange
-   uses: near-black ground, one hairline bottom border, no glow, plain text
-   links with the active one in brand orange, and the single filled CTA
-   parked at the right end. It previously carried a cyan accent and a
-   glowing underline bar inherited from an old reference design; that cyan
-   was the last of its kind on the site once Copy Trading and Markets moved
-   to the brand orange, and the glow read as decoration on what should be
-   the quietest surface on the page. */
-.top-nav-bar {
-  background: #0b0e11;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+/* Shared exchange header, transferred from the supplied Header.tsx/index.css
+   reference. The approved project Logo component remains unchanged. */
+.global-header {
+  --h-bg-1: #0c1018;
+  --h-bg-2: #0a0e15;
+  --h-border: #1c2330;
+  --h-text: #ffffff;
+  --h-text-2: #d8dce6;
+  --h-text-3: #aeb5c2;
+  --h-hover: rgba(255, 255, 255, 0.04);
+  --h-accent: #f0c43f;
+  --h-accent-text: #1a1410;
+  --h-accent-hover: #f7d06a;
+  --h-admin: #8b8af6;
+  --h-positive: #4cae7e;
+  --h-negative: #e0747b;
+  border-bottom: 1px solid var(--h-border);
+  background: linear-gradient(180deg, var(--h-bg-1), var(--h-bg-2));
+  box-shadow: 0 1px rgba(255, 255, 255, 0.02), 0 6px 24px rgba(0, 0, 0, 0.18);
 }
-
-.top-nav-fund-btn {
-  padding: 0 12px 0 14px;
-  font-size: 13px;
-  transition: background 160ms ease;
+.global-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 800px 200px at 25% -60%, rgba(139, 138, 246, 0.04), transparent 60%),
+    radial-gradient(ellipse 600px 160px at 80% -40%, rgba(70, 130, 220, 0.035), transparent 60%);
+  pointer-events: none;
 }
-.nav-desktop-right {
-  gap: 10px;
-}
-.top-nav-fund-btn:hover {
-  background: #ffb524;
-}
-.top-nav-fund-btn:active {
-  background: #e09600;
-}
-
-.top-nav-link {
+.header-left,
+.header-actions {
+  display: flex;
+  align-items: center;
   position: relative;
-  padding: 0 11px;
-  color: #9aa1ac;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  z-index: 1;
+}
+.header-left {
+  min-width: 0;
+}
+.header-brand {
+  flex: none;
+}
+.brand-separator {
+  width: 1px;
+  height: 22px;
+  margin: 0 18px;
+  flex: none;
+  background: linear-gradient(180deg, transparent, #2a3340, transparent);
+}
+.main-nav {
+  min-width: 0;
+}
+.nav-item-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+.nav-item {
+  position: relative;
+  margin: 8px 0;
+  border-radius: 6px;
+  color: var(--h-text-2);
   text-decoration: none;
-  transition: color 160ms ease;
+  white-space: nowrap;
+  transition: color 180ms ease, background 180ms ease;
 }
-/* No hover pill and no underline bar: on a row of eight links either one
-   turns the bar into the busiest strip on the page. Colour alone carries
-   both states, which is what the reference exchanges do. */
-.top-nav-link:hover {
-  color: #eaecef;
+.nav-item:hover {
+  color: var(--h-text);
+  background: var(--h-hover);
 }
-.top-nav-link.is-active {
-  color: #f7a600;
+.nav-item.nav-secondary {
+  color: var(--h-text-3);
+  font-size: 13px !important;
+  gap: 5px !important;
 }
-
+.nav-item.nav-secondary:hover {
+  color: var(--h-text);
+}
+.nav-item.nav-admin {
+  color: var(--h-admin);
+}
+.nav-item.nav-admin:hover {
+  color: #a6a5ff;
+  background: rgba(139, 138, 246, 0.08);
+}
+.nav-item.nav-active {
+  color: var(--h-text);
+  background: rgba(240, 196, 63, 0.06);
+}
+.nav-item.nav-active::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  bottom: -8px;
+  left: 10px;
+  height: 2px;
+  background: var(--h-accent);
+  border-radius: 2px 2px 0 0;
+}
+.nav-chevron {
+  opacity: 0.5;
+  transition: transform 200ms ease, opacity 180ms ease;
+}
+.nav-item:hover .nav-chevron {
+  opacity: 0.8;
+}
+.nav-chevron-open {
+  transform: rotate(180deg);
+}
+.nav-dropdown {
+  animation: navDrop 160ms ease;
+}
+.nav-dropdown a:hover {
+  background: var(--h-hover);
+}
+@keyframes navDrop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.header-actions {
+  gap: 10px;
+  flex: none;
+}
+.deposit-button {
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+.deposit-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(240, 196, 63, 0.28) !important;
+  background: linear-gradient(135deg, var(--h-accent-hover), #e6b830) !important;
+}
+.deposit-button:active {
+  transform: translateY(1px);
+}
+.header-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 9px;
+  color: var(--h-text-2);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+.header-icon:hover {
+  color: var(--h-text) !important;
+  background: var(--h-hover) !important;
+  border-color: #232c3a !important;
+}
+.language-control span,
+.profile-control span {
+  font-size: 12px;
+}
 .top-nav-pill-btn {
-  transition: color 180ms ease;
-}
-.top-nav-pill-btn:hover {
-  color: #ffffff;
+  padding: 0 9px !important;
 }
 
 .top-nav-profile-wrap {
   position: relative;
 }
 .top-nav-profile-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 2px 0 4px;
-  color: #b7bdc6;
-  font-size: 13px;
-  font-weight: 600;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  transition: color 180ms ease;
-}
-.top-nav-profile-btn:hover {
-  color: #ffffff;
+  gap: 7px;
 }
 .top-nav-profile-avatar {
   display: grid;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   place-items: center;
-  color: #b7bdc6;
-  background: #1e2329;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e8eff8;
+  background: linear-gradient(135deg, #3a4a6b, #2a3450);
+  border: 1px solid #2a3344;
   border-radius: 50%;
   overflow: hidden;
 }
@@ -282,14 +374,14 @@ body {
 }
 .top-nav-profile-menu {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 8px);
   right: 0;
   min-width: 146px;
   padding: 6px;
-  background: #111820;
-  border: 1px solid rgba(148, 172, 188, 0.2);
-  border-radius: 10px;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  background: #11161f;
+  border: 1px solid #232c3a;
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
   z-index: 30;
   animation: topNavMenuIn 160ms ease-out;
 }
@@ -300,7 +392,7 @@ body {
   width: 100%;
   gap: 8px;
   padding: 9px 10px;
-  color: #cbd4dc;
+  color: var(--h-text-3);
   font: inherit;
   font-size: 12px;
   text-align: left;
@@ -313,7 +405,7 @@ body {
 .top-nav-profile-menu a:hover,
 .top-nav-profile-menu button:hover {
   color: #ffffff;
-  background: rgba(128, 165, 182, 0.11);
+  background: var(--h-hover);
 }
 @keyframes topNavMenuIn {
   from {
@@ -323,6 +415,189 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.mobile-menu {
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: var(--h-text-2);
+  border-radius: 6px;
+}
+.mobile-menu:hover {
+  color: var(--h-text);
+  background: var(--h-hover);
+}
+
+.market-ticker {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: sticky;
+  top: 64px;
+  z-index: 19;
+  background: linear-gradient(180deg, #0a0e15, #080b11);
+  border-bottom: 1px solid #161d27;
+}
+.ticker-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 26px;
+  padding: 0 28px;
+  white-space: nowrap;
+  animation-duration: 38s !important;
+}
+.ticker-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 0;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ticker-item-button {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+}
+.ticker-item-button:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.ticker-item strong {
+  color: #f4f8fc;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ticker-item b {
+  font-size: 11px;
+  font-weight: 500;
+}
+.ticker-item .positive {
+  color: var(--h-positive, #4cae7e);
+}
+.ticker-item .negative {
+  color: var(--h-negative, #e0747b);
+}
+.ticker-hot {
+  padding: 1px 4px;
+  color: #1a1410;
+  background: #f0c43f;
+  border-radius: 3px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 1280px) {
+  .nav-item {
+    padding-right: 8px !important;
+    padding-left: 8px !important;
+    font-size: 12.5px !important;
+  }
+  .brand-separator {
+    margin-right: 12px;
+    margin-left: 12px;
+  }
+}
+@media (max-width: 1100px) {
+  .global-header {
+    padding-right: 20px !important;
+    padding-left: 20px !important;
+  }
+}
+@media (max-width: 1024px) {
+  .global-header {
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+  .nav-item {
+    padding-right: 6px !important;
+    padding-left: 6px !important;
+  }
+  .nav-item.nav-secondary {
+    display: none;
+  }
+  .nav-item.nav-admin {
+    display: inline-flex;
+  }
+  .brand-separator {
+    margin-right: 10px;
+    margin-left: 10px;
+  }
+}
+@media (max-width: 900px) {
+  .nav-desktop-links,
+  .brand-separator {
+    display: none !important;
+  }
+  .nav-burger {
+    display: grid !important;
+  }
+  .nav-mobile-menu.open {
+    display: flex !important;
+  }
+  .language-control .top-nav-pill-btn > span,
+  .profile-control > span:not(.top-nav-profile-avatar) {
+    display: none;
+  }
+  .header-extra-action {
+    display: none;
+  }
+  .nav-mobile-menu a:hover {
+    color: var(--h-text);
+    background: var(--h-hover);
+  }
+}
+@media (max-width: 600px) {
+  .global-header {
+    height: 56px !important;
+    padding-right: 14px !important;
+    padding-left: 14px !important;
+  }
+  .nav-mobile-menu {
+    top: 56px !important;
+    max-height: calc(100vh - 56px) !important;
+  }
+  .market-ticker {
+    top: 56px;
+    height: 30px;
+  }
+  .ticker-track {
+    gap: 20px;
+    padding: 0 16px;
+  }
+  .deposit-button {
+    min-height: 32px !important;
+    padding-right: 11px !important;
+    padding-left: 11px !important;
+    font-size: 12px !important;
+  }
+  .header-icon {
+    padding-right: 7px !important;
+    padding-left: 7px !important;
+  }
+}
+@media (max-width: 420px) {
+  .global-header {
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+  }
+  .header-actions {
+    gap: 4px !important;
+  }
+  .mobile-menu {
+    margin-right: 4px !important;
+  }
+  .language-chevron,
+  .profile-control > .nav-chevron {
+    display: none;
   }
 }
 
@@ -923,7 +1198,7 @@ a:hover > .nav-card-icon {
    value outranks a media query and the bar then shows at every width,
    which is what it used to do. */
 .bottom-nav {
-  display: none;
+  display: none !important;
 }
 
 .marketing-burger {
@@ -1023,8 +1298,7 @@ a:hover > .nav-card-icon {
 }
 
 @media (max-width: 860px) {
-  .nav-desktop-links,
-  .nav-desktop-right {
+  .nav-desktop-links {
     display: none !important;
   }
   .nav-burger {
@@ -1034,7 +1308,7 @@ a:hover > .nav-card-icon {
     display: flex !important;
   }
   .bottom-nav {
-    display: grid;
+    display: grid !important;
   }
   /* Dashboard's fixed 2fr/1fr and 4-column grids would otherwise overflow
      horizontally on a phone-width screen — collapse to a single column. */

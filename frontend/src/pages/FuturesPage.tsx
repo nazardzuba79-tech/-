@@ -9,7 +9,6 @@ import { PriceChart } from '../components/PriceChart';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
-import { TopGainersTicker } from '../components/TopGainersTicker';
 
 const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
@@ -56,13 +55,13 @@ export function FuturesPage() {
     <div className="page-mesh trading-page" style={styles.page}>
       <Nav
         active="/futures"
+        onTickerSelect={handleTickerSelect}
         rightExtra={
           <button onClick={() => setShowTransfer(true)} style={styles.transferBtn}>
             {t('futures.transfer')}
           </button>
         }
       />
-      <TopGainersTicker onSelect={handleTickerSelect} />
 
       <div className="trading-content" style={styles.content}>
         <div style={styles.tickerCard}>
