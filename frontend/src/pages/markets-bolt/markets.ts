@@ -158,16 +158,47 @@ export function computeSectorSummaries(rankByBase: Map<string, CoinRanking>, cat
   });
 }
 
+// One market per asset for the three summary lists.
+//
+// The backend lists a coin's deeper Kraken USD market a second time under
+// a "/USDT" label (see KrakenMarketDataService.getSymbolsMap) — so BTC/USD
+// and BTC/USDT are the same underlying Kraken market and carry byte-identical
+// price, change and volume. Both are real listings and the full market table
+// keeps them (a trader picks the quote there), but in a three-row "top
+// movers" summary they read as the same asset printed twice, and two of the
+// three slots can go to one coin.
+//
+// The survivor is the deepest market for that base by 24h turnover, so the
+// row shown is the one actually being traded. Nothing is invented and no
+// asset is dropped — only the duplicate quote of an asset already listed.
+function oneMarketPerAsset(tickers: Ticker[]): Ticker[] {
+  const bestByBase = new Map<string, Ticker>();
+  for (const tk of tickers) {
+    const base = baseOf(tk.pair);
+    const held = bestByBase.get(base);
+    if (!held || (parseFloat(tk.quoteVolume24h) || 0) > (parseFloat(held.quoteVolume24h) || 0)) {
+      bestByBase.set(base, tk);
+    }
+  }
+  return Array.from(bestByBase.values());
+}
+
 export function topMovers(tickers: Ticker[], count: number): Ticker[] {
-  return [...tickers].sort((a, b) => parseChangePercent(b.changePercent24h, b.pair) - parseChangePercent(a.changePercent24h, a.pair)).slice(0, count);
+  return oneMarketPerAsset(tickers)
+    .sort((a, b) => parseChangePercent(b.changePercent24h, b.pair) - parseChangePercent(a.changePercent24h, a.pair))
+    .slice(0, count);
 }
 
 export function topLosers(tickers: Ticker[], count: number): Ticker[] {
-  return [...tickers].sort((a, b) => parseChangePercent(a.changePercent24h, a.pair) - parseChangePercent(b.changePercent24h, b.pair)).slice(0, count);
+  return oneMarketPerAsset(tickers)
+    .sort((a, b) => parseChangePercent(a.changePercent24h, a.pair) - parseChangePercent(b.changePercent24h, b.pair))
+    .slice(0, count);
 }
 
 export function mostPopular(tickers: Ticker[], count: number): Ticker[] {
-  return [...tickers].sort((a, b) => (parseFloat(b.quoteVolume24h) || 0) - (parseFloat(a.quoteVolume24h) || 0)).slice(0, count);
+  return oneMarketPerAsset(tickers)
+    .sort((a, b) => (parseFloat(b.quoteVolume24h) || 0) - (parseFloat(a.quoteVolume24h) || 0))
+    .slice(0, count);
 }
 
 // CoinGecko's sparkline_in_7d is ~168 hourly closes — real history, used

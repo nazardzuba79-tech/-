@@ -58,7 +58,7 @@
   --gauge-track: #e9ebef;
   --gauge-warm: #f5a75b;
   --progress-track: #e9ebef;
-  --spark-opacity: .18;
+  --spark-opacity: .2;
   --card-shadow: 0 1px 3px rgba(16, 24, 40, .06);
   --spinner-track: #e4e7eb;
   --status-ring: rgba(0, 168, 112, .16);
@@ -94,7 +94,7 @@
 
 /* ===== OVERVIEW CARDS ===== */
 .markets-bolt-root .overview-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 22px; margin-bottom: 56px; }
-.markets-bolt-root .overview-card { min-height: 268px; padding: 28px 30px; border: 1px solid var(--border); background: linear-gradient(145deg, var(--bg-card-1), var(--bg-card-2)); border-radius: 10px; box-shadow: var(--card-shadow); }
+.markets-bolt-root .overview-card { min-height: 258px; padding: 26px; border: 1px solid var(--border); background: linear-gradient(145deg, var(--bg-card-1), var(--bg-card-2)); border-radius: 10px; box-shadow: var(--card-shadow); }
 .markets-bolt-root .card-heading, .markets-bolt-root .highlight-heading, .markets-bolt-root .score-label, .markets-bolt-root .long-short, .markets-bolt-root .metric-line, .markets-bolt-root .volume-footer, .markets-bolt-root .sector-row { display: flex; justify-content: space-between; align-items: center; }
 .markets-bolt-root .card-heading { color: var(--text-heading); font-weight: 600; font-size: 18px; margin-bottom: 22px; }
 .markets-bolt-root .card-heading-tag { color: var(--text-muted); font-size: 12px; }
@@ -102,9 +102,9 @@
    Stacking lets the gauge fill the card instead of leaving a void under a
    short two-column row. */
 .markets-bolt-root .sentiment-content { display: flex; flex-direction: column; align-items: center; gap: 22px; }
-.markets-bolt-root .gauge { width: 208px; height: 126px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: none; }
+.markets-bolt-root .gauge { width: 190px; height: 116px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: none; }
 .markets-bolt-root .gauge-arc { position: absolute; inset: 0 0 auto; width: 100%; }
-.markets-bolt-root .gauge-value { font: 600 42px 'Space Grotesk'; z-index: 1; color: var(--text-title); line-height: 1; }
+.markets-bolt-root .gauge-value { font: 650 34px/1.1 'Space Grotesk', sans-serif; letter-spacing: -.02em; font-variant-numeric: tabular-nums; z-index: 1; color: var(--text-title); line-height: 1; }
 .markets-bolt-root .gauge span { font-size: 13px; margin-top: 10px; color: var(--text-secondary); z-index: 1; font-weight: 500; }
 .markets-bolt-root .sentiment-side { width: 100%; }
 .markets-bolt-root .score-label { color: var(--text-heading); font-size: 15px; font-weight: 600; margin-bottom: 12px; }
@@ -115,15 +115,30 @@
 .markets-bolt-root .progress-track span { display: block; height: 100%; background: linear-gradient(90deg, var(--gauge-warm), var(--accent)); border-radius: inherit; }
 .markets-bolt-root .long-short { font-size: 13px; color: var(--text-muted); gap: 10px; font-variant-numeric: tabular-nums; }
 .markets-bolt-root .long-short span { display: flex; align-items: center; gap: 4px; }
-.markets-bolt-root .long-short b { color: var(--text-strong); font-weight: 600; }
+.markets-bolt-root .long-short b { color: var(--text-heading); font-weight: 600; }
 .markets-bolt-root .dot-green, .markets-bolt-root .dot-red { width: 5px; height: 5px; display: inline-block; border-radius: 50%; background: var(--positive); }
 .markets-bolt-root .dot-red { background: var(--negative); }
 .markets-bolt-root .muted-label { display: block; color: var(--text-muted); font-size: 13px; margin-bottom: 8px; }
-.markets-bolt-root .metric-line strong { display: block; font: 600 30px 'Space Grotesk'; color: var(--text-title); }
+/* The card's one primary metric. Was 30px/600 with default tracking and
+   line-height, which read heavy and loose; tightening both is what makes a
+   headline figure look composed rather than merely big. */
+.markets-bolt-root .metric-line strong {
+  display: block;
+  font: 650 32px/1.1 'Space Grotesk', sans-serif;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-title);
+}
 .markets-bolt-root .negative { color: var(--negative) !important; }
 .markets-bolt-root .positive { color: var(--positive) !important; }
-.markets-bolt-root .sparkline { width: 118px; height: 40px; overflow: visible; flex-shrink: 0; }
-.markets-bolt-root .sparkline-line { fill: none; stroke-width: 1.5; }
+.markets-bolt-root .sparkline {
+  width: 124px; height: 34px; overflow: visible; flex-shrink: 0;
+  /* An inline SVG sits on the text baseline, so the row inherited the
+     descender space under it — worth ~7px of row height that no content
+     was using. */
+  display: block; margin: 0 auto;
+}
+.markets-bolt-root .sparkline-line { fill: none; stroke-width: 2; }
 .markets-bolt-root .sparkline-fill { opacity: var(--spark-opacity); }
 .markets-bolt-root .sparkline-positive .sparkline-line { stroke: var(--positive); }
 .markets-bolt-root .sparkline-positive .sparkline-fill { fill: var(--positive); }
@@ -134,14 +149,15 @@
 .markets-bolt-root .sector-list { display: grid; gap: 14px; }
 .markets-bolt-root .sector-row {
   display: grid;
-  grid-template-columns: 1fr 74px 62px 74px;
+  grid-template-columns: 1fr 74px 62px 86px;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-body);
-  padding: 7px 0;
+  padding: 10px 0;
   font-variant-numeric: tabular-nums;
 }
+.markets-bolt-root .sector-row > span:first-child { color: var(--text-heading); font-weight: 600; }
 .markets-bolt-root .sector-row-head {
   font-size: 11px;
   text-transform: uppercase;
@@ -149,6 +165,10 @@
   color: var(--text-muted);
   padding-bottom: 4px;
   border-bottom: 1px solid var(--border);
+  /* Bottom-align rather than centre: the last column's label is the
+     longest and is the one that wraps to two lines in a narrow card, and
+     centring made the single-line headers float above its final line. */
+  align-items: end;
 }
 .markets-bolt-root .sector-row-head span:not(:first-child) { text-align: right; }
 .markets-bolt-root .muted-value { color: var(--text-muted); }
@@ -158,7 +178,7 @@
 .markets-bolt-root .sector-row em { color: var(--text-body); text-align: right; font-style: normal; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ===== MARKET SECTION ===== */
-.markets-bolt-root .market-section { border-top: 1px solid var(--border-section); padding-top: 52px; }
+.markets-bolt-root .market-section { border-top: 1px solid var(--border-section); padding-top: 48px; }
 .markets-bolt-root .section-title-row { align-items: center; margin-bottom: 32px; }
 .markets-bolt-root .search-box { width: 286px; border: 1px solid var(--border-input); background: var(--bg-input); color: var(--text-muted); border-radius: 8px; height: 42px; display: flex; align-items: center; gap: 10px; padding: 0 13px; transition: border-color .15s, box-shadow .15s; }
 .markets-bolt-root .search-box:focus-within { border-color: var(--accent-soft-border); box-shadow: 0 0 0 3px var(--accent-focus); }
@@ -192,17 +212,17 @@
 .markets-bolt-root .highlight-heading h3 { margin: 0; font: 600 17px 'Space Grotesk'; color: var(--text-heading); }
 .markets-bolt-root .highlight-heading button { color: var(--text-secondary); background: none; border: 0; font-size: 13px; }
 .markets-bolt-root .highlight-heading button:hover { color: var(--accent); }
-.markets-bolt-root .highlight-head { display: grid; grid-template-columns: 1.5fr 1fr .7fr; color: var(--text-muted); font-size: 11px; margin-bottom: 11px; }
+.markets-bolt-root .highlight-head { display: grid; grid-template-columns: 1.5fr 1fr .8fr; color: var(--text-secondary); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 12px; }
 .markets-bolt-root .highlight-head span:not(:first-child) { text-align: right; }
-.markets-bolt-root .highlight-row { width: 100%; display: grid; grid-template-columns: 1.5fr 1fr .7fr; align-items: center; text-align: right; border: 0; background: none; padding: 10px 6px; color: var(--text-body); border-radius: 6px; transition: background .15s; font-variant-numeric: tabular-nums; }
+.markets-bolt-root .highlight-row { width: 100%; display: grid; grid-template-columns: 1.5fr 1fr .8fr; align-items: center; text-align: right; border: 0; background: none; padding: 11px 6px; color: var(--text-body); border-radius: 6px; transition: background .15s; font-variant-numeric: tabular-nums; }
 .markets-bolt-root .highlight-row:hover { background: var(--bg-hover); }
 .markets-bolt-root .highlight-row > *:not(:first-child) { text-align: right; }
 .markets-bolt-root .highlight-empty { color: var(--text-muted); font-size: 13px; padding: 10px 0; }
 .markets-bolt-root .pair-cell, .markets-bolt-root .table-pair { display: flex; align-items: center; gap: 8px; min-width: 0; text-align: left; }
 .markets-bolt-root .pair-cell span, .markets-bolt-root .table-pair > span { min-width: 0; }
-.markets-bolt-root .pair-cell strong, .markets-bolt-root .table-pair strong { display: block; font-size: 13px; font-weight: 600; color: var(--text-heading); white-space: nowrap; }
-.markets-bolt-root .pair-cell small, .markets-bolt-root .table-pair em { display: block; color: var(--text-muted); font-size: 12px; font-style: normal; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.markets-bolt-root .highlight-price { font-size: 13px; color: var(--text-body); font-weight: 500; }
+.markets-bolt-root .pair-cell strong, .markets-bolt-root .table-pair strong { display: block; font-size: 14px; line-height: 1.25; font-weight: 600; color: var(--text-heading); letter-spacing: -.005em; white-space: nowrap; }
+.markets-bolt-root .pair-cell small, .markets-bolt-root .table-pair em { display: block; color: var(--text-muted); font-size: 11.5px; line-height: 1.25; font-style: normal; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.markets-bolt-root .highlight-price { font-size: 13.5px; color: var(--text-heading); font-weight: 600; }
 .markets-bolt-root .highlight-row .positive, .markets-bolt-root .highlight-row .negative { font-size: 14px; font-weight: 600; }
 
 /* ===== FILTERS ===== */
@@ -225,10 +245,10 @@
 .markets-bolt-root .density-button:hover { color: var(--text-heading); }
 .markets-bolt-root .markets-table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-surface-2); }
 .markets-bolt-root .markets-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.markets-bolt-root .markets-table th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; text-align: right; height: 43px; padding: 0 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.markets-bolt-root .markets-table th { color: var(--text-secondary); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; text-align: right; height: 44px; padding: 0 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .markets-bolt-root .markets-table th:first-child { text-align: left; padding-left: 17px; width: 21%; }
 .markets-bolt-root .markets-table th:nth-child(2) { width: 13%; } .markets-bolt-root .markets-table th:nth-child(3) { width: 12%; } .markets-bolt-root .markets-table th:nth-child(4), .markets-bolt-root .markets-table th:nth-child(5) { width: 12%; } .markets-bolt-root .markets-table th:nth-child(6) { width: 14%; } .markets-bolt-root .markets-table th:nth-child(7) { width: 10%; text-align: center; } .markets-bolt-root .markets-table th:last-child { width: 9%; }
-.markets-bolt-root .markets-table td { padding: 14px 12px; text-align: right; border-bottom: 1px solid var(--border-soft); color: var(--text-body); font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.markets-bolt-root .markets-table td { padding: 8px 12px; text-align: right; border-bottom: 1px solid var(--border-soft); color: var(--text-body); font-size: 13.5px; font-weight: 500; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .markets-bolt-root .markets-table-compact .markets-table td { padding: 9px 12px; }
 .markets-bolt-root .markets-table-compact .markets-table th { height: 36px; }
 .markets-bolt-root .markets-table td:first-child { text-align: left; padding-left: 17px; }
@@ -345,8 +365,10 @@
 .markets-bolt-root .metric-grid > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .markets-bolt-root .metric-grid .muted-label { font-size: 12px; color: var(--text-muted); }
 .markets-bolt-root .metric-grid b {
-  font-size: 17px; font-weight: 600; color: var(--text-strong);
-  font-variant-numeric: tabular-nums;
+  /* A step below the headline figure above — secondary metrics support it
+     rather than compete with it. */
+  font-size: 15px; font-weight: 600; color: var(--text-heading);
+  font-variant-numeric: tabular-nums; letter-spacing: -.01em;
 }
 
 /* Market pulse: one compact strip, not a new section. Breadth over this
@@ -354,10 +376,10 @@
 .markets-bolt-root .pulse-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: end;
+  align-items: center;
   gap: 24px;
   margin-top: 24px;
-  padding: 20px 26px;
+  padding: 10px 24px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: linear-gradient(145deg, var(--bg-card-1), var(--bg-card-2));
@@ -365,11 +387,11 @@
   position: relative;
   overflow: hidden;
 }
-.markets-bolt-root .pulse-item { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
-.markets-bolt-root .pulse-item .muted-label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.markets-bolt-root .pulse-item { display: flex; flex-direction: column-reverse; gap: 3px; min-width: 0; }
+.markets-bolt-root .pulse-item .muted-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 .markets-bolt-root .pulse-item strong {
-  font-size: 22px; font-weight: 600; color: var(--text-strong);
-  font-variant-numeric: tabular-nums; line-height: 1.15;
+  font-size: 20px; font-weight: 650; color: var(--text-heading);
+  font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: -.015em;
 }
 .markets-bolt-root .pulse-item strong.positive { color: var(--positive); }
 .markets-bolt-root .pulse-item strong.negative { color: var(--negative); }
@@ -388,9 +410,9 @@
 .markets-bolt-root .table-sort { display: flex; align-items: center; gap: 8px; }
 .markets-bolt-root .table-sort > span { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
 .markets-bolt-root .table-sort select {
-  font: inherit; font-size: 13px; color: var(--text-strong);
+  font: inherit; font-size: 13px; color: var(--text-heading);
   background: var(--bg-card-1); border: 1px solid var(--border);
-  border-radius: 8px; padding: 7px 10px; cursor: pointer; outline: none;
+  border-radius: 8px; height: 42px; padding: 0 12px; cursor: pointer; outline: none;
 }
 .markets-bolt-root .table-sort select:focus { border-color: var(--accent); }
 
