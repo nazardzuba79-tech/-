@@ -6,6 +6,7 @@ const FIXED_NOW = new Date('2026-09-02T12:00:00.000Z');
 
 function verifyConsistency(response: ReturnType<typeof toResponse>) {
   const { analytics, equityHistory, dailyResults, trades, followers } = response;
+  const all = analytics.allTime;
   expect(analytics.roi7).toBeCloseTo(rollingRoi(equityHistory, 7), 3);
   expect(analytics.roi30).toBeCloseTo(rollingRoi(equityHistory, 30), 3);
   expect(analytics.roi90).toBeCloseTo(rollingRoi(equityHistory, 90), 3);
@@ -16,6 +17,24 @@ function verifyConsistency(response: ReturnType<typeof toResponse>) {
   expect(analytics.expectancyR).toBeCloseTo((analytics.winRate / 100) * analytics.averageWinR - (1 - analytics.winRate / 100) * analytics.averageLossR, 3);
   expect(analytics.aum).toBeCloseTo(followers.filter((follower) => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0), 2);
   expect(analytics.followerPnl).toBeCloseTo(followers.reduce((sum, follower) => sum + follower.realizedPnl + follower.unrealizedPnl, 0), 2);
+  const allWins = trades.filter((trade) => trade.result === 'WIN');
+  const allLosses = trades.filter((trade) => trade.result === 'LOSS');
+  const allGrossProfit = allWins.reduce((sum, trade) => sum + trade.netPnl, 0);
+  const allGrossLoss = Math.abs(allLosses.reduce((sum, trade) => sum + trade.netPnl, 0));
+  expect(all.roi).toBeCloseTo((equityHistory[equityHistory.length - 1].equity / equityHistory[0].equity - 1) * 100, 3);
+  expect(all.pnl).toBeCloseTo(equityHistory[equityHistory.length - 1].equity - equityHistory[0].equity, 2);
+  expect(all.totalTrades).toBe(trades.length);
+  expect(all.winningTrades).toBe(allWins.length);
+  expect(all.losingTrades).toBe(allLosses.length);
+  expect(all.winRate).toBeCloseTo(allWins.length / trades.length * 100, 3);
+  expect(all.maximumDrawdown).toBeCloseTo(maximumDrawdown(equityHistory), 3);
+  expect(all.profitFactor).toBeCloseTo(allGrossProfit / allGrossLoss, 3);
+  expect(all.tradingDays).toBe(dailyResults.length);
+  expect(all.averageTrade).toBeCloseTo((allGrossProfit - allGrossLoss) / trades.length, 3);
+  expect(all.followersPnl).toBeCloseTo(followers.reduce((sum, follower) => sum + follower.realizedPnl + follower.unrealizedPnl, 0), 2);
+  expect(all.aum).toBe(analytics.aum);
+  expect(response.aumHistory).toHaveLength(equityHistory.length);
+  expect(response.aumHistory[response.aumHistory.length - 1].aum).toBe(all.aum);
   for (const day of dailyResults) {
     const dayTrades = trades.filter((trade) => trade.closedAt.slice(0, 10) === day.date);
     expect(day.numberOfTrades).toBe(dayTrades.length);
@@ -70,6 +89,28 @@ describe('synthetic Copy Trading performance engine', () => {
     }
   });
 
+  test('+90 keeps strict rolling windows while ALL preserves complete inception history', () => {
+    const initial = toResponse(createInitialState(FIXED_NOW));
+    const advanced = toResponse(advanceState(createInitialState(FIXED_NOW), 90));
+    const currentDate = advanced.equityHistory[advanced.equityHistory.length - 1].date;
+    const windowCount = (days: number) => advanced.trades.filter((trade) => trade.closedAt.slice(0, 10) > addUtcDays(currentDate, -days)).length;
+
+    expect(advanced.analytics.tradesLast7D).toBe(windowCount(7));
+    expect(advanced.analytics.tradesLast30D).toBe(windowCount(30));
+    expect(advanced.analytics.winningTrades + advanced.analytics.losingTrades).toBe(windowCount(90));
+    expect(advanced.analytics.allTime.totalTrades).toBe(advanced.trades.length);
+    expect(advanced.analytics.allTime.totalTrades).toBeGreaterThan(initial.analytics.allTime.totalTrades);
+    expect(advanced.analytics.allTime.pnl).toBeGreaterThan(initial.analytics.allTime.pnl);
+    expect(advanced.analytics.allTime.tradingDays).toBe(initial.analytics.allTime.tradingDays + 90);
+    expect(advanced.equityHistory).toHaveLength(initial.equityHistory.length + 90);
+    expect(advanced.equityHistory[0]).toEqual(initial.equityHistory[0]);
+    expect(advanced.equityHistory.slice(0, initial.equityHistory.length)).toEqual(initial.equityHistory);
+    expect(advanced.aumHistory.slice(0, initial.aumHistory.length)).toEqual(initial.aumHistory);
+    const advancedIds = new Set(advanced.trades.map((trade) => trade.id));
+    expect(initial.trades.every((trade) => advancedIds.has(trade.id))).toBe(true);
+    verifyConsistency(advanced);
+  });
+
   test('service supports +1/+7/+30/+90 and reset without touching exchange state', async () => {
     const store = new MemorySyntheticStateStore();
     const service = new SyntheticCopyTradingService(store, () => FIXED_NOW);
@@ -79,6 +120,10 @@ describe('synthetic Copy Trading performance engine', () => {
       const after = await service.advance(days);
       expect(after.analytics.totalTradingDays - before.analytics.totalTradingDays).toBe(days);
       expect(after.analytics.totalTrades).toBeGreaterThan(before.analytics.totalTrades);
+      expect(after.analytics.allTime.tradingDays - before.analytics.allTime.tradingDays).toBe(days);
+      expect(after.analytics.allTime.totalTrades).toBeGreaterThan(before.analytics.allTime.totalTrades);
+      expect(after.analytics.allTime.pnl).toBeGreaterThan(before.analytics.allTime.pnl);
+      expect(after.equityHistory[0]).toEqual(initial.equityHistory[0]);
     }
     const reset = await service.reset();
     expect(reset).toEqual(initial);
@@ -87,6 +132,9 @@ describe('synthetic Copy Trading performance engine', () => {
     const stopped = await service.followerEvent({ type: 'STOP', followerId: 'F-001' });
     expect(stopped.analytics.activeFollowers).toBe(31);
     expect(stopped.analytics.aum).toBeLessThan(increased.analytics.aum);
+    expect(stopped.analytics.allTime.followersPnl).toBe(increased.analytics.allTime.followersPnl);
+    expect(stopped.aumHistory).toHaveLength(increased.aumHistory.length);
+    expect(stopped.aumHistory[stopped.aumHistory.length - 1].aum).toBe(stopped.analytics.aum);
   });
 
   test('real-time mode catches up each missing UTC day and persists the result', async () => {

@@ -34,9 +34,15 @@ export interface SyntheticCopyTradingResponse {
     medianHoldingTimeMinutes: number; longestTradeMinutes: number; shortestTradeMinutes: number;
     masterPnl: number; followerPnl: number; followerPnl7: number; followerPnl30: number; followerPnl90: number;
     aum: number; activeFollowers: number; tradingVolume: number;
+    allTime: {
+      roi: number; pnl: number; totalTrades: number; winningTrades: number; losingTrades: number;
+      winRate: number; maximumDrawdown: number; profitFactor: number; sharpe: number; sortino: number;
+      tradingDays: number; averageTrade: number; followersPnl: number; aum: number;
+    };
   };
   trades: SyntheticTradeDto[];
   equityHistory: { date: string; equity: number }[];
+  aumHistory: { date: string; aum: number }[];
   dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];
   followers: { id: string; displayName: string; copyStartDate: string; allocatedCapital: number; currentEquity: number; realizedPnl: number; unrealizedPnl: number; roi: number; copiedTrades: number; copyRatio: number; slippageBps: number; latencyMs: number; active: boolean }[];
   weekly: { period: string; roi: number; pnl: number; trades: number; winRate: number; maxDrawdown: number }[];

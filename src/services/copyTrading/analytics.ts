@@ -61,6 +61,24 @@ function followerPnlForWindow(state: SyntheticCopyState, startDate: string): num
   }, 0);
 }
 
+function seriesRiskStatistics(history: EquitySnapshot[]) {
+  const returns = history.slice(1).map((point, index) => point.equity / history[index].equity - 1);
+  const mean = returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : 0;
+  const deviation = sampleStd(returns);
+  const downside = returns.filter((value) => value < 0);
+  const downsideDeviation = downside.length ? Math.sqrt(downside.reduce((sum, value) => sum + value ** 2, 0) / downside.length) : 0;
+  // Crypto trades every day, so all risk ratios use 365-day annualization.
+  const annualizedReturn = returns.length ? (history[history.length - 1].equity / history[0].equity) ** (365 / returns.length) - 1 : 0;
+  const drawdown = maximumDrawdown(history);
+  return {
+    sharpe: deviation ? mean / deviation * Math.sqrt(365) : 0,
+    sortino: downsideDeviation ? mean / downsideDeviation * Math.sqrt(365) : 0,
+    calmar: drawdown ? annualizedReturn / (drawdown / 100) : 0,
+    volatility: deviation * Math.sqrt(365) * 100,
+    maximumDrawdown: drawdown,
+  };
+}
+
 export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytics {
   const currentDate = state.equityHistory[state.equityHistory.length - 1].date;
   const windowStart = addUtcDays(currentDate, -90);
@@ -73,22 +91,20 @@ export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytic
   const averageWinR = wins.length ? wins.reduce((sum, trade) => sum + trade.riskR, 0) / wins.length : 0;
   const averageLossR = losses.length ? Math.abs(losses.reduce((sum, trade) => sum + trade.riskR, 0) / losses.length) : 0;
   const winRateFraction = rollingTrades.length ? wins.length / rollingTrades.length : 0;
-  const returns = rollingEquity.slice(1).map((point, index) => point.equity / rollingEquity[index].equity - 1);
-  const mean = returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : 0;
-  const deviation = sampleStd(returns);
-  const downside = returns.filter((value) => value < 0);
-  const downsideDeviation = downside.length ? Math.sqrt(downside.reduce((sum, value) => sum + value ** 2, 0) / downside.length) : 0;
-  // Crypto trades every day, so Sharpe, Sortino, volatility and Calmar use
-  // 365-day (not equities-style 252-day) annualization.
-  const annualizedReturn = returns.length ? (rollingEquity[rollingEquity.length - 1].equity / rollingEquity[0].equity) ** (365 / returns.length) - 1 : 0;
-  const maxDrawdown = maximumDrawdown(rollingEquity);
+  const rollingRisk = seriesRiskStatistics(rollingEquity);
   const holding = rollingTrades.map((trade) => trade.holdingTimeMinutes).sort((a, b) => a - b);
   const medianHolding = holding.length ? (holding[Math.floor((holding.length - 1) / 2)] + holding[Math.ceil((holding.length - 1) / 2)]) / 2 : 0;
   const activeFollowers = state.followers.filter((follower) => follower.active);
   const followerPnl = activeFollowers.reduce((sum, follower) => sum + follower.realizedPnl + follower.unrealizedPnl, 0);
+  const allFollowerPnl = state.followers.reduce((sum, follower) => sum + follower.realizedPnl + follower.unrealizedPnl, 0);
   const aum = activeFollowers.reduce((sum, follower) => sum + follower.allocatedCapital, 0);
   const initial = state.equityHistory[0].equity;
   const current = state.equityHistory[state.equityHistory.length - 1].equity;
+  const allWins = state.trades.filter((trade) => trade.result === 'WIN');
+  const allLosses = state.trades.filter((trade) => trade.result === 'LOSS');
+  const allGrossProfit = allWins.reduce((sum, trade) => sum + trade.netPnl, 0);
+  const allGrossLoss = Math.abs(allLosses.reduce((sum, trade) => sum + trade.netPnl, 0));
+  const allRisk = seriesRiskStatistics(state.equityHistory);
 
   return {
     roi7: round(rollingRoi(state.equityHistory, 7), 3),
@@ -96,7 +112,7 @@ export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytic
     roi90: round(rollingRoi(state.equityHistory, 90), 3),
     roiAll: round((current / initial - 1) * 100, 3),
     winRate: round(winRateFraction * 100, 3),
-    maximumDrawdown: round(maxDrawdown, 3),
+    maximumDrawdown: round(rollingRisk.maximumDrawdown, 3),
     averageWinR: round(averageWinR, 4),
     averageLossR: round(averageLossR, 4),
     plRatio: round(averageLossR ? averageWinR / averageLossR : 0, 4),
@@ -105,10 +121,10 @@ export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytic
     profitFactor: round(grossLoss ? grossProfit / grossLoss : 0, 4),
     expectancy: round(rollingTrades.length ? (grossProfit - grossLoss) / rollingTrades.length : 0, 4),
     expectancyR: round(winRateFraction * averageWinR - (1 - winRateFraction) * averageLossR, 4),
-    sharpe: round(deviation ? mean / deviation * Math.sqrt(365) : 0, 4),
-    sortino: round(downsideDeviation ? mean / downsideDeviation * Math.sqrt(365) : 0, 4),
-    calmar: round(maxDrawdown ? annualizedReturn / (maxDrawdown / 100) : 0, 4),
-    annualizedVolatility: round(deviation * Math.sqrt(365) * 100, 4),
+    sharpe: round(rollingRisk.sharpe, 4),
+    sortino: round(rollingRisk.sortino, 4),
+    calmar: round(rollingRisk.calmar, 4),
+    annualizedVolatility: round(rollingRisk.volatility, 4),
     totalTradingDays: state.dailyResults.length,
     totalTrades: state.trades.length,
     winningTrades: wins.length,
@@ -129,6 +145,22 @@ export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytic
     aum: round(aum, 2),
     activeFollowers: activeFollowers.length,
     tradingVolume: round(rollingTrades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0), 2),
+    allTime: {
+      roi: round((current / initial - 1) * 100, 3),
+      pnl: round(current - initial, 2),
+      totalTrades: state.trades.length,
+      winningTrades: allWins.length,
+      losingTrades: allLosses.length,
+      winRate: round(state.trades.length ? allWins.length / state.trades.length * 100 : 0, 3),
+      maximumDrawdown: round(allRisk.maximumDrawdown, 3),
+      profitFactor: round(allGrossLoss ? allGrossProfit / allGrossLoss : 0, 4),
+      sharpe: round(allRisk.sharpe, 4),
+      sortino: round(allRisk.sortino, 4),
+      tradingDays: state.dailyResults.length,
+      averageTrade: round(state.trades.length ? (allGrossProfit - allGrossLoss) / state.trades.length : 0, 4),
+      followersPnl: round(allFollowerPnl, 2),
+      aum: round(aum, 2),
+    },
   };
 }
 

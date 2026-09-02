@@ -25,6 +25,11 @@ export interface EquitySnapshot {
   equity: number;
 }
 
+export interface AumSnapshot {
+  date: string;
+  aum: number;
+}
+
 export interface DailyResult {
   date: string;
   startEquity: number;
@@ -65,6 +70,7 @@ export interface SyntheticCopyState {
   initialEquityDate: string;
   trades: SyntheticTrade[];
   equityHistory: EquitySnapshot[];
+  aumHistory: AumSnapshot[];
   dailyResults: DailyResult[];
   followers: SyntheticFollower[];
 }
@@ -123,6 +129,22 @@ export interface SyntheticAnalytics {
   aum: number;
   activeFollowers: number;
   tradingVolume: number;
+  allTime: {
+    roi: number;
+    pnl: number;
+    totalTrades: number;
+    winningTrades: number;
+    losingTrades: number;
+    winRate: number;
+    maximumDrawdown: number;
+    profitFactor: number;
+    sharpe: number;
+    sortino: number;
+    tradingDays: number;
+    averageTrade: number;
+    followersPnl: number;
+    aum: number;
+  };
 }
 
 export interface SyntheticCopyResponse {
@@ -131,6 +153,7 @@ export interface SyntheticCopyResponse {
   analytics: SyntheticAnalytics;
   trades: SyntheticTrade[];
   equityHistory: EquitySnapshot[];
+  aumHistory: AumSnapshot[];
   dailyResults: DailyResult[];
   followers: SyntheticFollower[];
   weekly: PeriodSummary[];

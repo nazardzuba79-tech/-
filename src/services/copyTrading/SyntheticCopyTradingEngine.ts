@@ -125,6 +125,31 @@ function refreshFollowers(state: SyntheticCopyState): void {
   }
 }
 
+function followerAum(state: SyntheticCopyState): number {
+  return round(state.followers.filter((follower) => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0), 2);
+}
+
+function buildInitialAumHistory(state: SyntheticCopyState) {
+  return state.equityHistory.map((point) => ({
+    date: point.date,
+    aum: round(state.followers
+      .filter((follower) => follower.active && follower.copyStartDate <= point.date)
+      .reduce((sum, follower) => sum + follower.allocatedCapital, 0), 2),
+  }));
+}
+
+function ensureAumHistory(state: SyntheticCopyState): void {
+  if (!Array.isArray(state.aumHistory)) state.aumHistory = buildInitialAumHistory(state);
+}
+
+function recordAum(state: SyntheticCopyState, date: string): void {
+  ensureAumHistory(state);
+  const snapshot = { date, aum: followerAum(state) };
+  const last = state.aumHistory[state.aumHistory.length - 1];
+  if (last?.date === date) state.aumHistory[state.aumHistory.length - 1] = snapshot;
+  else state.aumHistory.push(snapshot);
+}
+
 function appendDay(state: SyntheticCopyState, date: string, endEquity: number, rng: SeededRandom, forcedLossBudget?: number): void {
   const startEquity = state.equityHistory[state.equityHistory.length - 1].equity;
   const netDayPnl = endEquity - startEquity;
@@ -173,6 +198,7 @@ function appendDay(state: SyntheticCopyState, date: string, endEquity: number, r
   state.trades.push(...created);
   state.dailyResults.push(daily);
   state.equityHistory.push({ date, equity: round(endEquity, 4) });
+  if (state.followers.length) recordAum(state, date);
 }
 
 function initialTargets(rng: SeededRandom): number[] {
@@ -195,6 +221,7 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
     initialEquityDate: firstDate,
     trades: [],
     equityHistory: [{ date: firstDate, equity: SYNTHETIC_COPY_CONFIG.initialCapital }],
+    aumHistory: [],
     dailyResults: [],
     followers: [],
   };
@@ -210,6 +237,7 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
     appendDay(state, addUtcDays(firstDate, index + 1), targets[index], rng, budget);
   }
   state.followers = generateFollowers(firstDate, rng);
+  state.aumHistory = buildInitialAumHistory(state);
   state.rngState = rng.state;
   refreshFollowers(state);
   return state;
@@ -237,6 +265,7 @@ function targetNextEquity(state: SyntheticCopyState): number {
 export function advanceState(state: SyntheticCopyState, days: number): SyntheticCopyState {
   if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Days must be an integer from 1 to 365');
   const copy: SyntheticCopyState = JSON.parse(JSON.stringify(state));
+  ensureAumHistory(copy);
   const rng = new SeededRandom(copy.rngState);
   copy.mode = 'FAST_FORWARD';
   for (let index = 0; index < days; index++) {
@@ -261,6 +290,7 @@ export function catchUpRealTime(state: SyntheticCopyState, now = new Date()): Sy
 
 export function applyFollowerEvent(state: SyntheticCopyState, event: SyntheticFollowerEvent): SyntheticCopyState {
   const copy: SyntheticCopyState = JSON.parse(JSON.stringify(state));
+  ensureAumHistory(copy);
   if (event.type === 'NEW') {
     const next = copy.followers.length + 1;
     copy.followers.push({
@@ -286,16 +316,19 @@ export function applyFollowerEvent(state: SyntheticCopyState, event: SyntheticFo
     if (event.type === 'DECREASE') follower.allocatedCapital = round(Math.max(0, follower.allocatedCapital - event.amount), 2);
   }
   refreshFollowers(copy);
+  recordAum(copy, copy.equityHistory[copy.equityHistory.length - 1].date);
   return copy;
 }
 
 export function toResponse(state: SyntheticCopyState): SyntheticCopyResponse {
+  ensureAumHistory(state);
   return {
     trader: { id: 'VX-001', name: 'Nazara', vip: true },
     simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt },
     analytics: calculateAnalytics(state),
     trades: [...state.trades].sort((a, b) => b.closedAt.localeCompare(a.closedAt)),
     equityHistory: state.equityHistory,
+    aumHistory: state.aumHistory,
     dailyResults: state.dailyResults,
     followers: state.followers,
     weekly: summarizePeriods(state, 'week'),

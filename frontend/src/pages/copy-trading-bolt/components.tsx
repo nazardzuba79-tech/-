@@ -335,7 +335,7 @@ function PerformanceChart({ trader, synthetic }: { trader: Trader; synthetic?: S
       <div className="panel-header">
         <div><span className="eyebrow">Доходность</span><h2>Рост $10,000</h2></div>
         <div className="chart-tools">
-          <div className="tab-group">{PERIODS.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{PERIOD_LABEL_RU[tab]}</button>)}</div>
+          <div className="tab-group">{PERIODS.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab === 'ALL' ? 'ALL' : PERIOD_LABEL_RU[tab]}</button>)}</div>
           <div className="comparison-group">{['Trader', 'BTC', 'Market'].map((item) => <button key={item} className={comparison === item ? 'active' : ''} onClick={() => setComparison(item)}><i className={`legend-${item.toLowerCase()}`} />{item}</button>)}</div>
         </div>
       </div>
@@ -571,6 +571,61 @@ function Copiers({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticC
   );
 }
 
+function allTimeAumPath(history: SyntheticCopyTradingResponse['aumHistory']): string {
+  if (!history.length) return '';
+  const values = history.map((point) => point.aum);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  return history.map((point, index) => {
+    const x = history.length === 1 ? 900 : index / (history.length - 1) * 900;
+    const y = 125 - (point.aum - min) / range * 105;
+    return `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+function SinceInception({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
+  if (trader.id !== nazarTrader.id || !synthetic) return null;
+  const all = synthetic.analytics.allTime;
+  const rows: [string, string][] = [
+    ['All-Time ROI', formatPercent(all.roi)],
+    ['All-Time PnL', `${formatUsd(all.pnl)} USDT`],
+    ['Всего сделок', all.totalTrades.toLocaleString('ru-RU')],
+    ['Прибыльных сделок', all.winningTrades.toLocaleString('ru-RU')],
+    ['Убыточных сделок', all.losingTrades.toLocaleString('ru-RU')],
+    ['All-Time Win Rate', `${all.winRate.toFixed(3)}%`],
+    ['All-Time Max Drawdown', `${all.maximumDrawdown.toFixed(3)}%`],
+    ['All-Time Profit Factor', all.profitFactor.toFixed(4)],
+    ['All-Time Sharpe', all.sharpe.toFixed(4)],
+    ['All-Time Sortino', all.sortino.toFixed(4)],
+    ['Торговых дней', all.tradingDays.toLocaleString('ru-RU')],
+    ['Средняя сделка', `${formatUsd(all.averageTrade)} USDT`],
+    ['PnL подписчиков', `${formatUsd(all.followersPnl)} USDT`],
+    ['AUM', `${formatUsd(all.aum)} USDT`],
+  ];
+  const first = synthetic.aumHistory[0];
+  const last = synthetic.aumHistory[synthetic.aumHistory.length - 1];
+  return (
+    <section className="panel all-time-panel">
+      <div className="panel-header">
+        <div><span className="eyebrow">ALL · SINCE INCEPTION</span><h2>Результат за всё время</h2></div>
+        <LineChart size={20} className="panel-icon" />
+      </div>
+      <div className="stat-rows all-time-grid">
+        {rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+      </div>
+      <div className="all-time-aum">
+        <div><span>All-Time AUM history</span><strong>{formatAccountSize(last?.aum ?? 0)}</strong></div>
+        <svg viewBox="0 0 900 145" preserveAspectRatio="none" role="img" aria-label="AUM since inception">
+          <path d="M0 125H900" className="chart-grid" />
+          <path d={allTimeAumPath(synthetic.aumHistory)} className="chart-line" />
+        </svg>
+        <div className="all-time-aum-dates"><span>{first?.date}</span><span>{last?.date}</span></div>
+      </div>
+    </section>
+  );
+}
+
 export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack: () => void; synthetic?: SyntheticCopyTradingResponse | null }) {
   return (
     <main className="page-shell profile-page">
@@ -599,6 +654,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       </section>
       <PerformanceOverview trader={trader} />
       <PerformanceChart trader={trader} synthetic={synthetic} />
+      <SinceInception trader={trader} synthetic={synthetic} />
       <PerformanceEarnings trader={trader} synthetic={synthetic} />
       <div className="two-column"><RiskMetrics trader={trader} synthetic={synthetic} /><TradingStatistics trader={trader} synthetic={synthetic} /></div>
       <RecentTrades trader={trader} synthetic={synthetic} />
