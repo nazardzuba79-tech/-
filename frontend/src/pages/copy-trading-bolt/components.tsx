@@ -30,7 +30,6 @@ import {
   PERIOD_LABEL_RU,
   nazarTrader,
   marketplaceTraders,
-  allTraders,
   nazarEconomics,
   formatPercent,
   roiClass,
@@ -54,6 +53,8 @@ import {
 import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
+import type { SyntheticCopyTradingResponse } from '../../lib/syntheticCopyTrading';
+import { syntheticChartData, syntheticRecentTrades } from '../../lib/syntheticCopyTrading';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -236,14 +237,23 @@ function FavoriteButton({ trader, large = false }: { trader: Trader; large?: boo
   );
 }
 
-function TraderCard({ trader, period, onOpen }: { trader: Trader; period: Period; onOpen: (trader: Trader) => void }) {
+function followerProfitForPeriod(data: SyntheticCopyTradingResponse | null | undefined, period: Period): number | null {
+  if (!data) return null;
+  if (period === '7D') return data.analytics.followerPnl7;
+  if (period === '30D') return data.analytics.followerPnl30;
+  if (period === '90D') return data.analytics.followerPnl90;
+  return data.analytics.followerPnl;
+}
+
+function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; period: Period; onOpen: (trader: Trader) => void; synthetic?: SyntheticCopyTradingResponse | null }) {
   const { following } = useFollowing();
   const periodRoi = getRoiForPeriod(trader, period);
   // Copiers' profit is shown for the SAME period as the ROI above it, and
   // labelled with it — an unlabelled figure can't be checked against
   // anything, and a lifetime figure next to a 30-day ROI reads as if the
   // two belong together when they don't.
-  const copierProfit = getCopierProfit(trader, period);
+  const liveProfit = trader.id === nazarTrader.id ? followerProfitForPeriod(synthetic, period) : null;
+  const copierProfit = liveProfit ?? getCopierProfit(trader, period);
   return (
     <article className={`trader-card ${trader.vip ? 'trader-card-vip' : ''}`} onClick={() => onOpen(trader)}>
       <div className="card-topline">
@@ -311,10 +321,13 @@ function PerformanceOverview({ trader }: { trader: Trader }) {
   );
 }
 
-function PerformanceChart({ trader }: { trader: Trader }) {
+function PerformanceChart({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const [activeTab, setActiveTab] = useState<Period>('90D');
   const [comparison, setComparison] = useState('Trader');
-  const chart = useMemo(() => getChartData(trader, activeTab), [trader, activeTab]);
+  const chart = useMemo(
+    () => synthetic && trader.id === nazarTrader.id ? syntheticChartData(synthetic, activeTab) : getChartData(trader, activeTab),
+    [trader, activeTab, synthetic]
+  );
   const showMarket = comparison === 'Market' || comparison === 'Trader';
   const showBtc = comparison === 'BTC' || comparison === 'Trader';
   return (
@@ -322,7 +335,7 @@ function PerformanceChart({ trader }: { trader: Trader }) {
       <div className="panel-header">
         <div><span className="eyebrow">Доходность</span><h2>Рост $10,000</h2></div>
         <div className="chart-tools">
-          <div className="tab-group">{PERIODS.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{PERIOD_LABEL_RU[tab]}</button>)}</div>
+          <div className="tab-group">{PERIODS.map((tab) => <button key={tab} className={activeTab === tab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab === 'ALL' ? 'ALL' : PERIOD_LABEL_RU[tab]}</button>)}</div>
           <div className="comparison-group">{['Trader', 'BTC', 'Market'].map((item) => <button key={item} className={comparison === item ? 'active' : ''} onClick={() => setComparison(item)}><i className={`legend-${item.toLowerCase()}`} />{item}</button>)}</div>
         </div>
       </div>
@@ -347,15 +360,16 @@ function PerformanceChart({ trader }: { trader: Trader }) {
   );
 }
 
-function RiskMetrics({ trader }: { trader: Trader }) {
+function RiskMetrics({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const data = generateProfileData(trader);
+  const live = trader.id === nazarTrader.id ? synthetic?.analytics : null;
   const returnToRisk = trader.drawdown > 0 ? trader.roi90 / trader.drawdown : trader.roi90;
   const metrics: [string, string, string?][] = [
     ['Максимальная просадка', `${trader.drawdown.toFixed(1)}%`],
     ['Винрейт', `${trader.winRate}%`],
-    ['Профит-фактор', data.profitFactor],
+    ['Профит-фактор', live ? live.profitFactor.toFixed(2) : data.profitFactor],
     ['Уровень риска', RISK_LABEL_RU[trader.risk], trader.risk.toLowerCase().replace(' ', '-')],
-    ['Среднее время сделки', data.holdingTime],
+    ['Среднее время сделки', live ? `${Math.round(live.averageHoldingTimeMinutes)} мин` : data.holdingTime],
     ['Доходность/риск', `${returnToRisk.toFixed(1)}x`],
     ['Рейтинг стратегии', compositeScore(trader).toFixed(1)],
     ['Средства под управлением', formatAccountSize(trader.aum)],
@@ -380,16 +394,21 @@ function RiskMetrics({ trader }: { trader: Trader }) {
   );
 }
 
-function TradingStatistics({ trader }: { trader: Trader }) {
+function TradingStatistics({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const data = generateProfileData(trader);
+  const live = trader.id === nazarTrader.id ? synthetic?.analytics : null;
   const rows: [string, string][] = [
-    ['Всего сделок', String(data.totalTrades)],
-    ['Прибыльных сделок', String(data.winningTrades)],
-    ['Убыточных сделок', String(data.losingTrades)],
-    ['Средняя прибыль', data.avgProfit],
-    ['Профит-фактор', data.profitFactor],
-    ['Среднее время удержания', data.holdingTime],
-    ['Объём торгов', data.volume],
+    ['Всего сделок', String(live?.totalTrades ?? data.totalTrades)],
+    ['Прибыльных сделок · 90Д', String(live?.winningTrades ?? data.winningTrades)],
+    ['Убыточных сделок · 90Д', String(live?.losingTrades ?? data.losingTrades)],
+    ['Ожидание на сделку', live ? `${live.expectancy.toLocaleString('ru-RU')} USDT` : data.avgProfit],
+    ['Профит-фактор', live ? live.profitFactor.toFixed(2) : data.profitFactor],
+    ['P/L в R', live ? `${live.plRatio.toFixed(2)} : 1` : '—'],
+    ['Sharpe / Sortino', live ? `${live.sharpe.toFixed(2)} / ${live.sortino.toFixed(2)}` : '—'],
+    ['Волатильность · годовая', live ? `${live.annualizedVolatility.toFixed(1)}%` : '—'],
+    ['Сделок за 7Д / 30Д', live ? `${live.tradesLast7D} / ${live.tradesLast30D}` : '—'],
+    ['Среднее время удержания', live ? `${Math.round(live.averageHoldingTimeMinutes)} мин` : data.holdingTime],
+    ['Объём торгов · 90Д', live ? formatAccountSize(live.tradingVolume) : data.volume],
   ];
   return (
     <section className="panel">
@@ -406,8 +425,11 @@ function TradingStatistics({ trader }: { trader: Trader }) {
   );
 }
 
-function RecentTrades({ trader }: { trader: Trader }) {
-  const trades = useMemo(() => generateTrades(trader), [trader]);
+function RecentTrades({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
+  const trades = useMemo(
+    () => synthetic && trader.id === nazarTrader.id ? syntheticRecentTrades(synthetic) : generateTrades(trader),
+    [trader, synthetic]
+  );
   return (
     <section className="panel trades-panel">
       <div className="panel-header">
@@ -416,7 +438,7 @@ function RecentTrades({ trader }: { trader: Trader }) {
       </div>
       <div className="table-scroll">
         <table>
-          <thead><tr>{['Актив', 'Направление', 'Вход', 'Выход', 'PnL', 'ROI', 'Длительность', 'Дата'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
+          <thead><tr>{['Актив', 'Направление', 'Вход', 'Выход', 'PnL', 'ROI', 'Открыта', 'Закрыта'].map((h) => <th key={h}>{h}</th>)}</tr></thead>
           <tbody>
             {trades.map((trade, i) => (
               <tr key={`${trade.asset}-${trade.date}-${i}`}>
@@ -425,7 +447,7 @@ function RecentTrades({ trader }: { trader: Trader }) {
                 <td>{trade.entry}</td><td>{trade.exit}</td>
                 <td className={trade.positive ? 'positive' : 'negative'}>{trade.pnl}</td>
                 <td className={trade.positive ? 'positive' : 'negative'}>{trade.roi}</td>
-                <td>{trade.duration}</td><td>{trade.date}</td>
+                <td>{(trade as typeof trade & { openedAt?: string }).openedAt ?? trade.duration}</td><td>{(trade as typeof trade & { closedAt?: string }).closedAt ?? trade.date}</td>
               </tr>
             ))}
           </tbody>
@@ -435,11 +457,12 @@ function RecentTrades({ trader }: { trader: Trader }) {
   );
 }
 
-function PerformanceEarnings({ trader }: { trader: Trader }) {
+function PerformanceEarnings({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const data = generateProfileData(trader);
   const feePct = Math.round(trader.performanceFee * 100);
-  const lifetimeProfit = getLifetimeCopierProfit(trader);
-  const lifetimeEarnings = getLifetimeTraderEarnings(trader);
+  const live = trader.id === nazarTrader.id ? synthetic?.analytics : null;
+  const lifetimeProfit = live?.followerPnl ?? getLifetimeCopierProfit(trader);
+  const lifetimeEarnings = live ? Math.max(0, lifetimeProfit) * trader.performanceFee : getLifetimeTraderEarnings(trader);
   const isNazar = trader.id === nazarTrader.id;
 
   return (
@@ -497,13 +520,13 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
         <div><span>Подписчиков</span><strong>{trader.copiers.toLocaleString('ru-RU')}</strong></div>
         <div><span>Винрейт</span><strong>{trader.winRate}%</strong></div>
         <div><span>Макс. просадка</span><strong>{trader.drawdown}%</strong></div>
-        <div><span>Сделок</span><strong>{data.totalTrades.toLocaleString('ru-RU')}</strong></div>
-        <div><span>Прибыльных</span><strong className="positive">{data.winningTrades.toLocaleString('ru-RU')}</strong></div>
-        <div><span>Убыточных</span><strong className="negative">{data.losingTrades.toLocaleString('ru-RU')}</strong></div>
-        <div><span>Средняя прибыль</span><strong className="positive">{data.avgProfit}</strong></div>
-        <div><span>Профит-фактор</span><strong>{data.profitFactor}</strong></div>
+        <div><span>Сделок</span><strong>{(live?.totalTrades ?? data.totalTrades).toLocaleString('ru-RU')}</strong></div>
+        <div><span>Прибыльных · 90Д</span><strong className="positive">{(live?.winningTrades ?? data.winningTrades).toLocaleString('ru-RU')}</strong></div>
+        <div><span>Убыточных · 90Д</span><strong className="negative">{(live?.losingTrades ?? data.losingTrades).toLocaleString('ru-RU')}</strong></div>
+        <div><span>Ожидание</span><strong className="positive">{live ? `${live.expectancy.toLocaleString('ru-RU')} USDT` : data.avgProfit}</strong></div>
+        <div><span>Профит-фактор</span><strong>{live ? live.profitFactor.toFixed(2) : data.profitFactor}</strong></div>
         <div><span>Уровень риска</span><strong>{RISK_LABEL_RU[trader.risk]}</strong></div>
-        <div><span>Среднее время сделки</span><strong>{data.holdingTime}</strong></div>
+        <div><span>Среднее время сделки</span><strong>{live ? `${Math.round(live.averageHoldingTimeMinutes)} мин` : data.holdingTime}</strong></div>
         <div><span>История</span><strong>{trader.activeMonths} мес.</strong></div>
       </div>
 
@@ -513,10 +536,10 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
         // table — stating that is what keeps the two figures from looking
         // like they contradict each other.
         <div className="earnings-reconcile">
-          <div><span>Внесено подписчиками</span><strong>{formatAccountSize(nazarEconomics.principal)}</strong></div>
-          <div><span>Заработано на счетах</span><strong className="positive">{formatAccountSize(nazarEconomics.lifetimeProfit)}</strong></div>
-          <div><span>Выведено подписчиками</span><strong>−{formatAccountSize(nazarEconomics.withdrawn)}</strong></div>
-          <div><span>Под управлением сейчас</span><strong>{formatAccountSize(nazarEconomics.aum)}</strong></div>
+          <div><span>Активно распределено</span><strong>{formatAccountSize(live?.aum ?? nazarEconomics.principal)}</strong></div>
+          <div><span>Результат подписчиков</span><strong className="positive">{formatAccountSize(live?.followerPnl ?? nazarEconomics.lifetimeProfit)}</strong></div>
+          <div><span>Активных подписчиков</span><strong>{live?.activeFollowers ?? trader.copiers}</strong></div>
+          <div><span>Под управлением сейчас</span><strong>{formatAccountSize(live?.aum ?? nazarEconomics.aum)}</strong></div>
         </div>
       )}
 
@@ -525,8 +548,11 @@ function PerformanceEarnings({ trader }: { trader: Trader }) {
   );
 }
 
-function Copiers({ trader }: { trader: Trader }) {
+function Copiers({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const data = generateProfileData(trader);
+  const live = trader.id === nazarTrader.id ? synthetic : null;
+  const newThisWeek = live?.followers.filter((follower) => Date.parse(follower.copyStartDate) >= Date.parse(live.simulation.simulatedAt) - 7 * 86_400_000).length;
+  const averageDeposit = live ? live.analytics.aum / Math.max(1, live.analytics.activeFollowers) : data.avgCopierDeposit;
   return (
     <section className="panel copiers-panel">
       <div className="panel-header">
@@ -536,16 +562,71 @@ function Copiers({ trader }: { trader: Trader }) {
       <div className="copier-grid">
         <div className="copier-lead"><strong>{trader.copiers}</strong><span>Активных подписчиков</span><div className="copier-avatars"><span>J</span><span>K</span><span>R</span><span>+</span></div></div>
         <div><span>Всего подписчиков</span><strong>{trader.copiers}</strong></div>
-        <div><span>Новых за неделю</span><strong className="positive">+{data.newThisWeek}</strong></div>
-        <div><span>Средний депозит подписчика</span><strong>${data.avgCopierDeposit.toLocaleString()}</strong></div>
-        <div><span>Общий объём копирования</span><strong>${data.totalCopiedVolume}M</strong></div>
+        <div><span>Новых за неделю</span><strong className="positive">+{newThisWeek ?? data.newThisWeek}</strong></div>
+        <div><span>Средний депозит подписчика</span><strong>${Math.round(averageDeposit).toLocaleString()}</strong></div>
+        <div><span>Результат подписчиков</span><strong>{live ? formatUsd(live.analytics.followerPnl) : `$${data.totalCopiedVolume}M`}</strong></div>
       </div>
       <div className="info-note"><CircleHelp size={14} /> Активность подписчиков обновляется в реальном времени при открытии и закрытии позиций.</div>
     </section>
   );
 }
 
-export function Profile({ trader, onBack }: { trader: Trader; onBack: () => void }) {
+function allTimeAumPath(history: SyntheticCopyTradingResponse['aumHistory']): string {
+  if (!history.length) return '';
+  const values = history.map((point) => point.aum);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(1, max - min);
+  return history.map((point, index) => {
+    const x = history.length === 1 ? 900 : index / (history.length - 1) * 900;
+    const y = 125 - (point.aum - min) / range * 105;
+    return `${index ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+function SinceInception({ trader, synthetic }: { trader: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
+  if (trader.id !== nazarTrader.id || !synthetic) return null;
+  const all = synthetic.analytics.allTime;
+  const rows: [string, string][] = [
+    ['All-Time ROI', formatPercent(all.roi)],
+    ['All-Time PnL', `${formatUsd(all.pnl)} USDT`],
+    ['Всего сделок', all.totalTrades.toLocaleString('ru-RU')],
+    ['Прибыльных сделок', all.winningTrades.toLocaleString('ru-RU')],
+    ['Убыточных сделок', all.losingTrades.toLocaleString('ru-RU')],
+    ['All-Time Win Rate', `${all.winRate.toFixed(3)}%`],
+    ['All-Time Max Drawdown', `${all.maximumDrawdown.toFixed(3)}%`],
+    ['All-Time Profit Factor', all.profitFactor.toFixed(4)],
+    ['All-Time Sharpe', all.sharpe.toFixed(4)],
+    ['All-Time Sortino', all.sortino.toFixed(4)],
+    ['Торговых дней', all.tradingDays.toLocaleString('ru-RU')],
+    ['Средняя сделка', `${formatUsd(all.averageTrade)} USDT`],
+    ['PnL подписчиков', `${formatUsd(all.followersPnl)} USDT`],
+    ['AUM', `${formatUsd(all.aum)} USDT`],
+  ];
+  const first = synthetic.aumHistory[0];
+  const last = synthetic.aumHistory[synthetic.aumHistory.length - 1];
+  return (
+    <section className="panel all-time-panel">
+      <div className="panel-header">
+        <div><span className="eyebrow">ALL · SINCE INCEPTION</span><h2>Результат за всё время</h2></div>
+        <LineChart size={20} className="panel-icon" />
+      </div>
+      <div className="stat-rows all-time-grid">
+        {rows.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+      </div>
+      <div className="all-time-aum">
+        <div><span>All-Time AUM history</span><strong>{formatAccountSize(last?.aum ?? 0)}</strong></div>
+        <svg viewBox="0 0 900 145" preserveAspectRatio="none" role="img" aria-label="AUM since inception">
+          <path d="M0 125H900" className="chart-grid" />
+          <path d={allTimeAumPath(synthetic.aumHistory)} className="chart-line" />
+        </svg>
+        <div className="all-time-aum-dates"><span>{first?.date}</span><span>{last?.date}</span></div>
+      </div>
+    </section>
+  );
+}
+
+export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack: () => void; synthetic?: SyntheticCopyTradingResponse | null }) {
   return (
     <main className="page-shell profile-page">
       <button className="back-button" onClick={onBack}><ArrowLeft size={16} /> Назад к копитрейдингу</button>
@@ -572,11 +653,12 @@ export function Profile({ trader, onBack }: { trader: Trader; onBack: () => void
         </div>
       </section>
       <PerformanceOverview trader={trader} />
-      <PerformanceChart trader={trader} />
-      <PerformanceEarnings trader={trader} />
-      <div className="two-column"><RiskMetrics trader={trader} /><TradingStatistics trader={trader} /></div>
-      <RecentTrades trader={trader} />
-      <Copiers trader={trader} />
+      <PerformanceChart trader={trader} synthetic={synthetic} />
+      <SinceInception trader={trader} synthetic={synthetic} />
+      <PerformanceEarnings trader={trader} synthetic={synthetic} />
+      <div className="two-column"><RiskMetrics trader={trader} synthetic={synthetic} /><TradingStatistics trader={trader} synthetic={synthetic} /></div>
+      <RecentTrades trader={trader} synthetic={synthetic} />
+      <Copiers trader={trader} synthetic={synthetic} />
       <EligibilityGate />
     </main>
   );
@@ -598,7 +680,7 @@ function FilterDropdown({ label, options, value, onChange }: { label: string; op
   );
 }
 
-export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
+export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
   const { depositUsd, eligible } = useCopyEligibility();
   const { favorites } = useFavorites();
   const { following } = useFollowing();
@@ -615,14 +697,15 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
   // grid — listing him twice on the same screen would be a duplicate);
   // every other tab searches the full roster including him, which is what
   // makes searching for "Nazar" or starring him actually work.
+  const dynamicRoster = useMemo(() => [nazara, ...marketplaceTraders], [nazara]);
   const tabRoster = useMemo(() => {
     switch (tab) {
-      case 'favorites': return allTraders.filter((t) => favorites.has(t.id));
-      case 'following': return allTraders.filter((t) => following.has(t.id));
-      case 'all': return allTraders;
+      case 'favorites': return dynamicRoster.filter((t) => favorites.has(t.id));
+      case 'following': return dynamicRoster.filter((t) => following.has(t.id));
+      case 'all': return dynamicRoster;
       default: return marketplaceTraders;
     }
-  }, [tab, favorites, following]);
+  }, [tab, favorites, following, dynamicRoster]);
 
   const visibleTraders = useMemo(() => {
     let result = searchTraders(tabRoster, query);
@@ -642,7 +725,7 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
   // The featured slot always shows Nazar first, so explain why rather than
   // just placing him there: verify against the actual roster instead of
   // asserting it, so the claim stays true if the data ever changes.
-  const isTopPerformer = marketplaceTraders.every((t) => nazarTrader.roi90 >= t.roi90);
+  const isTopPerformer = marketplaceTraders.every((t) => nazara.roi90 >= t.roi90);
   const hasActiveFilters = filters.performance !== 'all' || filters.risk !== 'all' || filters.strategy !== 'all' || filters.account !== 'all';
 
   return (
@@ -709,33 +792,33 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
       {tab === 'leaderboard' && (
       <section className="featured-section">
         <div className="section-title">
-          <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 по прибыли подписчиков' : 'Рекомендуемая стратегия'}</span><h2>{nazarTrader.name} <VipBadge /></h2></div>
-          <button className="text-button" onClick={() => onOpen(nazarTrader)}>Профиль трейдера <ChevronRight size={15} /></button>
+          <div><span className="eyebrow">{isTopPerformer ? 'Топ-1 по прибыли подписчиков' : 'Рекомендуемая стратегия'}</span><h2>{nazara.name} <VipBadge /></h2></div>
+          <button className="text-button" onClick={() => onOpen(nazara)}>Профиль трейдера <ChevronRight size={15} /></button>
         </div>
-        <div className="featured-card" onClick={() => onOpen(nazarTrader)}>
+        <div className="featured-card" onClick={() => onOpen(nazara)}>
           <div className="featured-copy">
             <div className="featured-person">
-              <div className="profile-avatar-wrap"><Avatar trader={nazarTrader} large /><span className="profile-verified"><Check size={11} /></span></div>
+              <div className="profile-avatar-wrap"><Avatar trader={nazara} large /><span className="profile-verified"><Check size={11} /></span></div>
               <div>
-                <div className="profile-title-row"><h3>{nazarTrader.name}</h3><VipBadge /></div>
-                <p>{nazarTrader.strategy} <span className="dot-separator" /> {nazarTrader.id}</p>
+                <div className="profile-title-row"><h3>{nazara.name}</h3><VipBadge /></div>
+                <p>{nazara.strategy} <span className="dot-separator" /> {nazara.id}</p>
               </div>
             </div>
-            <p className="featured-description">{getStrategyDescription(nazarTrader)}</p>
+            <p className="featured-description">{getStrategyDescription(nazara)}</p>
             <div className="featured-footer">
-              <span><Users size={15} /> {nazarTrader.copiers} подписчиков</span>
-              <span><ShieldCheck size={15} /> {RISK_LABEL_RU[nazarTrader.risk]} риск</span>
-              <span><LineChart size={15} /> {nazarTrader.activeMonths} мес. истории</span>
-              <span><WalletCards size={15} /> {formatAccountSize(nazarTrader.aum)} под управлением</span>
+              <span><Users size={15} /> {nazara.copiers} подписчиков</span>
+              <span><ShieldCheck size={15} /> {RISK_LABEL_RU[nazara.risk]} риск</span>
+              <span><LineChart size={15} /> {nazara.activeMonths} мес. истории</span>
+              <span><WalletCards size={15} /> {formatAccountSize(nazara.aum)} под управлением</span>
             </div>
           </div>
           <div className="featured-performance">
-            <div><span>7Д</span><strong className="positive">{formatPercent(nazarTrader.roi7)}</strong></div>
-            <div><span>30Д</span><strong className="positive">{formatPercent(nazarTrader.roi30)}</strong></div>
-            <div><span>90Д</span><strong className="positive">{formatPercent(nazarTrader.roi90)}</strong></div>
-            <div><span>Всё время</span><strong className="positive">{formatPercent(nazarTrader.roiAll)}</strong></div>
-            <div><span>Винрейт</span><strong>{nazarTrader.winRate}%</strong></div>
-            <div><span>Макс. просадка</span><strong>{nazarTrader.drawdown}%</strong></div>
+            <div><span>7Д</span><strong className="positive">{formatPercent(nazara.roi7)}</strong></div>
+            <div><span>30Д</span><strong className="positive">{formatPercent(nazara.roi30)}</strong></div>
+            <div><span>90Д</span><strong className="positive">{formatPercent(nazara.roi90)}</strong></div>
+            <div><span>Всё время</span><strong className="positive">{formatPercent(nazara.roiAll)}</strong></div>
+            <div><span>Винрейт</span><strong>{nazara.winRate}%</strong></div>
+            <div><span>Макс. просадка</span><strong>{nazara.drawdown}%</strong></div>
           </div>
           {/* One period's figure, not two. A 90-day and an all-time total
               side by side ($7.4M and $7.7M) read as a mistake, even though
@@ -746,9 +829,9 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
               nothing invites the comparison. */}
           <div className="featured-copier-profit">
             <span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span>
-            <strong>{formatUsd(getCopierProfit(nazarTrader, period))} USDT</strong>
+            <strong>{formatUsd(followerProfitForPeriod(synthetic, period) ?? getCopierProfit(nazara, period))} USDT</strong>
           </div>
-          <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton trader={nazarTrader} /></div>
+          <div className="featured-action"><PremiumEligibilityBlock compact /><CopyButton trader={nazara} /></div>
         </div>
       </section>
       )}
@@ -762,7 +845,7 @@ export function Marketplace({ onOpen }: { onOpen: (trader: Trader) => void }) {
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
         <div className="trader-grid">
-          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} />)}
+          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={synthetic} />)}
         </div>
         {visibleTraders.length === 0 && (
           <div className="empty-state">
