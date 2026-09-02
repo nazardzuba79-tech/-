@@ -361,8 +361,10 @@ body {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* 8px — the dense end of the range these controls read best at;
+   they are four small controls, not four sections. */
 .header-actions {
-  gap: 10px;
+  gap: 8px;
   flex: none;
 }
 .deposit-button {
@@ -389,12 +391,15 @@ body {
 .deposit-button:active {
   transform: translateY(1px);
 }
+/* Padding trimmed 9 -> 7px: the only change to these two controls, so the
+   cluster tightens without either losing its label, its avatar or its
+   34px height. */
 .header-icon {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   height: 34px;
-  padding: 0 9px;
+  padding: 0 7px;
   color: var(--h-text-2);
   background: none;
   border: 1px solid transparent;
@@ -431,34 +436,31 @@ body {
   font-size: 12px;
   font-weight: 500;
 }
-.global-header .wallet-balance small {
-  font-size: 9px;
-}
 .global-header .wallet-balance strong {
   font-size: 12px;
   font-weight: 650;
 }
 
-/* Compact account-balance control, to the Trade archive's own
-   `.wallet-balance` spec (38px tall, 168px wide, #141c25 on a #2b3946
-   hairline, a 29px gold icon tile, a 9px muted caption over a 12px/650
-   balance, and a small chevron). It is an account control, not an input:
-   no glow, no field styling. */
+/* Compact account-balance control: icon, figure, chevron on one line.
+   It was a two-line 168px card whose caption ("Общий баланс") set the
+   width — the label is now only in the dropdown, so the control sizes to
+   its own figure. Height matches .header-icon exactly (34px) so the
+   balance is never taller than Deposit or Profile beside it. */
 .wallet-balance-wrap {
   position: relative;
 }
 .wallet-balance {
-  min-height: 38px;
-  width: 168px;
-  padding: 5px 9px 5px 7px;
+  height: 34px;
+  padding: 0 8px 0 6px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: #aeb9c4;
   background: #141c25;
   border: 1px solid #2b3946;
-  border-radius: 7px;
+  border-radius: 6px;
   text-align: left;
+  white-space: nowrap;
   transition: border-color 150ms ease, background 150ms ease;
 }
 .wallet-balance:hover {
@@ -466,25 +468,14 @@ body {
   border-color: #354554;
 }
 .wallet-icon {
-  width: 29px;
-  height: 29px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
   flex: 0 0 auto;
   color: #0f1419;
   background: #d9b633;
-  border-radius: 5px;
-}
-.wallet-balance > div {
-  display: grid;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-.wallet-balance small {
-  color: #7c8997;
-  font-size: 9px;
-  line-height: 1.1;
+  border-radius: 4px;
 }
 .wallet-balance strong {
   color: #edf1f4;
@@ -557,7 +548,7 @@ body {
   position: relative;
 }
 .top-nav-profile-btn {
-  gap: 7px;
+  gap: 6px;
 }
 .top-nav-profile-avatar {
   display: grid;
@@ -804,12 +795,6 @@ body {
   .profile-control > span:not(.top-nav-profile-avatar) {
     display: none;
   }
-  /* Same call the archive makes at its narrow tier: the balance control
-     steps aside rather than squeezing the deposit CTA. The figure is still
-     one tap away on the wallet page. */
-  .wallet-balance-wrap {
-    display: none;
-  }
   .nav-mobile-menu.open {
     display: flex;
   }
@@ -846,6 +831,16 @@ body {
   }
   .header-icon {
     padding: 0 7px;
+  }
+}
+/* The balance is the last of the four to go, and only on a phone. Above
+   this the language control has already shrunk to its globe, which is the
+   compacting that buys the room; below it there is no width left for a
+   ~110px figure beside the deposit CTA and the profile control, which
+   outrank it. The balance stays one tap away on the wallet page. */
+@media (max-width: 560px) {
+  .wallet-balance-wrap {
+    display: none;
   }
 }
 @media (max-width: 420px) {

@@ -99,15 +99,16 @@ export function WalletBalanceControl() {
         aria-expanded={open}
         aria-label={t('wallet.totalBalance')}
       >
+        {/* Header shows the figure alone — the "Общий баланс" caption that
+            used to sit above it doubled the control's width for a label the
+            wallet icon already implies. It is still spelled out in the
+            dropdown below, and in the aria-label for screen readers. */}
         <span className="wallet-icon">
-          <WalletCards size={15} />
+          <WalletCards size={13} />
         </span>
-        <div>
-          <small>{t('wallet.totalBalance')}</small>
-          <strong>
-            {formatAmount(total)} {QUOTE}
-          </strong>
-        </div>
+        <strong>
+          {formatAmount(total)} {QUOTE}
+        </strong>
         <ChevronDown size={12} />
       </button>
 
