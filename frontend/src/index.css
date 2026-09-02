@@ -416,6 +416,29 @@ body {
   position: relative;
 }
 
+/* Page wrappers scope their own resets to themselves — `.<page>-root button
+   { font: inherit }` and the like — but the shared header renders INSIDE
+   those wrappers, so at (0,1,1) such a reset outranks .deposit-button and
+   .header-icon (0,1,0) and resized the header's controls on those pages
+   alone. Re-asserting the type through .global-header (0,2,0) makes the
+   header immune to any page's reset, present or future, without a single
+   page stylesheet having to know the header exists. */
+.global-header .deposit-button {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.global-header .header-icon {
+  font-size: 12px;
+  font-weight: 500;
+}
+.global-header .wallet-balance small {
+  font-size: 9px;
+}
+.global-header .wallet-balance strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
 /* Compact account-balance control, to the Trade archive's own
    `.wallet-balance` spec (38px tall, 168px wide, #141c25 on a #2b3946
    hairline, a 29px gold icon tile, a 9px muted caption over a 12px/650
@@ -815,7 +838,9 @@ body {
     gap: 20px;
     padding: 0 16px;
   }
-  .deposit-button {
+  /* Carries .global-header so it still outranks the (0,2,0) reset guard
+     above — otherwise this tier's smaller type would never apply. */
+  .global-header .deposit-button {
     padding: 7px 11px;
     font-size: 12px;
   }
