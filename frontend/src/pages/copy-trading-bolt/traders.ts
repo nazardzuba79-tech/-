@@ -71,7 +71,7 @@ export const NAZAR_HISTORY_MONTHS = 12;
 
 export const nazarTrader: Trader = {
   id: 'VX-001',
-  name: 'Nazar',
+  name: 'Nazara',
   initials: 'N',
   tone: 'gold',
   vip: true,
