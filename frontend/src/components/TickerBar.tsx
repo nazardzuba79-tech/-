@@ -110,25 +110,6 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
         <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
         <span className="value">{stats ? compact(stats.quoteVolume24h, lang) : '—'}</span>
       </div>
-
-      {/* The reference's right-hand cluster is a margin-mode chip and two
-          icon buttons. Only the fullscreen one has anything real behind it
-          on a spot terminal — cross-margin does not exist here, so a chip
-          claiming "Cross 20x" would be decoration. */}
-      <div className="ticker-actions">
-        <button
-          className="btn-icon"
-          title={t('trade.fullscreen')}
-          onClick={() => {
-            const el = document.querySelector('.trade-terminal');
-            if (!el) return;
-            if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-            else el.requestFullscreen?.().catch(() => {});
-          }}
-        >
-          ⛶
-        </button>
-      </div>
     </div>
   );
 }

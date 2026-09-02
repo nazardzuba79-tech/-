@@ -39,6 +39,20 @@
   --color-sell-hover: #e03e53;
   --color-buy-bg: rgba(14, 203, 129, 0.08);
   --color-sell-bg: rgba(246, 70, 93, 0.08);
+  /* Three-tier dark hierarchy for the header area: the global nav sits on
+     --bg-primary (near-black, set in index.css, untouched here); the
+     ticker/toolbar row gets its own step up (a graphite-navy, not a
+     repeat of the nav's black); every workspace panel (chart, order
+     book, pair list, order form, bottom orders panel) shares one more
+     step up from that. Three distinct tones instead of the nav, toolbar
+     and chart panel all sharing the same --bg-primary black they did
+     before. --layer-border is the low-contrast seam between those tiers
+     — a faint blue-gray rather than the same --border-color used for
+     ordinary in-panel dividers (order book rows, pair list, form
+     fields), which stays as it was. */
+  --toolbar-bg: #131920;
+  --workspace-bg: #1a212b;
+  --layer-border: rgba(148, 163, 184, 0.08);
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   background: var(--bg-primary);
@@ -80,12 +94,15 @@
    that never scrolls the page. */
 .trade-terminal .terminal { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
-/* === TICKER BAR === */
+/* === TICKER BAR ===
+   Its own tier between the near-black global nav above and the lighter
+   workspace panels below — see --toolbar-bg's comment at the top of this
+   file. */
 .trade-terminal .ticker-bar {
   display: flex; align-items: center; gap: 20px;
   padding: 0 16px; height: 52px;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
+  background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--layer-border);
   flex-shrink: 0;
 }
 .trade-terminal .pair-selector {
@@ -102,13 +119,6 @@
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
 .trade-terminal .ticker-item .value.down { color: var(--color-sell); }
 .trade-terminal .ticker-item .value.mark { font-size: 12px; }
-.trade-terminal .ticker-actions { margin-left: auto; display: flex; gap: 8px; }
-.trade-terminal .btn-icon {
-  background: transparent; border: none; color: var(--text-secondary);
-  cursor: pointer; padding: 6px; border-radius: 4px; font-size: 16px; line-height: 1;
-  transition: background 0.2s;
-}
-.trade-terminal .btn-icon:hover { background: var(--bg-tertiary); color: var(--text-primary); }
 
 /* === MAIN GRID ===
    Left to right: pair list/search, chart, order book, order-entry form.
@@ -135,7 +145,7 @@
   grid-column: 2;
   border-right: 1px solid var(--border-color);
   position: relative;
-  background: var(--bg-primary);
+  background: var(--workspace-bg);
   display: flex; flex-direction: column;
   min-width: 0;
 }
@@ -176,7 +186,7 @@
 .trade-terminal .order-form-area {
   grid-column: 4;
   display: flex; flex-direction: column;
-  background: var(--bg-secondary);
+  background: var(--workspace-bg);
   min-width: 0;
 }
 .trade-terminal .order-form-tabs {
@@ -267,7 +277,7 @@
   grid-column: 3;
   border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column;
-  background: var(--bg-primary);
+  background: var(--workspace-bg);
   min-width: 0;
 }
 .trade-terminal .orderbook-header {
@@ -332,7 +342,7 @@
   grid-column: 1;
   border-right: 1px solid var(--border-color);
   display: flex; flex-direction: column;
-  background: var(--bg-secondary);
+  background: var(--workspace-bg);
   overflow: hidden;
   min-width: 0;
 }
@@ -401,8 +411,8 @@
 
 /* === BOTTOM PANEL === */
 .trade-terminal .bottom-panel {
-  height: 180px; background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
+  height: 180px; background: var(--workspace-bg);
+  border-top: 1px solid var(--layer-border);
   display: flex; flex-direction: column;
   flex-shrink: 0;
 }
@@ -504,7 +514,6 @@
     flex-wrap: wrap;
     gap: 14px;
   }
-  .trade-terminal .ticker-actions { margin-left: 0; }
   .trade-terminal .bottom-tabs { overflow-x: auto; }
   .trade-terminal .bottom-tab { white-space: nowrap; }
   /* Same reason as the bottom tabs: the interval/type/indicator row is a

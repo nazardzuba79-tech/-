@@ -12,7 +12,6 @@ import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
-import { TopGainersTicker } from '../components/TopGainersTicker';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
@@ -122,7 +121,6 @@ export function TradePage() {
       <div className="page-mesh trading-page" style={styles.page}>
         <Nav active="/trade" middle={<BotsComingSoon />} />
         <ConnectionBanner />
-        <TopGainersTicker onSelect={setPair} />
 
         <div className="trading-content" style={styles.content}>
           <main className="trading-grid" style={styles.grid}>
@@ -158,7 +156,6 @@ export function TradePage() {
     <div className="trade-terminal">
       <Nav active="/trade" middle={<BotsComingSoon />} />
       <ConnectionBanner />
-      <TopGainersTicker onSelect={setPair} />
 
       <div className="terminal">
         <TickerBar pair={pair} onSelectPair={() => pairListRef.current?.focusSearch()} />
