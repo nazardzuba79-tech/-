@@ -316,7 +316,15 @@ export function MarketsBoltPage() {
 
   return (
     <div className="markets-bolt-root">
-      <Nav active="/markets" />
+      {/* Every symbol in the strip links straight into that pair's terminal.
+          The strip is fed by api.getExternalTickers — this exchange's spot
+          ticker mirror, filtered to /USDT markets (see TopGainersTicker) —
+          so every item in it is a spot market by construction and the spot
+          route is the correct destination for all of them; nothing here
+          guesses a market type from the symbol string. The URL is the
+          app's existing deep-link (TradePage reads and validates ?pair=),
+          not a second scheme. */}
+      <Nav active="/markets" tickerHrefFor={(pair) => `/trade?pair=${encodeURIComponent(pair)}`} />
 
       <main className="markets-page">
         <div className="page-intro">

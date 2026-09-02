@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
@@ -24,9 +25,31 @@ interface Item {
  * the data a trader is actually reading. The animation itself is switched
  * off in CSS (see `.trade-terminal .ticker-track` in TradeTerminal.css);
  * the duplicate run has to go here, since without the animation it would
- * just render every symbol twice. */
-export function TopGainersTicker({ onSelect, staticStrip }: { onSelect?: (pair: string) => void; staticStrip?: boolean }) {
-  const { lang } = useLanguage();
+ * just render every symbol twice.
+ *
+ * Two ways to make an item interactive, because the two callers mean
+ * different things by "select":
+ *
+ * - `onSelect` — switch the pair on the page you are already on (the trade
+ *   and futures terminals). That is not navigation, so it renders a
+ *   <button>.
+ * - `hrefFor` — go to another page with that pair selected (the Markets
+ *   page). That IS navigation, so it renders a react-router <Link>: a real
+ *   anchor keeps middle-click, ctrl/cmd-click and "open in new tab"
+ *   working, and gets keyboard focus for free. Callers build the URL from
+ *   the app's existing `/trade?pair=` route rather than a new scheme.
+ *
+ * Passing neither renders plain, non-interactive text as before. */
+export function TopGainersTicker({
+  onSelect,
+  hrefFor,
+  staticStrip,
+}: {
+  onSelect?: (pair: string) => void;
+  hrefFor?: (pair: string) => string;
+  staticStrip?: boolean;
+}) {
+  const { lang, t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
 
   useEffect(() => {
@@ -79,16 +102,42 @@ export function TopGainersTicker({ onSelect, staticStrip }: { onSelect?: (pair: 
               {it.pair === hottest?.pair && <span className="ticker-hot">HOT</span>}
             </>
           );
+          // The marquee renders the list twice so it can loop seamlessly;
+          // the second run is decoration, so it is hidden from screen
+          // readers and taken out of the tab order rather than making every
+          // symbol appear (and be tabbed through) twice.
+          const duplicate = i >= items.length;
+          // Reuses the existing nav label instead of adding a locale key —
+          // "Торговля BTC/USDT" / "Trade BTC/USDT" in whichever of the
+          // seven languages is active.
+          const label = `${t('nav.trade')} ${it.pair}`;
+          if (hrefFor) {
+            return (
+              <Link
+                key={`${it.pair}-${i}`}
+                to={hrefFor(it.pair)}
+                className="ticker-item ticker-item-button"
+                aria-label={duplicate ? undefined : label}
+                aria-hidden={duplicate || undefined}
+                tabIndex={duplicate ? -1 : undefined}
+              >
+                {content}
+              </Link>
+            );
+          }
           return onSelect ? (
             <button
               key={`${it.pair}-${i}`}
               onClick={() => onSelect(it.pair)}
               className="ticker-item ticker-item-button"
+              aria-label={duplicate ? undefined : label}
+              aria-hidden={duplicate || undefined}
+              tabIndex={duplicate ? -1 : undefined}
             >
               {content}
             </button>
           ) : (
-            <span key={`${it.pair}-${i}`} className="ticker-item">
+            <span key={`${it.pair}-${i}`} className="ticker-item" aria-hidden={duplicate || undefined}>
               {content}
             </span>
           );

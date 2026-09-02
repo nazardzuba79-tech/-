@@ -46,6 +46,16 @@ export function TradePage() {
   // of rendering a broken pair.
   const requestedPair = searchParams.get('pair');
   const [pair, setPair] = useState(requestedPair && PAIR_PATTERN.test(requestedPair) ? requestedPair : 'BTC/USDT');
+  // Same reason as marketType below: this page is not remounted when only
+  // the query string changes, so the initializer alone would leave the
+  // previously selected pair active on a second deep-link into /trade (and
+  // on browser back/forward between two ?pair URLs). This only fires when
+  // the URL itself changes, so picking a pair in the sidebar — which
+  // doesn't touch the URL — is never clobbered by it.
+  useEffect(() => {
+    const next = searchParams.get('pair');
+    if (next && PAIR_PATTERN.test(next)) setPair(next);
+  }, [searchParams]);
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
