@@ -449,7 +449,7 @@ export const api = {
       };
     }>(`/market/external/tickers/${pairToSlug(pair)}`),
 
-  getExternalOrderBook: (pair: string, limit = 10) =>
+  getExternalOrderBook: (pair: string, limit = 100) =>
     request<{
       pair: string;
       bids: { price: string; quantity: string }[];

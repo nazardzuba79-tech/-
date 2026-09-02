@@ -289,6 +289,16 @@
   padding: 8px 12px; border-bottom: 1px solid var(--border-color);
 }
 .trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 8px; }
+/* Matches .ob-mode-btn's own size/colour so the two controls read as one
+   cluster, not a mismatched dropdown bolted onto the header. */
+.trade-terminal .ob-group-select {
+  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary); color: var(--text-secondary);
+  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 11px;
+  font-family: inherit; outline: none; transition: border-color 0.2s, color 0.2s;
+}
+.trade-terminal .ob-group-select:hover { color: var(--text-primary); }
+.trade-terminal .ob-group-select:focus { border-color: var(--accent-yellow); }
 .trade-terminal .orderbook-modes { display: flex; gap: 4px; }
 .trade-terminal .ob-mode-btn {
   background: transparent; border: none; color: var(--text-secondary);
@@ -315,7 +325,10 @@
   position: relative; cursor: pointer; transition: background 0.1s;
 }
 .trade-terminal .ob-row:hover { background: var(--bg-tertiary); }
-.trade-terminal .ob-row .cell { flex: 1; position: relative; z-index: 1; }
+/* tabular-nums so changing digits never shift the Price/Amount/Sum column
+   widths — a real risk here since rows update far more often than most of
+   the terminal's other numbers. */
+.trade-terminal .ob-row .cell { flex: 1; position: relative; z-index: 1; font-variant-numeric: tabular-nums; }
 .trade-terminal .ob-row .cell:nth-child(2) { text-align: center; color: var(--text-primary); }
 .trade-terminal .ob-row .cell:last-child { text-align: right; color: var(--text-secondary); }
 .trade-terminal .ob-row .cell.ask-price { color: var(--color-sell); font-weight: 500; }
@@ -327,12 +340,24 @@
 .trade-terminal .ob-depth-bar.ask { background: var(--color-sell); }
 .trade-terminal .ob-depth-bar.bid { background: var(--color-buy); }
 .trade-terminal .orderbook-spread {
-  padding: 8px 12px; text-align: center;
-  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 12px; text-align: center;
   border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }
+.trade-terminal .ob-spread-price {
+  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
 .trade-terminal .orderbook-spread .usd { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+/* The spread readout below the price — same muted, smaller treatment as
+   every other secondary figure in the terminal (ticker-bar labels, pair
+   list price cells), so it reads as supporting detail, not a second
+   headline number. */
+.trade-terminal .ob-spread-detail {
+  font-size: 11px; font-weight: 500; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
 
 /* === LEFT PANEL: search + pair list ===
    Was the reference's right-hand column; moved to the left per a later

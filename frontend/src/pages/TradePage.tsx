@@ -178,6 +178,7 @@ export function TradePage() {
             <OrderBookPanel
               bids={book.bids}
               asks={book.asks}
+              pair={pair}
               onPickPrice={(value) => setPickedPrice((prev) => ({ value, seq: (prev?.seq ?? 0) + 1 }))}
             />
           </div>

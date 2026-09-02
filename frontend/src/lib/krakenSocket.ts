@@ -39,10 +39,20 @@ interface BookState {
 
 const WS_URL = 'wss://ws.kraken.com/v2';
 const MAX_RECONNECT_DELAY_MS = 15_000;
-// Kraken's book channel only accepts 10/25/100/500/1000 — 10 (its own
-// default) keeps each side short enough to fit OrderBookPanel's fixed
-// height without scrolling past a wall of asks before reaching the bids.
-const BOOK_DEPTH = 10;
+// Kraken's book channel only accepts 10/25/100/500/1000. OrderBookPanel
+// still only ever shows a near-spread window of it, but its price-step
+// grouping needs real raw levels to aggregate — 10 barely gave it two or
+// three, which made every grouping step look identical. 100 gives the
+// panel enough depth to actually merge when a coarser step is selected.
+const BOOK_DEPTH = 100;
+// Kraken's book channel can push several delta messages per second on an
+// active pair. Applying each one straight to React state repainted the
+// whole panel that often, which is what read as the order book
+// constantly jumping. Deltas still land in bookState (below) the instant
+// they arrive — nothing about the data goes stale — but listeners (i.e.
+// React) are only notified at this cadence, so the visible DOM settles
+// while still reflecting the latest snapshot the next time it updates.
+const EMIT_INTERVAL_MS = 300;
 
 class KrakenSocket {
   private ws: WebSocket | null = null;
@@ -53,6 +63,11 @@ class KrakenSocket {
   private bookState = new Map<string, BookState>();
   private bookListeners = new Map<string, Set<BookListener>>();
   private tradeListeners = new Map<string, Set<TradeListener>>();
+  // Pairs with unflushed delta updates, and the single shared timer that
+  // flushes all of them at once every EMIT_INTERVAL_MS — see that
+  // constant's comment for why listeners aren't notified on every message.
+  private dirtyPairs = new Set<string>();
+  private flushTimer: number | null = null;
 
   // Real connection state, not a guess — flips on the socket's own
   // open/close events so UI can honestly show "reconnecting" instead of
@@ -92,6 +107,7 @@ class KrakenSocket {
       if (set.size === 0) {
         this.bookListeners.delete(pair);
         this.bookState.delete(pair);
+        this.dirtyPairs.delete(pair);
         this.send({ method: 'unsubscribe', params: { channel: 'book', symbol: [pair] } });
       }
     };
@@ -203,14 +219,38 @@ class KrakenSocket {
       else state.asks.set(String(level.price), String(level.qty));
     }
 
+    // The snapshot is the very first thing a subscriber sees, so it flushes
+    // immediately — otherwise the book would sit empty for up to
+    // EMIT_INTERVAL_MS after switching pairs. Every delta after that just
+    // marks the pair dirty; the shared timer catches it on the next tick.
+    if (isSnapshot) this.flushPair(pair);
+    else {
+      this.dirtyPairs.add(pair);
+      this.scheduleFlush();
+    }
+  }
+
+  private scheduleFlush() {
+    if (this.flushTimer !== null) return;
+    this.flushTimer = window.setTimeout(() => {
+      this.flushTimer = null;
+      const pairs = Array.from(this.dirtyPairs);
+      this.dirtyPairs.clear();
+      for (const pair of pairs) this.flushPair(pair);
+    }, EMIT_INTERVAL_MS);
+  }
+
+  private flushPair(pair: string) {
+    const state = this.bookState.get(pair);
+    if (!state) return;
     const bids = Array.from(state.bids.entries())
       .map(([price, quantity]) => ({ price, quantity }))
       .sort((a, b) => Number(b.price) - Number(a.price))
-      .slice(0, 50);
+      .slice(0, BOOK_DEPTH);
     const asks = Array.from(state.asks.entries())
       .map(([price, quantity]) => ({ price, quantity }))
       .sort((a, b) => Number(a.price) - Number(b.price))
-      .slice(0, 50);
+      .slice(0, BOOK_DEPTH);
 
     this.bookListeners.get(pair)?.forEach((listener) => listener({ bids, asks }));
   }
