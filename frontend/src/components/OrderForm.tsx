@@ -1,7 +1,8 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
-import { useLanguage } from '../lib/i18n';
+import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
+import { parseChangePercent } from '../lib/priceChange';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -26,7 +27,7 @@ export function OrderForm({
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
 }) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const toast = useToast();
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
@@ -41,6 +42,16 @@ export function OrderForm({
   const [percent, setPercent] = useState(0);
   const [available, setAvailable] = useState<{ base: number; quote: number }>({ base: 0, quote: 0 });
   const [marketPrice, setMarketPrice] = useState<number | null>(null);
+  // Everything the new market-info block below the CTA shows — same ticker
+  // poll that already drove marketPrice, just keeping the rest of the
+  // payload instead of discarding it. No extra request.
+  const [marketStats, setMarketStats] = useState<{
+    changePercent24h: number;
+    high24h: number;
+    low24h: number;
+    volume24h: number;
+    quoteVolume24h: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,7 +100,17 @@ export function OrderForm({
     function load() {
       api
         .getExternalTicker(pair)
-        .then((res) => !cancelled && setMarketPrice(parseFloat(res.ticker.lastPrice)))
+        .then((res) => {
+          if (cancelled) return;
+          setMarketPrice(parseFloat(res.ticker.lastPrice));
+          setMarketStats({
+            changePercent24h: parseChangePercent(res.ticker.changePercent24h, pair),
+            high24h: parseFloat(res.ticker.high24h),
+            low24h: parseFloat(res.ticker.low24h),
+            volume24h: parseFloat(res.ticker.volume24h),
+            quoteVolume24h: parseFloat(res.ticker.quoteVolume24h),
+          });
+        })
         .catch(() => {});
     }
     load();
@@ -366,21 +387,28 @@ export function OrderForm({
               />
             ))}
           </div>
+          <div className="slider-labels">
+            {SLIDER_STEPS.map((step) => (
+              <span key={step}>{step}%</span>
+            ))}
+          </div>
         </div>
 
-        <div className="available-balance">
-          <span>{t('trade.available')}</span>
-          <span className="amount">
-            {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
-            {side === 'BUY' ? quoteAsset : baseAsset}
-          </span>
-        </div>
+        <div className="order-summary">
+          <div className="available-balance">
+            <span>{t('trade.available')}</span>
+            <span className="amount">
+              {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
+              {side === 'BUY' ? quoteAsset : baseAsset}
+            </span>
+          </div>
 
-        <div className="available-balance">
-          <span>{t('trade.fee')}</span>
-          <span className="amount">
-            {feeAmount} {quoteAsset} (0%)
-          </span>
+          <div className="available-balance">
+            <span>{t('trade.fee')}</span>
+            <span className="amount">
+              {feeAmount} {quoteAsset} (0%)
+            </span>
+          </div>
         </div>
 
         {error && (
@@ -392,6 +420,69 @@ export function OrderForm({
         <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : `${side === 'BUY' ? t('trade.buy') : t('trade.sell')} ${baseAsset}`}
         </button>
+
+        {/* Fills the space that used to sit empty below the CTA — the same
+            ticker poll driving marketPrice above, plus the same balances
+            call from the effect near the top of this component. Nothing
+            here is fetched or computed just for this block, and nothing
+            futures-only (funding rate, mark/index price, open interest)
+            is shown, since this is a spot pair and doesn't have any of
+            those. */}
+        <div className="info-section">
+          <div className="info-heading">{t('trade.marketInfo')}</div>
+          <div className="info-row">
+            <span className="info-label">{t('trade.lastPrice')}</span>
+            <span className="info-value">
+              {marketPrice !== null ? marketPrice.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{t('markets.change24h')}</span>
+            <span className={`info-value ${marketStats ? (marketStats.changePercent24h >= 0 ? 'up' : 'down') : ''}`}>
+              {marketStats
+                ? `${marketStats.changePercent24h >= 0 ? '+' : ''}${marketStats.changePercent24h.toFixed(2)}%`
+                : '—'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{t('trade.high24h')}</span>
+            <span className="info-value">
+              {marketStats ? marketStats.high24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{t('trade.low24h')}</span>
+            <span className="info-value">
+              {marketStats ? marketStats.low24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 8 }) : '—'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
+            <span className="info-value">
+              {marketStats ? marketStats.volume24h.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 }) : '—'}
+            </span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
+            <span className="info-value">
+              {marketStats
+                ? marketStats.quoteVolume24h.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 })
+                : '—'}
+            </span>
+          </div>
+        </div>
+
+        <div className="info-section">
+          <div className="info-heading">{t('trade.accountInfo')}</div>
+          <div className="info-row">
+            <span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span>
+            <span className="info-value">{available.base.toLocaleString(localeOf(lang), { maximumFractionDigits: 6 })}</span>
+          </div>
+          <div className="info-row">
+            <span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span>
+            <span className="info-value">{available.quote.toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}</span>
+          </div>
+        </div>
       </form>
     </>
   );

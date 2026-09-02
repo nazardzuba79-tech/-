@@ -193,19 +193,31 @@
   background: var(--workspace-bg);
   min-width: 0;
 }
+/* Buy/Sell segmented control — a single bordered, rounded pill the two
+   tabs share, rather than two full-bleed rectangles separated by a hard
+   border-bottom cutting across the whole panel. That border-bottom was
+   what made the tab row read as a separate module glued onto the form
+   instead of part of one continuous surface. The active tab still gets a
+   real accent fill — that part of the old look was fine — it's the
+   surrounding container that changed. */
 .trade-terminal .order-form-tabs {
-  display: flex; border-bottom: 1px solid var(--border-color);
+  display: flex; gap: 3px;
+  margin: 10px 12px 2px; padding: 3px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--layer-border);
+  border-radius: 8px;
 }
 .trade-terminal .order-form-tab {
-  flex: 1; background: transparent; border: none;
-  padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
-  transition: all 0.2s; color: var(--text-secondary);
+  flex: 1; background: transparent; border: none; border-radius: 6px;
+  padding: 9px 0; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, color 0.15s; color: var(--text-secondary);
 }
-.trade-terminal .order-form-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #fff; }
-.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #fff; }
+.trade-terminal .order-form-tab:hover { color: var(--text-primary); }
+.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #06120c; }
+.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #200507; }
 .trade-terminal .order-type-tabs {
-  display: flex; gap: 8px; padding: 10px 16px;
+  display: flex; gap: 8px; padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--layer-border);
 }
 .trade-terminal .order-type-tab {
   background: transparent; border: none; color: var(--text-secondary);
@@ -214,32 +226,34 @@
 }
 .trade-terminal .order-type-tab:hover { color: var(--text-primary); }
 .trade-terminal .order-type-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
-/* min-height: 0 is the one property added to this rule. Without it a flex
-   item's automatic minimum size is its content height, so the reference's
-   own `overflow-y: auto` never engages: instead of scrolling inside the
-   340px form panel, the content grows past it and pushes the submit button
-   out of the panel entirely. Everything else here is the reference's. */
-.trade-terminal .order-form-content { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
+/* min-height: 0 is the one property that changed the reference's own
+   metrics on this rule. Without it a flex item's automatic minimum size
+   is its content height, so `overflow-y: auto` never engages: instead of
+   scrolling inside the panel, the content grows past it and pushes the
+   submit button out entirely. The account/market info blocks appended
+   below the button rely on the same scroll rather than growing the panel
+   past its grid row. */
+.trade-terminal .order-form-content { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
 .trade-terminal .form-group { display: flex; flex-direction: column; gap: 4px; }
 .trade-terminal .form-label { font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; }
 .trade-terminal .form-label .max-btn { color: var(--accent-yellow); cursor: pointer; font-weight: 600; background: transparent; border: none; font-size: 11px; padding: 0; }
 .trade-terminal .input-group {
   display: flex; align-items: center;
-  background: var(--bg-tertiary); border-radius: 4px;
-  border: 1px solid var(--bg-tertiary); transition: border-color 0.2s;
+  background: var(--bg-tertiary); border-radius: 6px;
+  border: 1px solid var(--border-color); transition: border-color 0.2s;
 }
 .trade-terminal .input-group:focus-within { border-color: var(--accent-yellow); }
 .trade-terminal .input-group input {
   flex: 1; background: transparent; border: none; color: var(--text-primary);
   padding: 10px 12px; font-size: 14px; outline: none; width: 100%;
-  font-family: inherit;
+  font-family: inherit; font-variant-numeric: tabular-nums;
 }
 .trade-terminal .input-group input::placeholder { color: var(--text-secondary); }
 .trade-terminal .input-suffix {
-  padding: 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500;
+  padding: 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 600;
   border-left: 1px solid var(--border-color);
 }
-.trade-terminal .slider-container { padding: 4px 0; }
+.trade-terminal .slider-container { padding: 6px 2px 2px; }
 .trade-terminal .slider-track {
   display: flex; gap: 4px; align-items: center;
 }
@@ -248,28 +262,73 @@
   cursor: pointer; transition: background 0.2s; position: relative;
   border: none; padding: 0;
 }
+/* A visible dot at each of the five stops, on top of the fill bar — makes
+   the control read as "five discrete points on a rail" rather than a
+   plain progress bar, without adding a second row of controls. */
+.trade-terminal .slider-step::before {
+  content: ''; position: absolute; top: 50%; right: -1px; transform: translate(50%, -50%);
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--bg-tertiary); border: 2px solid var(--border-color);
+  transition: background 0.2s, border-color 0.2s;
+}
+.trade-terminal .slider-step:first-child::before { left: -1px; right: auto; transform: translate(-50%, -50%); }
 .trade-terminal .slider-step.active { background: var(--color-buy); }
+.trade-terminal .slider-step.active::before { background: var(--color-buy); border-color: var(--color-buy); }
 .trade-terminal .slider-step.active.sell { background: var(--color-sell); }
+.trade-terminal .slider-step.active.sell::before { background: var(--color-sell); border-color: var(--color-sell); }
 .trade-terminal .slider-step:hover::after {
   content: attr(data-label); position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
   font-size: 10px; color: var(--text-secondary); background: var(--bg-tertiary);
   padding: 2px 4px; border-radius: 2px; white-space: nowrap;
 }
+.trade-terminal .slider-labels {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--text-secondary); padding: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+}
+.trade-terminal .order-summary {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 10px; margin-top: 2px;
+  background: var(--bg-secondary); border: 1px solid var(--layer-border); border-radius: 6px;
+}
 .trade-terminal .available-balance {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; color: var(--text-secondary); padding: 4px 0;
+  font-size: 12px; color: var(--text-secondary); padding: 3px 0;
 }
-.trade-terminal .available-balance .amount { color: var(--text-primary); font-weight: 600; }
+.trade-terminal .available-balance .amount { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
 .trade-terminal .submit-btn {
-  width: 100%; padding: 12px; border: none; border-radius: 4px;
-  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-  margin-top: auto;
+  width: 100%; height: 50px; border: none; border-radius: 8px;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.01em; cursor: pointer;
+  transition: background 0.15s, transform 0.1s; flex-shrink: 0;
 }
 .trade-terminal .submit-btn.buy { background: var(--color-buy); color: #fff; }
 .trade-terminal .submit-btn.buy:hover { background: var(--color-buy-hover); }
 .trade-terminal .submit-btn.sell { background: var(--color-sell); color: #fff; }
 .trade-terminal .submit-btn.sell:hover { background: var(--color-sell-hover); }
-.trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.trade-terminal .submit-btn:active { transform: translateY(1px); }
+.trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* === MARKET / ACCOUNT INFO — fills the space below the CTA that used to
+   sit empty (the submit button no longer gets shoved to the panel's
+   bottom edge via margin-top: auto now that there's real content after
+   it). Same two-column label/value row shape repeated for both blocks;
+   only real data already fetched for this form (the ticker poll, the
+   balances call) feeds it — nothing here is fabricated. === */
+.trade-terminal .info-section { padding-top: 10px; margin-top: 2px; border-top: 1px solid var(--layer-border); }
+.trade-terminal .info-section + .info-section { padding-top: 8px; margin-top: 0; }
+.trade-terminal .info-heading {
+  font-size: 12px; font-weight: 700; color: var(--text-primary);
+  text-transform: uppercase; letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+.trade-terminal .info-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 3px 0; font-size: 12px;
+}
+.trade-terminal .info-row .info-label { color: var(--text-secondary); }
+.trade-terminal .info-row .info-value { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.trade-terminal .info-row .info-value.up { color: var(--color-buy); }
+.trade-terminal .info-row .info-value.down { color: var(--color-sell); }
 
 /* TP/SL Checkbox */
 .trade-terminal .form-options { display: flex; gap: 16px; padding: 4px 0; }
