@@ -42,11 +42,12 @@ type GlobalMarket = {
   totalVolume24hUsd: number;
   totalMarketCapUsd: number;
   btcDominancePercent: number | null;
+  ethDominancePercent: number | null;
   marketCapChangePercent24h: number | null;
 };
 type FearGreedReading = { value: number; classification: string; updatedAt: number };
 
-type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume';
+type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume' | 'marketCap' | 'symbol';
 type MarketKind = 'Spot' | 'Futures' | 'Options';
 type CategoryTab = 'Cryptocurrency' | 'Favorites' | 'TradFi';
 
@@ -261,6 +262,20 @@ export function MarketsBoltPage() {
           return (parseFloat(a.high24h) - parseFloat(b.high24h)) * dir;
         case 'low':
           return (parseFloat(a.low24h) - parseFloat(b.low24h)) * dir;
+        case 'marketCap': {
+          // Real CoinGecko market cap for the pair's base asset. A base
+          // that isn't in the ranked set has no cap to sort on, so it
+          // sinks to the end either way rather than being treated as 0
+          // and jumping to the top of an ascending sort.
+          const capA = rankByBase?.get(baseOf(a.pair))?.marketCap;
+          const capB = rankByBase?.get(baseOf(b.pair))?.marketCap;
+          if (capA == null && capB == null) return 0;
+          if (capA == null) return 1;
+          if (capB == null) return -1;
+          return (capA - capB) * dir;
+        }
+        case 'symbol':
+          return a.pair.localeCompare(b.pair) * dir;
         default:
           return (parseFloat(a.quoteVolume24h || '0') - parseFloat(b.quoteVolume24h || '0')) * dir;
       }
@@ -330,10 +345,15 @@ export function MarketsBoltPage() {
                   {fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}
                 </span>
               </div>
+              {/* The distribution sits under the gauge rather than beside
+                  it: the state label was previously printed twice (once
+                  under the gauge, once here), and stacking lets the gauge
+                  itself be the card's focal point. */}
               <div className="sentiment-side">
                 <div className="score-label">
+                  <span className="muted-label">Настроение рынка</span>
                   <strong style={fearGreed ? { color: zoneColor(fearGreed.value) } : undefined}>
-                    {fearGreed ? fearGreedLabelRu(fearGreed.classification) : 'Нет данных'}
+                    {fearGreed ? `${fearGreed.value} · ${fearGreedLabelRu(fearGreed.classification)}` : 'Нет данных'}
                   </strong>
                 </div>
                 <div className="progress-track"><span style={{ width: `${fearGreed ? fearGreed.value : 0}%` }} /></div>
@@ -352,30 +372,94 @@ export function MarketsBoltPage() {
                 <strong>{globalMarket ? formatCompactUsd(globalMarket.totalVolume24hUsd) : '—'}</strong>
               </div>
             </div>
-            <div className="volume-footer">
-              <span>Капитализация <b>{globalMarket ? formatCompactUsd(globalMarket.totalMarketCapUsd) : '—'}</b></span>
-              <span>Доминация BTC <b>{globalMarket?.btcDominancePercent != null ? `${globalMarket.btcDominancePercent.toFixed(1)}%` : '—'}</b></span>
-              <span>Наши пары <b>{volumeSummary.pairCount}</b></span>
+            {/* Was a single run-on line of three figures. The four metrics
+                that matter get their own labelled cells; ETH dominance
+                comes from the same CoinGecko /global response that already
+                supplied BTC dominance — the field was simply not being
+                read through. */}
+            <div className="metric-grid">
+              <div>
+                <span className="muted-label">Капитализация</span>
+                <b>{globalMarket ? formatCompactUsd(globalMarket.totalMarketCapUsd) : '—'}</b>
+              </div>
+              <div>
+                <span className="muted-label">Изм. капитализации</span>
+                <b className={(globalMarket?.marketCapChangePercent24h ?? 0) >= 0 ? 'positive' : 'negative'}>
+                  {globalMarket?.marketCapChangePercent24h != null
+                    ? `${globalMarket.marketCapChangePercent24h >= 0 ? '+' : ''}${globalMarket.marketCapChangePercent24h.toFixed(2)}%`
+                    : '—'}
+                </b>
+              </div>
+              <div>
+                <span className="muted-label">Доминация BTC</span>
+                <b>{globalMarket?.btcDominancePercent != null ? `${globalMarket.btcDominancePercent.toFixed(1)}%` : '—'}</b>
+              </div>
+              <div>
+                <span className="muted-label">Доминация ETH</span>
+                <b>{globalMarket?.ethDominancePercent != null ? `${globalMarket.ethDominancePercent.toFixed(1)}%` : '—'}</b>
+              </div>
             </div>
           </article>
           <article className="overview-card sectors-card">
             <div className="card-heading"><span>Популярные секторы</span></div>
+            {/* Four labelled columns rather than a row of loose values, so
+                the card scans like the small analytics table it is. A
+                sector with no ranked members yet reports no leader and no
+                average — shown as "—" rather than a fabricated 0.00%. */}
             <div className="sector-list">
+              <div className="sector-row sector-row-head">
+                <span>Сектор</span>
+                <span>24ч</span>
+                <span>Лидер</span>
+                <span>Изм. лидера</span>
+              </div>
               {sectorSummaries.length === 0 && <div className="sector-row sector-row-empty">Загрузка данных...</div>}
-              {sectorSummaries.map((s) => (
-                <div className="sector-row" key={s.category}>
-                  <span>{CATEGORY_LABEL_RU[s.category]}</span>
-                  <strong className={s.avgChange >= 0 ? 'positive' : 'negative'}>
-                    {s.avgChange >= 0 ? '+' : ''}
-                    {s.avgChange.toFixed(2)}%
-                  </strong>
-                  <em>
-                    {s.leaderSymbol ? `${s.leaderSymbol} ${(s.leaderChange ?? 0) >= 0 ? '+' : ''}${(s.leaderChange ?? 0).toFixed(2)}%` : '—'}
-                  </em>
-                </div>
-              ))}
+              {sectorSummaries.map((s) => {
+                const hasData = s.leaderSymbol !== null;
+                return (
+                  <div className="sector-row" key={s.category}>
+                    <span>{CATEGORY_LABEL_RU[s.category]}</span>
+                    <strong className={!hasData ? 'muted-value' : s.avgChange >= 0 ? 'positive' : 'negative'}>
+                      {hasData ? `${s.avgChange >= 0 ? '+' : ''}${s.avgChange.toFixed(2)}%` : '—'}
+                    </strong>
+                    <em>{s.leaderSymbol ?? '—'}</em>
+                    <b className={!hasData ? 'muted-value' : (s.leaderChange ?? 0) >= 0 ? 'positive' : 'negative'}>
+                      {hasData ? `${(s.leaderChange ?? 0) >= 0 ? '+' : ''}${(s.leaderChange ?? 0).toFixed(2)}%` : '—'}
+                    </b>
+                  </div>
+                );
+              })}
             </div>
           </article>
+        </section>
+
+        {/* Market pulse. Deliberately about THIS exchange's own book rather
+            than repeating the market-wide cap/volume/dominance figures the
+            card above already carries: how many of the pairs listed here
+            are up vs down right now, over how many pairs, and the turnover
+            across them. All four come straight from the same live tickers
+            the table below renders. */}
+        <section className="pulse-strip" aria-label="Пульс рынка">
+          <div className="pulse-item">
+            <span className="muted-label">Растут</span>
+            <strong className="positive">{breadth.advancing}</strong>
+          </div>
+          <div className="pulse-item">
+            <span className="muted-label">Падают</span>
+            <strong className="negative">{breadth.declining}</strong>
+          </div>
+          <div className="pulse-item">
+            <span className="muted-label">Пар в обзоре</span>
+            <strong>{volumeSummary.pairCount}</strong>
+          </div>
+          <div className="pulse-item">
+            <span className="muted-label">Объём по нашим парам</span>
+            <strong>{formatCompactUsd(volumeSummary.totalVolume)}</strong>
+          </div>
+          <div className="pulse-bar" role="presentation">
+            <span className="pulse-bar-up" style={{ width: `${breadth.longPct}%` }} />
+            <span className="pulse-bar-down" style={{ width: `${breadth.shortPct}%` }} />
+          </div>
         </section>
 
         <section className="market-section">
@@ -455,14 +539,41 @@ export function MarketsBoltPage() {
                   <h3>Все рынки <span>{filteredMarkets.length}</span></h3>
                   <p>Данные приведены в справочных целях и обновляются в реальном времени.</p>
                 </div>
-                <button className="density-button" onClick={() => setCompact((c) => !c)}>{compact ? 'Обычный вид' : 'Компактный вид'}</button>
+                <div className="table-caption-actions">
+                  {/* Market cap has no column of its own — the column set
+                      is deliberately fixed — so it sorts from here. The
+                      other modes are the same state the column headers
+                      drive, so the two controls always agree. */}
+                  <label className="table-sort">
+                    <span>Сортировка</span>
+                    <select
+                      value={`${sortKey}_${sortDirection}`}
+                      onChange={(e) => {
+                        const [key, dir] = e.target.value.split('_') as [SortKey, 'asc' | 'desc'];
+                        setSortKey(key);
+                        setSortDirection(dir);
+                      }}
+                    >
+                      <option value="volume_desc">Объём 24ч ↓</option>
+                      <option value="volume_asc">Объём 24ч ↑</option>
+                      <option value="change_desc">Изменение 24ч ↓</option>
+                      <option value="change_asc">Изменение 24ч ↑</option>
+                      <option value="price_desc">Цена ↓</option>
+                      <option value="price_asc">Цена ↑</option>
+                      <option value="marketCap_desc">Капитализация ↓</option>
+                      <option value="marketCap_asc">Капитализация ↑</option>
+                      <option value="symbol_asc">Символ A–Z</option>
+                    </select>
+                  </label>
+                  <button className="density-button" onClick={() => setCompact((c) => !c)}>{compact ? 'Обычный вид' : 'Компактный вид'}</button>
+                </div>
               </div>
 
               <div className={`markets-table-wrap ${compact ? 'markets-table-compact' : ''}`}>
                 <table className="markets-table">
                   <thead>
                     <tr>
-                      <th>Пара</th>
+                      <th><button onClick={() => handleSort('symbol')} className="sort-button">Пара <SortIcon active={sortKey === 'symbol'} direction={sortDirection} /></button></th>
                       <th><button onClick={() => handleSort('price')} className="sort-button">Цена <SortIcon active={sortKey === 'price'} direction={sortDirection} /></button></th>
                       <th><button onClick={() => handleSort('change')} className="sort-button">24ч изм. <SortIcon active={sortKey === 'change'} direction={sortDirection} /></button></th>
                       <th><button onClick={() => handleSort('high')} className="sort-button">24ч макс. <SortIcon active={sortKey === 'high'} direction={sortDirection} /></button></th>

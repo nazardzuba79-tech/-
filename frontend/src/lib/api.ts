@@ -340,6 +340,7 @@ export const api = {
         totalVolume24hUsd: number;
         totalMarketCapUsd: number;
         btcDominancePercent: number | null;
+        ethDominancePercent: number | null;
         marketCapChangePercent24h: number | null;
       } | null;
       fearGreed: { value: number; classification: string; updatedAt: number } | null;

@@ -153,6 +153,9 @@ export interface GlobalMarketData {
   totalMarketCapUsd: number;
   /** BTC's share of total market cap, in percent. */
   btcDominancePercent: number | null;
+  /** Same CoinGecko /global response, same market_cap_percentage object —
+   * no extra request. */
+  ethDominancePercent: number | null;
   marketCapChangePercent24h: number | null;
 }
 
@@ -304,11 +307,13 @@ export class CoinGeckoService {
     }
 
     const btcDominance = Number(payload?.data?.market_cap_percentage?.btc);
+    const ethDominance = Number(payload?.data?.market_cap_percentage?.eth);
     const capChange = Number(payload?.data?.market_cap_change_percentage_24h_usd);
     const data: GlobalMarketData = {
       totalVolume24hUsd,
       totalMarketCapUsd,
       btcDominancePercent: Number.isFinite(btcDominance) ? btcDominance : null,
+      ethDominancePercent: Number.isFinite(ethDominance) ? ethDominance : null,
       marketCapChangePercent24h: Number.isFinite(capChange) ? capChange : null,
     };
     this.globalCache = { data, expiresAt: Date.now() + GLOBAL_TTL_MS };

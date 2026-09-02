@@ -95,11 +95,16 @@ export function deriveQuoteList(tickers: Ticker[]): string[] {
 // routinely sit tens of points apart — showing breadth under a "Fear &
 // Greed" label is what made this card read 43 while every other exchange
 // showed 71. Both are now shown, each under its own honest label.
-export function computeBreadth(tickers: Ticker[]): { longPct: number; shortPct: number } {
-  if (tickers.length === 0) return { longPct: 0, shortPct: 0 };
-  const positive = tickers.filter((tk) => parseChangePercent(tk.changePercent24h, tk.pair) >= 0).length;
-  const longPct = Math.round((positive / tickers.length) * 100);
-  return { longPct, shortPct: 100 - longPct };
+export function computeBreadth(tickers: Ticker[]): {
+  longPct: number;
+  shortPct: number;
+  advancing: number;
+  declining: number;
+} {
+  if (tickers.length === 0) return { longPct: 0, shortPct: 0, advancing: 0, declining: 0 };
+  const advancing = tickers.filter((tk) => parseChangePercent(tk.changePercent24h, tk.pair) >= 0).length;
+  const longPct = Math.round((advancing / tickers.length) * 100);
+  return { longPct, shortPct: 100 - longPct, advancing, declining: tickers.length - advancing };
 }
 
 // alternative.me publishes the index bucket in English; this is the only

@@ -248,6 +248,7 @@ describe('CoinGeckoService.getGlobalMarket', () => {
       totalVolume24hUsd: 76_360_000_000,
       totalMarketCapUsd: 2_410_000_000_000,
       btcDominancePercent: 57.4,
+      ethDominancePercent: 12.1,
       marketCapChangePercent24h: 1.83,
     });
     expect(fetchFn.mock.calls[0][0]).toBe('https://mock-coingecko/global');

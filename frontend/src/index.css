@@ -449,7 +449,13 @@ body {
   gap: 26px;
   padding: 0 28px;
   white-space: nowrap;
-  animation-duration: 38s !important;
+  /* A full loop in ~62s (the Markets page keeps its marquee; the trade
+     terminal holds its strip still instead). Slow enough to read a symbol
+     without tracking it, and paused on hover — see .ticker-track:hover.
+     will-change keeps the transform on its own compositor layer so the
+     movement stays smooth instead of relayouting the strip each frame. */
+  animation-duration: 62s !important;
+  will-change: transform;
 }
 .ticker-item {
   display: inline-flex;
