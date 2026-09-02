@@ -117,7 +117,10 @@
    same way the order book already did. */
 .trade-terminal .main-grid {
   display: grid;
-  grid-template-columns: 260px 1fr 280px 320px;
+  /* Left column widened ~15% (260px -> 300px) so pair name/price/change
+     have breathing room and the new per-row logo fits without crowding —
+     the chart's 1fr share still easily dominates the layout. */
+  grid-template-columns: 300px 1fr 280px 320px;
   flex: 1;
   min-height: 0;
   /* The reference's `overflow: hidden`, as `clip` — same reason as on the
@@ -348,24 +351,50 @@
 }
 .trade-terminal .pairs-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 8px 10px; font-size: 12px; font-weight: 500; cursor: pointer;
+  padding: 8px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s;
+  letter-spacing: 0.01em;
 }
 .trade-terminal .pairs-tab:hover { color: var(--text-primary); }
 .trade-terminal .pairs-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
 .trade-terminal .pairs-list { overflow-y: auto; flex: 1; }
 .trade-terminal .pair-row {
-  display: flex; padding: 8px 12px; font-size: 12px; cursor: pointer;
-  transition: background 0.15s; align-items: center;
+  display: flex; padding: 9px 12px; font-size: 12px; cursor: pointer;
+  transition: background 0.15s, border-color 0.15s; align-items: center;
   width: 100%; background: transparent; border: none; text-align: left;
   font-family: inherit;
+  /* Reserves the active row's left indicator so hover/selection never
+     shifts row content sideways by the border's own width. */
+  border-left: 2px solid transparent;
 }
 .trade-terminal .pair-row:hover { background: var(--bg-tertiary); }
-.trade-terminal .pair-row.active { background: rgba(240, 185, 11, 0.08); }
-.trade-terminal .pair-row .p-name { flex: 1; font-weight: 600; color: var(--text-primary); }
+/* Brighter surface + a left accent bar, restrained rather than a full
+   accent fill — reads as "this is the open pair" without the row
+   competing with the chart/order book for attention. */
+.trade-terminal .pair-row.active {
+  background: rgba(240, 185, 11, 0.1);
+  border-left-color: var(--accent-yellow);
+}
+.trade-terminal .pair-row .p-icon { flex-shrink: 0; margin-right: 6px; }
+.trade-terminal .pair-row.active .p-icon { filter: brightness(1.15); }
+/* The name column gets a bigger flex share than price/change — it now
+   carries a star, a logo and the pair text, while "108,420.5"/"+1.24%"
+   stay short at any size. Without this the extra logo column pushed pair
+   names into an ellipsis on every row, which is the opposite of the
+   "more readable" panel this was meant to be. */
+.trade-terminal .pair-row .p-name {
+  flex: 1.7; display: flex; align-items: center; min-width: 0;
+  font-weight: 700; color: var(--text-primary);
+}
 .trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
-.trade-terminal .pair-row .p-price { flex: 1; text-align: right; color: var(--text-primary); }
-.trade-terminal .pair-row .p-change { flex: 1; text-align: right; font-weight: 500; }
+.trade-terminal .pair-row .p-price {
+  flex: 1; text-align: right; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.trade-terminal .pair-row .p-change {
+  flex: 1.1; text-align: right; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 .trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
 .trade-terminal .pair-row .p-change.down { color: var(--color-sell); }
 .trade-terminal .sparkline { width: 60px; height: 20px; margin-left: 8px; }
@@ -424,10 +453,10 @@
 
 /* Responsive helpers */
 @media (max-width: 1400px) {
-  .trade-terminal .main-grid { grid-template-columns: 240px 1fr 260px 300px; }
+  .trade-terminal .main-grid { grid-template-columns: 272px 1fr 260px 300px; }
 }
 @media (max-width: 1200px) {
-  .trade-terminal .main-grid { grid-template-columns: 220px 1fr 240px 280px; }
+  .trade-terminal .main-grid { grid-template-columns: 250px 1fr 240px 280px; }
   .trade-terminal .ticker-bar { gap: 12px; font-size: 12px; }
 }
 

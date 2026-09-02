@@ -11,6 +11,8 @@ import {
   IPriceLine,
   MouseEventParams,
   Time,
+  LineStyle,
+  CrosshairMode,
 } from 'lightweight-charts';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -163,23 +165,45 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // The terminal chrome gets a more legible price axis than Futures'
+    // default chrome — brighter axis text, a faint horizontal grid tying
+    // candles to price levels, and a clearer crosshair — requested
+    // specifically for the spot terminal. Gated on `terminal` rather than
+    // applied everywhere so Futures' chart (out of scope here) is
+    // pixel-identical to before.
     const chart = createChart(containerRef.current, {
       layout: {
         // Pure black, not the panel's dark-gray — the chart is meant to
         // read as its own "screen" rather than blend into the surrounding
         // panel chrome.
         background: { type: ColorType.Solid, color: '#000000' },
-        textColor: '#a3adba',
+        // A cool, slightly desaturated near-white rather than pure #fff —
+        // reads as a premium instrument panel, not a stark spreadsheet.
+        textColor: terminal ? '#c7d2e0' : '#a3adba',
         fontFamily: 'var(--font-ui)',
-        fontSize: 11,
+        fontSize: terminal ? 12 : 11,
       },
       grid: {
         vertLines: { visible: false },
-        horzLines: { visible: false },
+        // Faint horizontal reference lines only — enough to tie a candle
+        // to its price level without turning the chart into a spreadsheet
+        // grid. Vertical (time) gridlines stay off; the crosshair below
+        // already marks a specific moment when the trader needs one.
+        horzLines: terminal ? { color: 'rgba(148, 163, 184, 0.07)' } : { visible: false },
       },
-      rightPriceScale: { borderColor: '#2b303a' },
-      timeScale: { borderColor: '#2b303a', timeVisible: true },
-      crosshair: { mode: 0 },
+      // borderColor is what draws the 1px seam between the candles and the
+      // price axis — a graphite/blue tone rather than near-black makes the
+      // axis read as an intentional part of the chart instead of text
+      // floating in empty space.
+      rightPriceScale: { borderColor: terminal ? '#334155' : '#2b303a' },
+      timeScale: { borderColor: terminal ? '#334155' : '#2b303a', timeVisible: true },
+      crosshair: terminal
+        ? {
+            mode: CrosshairMode.Normal,
+            vertLine: { color: 'rgba(148, 163, 184, 0.35)', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#1c2735' },
+            horzLine: { color: '#f0b90b', width: 1, style: LineStyle.Dashed, labelBackgroundColor: '#f0b90b' },
+          }
+        : { mode: 0 },
     });
 
     // White up / orange down — VOLTEX's own brand accent, not TradingView's
@@ -192,6 +216,13 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       borderVisible: false,
       wickUpColor: '#eaecef',
       wickDownColor: '#f7a600',
+      // The current-price line + its axis tag were "too weak" by design
+      // request: a single accent color regardless of up/down direction
+      // reads as one deliberate "you are here" marker, rather than
+      // blending into whichever candle color the last bar happens to be.
+      ...(terminal
+        ? { priceLineVisible: true, priceLineWidth: 1, priceLineStyle: LineStyle.Dashed, priceLineColor: '#f0b90b' }
+        : {}),
     });
     chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.1, bottom: 0.3 } });
 
