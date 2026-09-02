@@ -1,31 +1,17 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import {
-  QUOTE_PRIORITY,
-  loadFavorites,
-  saveFavorites,
-  filterAndSortPairs,
-  TickerRow,
-  SevenDayRange,
-} from '../lib/pairList';
+import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
 import { CryptoIcon } from './CryptoIcon';
 
-// One CoinGecko rankings fetch feeds two otherwise-unrelated needs, so it's
-// done once here rather than twice:
-//  - per-coin logos (icons), covering this app's newer/smaller listings
-//    (SUI, TAO, ENA, …) that the static jsDelivr icon set CryptoIcon falls
-//    back to has never had;
-//  - 7-day high/low (sevenDay), derived from CoinGecko's own 7-day
-//    sparkline rather than a separate endpoint — nothing here is invented,
-//    just min/max over a series CoinGecko already reports.
-// Not polled: unlike price data, a coin's logo and week-old price history
-// don't change minute to minute, and the backend's own rankings cache only
-// refreshes hourly anyway (see CoinGeckoService).
-function useCoinGeckoIndex(): { icons: Map<string, string>; sevenDay: Map<string, SevenDayRange> } {
+// Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
+// ENA, …) that the static jsDelivr icon set CryptoIcon falls back to has
+// never had. Not polled: unlike price data, a coin's logo doesn't change
+// minute to minute, and the backend's own rankings cache only refreshes
+// hourly anyway (see CoinGeckoService).
+function useCoinIconMap(): Map<string, string> {
   const [icons, setIcons] = useState<Map<string, string>>(new Map());
-  const [sevenDay, setSevenDay] = useState<Map<string, SevenDayRange>>(new Map());
   useEffect(() => {
     let cancelled = false;
     api
@@ -33,23 +19,20 @@ function useCoinGeckoIndex(): { icons: Map<string, string>; sevenDay: Map<string
       .then((res) => {
         if (cancelled) return;
         const iconMap = new Map<string, string>();
-        const rangeMap = new Map<string, SevenDayRange>();
         for (const r of res.rankings) {
           if (r.image) iconMap.set(r.symbol, r.image);
-          if (r.sparkline.length > 0) {
-            rangeMap.set(r.symbol, { high7d: Math.max(...r.sparkline), low7d: Math.min(...r.sparkline) });
-          }
         }
         setIcons(iconMap);
-        setSevenDay(rangeMap);
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
   }, []);
-  return { icons, sevenDay };
+  return icons;
 }
+
+type SortField = 'volume' | 'price' | 'change';
 
 export interface PairListHandle {
   focusSearch: () => void;
@@ -75,11 +58,15 @@ const SORT_SNAPSHOT_INTERVAL_MS = 20000;
 export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChange: (pair: string) => void }>(
   function PairListSidebar({ pair, onChange }, ref) {
     const { t } = useLanguage();
-    const { icons: coinIcons, sevenDay } = useCoinGeckoIndex();
+    const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
-    const [sortMode, setSortMode] = useState<'volume' | 'high24h' | 'low24h' | 'high7d' | 'low7d'>('volume');
+    // No sort column active (the default state) reads as "sorted by
+    // volume" — same behavior as before, just without a header highlighted
+    // for it, matching the reference: only a clicked column shows an arrow.
+    const [sortField, setSortField] = useState<SortField>('volume');
+    const [sortDir, setSortDir] = useState<1 | -1>(-1);
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
@@ -140,6 +127,19 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       return QUOTE_PRIORITY.filter((q) => present.has(q));
     }, [tickers]);
 
+    // Bybit-style column-header sort: clicking a header that isn't already
+    // active switches to it (descending, "biggest first" — the more useful
+    // default reading for both price and % change); clicking the already-
+    // active header just flips direction.
+    function toggleSort(field: SortField) {
+      if (sortField === field) {
+        setSortDir((d) => (d === -1 ? 1 : -1));
+      } else {
+        setSortField(field);
+        setSortDir(-1);
+      }
+    }
+
     function toggleFavorite(p: string, e: React.MouseEvent) {
       e.stopPropagation();
       setFavorites((prev) => {
@@ -169,9 +169,8 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       favoritesOnly,
       favorites,
       categoryFilter: null,
-      sortField: sortMode,
-      sortDir: -1,
-      sevenDayBySymbol: sevenDay,
+      sortField,
+      sortDir,
     });
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
@@ -189,22 +188,6 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('trade.searchPairPlaceholder')}
           />
-        </div>
-
-        <div className="pairs-sort-row">
-          <span className="pairs-sort-label">{t('trade.sortBy')}</span>
-          <select
-            className="pairs-sort-select"
-            value={sortMode}
-            onChange={(e) => setSortMode(e.target.value as typeof sortMode)}
-            aria-label={t('trade.sortBy')}
-          >
-            <option value="volume">{t('trade.sortVolume')}</option>
-            <option value="high24h">{t('trade.sortHigh24h')}</option>
-            <option value="low24h">{t('trade.sortLow24h')}</option>
-            <option value="high7d">{t('trade.sortHigh7d')}</option>
-            <option value="low7d">{t('trade.sortLow7d')}</option>
-          </select>
         </div>
 
         <div className="pairs-tabs">
@@ -234,6 +217,26 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             }}
           >
             {t('trade.allPairs')}
+          </button>
+        </div>
+
+        <div className="pairs-col-headers">
+          <span className="pch-name" />
+          <button
+            type="button"
+            className={`pch-sort ${sortField === 'price' ? 'active' : ''}`}
+            onClick={() => toggleSort('price')}
+          >
+            {t('trade.price')}
+            <SortArrow active={sortField === 'price'} dir={sortDir} />
+          </button>
+          <button
+            type="button"
+            className={`pch-sort ${sortField === 'change' ? 'active' : ''}`}
+            onClick={() => toggleSort('change')}
+          >
+            {t('markets.change24h')}
+            <SortArrow active={sortField === 'change'} dir={sortDir} />
           </button>
         </div>
 
@@ -279,3 +282,11 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     );
   }
 );
+
+// Faint on an inactive column (still hints it's clickable), solid and
+// pointing the live direction on the active one — the same small-arrow
+// language the reference's own column headers use.
+function SortArrow({ active, dir }: { active: boolean; dir: 1 | -1 }) {
+  if (!active) return <span className="pch-arrow idle">⇅</span>;
+  return <span className="pch-arrow">{dir === -1 ? '▼' : '▲'}</span>;
+}

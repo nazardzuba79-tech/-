@@ -473,21 +473,6 @@
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
 .trade-terminal .pairs-search input::placeholder { color: var(--text-secondary); }
-/* A compact "sort by" row under the search field — 24h/7d high/low, using
-   the same live ticker figures and CoinGecko sparkline (already fetched
-   for the row icons) rather than any new data. */
-.trade-terminal .pairs-sort-row {
-  display: flex; align-items: center; gap: 6px;
-  padding: 0 12px 8px; border-bottom: 1px solid var(--border-color);
-}
-.trade-terminal .pairs-sort-label { font-size: 11px; color: var(--text-secondary); flex-shrink: 0; }
-.trade-terminal .pairs-sort-select {
-  flex: 1; min-width: 0;
-  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary); color: var(--text-primary);
-  padding: 4px 6px; border-radius: 4px; font-size: 11px; outline: none;
-  font-family: inherit; cursor: pointer; transition: border-color 0.2s;
-}
-.trade-terminal .pairs-sort-select:focus { border-color: var(--accent-yellow); }
 .trade-terminal .pairs-tabs {
   display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
 }
@@ -499,6 +484,26 @@
 }
 .trade-terminal .pairs-tab:hover { color: var(--text-primary); }
 .trade-terminal .pairs-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+/* Bybit-style clickable column headers — replaces a separate "sort by"
+   control row with sort built directly into the Цена/24Ч% columns
+   themselves, flex-matched to .pair-row's own p-price/p-change so the
+   labels sit right above the values they sort. */
+.trade-terminal .pairs-col-headers {
+  display: flex; align-items: center; padding: 6px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+.trade-terminal .pairs-col-headers .pch-name { flex: 1.7; }
+.trade-terminal .pairs-col-headers .pch-sort {
+  flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 3px;
+  background: transparent; border: none; color: var(--text-secondary);
+  font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer;
+  padding: 0; transition: color 0.15s;
+}
+.trade-terminal .pairs-col-headers .pch-sort:last-child { flex: 1.1; }
+.trade-terminal .pairs-col-headers .pch-sort:hover { color: var(--text-primary); }
+.trade-terminal .pairs-col-headers .pch-sort.active { color: var(--accent-yellow); }
+.trade-terminal .pairs-col-headers .pch-arrow { font-size: 9px; }
+.trade-terminal .pairs-col-headers .pch-arrow.idle { opacity: 0.4; }
 .trade-terminal .pairs-list { overflow-y: auto; flex: 1; }
 .trade-terminal .pair-row {
   display: flex; padding: 9px 12px; font-size: 12px; cursor: pointer;
