@@ -10,8 +10,14 @@
    footer (both are separate global components with their own styling, so
    they are untouched here) over a light content area. Every colour is a
    token on .markets-bolt-root below, so the whole page themes from this
-   one block and nothing leaks out to any other page. */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+   one block and nothing leaks out to any other page.
+
+   DM Sans / Space Grotesk are loaded from index.html (non-blocking), not
+   via @import here — @import is always render-blocking, and this file is
+   pulled in eagerly for every page (App.tsx imports MarketsPage directly,
+   not lazily), so a blocking @import here held up first paint on every
+   route, not just Markets, whenever fonts.googleapis.com was slow to
+   reach. */
 
 .markets-bolt-root {
   --bg-page: #f5f6f8;

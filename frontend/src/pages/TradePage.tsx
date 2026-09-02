@@ -7,7 +7,6 @@ import { TickerBar } from '../components/TickerBar';
 import { BotsComingSoon } from '../components/BotsComingSoon';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
-import { RecentTradesPanel } from '../components/RecentTradesPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
 import { PriceChart } from '../components/PriceChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
@@ -172,7 +171,6 @@ export function TradePage() {
         <div className="main-grid">
           <div className="left-panel">
             <PairListSidebar ref={pairListRef} pair={pair} onChange={setPair} />
-            <RecentTradesPanel pair={pair} />
           </div>
 
           <div className="chart-area">

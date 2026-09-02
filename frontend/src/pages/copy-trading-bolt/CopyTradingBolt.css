@@ -11,8 +11,14 @@
    archive's own App.tsx rendered that this integration replaces with the
    site's real Nav/Footer (see CopyTradingPage.tsx) — left in rather than
    pruned, since they're harmless unused CSS under this scope and cutting
-   them would mean editing the archive's file by hand. */
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap');
+   them would mean editing the archive's file by hand.
+
+   DM Mono / Manrope are loaded from index.html (non-blocking), not via
+   @import here — @import is always render-blocking, and this file is
+   pulled in eagerly for every page (App.tsx imports CopyTradingPage
+   directly, not lazily), so a blocking @import here held up first paint
+   on every route, not just Copy Trading, whenever fonts.googleapis.com
+   was slow to reach. */
 
 .copytrading-bolt-root { font-family: 'Manrope', sans-serif; color: #f2f1ee; background: #090a0c; font-synthesis: none; text-rendering: optimizeLegibility; }
 .copytrading-bolt-root * { box-sizing: border-box; }

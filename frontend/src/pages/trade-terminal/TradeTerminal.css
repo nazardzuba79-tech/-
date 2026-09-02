@@ -317,10 +317,14 @@
 }
 .trade-terminal .orderbook-spread .usd { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
 
-/* === LEFT PANEL: search, pair list, market trades ===
+/* === LEFT PANEL: search + pair list ===
    Was the reference's right-hand column; moved to the left per a later
    request so the search field reads left-to-right with the rest of the
-   page instead of being the last thing on the far right. */
+   page instead of being the last thing on the far right. It originally
+   also held a market-trades tape stacked below the pair list (splitting
+   this column ~45/55, see the removed .trades-section rules); that tape
+   was dropped per a follow-up request, so .pairs-section now takes the
+   whole column instead of sharing it. */
 .trade-terminal .left-panel {
   grid-column: 1;
   border-right: 1px solid var(--border-color);
@@ -329,7 +333,7 @@
   overflow: hidden;
   min-width: 0;
 }
-.trade-terminal .pairs-section { border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; max-height: 45%; }
+.trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .trade-terminal .pairs-search { padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
 .trade-terminal .pairs-search input {
   width: 100%; background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
@@ -365,27 +369,6 @@
 .trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
 .trade-terminal .pair-row .p-change.down { color: var(--color-sell); }
 .trade-terminal .sparkline { width: 60px; height: 20px; margin-left: 8px; }
-
-.trade-terminal .trades-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-.trade-terminal .trades-header { padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--text-primary); border-bottom: 1px solid var(--border-color); }
-.trade-terminal .trades-col-headers {
-  display: flex; padding: 6px 12px; font-size: 11px; color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
-}
-.trade-terminal .trades-list { flex: 1; overflow-y: auto; padding: 0 12px; }
-.trade-terminal .trade-row {
-  display: flex; padding: 3px 0; font-size: 12px; animation: tradeTerminalFadeIn 0.2s ease;
-}
-.trade-terminal .trade-row .t-price { flex: 1; font-weight: 500; }
-.trade-terminal .trade-row .t-price.buy { color: var(--color-buy); }
-.trade-terminal .trade-row .t-price.sell { color: var(--color-sell); }
-.trade-terminal .trade-row .t-amount { flex: 1; text-align: center; color: var(--text-primary); }
-.trade-terminal .trade-row .t-time { flex: 1; text-align: right; color: var(--text-secondary); }
-
-@keyframes tradeTerminalFadeIn {
-  from { opacity: 0; transform: translateY(-3px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 /* === BOTTOM PANEL === */
 .trade-terminal .bottom-panel {
@@ -480,9 +463,11 @@
   }
   .trade-terminal .chart-area { order: 1; height: 340px; }
   .trade-terminal .order-form-area { order: 2; }
-  .trade-terminal .left-panel { order: 3; height: 480px; }
+  /* Was 480px to split between the pair list and the market-trades tape
+     stacked under it; now the pair list alone, so a shorter fixed height
+     (it scrolls internally) is enough. */
+  .trade-terminal .left-panel { order: 3; height: 380px; }
   .trade-terminal .orderbook-area { order: 4; height: 420px; }
-  .trade-terminal .pairs-section { max-height: 60%; }
   .trade-terminal .bottom-panel { height: auto; min-height: 180px; }
   .trade-terminal .ticker-bar {
     height: auto;

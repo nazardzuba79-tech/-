@@ -7,10 +7,42 @@
     <link rel="mask-icon" href="/favicon.svg" color="#f7a600" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Google Fonts, loaded without blocking first paint. A plain
+         `<link rel="stylesheet">` (or a CSS `@import`, as two page-scoped
+         stylesheets used to do — see MarketsBolt.css/CopyTradingBolt.css)
+         is render-blocking: the browser won't paint until it either loads
+         or the connection gives up, which on a slow or filtered path to
+         fonts.googleapis.com can hold up the entire app for many seconds
+         before anything appears — every rule below already names a
+         generic fallback (sans-serif/monospace), so there's nothing to
+         lose by not waiting. `media="print"` makes the browser treat it
+         as low-priority/non-blocking; `onload` flips it to `all` once it
+         actually arrives, letting the page swap to the real fonts
+         whenever they show up instead of gating on them. The <noscript>
+         copy is the plain blocking version for the (rare) no-JS case. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800;900&family=Roboto+Mono:wght@400;500;600&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" />
+    </noscript>
 
     <meta name="theme-color" content="#0b0e11" />
     <meta name="description" content="VOLTEX — криптобиржа со спотовой и фьючерсной торговлей: лимитные, рыночные, стоп- и тейк-профит ордера, маржинальная торговля с плечом и депозиты/выводы в поддерживаемых сетях." />
