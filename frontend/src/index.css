@@ -187,15 +187,26 @@ body {
   z-index: 1;
 }
 
-/* Shared exchange header, transferred from the supplied Header.tsx/index.css
-   reference. The approved project Logo component remains unchanged. */
+/* Shared exchange header, transferred from the supplied ExchangeHeader.css /
+   variants/graphite-gold.css reference. Values are the reference's own — the
+   Graphite & Gold variant is the primary theme, so where it and the base
+   file disagree (text ramp, .nav-item 13px, .nav-secondary 12.5px and its
+   hover, ticker symbol colour) the variant wins.
+   The approved project Logo component remains unchanged, and the header
+   keeps every VOLTEX behaviour: routing, i18n, auth, admin gating, deposit.
+
+   The box model below deliberately lives here rather than in Nav.tsx's
+   inline style object: an inline style beats a media query at any
+   specificity, so anything set there is a value the responsive tiers can
+   never shrink. That is what previously forced this whole block into an
+   !important war and pushed the burger up to 1160px. */
 .global-header {
   --h-bg-1: #0c1018;
   --h-bg-2: #0a0e15;
   --h-border: #1c2330;
-  --h-text: #ffffff;
-  --h-text-2: #d8dce6;
-  --h-text-3: #aeb5c2;
+  --h-text: #e8ecf3;
+  --h-text-2: #9aa4b4;
+  --h-text-3: #6a7384;
   --h-hover: rgba(255, 255, 255, 0.04);
   --h-accent: #f0c43f;
   --h-accent-text: #1a1410;
@@ -203,9 +214,21 @@ body {
   --h-admin: #8b8af6;
   --h-positive: #4cae7e;
   --h-negative: #e0747b;
+  height: 64px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 0 28px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
   border-bottom: 1px solid var(--h-border);
   background: linear-gradient(180deg, var(--h-bg-1), var(--h-bg-2));
-  box-shadow: 0 1px rgba(255, 255, 255, 0.02), 0 6px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02), 0 6px 24px rgba(0, 0, 0, 0.18);
+  /* The reference's own body face, scoped to the header and ticker rather
+     than swapped in globally — the rest of the exchange keeps Inter. */
+  font-family: 'DM Sans', var(--font-ui);
 }
 .global-header::before {
   content: '';
@@ -224,6 +247,7 @@ body {
   z-index: 1;
 }
 .header-left {
+  gap: 0;
   min-width: 0;
 }
 .header-brand {
@@ -237,6 +261,10 @@ body {
   background: linear-gradient(180deg, transparent, #2a3340, transparent);
 }
 .main-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 100%;
   min-width: 0;
 }
 .nav-item-wrap {
@@ -246,9 +274,17 @@ body {
 }
 .nav-item {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
   margin: 8px 0;
+  background: none;
+  border: 0;
   border-radius: 6px;
   color: var(--h-text-2);
+  font-size: 13px;
+  font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
   transition: color 180ms ease, background 180ms ease;
@@ -259,11 +295,11 @@ body {
 }
 .nav-item.nav-secondary {
   color: var(--h-text-3);
-  font-size: 13px !important;
-  gap: 5px !important;
+  font-size: 12.5px;
+  gap: 5px;
 }
 .nav-item.nav-secondary:hover {
-  color: var(--h-text);
+  color: var(--h-text-2);
 }
 .nav-item.nav-admin {
   color: var(--h-admin);
@@ -297,7 +333,26 @@ body {
   transform: rotate(180deg);
 }
 .nav-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 210px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: #11161f;
+  border: 1px solid #232c3a;
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
+  z-index: 30;
   animation: navDrop 160ms ease;
+}
+.nav-dropdown a {
+  padding: 7px 8px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background 150ms ease, color 150ms ease;
 }
 .nav-dropdown a:hover {
   background: var(--h-hover);
@@ -311,12 +366,25 @@ body {
   flex: none;
 }
 .deposit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, var(--h-accent), #e6b830);
+  color: var(--h-accent-text);
+  border: 0;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(240, 196, 63, 0.18);
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
 .deposit-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(240, 196, 63, 0.28) !important;
-  background: linear-gradient(135deg, var(--h-accent-hover), #e6b830) !important;
+  box-shadow: 0 4px 14px rgba(240, 196, 63, 0.28);
+  background: linear-gradient(135deg, var(--h-accent-hover), #e6b830);
 }
 .deposit-button:active {
   transform: translateY(1px);
@@ -336,16 +404,16 @@ body {
   transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
 }
 .header-icon:hover {
-  color: var(--h-text) !important;
-  background: var(--h-hover) !important;
-  border-color: #232c3a !important;
+  color: var(--h-text);
+  background: var(--h-hover);
+  border-color: #232c3a;
 }
 .language-control span,
 .profile-control span {
   font-size: 12px;
 }
-.top-nav-pill-btn {
-  padding: 0 9px !important;
+.language-control {
+  position: relative;
 }
 
 .top-nav-profile-wrap {
@@ -359,7 +427,7 @@ body {
   width: 24px;
   height: 24px;
   place-items: center;
-  color: #e8eff8;
+  color: #c8d0e0;
   background: linear-gradient(135deg, #3a4a6b, #2a3450);
   border: 1px solid #2a3344;
   border-radius: 50%;
@@ -419,15 +487,49 @@ body {
 }
 
 .mobile-menu {
+  display: none;
   width: 34px;
   height: 34px;
+  margin-right: 8px;
   place-items: center;
   color: var(--h-text-2);
+  background: none;
+  border: 0;
+  padding: 0;
   border-radius: 6px;
 }
 .mobile-menu:hover {
   color: var(--h-text);
   background: var(--h-hover);
+}
+
+/* VOLTEX's own mobile drawer. The reference re-flows its single <nav> into
+   a dropdown; ours is a separate panel because it also carries deposit,
+   language and logout, which the demo header has no equivalent for. The
+   surface values are the reference's `.main-nav.mobile-nav-open`. */
+.nav-mobile-menu {
+  display: none;
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 16px 14px;
+  background: #0c1018;
+  border-bottom: 1px solid var(--h-border);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  z-index: 21;
+}
+.nav-mobile-menu a,
+.nav-mobile-menu > button {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 11px 12px;
+  margin: 0;
+  border-radius: 6px;
 }
 
 .market-ticker {
@@ -441,6 +543,7 @@ body {
   z-index: 19;
   background: linear-gradient(180deg, #0a0e15, #080b11);
   border-bottom: 1px solid #161d27;
+  font-family: 'DM Sans', var(--font-ui);
 }
 .ticker-track {
   display: flex;
@@ -463,20 +566,38 @@ body {
   gap: 7px;
   padding: 0;
   color: inherit;
-  font-family: var(--font-mono);
+  /* The reference sets no face here, so the strip inherits the header's DM
+     Sans. (The trade terminal already overrode the monospace this used to
+     force — see .trade-terminal .ticker-bar .ticker-item — so dropping it
+     changes the header strip only.) */
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* Interactive ticker symbols (a <button> that switches pair in place, or a
+   <Link> to that pair's terminal — see TopGainersTicker). Deliberately
+   restrained: a pointer cursor and a barely-there wash, so the strip still
+   reads as a market ticker rather than a row of buttons. The marquee
+   already pauses on hover (.ticker-track:hover), which is what actually
+   makes a moving symbol clickable. */
 .ticker-item-button {
   background: transparent;
   border: 0;
   border-radius: 5px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 150ms ease;
 }
 .ticker-item-button:hover {
   background: rgba(255, 255, 255, 0.04);
 }
+.ticker-item-button:focus-visible {
+  outline: 1px solid var(--h-accent, #f0c43f);
+  outline-offset: 1px;
+  background: rgba(255, 255, 255, 0.04);
+}
 .ticker-item strong {
-  color: #f4f8fc;
+  color: #c8d0dc;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -501,31 +622,28 @@ body {
   letter-spacing: 0.02em;
 }
 
-@media (max-width: 1280px) {
+/* Responsive tiers are the reference's own: 1200 / 1050 / 860 / 720. The
+   VOLTEX-specific lines in each are the drawer and the extras the Bolt demo
+   has no equivalent for (its mobile nav is the same <nav> re-flowed; ours is
+   a separate drawer carrying deposit, language and logout). */
+@media (max-width: 1200px) {
   .nav-item {
-    padding-right: 8px !important;
-    padding-left: 8px !important;
-    font-size: 12.5px !important;
+    padding: 0 8px;
+    font-size: 12.5px;
   }
   .brand-separator {
-    margin-right: 12px;
-    margin-left: 12px;
+    margin: 0 12px;
+  }
+  .global-header {
+    padding: 0 20px;
   }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1050px) {
   .global-header {
-    padding-right: 20px !important;
-    padding-left: 20px !important;
-  }
-}
-@media (max-width: 1024px) {
-  .global-header {
-    padding-right: 16px !important;
-    padding-left: 16px !important;
+    padding: 0 16px;
   }
   .nav-item {
-    padding-right: 6px !important;
-    padding-left: 6px !important;
+    padding: 0 6px;
   }
   .nav-item.nav-secondary {
     display: none;
@@ -534,24 +652,23 @@ body {
     display: inline-flex;
   }
   .brand-separator {
-    margin-right: 10px;
-    margin-left: 10px;
+    margin: 0 10px;
   }
 }
-@media (max-width: 900px) {
-  .nav-desktop-links,
+@media (max-width: 860px) {
+  .main-nav,
   .brand-separator {
-    display: none !important;
+    display: none;
   }
-  .nav-burger {
-    display: grid !important;
+  .mobile-menu {
+    display: grid;
   }
-  .nav-mobile-menu.open {
-    display: flex !important;
-  }
-  .language-control .top-nav-pill-btn > span,
+  .language-control span:not(.language-chevron),
   .profile-control > span:not(.top-nav-profile-avatar) {
     display: none;
+  }
+  .nav-mobile-menu.open {
+    display: flex;
   }
   .header-extra-action {
     display: none;
@@ -561,15 +678,14 @@ body {
     background: var(--h-hover);
   }
 }
-@media (max-width: 600px) {
+@media (max-width: 720px) {
   .global-header {
-    height: 56px !important;
-    padding-right: 14px !important;
-    padding-left: 14px !important;
+    height: 56px;
+    padding: 0 14px;
   }
   .nav-mobile-menu {
-    top: 56px !important;
-    max-height: calc(100vh - 56px) !important;
+    top: 56px;
+    max-height: calc(100vh - 56px);
   }
   .market-ticker {
     top: 56px;
@@ -580,26 +696,22 @@ body {
     padding: 0 16px;
   }
   .deposit-button {
-    min-height: 32px !important;
-    padding-right: 11px !important;
-    padding-left: 11px !important;
-    font-size: 12px !important;
+    padding: 7px 11px;
+    font-size: 12px;
   }
   .header-icon {
-    padding-right: 7px !important;
-    padding-left: 7px !important;
+    padding: 0 7px;
   }
 }
 @media (max-width: 420px) {
   .global-header {
-    padding-right: 10px !important;
-    padding-left: 10px !important;
+    padding: 0 10px;
   }
   .header-actions {
-    gap: 4px !important;
+    gap: 6px;
   }
   .mobile-menu {
-    margin-right: 4px !important;
+    margin-right: 4px;
   }
   .language-chevron,
   .profile-control > .nav-chevron {
@@ -1650,7 +1762,12 @@ a:hover > .nav-card-icon {
 .ticker-track {
   animation: ticker-scroll 60s linear infinite;
 }
-.ticker-track:hover {
+/* Pausing (not restarting) the animation, so the strip holds where it is
+   and resumes from the same offset — no jump back to the start. :focus-within
+   does the same for keyboard users, who get no hover: tabbing onto a symbol
+   stops the strip instead of making them chase a moving target. */
+.ticker-track:hover,
+.ticker-track:focus-within {
   animation-play-state: paused;
 }
 @keyframes ticker-scroll {
@@ -1731,65 +1848,15 @@ a:hover > .nav-card-icon {
   }
 }
 
-/* The full-size nav row — logo, eight links, CTA and account cluster —
-   needs about 1310px. Below that it used to simply overflow the page, all
-   the way down to the 860px burger breakpoint, so every laptop and tablet
-   width in between scrolled sideways. This tier tightens the row instead:
-   smaller link padding and type, no icon on the CTA, and the profile
-   button reduced to its avatar. */
-@media (max-width: 1360px) {
-  .top-nav-link {
-    padding: 0 7px;
-    font-size: 12px;
-  }
-  .top-nav-fund-btn {
-    padding: 0 11px;
-    font-size: 12px;
-  }
-  .top-nav-fund-btn svg {
-    display: none;
-  }
-  /* The avatar is the first span; the name label is the second. */
-  .top-nav-profile-btn > span + span {
-    display: none;
-  }
-}
-
-/* One step tighter, so the last band above the burger breakpoint fits too
-   (it was still 16px over at 1200px). */
-@media (max-width: 1240px) {
-  .top-nav-link {
-    padding: 0 5px;
-    letter-spacing: -0.02em;
-  }
-  .nav-desktop-right {
-    gap: 8px;
-  }
-}
-
-@media (max-width: 1160px) {
-  .nav-desktop-links,
-  .nav-desktop-right {
-    display: none !important;
-  }
-  .nav-burger {
-    display: flex !important;
-  }
-  .nav-mobile-menu.open {
-    display: flex !important;
-  }
-}
-
+/* The header's own responsive tiers are the reference's, and live with the
+   rest of the header block above. The tiers that used to sit here (1360 /
+   1240 / 1160) were a second, competing set written when Nav.tsx still set
+   link padding and type size inline — an inline style outranks a media
+   query, so the reference's own 1200/1050 shrink steps could never fire and
+   the row overflowed until the whole right-hand cluster was hidden at
+   1160px. With those inline styles gone the reference's tiers do the work,
+   and the account cluster stays usable at every width. */
 @media (max-width: 860px) {
-  .nav-desktop-links {
-    display: none !important;
-  }
-  .nav-burger {
-    display: flex !important;
-  }
-  .nav-mobile-menu.open {
-    display: flex !important;
-  }
   .bottom-nav {
     display: grid !important;
   }

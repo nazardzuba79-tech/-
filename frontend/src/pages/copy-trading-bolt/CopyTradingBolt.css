@@ -23,8 +23,12 @@
 .copytrading-bolt-root { font-family: 'Manrope', sans-serif; color: #f2f1ee; background: #090a0c; font-synthesis: none; text-rendering: optimizeLegibility; }
 .copytrading-bolt-root * { box-sizing: border-box; }
 .copytrading-bolt-root { margin: 0; min-width: 320px; background: #090a0c; }
-.copytrading-bolt-root button,
-.copytrading-bolt-root input { font: inherit; }
+/* Stops at the shared <Nav>, which renders inside this wrapper: `font:
+   inherit` also resets font-size and at (0,1,1) outranks .deposit-button /
+   .header-icon, which made the header's controls 14px on this page alone.
+   This page's own controls are unchanged. */
+.copytrading-bolt-root button:not(.global-header *):not(.market-ticker *),
+.copytrading-bolt-root input:not(.global-header *) { font: inherit; }
 .copytrading-bolt-root button { cursor: pointer; }
 .copytrading-bolt-root button:disabled { cursor: not-allowed; }
 .copytrading-bolt-root .synthetic-admin {

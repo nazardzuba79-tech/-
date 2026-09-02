@@ -21,6 +21,7 @@ export function Nav({
   middle,
   rightExtra,
   onTickerSelect,
+  tickerHrefFor,
   hideTicker,
   staticTicker,
 }: {
@@ -28,6 +29,10 @@ export function Nav({
   middle?: ReactNode;
   rightExtra?: ReactNode;
   onTickerSelect?: (pair: string) => void;
+  /** Makes each ticker symbol a link to that pair's trading page — for
+   * pages that navigate away rather than switching pair in place. See
+   * TopGainersTicker for why this is a link and onTickerSelect a button. */
+  tickerHrefFor?: (pair: string) => string;
   /** The Trade page's own terminal already surfaces live market data, so
    * the marquee would be pure duplication there — every other page keeps it. */
   hideTicker?: boolean;
@@ -104,11 +109,10 @@ export function Nav({
 
   return (
     <>
-    <header className="global-header top-nav-bar" style={styles.nav}>
+    <header className="global-header top-nav-bar">
       <div className="header-left">
         <button
           className="mobile-menu nav-burger"
-          style={styles.burgerBtn}
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={t('nav.menu')}
           aria-expanded={mobileOpen}
@@ -121,13 +125,12 @@ export function Nav({
         </Link>
         <span className="brand-separator top-nav-divider" aria-hidden="true" />
 
-        <nav className="main-nav nav-desktop-links" style={styles.desktopLinks} aria-label={t('nav.menu')}>
+        <nav className="main-nav nav-desktop-links" aria-label={t('nav.menu')}>
         {LINKS.map((l) =>
           l.to === '/trade' ? (
             <div
               key={l.to}
               className="nav-item-wrap"
-              style={styles.tradeMenuWrap}
               onMouseEnter={() => {
                 if (tradeMenuCloseTimer.current) window.clearTimeout(tradeMenuCloseTimer.current);
                 setTradeMenuOpen(true);
@@ -144,7 +147,6 @@ export function Nav({
               <Link
                 to={l.to}
                 className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
-                style={{ ...styles.link, ...styles.tradeMenuTrigger }}
                 aria-haspopup="menu"
                 aria-expanded={tradeMenuOpen}
               >
@@ -152,12 +154,12 @@ export function Nav({
                 <ChevronDown size={12} className={`nav-chevron${tradeMenuOpen ? ' nav-chevron-open' : ''}`} />
               </Link>
               {tradeMenuOpen && (
-                <div className="nav-dropdown" style={styles.tradeMenu} role="menu">
-                  <Link to="/trade" style={styles.tradeMenuItem} className="row-hover">
+                <div className="nav-dropdown" role="menu">
+                  <Link to="/trade" style={styles.tradeMenuItem}>
                     <span style={styles.tradeMenuItemTitle}>{t('trade.spotTab')}</span>
                     <span style={styles.tradeMenuItemDesc}>{t('nav.tradeSpotDesc')}</span>
                   </Link>
-                  <Link to="/trade?market=cfd" style={styles.tradeMenuItem} className="row-hover">
+                  <Link to="/trade?market=cfd" style={styles.tradeMenuItem}>
                     <span style={styles.tradeMenuItemTitle}>{t('trade.cfdTab')}</span>
                     <span style={styles.tradeMenuItemDesc}>{t('nav.tradeCfdDesc')}</span>
                   </Link>
@@ -169,7 +171,6 @@ export function Nav({
               key={l.to}
               to={l.to}
               className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
-              style={styles.link}
             >
               {l.label}
             </Link>
@@ -178,20 +179,15 @@ export function Nav({
         <Link
           to="/card"
           className={`nav-item nav-secondary top-nav-link${active === '/card' ? ' nav-active is-active' : ''}`}
-          style={{ ...styles.link, ...styles.cardLink }}
         >
           <CreditCard size={14} />
           {t('nav.card')}
         </Link>
-        <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active === '/otc' ? ' nav-active is-active' : ''}`} style={styles.link}>
+        <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active === '/otc' ? ' nav-active is-active' : ''}`}>
           {t('nav.otc')}
         </Link>
         {isAdmin && (
-          <Link
-            to="/admin"
-            className={`nav-item nav-admin${active === '/admin' ? ' nav-active' : ''}`}
-            style={{ ...styles.adminBadge, ...(active === '/admin' ? styles.adminBadgeActive : {}) }}
-          >
+          <Link to="/admin" className={`nav-item nav-admin${active === '/admin' ? ' nav-active' : ''}`}>
             <Landmark size={14} />
             {t('nav.admin')}
           </Link>
@@ -200,8 +196,8 @@ export function Nav({
         </nav>
       </div>
 
-      <div className="header-actions nav-desktop-right" style={styles.right}>
-        <button onClick={() => setShowDeposit(true)} className="deposit-button top-nav-fund-btn" style={styles.navDepositBtn}>
+      <div className="header-actions nav-desktop-right">
+        <button onClick={() => setShowDeposit(true)} className="deposit-button top-nav-fund-btn">
           <span>{t('wallet.deposit')}</span>
           <ArrowUpRight size={14} />
         </button>
@@ -237,13 +233,14 @@ export function Nav({
         </div>
       </div>
 
-      <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`} style={styles.mobileMenu}>
+      <div className={`nav-mobile-menu${mobileOpen ? ' open' : ''}`}>
         <button
+          className="deposit-button"
           onClick={() => {
             setShowDeposit(true);
             setMobileOpen(false);
           }}
-          style={{ ...styles.navDepositBtn, width: '100%', marginBottom: 4 }}
+          style={{ justifyContent: 'center', marginBottom: 4 }}
         >
           {t('wallet.deposit')}
         </button>
@@ -298,26 +295,19 @@ export function Nav({
         </button>
       </div>
     </header>
-    {!hideTicker && <TopGainersTicker onSelect={onTickerSelect} staticStrip={staticTicker} />}
+    {!hideTicker && <TopGainersTicker onSelect={onTickerSelect} hrefFor={tickerHrefFor} staticStrip={staticTicker} />}
     {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     <BottomNav />
     </>
   );
 }
 
+/* Only what the CSS can't own: the mobile drawer's per-item styling (the
+   drawer is VOLTEX's own element, not the reference's re-flowed <nav>) and
+   the trade dropdown's two-line item. Everything the desktop header renders
+   is styled from index.css instead — see the note on .global-header there
+   for why an inline style is the wrong place for any of it. */
 const styles: Record<string, React.CSSProperties> = {
-  nav: {
-    display: 'flex',
-    alignItems: 'stretch',
-    justifyContent: 'space-between',
-    gap: 0,
-    padding: '0 28px',
-    height: 64,
-    position: 'sticky',
-    top: 0,
-    zIndex: 20,
-    flexShrink: 0,
-  },
   logo: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -326,75 +316,21 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     letterSpacing: '0.02em',
   },
-  desktopLinks: {
-    display: 'flex',
-    alignItems: 'stretch',
-    gap: 2,
-    height: '100%',
-  },
-  tradeMenuWrap: {
-    position: 'relative',
-  },
-  tradeMenuTrigger: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-  },
-  tradeMenu: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    marginTop: 0,
-    background: '#11161f',
-    border: '1px solid #232c3a',
-    borderRadius: 8,
-    boxShadow: '0 12px 36px rgba(0,0,0,0.4)',
-    padding: '12px 14px',
-    width: 224,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    zIndex: 20,
-  },
   tradeMenuItem: {
     display: 'flex',
     flexDirection: 'column',
     gap: 2,
-    padding: '10px 12px',
-    borderRadius: 8,
+    padding: '7px 8px',
+    borderRadius: 5,
   },
   tradeMenuItemTitle: {
     fontSize: 13,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
+    fontWeight: 600,
+    color: '#e8ecf3',
   },
   tradeMenuItemDesc: {
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-  },
-  burgerBtn: {
-    display: 'none',
-    marginRight: 8,
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mobileMenu: {
-    display: 'none',
-    position: 'absolute',
-    top: 64,
-    left: 0,
-    right: 0,
-    flexDirection: 'column',
-    gap: 4,
-    padding: '10px 16px 14px',
-    background: '#0c1018',
-    borderBottom: '1px solid #1c2330',
-    boxShadow: '0 12px 28px rgba(0,0,0,0.3)',
-    maxHeight: 'calc(100vh - 64px)',
-    overflowY: 'auto',
+    fontSize: 12,
+    color: 'var(--h-text-3)',
   },
   mobileLink: {
     display: 'flex',
@@ -415,20 +351,6 @@ const styles: Record<string, React.CSSProperties> = {
   },
   mobileLangRow: {
     padding: '10px 6px',
-  },
-  // Colour, hover and — importantly — padding and type size live in the
-  // .top-nav-link CSS class rather than here. An inline style beats a
-  // media query no matter how specific the selector, so anything the
-  // responsive tiers need to shrink cannot be set from this object.
-  link: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '0 11px',
-    fontSize: 13.5,
-    fontWeight: 500,
-    letterSpacing: 0,
-    whiteSpace: 'nowrap',
   },
   // Still used by the mobile drawer, which doesn't use .top-nav-link.
   linkActive: {
@@ -460,26 +382,6 @@ const styles: Record<string, React.CSSProperties> = {
   adminBadgeActive: {
     background: 'rgba(139,138,246,0.08)',
     color: '#b6b5ff',
-  },
-  right: {
-    marginLeft: 'auto',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  navDepositBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 5,
-    minHeight: 34,
-    background: 'linear-gradient(135deg, #f0c43f, #e6b830)',
-    color: '#1a1410',
-    border: 0,
-    borderRadius: 6,
-    padding: '0 14px',
-    fontWeight: 700,
-    fontSize: 12.5,
-    letterSpacing: '0.01em',
-    boxShadow: '0 2px 8px rgba(240,196,63,0.18)',
   },
   // Only used by the mobile drawer now — the desktop logout lives inside
   // the profile dropdown menu (.top-nav-profile-menu).

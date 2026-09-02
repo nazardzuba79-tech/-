@@ -73,7 +73,12 @@
   text-rendering: optimizeLegibility;
 }
 .markets-bolt-root * { box-sizing: border-box; }
-.markets-bolt-root button, .markets-bolt-root input { font: inherit; }
+/* The shared <Nav> renders inside this wrapper, so this page-level reset
+   has to stop at the header: `font: inherit` also resets font-size, and at
+   (0,1,1) it outranks .deposit-button/.header-icon, which made the header's
+   controls 14px on this page alone. The page's own controls are unchanged. */
+.markets-bolt-root button:not(.global-header *):not(.market-ticker *),
+.markets-bolt-root input:not(.global-header *) { font: inherit; }
 .markets-bolt-root button { cursor: pointer; }
 .markets-bolt-root button:disabled { cursor: not-allowed; opacity: .45; }
 
