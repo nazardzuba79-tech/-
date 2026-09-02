@@ -80,6 +80,61 @@ describe('KrakenMarketDataService', () => {
     ]);
   });
 
+  it("prefers a coin's USD-quoted Kraken market over its own USDT pair when both exist", async () => {
+    // Kraken's legacy USD market is its deepest for most majors — a coin's
+    // native USDT pair can be far thinner even though it also genuinely
+    // exists. USDT tracks USD closely enough that reusing the USD market's
+    // real numbers under the "/USDT" label is a fair stand-in, so this
+    // should win even though XXBTZUSDT/XBTUSDT is present in AssetPairs too.
+    const assetPairsWithUsd = {
+      error: [],
+      result: {
+        ...ASSET_PAIRS_BODY.result,
+        XXBTZUSD: { altname: 'XBTUSD', wsname: 'XBT/USD', base: 'XXBT', quote: 'USD' },
+      },
+    };
+    const usdDepthBody = {
+      error: [],
+      result: { XBTUSD: { bids: [['61000', '5', 1700000000]], asks: [['61010', '5', 1700000000]] } },
+    };
+    const fetchFn = jest
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(jsonResponse(url.includes('AssetPairs') ? assetPairsWithUsd : usdDepthBody))
+      );
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const book = await service.getOrderBook('BTC/USDT');
+
+    const depthCall = fetchFn.mock.calls.find(([url]) => url.includes('Depth'));
+    expect(depthCall[0]).toContain('pair=XBTUSD');
+    expect(depthCall[0]).not.toContain('pair=XBTUSDT');
+    expect(book.bids[0]).toEqual({ price: '61000', quantity: '5' });
+  });
+
+  it('still fills the gap with a synthetic USDT pair for a coin with no native USDT market at all', async () => {
+    const assetPairsUsdOnly = {
+      error: [],
+      result: { XTRXZUSD: { altname: 'TRXUSD', wsname: 'TRX/USD', base: 'XTRX', quote: 'USD' } },
+    };
+    const trxDepthBody = {
+      error: [],
+      result: { TRXUSD: { bids: [['0.30', '1000', 1700000000]], asks: [['0.31', '1000', 1700000000]] } },
+    };
+    const fetchFn = jest
+      .fn()
+      .mockImplementation((url: string) =>
+        Promise.resolve(jsonResponse(url.includes('AssetPairs') ? assetPairsUsdOnly : trxDepthBody))
+      );
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);
+
+    const book = await service.getOrderBook('TRX/USDT');
+
+    const depthCall = fetchFn.mock.calls.find(([url]) => url.includes('Depth'));
+    expect(depthCall[0]).toContain('pair=TRXUSD');
+    expect(book.bids[0]).toEqual({ price: '0.30', quantity: '1000' });
+  });
+
   it('caches the symbol list and does not refetch within the TTL', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(ASSET_PAIRS_BODY));
     const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);

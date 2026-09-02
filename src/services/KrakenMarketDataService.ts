@@ -243,13 +243,25 @@ export class KrakenMarketDataService {
     // tracks USD closely enough (sub-cent in practice) that reusing the
     // same Kraken ticker under a "/USDT" label is a fair stand-in, not a
     // fabricated price — it's still Kraken's real, live number for that
-    // coin. Only fills in the gap; a genuine Kraken USDT pair always wins.
+    // coin.
+    //
+    // This now wins even when a genuine Kraken USDT pair also exists.
+    // Kraken launched as a USD/EUR exchange in 2013 and only added
+    // USDT-quoted markets years later; for most majors (BTC/ETH among
+    // them) the legacy USD market is still by far the deeper, more liquid
+    // one — its native USDT pair can show 24h volume in the low hundreds
+    // of coins, which reads on the chart as thin, choppy candles with
+    // oversized wicks. Preferring the USD market's real Kraken data under
+    // the "/USDT" label fixes that without fabricating anything: same
+    // reasoning as the TRX-style gap fill above, just applied whenever
+    // it's actually the more liquid of the two rather than only when the
+    // USDT pair is missing outright. A coin genuinely listed only against
+    // USDT on Kraken (no USD counterpart at all) is unaffected — this loop
+    // only runs for entries that came from a real "/USD" pair.
     for (const info of Array.from(byPair.values())) {
       if (info.quoteAsset !== 'USD') continue;
       const usdtPair = `${info.baseAsset}/USDT`;
-      if (!byPair.has(usdtPair)) {
-        byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
-      }
+      byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
     }
 
     this.symbolsCache = { byPair, expiresAt: Date.now() + SYMBOLS_TTL_MS };
