@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
-import { CryptoIcon, assetColor } from './CryptoIcon';
-import { Sparkline } from './Sparkline';
+import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { CFD_ICON_BY_SYMBOL } from './CfdInstrumentList';
@@ -125,38 +124,42 @@ export function CfdMarketsSection({ id }: { id?: string }) {
         </div>
       </section>
 
-      <section style={styles.dashboardSection}>
-        <div style={styles.dashboardPattern} />
-        <div style={styles.dashboardShell}>
-          <div style={styles.dashboardTopGrid}>
-            <article style={{ ...styles.dashboardCard, ...styles.dashboardTrendingCard }}>
-              <h3 style={styles.dashboardCardHeading}>
+      <section className="market-dashboard">
+        <div className="market-dashboard__pattern" />
+        <div className="market-dashboard__shell">
+          <div className="market-dashboard__top-grid">
+            <article className="market-dashboard__card market-dashboard__trending-card">
+              <h3 className="market-dashboard__heading">
                 <FlameIcon /> {t('marketing.trending')}
               </h3>
               {trendingPair &&
                 (() => {
                   const tk = tickers.get(trendingPair.pair);
                   const change = tk ? parseChangePercent(tk.changePercent24h, trendingPair.pair) : 0;
-                  const points = history.get(trendingPair.pair) ?? [];
+                  const sampledPoints = history.get(trendingPair.pair) ?? [];
+                  const current = tk ? parseFloat(tk.lastPrice) : 0;
+                  const open = current && change !== -100 ? current / (1 + change / 100) : current;
+                  const high = tk ? parseFloat(tk.high24h) : current;
+                  const low = tk ? parseFloat(tk.low24h) : current;
+                  const summaryPoints = [open, high, low, (low + current) / 2, current].filter(Number.isFinite);
+                  const points = sampledPoints.length >= 5 ? sampledPoints : summaryPoints;
                   const positive = change >= 0;
                   return (
-                    <Link to="/login" style={styles.dashboardFeaturedLink}>
-                      <div style={styles.dashboardFeaturedAsset}>
-                        <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={36} />
-                        <strong style={styles.dashboardFeaturedAssetName}>{trendingPair.pair}</strong>
+                    <Link to="/login" className="market-dashboard__featured-link">
+                      <div className="market-dashboard__featured-asset">
+                        <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={50} />
+                        <strong>{trendingPair.pair}</strong>
                       </div>
-                      <div style={styles.dashboardFeaturedPrice}>
-                        <strong style={styles.dashboardFeaturedPriceValue}>{tk ? fmt(parseFloat(tk.lastPrice)) : '—'}</strong>
-                        <span style={{ color: positive ? '#22c55e' : '#ef4444' }}>
+                      <div className="market-dashboard__featured-price">
+                        <strong>{tk ? fmt(parseFloat(tk.lastPrice)) : '—'}</strong>
+                        <span className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
                           {tk ? `${positive ? '+' : ''}${change.toFixed(2)}%` : ''}
                         </span>
                       </div>
-                      {points.length > 1 && <Sparkline points={points} width={420} height={105} />}
-                      <div style={styles.dashboardMonths}>
+                      <PerformanceChart points={points} />
+                      <div className="market-dashboard__months">
                         {monthLabels.map((m, i) => (
-                          <span key={i} style={styles.dashboardMonthLabel}>
-                            {m}
-                          </span>
+                          <span key={i}>{m}</span>
                         ))}
                       </div>
                     </Link>
@@ -164,27 +167,25 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                 })()}
             </article>
 
-            <article style={{ ...styles.dashboardCard, ...styles.dashboardCfdCard }}>
-              <span style={styles.cfdBadge}>CFD</span>
-              <div style={styles.dashboardCfdList}>
+            <article className="market-dashboard__card market-dashboard__cfd-card">
+              <span className="market-dashboard__cfd-badge">CFD</span>
+              <div className="market-dashboard__cfd-list">
                 {cfdTickers.slice(0, 3).map((tk) => {
                   const change = parseChangePercent(tk.changePercent24h, tk.symbol);
                   const positive = change >= 0;
                   return (
-                    <Link key={tk.symbol} to="/trade" style={styles.dashboardRow} className="dashboard-row-hover">
-                      <span style={{ ...styles.dashboardCoin, background: assetColor(tk.symbol).solid }}>
-                        {CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}
+                    <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__cfd-row">
+                      <CfdMark symbol={tk.symbol} />
+                      <span className="market-dashboard__row-label">
+                        <strong>{tk.symbol}</strong>
+                        <small>{tk.name}</small>
                       </span>
-                      <span style={styles.dashboardRowLabel}>
-                        <strong style={styles.dashboardRowLabelStrong}>{tk.symbol}</strong>
-                        <small style={styles.dashboardRowLabelSmall}>{tk.name}</small>
-                      </span>
-                      <span className="mono" style={styles.dashboardRowPrice}>
-                        {tk.price}
-                      </span>
-                      <span style={positive ? styles.dashboardPositive : styles.dashboardNegative}>
-                        {positive ? '+' : ''}
-                        {change.toFixed(2)}%
+                      <span className="market-dashboard__cfd-value">
+                        <strong className="mono">{tk.price}</strong>
+                        <small className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
+                          {positive ? '+' : ''}
+                          {change.toFixed(2)}%
+                        </small>
                       </span>
                     </Link>
                   );
@@ -194,45 +195,43 @@ export function CfdMarketsSection({ id }: { id?: string }) {
             </article>
           </div>
 
-          <article style={{ ...styles.dashboardCard, ...styles.dashboardPopularCard }}>
-            <div style={styles.dashboardTabsRow}>
+          <article className="market-dashboard__card market-dashboard__popular-card">
+            <div className="market-dashboard__tabs-row">
               <button
                 onClick={() => setPopularTab('crypto')}
-                style={{ ...styles.dashboardTabBtn, ...(popularTab === 'crypto' ? styles.dashboardTabBtnActive : {}) }}
-                className={popularTab === 'crypto' ? 'dashboard-tab-active' : undefined}
+                className={`market-dashboard__tab${popularTab === 'crypto' ? ' is-active' : ''}`}
               >
                 {t('marketing.popularPairs')}
               </button>
               <button
                 onClick={() => setPopularTab('cfd')}
-                style={{ ...styles.dashboardTabBtn, ...(popularTab === 'cfd' ? styles.dashboardTabBtnActive : {}) }}
-                className={popularTab === 'cfd' ? 'dashboard-tab-active' : undefined}
+                className={`market-dashboard__tab${popularTab === 'cfd' ? ' is-active' : ''}`}
               >
                 {t('marketing.popularDerivatives')}
               </button>
-              <Link to="/login" style={styles.viewAllLink}>
-                {t('marketing.viewAllMarkets')} <ArrowIcon />
+              <Link to="/login" className="market-dashboard__view-all">
+                {t('marketing.viewAllMarkets')}
               </Link>
             </div>
 
-            <div style={styles.dashboardPopularList}>
+            <div className="market-dashboard__popular-list">
               {popularTab === 'crypto' &&
-                OVERVIEW_PAIRS.map((pair) => {
+                OVERVIEW_PAIRS.slice(0, 4).map((pair) => {
                   const tk = tickers.get(pair);
                   const change = tk ? parseChangePercent(tk.changePercent24h, pair) : 0;
                   const base = pair.split('/')[0];
                   const positive = change >= 0;
                   return (
-                    <Link key={pair} to="/login" style={styles.dashboardRow} className="dashboard-row-hover">
-                      <CryptoIcon symbol={base} size={36} />
-                      <span style={styles.dashboardRowLabel}>
-                        <strong style={styles.dashboardRowLabelStrong}>{pair}</strong>
-                        <small style={styles.dashboardRowLabelSmall}>{tk ? `Vol ${fmtCompact(parseFloat(tk.quoteVolume24h))}` : ''}</small>
+                    <Link key={pair} to="/login" className="market-dashboard__row market-dashboard__popular-row">
+                      <CryptoIcon symbol={base} size={40} />
+                      <span className="market-dashboard__row-label market-dashboard__popular-label">
+                        <strong>{pair.replace('/', '')}</strong>
+                        <small>{tk ? `Vol ${fmtCompact(parseFloat(tk.quoteVolume24h))}` : ''}</small>
                       </span>
-                      <span className="mono" style={styles.dashboardRowPrice}>
+                      <span className="mono market-dashboard__row-price">
                         {tk ? fmt(parseFloat(tk.lastPrice)) : '—'}
                       </span>
-                      <span style={positive ? styles.dashboardPositive : styles.dashboardNegative}>
+                      <span className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
                         {tk ? `${positive ? '+' : ''}${change.toFixed(2)}%` : ''}
                       </span>
                     </Link>
@@ -240,22 +239,20 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                 })}
 
               {popularTab === 'cfd' &&
-                cfdTickers.map((tk) => {
+                cfdTickers.slice(0, 4).map((tk) => {
                   const change = parseChangePercent(tk.changePercent24h, tk.symbol);
                   const positive = change >= 0;
                   return (
-                    <Link key={tk.symbol} to="/trade" style={styles.dashboardRow} className="dashboard-row-hover">
-                      <span style={{ ...styles.dashboardCoin, background: assetColor(tk.symbol).solid }}>
-                        {CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}
+                    <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__popular-row">
+                      <CfdMark symbol={tk.symbol} />
+                      <span className="market-dashboard__row-label market-dashboard__popular-label">
+                        <strong>{tk.symbol}</strong>
+                        <small>{tk.name}</small>
                       </span>
-                      <span style={styles.dashboardRowLabel}>
-                        <strong style={styles.dashboardRowLabelStrong}>{tk.symbol}</strong>
-                        <small style={styles.dashboardRowLabelSmall}>{tk.name}</small>
-                      </span>
-                      <span className="mono" style={styles.dashboardRowPrice}>
+                      <span className="mono market-dashboard__row-price">
                         {tk.price}
                       </span>
-                      <span style={positive ? styles.dashboardPositive : styles.dashboardNegative}>
+                      <span className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
                         {positive ? '+' : ''}
                         {change.toFixed(2)}%
                       </span>
@@ -273,17 +270,58 @@ export function CfdMarketsSection({ id }: { id?: string }) {
 
 function FlameIcon() {
   return (
-    <svg width={24} height={24} viewBox="0 0 24 24" fill="#f97316" stroke="#f97316" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+    <svg width={29} height={29} viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
     </svg>
   );
 }
 
-function ArrowIcon() {
+function PerformanceChart({ points }: { points: number[] }) {
+  const safePoints = points.length > 1 ? points : [0, 0, 0, 0, 0];
+  const min = Math.min(...safePoints);
+  const max = Math.max(...safePoints);
+  const range = max - min || 1;
+  const width = 376;
+  const height = 104;
+  const padY = 8;
+  const coords = safePoints.map((point, index) => {
+    const x = (index / Math.max(safePoints.length - 1, 1)) * width;
+    const y = height - padY - ((point - min) / range) * (height - padY * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+
   return (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 12h14M13 6l6 6-6 6" />
+    <svg className="market-dashboard__chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <filter id="market-chart-glow" x="-20%" y="-30%" width="140%" height="160%">
+          <feGaussianBlur stdDeviation="4.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <polyline className="market-dashboard__chart-glow" points={coords.join(' ')} />
+      <polyline className="market-dashboard__chart-line" points={coords.join(' ')} />
     </svg>
+  );
+}
+
+function CfdMark({ symbol }: { symbol: string }) {
+  const upper = symbol.toUpperCase();
+  const mark = upper.startsWith('XAU')
+    ? { glyph: '◆', color: '#e4a900' }
+    : upper.startsWith('EUR')
+      ? { glyph: '€', color: '#1749a8' }
+      : upper.startsWith('GBP')
+        ? { glyph: '£', color: '#8b2635' }
+        : upper.includes('JPY')
+          ? { glyph: '¥', color: '#b8303a' }
+          : { glyph: '$', color: '#22262c' };
+  return (
+    <span className="market-dashboard__coin" style={{ background: mark.color }} aria-hidden="true">
+      {mark.glyph}
+    </span>
   );
 }
 
@@ -292,100 +330,4 @@ const styles: Record<string, React.CSSProperties> = {
   tickerStrip: { display: 'flex', gap: 28, overflowX: 'auto', padding: '12px 20px', borderBottom: '1px solid var(--border)' },
   tickerStripItem: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, whiteSpace: 'nowrap', flexShrink: 0 },
   hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12 },
-  viewAllLink: { display: 'inline-flex', alignItems: 'center', gap: 6, color: '#71717a', fontSize: 13, fontWeight: 500, marginLeft: 'auto' },
-
-  dashboardSection: {
-    position: 'relative',
-    padding: '80px 24px 90px',
-    background: '#0a0a0b',
-    borderTop: '1px solid rgba(129, 120, 236, 0.07)',
-    overflow: 'hidden',
-  },
-  dashboardPattern: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 520,
-    height: 520,
-    opacity: 0.04,
-    backgroundImage:
-      'linear-gradient(rgba(140, 140, 160, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(140, 140, 160, 0.5) 1px, transparent 1px)',
-    backgroundSize: '48px 48px',
-    WebkitMaskImage: 'radial-gradient(circle at bottom right, black, transparent 70%)',
-    maskImage: 'radial-gradient(circle at bottom right, black, transparent 70%)',
-    pointerEvents: 'none',
-  },
-  dashboardShell: { position: 'relative', zIndex: 2, maxWidth: 1180, margin: '0 auto', display: 'grid', gap: 20 },
-  dashboardCard: {
-    border: '1px solid rgba(255, 255, 255, 0.06)',
-    borderRadius: 20,
-    background: '#141416',
-    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.4), 0 0 60px rgba(95, 95, 130, 0.04) inset',
-  },
-  dashboardTopGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 },
-  dashboardTrendingCard: { padding: 28 },
-  dashboardCardHeading: { display: 'flex', alignItems: 'center', gap: 10, margin: '0 0 24px', fontSize: 16, fontWeight: 700, color: '#f4f4f5' },
-  dashboardFeaturedLink: { display: 'flex', flexDirection: 'column', textDecoration: 'none' },
-  dashboardFeaturedAsset: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 },
-  dashboardFeaturedAssetName: { fontSize: 18, fontWeight: 700, color: '#fafafa', letterSpacing: '0.02em' },
-  dashboardFeaturedPrice: { display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 18, fontSize: 15, fontWeight: 700 },
-  dashboardFeaturedPriceValue: { fontSize: 32, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' },
-  dashboardMonths: { display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '0 2px' },
-  dashboardMonthLabel: { fontSize: 11, color: '#71717a', fontWeight: 500, letterSpacing: '0.08em' },
-  dashboardCfdCard: { padding: '24px 28px' },
-  cfdBadge: {
-    display: 'inline-block',
-    padding: '5px 14px',
-    marginBottom: 20,
-    borderRadius: 8,
-    background: '#1e3a8a',
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: '0.12em',
-  },
-  dashboardCfdList: { display: 'grid', gap: 6 },
-  dashboardRow: {
-    display: 'grid',
-    gridTemplateColumns: '40px 1fr auto auto',
-    alignItems: 'center',
-    gap: 14,
-    padding: '12px 14px',
-    borderRadius: 12,
-    textAlign: 'left',
-    color: '#f4f4f5',
-    background: 'transparent',
-    textDecoration: 'none',
-  },
-  dashboardCoin: {
-    width: 36,
-    height: 36,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: 800,
-    boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.08) inset',
-    flexShrink: 0,
-  },
-  dashboardRowLabel: { display: 'grid', gap: 3, minWidth: 0 },
-  dashboardRowLabelStrong: { fontSize: 14, fontWeight: 700, color: '#fafafa' },
-  dashboardRowLabelSmall: { fontSize: 11, color: '#71717a' },
-  dashboardRowPrice: { fontSize: 14, fontWeight: 700, color: '#f4f4f5', textAlign: 'right' },
-  dashboardPositive: { fontSize: 13, fontWeight: 600, color: '#22c55e', textAlign: 'right' },
-  dashboardNegative: { fontSize: 13, fontWeight: 600, color: '#ef4444', textAlign: 'right' },
-  dashboardPopularCard: { padding: '24px 28px' },
-  dashboardTabsRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 28,
-    marginBottom: 18,
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    paddingBottom: 14,
-  },
-  dashboardTabBtn: { padding: 0, background: 'none', border: 'none', fontSize: 14, fontWeight: 600, color: '#71717a' },
-  dashboardTabBtnActive: { color: '#fafafa', position: 'relative' },
-  dashboardPopularList: { display: 'grid', gap: 4 },
 };
