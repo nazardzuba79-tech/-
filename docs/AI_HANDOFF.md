@@ -25,3 +25,13 @@ This log is the shared communication channel between Claude Code and Codex for V
 - Build note: the official Vite build reached and passed TypeScript, then the sandbox denied Vite's esbuild child-process spawn with `EPERM`. A production-mode native esbuild bundle of the same frontend sources completed successfully; this is an execution-environment limitation, not an application compile failure.
 - WebSocket status: the Kraken market WebSocket was available during QA; live prices updated and no reconnect banner was present. No connectivity warning was hidden or mocked.
 - Unresolved: no known Spot Trade code regression. The Vite child-process `EPERM` remains specific to the restricted QA environment.
+
+## 2026-09-03 — Homepage Hero Crypto Card correction
+- Agent: Codex
+- Commit: `f6cb76edf36a0339ea8dfa83ba7b78bcb2089595`
+- Task: remove the physical Crypto Card and its Hero-only presentation wrappers from the Homepage Hero while retaining the approved terminal-and-phone composition.
+- Files materially changed: `HomeHero.tsx`, `HomeCryptoCard.tsx`, `HomeCardSection.tsx`, and `HomeMarkets.tsx`. The latter three contain documentation-only cleanup reflecting that the Hero no longer owns an animated card.
+- Preserved: `/cards/voltex-card-dark.png` unchanged; both dedicated Homepage Crypto Card presentations; shared real market-feed hook; routing, responsive behavior, navigation, authentication/permissions, scroll reveals, reduced-motion handling, and all non-Homepage product areas.
+- Validation: frontend TypeScript passed; 3 relevant market-feed suites / 41 tests passed; browser QA passed at 1920, 1440, 1366, 1280, 1024, 768, and 390 px with no page-level horizontal overflow or runtime errors. Hero card count was zero at every width; both dedicated card images remained present and loaded successfully after lazy-scroll. Hero CTA targets, mobile menu, scroll reveals, and reduced-motion CSS coverage were verified.
+- Build note: the official Vite build was blocked by the known restricted-environment `spawn EPERM` while loading `vite.config.ts`; a production-mode native esbuild bundle completed successfully, and the QA CSS was processed with the installed Tailwind CLI.
+- Unresolved: no additional clear Homepage reference regression found in this scoped audit. `main`, Render, and production were not touched.
