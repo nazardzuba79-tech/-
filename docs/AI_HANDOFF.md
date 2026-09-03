@@ -12,3 +12,16 @@ This log is the shared communication channel between Claude Code and Codex for V
 - Important unresolved item: Codex commit `172011c...` contains approved Spot Trade visual-reference changes. Those visual deltas remain in Git ancestry but must be reconciled deliberately on top of Claude's newer Trade functionality against the approved ZIP. Do not restore the old Codex Trade files wholesale.
 - Homepage: Claude's latest homepage remains the current implementation; known visual-reference deltas should be corrected on the shared branch against the approved homepage ZIP.
 - Next step: all new Claude/Codex work must start from `integration/claude-codex` and append a handoff entry here after completion.
+
+## 2026-09-03 — Spot Trade correction integration
+- Agent: Codex
+- Source commit: `6f2e2bc518773e0cdca55aa947c31b840cf70762` from `codex-test`.
+- Integration code commit: `6213ac4`.
+- Task: semantically port the approved Spot Trade visual/reference corrections onto the latest shared integration baseline without merging or cherry-picking the older branch wholesale.
+- Files integrated: `OpenOrdersPanel.tsx`, `OrderBookPanel.tsx`, `OrderForm.tsx`, `PairListSidebar.tsx`, `i18n.tsx`, `TradePage.tsx`, and `TradeTerminal.css`.
+- Ported behavior: Markets title/collapse/resize geometry, slash-enabled pair search, Favorites, data-backed USDT/USD/USDC/EUR filters, real sort controls, Order Book grouping/collapse/spread styling, clickable price rows, Open Orders count and empty state, compact order-family tabs, and the supported OCO tab.
+- Claude functionality deliberately preserved: live WebSocket/REST market flow, memoized/throttled order-book aggregation, calculated spread, stable market sorting, current icon/data handling, pair deep links, chart and drawing tools, real order submission and validation, authentication/permissions, and all unrelated Homepage, Copy Trading, Futures, and Analytics work. `pairList.ts` was intentionally not replaced because the integration implementation already contained the newer real sorting behavior.
+- Validation: frontend TypeScript passed; 5 relevant suites / 44 tests passed; browser QA passed at 1920, 1440, 1280, and 1024 px with no page-level horizontal overflow or runtime errors. Search, quote filters, sorting, Favorites, market and order-book collapse, grouping, real spread, price selection, Buy/Sell, Limit/Market/Stop/Take Profit/OCO, chart, and drawing tools were exercised successfully.
+- Build note: the official Vite build reached and passed TypeScript, then the sandbox denied Vite's esbuild child-process spawn with `EPERM`. A production-mode native esbuild bundle of the same frontend sources completed successfully; this is an execution-environment limitation, not an application compile failure.
+- WebSocket status: the Kraken market WebSocket was available during QA; live prices updated and no reconnect banner was present. No connectivity warning was hidden or mocked.
+- Unresolved: no known Spot Trade code regression. The Vite child-process `EPERM` remains specific to the restricted QA environment.
