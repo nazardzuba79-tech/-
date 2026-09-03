@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { PrismaClient, EmailVerificationChallenge } from '@prisma/client';
+import { requireEmailVerificationSecret } from '../config/emailVerificationSecret';
 
 /**
  * Six-digit email verification for new registrations.
@@ -44,15 +45,15 @@ export type ResendResult =
   | { ok: false; reason: 'COOLDOWN'; retryAfterSeconds: number };
 
 /**
- * The HMAC key. EMAIL_VERIFICATION_SECRET is the dedicated variable; it falls
- * back to JWT_SECRET (already mandatory at boot, see src/index.ts) so an
- * existing deployment does not fail to start the moment this feature lands.
- * Either way the key lives only in the process environment.
+ * The HMAC key, read through the shared gate in
+ * src/config/emailVerificationSecret.ts. There is NO fallback to JWT_SECRET:
+ * see that module for why the two keys must stay separate. Read lazily
+ * rather than at import time so the module can be imported by tooling and
+ * tests without a configured environment; the process-wide requirement is
+ * enforced at startup by assertEmailVerificationSecretConfigured().
  */
 function verificationSecret(): string {
-  const secret = process.env.EMAIL_VERIFICATION_SECRET || process.env.JWT_SECRET;
-  if (!secret) throw new Error('EMAIL_VERIFICATION_SECRET or JWT_SECRET is required for email verification');
-  return secret;
+  return requireEmailVerificationSecret();
 }
 
 /** Uniform over 000000-999999 from the CSPRNG. `randomInt` with an exclusive

@@ -87,6 +87,75 @@ Fast-forwarded onto `9f9116c` before pushing. The Spot Trade correction (`6213ac
 Delivery was proven over SMTP against a local sink, not against the production relay. Before enabling this in production, set `EMAIL_VERIFICATION_SECRET` and confirm one real send through the configured provider (deliverability, From: address, spam placement). Nothing about delivery is mocked in application code — with no `SMTP_HOST` set the app reports `emailDelivered:false` rather than pretending.
 
 ### Unresolved / next
-- `EMAIL_VERIFICATION_SECRET` currently falls back to `JWT_SECRET` so an existing deployment does not fail to boot. Set it explicitly in production; rotating it invalidates outstanding codes (they expire in 10 minutes anyway).
+- ~~`EMAIL_VERIFICATION_SECRET` currently falls back to `JWT_SECRET` so an existing deployment does not fail to boot.~~ **Superseded by the security-hardening entry below — the fallback has been removed and the variable is now mandatory.** Rotating it invalidates outstanding codes (they expire in 10 minutes anyway).
 - Old unverified accounts accumulate rows; a periodic cleanup of expired, unconsumed challenges would be reasonable but is not implemented.
 - `main`, Render configuration, production secrets, DNS and production deployment were not touched.
+
+## 2026-09-03 — EMAIL_VERIFICATION_SECRET is mandatory and independent of JWT_SECRET
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main` untouched, no merge, no force-push.
+
+### The change
+`EmailVerificationService` used to key its HMAC with
+`process.env.EMAIL_VERIFICATION_SECRET || process.env.JWT_SECRET`. That fallback is
+**gone**. The two keys protect different things: a leaked session-signing key lets an
+attacker mint sessions; a leaked verification key lets them derive a valid six-digit
+code for any pending registration. Sharing one value means either leak costs you both,
+and the verification key can never be rotated without invalidating every live session.
+
+New module `src/config/emailVerificationSecret.ts` is the single source of the rule:
+
+- **Required.** `requireEmailVerificationSecret(env)` throws when the variable is
+  absent, empty, or whitespace.
+- **No fallback.** A set `JWT_SECRET` no longer satisfies email verification.
+- **No reuse.** Setting the two variables to the same value is also rejected, so the
+  fallback cannot be reintroduced by configuration.
+- **No hardcoded default, never generated at runtime.** A per-boot key would silently
+  invalidate every outstanding code on restart and differ between instances.
+- **Never echoed.** Neither error message contains the secret value — only the variable
+  name — so a startup failure can be pasted into an issue safely.
+
+`assertEmailVerificationSecretConfigured()` is called in `src/index.ts` as the first
+statement after the import block, so a misconfigured deployment dies at boot rather
+than accepting registrations it can never verify. The service reads the secret lazily
+(per call) so importing the module in a test does not require the variable; the
+process-wide requirement is enforced by that startup gate.
+
+### Test bootstrap
+`jest.setup.ts` (new, wired via `setupFiles` in `jest.config.js`) sets a deterministic
+test-only `EMAIL_VERIFICATION_SECRET`, deliberately different from the test
+`JWT_SECRET` because the gate rejects equality. **Production validation was not
+relaxed to make tests pass** — the tests supply the variable the same way a real
+deployment must.
+
+### Tests added
+`src/config/__tests__/emailVerificationSecret.test.ts` — returns the configured secret;
+throws when absent; empty/whitespace treated as missing; **does not fall back to
+JWT_SECRET**; rejects the two being equal; accepts a dedicated secret with no
+`JWT_SECRET` present; never puts the value in the error message; no hardcoded default;
+stable across calls rather than generated. Plus a real-process test that spawns
+`src/index.ts` with `JWT_SECRET` set and `EMAIL_VERIFICATION_SECRET` unset (and dotenv
+pointed at a non-existent file) and asserts a non-zero exit, the message naming the
+variable, and that it never printed `Exchange API listening`.
+`src/services/__tests__/EmailVerificationService.test.ts` gained three cases: refuses to
+hash with only `JWT_SECRET` set; the digest is unrelated to a `JWT_SECRET`-keyed HMAC;
+the full issue → verify flow still works with a dedicated secret.
+
+### Validation run
+`prisma validate` OK · backend `tsc --noEmit` OK · **backend suite 63 suites / 624 tests
+passed** (was 62/609) · frontend `tsc --noEmit` OK · frontend production Vite build OK ·
+`grep -rn EMAIL_VERIFICATION_SECRET frontend/src` → no matches (never reaches the client
+bundle).
+
+### `.env.example`
+Documents the variable, why it must be separate, and how to generate one
+(`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). The line
+stays **commented out with a placeholder** — no real value is committed.
+
+### DEPLOYMENT PREREQUISITE
+`EMAIL_VERIFICATION_SECRET` is now **mandatory**. The backend will **fail to start**
+without it. Before this branch is ever promoted or deployed, the production environment
+must be given a dedicated, randomly generated `EMAIL_VERIFICATION_SECRET` that is
+**not** the value of `JWT_SECRET`. Setting it was intentionally left to the operator —
+this session set no production environment variables and touched no Render
+configuration, DNS, or deployment.

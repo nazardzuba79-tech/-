@@ -1,3 +1,5 @@
+// jest.setup.ts already supplies a suite-wide value; this file pins its own
+// so the HMAC assertions below are independent of that default.
 process.env.EMAIL_VERIFICATION_SECRET = 'test-verification-secret-value';
 
 import {
@@ -234,5 +236,44 @@ describe('maskEmail', () => {
 
   it('leaves an unparseable value alone rather than mangling it', () => {
     expect(maskEmail('not-an-email')).toBe('not-an-email');
+  });
+});
+
+describe('the secret is required, with no JWT_SECRET fallback', () => {
+  const ORIGINAL = process.env.EMAIL_VERIFICATION_SECRET;
+
+  afterEach(() => {
+    process.env.EMAIL_VERIFICATION_SECRET = ORIGINAL;
+  });
+
+  it('refuses to hash a code when EMAIL_VERIFICATION_SECRET is absent, even with JWT_SECRET set', () => {
+    delete process.env.EMAIL_VERIFICATION_SECRET;
+    process.env.JWT_SECRET = 'a-session-signing-key';
+
+    // Before this hardening, JWT_SECRET silently keyed the HMAC here.
+    expect(() => hashVerificationCode('123456')).toThrow(/EMAIL_VERIFICATION_SECRET/);
+  });
+
+  it('produces a digest unrelated to JWT_SECRET once configured', () => {
+    process.env.JWT_SECRET = 'a-session-signing-key';
+    process.env.EMAIL_VERIFICATION_SECRET = 'a-separate-verification-key';
+    const withDedicated = hashVerificationCode('123456');
+
+    // Keying with JWT_SECRET would have produced this instead; it must not
+    // be what the service stores.
+    const crypto = require('crypto') as typeof import('crypto');
+    const asIfKeyedByJwt = crypto.createHmac('sha256', 'a-session-signing-key').update('123456').digest('hex');
+
+    expect(withDedicated).not.toBe(asIfKeyedByJwt);
+  });
+
+  it('still runs the full issue -> verify flow with a dedicated secret', async () => {
+    process.env.EMAIL_VERIFICATION_SECRET = 'a-separate-verification-key';
+    const users = { 'user-1': { id: 'user-1', email: 'alice@example.com', emailVerifiedAt: null as Date | null } };
+    const svc = new EmailVerificationService(fakePrisma(users));
+
+    const { challengeId, code } = await svc.issueChallenge('user-1');
+    expect(await svc.verify(challengeId, code)).toEqual({ ok: true, userId: 'user-1' });
+    expect(users['user-1'].emailVerifiedAt).toBeInstanceOf(Date);
   });
 });
