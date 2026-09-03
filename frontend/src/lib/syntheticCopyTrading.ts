@@ -51,6 +51,106 @@ export interface SyntheticCopyTradingResponse {
 
 const periodDays: Record<Period, number> = { '7D': 7, '30D': 30, '90D': 90, ALL: Number.POSITIVE_INFINITY };
 
+export interface SyntheticPeriodAnalytics {
+  period: Period;
+  roi: number;
+  pnl: number;
+  winRate: number;
+  maximumDrawdown: number;
+  averagePnl: number;
+  profitFactor: number;
+  averageTradesPerWeek: number;
+  averageHoldingTimeMinutes: number;
+  annualizedVolatility: number;
+  sharpe: number;
+  sortino: number;
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  tradingDays: number;
+  followerPnl: number;
+  equity: SyntheticCopyTradingResponse['equityHistory'];
+  daily: SyntheticCopyTradingResponse['dailyResults'];
+  trades: SyntheticCopyTradingResponse['trades'];
+}
+
+function sampleStd(values: number[]): number {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  return Math.sqrt(values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / (values.length - 1));
+}
+
+function maxDrawdown(history: SyntheticCopyTradingResponse['equityHistory']): number {
+  let peak = history[0]?.equity ?? 0;
+  let maximum = 0;
+  for (const point of history) {
+    peak = Math.max(peak, point.equity);
+    if (peak > 0) maximum = Math.max(maximum, (peak - point.equity) / peak);
+  }
+  return maximum * 100;
+}
+
+/**
+ * Produces every period-sensitive profile KPI from one slice of the engine's
+ * ledger/equity history. The cutoff mirrors the backend analytics convention:
+ * the equity point at the boundary is the opening balance, while trades and
+ * daily results after that boundary belong to the selected window.
+ */
+export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period: Period): SyntheticPeriodAnalytics {
+  const allEquity = data.equityHistory;
+  const currentDate = allEquity[allEquity.length - 1]?.date ?? data.simulation.simulatedAt.slice(0, 10);
+  const cutoff = period === 'ALL'
+    ? ''
+    : new Date(Date.parse(`${currentDate}T00:00:00Z`) - periodDays[period] * 86_400_000).toISOString().slice(0, 10);
+  const equity = period === 'ALL' ? allEquity : allEquity.filter((point) => point.date >= cutoff);
+  const trades = (period === 'ALL' ? data.trades : data.trades.filter((trade) => trade.closedAt.slice(0, 10) > cutoff))
+    .slice()
+    .sort((a, b) => Date.parse(b.closedAt) - Date.parse(a.closedAt));
+  const daily = period === 'ALL' ? data.dailyResults : data.dailyResults.filter((day) => day.date > cutoff);
+  const openingEquity = equity[0]?.equity ?? 0;
+  const closingEquity = equity[equity.length - 1]?.equity ?? openingEquity;
+  const pnl = closingEquity - openingEquity;
+  const wins = trades.filter((trade) => trade.result === 'WIN');
+  const losses = trades.filter((trade) => trade.result === 'LOSS');
+  const grossProfit = wins.reduce((sum, trade) => sum + trade.netPnl, 0);
+  const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + trade.netPnl, 0));
+  const returns = equity.slice(1).map((point, index) => point.equity / equity[index].equity - 1);
+  const mean = returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : 0;
+  const deviation = sampleStd(returns);
+  const downside = returns.filter((value) => value < 0);
+  const downsideDeviation = downside.length
+    ? Math.sqrt(downside.reduce((sum, value) => sum + value ** 2, 0) / downside.length)
+    : 0;
+  const holdingTotal = trades.reduce((sum, trade) => sum + trade.holdingTimeMinutes, 0);
+  const followerPnl = period === '7D' ? data.analytics.followerPnl7
+    : period === '30D' ? data.analytics.followerPnl30
+      : period === '90D' ? data.analytics.followerPnl90
+        : data.analytics.allTime.followersPnl;
+
+  return {
+    period,
+    roi: openingEquity ? pnl / openingEquity * 100 : 0,
+    pnl,
+    winRate: trades.length ? wins.length / trades.length * 100 : 0,
+    maximumDrawdown: maxDrawdown(equity),
+    averagePnl: trades.length ? trades.reduce((sum, trade) => sum + trade.netPnl, 0) / trades.length : 0,
+    profitFactor: grossLoss ? grossProfit / grossLoss : 0,
+    averageTradesPerWeek: trades.length / Math.max(1, daily.length) * 7,
+    averageHoldingTimeMinutes: trades.length ? holdingTotal / trades.length : 0,
+    annualizedVolatility: deviation * Math.sqrt(365) * 100,
+    sharpe: deviation ? mean / deviation * Math.sqrt(365) : 0,
+    sortino: downsideDeviation ? mean / downsideDeviation * Math.sqrt(365) : 0,
+    totalTrades: trades.length,
+    winningTrades: wins.length,
+    losingTrades: losses.length,
+    tradingDays: daily.length,
+    followerPnl,
+    equity,
+    daily,
+    trades,
+  };
+}
+
 function duration(minutes: number): string {
   if (minutes >= 1_440) return `${(minutes / 1_440).toFixed(1)} дн.`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`;
