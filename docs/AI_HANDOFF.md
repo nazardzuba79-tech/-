@@ -159,3 +159,94 @@ must be given a dedicated, randomly generated `EMAIL_VERIFICATION_SECRET` that i
 **not** the value of `JWT_SECRET`. Setting it was intentionally left to the operator —
 this session set no production environment variables and touched no Render
 configuration, DNS, or deployment.
+
+## 2026-09-03 — Markets page refinement against the Bolt.new Markets reference archive
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main`, Render, and production untouched.
+
+### Reference used
+The user's attached archive (`projectboltsb1uhsf3eve.zip`) contained a header-variant
+showcase under `src/header/` plus a separate, self-contained `src/App.tsx`/`src/index.css`
+that IS the Markets implementation the task described — market rows, marketCap, sectors,
+Favorites, Spot/Perpetual/Futures/Options tabs, sparklines, sort/pagination. That App.tsx
+was the visual/interaction reference; `src/header/*` was unrelated to this task and left
+alone.
+
+### Starting point
+The current `/markets` page (`frontend/src/pages/markets-bolt/{components.tsx,markets.ts,
+MarketsBolt.css}`) is already a prior, thorough port of the same reference family onto real
+data — it was not rebuilt. This task compared the two carefully and applied only the
+genuine, real-data-backed gaps found; it did not touch unrelated pages.
+
+### Corrections applied
+1. **Market Cap column was missing from the main table despite real data already existing
+   for it.** `markets.ts`'s sort function already had a working `case 'marketCap'` branch
+   reading `rankByBase.get(base).marketCap` (real CoinGecko data), and the sort `<select>`
+   already offered "Капитализация ↓/↑" — but there was no visible column, so the sort had
+   nothing to look at. Added a `Кап-ция` column (with its own sort-button header, matching
+   the pattern already used for Price/Change/Volume) between Volume and Chart, using
+   `formatCompactUsd(ranking.marketCap)` with an honest `—` when a pair's base isn't in the
+   ranked set. Also added to the mobile card's detail line. Table column widths, the
+   colSpan on the loading/empty states, and the `td:nth-child` chart-centering rule were
+   recomputed for the new 9-column layout; the ≤1050px responsive tier now also hides this
+   column (alongside High/Low, which it already hid).
+2. **Market Data card hierarchy didn't match the reference.** The reference's card leads
+   with Total Market Cap (+ its own 24h % change) as the one large headline figure, with
+   Volume/BTC Dominance/ETH Dominance as a supporting 3-cell grid below. The port had it
+   backwards (Volume as headline, Market Cap buried as a small secondary cell). Swapped:
+   `totalMarketCapUsd` + real `marketCapChangePercent24h` are now the headline
+   (`.metric-primary`, new CSS block); the grid below is Volume/BTC Dom/ETH Dom
+   (`.metric-grid`, now `repeat(3, 1fr)` instead of a 2×2 of 4 cells). All four figures are
+   the same real `globalMarket` fields as before — nothing new was fetched or invented.
+   **Deliberately NOT reproduced:** the reference draws a sparkline under this headline
+   from a hand-written literal array (`[40, 38, 42, 35, 39, 44, ...]`) with no real backing
+   data anywhere in this app. That figure is fabricated in the reference and stays omitted
+   here, consistent with this app's own honest-unavailable-state pattern.
+3. **Highlight columns (Active Movers / Top Losers / Popular) showed 3 rows; the reference
+   shows 4.** Bumped `topMovers/topLosers/mostPopular(kindTickers, 3)` → `4`. Pure
+   content-density change against the same real ticker data already being read.
+
+### Explicitly NOT changed (verified already correct / already deliberate)
+- Quote filter chips are derived live from `deriveQuoteList(tickers)`, not the reference's
+  fixed list (which includes `USDE`, a quote this exchange doesn't support) — unchanged.
+- "New Listings" sector stays dropped — no real listing-date field exists; restoring the
+  reference's badge-based flag would be fabricated data. Unchanged.
+- The Fear & Greed gauge keeps its proper SVG arc (`GaugeArc`) rather than the reference's
+  CSS border-rotation trick, which renders as a broken ring once a card this size — an
+  earlier, deliberate improvement over the archive family. Unchanged.
+- The Filters/reset button, the Пара column's real alpha-sort, and the market-pulse strip
+  (breadth over this exchange's own listed pairs) are working real functionality the
+  reference either doesn't have or renders as a dead decorative button — kept, not stripped
+  for pixel parity.
+
+### Files changed
+`frontend/src/pages/markets-bolt/components.tsx`, `frontend/src/pages/markets-bolt/MarketsBolt.css`.
+No other file touched — Registration/Auth/EMAIL_VERIFICATION_SECRET/Prisma auth schema/
+login, and Homepage/Trade/Futures/Copy Trading/Wallet/Analytics/Admin, are all untouched.
+
+### Validation actually run
+- Frontend `tsc --noEmit`: passed, no errors.
+- Frontend production build (`npm run build`): passed (`✓ built in 6.28s`).
+- No frontend test runner exists in this repo (no `test` script, no jest/vitest config, no
+  `*.test.*` files) — none were skipped, there were none to run.
+- Browser QA (Playwright/Chromium) against the running app, authenticated with a real
+  throwaway account (registered → real six-digit OTP read from the local SMTP QA sink →
+  verified → real session token), at 1920/1440/1366/1280/1024/768/390/375: horizontal page
+  overflow was 0px at every width; no console/page runtime errors (only blocked external
+  font/CDN fetches from the sandbox's network policy, not application errors). Verified
+  interactively: sorting by the new Market Cap column, toggling a favorite and filtering by
+  the Favorites tab (narrowed correctly to the starred pair), and searching ("ETH" narrowed
+  to exactly the ETH pairs). Screenshots confirm the new column, the restructured Market
+  Data card, and the 4-row highlight columns all render correctly at desktop and mobile
+  widths with no clipping or overlap.
+- `/trade?pair=ETH/USDT` regression check: opened correctly, pair rendered, no runtime
+  errors. Trade page was not modified.
+- In this sandbox, CoinGecko/global-market/Fear&Greed are network-blocked, so those cards
+  correctly show `—`/"Нет данных"/"Загрузка данных..." rather than fabricated numbers —
+  this is the existing honest-fallback behavior, confirmed still intact under the new
+  Market Cap column and restructured card.
+
+### Unresolved / next
+None identified within Markets. Production must still receive `EMAIL_VERIFICATION_SECRET`
+before this integration branch is ever promoted or deployed (unchanged from the prior
+entry — not touched by this task).

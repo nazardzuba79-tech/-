@@ -396,29 +396,31 @@ export function MarketsBoltPage() {
           </article>
           <article className="overview-card volume-card">
             <div className="card-heading"><span>Рыночные данные</span><span className="card-heading-tag">24ч</span></div>
-            <div className="metric-line">
-              <div>
-                <span className="muted-label">Объём торгов</span>
-                <strong>{globalMarket ? formatCompactUsd(globalMarket.totalVolume24hUsd) : '—'}</strong>
-              </div>
+            {/* Total Market Cap is the headline figure, matching the
+                reference's card hierarchy — both totalMarketCapUsd and its
+                own 24h change come from the same real CoinGecko /global
+                response as everything else on this card. The reference
+                also draws a sparkline under this headline from a
+                hand-written array ([40, 38, 42, ...]) with no real
+                counterpart in this app; that figure is fabricated for
+                visual parity and is deliberately NOT reproduced here. */}
+            <div className="metric-primary">
+              <span className="muted-label">Общая капитализация</span>
+              <strong>{globalMarket ? formatCompactUsd(globalMarket.totalMarketCapUsd) : '—'}</strong>
+              <span className={(globalMarket?.marketCapChangePercent24h ?? 0) >= 0 ? 'positive' : 'negative'}>
+                {globalMarket?.marketCapChangePercent24h != null
+                  ? `${globalMarket.marketCapChangePercent24h >= 0 ? '+' : ''}${globalMarket.marketCapChangePercent24h.toFixed(2)}%`
+                  : '—'}{' '}
+                <span className="muted-label inline">24ч</span>
+              </span>
             </div>
-            {/* Was a single run-on line of three figures. The four metrics
-                that matter get their own labelled cells; ETH dominance
-                comes from the same CoinGecko /global response that already
-                supplied BTC dominance — the field was simply not being
-                read through. */}
+            {/* ETH dominance comes from the same CoinGecko /global response
+                that already supplied BTC dominance — the field was simply
+                not being read through. */}
             <div className="metric-grid">
               <div>
-                <span className="muted-label">Капитализация</span>
-                <b>{globalMarket ? formatCompactUsd(globalMarket.totalMarketCapUsd) : '—'}</b>
-              </div>
-              <div>
-                <span className="muted-label">Изм. капитализации</span>
-                <b className={(globalMarket?.marketCapChangePercent24h ?? 0) >= 0 ? 'positive' : 'negative'}>
-                  {globalMarket?.marketCapChangePercent24h != null
-                    ? `${globalMarket.marketCapChangePercent24h >= 0 ? '+' : ''}${globalMarket.marketCapChangePercent24h.toFixed(2)}%`
-                    : '—'}
-                </b>
+                <span className="muted-label">Объём торгов</span>
+                <b>{globalMarket ? formatCompactUsd(globalMarket.totalVolume24hUsd) : '—'}</b>
               </div>
               <div>
                 <span className="muted-label">Доминация BTC</span>
@@ -531,9 +533,9 @@ export function MarketsBoltPage() {
           ) : (
             <>
               <div className="highlights-grid">
-                <HighlightColumn title="Лидеры роста" tickers={topMovers(kindTickers, 3)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'desc')} />
-                <HighlightColumn title="Лидеры падения" tickers={topLosers(kindTickers, 3)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'asc')} />
-                <HighlightColumn title="Популярное" tickers={mostPopular(kindTickers, 3)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('volume', 'desc')} />
+                <HighlightColumn title="Лидеры роста" tickers={topMovers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'desc')} />
+                <HighlightColumn title="Лидеры падения" tickers={topLosers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'asc')} />
+                <HighlightColumn title="Популярное" tickers={mostPopular(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('volume', 'desc')} />
               </div>
 
               <div className="filter-bar">
@@ -606,15 +608,16 @@ export function MarketsBoltPage() {
                       <th><button onClick={() => handleSort('high')} className="sort-button">24ч макс. <SortIcon active={sortKey === 'high'} direction={sortDirection} /></button></th>
                       <th><button onClick={() => handleSort('low')} className="sort-button">24ч мин. <SortIcon active={sortKey === 'low'} direction={sortDirection} /></button></th>
                       <th><button onClick={() => handleSort('volume')} className="sort-button">Объём 24ч <SortIcon active={sortKey === 'volume'} direction={sortDirection} /></button></th>
+                      <th><button onClick={() => handleSort('marketCap')} className="sort-button">Кап-ция <SortIcon active={sortKey === 'marketCap'} direction={sortDirection} /></button></th>
                       <th>График</th>
                       <th />
                     </tr>
                   </thead>
                   <tbody>
                     {tickers.length === 0 && !error ? (
-                      <tr><td className="table-state" colSpan={8}><div className="loading-spinner" /> Загрузка рынков</td></tr>
+                      <tr><td className="table-state" colSpan={9}><div className="loading-spinner" /> Загрузка рынков</td></tr>
                     ) : visibleMarkets.length === 0 ? (
-                      <tr><td className="table-state" colSpan={8}><Search size={20} /><strong>Ничего не найдено</strong><span>Попробуйте изменить поиск или фильтры.</span></td></tr>
+                      <tr><td className="table-state" colSpan={9}><Search size={20} /><strong>Ничего не найдено</strong><span>Попробуйте изменить поиск или фильтры.</span></td></tr>
                     ) : (
                       visibleMarkets.map((tk) => (
                         <MarketRow
@@ -741,6 +744,7 @@ function MarketRow({
       <td className="numeric">{formatPrice(parseFloat(ticker.high24h))}</td>
       <td className="numeric">{formatPrice(parseFloat(ticker.low24h))}</td>
       <td className="numeric">{formatPrice(parseFloat(ticker.quoteVolume24h))} <small className="volume-quote">{quoteOf(ticker.pair)}</small></td>
+      <td className="numeric">{ranking?.marketCap != null ? formatCompactUsd(ranking.marketCap) : '—'}</td>
       <td><Sparkline points={points} positive={change >= 0} /></td>
       <td><button className="trade-button" onClick={() => onTrade(ticker.pair)}>Торговать</button></td>
     </tr>
@@ -778,6 +782,7 @@ function MobileMarketRow({
         <span>Макс. <b>{formatPrice(parseFloat(ticker.high24h))}</b></span>
         <span>Мин. <b>{formatPrice(parseFloat(ticker.low24h))}</b></span>
         <span>Объём <b>{formatPrice(parseFloat(ticker.quoteVolume24h))}</b></span>
+        <span>Кап. <b>{ranking?.marketCap != null ? formatCompactUsd(ranking.marketCap) : '—'}</b></span>
         <Sparkline points={points} positive={change >= 0} />
       </div>
     </div>
