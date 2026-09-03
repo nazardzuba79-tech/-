@@ -23,7 +23,15 @@ export function clearToken() {
 }
 
 class ApiError extends Error {
-  constructor(message: string, public status: number) {
+  constructor(
+    message: string,
+    public status: number,
+    /** The parsed error body. Routes that fail in a way the UI must react to
+     *  (email verification pending, a wrong OTP, a resend cooldown) return a
+     *  machine-readable `code` alongside the message; branching on that is
+     *  reliable, branching on message text is not. */
+    public body: Record<string, unknown> = {}
+  ) {
     super(message);
   }
 }
@@ -77,7 +85,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(extractErrorMessage(body, res.status), res.status);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status, body);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -95,7 +103,7 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
   if (!res.ok) {
     handleUnauthorized(res.status, !!token);
     const body = await res.json().catch(() => ({}));
-    throw new ApiError(extractErrorMessage(body, res.status), res.status);
+    throw new ApiError(extractErrorMessage(body, res.status), res.status, body);
   }
   return res.json();
 }
@@ -131,9 +139,42 @@ export interface CfdPosition {
   closedAt: string | null;
 }
 
+/** What /auth/register answers with, and what a login rejected for an
+ *  unverified address carries in its error body. */
+export interface RegistrationChallenge {
+  verificationRequired: true;
+  challengeId: string;
+  maskedEmail: string;
+  expiresInSeconds: number;
+  resendAvailableInSeconds: number;
+  /** False when the relay refused the message — the UI must say the code
+   *  could not be sent rather than asking for one that never arrived. */
+  emailDelivered: boolean;
+}
+
 export const api = {
+  /** Creates the account but issues NO session: the response carries the
+   *  verification challenge, and a token only comes back from verifyEmail. */
   register: (email: string, password: string, ref?: string) =>
-    request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, ref }) }),
+    request<RegistrationChallenge>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, ref }),
+    }),
+
+  /** Exchanges the six-digit code for the real session token. */
+  verifyEmail: (challengeId: string, code: string) =>
+    request<{ token: string }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId, code }),
+    }),
+
+  /** Issues a replacement code and invalidates the previous one. The new
+   *  challengeId replaces the one the caller was holding. */
+  resendVerification: (challengeId: string) =>
+    request<Omit<RegistrationChallenge, 'verificationRequired' | 'emailDelivered'>>('/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ challengeId }),
+    }),
 
   login: (email: string, password: string) =>
     request<{ token: string } | { requires2fa: true; pendingToken: string }>('/auth/login', {

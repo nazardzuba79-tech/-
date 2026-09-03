@@ -35,3 +35,58 @@ This log is the shared communication channel between Claude Code and Codex for V
 - Validation: frontend TypeScript passed; 3 relevant market-feed suites / 41 tests passed; browser QA passed at 1920, 1440, 1366, 1280, 1024, 768, and 390 px with no page-level horizontal overflow or runtime errors. Hero card count was zero at every width; both dedicated card images remained present and loaded successfully after lazy-scroll. Hero CTA targets, mobile menu, scroll reveals, and reduced-motion CSS coverage were verified.
 - Build note: the official Vite build was blocked by the known restricted-environment `spawn EPERM` while loading `vite.config.ts`; a production-mode native esbuild bundle completed successfully, and the QA CSS was processed with the installed Tailwind CLI.
 - Unresolved: no additional clear Homepage reference regression found in this scoped audit. `main`, Render, and production were not touched.
+
+## 2026-09-03 — Registration + real email verification
+- Agent: Claude
+- Registration source commit: `1c3e1ab56ed2f5f25ef9bbe80419834bab9bfbe3` (on the now-stale `integration/homepage-plus-codex-test`). Ported **semantically** onto this branch, not merged: the six `pages/register/*` files were taken verbatim, and the seven shared-file edits (route, i18n keys, AuthPage register tab, Settings `?tab=`, HomeHeader CTA, `home.css` reset, Tailwind tokens) were re-applied by hand onto the current versions. The stale branch was never merged and nothing on it was force-pushed.
+- Task: land the approved `/register` screen and replace "register issues a session immediately" with a real six-digit email verification step.
+
+### What changed in auth
+- **Before:** `POST /auth/register` created the user and returned a JWT — the account was live at once, and nothing proved the address existed.
+- **After:** `POST /auth/register` creates the user with `emailVerifiedAt = null`, issues a challenge, emails the code, and returns `{verificationRequired, challengeId, maskedEmail, expiresInSeconds, resendAvailableInSeconds, emailDelivered}`. **No token.**
+- `POST /auth/verify-email` `{challengeId, code}` — validates server-side and, only on success, marks `emailVerifiedAt` and issues a token through the existing `createSession` + `issueToken` path. No second auth mechanism.
+- `POST /auth/resend-verification` `{challengeId}` — invalidates the old code, issues and sends a new one. Keyed by challenge id, never by email, so it cannot be used to probe which addresses are registered.
+- `POST /auth/login` — a correct password on an unverified account returns **403** `EMAIL_VERIFICATION_REQUIRED` with a freshly-issued challenge (no session). The frontend forwards that into the verification step. Verified users, including every pre-existing account, log in exactly as before. The check sits ahead of the 2FA branch.
+
+### Database / migration
+- Migration `20260903170000_add_email_verification`.
+- `User.emailVerifiedAt DateTime?`, added NULL then **backfilled to each row's own `createdAt`**, so no established account is retroactively locked out. Only rows created after the migration start as NULL. Verified on the local database: 164/164 existing users came out verified.
+- New `EmailVerificationChallenge` — `codeHash`, `expiresAt`, `attempts`, `consumedAt`, `lastSentAt`, `userId` with `ON DELETE CASCADE`.
+
+### OTP policy
+Six digits from `crypto.randomInt` (uniform, no modulo bias) · 10-minute expiry · single use (`consumedAt`) · max 5 attempts per challenge · 60-second resend cooldown · issuing a new code deletes the previous challenge, so an old code dies the moment a new one is sent. **The code is never stored:** the database holds `HMAC-SHA256(code, EMAIL_VERIFICATION_SECRET)`. A plain digest of six digits is brute-forceable offline from a dump; the keyed digest is not, and the key never enters the database. The code never appears in an API response, an audit-log entry, or any log line. Comparison is `timingSafeEqual`.
+- Route limiters (express-rate-limit, as elsewhere in this repo): register 20/hour, verify-email 20/15min, resend 10/hour, all per IP, on top of the per-challenge attempt counter and cooldown.
+- Audit events reuse the existing `AuditLog`: `USER_REGISTERED`, `EMAIL_VERIFICATION_SENT`, `EMAIL_VERIFIED`, `EMAIL_VERIFICATION_ATTEMPT_LIMIT`.
+
+### Mail
+`VerificationEmailService` reuses the same nodemailer SMTP configuration as the support and KYC mailers (`SMTP_HOST/PORT/SECURE/USER/PASS`). Unlike those, it **reports failure**: `send` returns false, registration answers `emailDelivered:false`, and the UI says the code could not be sent rather than showing a code screen for mail that never left. A transport can be injected, which is how the tests run without a relay.
+
+### Password rule
+Frontend and backend now enforce **identically**: 10+ characters and at least one uppercase letter. The backend previously required 10 with no uppercase rule while the approved hint said "8+". The backend was **not** weakened; the UI hint states the real threshold. No digit/special-character/lowercase requirement was added. Existing test fixtures using lowercase passwords were updated to match the stated policy.
+
+### Files materially changed
+- Backend: `src/services/EmailVerificationService.ts` (new), `src/services/VerificationEmailService.ts` (new), `src/api/routes/auth.ts`, `prisma/schema.prisma`, `prisma/migrations/20260903170000_add_email_verification/`, `.env.example`.
+- Frontend: `pages/register/{RegisterPage,RegisterVisual,RegisterPanel,Field,PasswordField,OtpInput}.tsx` + `register.css`, `lib/api.ts`, `lib/i18n.tsx`, `App.tsx`, `pages/AuthPage.tsx`, `pages/SettingsPage.tsx`, `pages/home/HomeHeader.tsx`, `pages/home/home.css`, `tailwind.config.js`.
+- Tests: `src/services/__tests__/EmailVerificationService.test.ts` (new), `src/api/routes/__tests__/emailVerification.test.ts` (new), `src/api/routes/__tests__/auth.test.ts` and `account.test.ts` (fixtures updated to the real password rule and to the migration's backfilled state).
+
+### Preserved from Codex
+Fast-forwarded onto `9f9116c` before pushing. The Spot Trade correction (`6213ac4`) and the Homepage Hero card removal (`f6cb76e`) are untouched — no file in either overlaps this work, and `HomeCryptoCard`'s props are unchanged, so `RegisterVisual`'s use of it still matches. Trade, Futures, Copy Trading, Analytics, Wallet and the Homepage were not modified beyond the two lines noted above (`HomeHeader` CTA target and the `home.css` reset).
+
+### Also fixed here
+`home.css`'s scoped reset was rewritten with `:where()`. Written plainly, `.vx-home button` scores 0,1,1 and beats a Tailwind utility's 0,1,0, which was silently swallowing the active market tab's own `bg-white/[0.08]`. The registration reset carries the same guard, plus `border: 0 solid` rather than `border: 0` — Tailwind's `border` utility sets only a width and takes its style from preflight, which is off in this project.
+
+### Validation actually run
+- `prisma validate` passed; `prisma migrate deploy` applied cleanly against the local database; backfill verified by query.
+- Backend TypeScript, frontend TypeScript, and the frontend production Vite build all passed on this branch (no `EPERM` encountered in this session's environment).
+- Backend suite: **62 suites / 609 tests passed**, including 18 new service tests and 27 new endpoint tests.
+- Browser QA against the running app with a **real SMTP session** (a local sink on :2525 that speaks RFC 5321, so nodemailer genuinely connected, sent, and got a 250 — the code was read out of the delivered message, not out of the API): registration → code screen with no token stored → wrong code shows "Осталось попыток: 4" and still no token → the real code returns 200 and stores the token → "Аккаунт создан". Paste of six digits works; typing digit by digit works; the resend countdown ticks down from the server's own value. Login with an unverified account returned 403 and landed on the verification step with the code already re-sent.
+- Responsive at 1440/1366/1280/1024/768/390/375: no horizontal page scroll, all six cells in view at every width (41px at 375px), zero console/page errors.
+- Lint: **not run — this repository has no lint script or ESLint config** in either package.
+
+### Requires real-provider verification
+Delivery was proven over SMTP against a local sink, not against the production relay. Before enabling this in production, set `EMAIL_VERIFICATION_SECRET` and confirm one real send through the configured provider (deliverability, From: address, spam placement). Nothing about delivery is mocked in application code — with no `SMTP_HOST` set the app reports `emailDelivered:false` rather than pretending.
+
+### Unresolved / next
+- `EMAIL_VERIFICATION_SECRET` currently falls back to `JWT_SECRET` so an existing deployment does not fail to boot. Set it explicitly in production; rotating it invalidates outstanding codes (they expire in 10 minutes anyway).
+- Old unverified accounts accumulate rows; a periodic cleanup of expired, unconsumed challenges would be reasonable but is not implemented.
+- `main`, Render configuration, production secrets, DNS and production deployment were not touched.

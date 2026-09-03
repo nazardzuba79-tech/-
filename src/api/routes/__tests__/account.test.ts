@@ -76,7 +76,7 @@ describe('account routes', () => {
 
   describe('PATCH /me/password', () => {
     it('changes the password when the current password is correct', async () => {
-      const currentHash = await bcrypt.hash('correcthorsebattery', 12);
+      const currentHash = await bcrypt.hash('Correcthorsebattery', 12);
       const prisma = {
         user: {
           findUnique: jest.fn().mockResolvedValue({ id: 'user-1', passwordHash: currentHash }),
@@ -89,7 +89,7 @@ describe('account routes', () => {
       const res = await request(app)
         .patch('/api/v1/me/password')
         .set('Authorization', authHeader('user-1'))
-        .send({ currentPassword: 'correcthorsebattery', newPassword: 'newlongenoughpassword' });
+        .send({ currentPassword: 'Correcthorsebattery', newPassword: 'newlongenoughpassword' });
 
       expect(res.status).toBe(200);
       expect(prisma.user.update).toHaveBeenCalledWith(
@@ -98,7 +98,7 @@ describe('account routes', () => {
     });
 
     it('rejects an incorrect current password', async () => {
-      const currentHash = await bcrypt.hash('correcthorsebattery', 12);
+      const currentHash = await bcrypt.hash('Correcthorsebattery', 12);
       const prisma = {
         user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', passwordHash: currentHash }), update: jest.fn() },
         auditLog: { create: jest.fn() },

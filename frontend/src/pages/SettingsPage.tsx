@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
@@ -66,9 +67,23 @@ function kycStatusText(t: ReturnType<typeof useLanguage>['t'], status: string): 
   return t('settings.kyc.NOT_STARTED');
 }
 
+const TABS: Tab[] = ['profile', 'security', 'verification', 'api', 'referral'];
+
+function isTab(value: string | null): value is Tab {
+  return value !== null && (TABS as string[]).includes(value);
+}
+
 export function SettingsPage() {
   const { t } = useLanguage();
-  const [tab, setTab] = useState<Tab>('profile');
+  const [searchParams] = useSearchParams();
+  // Read once, for the initial tab only: this makes /settings?tab=security a
+  // real destination (the registration success screen links straight to it)
+  // without turning tab switching into navigation, which would put a history
+  // entry behind every click in the sidebar.
+  const [tab, setTab] = useState<Tab>(() => {
+    const requested = searchParams.get('tab');
+    return isTab(requested) ? requested : 'profile';
+  });
 
   return (
     // color/fontWeight re-anchored here for the same reason adminStyles.ts

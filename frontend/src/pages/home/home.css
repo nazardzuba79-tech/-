@@ -20,28 +20,39 @@
    this page cannot reset elements anywhere else in the app. The cost is that
    no base styles apply here either — a bare <button> would fall back to the
    browser's own grey chrome, which is exactly what happened to the market
-   tabs. These few rules are that reset, scoped to the homepage. */
-.vx-home button,
-.vx-home input,
-.vx-home select {
+   tabs. These few rules are that reset, scoped to the homepage.
+
+   Every selector is wrapped in :where() so the reset carries ZERO
+   specificity. Written plainly, `.vx-home button` scores 0,1,1 and beats a
+   Tailwind utility's 0,1,0 — which silently swallowed the active market
+   tab's own `bg-white/[0.08]` along with the browser chrome. :where() drops
+   these to the bare element selector so any utility class wins, which is how
+   preflight behaves.
+
+   `border: 0 solid` rather than `border: 0`: Tailwind's `border` utility
+   sets only a WIDTH and takes its style from preflight's global
+   `border-style: solid`, which is off here. */
+:where(.vx-home) button,
+:where(.vx-home) input,
+:where(.vx-home) select {
   font: inherit;
   color: inherit;
   background: none;
-  border: 0;
+  border: 0 solid;
   margin: 0;
   cursor: pointer;
 }
-.vx-home button { text-align: inherit; }
-.vx-home table { border-collapse: collapse; }
-.vx-home h1,
-.vx-home h2,
-.vx-home h3,
-.vx-home p,
-.vx-home ul,
-.vx-home figure { margin: 0; }
-.vx-home ul { list-style: none; padding: 0; }
-.vx-home a { text-decoration: none; }
-.vx-home img { display: block; max-width: 100%; }
+:where(.vx-home) button { text-align: inherit; }
+:where(.vx-home) table { border-collapse: collapse; }
+:where(.vx-home) h1,
+:where(.vx-home) h2,
+:where(.vx-home) h3,
+:where(.vx-home) p,
+:where(.vx-home) ul,
+:where(.vx-home) figure { margin: 0; }
+:where(.vx-home) ul { list-style: none; padding: 0; }
+:where(.vx-home) a { text-decoration: none; }
+:where(.vx-home) img { display: block; max-width: 100%; }
 .vx-home *,
 .vx-home *::before,
 .vx-home *::after { box-sizing: border-box; }

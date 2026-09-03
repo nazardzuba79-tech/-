@@ -9,7 +9,7 @@ import { authRouter } from '../auth';
 import { generateBackupCodes } from '../../../services/TwoFactorService';
 
 function makePrismaMock(overrides: Partial<any> = {}) {
-  return {
+  const base: any = {
     user: {
       findUnique: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'user-1', ...data })),
@@ -20,13 +20,53 @@ function makePrismaMock(overrides: Partial<any> = {}) {
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'session-1', ...data })),
       ...overrides.session,
     },
+    // Registration now issues a verification challenge before any session.
+    emailVerificationChallenge: {
+      deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+      create: jest
+        .fn()
+        .mockImplementation(({ data }) =>
+          Promise.resolve({ id: '00000000-0000-4000-8000-000000000001', attempts: 0, consumedAt: null, ...data })
+        ),
+      findUnique: jest.fn().mockResolvedValue(null),
+      update: jest.fn(),
+      ...overrides.emailVerificationChallenge,
+    },
+    $transaction: jest.fn().mockImplementation((fn: any) => fn(base)),
+  };
+  return base as any;
+}
+
+/** Captures the code instead of mailing it; never a real relay in tests. */
+function stubMailer() {
+  const sent: { to: string; code: string }[] = [];
+  return {
+    sent,
+    isConfigured: true,
+    send: jest.fn(async (input: any) => {
+      sent.push({ to: input.to, code: input.code });
+      return true;
+    }),
   } as any;
 }
 
-function buildApp(prisma: any) {
+const passThrough = (_req: any, _res: any, next: any) => next();
+
+function buildApp(prisma: any, mailer: any = stubMailer()) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', authRouter(prisma));
+  app.use(
+    '/api/v1',
+    authRouter(prisma, {
+      verificationEmail: mailer,
+      limiters: {
+        register: passThrough,
+        verifyEmail: passThrough,
+        resendVerification: passThrough,
+        login: passThrough,
+      },
+    })
+  );
   return app;
 }
 
@@ -39,16 +79,19 @@ describe('auth routes', () => {
     process.env = OLD_ENV;
   });
 
-  it('registers a new user and returns a token', async () => {
+  it('registers a new user and returns a verification challenge, not a session', async () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);
 
     const res = await request(app)
       .post('/api/v1/auth/register')
-      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(res.status).toBe(201);
-    expect(res.body.token).toEqual(expect.any(String));
+    // The session comes from /auth/verify-email now, never from register.
+    expect(res.body.token).toBeUndefined();
+    expect(res.body).toMatchObject({ verificationRequired: true });
+    expect(prisma.session.create).not.toHaveBeenCalled();
     expect(prisma.user.create).toHaveBeenCalled();
   });
 
@@ -56,7 +99,7 @@ describe('auth routes', () => {
     const prisma = makePrismaMock();
     const app = buildApp(prisma);
 
-    await request(app).post('/api/v1/auth/register').send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+    await request(app).post('/api/v1/auth/register').send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ role: 'USER' }) })
@@ -69,7 +112,7 @@ describe('auth routes', () => {
 
     await request(app)
       .post('/api/v1/auth/register')
-      .send({ email: 'voltex.crypto@gmail.com', password: 'correcthorsebattery' });
+      .send({ email: 'voltex.crypto@gmail.com', password: 'Correcthorsebattery' });
 
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ role: 'ADMIN' }) })
@@ -82,7 +125,7 @@ describe('auth routes', () => {
 
     await request(app)
       .post('/api/v1/auth/register')
-      .send({ email: 'Voltex.Crypto@Gmail.com', password: 'correcthorsebattery' });
+      .send({ email: 'Voltex.Crypto@Gmail.com', password: 'Correcthorsebattery' });
 
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ role: 'ADMIN' }) })
@@ -96,7 +139,7 @@ describe('auth routes', () => {
     await request(app)
       .post('/api/v1/auth/register')
       .set('User-Agent', 'test-agent/1.0')
-      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(prisma.auditLog.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -128,7 +171,7 @@ describe('auth routes', () => {
 
     const res = await request(app)
       .post('/api/v1/auth/register')
-      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(res.status).toBe(400);
   });
@@ -140,22 +183,22 @@ describe('auth routes', () => {
 
     const res = await request(app)
       .post('/api/v1/auth/register')
-      .send({ email: 'bob@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'bob@team.com', password: 'Correcthorsebattery' });
 
     expect(res.status).toBe(403);
   });
 
   it('logs in with correct credentials', async () => {
     const bcrypt = require('bcrypt');
-    const passwordHash = await bcrypt.hash('correcthorsebattery', 12);
+    const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
     const prisma = makePrismaMock({
-      user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', passwordHash }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', passwordHash, emailVerifiedAt: new Date('2026-01-01') }) },
     });
     const app = buildApp(prisma);
 
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(res.status).toBe(200);
     expect(res.body.token).toEqual(expect.any(String));
@@ -166,9 +209,9 @@ describe('auth routes', () => {
 
   it('rejects login with wrong password', async () => {
     const bcrypt = require('bcrypt');
-    const passwordHash = await bcrypt.hash('correcthorsebattery', 12);
+    const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
     const prisma = makePrismaMock({
-      user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', passwordHash }) },
+      user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', email: 'alice@team.com', passwordHash, emailVerifiedAt: new Date('2026-01-01') }) },
     });
     const app = buildApp(prisma);
 
@@ -181,7 +224,7 @@ describe('auth routes', () => {
 
   it('rejects login for a blocked account, even with the correct password', async () => {
     const bcrypt = require('bcrypt');
-    const passwordHash = await bcrypt.hash('correcthorsebattery', 12);
+    const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
     const prisma = makePrismaMock({
       user: {
         findUnique: jest
@@ -193,7 +236,7 @@ describe('auth routes', () => {
 
     const res = await request(app)
       .post('/api/v1/auth/login')
-      .send({ email: 'alice@team.com', password: 'correcthorsebattery' });
+      .send({ email: 'alice@team.com', password: 'Correcthorsebattery' });
 
     expect(res.status).toBe(403);
     expect(res.body.error).toContain('Нарушение правил');
@@ -214,13 +257,16 @@ describe('auth routes', () => {
   describe('2FA-enabled login', () => {
     async function makeTwoFactorUser() {
       const bcrypt = require('bcrypt');
-      const passwordHash = await bcrypt.hash('correcthorsebattery', 12);
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 12);
       const { base32 } = speakeasy.generateSecret({ length: 20 });
       const { hashed } = await generateBackupCodes();
       return {
         id: 'user-1',
         email: 'alice@team.com',
         passwordHash,
+        // Predates verification, exactly as the migration's backfill leaves
+        // every account that existed before the feature.
+        emailVerifiedAt: new Date('2026-01-01'),
         twoFactorEnabled: true,
         twoFactorSecret: base32,
         twoFactorBackupCodes: hashed,
@@ -234,7 +280,7 @@ describe('auth routes', () => {
 
       const res = await request(app)
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'correcthorsebattery' });
+        .send({ email: user.email, password: 'Correcthorsebattery' });
 
       expect(res.status).toBe(200);
       expect(res.body.requires2fa).toBe(true);
@@ -249,7 +295,7 @@ describe('auth routes', () => {
 
       const loginRes = await request(app)
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'correcthorsebattery' });
+        .send({ email: user.email, password: 'Correcthorsebattery' });
       const code = speakeasy.totp({ secret: user.twoFactorSecret, encoding: 'base32' });
 
       const res = await request(app)
@@ -270,7 +316,7 @@ describe('auth routes', () => {
 
       const loginRes = await request(app)
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'correcthorsebattery' });
+        .send({ email: user.email, password: 'Correcthorsebattery' });
 
       const res = await request(app)
         .post('/api/v1/auth/login/2fa')
@@ -313,7 +359,7 @@ describe('auth routes', () => {
 
       const loginRes = await request(app)
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'correcthorsebattery' });
+        .send({ email: user.email, password: 'Correcthorsebattery' });
 
       const res = await request(app)
         .post('/api/v1/auth/login/2fa')

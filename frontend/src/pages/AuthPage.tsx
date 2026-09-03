@@ -54,39 +54,26 @@ export function AuthPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (mode === 'register' && password !== confirmPassword) {
-      setError(t('auth.passwordMismatch'));
-      return;
-    }
     setLoading(true);
     try {
-      let result;
-      if (mode === 'login') {
-        result = await api.login(email, password);
-      } else {
-        let refCode: string | undefined;
-        try {
-          refCode = localStorage.getItem(REFERRAL_CODE_STORAGE_KEY) ?? undefined;
-        } catch {
-          // no localStorage access — register without a referral, same as
-          // anyone who never followed a referral link
-        }
-        result = await api.register(email, password, refCode);
-      }
+      // This form is sign-in only; registration is its own approved screen
+      // at /register, which the Регистрация tab links to.
+      const result = await api.login(email, password);
       if ('requires2fa' in result) {
         setPendingToken(result.pendingToken);
       } else {
-        if (mode === 'register') {
-          try {
-            localStorage.removeItem(REFERRAL_CODE_STORAGE_KEY);
-          } catch {
-            // harmless if this fails — the code just lingers unused
-          }
-        }
         setToken(result.token);
         navigate(defaultTradingPath());
       }
     } catch (err) {
+      // The password was right but the address was never confirmed. The
+      // server has already issued and sent a fresh code, so hand the user
+      // straight to the verification screen instead of leaving them at a
+      // login form that will keep refusing them.
+      if (err instanceof ApiError && err.body.code === 'EMAIL_VERIFICATION_REQUIRED') {
+        navigate('/register', { state: { verification: err.body } });
+        return;
+      }
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);
@@ -251,16 +238,13 @@ export function AuthPage() {
                 >
                   {t('auth.login')}
                 </button>
-                <button
-                  style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
-                  onClick={() => {
-                    setMode('register');
-                    setError(null);
-                  }}
-                  type="button"
-                >
+                {/* Registration has its own approved screen (see
+                    pages/register). This tab navigates there rather than
+                    switching this form into a second, different-looking
+                    signup UI. */}
+                <Link to="/register" style={styles.tab}>
                   {t('auth.register')}
-                </button>
+                </Link>
               </div>
 
               {mode === 'register' && (

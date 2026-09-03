@@ -87,6 +87,18 @@ model User {
   /// Rewards a referrer earned FROM this user's own deposits — the other
   /// side of the same rows as referralRewardsEarned above.
   referralRewardsGenerated ReferralReward[] @relation("ReferralRewardsFromDeposits")
+  /// Set the moment the user proves control of their email by entering the
+  /// six-digit code sent at registration (see EmailVerificationChallenge and
+  /// src/services/EmailVerificationService.ts). Null means the account was
+  /// created but never verified: it exists, holds a referral link and a
+  /// password hash, but /auth/login refuses it a session.
+  ///
+  /// Every account that existed before this column was added is backfilled
+  /// to its own createdAt by the migration, so no established user is locked
+  /// out retroactively — verification is a requirement for accounts created
+  /// from this point on.
+  emailVerifiedAt DateTime?
+  emailVerificationChallenges EmailVerificationChallenge[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -113,6 +125,39 @@ model User {
   portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
+}
+
+/// One outstanding email-verification attempt for one user.
+///
+/// The six-digit code is NEVER stored, in plaintext or otherwise. What is
+/// stored is an HMAC-SHA256 of the code keyed by a backend-only secret
+/// (EMAIL_VERIFICATION_SECRET). Six digits is only a million possibilities,
+/// so a plain hash — even bcrypt — would be brute-forceable offline by
+/// anyone who obtained a database dump; the keyed digest is useless without
+/// the secret, which never enters the database.
+///
+/// One row per user is live at a time: issuing a new code (registration or
+/// resend) consumes/replaces the previous one, so an old code stops working
+/// the moment a new one is sent.
+model EmailVerificationChallenge {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// HMAC-SHA256(code, EMAIL_VERIFICATION_SECRET), hex. Never the code.
+  codeHash  String
+  expiresAt DateTime
+  /// Incremented on every wrong code. At MAX_ATTEMPTS the challenge is dead
+  /// and the user must request a new one — this is what stops someone
+  /// walking the million-code space against a live challenge.
+  attempts  Int      @default(0)
+  /// Set when the code is accepted, so a correct code cannot be replayed.
+  consumedAt DateTime?
+  /// When the code was last emailed, for the resend cooldown.
+  lastSentAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum KycStatus {

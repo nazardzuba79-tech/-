@@ -14,6 +14,7 @@ export default {
     './src/pages/SettingsPage.tsx',
     './src/pages/settings-arctic/**/*.{ts,tsx}',
     './src/pages/home/**/*.{ts,tsx}',
+    './src/pages/register/**/*.{ts,tsx}',
   ],
   corePlugins: { preflight: false },
   theme: {
@@ -30,6 +31,8 @@ export default {
           860: '#0e131a',
           850: '#121821',
           800: '#171e28',
+          // The registration card's own surface, one step above ink-800.
+          760: '#1d2531',
         },
         gold: {
           400: '#f0c45a',
@@ -39,6 +42,8 @@ export default {
         up: '#2ebd85',
         down: '#f0616d',
         faint: '#5b6675',
+        // Hairline used for the registration card's borders and field edges.
+        line: '#1b2431',
         // Same names shadcn/the archive uses, pointed at the CSS custom
         // properties SettingsPage.tsx already scopes via ARCTIC_THEME_VARS
         // — one set of values, two consumers (existing inline styles +
