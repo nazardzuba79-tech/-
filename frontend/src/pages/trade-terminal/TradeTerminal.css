@@ -506,19 +506,46 @@
   font-size: 12px; color: var(--text-secondary); padding: 3px 0;
 }
 .trade-terminal .available-balance .amount { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
-.trade-terminal .submit-btn {
-  width: 100%; height: 50px; border: none; border-radius: 8px;
-  font-size: 15px; font-weight: 700; letter-spacing: 0.01em; cursor: pointer;
-  transition: background 0.15s, transform 0.1s; flex-shrink: 0;
-}
 /* The primary CTA sits in the same colour family as the segmented control
-   above it, one step brighter — it is the stronger of the two controls. */
-.trade-terminal .submit-btn.buy { background: linear-gradient(180deg, #1ae0a2, #12c98d); color: #fff; }
-.trade-terminal .submit-btn.buy:hover { background: linear-gradient(180deg, #22ecad, #14d495); }
-.trade-terminal .submit-btn.sell { background: linear-gradient(180deg, #ff6b6b, #ef5350); color: #fff; }
-.trade-terminal .submit-btn.sell:hover { background: linear-gradient(180deg, #ff7d7d, #f45f5c); }
-.trade-terminal .submit-btn:active { transform: translateY(1px); }
-.trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+   above it and stays the stronger of the two — but it used to get there by
+   being brighter (#1ae0a2 reads close to neon) and heavier (700 on pure
+   white), which made a 50px full-width block feel harsh next to the rest
+   of the terminal. It gets its weight from depth now instead: a deeper
+   emerald base, a restrained gradient, a hairline top highlight, and text
+   a shade off pure white. Same height, same radius, same action. */
+.trade-terminal .submit-btn {
+  width: 100%; height: 50px; border: 1px solid transparent; border-radius: 8px;
+  font-size: 15px; font-weight: 640; letter-spacing: 0.01em; cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s; flex-shrink: 0;
+}
+.trade-terminal .submit-btn.buy {
+  background: linear-gradient(180deg, #16c79a, #10b981);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #f3fbf8;
+}
+.trade-terminal .submit-btn.buy:hover { background: linear-gradient(180deg, #1ad2a4, #12c48a); }
+/* Pressed reads as a step down into the surface rather than a nudge
+   downward — no transform, so nothing in the panel shifts on click. */
+.trade-terminal .submit-btn.buy:active { background: linear-gradient(180deg, #12b189, #0e9d6f); }
+.trade-terminal .submit-btn.sell {
+  background: linear-gradient(180deg, #f45d5d, #e65454);
+  border-color: rgba(255, 255, 255, 0.10);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #fff4f3;
+}
+.trade-terminal .submit-btn.sell:hover { background: linear-gradient(180deg, #f76c6c, #ea5f5f); }
+.trade-terminal .submit-btn.sell:active { background: linear-gradient(180deg, #e05252, #d24747); }
+/* Muted rather than just faded: a disabled CTA should not read as a
+   dimmed version of a live one you could still press. */
+.trade-terminal .submit-btn:disabled {
+  background: var(--bg-tertiary);
+  border-color: var(--layer-border);
+  box-shadow: none;
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+}
 
 /* === MARKET / ACCOUNT INFO — fills the space below the CTA that used to
    sit empty (the submit button no longer gets shoved to the panel's
@@ -753,11 +780,34 @@
    stay short at any size. Without this the extra logo column pushed pair
    names into an ellipsis on every row, which is the opposite of the
    "more readable" panel this was meant to be. */
+/* The star was an 11px glyph in a 15px column: visible if you looked for
+   it, and hard to hit — especially on touch. Two independent sizes fix
+   that. The glyph goes to 16px, and an absolutely positioned pseudo-element
+   gives it a 28px hit area that spills left into the row's own padding and
+   right only as far as the grid gap. Being absolutely positioned it
+   contributes nothing to layout, so the grid template, the row height and
+   every column after it are exactly as they were. */
 .trade-terminal .pair-row .p-star {
-  display: grid; place-items: center; color: #657181; font-size: 11px;
+  position: relative;
+  display: grid; place-items: center;
+  color: #7c8899; font-size: 16px; line-height: 1;
+  transition: color 0.12s;
 }
-.trade-terminal .pair-row.active .p-star,
-.trade-terminal .pair-row .p-star:hover { color: #d8b631; }
+.trade-terminal .pair-row .p-star::after {
+  content: ''; position: absolute;
+  top: 50%; transform: translateY(-50%);
+  /* 15px column + the row's 9px left padding + the 4px column gap = 28px,
+     which is the whole budget available without reaching the asset logo. */
+  left: -9px; right: -4px; height: 28px;
+}
+/* Brightness only, no plate behind the glyph — the star stays part of the
+   row rather than becoming a button sitting on it. */
+.trade-terminal .pair-row .p-star:hover { color: #a9b4c4; }
+/* Gold means favourited and nothing else. It used to also apply to
+   .pair-row.active, which made the open pair's star look favourited when
+   it wasn't — selection is already shown by the row itself. */
+.trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); font-size: 17px; }
+.trade-terminal .pair-row .p-star.on:hover { color: #f0cb4a; }
 .trade-terminal .pair-row .p-name {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 11px; font-weight: 650; color: #e3e8ed;

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { api, getToken } from '../../lib/api';
 import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
+import { useAdminGate } from '../../lib/useAdminGate';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
 import {
@@ -29,34 +29,16 @@ const SECTIONS = [
 ];
 
 /**
- * Gate for everything under /admin. This is a UX convenience only — every
- * request the pages below make is independently re-checked for role ADMIN
- * on the server (see requireAdmin middleware); nothing here is trusted.
- * The check is against `role` as reported by GET /me, never against an
- * email address — the backend is the only place that email is ever
- * compared. Deliberately not linked from anywhere in the normal UI: reached
- * only by a direct visit to /admin.
+ * Gate for everything under /admin, via the shared useAdminGate hook — see
+ * its own note for why the check is against `role` from GET /me and why
+ * nothing here is trusted on its own. Deliberately not linked from anywhere
+ * in the normal UI: reached only by a direct visit to /admin.
  */
 export function AdminLayout() {
-  const [status, setStatus] = useState<'loading' | 'denied' | 'ok'>('loading');
-  const [me, setMe] = useState<Awaited<ReturnType<typeof api.getMe>> | null>(null);
+  const { status, me } = useAdminGate();
   const [soundOn, setSoundOn] = useState(isAdminAlertSoundEnabled);
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
-
-  useEffect(() => {
-    if (!getToken()) {
-      setStatus('denied');
-      return;
-    }
-    api
-      .getMe()
-      .then((data) => {
-        setMe(data);
-        setStatus(data.isAdmin ? 'ok' : 'denied');
-      })
-      .catch(() => setStatus('denied'));
-  }, []);
 
   if (status === 'loading') return <div style={styles.loadingScreen} />;
   if (status === 'denied') return <Navigate to="/" replace />;

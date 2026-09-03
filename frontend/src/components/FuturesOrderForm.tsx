@@ -274,14 +274,15 @@ export function FuturesOrderForm({
 
         {error && <div style={styles.error}>{error}</div>}
 
+        {/* The shared terminal CTA, same as spot — this used to be a
+            flat accent fill under a coloured outer glow, which is the one
+            treatment the terminal's design system doesn't use anywhere
+            else. Long/Short keep their own labels and their own colour
+            sides; only the surface is now the common one. */}
         <button
           type="submit"
           disabled={submitting}
-          style={{
-            ...styles.submit,
-            background: side === 'BUY' ? 'var(--buy)' : 'var(--sell)',
-            boxShadow: side === 'BUY' ? '0 4px 16px rgba(0,214,143,0.3)' : '0 4px 16px rgba(255,77,106,0.3)',
-          }}
+          className={`submit-btn ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
         </button>
@@ -423,15 +424,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 10px',
     borderRadius: 6,
     fontSize: 11,
-  },
-  submit: {
-    border: 'none',
-    borderRadius: 10,
-    padding: '14px 0',
-    color: 'var(--on-accent)',
-    fontWeight: 800,
-    fontSize: 14,
-    letterSpacing: '0.01em',
   },
   tiersBox: {
     borderTop: '1px solid var(--border)',

@@ -54,14 +54,18 @@ export function Nav({
 
   // Ordered to match a real exchange's own nav (Markets, then Trade, then
   // Futures right after the primary deposit CTA), with the rest following.
-  const LINKS = [
+  // `adminOnly` entries are filtered out below for everyone else — hiding
+  // the link is cosmetic, the route's own guard is what closes it.
+  const ALL_LINKS: { to: string; label: string; adminOnly?: boolean }[] = [
     { to: '/markets', label: t('nav.markets') },
     { to: '/trade', label: t('nav.trade') },
     { to: '/futures', label: t('nav.futures') },
+    { to: '/analytics', label: t('nav.analytics'), adminOnly: true },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/copy-trading', label: t('nav.copyTrading') },
     { to: '/arbitrage', label: t('nav.arbitrage') },
   ];
+  const LINKS = ALL_LINKS.filter((l) => !l.adminOnly || isAdmin);
 
   useEffect(() => {
     return () => {

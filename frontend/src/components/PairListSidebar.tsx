@@ -289,9 +289,9 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                     made the pair column's width depend on the icon's own
                     layout instead of on the grid. */}
                 <span
-                  className="p-star"
+                  className={`p-star${favorites.has(tk.pair) ? ' on' : ''}`}
                   onClick={(e) => toggleFavorite(tk.pair, e)}
-                  style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : undefined }}
+                  title={t('trade.favorites')}
                 >
                   ★
                 </span>
