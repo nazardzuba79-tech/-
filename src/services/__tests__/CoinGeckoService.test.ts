@@ -10,10 +10,16 @@ const MARKETS_BODY = [
   { symbol: 'usdt', name: 'Tether', image: 'usdt.png', market_cap_rank: 3 },
 ];
 
+// Retries are a production behaviour (see ProviderHealth); a test that
+// mocks a permanent failure would otherwise spend the real jittered
+// backoff on every one of the nine calls a rankings walk makes. The retry
+// policy itself is covered directly in marketData/__tests__.
+const FAST_POLICY = { retries: 0 };
+
 describe('CoinGeckoService', () => {
   it('returns rankings sorted ascending by market cap rank', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(MARKETS_BODY));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -32,7 +38,7 @@ describe('CoinGeckoService', () => {
 
   it('omits the API key header when none is configured', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(MARKETS_BODY));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await service.getRankings();
 
@@ -47,7 +53,7 @@ describe('CoinGeckoService', () => {
       if (url.includes('category=')) return Promise.resolve(jsonResponse([]));
       return Promise.resolve(jsonResponse(MARKETS_BODY));
     });
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -64,7 +70,7 @@ describe('CoinGeckoService', () => {
       if (url.includes('category=')) return Promise.reject(new Error('rate limited'));
       return Promise.resolve(jsonResponse(MARKETS_BODY));
     });
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -80,7 +86,7 @@ describe('CoinGeckoService', () => {
         jsonResponse([{ symbol: 'zzz', name: 'Not A Real Coin', image: 'zzz.png', market_cap_rank: 4 }])
       );
     });
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -95,7 +101,7 @@ describe('CoinGeckoService', () => {
       if (url.includes('category=')) return Promise.resolve(jsonResponse([]));
       return Promise.resolve(jsonResponse(MARKETS_BODY));
     });
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -110,7 +116,7 @@ describe('CoinGeckoService', () => {
       if (url.includes('category=')) return Promise.resolve(jsonResponse([]));
       return Promise.resolve(jsonResponse(MARKETS_BODY));
     });
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -124,7 +130,7 @@ describe('CoinGeckoService', () => {
         { symbol: 'btc', name: 'Some Other BTC', image: 'other.png', market_cap_rank: 150 },
       ])
     );
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -134,7 +140,7 @@ describe('CoinGeckoService', () => {
 
   it('caches rankings and does not refetch within the TTL', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(MARKETS_BODY));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await service.getRankings();
     const callsAfterFirst = fetchFn.mock.calls.length;
@@ -145,14 +151,14 @@ describe('CoinGeckoService', () => {
 
   it('throws ExternalRankingError on a non-OK response', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse({}, false, 429));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await expect(service.getRankings()).rejects.toThrow(ExternalRankingError);
   });
 
   it('throws ExternalRankingError when the network request itself fails', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('DNS failure'));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await expect(service.getRankings()).rejects.toThrow('Failed to reach CoinGecko');
   });
@@ -161,7 +167,7 @@ describe('CoinGeckoService', () => {
     jest.useFakeTimers();
     try {
       const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse(MARKETS_BODY)).mockRejectedValue(new Error('rate limited'));
-      const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+      const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
       const first = await service.getRankings();
       expect(first.map((r) => r.symbol)).toEqual(['BTC', 'ETH', 'USDT']);
@@ -179,7 +185,7 @@ describe('CoinGeckoService', () => {
 
   it('still throws on a refresh failure when there is no prior successful snapshot to fall back to', async () => {
     const fetchFn = jest.fn().mockRejectedValue(new Error('rate limited'));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await expect(service.getRankings()).rejects.toThrow(ExternalRankingError);
   });
@@ -200,7 +206,7 @@ describe('CoinGeckoService', () => {
         },
       ])
     );
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -220,7 +226,7 @@ describe('CoinGeckoService', () => {
     const fetchFn = jest.fn().mockResolvedValue(
       jsonResponse([{ symbol: 'zzz', name: 'Thin Coin', image: 'zzz.png', market_cap_rank: 199 }])
     );
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const rankings = await service.getRankings();
 
@@ -240,7 +246,7 @@ describe('CoinGeckoService.getGlobalMarket', () => {
 
   it('returns the market-wide USD totals, dominance and 24h cap change', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(GLOBAL_BODY));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     const data = await service.getGlobalMarket();
 
@@ -256,7 +262,7 @@ describe('CoinGeckoService.getGlobalMarket', () => {
 
   it('caches within the TTL instead of refetching on every request', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(GLOBAL_BODY));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await service.getGlobalMarket();
     await service.getGlobalMarket();
@@ -269,7 +275,7 @@ describe('CoinGeckoService.getGlobalMarket', () => {
       .fn()
       .mockResolvedValueOnce(jsonResponse(GLOBAL_BODY))
       .mockResolvedValue(jsonResponse({}, false, 429));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await service.getGlobalMarket();
     jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 60 * 60_000);
@@ -281,14 +287,14 @@ describe('CoinGeckoService.getGlobalMarket', () => {
 
   it('throws when the very first call fails, with nothing cached to serve', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse({}, false, 429));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await expect(service.getGlobalMarket()).rejects.toBeInstanceOf(ExternalRankingError);
   });
 
   it('rejects a response with no usable USD totals rather than reporting NaN', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse({ data: { total_volume: {} } }));
-    const service = new CoinGeckoService('https://mock-coingecko', fetchFn);
+    const service = new CoinGeckoService('https://mock-coingecko', fetchFn, undefined, FAST_POLICY);
 
     await expect(service.getGlobalMarket()).rejects.toBeInstanceOf(ExternalRankingError);
   });

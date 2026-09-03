@@ -54,6 +54,8 @@ import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { portfolioRouter } from './api/routes/portfolio';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
+import { analyticsRouter } from './api/routes/analytics';
+import { AnalyticsDataService } from './services/AnalyticsDataService';
 
 // Fail fast, before anything binds or connects. A deployment without a
 // dedicated EMAIL_VERIFICATION_SECRET would accept registrations it could
@@ -104,6 +106,18 @@ const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, ma
 // DemoBalance's schema.prisma doc comment for why).
 const demoEngine = new MatchingEngine();
 const demoTradingService = new DemoTradingService(prisma, demoEngine);
+
+// Read-only analytics aggregation over data this exchange already holds
+// (see AnalyticsDataService): market-wide figures from CoinGecko, the
+// published Fear & Greed index, and this venue's own funding, open
+// interest and mark/index prices. Nothing new is fetched for it.
+const analyticsDataService = new AnalyticsDataService(
+  prisma,
+  coinGeckoService,
+  fearGreedService,
+  markPriceService,
+  futuresMarketRegistry
+);
 
 // Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
 // req.ip is always the proxy's own address, which would both defeat the
@@ -161,6 +175,7 @@ app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', portfolioRouter(prisma));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
+app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

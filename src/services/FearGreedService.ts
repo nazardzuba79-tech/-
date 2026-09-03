@@ -21,6 +21,16 @@
  * CoinGeckoService and the Kraken mirror carry); verify in production.
  */
 
+import { ProviderCache } from './marketData/ProviderCache';
+import {
+  HttpProviderClient,
+  ProviderHealth,
+  ProviderRequestPolicy,
+  ProviderUnavailableError,
+  logCircuitTransition,
+  providerHealthRegistry,
+} from './marketData/ProviderHealth';
+
 export class FearGreedError extends Error {}
 
 export interface FearGreedReading {
@@ -39,47 +49,70 @@ interface FearGreedResponse {
 }
 
 export class FearGreedService {
-  private cache: { reading: FearGreedReading; expiresAt: number } | null = null;
+  // The index is republished once a day, so a reading that is hours past
+  // its TTL is still very often the current published number — hence the
+  // generous stale window. It is descriptive sentiment, never a price.
+  private readonly cache = new ProviderCache<FearGreedReading>({
+    ttlMs: TTL_MS,
+    maxStaleMs: 24 * 60 * 60_000,
+    maxEntries: 2,
+    onStaleServe: (key, ageMs) =>
+      console.warn(`[marketData] alternative.me serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
+  });
+  private readonly http: HttpProviderClient;
+  readonly health: ProviderHealth;
 
   constructor(
     private readonly baseUrl = 'https://api.alternative.me',
-    private readonly fetchFn: typeof fetch = fetch
-  ) {}
+    private readonly fetchFn: typeof fetch = fetch,
+    policy: ProviderRequestPolicy = {}
+  ) {
+    this.health = providerHealthRegistry.register(
+      new ProviderHealth('alternative.me', { onStateChange: logCircuitTransition })
+    );
+    this.http = new HttpProviderClient('Fear & Greed API', {
+      ...policy,
+      fetchFn: this.fetchFn,
+      health: this.health,
+      wrapError: (message) => new FearGreedError(message),
+    });
+  }
 
   /** Latest published reading. Serves the last good snapshot on a failed
    * refresh (the index only moves once a day, so a stale one is still the
    * correct number far more often than not); only a first-ever call
    * throws. */
   async getIndex(): Promise<FearGreedReading> {
-    if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.reading;
+    const cached = await this.cache.fetch('latest', () => this.fetchIndex());
+    return cached.value;
+  }
 
+  private async fetchIndex(): Promise<FearGreedReading> {
     let payload: FearGreedResponse;
     try {
-      const res = await this.fetchFn(`${this.baseUrl}/fng/?limit=1`);
-      if (!res.ok) throw new FearGreedError(`Fear & Greed API responded with HTTP ${res.status}`);
-      payload = (await res.json()) as FearGreedResponse;
-    } catch (err: any) {
-      if (this.cache) return this.cache.reading;
-      if (err instanceof FearGreedError) throw err;
-      throw new FearGreedError(`Failed to reach the Fear & Greed API: ${err.message}`);
+      payload = (await this.http.getJson(`${this.baseUrl}/fng/?limit=1`)) as FearGreedResponse;
+    } catch (err) {
+      if (err instanceof ProviderUnavailableError) {
+        throw new FearGreedError('The Fear & Greed API is temporarily unavailable');
+      }
+      throw err;
     }
 
     const row = payload?.data?.[0];
     const value = Number(row?.value);
     // The API reports the value as a string; anything outside 0-100 means
     // the shape changed under us and is not worth rendering as an index.
+    // Throwing (rather than returning a made-up neutral 50) is what lets
+    // the cache fall back to the last genuinely published reading.
     if (!Number.isFinite(value) || value < 0 || value > 100) {
-      if (this.cache) return this.cache.reading;
       throw new FearGreedError('Fear & Greed API returned no usable value');
     }
 
     const timestamp = Number(row?.timestamp);
-    const reading: FearGreedReading = {
+    return {
       value,
       classification: row?.value_classification || 'Neutral',
       updatedAt: Number.isFinite(timestamp) ? timestamp : Math.floor(Date.now() / 1000),
     };
-    this.cache = { reading, expiresAt: Date.now() + TTL_MS };
-    return reading;
   }
 }

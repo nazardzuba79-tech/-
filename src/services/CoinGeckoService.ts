@@ -18,6 +18,16 @@
  * in production, same caveat the deposit verifiers carry.
  */
 
+import { ProviderCache } from './marketData/ProviderCache';
+import {
+  HttpProviderClient,
+  ProviderHealth,
+  ProviderRequestPolicy,
+  ProviderUnavailableError,
+  logCircuitTransition,
+  providerHealthRegistry,
+} from './marketData/ProviderHealth';
+
 export class ExternalRankingError extends Error {}
 
 export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN' | 'AI' | 'GAMING' | 'RWA';
@@ -169,8 +179,30 @@ interface CoinGeckoGlobalResponse {
 }
 
 export class CoinGeckoService {
-  private cache: { rankings: CoinRanking[]; expiresAt: number } | null = null;
-  private globalCache: { data: GlobalMarketData; expiresAt: number } | null = null;
+  // Both caches are ProviderCache now: same TTLs as before, same
+  // serve-stale-on-failure policy the doc comments below already promised,
+  // plus the in-flight deduplication they lacked — three visitors landing
+  // on a cold rankings cache in the same second previously triggered three
+  // full paged walks (6 CoinGecko calls each) against a 10k/month budget.
+  //
+  // maxStaleMs is deliberately huge for both: this data is descriptive
+  // (ranks, categories, market-wide totals), never something a trade is
+  // priced off, and the alternative to an hour-old market cap is a dash
+  // where a number should be.
+  private readonly rankingsCache = new ProviderCache<CoinRanking[]>({
+    ttlMs: RANKINGS_TTL_MS,
+    maxStaleMs: 24 * 60 * 60_000,
+    maxEntries: 2,
+    onStaleServe: (key, ageMs) => console.warn(`[marketData] coingecko serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
+  });
+  private readonly globalMarketCache = new ProviderCache<GlobalMarketData>({
+    ttlMs: GLOBAL_TTL_MS,
+    maxStaleMs: 6 * 60 * 60_000,
+    maxEntries: 2,
+    onStaleServe: (key, ageMs) => console.warn(`[marketData] coingecko serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
+  });
+  private readonly http: HttpProviderClient;
+  readonly health: ProviderHealth;
 
   constructor(
     private readonly baseUrl = 'https://api.coingecko.com/api/v3',
@@ -181,8 +213,19 @@ export class CoinGeckoService {
     // under real traffic) onto this app's own dedicated 100-calls/min,
     // 10,000-calls/month quota. Optional: falls back to the anonymous tier
     // when unset, same "gracefully absent" pattern as everywhere else.
-    private readonly apiKey?: string
-  ) {}
+    private readonly apiKey?: string,
+    policy: ProviderRequestPolicy = {}
+  ) {
+    this.health = providerHealthRegistry.register(
+      new ProviderHealth('coingecko', { onStateChange: logCircuitTransition })
+    );
+    this.http = new HttpProviderClient('CoinGecko', {
+      ...policy,
+      fetchFn: this.fetchFn,
+      health: this.health,
+      wrapError: (message) => new ExternalRankingError(message),
+    });
+  }
 
   /** Top ~500 coins by market cap, each tagged with whichever of the four
    * tracked categories it belongs to. Sorted ascending by rank.
@@ -197,10 +240,13 @@ export class CoinGeckoService {
    * far less confusing than a flickering dash. Only a genuinely first-ever
    * call (nothing cached yet) still throws. */
   async getRankings(): Promise<CoinRanking[]> {
-    if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.rankings;
+    const cached = await this.rankingsCache.fetch('top500', () => this.fetchRankings());
+    return cached.value;
+  }
 
-    let markets: CoinGeckoMarketRow[];
-    try {
+  private async fetchRankings(): Promise<CoinRanking[]> {
+    let markets: CoinGeckoMarketRow[] = [];
+    {
       markets = [];
       const pageCount = Math.ceil(TOP_N / CG_MAX_PER_PAGE);
       // Sequential, not Promise.all — same reasoning as the per-category
@@ -223,9 +269,6 @@ export class CoinGeckoService {
         }
         markets.push(...rows);
       }
-    } catch (err) {
-      if (this.cache) return this.cache.rankings;
-      throw err;
     }
 
     const bySymbol = new Map<string, CoinRanking>();
@@ -278,9 +321,7 @@ export class CoinGeckoService {
       if (fallback) entry.categories = Array.from(new Set([...entry.categories, ...fallback]));
     }
 
-    const rankings = Array.from(bySymbol.values()).sort((a, b) => a.rank - b.rank);
-    this.cache = { rankings, expiresAt: Date.now() + RANKINGS_TTL_MS };
-    return rankings;
+    return Array.from(bySymbol.values()).sort((a, b) => a.rank - b.rank);
   }
 
   /** Market-wide 24h volume, total market cap and BTC dominance from
@@ -289,49 +330,48 @@ export class CoinGeckoService {
    * snapshot rather than blanking the headline figure, and only a
    * genuinely first-ever call throws. */
   async getGlobalMarket(): Promise<GlobalMarketData> {
-    if (this.globalCache && this.globalCache.expiresAt > Date.now()) return this.globalCache.data;
+    const cached = await this.globalMarketCache.fetch('global', () => this.fetchGlobalMarket());
+    return cached.value;
+  }
 
-    let payload: CoinGeckoGlobalResponse;
-    try {
-      payload = (await this.request('/global')) as CoinGeckoGlobalResponse;
-    } catch (err) {
-      if (this.globalCache) return this.globalCache.data;
-      throw err;
-    }
+  private async fetchGlobalMarket(): Promise<GlobalMarketData> {
+    const payload = (await this.request('/global')) as CoinGeckoGlobalResponse;
 
     const totalVolume24hUsd = Number(payload?.data?.total_volume?.usd);
     const totalMarketCapUsd = Number(payload?.data?.total_market_cap?.usd);
+    // A response we can't read is a failure, not a zero — throwing here is
+    // what lets ProviderCache fall back to the last good snapshot.
     if (!Number.isFinite(totalVolume24hUsd) || !Number.isFinite(totalMarketCapUsd)) {
-      if (this.globalCache) return this.globalCache.data;
       throw new ExternalRankingError('CoinGecko /global returned no usable USD totals');
     }
 
     const btcDominance = Number(payload?.data?.market_cap_percentage?.btc);
     const ethDominance = Number(payload?.data?.market_cap_percentage?.eth);
     const capChange = Number(payload?.data?.market_cap_change_percentage_24h_usd);
-    const data: GlobalMarketData = {
+    return {
       totalVolume24hUsd,
       totalMarketCapUsd,
       btcDominancePercent: Number.isFinite(btcDominance) ? btcDominance : null,
       ethDominancePercent: Number.isFinite(ethDominance) ? ethDominance : null,
       marketCapChangePercent24h: Number.isFinite(capChange) ? capChange : null,
     };
-    this.globalCache = { data, expiresAt: Date.now() + GLOBAL_TTL_MS };
-    return data;
   }
 
+  /** Shared outbound policy: bounded jittered retries, Retry-After respect
+   *  (CoinGecko's free tier sends one), 429 accounting and a circuit that
+   *  stops a rate-limited window from turning into a request storm. The
+   *  Demo API key, when present, only ever travels in this request header —
+   *  never into a log line or a response body. */
   private async request(path: string): Promise<unknown> {
-    let res: Response;
     try {
-      res = await this.fetchFn(`${this.baseUrl}${path}`, {
+      return await this.http.getJson(`${this.baseUrl}${path}`, {
         headers: this.apiKey ? { 'x-cg-demo-api-key': this.apiKey } : undefined,
       });
-    } catch (err: any) {
-      throw new ExternalRankingError(`Failed to reach CoinGecko: ${err.message}`);
+    } catch (err) {
+      if (err instanceof ProviderUnavailableError) {
+        throw new ExternalRankingError('CoinGecko is temporarily unavailable');
+      }
+      throw err;
     }
-    if (!res.ok) {
-      throw new ExternalRankingError(`CoinGecko responded with HTTP ${res.status}`);
-    }
-    return res.json();
   }
 }

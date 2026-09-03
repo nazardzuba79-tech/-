@@ -163,6 +163,13 @@ class KrakenSocket {
     socket.onclose = () => {
       this.ws = null;
       this.connecting = false;
+      // Everything held in bookState was built from deltas applied to a
+      // snapshot that is now gone. Kraken sends a fresh snapshot on
+      // resubscribe (and applyBookUpdate resets on one), but dropping it
+      // here means a book cannot be rendered from half-old state in the
+      // window between reconnecting and that snapshot arriving.
+      this.bookState.clear();
+      this.dirtyPairs.clear();
       this.setStatus('disconnected');
       this.scheduleReconnect();
     };
@@ -172,10 +179,14 @@ class KrakenSocket {
   private scheduleReconnect() {
     if (this.bookListeners.size === 0 && this.tradeListeners.size === 0) return;
     if (this.reconnectTimer !== null) return;
+    // Full jitter, same reasoning as the backend's provider backoff: every
+    // browser that was connected when Kraken dropped would otherwise
+    // reconnect on the same schedule and re-create the burst that broke it.
+    const delay = Math.round(Math.random() * this.reconnectDelay);
     this.reconnectTimer = window.setTimeout(() => {
       this.reconnectTimer = null;
       this.ensureConnected();
-    }, this.reconnectDelay);
+    }, delay);
     this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, MAX_RECONNECT_DELAY_MS);
   }
 

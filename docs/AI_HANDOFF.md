@@ -411,3 +411,115 @@ mark/index price, market registry) was audited and left exactly as-is.
   same Kraken-mirrored ticker feed in this environment (see item 6 above) — this is
   an existing, now-documented characteristic of the exchange's current data sources,
   not something introduced or changed by this task.
+
+## 2026-09-03 — Market data layer hardening + Analytics data foundation
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main`, Render and production untouched.
+- Full architecture write-up: **`docs/MARKET_DATA_ARCHITECTURE.md`** (new).
+
+### What this was
+Not a rewrite. Three shared primitives were introduced and the existing provider
+services were moved onto them, keeping every public API contract and every page's
+behaviour identical. Providers are unchanged: Kraken (REST + browser WS), CoinGecko,
+alternative.me. **No new provider was added** — no gap was found that the current
+sources plus this exchange's own book couldn't cover, and adding one would mean new
+budget, secrets and failure modes for data nobody is asking for yet.
+
+### New shared infrastructure
+- **`src/services/marketData/ProviderCache.ts`** — the one caching primitive: TTL,
+  in-flight deduplication, stale-last-good with a bounded staleness budget, and an
+  LRU ceiling. Previously each service hand-rolled `{data, expiresAt}` with different
+  behaviour: only Kraken's ticker walk deduplicated, only CoinGecko/Fear & Greed
+  served stale, and none of the per-symbol maps had any bound.
+- **`src/services/marketData/ProviderHealth.ts`** — `ProviderHealth`
+  (CLOSED/OPEN/HALF_OPEN circuit, consecutive failures, last success/failure, 429
+  counter), `parseRetryAfter`, `backoffWithJitter`, and `HttpProviderClient` (the
+  shared outbound GET: bounded retries, full-jitter backoff, Retry-After respect,
+  health recording, hard stop while open). Plus a process-wide
+  `providerHealthRegistry`.
+
+### Services moved onto it (behaviour preserved)
+- `KrakenMarketDataService` — all five caches (symbols, tickers, order book, candles,
+  trades) now deduplicate and are bounded; every outbound call goes through the
+  retry/backoff/circuit policy.
+- `CoinGeckoService`, `FearGreedService` — same, keeping their existing
+  serve-stale-on-failure promise (now bounded rather than unlimited).
+- Each service takes an optional `ProviderRequestPolicy` last argument so tests can
+  disable retries; production defaults are unchanged.
+
+### Candle caching (the BTC to ETH to SOL to BTC problem)
+Cached as one series per `pair:interval` instead of per `pair:interval:limit`. A
+refresh past the 5s TTL asks Kraken for `since=<last closed candle>` — one or two
+candles — and merges, replacing the previously-open bucket with its final closed
+form. `limit` is a slice of the shared series, so a 300-candle and a 720-candle
+consumer share one fetch. Returning to a pair reuses its history instead of
+re-downloading ~720 candles.
+
+### Analytics data foundation (no UI built)
+- **`src/services/AnalyticsDataService.ts`** + **`src/api/routes/analytics.ts`**
+  (`GET /api/v1/analytics/overview`), gated by `requireAuth` + `requireAdmin` — the
+  server-side half of the same admin gate `/analytics` already uses via
+  `useAdminGate`. The permission model itself is unchanged, and `AnalyticsPage.tsx`
+  was **not** touched: no cards, no dashboard, no UI.
+- Real sections: market overview (CoinGecko `/global` — cap, volume, BTC and ETH
+  dominance, 24h change), sentiment (alternative.me), funding (this venue's own
+  settled `FundingRateRecord` + real interval boundary), open interest (this venue's
+  own positions, explicitly `scope: 'venue'`), mark and index prices, and provider
+  health.
+- Deliberately unsupported, each returned as `available: false` with a reason **and
+  no value-carrying fields at all**: liquidations, long/short ratio, cross-venue open
+  interest, ETF flows, exchange flows, whale activity. A test asserts those sections
+  carry only `available`/`reason`/`detail`, so nothing can be plotted as a zero.
+
+### Frontend
+- Direct provider dependencies inventoried: the **only** one is `krakenSocket.ts` to
+  `wss://ws.kraken.com/v2` for the live book/tape. Classified **B — temporarily
+  acceptable**: moving it behind VOLTEX needs a production WS proxy (fan-out,
+  backpressure, connection limits), explicitly out of scope here; it carries no
+  secret and degrades honestly through `ConnectionBanner`. Everything else already
+  goes frontend to `lib/api.ts` to VOLTEX to provider. Nothing needed removing.
+- WS audit found the shared-connection, reference-counted subscription model already
+  correct (BTC to ETH to SOL to BTC leaks nothing). Two hardening fixes: reconnect
+  backoff now uses full jitter, and cached book state is cleared on disconnect so a
+  book can never be rendered from pre-disconnect deltas.
+
+### Files added
+`src/services/marketData/ProviderCache.ts`, `src/services/marketData/ProviderHealth.ts`,
+`src/services/AnalyticsDataService.ts`, `src/api/routes/analytics.ts`,
+`src/services/marketData/__tests__/{ProviderCache,ProviderHealth}.test.ts`,
+`src/services/__tests__/AnalyticsDataService.test.ts`,
+`src/api/routes/__tests__/analytics.test.ts`, `docs/MARKET_DATA_ARCHITECTURE.md`.
+
+### Files changed
+`src/services/{KrakenMarketDataService,CoinGeckoService,FearGreedService}.ts`,
+`src/index.ts` (analytics wiring),
+`src/services/__tests__/{KrakenMarketDataService,CoinGeckoService}.test.ts`,
+`frontend/src/lib/krakenSocket.ts`.
+
+### Not touched
+Matching engine, order execution, wallet balances, futures margin/liquidation
+engines, copy trading. No visual redesign anywhere; `AnalyticsPage.tsx`, Markets,
+Trade, Futures and the Homepage are visually unchanged. The Futures fixes from the
+preceding task are intact.
+
+### Validation actually run
+- Backend `tsc --noEmit`, frontend `tsc --noEmit`, `prisma validate`: all clean.
+- Backend suite: **67 suites / 666 tests passed** (was 63/624 — 42 new tests: 9 cache,
+  18 health/circuit/Retry-After, 3 candle caching, 8 analytics service, 4 analytics
+  route). All deterministic, injected clocks and sleeps, no test touches a real
+  provider.
+- Frontend production build: passed (`built in 6.04s`).
+- Live API check against the running backend: ticker/candle response shapes
+  unchanged; `/analytics/overview` returns 401 unauthenticated and 403 for a
+  non-admin account.
+- Browser regression (Playwright) at 1440 and 390: Homepage (anonymous), Markets,
+  Trade and Futures all render live numbers with 0 horizontal overflow and 0 runtime
+  errors.
+
+### Known limitations
+- Freshness metadata is tracked and logged internally but not yet surfaced in HTTP
+  responses — adding it would change contracts this task was told to preserve. Noted
+  in the architecture doc as the natural next step.
+- Provider health/cache are per-process, correct for one Render instance.
+- This sandbox blocks Kraken/CoinGecko/alternative.me, so provider behaviour remains
+  covered by deterministic mocked tests only.

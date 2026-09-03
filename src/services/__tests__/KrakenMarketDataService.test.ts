@@ -340,3 +340,88 @@ describe('KrakenMarketDataService', () => {
     await expect(service.listSymbols()).rejects.toThrow(ExternalMarketDataError);
   });
 });
+
+/**
+ * The navigation every trader does — BTC, away to other pairs, back to
+ * BTC — used to re-download BTC's entire candle history on the way back,
+ * because the cache keyed on pair+interval+limit with a 5s TTL. Closed
+ * candles are immutable, so the only thing that can have changed is the
+ * newest bucket.
+ */
+describe('KrakenMarketDataService candle caching', () => {
+  const HOUR = 3_600;
+  // A series whose newest bucket is "now", so the tail request is the
+  // realistic case rather than an artificially huge gap.
+  function ohlcBody(rows: [number, string, string, string, string, string, string, number][]) {
+    return { error: [], result: { XBTUSDT: rows, last: rows[rows.length - 1][0] } };
+  }
+
+  function candleRow(time: number, close: string): [number, string, string, string, string, string, string, number] {
+    return [time, close, close, close, close, close, '1', 1];
+  }
+
+  it('serves a second request for the same series from cache, with no extra OHLC call', async () => {
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(url.includes('AssetPairs') ? ASSET_PAIRS_BODY : OHLC_BODY))
+    );
+    const service = new KrakenMarketDataService('https://mock-kraken', fetchFn as any);
+
+    await service.getCandles('BTC/USDT', '1m');
+    await service.getCandles('BTC/USDT', '1m');
+
+    const ohlcCalls = fetchFn.mock.calls.filter(([url]: [string]) => String(url).includes('OHLC'));
+    expect(ohlcCalls).toHaveLength(1);
+  });
+
+  it('serves different limits of the same series from ONE cached fetch', async () => {
+    const fetchFn = jest.fn().mockImplementation((url: string) =>
+      Promise.resolve(jsonResponse(url.includes('AssetPairs') ? ASSET_PAIRS_BODY : OHLC_BODY))
+    );
+    const service = new KrakenMarketDataService('https://mock-kraken', fetchFn as any);
+
+    const wide = await service.getCandles('BTC/USDT', '1m', 300);
+    const narrow = await service.getCandles('BTC/USDT', '1m', 1);
+
+    expect(fetchFn.mock.calls.filter(([url]: [string]) => String(url).includes('OHLC'))).toHaveLength(1);
+    expect(wide).toHaveLength(2);
+    expect(narrow).toHaveLength(1);
+    // The narrow slice is the newest candle, not the oldest.
+    expect(narrow[0].time).toBe(wide[wide.length - 1].time);
+  });
+
+  it('tops up with a `since` tail instead of re-downloading history, and closes the previously-open candle', async () => {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const t0 = nowSeconds - 2 * HOUR;
+    const t1 = nowSeconds - HOUR;
+    const t2 = nowSeconds;
+
+    const initial = ohlcBody([candleRow(t0, '100'), candleRow(t1, '101')]);
+    // The tail re-reports t1 with its FINAL close, plus the new bucket.
+    const tail = ohlcBody([candleRow(t1, '109'), candleRow(t2, '110')]);
+
+    let ohlcCall = 0;
+    const fetchFn = jest.fn().mockImplementation((url: string) => {
+      if (String(url).includes('AssetPairs')) return Promise.resolve(jsonResponse(ASSET_PAIRS_BODY));
+      ohlcCall += 1;
+      return Promise.resolve(jsonResponse(ohlcCall === 1 ? initial : tail));
+    });
+
+    const service = new KrakenMarketDataService('https://mock-kraken', fetchFn as any);
+    await service.getCandles('BTC/USDT', '1h');
+
+    // Past the 5s open-candle TTL, the next request tops the series up.
+    jest.spyOn(Date, 'now').mockReturnValue(Date.now() + 6_000);
+    const merged = await service.getCandles('BTC/USDT', '1h');
+    jest.spyOn(Date, 'now').mockRestore();
+
+    const ohlcUrls = fetchFn.mock.calls.map(([url]: [string]) => String(url)).filter((u) => u.includes('OHLC'));
+    expect(ohlcUrls).toHaveLength(2);
+    expect(ohlcUrls[0]).not.toContain('since=');
+    expect(ohlcUrls[1]).toContain(`since=${t0}`); // asks only for what it lacks
+
+    // Three distinct buckets, no duplicate for t1, and t1 now carries its
+    // final close rather than the value it had while still forming.
+    expect(merged.map((c) => c.time)).toEqual([t0, t1, t2]);
+    expect(merged.find((c) => c.time === t1)?.close).toBe(109);
+  });
+});

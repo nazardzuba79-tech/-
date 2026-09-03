@@ -13,6 +13,16 @@
  * matching engine — it only reads and caches.
  */
 
+import { ProviderCache } from './marketData/ProviderCache';
+import {
+  HttpProviderClient,
+  ProviderHealth,
+  ProviderRequestPolicy,
+  ProviderUnavailableError,
+  logCircuitTransition,
+  providerHealthRegistry,
+} from './marketData/ProviderHealth';
+
 export class ExternalMarketDataError extends Error {}
 
 export interface MarketSymbol {
@@ -68,11 +78,33 @@ export interface MarketTrade {
   time: number; // unix ms
 }
 
+// TTLs by data type, and how long each may still be served past its TTL if
+// a refresh FAILS (see ProviderCache). The staleness budgets are graded by
+// how much a stale value could mislead someone:
+//
+//  - symbols: a pair listing barely changes; an hour-old list beats an
+//    empty exchange.
+//  - tickers/order book: trading-adjacent. A short grace covers a single
+//    failed poll; past that the API says "unavailable" rather than dressing
+//    up an old price as current.
+//  - candles: closed candles are immutable, so the only stale part is the
+//    newest bucket — a generous grace here just keeps the chart drawn.
 const SYMBOLS_TTL_MS = 5 * 60_000;
+const SYMBOLS_MAX_STALE_MS = 60 * 60_000;
 const TICKERS_TTL_MS = 5_000;
+const TICKERS_MAX_STALE_MS = 60_000;
 const ORDERBOOK_TTL_MS = 2_000;
+const ORDERBOOK_MAX_STALE_MS = 10_000;
+// The open (still-forming) candle is the only part of a series that can
+// change, so this is really "how often do we top up the tail".
 const CANDLES_TTL_MS = 5_000;
+const CANDLES_MAX_STALE_MS = 10 * 60_000;
 const TRADES_TTL_MS = 2_000;
+const TRADES_MAX_STALE_MS = 30_000;
+
+// Longest candle series kept per pair+interval. Bounds memory per entry the
+// same way ProviderCache bounds the number of entries.
+const MAX_CACHED_CANDLES = 1000;
 
 // Kraken renamed a few assets long ago (legacy ticker codes) — its
 // AssetPairs "wsname" still uses these instead of the common ticker.
@@ -119,19 +151,43 @@ const TICKER_BATCH_SIZE = 40;
 const TICKER_CONCURRENCY = 6;
 
 export class KrakenMarketDataService {
-  private symbolsCache: { byPair: Map<string, SymbolInfo>; expiresAt: number } | null = null;
-  private tickersCache: { byPair: Map<string, MarketTicker>; expiresAt: number } | null = null;
-  // Shared by every caller that lands mid-walk, so a burst of requests
-  // while the cache is cold/expired triggers one walk, not one each.
-  private tickersInFlight: Promise<Map<string, MarketTicker>> | null = null;
-  private readonly orderBookCache = new Map<string, { data: MarketOrderBookSnapshot; expiresAt: number }>();
-  private readonly candlesCache = new Map<string, { data: MarketCandle[]; expiresAt: number }>();
-  private readonly tradesCache = new Map<string, { data: MarketTrade[]; expiresAt: number }>();
+  // Every cache below is a ProviderCache: TTL + in-flight deduplication +
+  // stale-last-good + an LRU bound. Before this, only the ticker walk
+  // deduplicated concurrent callers and none of the per-pair maps had a
+  // ceiling — three visitors opening the same chart at once meant three
+  // identical outbound requests, and an arbitrary-symbol caller could grow
+  // the maps without limit.
+  private readonly symbols: ProviderCache<Map<string, SymbolInfo>>;
+  private readonly tickers: ProviderCache<Map<string, MarketTicker>>;
+  private readonly orderBooks: ProviderCache<MarketOrderBookSnapshot>;
+  private readonly candleSeries: ProviderCache<MarketCandle[]>;
+  private readonly trades: ProviderCache<MarketTrade[]>;
+  private readonly http: HttpProviderClient;
+  readonly health: ProviderHealth;
 
   constructor(
     private readonly baseUrl = 'https://api.kraken.com',
-    private readonly fetchFn: typeof fetch = fetch
-  ) {}
+    private readonly fetchFn: typeof fetch = fetch,
+    policy: ProviderRequestPolicy = {}
+  ) {
+    this.health = providerHealthRegistry.register(
+      new ProviderHealth('kraken', { onStateChange: logCircuitTransition })
+    );
+    this.http = new HttpProviderClient('Kraken', {
+      ...policy,
+      fetchFn: this.fetchFn,
+      health: this.health,
+      wrapError: (message) => new ExternalMarketDataError(message),
+    });
+
+    const onStaleServe = (key: string, ageMs: number) =>
+      console.warn(`[marketData] kraken serving stale ${key} (${Math.round(ageMs / 1000)}s old)`);
+    this.symbols = new ProviderCache({ ttlMs: SYMBOLS_TTL_MS, maxStaleMs: SYMBOLS_MAX_STALE_MS, maxEntries: 4, onStaleServe });
+    this.tickers = new ProviderCache({ ttlMs: TICKERS_TTL_MS, maxStaleMs: TICKERS_MAX_STALE_MS, maxEntries: 4, onStaleServe });
+    this.orderBooks = new ProviderCache({ ttlMs: ORDERBOOK_TTL_MS, maxStaleMs: ORDERBOOK_MAX_STALE_MS, maxEntries: 120, onStaleServe });
+    this.candleSeries = new ProviderCache({ ttlMs: CANDLES_TTL_MS, maxStaleMs: CANDLES_MAX_STALE_MS, maxEntries: 120, onStaleServe });
+    this.trades = new ProviderCache({ ttlMs: TRADES_TTL_MS, maxStaleMs: TRADES_MAX_STALE_MS, maxEntries: 120, onStaleServe });
+  }
 
   async listSymbols(): Promise<MarketSymbol[]> {
     const byPair = await this.getSymbolsMap();
@@ -150,76 +206,105 @@ export class KrakenMarketDataService {
 
   async getOrderBook(pair: string, limit = 50): Promise<MarketOrderBookSnapshot> {
     const normalizedPair = pair.toUpperCase();
-    const cached = this.orderBookCache.get(normalizedPair);
-    if (cached && cached.expiresAt > Date.now()) return cached.data;
-
-    const info = await this.requireSymbol(normalizedPair);
-    const body = await this.request(`/0/public/Depth?pair=${info.krakenName}&count=${limit}`);
-    const result = Object.values(body.result)[0] as { asks: [string, string, number][]; bids: [string, string, number][] };
-
-    const snapshot: MarketOrderBookSnapshot = {
-      pair: normalizedPair,
-      bids: result.bids.map(([price, quantity]) => ({ price, quantity })),
-      asks: result.asks.map(([price, quantity]) => ({ price, quantity })),
-      timestamp: Date.now(),
-    };
-    this.orderBookCache.set(normalizedPair, { data: snapshot, expiresAt: Date.now() + ORDERBOOK_TTL_MS });
-    return snapshot;
+    // Keyed with the depth too: a 200-level request must not be served the
+    // 50-level snapshot a different caller just cached.
+    const cached = await this.orderBooks.fetch(`${normalizedPair}:${limit}`, async () => {
+      const info = await this.requireSymbol(normalizedPair);
+      const body = await this.request(`/0/public/Depth?pair=${info.krakenName}&count=${limit}`);
+      const result = Object.values(body.result)[0] as { asks: [string, string, number][]; bids: [string, string, number][] };
+      return {
+        pair: normalizedPair,
+        bids: result.bids.map(([price, quantity]) => ({ price, quantity })),
+        asks: result.asks.map(([price, quantity]) => ({ price, quantity })),
+        timestamp: Date.now(),
+      } satisfies MarketOrderBookSnapshot;
+    });
+    return cached.value;
   }
 
+  /**
+   * Candles, cached as ONE series per pair+interval rather than per
+   * requested `limit`, and topped up rather than re-downloaded.
+   *
+   * A closed candle never changes: once 12:00-12:05 is over, its OHLCV is
+   * final forever. Only the newest bucket is still forming. The old cache
+   * ignored that — it keyed on `pair:interval:limit` with a 5s TTL, so the
+   * BTC -> ETH -> SOL -> BTC navigation every trader does re-downloaded
+   * BTC's entire ~720-candle history on the way back, every time.
+   *
+   * Now the first request for a pair+interval fetches the full window and
+   * keeps it; subsequent requests past the TTL ask Kraken for candles
+   * `since` the last CLOSED bucket, which returns the handful that have
+   * happened since (usually one or two), and merge them in — the
+   * previously-open candle is replaced by its now-closed version, so no
+   * incomplete bucket is ever kept as history. `limit` is applied as a
+   * slice of the shared series, so two consumers asking for 300 and 720
+   * candles still cost one request.
+   */
   async getCandles(pair: string, interval: string, limit = 300): Promise<MarketCandle[]> {
     const krakenInterval = INTERVAL_MAP[interval];
     if (!krakenInterval) throw new ExternalMarketDataError(`Unsupported interval: ${interval}`);
 
     const normalizedPair = pair.toUpperCase();
-    const cacheKey = `${normalizedPair}:${interval}:${limit}`;
-    const cached = this.candlesCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) return cached.data;
+    const key = `${normalizedPair}:${interval}`;
+    const cached = await this.candleSeries.fetch(key, async () => {
+      const previous = this.candleSeries.peek(key)?.value;
+      const info = await this.requireSymbol(normalizedPair);
 
-    const info = await this.requireSymbol(normalizedPair);
-    const body = await this.request(`/0/public/OHLC?pair=${info.krakenName}&interval=${krakenInterval}`);
-    const rows = Object.values(body.result).find((v) => Array.isArray(v)) as
-      | [number, string, string, string, string, string, string, number][]
-      | undefined;
-    if (!rows) throw new ExternalMarketDataError(`No OHLC data for ${normalizedPair}`);
+      // Only ask for the tail when we already hold history AND the gap is
+      // small enough that Kraken's window covers it — otherwise a chart
+      // reopened hours later would silently keep a hole in the middle.
+      const lastClosed = previous && previous.length >= 2 ? previous[previous.length - 2] : null;
+      const intervalSeconds = krakenInterval * 60;
+      const gapCandles = lastClosed ? (Date.now() / 1000 - lastClosed.time) / intervalSeconds : Infinity;
+      const useSince = lastClosed !== null && gapCandles < 500;
 
-    // Kraken already returns candles oldest-first.
-    const candles: MarketCandle[] = rows.slice(-limit).map(([time, open, high, low, close, , volume]) => ({
-      time,
-      open: Number(open),
-      high: Number(high),
-      low: Number(low),
-      close: Number(close),
-      volume: Number(volume),
-    }));
-    this.candlesCache.set(cacheKey, { data: candles, expiresAt: Date.now() + CANDLES_TTL_MS });
-    return candles;
+      const query = `/0/public/OHLC?pair=${info.krakenName}&interval=${krakenInterval}` + (useSince ? `&since=${lastClosed!.time}` : '');
+      const body = await this.request(query);
+      const rows = Object.values(body.result).find((v) => Array.isArray(v)) as
+        | [number, string, string, string, string, string, string, number][]
+        | undefined;
+      if (!rows) throw new ExternalMarketDataError(`No OHLC data for ${normalizedPair}`);
+
+      // Kraken already returns candles oldest-first.
+      const fetched: MarketCandle[] = rows.map(([time, open, high, low, close, , volume]) => ({
+        time,
+        open: Number(open),
+        high: Number(high),
+        low: Number(low),
+        close: Number(close),
+        volume: Number(volume),
+      }));
+
+      if (!useSince || !previous) return fetched.slice(-MAX_CACHED_CANDLES);
+      return mergeCandleSeries(previous, fetched).slice(-MAX_CACHED_CANDLES);
+    });
+
+    return cached.value.slice(-limit);
   }
 
   async getRecentTrades(pair: string, limit = 60): Promise<MarketTrade[]> {
     const normalizedPair = pair.toUpperCase();
-    const cached = this.tradesCache.get(normalizedPair);
-    if (cached && cached.expiresAt > Date.now()) return cached.data;
+    const cached = await this.trades.fetch(`${normalizedPair}:${limit}`, async () => {
+      const info = await this.requireSymbol(normalizedPair);
+      const body = await this.request(`/0/public/Trades?pair=${info.krakenName}`);
+      const rows = Object.values(body.result).find((v) => Array.isArray(v)) as
+        | [string, string, number, string, string, string][]
+        | undefined;
+      if (!rows) throw new ExternalMarketDataError(`No trade data for ${normalizedPair}`);
 
-    const info = await this.requireSymbol(normalizedPair);
-    const body = await this.request(`/0/public/Trades?pair=${info.krakenName}`);
-    const rows = Object.values(body.result).find((v) => Array.isArray(v)) as
-      | [string, string, number, string, string, string][]
-      | undefined;
-    if (!rows) throw new ExternalMarketDataError(`No trade data for ${normalizedPair}`);
-
-    const trades: MarketTrade[] = rows
-      .slice(-limit)
-      .reverse() // Kraken returns oldest-first; a trade tape reads newest-first.
-      .map(([price, volume, time, side], idx) => ({
-        id: `${time}-${price}-${volume}-${idx}`,
-        price,
-        quantity: volume,
-        side: side === 'b' ? 'BUY' : 'SELL',
-        time: Math.round(time * 1000),
-      }));
-    this.tradesCache.set(normalizedPair, { data: trades, expiresAt: Date.now() + TRADES_TTL_MS });
-    return trades;
+      return rows
+        .slice(-limit)
+        .reverse() // Kraken returns oldest-first; a trade tape reads newest-first.
+        .map(([price, volume, time, side], idx) => ({
+          id: `${time}-${price}-${volume}-${idx}`,
+          price,
+          quantity: volume,
+          side: side === 'b' ? 'BUY' : ('SELL' as 'BUY' | 'SELL'),
+          time: Math.round(time * 1000),
+        }));
+    });
+    return cached.value;
   }
 
   private async requireSymbol(normalizedPair: string): Promise<SymbolInfo> {
@@ -230,9 +315,11 @@ export class KrakenMarketDataService {
   }
 
   private async getSymbolsMap(): Promise<Map<string, SymbolInfo>> {
-    if (this.symbolsCache && this.symbolsCache.expiresAt > Date.now()) {
-      return this.symbolsCache.byPair;
-    }
+    const cached = await this.symbols.fetch('assetPairs', () => this.fetchSymbolsMap());
+    return cached.value;
+  }
+
+  private async fetchSymbolsMap(): Promise<Map<string, SymbolInfo>> {
     const body = await this.request('/0/public/AssetPairs');
     const byPair = new Map<string, SymbolInfo>();
     for (const [, raw] of Object.entries(body.result as Record<string, KrakenAssetPair>)) {
@@ -280,20 +367,14 @@ export class KrakenMarketDataService {
       byPair.set(usdtPair, { pair: usdtPair, baseAsset: info.baseAsset, quoteAsset: 'USDT', krakenName: info.krakenName });
     }
 
-    this.symbolsCache = { byPair, expiresAt: Date.now() + SYMBOLS_TTL_MS };
     return byPair;
   }
 
   private async getTickersMap(): Promise<Map<string, MarketTicker>> {
-    if (this.tickersCache && this.tickersCache.expiresAt > Date.now()) {
-      return this.tickersCache.byPair;
-    }
-    if (this.tickersInFlight) return this.tickersInFlight;
-
-    this.tickersInFlight = this.fetchTickersMap().finally(() => {
-      this.tickersInFlight = null;
-    });
-    return this.tickersInFlight;
+    // ProviderCache supplies what the hand-rolled `tickersInFlight` field
+    // used to: one shared walk for every caller that lands while it runs.
+    const cached = await this.tickers.fetch('all', () => this.fetchTickersMap());
+    return cached.value;
   }
 
   private async fetchTickersMap(): Promise<Map<string, MarketTicker>> {
@@ -375,26 +456,45 @@ export class KrakenMarketDataService {
         }
       }
     }
-    this.tickersCache = { byPair, expiresAt: Date.now() + TICKERS_TTL_MS };
     return byPair;
   }
 
+  /**
+   * Every outbound Kraken call goes through the shared HTTP policy:
+   * bounded retries with jittered backoff, Retry-After respect, 429
+   * accounting, and a circuit that stops hammering a provider that is
+   * already failing. Kraken's own body-level `error[]` convention is
+   * checked here because only this service knows about it.
+   */
   private async request(path: string): Promise<any> {
-    let res: Response;
+    let body: { error: string[]; result: any };
     try {
-      res = await this.fetchFn(`${this.baseUrl}${path}`);
-    } catch (err: any) {
-      throw new ExternalMarketDataError(`Failed to reach Kraken: ${err.message}`);
+      body = (await this.http.getJson(`${this.baseUrl}${path}`)) as { error: string[]; result: any };
+    } catch (err) {
+      if (err instanceof ProviderUnavailableError) {
+        throw new ExternalMarketDataError('Kraken is temporarily unavailable');
+      }
+      throw err;
     }
-    if (!res.ok) {
-      throw new ExternalMarketDataError(`Kraken responded with HTTP ${res.status}`);
-    }
-    const body = (await res.json()) as { error: string[]; result: any };
     if (body.error && body.error.length > 0) {
       throw new ExternalMarketDataError(`Kraken error: ${body.error.join(', ')}`);
     }
     return body;
   }
+}
+
+/**
+ * Merges a freshly-fetched tail into an existing series. Later data wins
+ * for any bucket present in both — which is exactly what turns the
+ * previously-open candle into its final closed form — and the result stays
+ * sorted oldest-first with one entry per bucket.
+ */
+export function mergeCandleSeries(previous: MarketCandle[], tail: MarketCandle[]): MarketCandle[] {
+  if (tail.length === 0) return previous;
+  const byTime = new Map<number, MarketCandle>();
+  for (const candle of previous) byTime.set(candle.time, candle);
+  for (const candle of tail) byTime.set(candle.time, candle);
+  return Array.from(byTime.values()).sort((a, b) => a.time - b.time);
 }
 
 export function pairToKrakenSymbol(pair: string): string {
