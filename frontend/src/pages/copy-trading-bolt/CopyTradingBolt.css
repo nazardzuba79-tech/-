@@ -914,3 +914,197 @@
   --text-tertiary: var(--l-dim);
   --bg: var(--l-page);
 }
+
+/* ===== INDIVIDUAL TRADER PROFILE =====
+   Deliberately scoped to profile-view: the approved marketplace above is
+   untouched by this detail-page layout. */
+.copytrading-bolt-root.profile-view {
+  color: #f4f6f8;
+  background: #080a0d;
+}
+.copytrading-bolt-root.profile-view .app {
+  background:
+    radial-gradient(circle at 82% 0%, rgba(247, 166, 0, .055), transparent 29%),
+    linear-gradient(180deg, #0a0d12 0%, #080a0d 100%);
+}
+.copytrading-bolt-root.profile-view .content-wrap { border-bottom-color: #20242b; }
+.copytrading-bolt-root.profile-view .trader-profile-page { max-width: 1320px; padding-top: 30px; }
+.copytrading-bolt-root.profile-view .back-button { margin-bottom: 22px; color: #89909a; }
+.copytrading-bolt-root.profile-view .back-button:hover { color: #f2f4f7; }
+.copytrading-bolt-root.profile-view .trader-profile-hero {
+  display: grid;
+  grid-template-columns: minmax(250px, 1.15fr) minmax(430px, 1.6fr) minmax(225px, .8fr);
+  align-items: center;
+  gap: 34px;
+  padding: 26px 28px;
+  border: 1px solid #262c34;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(27, 32, 40, .95), rgba(15, 19, 25, .97));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .25);
+}
+.copytrading-bolt-root.profile-view .trader-profile-identity { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.copytrading-bolt-root.profile-view .trader-profile-identity .avatar-large { width: 66px; height: 66px; flex: 0 0 auto; }
+.copytrading-bolt-root.profile-view .trader-profile-identity h1 { font-size: 28px; letter-spacing: -.035em; }
+.copytrading-bolt-root.profile-view .trader-profile-identity p { margin-top: 7px; color: #89919d; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.copytrading-bolt-root.profile-view .trader-hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #29303a;
+  border-radius: 8px;
+  background: #29303a;
+}
+.copytrading-bolt-root.profile-view .trader-hero-metrics > div { min-width: 0; padding: 15px 14px; background: #11161d; }
+.copytrading-bolt-root.profile-view .trader-hero-metrics span,
+.copytrading-bolt-root.profile-view .profile-metrics-grid span,
+.copytrading-bolt-root.profile-view .followers-summary span {
+  display: block;
+  color: #7f8997;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  line-height: 1.4;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.copytrading-bolt-root.profile-view .trader-hero-metrics strong { display: block; margin-top: 7px; color: #f4f6f8; font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.copytrading-bolt-root.profile-view .trader-copy-cta { display: flex; align-items: flex-start; justify-content: flex-end; gap: 9px; }
+.copytrading-bolt-root.profile-view .trader-copy-cta > div { display: grid; gap: 8px; min-width: 184px; }
+.copytrading-bolt-root.profile-view .trader-copy-cta .button { min-height: 41px; }
+.copytrading-bolt-root.profile-view .trader-copy-cta small { color: #777f8a; font-size: 9px; text-align: center; }
+.copytrading-bolt-root.profile-view .trader-copy-cta small b { color: #b2b8c0; font-weight: 600; }
+.copytrading-bolt-root.profile-view .large-icon { flex: 0 0 41px; width: 41px; height: 41px; border-color: #323945; background: #131820; }
+
+.copytrading-bolt-root.profile-view .profile-primary-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 24px;
+  border-bottom: 1px solid #252a32;
+}
+.copytrading-bolt-root.profile-view .profile-primary-tabs > div { display: flex; gap: 4px; }
+.copytrading-bolt-root.profile-view .profile-primary-tabs button {
+  color: #8f97a2;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.copytrading-bolt-root.profile-view .profile-primary-tabs > div:first-child button.active { color: #f7a600; border-bottom-color: #f7a600; }
+.copytrading-bolt-root.profile-view .profile-primary-tabs .profile-periods { gap: 3px; padding-bottom: 7px; }
+.copytrading-bolt-root.profile-view .profile-primary-tabs .profile-periods button { min-width: 46px; padding: 7px 10px; border: 1px solid transparent; border-radius: 5px; }
+.copytrading-bolt-root.profile-view .profile-primary-tabs .profile-periods button.active { color: #15100a; border-color: #f7a600; background: #f7a600; }
+
+.copytrading-bolt-root.profile-view .profile-panel {
+  margin-top: 18px;
+  padding: 24px;
+  border: 1px solid #252b34;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #12161d, #0f1319);
+}
+.copytrading-bolt-root.profile-view .profile-panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+.copytrading-bolt-root.profile-view .profile-panel-heading > div:first-child > span { color: #7d8794; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+.copytrading-bolt-root.profile-view .profile-panel-heading h2 { margin-top: 6px; color: #f3f5f7; font-size: 20px; }
+.copytrading-bolt-root.profile-view .profile-panel-heading > svg { color: #f7a600; }
+.copytrading-bolt-root.profile-view .profile-panel-heading > strong { color: #aeb5be; font-size: 12px; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root.profile-view .profile-metrics-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid #252c35; border-radius: 8px; background: #252c35; }
+.copytrading-bolt-root.profile-view .profile-metrics-grid > div { min-width: 0; min-height: 82px; display: grid; align-content: center; gap: 9px; padding: 14px 16px; background: #10151c; }
+.copytrading-bolt-root.profile-view .profile-metrics-grid strong { color: #eef1f4; font-size: 16px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.copytrading-bolt-root.profile-view .positive { color: #46c985 !important; }
+.copytrading-bolt-root.profile-view .negative { color: #ef6574 !important; }
+
+.copytrading-bolt-root.profile-view .profile-segmented { display: flex; gap: 2px; padding: 3px; border: 1px solid #2c333d; border-radius: 6px; background: #0c1015; }
+.copytrading-bolt-root.profile-view .profile-segmented button { min-width: 52px; padding: 6px 10px; color: #8d96a2; border: 0; border-radius: 4px; background: transparent; font-size: 10px; font-weight: 700; }
+.copytrading-bolt-root.profile-view .profile-segmented button.active { color: #171208; background: #f7a600; }
+.copytrading-bolt-root.profile-view .profile-chart-wrap { position: relative; height: 306px; padding: 0 10px 30px 60px; }
+.copytrading-bolt-root.profile-view .profile-chart-wrap svg { width: 100%; height: 270px; overflow: visible; }
+.copytrading-bolt-root.profile-view .profile-chart-y { position: absolute; left: 0; top: 1px; bottom: 35px; display: flex; flex-direction: column; justify-content: space-between; color: #737e8b; font-size: 9px; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root.profile-view .profile-chart-x { position: absolute; left: 60px; right: 10px; bottom: 2px; display: flex; justify-content: space-between; color: #737e8b; font-size: 9px; }
+.copytrading-bolt-root.profile-view .profile-chart-grid { fill: none; stroke: #252b33; stroke-width: 1; stroke-dasharray: 3 4; }
+.copytrading-bolt-root.profile-view .profile-chart-area { fill: url(#profile-area); }
+.copytrading-bolt-root.profile-view .profile-chart-line { fill: none; stroke: #f7a600; stroke-width: 2.2; vector-effect: non-scaling-stroke; }
+.copytrading-bolt-root.profile-view .profile-chart-point { fill: #f7a600; stroke: #201704; stroke-width: 4; vector-effect: non-scaling-stroke; }
+.copytrading-bolt-root.profile-view .profile-trust { display: flex; align-items: center; gap: 7px; padding-top: 15px; border-top: 1px solid #232a32; color: #747e8b; font-size: 10px; }
+.copytrading-bolt-root.profile-view .profile-trust svg { color: #9b7b37; }
+
+.copytrading-bolt-root.profile-view .profile-secondary-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(310px, .7fr); gap: 18px; }
+.copytrading-bolt-root.profile-view .daily-bars { position: relative; height: 190px; display: flex; align-items: center; gap: clamp(1px, .35vw, 5px); padding: 6px 0; overflow: hidden; }
+.copytrading-bolt-root.profile-view .daily-bars > span { flex: 1 1 2px; min-width: 1px; max-width: 13px; border-radius: 2px; }
+.copytrading-bolt-root.profile-view .daily-bars > span.gain { background: #36bd78; transform: translateY(-50%); }
+.copytrading-bolt-root.profile-view .daily-bars > span.loss { background: #e75868; transform: translateY(50%); }
+.copytrading-bolt-root.profile-view .daily-zero { position: absolute; z-index: 0; left: 0; right: 0; top: 50%; height: 1px; background: #343b45; }
+.copytrading-bolt-root.profile-view .daily-legend { display: flex; gap: 18px; color: #7b8591; font-size: 9px; }
+.copytrading-bolt-root.profile-view .daily-legend span { display: flex; align-items: center; gap: 6px; }
+.copytrading-bolt-root.profile-view .daily-legend i { width: 8px; height: 8px; border-radius: 2px; }
+.copytrading-bolt-root.profile-view .daily-legend i.gain { background: #36bd78; }
+.copytrading-bolt-root.profile-view .daily-legend i.loss { background: #e75868; }
+.copytrading-bolt-root.profile-view .profile-empty { min-height: 190px; display: grid; place-items: center; color: #707a87; font-size: 11px; }
+.copytrading-bolt-root.profile-view .trading-profile-panel > div:last-child { display: grid; gap: 0; }
+.copytrading-bolt-root.profile-view .trading-profile-panel p { display: flex; justify-content: space-between; gap: 20px; padding: 13px 0; border-bottom: 1px solid #252b33; color: #7f8995; font-size: 11px; }
+.copytrading-bolt-root.profile-view .trading-profile-panel p:last-child { border-bottom: 0; }
+.copytrading-bolt-root.profile-view .trading-profile-panel strong { color: #e9edf1; font-size: 11px; text-align: right; }
+
+.copytrading-bolt-root.profile-view .followers-summary { display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; border: 1px solid #29303a; border-radius: 8px; background: #29303a; }
+.copytrading-bolt-root.profile-view .followers-summary > div { min-height: 88px; display: grid; align-content: center; gap: 8px; padding: 15px 18px; background: #10151c; }
+.copytrading-bolt-root.profile-view .followers-summary strong { color: #eef1f4; font-size: 18px; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root.profile-view .follower-list { margin-top: 18px; border-top: 1px solid #262d35; }
+.copytrading-bolt-root.profile-view .follower-list > div { display: grid; grid-template-columns: 34px minmax(160px, 1fr) minmax(100px, .45fr) minmax(155px, .6fr); align-items: center; gap: 14px; padding: 12px 4px; border-bottom: 1px solid #232a32; }
+.copytrading-bolt-root.profile-view .follower-initial { display: grid; place-items: center; width: 30px; height: 30px; color: #f7b936; border: 1px solid #59451b; border-radius: 50%; background: #2a2215; font-size: 11px; font-weight: 800; }
+.copytrading-bolt-root.profile-view .follower-list p { display: grid; gap: 3px; }
+.copytrading-bolt-root.profile-view .follower-list strong { color: #dfe3e8; font-size: 11px; font-variant-numeric: tabular-nums; }
+.copytrading-bolt-root.profile-view .follower-list small { color: #717b87; font-size: 9px; }
+
+.copytrading-bolt-root.profile-view .profile-trades-panel { overflow: hidden; }
+.copytrading-bolt-root.profile-view .profile-trades-panel .table-scroll { max-width: 100%; overflow-x: auto; }
+.copytrading-bolt-root.profile-view .profile-trades-panel table { min-width: 1420px; }
+.copytrading-bolt-root.profile-view .profile-trades-panel th { color: #747f8c; border-bottom-color: #303741; }
+.copytrading-bolt-root.profile-view .profile-trades-panel td { color: #b9c0c8; border-bottom-color: #242b33; white-space: nowrap; }
+.copytrading-bolt-root.profile-view .profile-trades-panel td strong { color: #edf0f3; }
+.copytrading-bolt-root.profile-view .closed-status { display: inline-flex; padding: 4px 7px; color: #77c99a; border: 1px solid rgba(70, 201, 133, .25); border-radius: 4px; background: rgba(70, 201, 133, .08); font-size: 9px; }
+
+@media (max-width: 1180px) {
+  .copytrading-bolt-root.profile-view .trader-profile-hero { grid-template-columns: 1fr 1.5fr; }
+  .copytrading-bolt-root.profile-view .trader-copy-cta { grid-column: 1 / -1; justify-content: flex-end; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .copytrading-bolt-root.profile-view .trader-profile-hero { grid-template-columns: 1fr; gap: 22px; }
+  .copytrading-bolt-root.profile-view .trader-copy-cta { grid-column: auto; justify-content: flex-start; }
+  .copytrading-bolt-root.profile-view .profile-secondary-grid { grid-template-columns: 1fr; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .copytrading-bolt-root.profile-view .trader-profile-page { padding: 24px 16px 56px; }
+  .copytrading-bolt-root.profile-view .trader-profile-hero { padding: 20px; }
+  .copytrading-bolt-root.profile-view .trader-hero-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .copytrading-bolt-root.profile-view .profile-primary-tabs { align-items: stretch; flex-direction: column; gap: 0; }
+  .copytrading-bolt-root.profile-view .profile-primary-tabs .profile-periods { justify-content: space-between; padding: 8px 0; border-top: 1px solid #252a32; }
+  .copytrading-bolt-root.profile-view .profile-primary-tabs .profile-periods button { flex: 1; min-width: 0; }
+  .copytrading-bolt-root.profile-view .profile-panel { padding: 18px; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .copytrading-bolt-root.profile-view .profile-chart-wrap { height: 250px; padding-left: 45px; }
+  .copytrading-bolt-root.profile-view .profile-chart-wrap svg { height: 220px; }
+  .copytrading-bolt-root.profile-view .profile-chart-x { left: 45px; }
+  .copytrading-bolt-root.profile-view .followers-summary { grid-template-columns: 1fr; gap: 1px; }
+  .copytrading-bolt-root.profile-view .follower-list > div { grid-template-columns: 34px 1fr auto; }
+  .copytrading-bolt-root.profile-view .follower-list > div p:nth-child(3) { display: none; }
+}
+@media (max-width: 440px) {
+  .copytrading-bolt-root.profile-view .trader-profile-identity { align-items: flex-start; }
+  .copytrading-bolt-root.profile-view .trader-profile-identity .avatar-large { width: 54px; height: 54px; }
+  .copytrading-bolt-root.profile-view .trader-profile-identity h1 { font-size: 23px; }
+  .copytrading-bolt-root.profile-view .trader-copy-cta { width: 100%; }
+  .copytrading-bolt-root.profile-view .trader-copy-cta > div { min-width: 0; flex: 1; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid { grid-template-columns: 1fr 1fr; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid > div { min-height: 74px; padding: 12px; }
+  .copytrading-bolt-root.profile-view .profile-metrics-grid strong { font-size: 14px; }
+  .copytrading-bolt-root.profile-view .profile-panel-heading { align-items: flex-start; }
+  .copytrading-bolt-root.profile-view .profile-chart-wrap { margin-left: -5px; margin-right: -5px; }
+  .copytrading-bolt-root.profile-view .profile-trust { align-items: flex-start; line-height: 1.45; }
+  .copytrading-bolt-root.profile-view .daily-bars { height: 150px; }
+  .copytrading-bolt-root.profile-view .follower-list > div { grid-template-columns: 30px minmax(0, 1fr); }
+  .copytrading-bolt-root.profile-view .follower-list > div p:last-child { grid-column: 2; }
+}
