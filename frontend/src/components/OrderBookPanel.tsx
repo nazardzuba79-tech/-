@@ -1,6 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice } from '../lib/formatNumber';
+import { PanelRightClose } from 'lucide-react';
 
 interface Level {
   price: string;
@@ -17,7 +18,7 @@ interface AggregatedLevel {
 // The reference's price-step "group by" control, same idea as every real
 // exchange's DOM: pick a coarser grid and every raw resting order lands in
 // one of these fixed buckets instead of its own row.
-const GROUP_STEPS = [0.1, 0.5, 1, 5, 10];
+const GROUP_STEPS = [0.1, 1, 10, 50];
 
 function defaultGroupStep(price: number | null): number {
   if (price === null) return GROUP_STEPS[0];
@@ -99,11 +100,13 @@ export function OrderBookPanel({
   asks,
   pair,
   onPickPrice,
+  onCollapse,
 }: {
   bids: Level[];
   asks: Level[];
   pair?: string;
   onPickPrice?: (price: string) => void;
+  onCollapse?: () => void;
 }) {
   const { t } = useLanguage();
 
@@ -167,6 +170,11 @@ export function OrderBookPanel({
               </option>
             ))}
           </select>
+          {onCollapse && (
+            <button className="orderbook-collapse" type="button" onClick={onCollapse} title="Свернуть стакан" aria-label="Свернуть стакан">
+              <PanelRightClose size={16} />
+            </button>
+          )}
         </div>
       </div>
 

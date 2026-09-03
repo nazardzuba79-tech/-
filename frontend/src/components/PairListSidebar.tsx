@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { useLanguage, Key } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
 import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
 import { CryptoIcon } from './CryptoIcon';
+import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
 
 // Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
 // ENA, …) that the static jsDelivr icon set CryptoIcon falls back to has
@@ -35,19 +36,22 @@ function useCoinIconMap(): Map<string, string> {
 
 type SortField = 'volume' | 'price' | 'change' | 'symbol';
 
-/** The sort modes offered, in menu order. `volume` descending is the
+/** The sort states used by the four approved column controls. `volume` descending is the
  * default: "which markets are actually being traded right now" is the
  * first thing a trader wants from a pair list, and it sorts on the feed's
  * real 24h quote turnover (see filterAndSortPairs' note on the field). */
-const SORT_MODES: { id: string; field: SortField; dir: 1 | -1; labelKey: Key }[] = [
-  { id: 'volume_desc', field: 'volume', dir: -1, labelKey: 'trade.sortVolumeDesc' },
-  { id: 'volume_asc', field: 'volume', dir: 1, labelKey: 'trade.sortVolumeAsc' },
-  { id: 'change_desc', field: 'change', dir: -1, labelKey: 'trade.sortChangeDesc' },
-  { id: 'change_asc', field: 'change', dir: 1, labelKey: 'trade.sortChangeAsc' },
-  { id: 'price_desc', field: 'price', dir: -1, labelKey: 'trade.sortPriceDesc' },
-  { id: 'price_asc', field: 'price', dir: 1, labelKey: 'trade.sortPriceAsc' },
-  { id: 'symbol_asc', field: 'symbol', dir: 1, labelKey: 'trade.sortSymbolAsc' },
+const SORT_MODES: { id: string; field: SortField; dir: 1 | -1 }[] = [
+  { id: 'volume_desc', field: 'volume', dir: -1 },
+  { id: 'volume_asc', field: 'volume', dir: 1 },
+  { id: 'change_desc', field: 'change', dir: -1 },
+  { id: 'change_asc', field: 'change', dir: 1 },
+  { id: 'price_desc', field: 'price', dir: -1 },
+  { id: 'price_asc', field: 'price', dir: 1 },
+  { id: 'symbol_asc', field: 'symbol', dir: 1 },
+  { id: 'symbol_desc', field: 'symbol', dir: -1 },
 ];
+
+const REFERENCE_QUOTE_FILTERS = ['USDT', 'USD', 'USDC', 'EUR'];
 
 export interface PairListHandle {
   focusSearch: () => void;
@@ -59,19 +63,23 @@ export interface PairListHandle {
 const SORT_SNAPSHOT_INTERVAL_MS = 20000;
 
 /**
- * The reference's `.pairs-section`: a search field, a row of quote tabs
- * (the reference's ⭐ Fav / USDT / BTC / ETH / NEW), and the pair list
- * itself — each row a favourite star, an asset logo, a name, a price and
- * a signed change, with the active pair tinted in the accent. The logo is
- * CryptoIcon, the same icon-set-with-letter-fallback component the rest
- * of the app already uses (Futures' pair list, Wallet, CFD instruments) —
- * not a new asset system.
+ * The reference's `.pairs-section`: header/collapse, search, live-backed
+ * USDT/USD/USDC/EUR tabs, four real sorting controls, resizable width and
+ * rows with favourite, current icon, pair, price and signed-change data.
  *
  * All the existing behaviour is kept: the 4s ticker poll, favourites in
  * localStorage, and the shared filter/sort helper in lib/pairList.
  */
-export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChange: (pair: string) => void }>(
-  function PairListSidebar({ pair, onChange }, ref) {
+export const PairListSidebar = forwardRef<
+  PairListHandle,
+  {
+    pair: string;
+    onChange: (pair: string) => void;
+    onCollapse?: () => void;
+    onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  }
+>(
+  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart }, ref) {
     const { t } = useLanguage();
     const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
@@ -136,18 +144,30 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       return () => window.clearInterval(poll);
     }, []);
 
+    useEffect(() => {
+      function focusSearch(event: KeyboardEvent) {
+        const target = event.target as HTMLElement | null;
+        if (event.key !== '/' || target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      window.addEventListener('keydown', focusSearch);
+      return () => window.removeEventListener('keydown', focusSearch);
+    }, []);
+
     const quoteChips = useMemo(() => {
       const present = new Set(tickers.map((tk) => tk.pair.split('/')[1]));
-      return QUOTE_PRIORITY.filter((q) => present.has(q));
+      return QUOTE_PRIORITY.filter((q) => REFERENCE_QUOTE_FILTERS.includes(q) && present.has(q));
     }, [tickers]);
 
     // Clicking a column header that isn't already active switches to it
     // descending ("biggest first", the more useful default reading for
     // price and % change alike); clicking the active one flips direction.
-    // Both the headers and the sort menu drive the same single sortId, so
-    // they can never disagree about what the list is sorted by.
+    // Every header drives the same single sortId, so the visible arrow and
+    // the stable snapshot order can never disagree.
     function toggleSort(field: SortField) {
-      const wantDir: 1 | -1 = sortField === field && sortDir === -1 ? 1 : -1;
+      const defaultDir: 1 | -1 = field === 'symbol' ? 1 : -1;
+      const wantDir: 1 | -1 = sortField === field ? (sortDir === -1 ? 1 : -1) : defaultDir;
       const next = SORT_MODES.find((m) => m.field === field && m.dir === wantDir);
       if (next) setSortId(next.id);
     }
@@ -193,6 +213,15 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
 
     return (
       <div className="pairs-section">
+        <div className="pairs-header">
+          <span>{t('nav.markets')}</span>
+          {onCollapse && (
+            <button type="button" onClick={onCollapse} title="Свернуть рынки" aria-label="Свернуть рынки">
+              <PanelLeftClose size={16} />
+            </button>
+          )}
+        </div>
+
         <div className="pairs-search">
           <input
             ref={searchRef}
@@ -200,6 +229,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('trade.searchPairPlaceholder')}
           />
+          <kbd>/</kbd>
         </div>
 
         <div className="pairs-tabs">
@@ -207,7 +237,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
             onClick={() => setFavoritesOnly((v) => !v)}
           >
-            ★ {t('trade.favorites')}
+            <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
           </button>
           {quoteChips.map((q) => (
             <button
@@ -221,52 +251,20 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
               {q}
             </button>
           ))}
-          <button
-            className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === null ? 'active' : ''}`}
-            onClick={() => {
-              setFavoritesOnly(false);
-              setQuoteFilter(null);
-            }}
-          >
-            {t('trade.allPairs')}
-          </button>
         </div>
 
-        {/* The header carries the sort itself rather than a separate panel
-            above the list. Цена / 24ч % are the two columns actually shown,
-            so they sort by being clicked; 24h volume has no column at this
-            panel width, so it lives in the menu on the left — which doubles
-            as the readout of what the list is currently sorted by, since
-            the default (volume, descending) has no column to mark. */}
-        <div className="pairs-col-headers">
-          <select
-            className={`pch-mode ${sortField === 'volume' || sortField === 'symbol' ? 'active' : ''}`}
-            value={sortId}
-            onChange={(e) => setSortId(e.target.value)}
-            aria-label={t('trade.sortBy')}
-            title={t('trade.sortBy')}
-          >
-            {SORT_MODES.map((m) => (
-              <option key={m.id} value={m.id}>
-                {t(m.labelKey)}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className={`pch-sort ${sortField === 'price' ? 'active' : ''}`}
-            onClick={() => toggleSort('price')}
-          >
-            {t('trade.price')}
-            <SortArrow active={sortField === 'price'} dir={sortDir} />
+        <div className="pairs-sort">
+          <button type="button" onClick={() => toggleSort('volume')}>
+            {t('trade.volume24h')} <SortArrow active={sortField === 'volume'} dir={sortDir} />
           </button>
-          <button
-            type="button"
-            className={`pch-sort ${sortField === 'change' ? 'active' : ''}`}
-            onClick={() => toggleSort('change')}
-          >
-            {t('markets.change24h')}
-            <SortArrow active={sortField === 'change'} dir={sortDir} />
+          <button type="button" onClick={() => toggleSort('price')}>
+            {t('trade.price')} <SortArrow active={sortField === 'price'} dir={sortDir} />
+          </button>
+          <button type="button" onClick={() => toggleSort('change')}>
+            {t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
+          </button>
+          <button type="button" onClick={() => toggleSort('symbol')} title="Символ A–Z">
+            A–Z <SortArrow active={sortField === 'symbol'} dir={sortDir} />
           </button>
         </div>
 
@@ -293,7 +291,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                   onClick={(e) => toggleFavorite(tk.pair, e)}
                   title={t('trade.favorites')}
                 >
-                  ★
+                  <Star size={12} fill={favorites.has(tk.pair) ? 'currentColor' : 'none'} />
                 </span>
                 <span className="p-icon">
                   <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
@@ -318,6 +316,12 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
           )}
           {tickers.length > 0 && filtered.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         </div>
+
+        {onResizeStart && (
+          <div className="pairs-resize-handle" onPointerDown={onResizeStart} aria-hidden="true">
+            <GripVertical size={14} />
+          </div>
+        )}
       </div>
     );
   }
@@ -327,6 +331,6 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
 // pointing the live direction on the active one — the same small-arrow
 // language the reference's own column headers use.
 function SortArrow({ active, dir }: { active: boolean; dir: 1 | -1 }) {
-  if (!active) return <span className="pch-arrow idle">⇅</span>;
-  return <span className="pch-arrow">{dir === -1 ? '▼' : '▲'}</span>;
+  if (!active) return null;
+  return dir === -1 ? <ChevronDown size={11} /> : <ChevronUp size={11} />;
 }

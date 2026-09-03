@@ -299,7 +299,7 @@
   /* The reference's desktop proportions, not the previous production
      ones: market panel 258, order book 220, order entry 264, and every
      remaining pixel to the chart. */
-  grid-template-columns: 258px minmax(0, 1fr) 220px 264px;
+  grid-template-columns: var(--market-panel-width, 258px) minmax(0, 1fr) 220px 264px;
   background: var(--grid-bg);
   /* The single row must be exactly as tall as the grid, never as tall as
      its tallest column's content. Left implicit (`auto`) it sized to
@@ -310,6 +310,7 @@
      is what lets the row shrink to the container. The 1024px block below
      switches this grid to flex, so it doesn't apply on mobile. */
   grid-template-rows: minmax(0, 1fr);
+  position: relative;
   flex: 1;
   min-height: 0;
   /* The reference's `overflow: hidden`, as `clip` — same reason as on the
@@ -458,47 +459,36 @@
    surrounding container that changed. */
 .trade-terminal .order-form-tabs {
   display: flex; gap: 3px;
-  margin: 10px 12px 2px; padding: 3px;
+  min-height: 39px; margin: 10px 12px 2px; padding: 3px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--layer-border);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 .trade-terminal .order-form-tab {
-  flex: 1; background: transparent; border: none; border-radius: 6px;
-  padding: 9px 0; font-size: 13px; font-weight: 700; cursor: pointer;
-  transition: background 0.15s, color 0.15s; color: var(--text-secondary);
+  flex: 1; background: transparent; border: 1px solid transparent; border-radius: 4px;
+  padding: 7px 2px; font-size: 11px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s, color 0.15s; color: #a2adb8;
 }
 .trade-terminal .order-form-tab:hover { color: var(--text-primary); }
 /* Bold white on the saturated fill — the same high-contrast treatment
    every major exchange (Bybit included) uses on its Buy/Sell buttons.
    Dark text here read as muted next to that reference. */
-/* Reference's active fills (#12c98d / #ef5350 with the lighter #16d89a /
-   #ff6262 edge), carried as a shallow top-to-bottom gradient so the active
-   side reads as lit rather than a flat block. No glow, no outer shadow —
-   only the active side is strong; the inactive one stays the panel's own
-   graphite with muted-but-readable text. */
+/* Exact reference active fills (#12c98d / #ef5350) with the lighter
+   #16d89a / #ff6262 edge. */
 .trade-terminal .order-form-tab.active.buy {
-  background: linear-gradient(180deg, #16d89a, #12c98d);
-  border: 1px solid #16d89a; color: #fff;
+  background: #12c98d; border-color: #16d89a; color: #fff;
 }
 .trade-terminal .order-form-tab.active.sell {
-  background: linear-gradient(180deg, #ff6262, #ef5350);
-  border: 1px solid #ff6262; color: #fff;
+  background: #ef5350; border-color: #ff6262; color: #fff;
 }
-/* The full-width hairline that used to close this row read as a scroll
-   track under the tabs. The reference marks the selection with a 2px bar
-   under the active tab alone (.order-types button.active::after) and draws
-   no rule across the row, so the border is gone. With OCO out of the row
-   the four remaining tabs are spread instead of packed, and they fit at
-   their natural width — nothing is clipped and there is nothing to
-   scroll. */
+/* Five compact real order types, including OCO, share the approved 43px
+   row and use the reference's active underline. */
 .trade-terminal .order-type-tabs {
-  display: flex; justify-content: space-between; align-items: flex-end;
-  gap: 6px; padding: 10px 16px 8px;
+  height: 43px; display: flex; justify-content: space-between; align-items: flex-end;
+  gap: 10px; padding: 8px 12px; overflow: hidden;
 }
 .trade-terminal .order-type-tab {
-  background: transparent; border: none; color: var(--text-secondary);
-  font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 0;
+  flex: 1; height: 32px; min-width: 0; background: transparent; border: none; color: #8794a1;
+  font-size: 10px; font-weight: 500; cursor: pointer; padding: 5px 2px;
   border-bottom: 2px solid transparent; transition: all 0.2s;
 }
 .trade-terminal .order-type-tab:hover { color: var(--text-primary); }
@@ -651,17 +641,30 @@
 }
 .trade-terminal .orderbook-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; padding: 0 12px; border-bottom: 1px solid var(--border-color);
 }
-.trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-.trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 8px; }
+.trade-terminal .orderbook-title { font-size: 12px; font-weight: 700; color: #f1f4f7; }
+.trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 4px; }
 .trade-terminal .ob-group-select {
-  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary); color: var(--text-secondary);
-  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 11px;
+  min-width: 46px; height: 25px; padding: 3px 2px 3px 7px;
+  background: #202b36; border: 1px solid #2d3b49; color: #b4bec8;
+  cursor: pointer; border-radius: 3px; font-size: 10px;
   font-family: inherit; outline: none; transition: border-color 0.2s, color 0.2s;
 }
 .trade-terminal .ob-group-select:hover { color: var(--text-primary); }
 .trade-terminal .ob-group-select:focus { border-color: var(--accent-yellow); }
+.trade-terminal .orderbook-collapse,
+.trade-terminal .pairs-header button,
+.trade-terminal .restore-market-panel,
+.trade-terminal .restore-orderbook {
+  width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+  color: #8d99a5; background: transparent; border: 1px solid transparent;
+  border-radius: 4px; cursor: pointer;
+}
+.trade-terminal .orderbook-collapse:hover,
+.trade-terminal .pairs-header button:hover,
+.trade-terminal .restore-market-panel:hover,
+.trade-terminal .restore-orderbook:hover { color: #e1e6ea; background: #202b36; border-color: #2d3b49; }
 .trade-terminal .orderbook-col-headers {
   display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
   border-bottom: 1px solid var(--border-color);
@@ -699,22 +702,23 @@
 .trade-terminal .ob-depth-bar.ask { background: var(--color-sell); }
 .trade-terminal .ob-depth-bar.bid { background: var(--color-buy); }
 .trade-terminal .orderbook-spread {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 6px 12px; text-align: center;
+  display: flex; flex-direction: column; align-items: stretch; gap: 2px;
+  padding: 9px 12px 8px; text-align: left;
   border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }
 .trade-terminal .ob-spread-price {
-  font-size: 16px; font-weight: 700; color: var(--text-primary);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 6px;
+  font-size: 15px; font-weight: 700; color: #f0f3f6;
   font-variant-numeric: tabular-nums;
 }
-.trade-terminal .orderbook-spread .usd { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+.trade-terminal .orderbook-spread .usd { font-size: 10px; color: #91a0ad; font-weight: 400; }
 /* The spread readout below the price — same muted, smaller treatment as
    every other secondary figure in the terminal (ticker-bar labels, pair
    list price cells), so it reads as supporting detail, not a second
    headline number. */
 .trade-terminal .ob-spread-detail {
-  font-size: 11px; font-weight: 500; color: var(--text-secondary);
+  margin-top: 1px; font-size: 9px; font-weight: 500; color: #70808e;
   font-variant-numeric: tabular-nums;
 }
 
@@ -734,39 +738,61 @@
   overflow: hidden;
   min-width: 0;
 }
-.trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.trade-terminal .pairs-search { padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+.trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
+.trade-terminal .pairs-header {
+  min-height: 43px; padding: 0 8px 0 13px; display: flex; align-items: center; justify-content: space-between;
+  color: #f1f4f7; border-bottom: 1px solid #24303c; font-size: 12px; font-weight: 700;
+}
+.trade-terminal .pairs-search { padding: 10px 10px 9px; position: relative; }
 /* Only the four things asked for: horizontal padding, vertical centring (an
    explicit height rather than padding alone), room for the leading search
    glyph, and a placeholder a step brighter — the old one sat too close to
    the field's own fill to read. */
 .trade-terminal .pairs-search input {
-  width: 100%; height: 36px;
-  background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
-  color: var(--text-primary); padding: 0 12px 0 32px; border-radius: 4px;
-  font-size: 12px; outline: none; transition: border-color 0.2s;
+  width: 100%; height: 32px;
+  background: #202b37; border: 1px solid #2a3743;
+  color: #d4dbe2; padding: 0 28px 0 29px; border-radius: 4px;
+  font-size: 11px; outline: none; transition: border-color 0.2s;
   font-family: inherit;
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
-.trade-terminal .pairs-search input::placeholder { color: #97a1ae; }
+.trade-terminal .pairs-search input::placeholder { color: #7e8997; }
 /* Leading search glyph, drawn in CSS so the panel gains no icon import. */
-.trade-terminal .pairs-search { position: relative; }
 .trade-terminal .pairs-search::before {
-  content: ''; position: absolute; left: 22px; top: 50%; width: 13px; height: 13px;
-  margin-top: -6.5px; pointer-events: none; opacity: 0.75;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397a1ae' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+  content: ''; position: absolute; z-index: 1; left: 19px; top: 20px; width: 13px; height: 13px;
+  transform: translateY(-50%); pointer-events: none; opacity: 0.75;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237e8b99' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.trade-terminal .pairs-search kbd {
+  position: absolute; z-index: 2; right: 19px; top: 17px;
+  color: #7e8997; background: transparent; border: none; font: inherit; font-size: 10px;
+  pointer-events: none;
 }
 .trade-terminal .pairs-tabs {
-  display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
+  min-height: 33px; display: flex; align-items: center; gap: 14px;
+  padding: 0 12px; overflow: hidden; border-bottom: 1px solid #24303c;
 }
 .trade-terminal .pairs-tab {
+  display: inline-flex; align-items: center; gap: 3px; flex-shrink: 0;
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 8px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+  height: 33px; padding: 0 1px; font-size: 10px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s;
   letter-spacing: 0.01em;
 }
 .trade-terminal .pairs-tab:hover { color: var(--text-primary); }
 .trade-terminal .pairs-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+.trade-terminal .pairs-sort {
+  min-height: 31px; padding: 0 7px; display: grid;
+  grid-template-columns: minmax(58px, 1fr) 59px 46px 34px;
+  color: #8995a2; border-bottom: 1px solid #202a35;
+}
+.trade-terminal .pairs-sort button {
+  min-width: 0; display: flex; align-items: center; gap: 1px; padding: 0 2px;
+  color: inherit; background: transparent; border: none; font: inherit; font-size: 10px;
+  white-space: nowrap; cursor: pointer;
+}
+.trade-terminal .pairs-sort button:not(:first-child) { justify-content: flex-end; }
+.trade-terminal .pairs-sort button:hover { color: #d8dee4; }
 /* Bybit-style clickable column headers — replaces a separate "sort by"
    control row with sort built directly into the Цена/24Ч% columns
    themselves, flex-matched to .pair-row's own p-price/p-change so the
@@ -828,9 +854,9 @@
      tabular "108,420.50" measures ~56px, so 64px is still slack) and the
      gap one more each, which is 9px straight into the name. The panel
      stays 258px and neither numeric column can move. */
-  grid-template-columns: 15px 23px minmax(0, 1fr) 64px 46px;
-  gap: 0 3px;
-  min-height: 35px; padding: 0 9px; font-size: 11px; cursor: pointer;
+  grid-template-columns: 15px 21px minmax(50px, 1fr) 60px 42px;
+  gap: 3px;
+  min-height: 35px; padding: 0 7px; font-size: 10px; cursor: pointer;
   transition: background 0.15s, border-color 0.15s; align-items: center;
   width: 100%; background: transparent; border: none; text-align: left;
   font-family: inherit;
@@ -863,7 +889,7 @@
 .trade-terminal .pair-row .p-star {
   position: relative;
   display: grid; place-items: center;
-  color: #7c8899; font-size: 17px; line-height: 1;
+  color: #687583; line-height: 1;
   transition: color 0.12s;
 }
 .trade-terminal .pair-row .p-star::after {
@@ -880,7 +906,7 @@
 /* Gold means favourited and nothing else. It used to also apply to
    .pair-row.active, which made the open pair's star look favourited when
    it wasn't — selection is already shown by the row itself. */
-.trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); font-size: 18px; }
+.trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); }
 .trade-terminal .pair-row .p-star.on:hover { color: #f0cb4a; }
 /* The base asset is the part a trader scans for, so it never truncates:
    the name is two spans, and only the quote is allowed to shrink. Worst
@@ -888,15 +914,13 @@
    above, nothing in the listed universe actually reaches that. */
 .trade-terminal .pair-row .p-name {
   min-width: 0; display: flex; align-items: baseline; white-space: nowrap;
-  font-size: 11px; font-weight: 650; color: #e3e8ed;
+  font-size: 10px; font-weight: 650; color: #e3e8ed;
 }
 .trade-terminal .pair-row .p-name .p-base { flex-shrink: 0; }
 .trade-terminal .pair-row .p-name .p-quote {
   min-width: 0; overflow: hidden; text-overflow: ellipsis;
   color: #9aa6b4; font-weight: 600;
 }
-.trade-terminal .pair-row.active .p-name .p-quote { color: inherit; }
-.trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
 .trade-terminal .pair-row .p-price {
   text-align: right; color: #c0c8d1;
   font-variant-numeric: tabular-nums;
@@ -911,6 +935,11 @@
 .trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
 .trade-terminal .pair-row .p-change.down { color: var(--color-sell); }
 .trade-terminal .sparkline { width: 60px; height: 20px; margin-left: 8px; }
+.trade-terminal .pairs-resize-handle {
+  position: absolute; z-index: 5; top: 0; right: -7px; bottom: 0; width: 14px;
+  display: flex; align-items: center; justify-content: center; color: transparent; cursor: col-resize;
+}
+.trade-terminal .pairs-resize-handle:hover { color: #708090; }
 
 /* === BOTTOM PANEL === */
 /* 180 -> 140px. The empty state was 141px of blank panel under a 40px tab
@@ -926,20 +955,21 @@
   flex-shrink: 0;
 }
 .trade-terminal .bottom-tabs {
-  display: flex; padding: 0 16px; border-bottom: 1px solid var(--border-color);
-  align-items: center;
+  min-height: 43px; display: flex; padding: 0 24px; gap: 27px;
+  border-bottom: 1px solid #202b36; align-items: center;
 }
 .trade-terminal .bottom-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  height: 43px; padding: 0; font-size: 11px; font-weight: 500; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s; position: relative;
 }
 .trade-terminal .bottom-tab:hover { color: var(--text-primary); }
-.trade-terminal .bottom-tab.active { color: var(--accent-yellow); font-weight: 700; border-bottom-color: var(--accent-yellow); }
+.trade-terminal .bottom-tab.active { color: #e4c43f; font-weight: 700; border-bottom-color: #d2b231; }
 .trade-terminal .bottom-tab .badge {
-  position: absolute; top: 6px; right: 2px;
-  background: var(--accent-yellow); color: var(--bg-primary);
-  font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 8px;
+  position: static; display: inline-grid; place-items: center;
+  min-width: 18px; height: 17px; margin-left: 5px; padding: 0 4px;
+  background: #25313d; color: #9ca7b2;
+  font-size: 9px; font-weight: 700; border-radius: 10px;
 }
 .trade-terminal .bottom-actions { margin-left: auto; display: flex; gap: 12px; }
 .trade-terminal .bottom-action-btn {
@@ -979,13 +1009,29 @@
   width: 30px; height: 30px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23545b66' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='3' width='16' height='18' rx='2'/%3E%3Cline x1='8' y1='8' x2='16' y2='8'/%3E%3Cline x1='8' y1='12' x2='16' y2='12'/%3E%3Cline x1='8' y1='16' x2='12' y2='16'/%3E%3C/svg%3E") no-repeat center / contain;
 }
+.trade-terminal .open-orders-empty {
+  min-height: 102px; height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; color: #62717f; font-size: 10px;
+}
+.trade-terminal .open-orders-empty-icon {
+  width: 32px; height: 32px; margin-bottom: 3px; display: grid; place-items: center;
+  color: #6d7b88; background: #202b36; border: 1px solid #2c3945; border-radius: 5px;
+}
+.trade-terminal .open-orders-empty strong { color: #8f9ba8; font-size: 11px; font-weight: 600; }
+.trade-terminal .restore-market-panel,
+.trade-terminal .restore-orderbook {
+  position: absolute; top: 8px; z-index: 7;
+  color: #d4b32d; background: #18232e; border-color: #2d3b49;
+}
+.trade-terminal .restore-market-panel { left: 8px; }
+.trade-terminal .restore-orderbook { right: 8px; }
 
 /* Responsive helpers */
 @media (max-width: 1400px) {
-  .trade-terminal .main-grid { grid-template-columns: 258px minmax(0, 1fr) 220px 264px; }
+  .trade-terminal .main-grid { grid-template-columns: var(--market-panel-width, 258px) minmax(0, 1fr) 220px 264px; }
 }
 @media (max-width: 1200px) {
-  .trade-terminal .main-grid { grid-template-columns: 240px minmax(0, 1fr) 210px 250px; }
+  .trade-terminal .main-grid { grid-template-columns: var(--market-panel-width, 258px) minmax(0, 1fr) 220px 264px; }
   /* Reference behaviour: below this the row needs its width for the price
      and 24h stats, so the contextual block steps aside rather than
      crushing them. */
@@ -1069,7 +1115,23 @@
   .trade-terminal .chart-tools { flex-shrink: 0; }
   .trade-terminal .chart-tab,
   .trade-terminal .chart-tool-btn { white-space: nowrap; }
+  .trade-terminal .pairs-resize-handle { display: none; }
 }
+
+@media (min-width: 1025px) {
+  .trade-terminal .main-grid.market-panel-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) 220px 264px;
+  }
+  .trade-terminal .main-grid.orderbook-collapsed {
+    grid-template-columns: var(--market-panel-width, 258px) minmax(0, 1fr) 0 264px;
+  }
+  .trade-terminal .main-grid.market-panel-collapsed.orderbook-collapsed {
+    grid-template-columns: 0 minmax(0, 1fr) 0 264px;
+  }
+}
+
+.trade-terminal .main-grid.market-panel-collapsed .left-panel,
+.trade-terminal .main-grid.orderbook-collapsed .orderbook-area { display: none; }
 
 /* Below 900px the app's fixed bottom tab bar appears (see .bottom-nav in
    index.css). Same allowance the rest of the site makes for it, so the

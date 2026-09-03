@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } fro
 import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
+import { LayoutList } from 'lucide-react';
 
 interface Order {
   id: string;
@@ -111,7 +112,13 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
     );
 
     if (!loading && pairOrders.length === 0) {
-      return <div className="empty-state">{t('trade.noOrdersForPair')}</div>;
+      return (
+        <div className="open-orders-empty">
+          <span className="open-orders-empty-icon" aria-hidden="true"><LayoutList size={20} /></span>
+          <strong>{t('trade.noOrdersForPair')}</strong>
+          <span>{t('trade.placeOrderPrompt')}</span>
+        </div>
+      );
     }
 
     return (
