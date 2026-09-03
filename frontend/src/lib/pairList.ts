@@ -68,7 +68,7 @@ export function filterAndSortPairs(
     // no CoinGecko dependency needed since every TickerRow already carries
     // changePercent24h. Defaults to 'volume' (most-traded first), the
     // existing behavior.
-    sortField?: 'volume' | 'change';
+    sortField?: 'volume' | 'change' | 'price' | 'symbol';
     sortDir?: 1 | -1;
   }
 ): TickerRow[] {
@@ -103,14 +103,18 @@ export function filterAndSortPairs(
         const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
         if (rankA !== rankB) return rankA - rankB;
       }
-      if (opts.sortField === 'change') {
-        const changeA = parseChangePercent(a.changePercent24h, a.pair);
-        const changeB = parseChangePercent(b.changePercent24h, b.pair);
-        return (changeA - changeB) * sortDir;
+      let comparison: number;
+      if (opts.sortField === 'symbol') {
+        comparison = a.pair.localeCompare(b.pair);
+      } else if (opts.sortField === 'price') {
+        comparison = parseFloat(a.lastPrice || '0') - parseFloat(b.lastPrice || '0');
+      } else if (opts.sortField === 'change') {
+        comparison = parseChangePercent(a.changePercent24h, a.pair) - parseChangePercent(b.changePercent24h, b.pair);
+      } else {
+        // Most-traded pairs first by default — the API's raw alphabetical
+        // order otherwise puts obscure, barely-liquid tickers first.
+        comparison = parseFloat(a.quoteVolume24h || '0') - parseFloat(b.quoteVolume24h || '0');
       }
-      // Most-traded pairs first — sorting alphabetically (the API's raw
-      // order) put obscure, barely-liquid tickers at the top just because
-      // their symbol starts early in the alphabet.
-      return (parseFloat(b.quoteVolume24h || '0') - parseFloat(a.quoteVolume24h || '0')) * (sortDir === -1 ? 1 : -1);
+      return comparison * sortDir;
     });
 }

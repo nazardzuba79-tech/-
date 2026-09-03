@@ -10,25 +10,35 @@ import {
 } from '../lib/pairList';
 import { parseChangePercent } from '../lib/priceChange';
 import { CryptoIcon } from './CryptoIcon';
+import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
 
 export interface PairListHandle {
   focusSearch: () => void;
 }
 
+type PairSortField = 'volume' | 'price' | 'change' | 'symbol';
+
+const REFERENCE_QUOTE_FILTERS = ['USDT', 'USD', 'USDC', 'EUR'];
+
 /**
- * The reference's `.pairs-section`: a search field, a row of quote tabs
- * (the reference's ⭐ Fav / USDT / BTC / ETH / NEW), and the pair list
- * itself — each row a favourite star, an asset logo, a name, a price and
- * a signed change, with the active pair tinted in the accent. The logo is
- * CryptoIcon, the same icon-set-with-letter-fallback component the rest
- * of the app already uses (Futures' pair list, Wallet, CFD instruments) —
- * not a new asset system.
+ * The reference's `.pairs-section`: header/collapse, search, the quote tabs
+ * actually present in the live USDT/USD/USDC/EUR ticker set, real sorting,
+ * resizable width, and rows with favourite, asset, price and signed-change
+ * data. CryptoIcon remains the application's shared real icon system.
  *
  * All the existing behaviour is kept: the 4s ticker poll, favourites in
  * localStorage, and the shared filter/sort helper in lib/pairList.
  */
-export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChange: (pair: string) => void }>(
-  function PairListSidebar({ pair, onChange }, ref) {
+export const PairListSidebar = forwardRef<
+  PairListHandle,
+  {
+    pair: string;
+    onChange: (pair: string) => void;
+    onCollapse?: () => void;
+    onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+  }
+>(
+  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart }, ref) {
     const { t } = useLanguage();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
@@ -36,6 +46,8 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+    const [sortField, setSortField] = useState<PairSortField>('volume');
+    const [sortDir, setSortDir] = useState<1 | -1>(-1);
     const searchRef = useRef<HTMLInputElement>(null);
 
     useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
@@ -54,9 +66,20 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       return () => window.clearInterval(poll);
     }, []);
 
+    useEffect(() => {
+      function focusSearch(event: KeyboardEvent) {
+        const target = event.target as HTMLElement | null;
+        if (event.key !== '/' || target?.matches('input, textarea, select, [contenteditable="true"]')) return;
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      window.addEventListener('keydown', focusSearch);
+      return () => window.removeEventListener('keydown', focusSearch);
+    }, []);
+
     const quoteChips = useMemo(() => {
       const present = new Set(tickers.map((tk) => tk.pair.split('/')[1]));
-      return QUOTE_PRIORITY.filter((q) => present.has(q));
+      return QUOTE_PRIORITY.filter((q) => REFERENCE_QUOTE_FILTERS.includes(q) && present.has(q));
     }, [tickers]);
 
     function toggleFavorite(p: string, e: React.MouseEvent) {
@@ -76,8 +99,8 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
       favoritesOnly,
       favorites,
       categoryFilter: null,
-      sortField: 'volume',
-      sortDir: -1,
+      sortField,
+      sortDir,
     });
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
@@ -86,8 +109,31 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
     const isSearching = search.trim().length > 0;
     const effectiveQuoteFilter = isSearching ? null : quoteFilter;
 
+    function chooseSort(nextField: PairSortField) {
+      if (sortField === nextField) {
+        setSortDir((current) => (current === 1 ? -1 : 1));
+        return;
+      }
+      setSortField(nextField);
+      setSortDir(nextField === 'symbol' ? 1 : -1);
+    }
+
+    function sortIcon(field: PairSortField) {
+      if (sortField !== field) return null;
+      return sortDir === 1 ? <ChevronUp size={11} /> : <ChevronDown size={11} />;
+    }
+
     return (
       <div className="pairs-section">
+        <div className="pairs-header">
+          <span>{t('nav.markets')}</span>
+          {onCollapse && (
+            <button type="button" onClick={onCollapse} title="Свернуть рынки" aria-label="Свернуть рынки">
+              <PanelLeftClose size={16} />
+            </button>
+          )}
+        </div>
+
         <div className="pairs-search">
           <input
             ref={searchRef}
@@ -95,6 +141,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('trade.searchPairPlaceholder')}
           />
+          <kbd>/</kbd>
         </div>
 
         <div className="pairs-tabs">
@@ -102,7 +149,7 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
             className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
             onClick={() => setFavoritesOnly((v) => !v)}
           >
-            ★ {t('trade.favorites')}
+            <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
           </button>
           {quoteChips.map((q) => (
             <button
@@ -116,15 +163,13 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
               {q}
             </button>
           ))}
-          <button
-            className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === null ? 'active' : ''}`}
-            onClick={() => {
-              setFavoritesOnly(false);
-              setQuoteFilter(null);
-            }}
-          >
-            {t('trade.allPairs')}
-          </button>
+        </div>
+
+        <div className="pairs-sort">
+          <button type="button" onClick={() => chooseSort('volume')}>{t('trade.volume24h')} {sortIcon('volume')}</button>
+          <button type="button" onClick={() => chooseSort('price')}>{t('trade.price')} {sortIcon('price')}</button>
+          <button type="button" onClick={() => chooseSort('change')}>24ч % {sortIcon('change')}</button>
+          <button type="button" onClick={() => chooseSort('symbol')} title="Символ A–Z">A–Z {sortIcon('symbol')}</button>
         </div>
 
         <div className="pairs-list">
@@ -137,18 +182,15 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                 className={`pair-row ${tk.pair === pair ? 'active' : ''}`}
                 onClick={() => onChange(tk.pair)}
               >
-                <span className="p-name">
-                  <span
-                    onClick={(e) => toggleFavorite(tk.pair, e)}
-                    style={{ color: favorites.has(tk.pair) ? 'var(--accent-yellow)' : 'var(--text-secondary)', marginRight: 4, flexShrink: 0 }}
-                  >
-                    ★
-                  </span>
-                  <span className="p-icon">
-                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={18} />
-                  </span>
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tk.pair}</span>
+                <span
+                  className={`pair-favorite ${favorites.has(tk.pair) ? 'starred' : ''}`}
+                  onClick={(e) => toggleFavorite(tk.pair, e)}
+                  title={t('trade.favorites')}
+                >
+                  <Star size={12} fill={favorites.has(tk.pair) ? 'currentColor' : 'none'} />
                 </span>
+                <span className="p-icon"><CryptoIcon symbol={tk.pair.split('/')[0]} size={18} /></span>
+                <strong className="p-name">{tk.pair}</strong>
                 <span className="p-price">{parseFloat(tk.lastPrice).toLocaleString('en-US', { maximumFractionDigits: 4 })}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}
@@ -165,6 +207,12 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
           )}
           {tickers.length > 0 && filtered.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         </div>
+
+        {onResizeStart && (
+          <div className="pairs-resize-handle" onPointerDown={onResizeStart} aria-hidden="true">
+            <GripVertical size={14} />
+          </div>
+        )}
       </div>
     );
   }

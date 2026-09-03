@@ -4,7 +4,6 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { TickerBar } from '../components/TickerBar';
-import { BotsComingSoon } from '../components/BotsComingSoon';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
@@ -19,6 +18,7 @@ import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
+import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
@@ -55,6 +55,10 @@ export function TradePage() {
   const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
+  const [marketPanelWidth, setMarketPanelWidth] = useState(258);
+  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
+  const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
+  const marketResizeStart = useRef({ x: 0, width: 258 });
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
   // Nav.tsx's TradeMenu. TradePage stays mounted across a /trade <-> /trade?market=cfd
   // navigation (same route, React Router doesn't remount it), so the
@@ -113,13 +117,31 @@ export function TradePage() {
     setOrdersRefreshKey((k) => k + 1);
   }
 
+  function handleMarketResizeStart(event: React.PointerEvent<HTMLDivElement>) {
+    marketResizeStart.current = { x: event.clientX, width: marketPanelWidth };
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    function move(moveEvent: PointerEvent) {
+      const nextWidth = marketResizeStart.current.width + moveEvent.clientX - marketResizeStart.current.x;
+      setMarketPanelWidth(Math.min(340, Math.max(240, nextWidth)));
+    }
+
+    function stop() {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+    }
+
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+  }
+
   // Spot renders the ported terminal; CFD keeps the page's previous layout,
   // because the supplied design covers a spot terminal only and its
   // instrument list, chart and position table have no slot in that grid.
   if (marketType === 'cfd') {
     return (
       <div className="page-mesh trading-page" style={styles.page}>
-        <Nav active="/trade" middle={<BotsComingSoon />} onTickerSelect={setPair} />
+        <Nav active="/trade" onTickerSelect={setPair} />
         <ConnectionBanner />
 
         <div className="trading-content" style={styles.content}>
@@ -154,7 +176,7 @@ export function TradePage() {
 
   return (
     <div className="trade-terminal">
-      <Nav active="/trade" middle={<BotsComingSoon />} onTickerSelect={setPair} />
+      <Nav active="/trade" onTickerSelect={setPair} />
       <ConnectionBanner />
 
       <div className="terminal">
@@ -165,10 +187,24 @@ export function TradePage() {
             list on the far right; this is the requested reorder, done via
             grid-column placement in TradeTerminal.css, not by moving
             anything with absolute positioning or transforms. */}
-        <div className="main-grid">
+        <div
+          className={`main-grid${marketPanelCollapsed ? ' market-panel-collapsed' : ''}${orderBookCollapsed ? ' orderbook-collapsed' : ''}`}
+          style={{ '--market-panel-width': `${marketPanelWidth}px` } as React.CSSProperties}
+        >
           <div className="left-panel">
-            <PairListSidebar ref={pairListRef} pair={pair} onChange={setPair} />
+            <PairListSidebar
+              ref={pairListRef}
+              pair={pair}
+              onChange={setPair}
+              onCollapse={() => setMarketPanelCollapsed(true)}
+              onResizeStart={handleMarketResizeStart}
+            />
           </div>
+          {marketPanelCollapsed && (
+            <button className="restore-market-panel" onClick={() => setMarketPanelCollapsed(false)} title="Открыть рынки" aria-label="Открыть рынки">
+              <PanelLeftOpen size={17} />
+            </button>
+          )}
 
           <div className="chart-area">
             <PriceChart pair={pair} chrome="terminal" />
@@ -179,8 +215,14 @@ export function TradePage() {
               bids={book.bids}
               asks={book.asks}
               onPickPrice={(value) => setPickedPrice((prev) => ({ value, seq: (prev?.seq ?? 0) + 1 }))}
+              onCollapse={() => setOrderBookCollapsed(true)}
             />
           </div>
+          {orderBookCollapsed && (
+            <button className="restore-orderbook" onClick={() => setOrderBookCollapsed(false)} title="Открыть стакан" aria-label="Открыть стакан">
+              <PanelRightOpen size={17} />
+            </button>
+          )}
 
           <div className="order-form-area">
             <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
@@ -196,7 +238,7 @@ export function TradePage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'open' && openOrderCount > 0 && <span className="badge">{openOrderCount}</span>}
+                {tab.id === 'open' && <span className="badge">{openOrderCount}</span>}
               </button>
             ))}
 

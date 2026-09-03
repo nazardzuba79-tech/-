@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage, localeOf } from '../lib/i18n';
+import { PanelRightClose } from 'lucide-react';
 
 interface Level {
   price: string;
@@ -27,6 +28,29 @@ function withDepth(levels: Level[]): (Level & { cumulative: number })[] {
 // so the first N of each is exactly that near-spread window.
 const VISIBLE_LEVELS_PER_SIDE = 15;
 
+const GROUPING_STEPS = ['0.1', '1', '10', '50'] as const;
+
+function groupLevels(levels: Level[], step: number, side: 'asks' | 'bids'): Level[] {
+  const grouped = new Map<number, { quantity: number; orders: number }>();
+  for (const level of levels) {
+    const price = parseFloat(level.price);
+    const quantity = parseFloat(level.quantity);
+    if (!Number.isFinite(price) || !Number.isFinite(quantity)) continue;
+    const bucket = side === 'asks' ? Math.ceil(price / step) * step : Math.floor(price / step) * step;
+    const normalizedBucket = Math.round(bucket * 10_000_000) / 10_000_000;
+    const current = grouped.get(normalizedBucket) ?? { quantity: 0, orders: 0 };
+    current.quantity += quantity;
+    current.orders += level.orders ?? 1;
+    grouped.set(normalizedBucket, current);
+  }
+
+  return Array.from(grouped, ([price, value]) => ({
+    price: String(price),
+    quantity: String(value.quantity),
+    orders: value.orders,
+  })).sort((a, b) => (side === 'asks' ? parseFloat(a.price) - parseFloat(b.price) : parseFloat(b.price) - parseFloat(a.price)));
+}
+
 /**
  * The reference's `.orderbook-area`, whole: header with the display-mode
  * buttons, the three column headers (Price / Amount / Sum), the ask stack
@@ -36,13 +60,26 @@ const VISIBLE_LEVELS_PER_SIDE = 15;
  * The data and its maths are unchanged from before: real Kraken depth,
  * cumulative-from-the-spread bars, the same near-spread window.
  */
-export function OrderBookPanel({ bids, asks, onPickPrice }: { bids: Level[]; asks: Level[]; onPickPrice?: (price: string) => void }) {
+export function OrderBookPanel({
+  bids,
+  asks,
+  onPickPrice,
+  onCollapse,
+}: {
+  bids: Level[];
+  asks: Level[];
+  onPickPrice?: (price: string) => void;
+  onCollapse?: () => void;
+}) {
   const { t, lang } = useLanguage();
   // The reference's three display modes: both sides, bids only, asks only.
   const [mode, setMode] = useState<'both' | 'bids' | 'asks'>('both');
+  const [grouping, setGrouping] = useState<(typeof GROUPING_STEPS)[number]>('1');
 
-  const asksDepth = withDepth(asks).slice(0, VISIBLE_LEVELS_PER_SIDE);
-  const bidsDepth = withDepth(bids).slice(0, VISIBLE_LEVELS_PER_SIDE);
+  const groupedAsks = useMemo(() => groupLevels(asks, Number(grouping), 'asks'), [asks, grouping]);
+  const groupedBids = useMemo(() => groupLevels(bids, Number(grouping), 'bids'), [bids, grouping]);
+  const asksDepth = withDepth(groupedAsks).slice(0, VISIBLE_LEVELS_PER_SIDE);
+  const bidsDepth = withDepth(groupedBids).slice(0, VISIBLE_LEVELS_PER_SIDE);
   const maxDepth = Math.max(
     asksDepth.length ? asksDepth[asksDepth.length - 1].cumulative : 0,
     bidsDepth.length ? bidsDepth[bidsDepth.length - 1].cumulative : 0,
@@ -52,15 +89,27 @@ export function OrderBookPanel({ bids, asks, onPickPrice }: { bids: Level[]; ask
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
   const midPrice = bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
+  const spread = bestAsk !== null && bestBid !== null ? Math.max(0, bestAsk - bestBid) : null;
+  const spreadPercent = spread !== null && midPrice ? (spread / midPrice) * 100 : null;
 
   return (
     <>
       <div className="orderbook-header">
         <span className="orderbook-title">{t('trade.orderBook')}</span>
-        <div className="orderbook-modes">
-          <button className={`ob-mode-btn ${mode === 'both' ? 'active' : ''}`} onClick={() => setMode('both')} title={t('trade.orderBook')}>▦</button>
-          <button className={`ob-mode-btn ${mode === 'bids' ? 'active' : ''}`} onClick={() => setMode('bids')} title={t('trade.buy')}>▪</button>
-          <button className={`ob-mode-btn ${mode === 'asks' ? 'active' : ''}`} onClick={() => setMode('asks')} title={t('trade.sell')}>▭</button>
+        <div className="orderbook-controls">
+          <div className="orderbook-modes">
+            <button className={`ob-mode-btn ${mode === 'both' ? 'active' : ''}`} onClick={() => setMode('both')} title={t('trade.orderBook')}>▦</button>
+            <button className={`ob-mode-btn ${mode === 'bids' ? 'active' : ''}`} onClick={() => setMode('bids')} title={t('trade.buy')}>▪</button>
+            <button className={`ob-mode-btn ${mode === 'asks' ? 'active' : ''}`} onClick={() => setMode('asks')} title={t('trade.sell')}>▭</button>
+          </div>
+          <select className="orderbook-grouping" value={grouping} onChange={(event) => setGrouping(event.target.value as (typeof GROUPING_STEPS)[number])} aria-label="Группировка цены">
+            {GROUPING_STEPS.map((step) => <option key={step} value={step}>{step}</option>)}
+          </select>
+          {onCollapse && (
+            <button className="orderbook-collapse" type="button" onClick={onCollapse} title="Свернуть стакан" aria-label="Свернуть стакан">
+              <PanelRightClose size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -79,9 +128,12 @@ export function OrderBookPanel({ bids, asks, onPickPrice }: { bids: Level[]; ask
       )}
 
       <div className="orderbook-spread">
-        {midPrice !== null ? midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
-        {midPrice !== null && (
-          <span className="usd">≈ ${midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        <div>
+          <strong>{midPrice !== null ? midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</strong>
+          {midPrice !== null && <span className="usd">≈ ${midPrice.toLocaleString(localeOf(lang), { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>}
+        </div>
+        {spread !== null && spreadPercent !== null && (
+          <small>{t('trade.spread')} {spread.toLocaleString(localeOf(lang), { minimumFractionDigits: 4, maximumFractionDigits: 8 })} ({spreadPercent.toFixed(3)}%)</small>
         )}
       </div>
 
