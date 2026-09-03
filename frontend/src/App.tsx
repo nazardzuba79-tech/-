@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
-import { MarketingPage } from './pages/MarketingPage';
+import { HomePage } from './pages/home/HomePage';
 import { TradePage } from './pages/TradePage';
 import { FuturesPage } from './pages/FuturesPage';
 import { MarketsPage } from './pages/MarketsPage';
@@ -38,7 +38,7 @@ export function App() {
             they are the only places the trading-mode preference applies —
             see lib/tradingMode. A direct /trade or /futures URL is its own
             route and is never rewritten. */}
-        <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <MarketingPage />} />
+        <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
         <Route path="/login" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <AuthPage />} />
         <Route
           path="/trade"
