@@ -367,20 +367,70 @@
    --border/--accent tokens rather than the terminal's own darker palette
    above — close in hue but visibly not the same, and inline styles can't
    express :hover at all, so the buttons gave no feedback. */
+/* 42px rail: a 32px hit target plus 5px either side. Wide enough to click
+   without thinking, narrow enough that it costs the chart almost nothing.
+   `overflow-y: auto` with a hidden scrollbar is the shorter-screen
+   fallback — the grouped layout fits any normal desktop, so the track
+   never appears, but tools can still be reached at 768px rather than
+   being cut off below the viewport. */
 .trade-terminal .draw-toolbar {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  padding: 10px 6px; flex-shrink: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  padding: 8px 5px; flex-shrink: 0; width: 42px;
   background: var(--toolbar-bg); border-right: 1px solid var(--layer-border);
+  overflow-y: auto; overflow-x: visible; scrollbar-width: none;
 }
+.trade-terminal .draw-toolbar::-webkit-scrollbar { width: 0; height: 0; }
 .trade-terminal .tool-btn {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   background: transparent; border: none; border-radius: 6px; cursor: pointer;
   color: var(--text-secondary); transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
+/* Restrained on both counts: hover is one step of graphite, and the active
+   tool is a gold glyph on a barely-there gold wash — never a filled yellow
+   button. No glow, no scaling. */
 .trade-terminal .tool-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
 .trade-terminal .tool-btn.active { background: rgba(240, 185, 11, 0.12); color: var(--accent-yellow); }
-.trade-terminal .tool-divider { width: 18px; height: 1px; background: var(--layer-border); margin: 6px 0; }
+.trade-terminal .tool-divider { width: 18px; height: 1px; background: var(--layer-border); margin: 5px 0; }
+
+/* === GROUPED TOOL === */
+.trade-terminal .tool-group { position: relative; display: flex; flex-shrink: 0; }
+/* The chevron sits in the button's bottom-right corner the way professional
+   terminals mark an expandable tool, rather than taking a slot of its own. */
+.trade-terminal .tool-group-chevron {
+  position: absolute; right: 1px; bottom: 1px;
+  width: 10px; height: 10px; padding: 0;
+  display: flex; align-items: flex-end; justify-content: flex-end;
+  background: transparent; border: none; cursor: pointer;
+  color: #5c6675; transition: color 0.15s;
+}
+.trade-terminal .tool-group:hover .tool-group-chevron { color: #93a0b2; }
+.trade-terminal .tool-group.open .tool-group-chevron { color: var(--accent-yellow); }
+
+/* Flyout to the right of the rail, in the terminal's own graphite — no
+   glass, no shadow bloom, no descriptions. Just icon + name. */
+.tool-flyout {
+  /* Portalled to document.body (see PriceChart) and therefore outside
+     .trade-terminal — positioned in viewport coordinates by the toolbar. */
+  position: fixed; z-index: 60;
+  min-width: 178px; padding: 4px;
+  display: flex; flex-direction: column; gap: 1px;
+  background: #1a222d; border: 1px solid #283340; border-radius: 7px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+.tool-flyout-item {
+  display: flex; align-items: center; gap: 10px;
+  height: 33px; padding: 0 9px;
+  background: transparent; border: none; border-radius: 5px; cursor: pointer;
+  color: #848e9c; font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-align: left; white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.tool-flyout-item:hover { background: #2b3139; color: #eaecef; }
+.tool-flyout-item.active { color: #f0b90b; }
+.tool-flyout-item svg { flex-shrink: 0; }
 .trade-terminal .chart-placeholder {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -725,8 +775,8 @@
    plus its 2px indicator border), so each label sits exactly over the
    column it sorts. */
 .trade-terminal .pairs-col-headers {
-  display: grid; grid-template-columns: minmax(0, 1fr) 68px 47px;
-  gap: 0 4px; align-items: center; height: 31px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 64px 46px;
+  gap: 0 3px; align-items: center; height: 31px;
   padding: 0 9px 0 11px;
   color: #8995a2; border-bottom: 1px solid #202a35;
 }
@@ -772,8 +822,14 @@
      Only the pair column flexes (it is a fixed 79px there, which overflows
      a 258px panel once the row's own padding is counted), so both numeric
      columns keep the reference's exact widths and cannot move. */
-  grid-template-columns: 15px 23px minmax(0, 1fr) 68px 47px;
-  gap: 0 4px;
+  /* 68px/47px with a 4px gap left the name column 69px, which is a hair
+     under what "DOGE/USDT" or "USDC/USDT" need at this size — hence the
+     truncation. The numeric columns give back 5px between them (a
+     tabular "108,420.50" measures ~56px, so 64px is still slack) and the
+     gap one more each, which is 9px straight into the name. The panel
+     stays 258px and neither numeric column can move. */
+  grid-template-columns: 15px 23px minmax(0, 1fr) 64px 46px;
+  gap: 0 3px;
   min-height: 35px; padding: 0 9px; font-size: 11px; cursor: pointer;
   transition: background 0.15s, border-color 0.15s; align-items: center;
   width: 100%; background: transparent; border: none; text-align: left;
@@ -807,15 +863,16 @@
 .trade-terminal .pair-row .p-star {
   position: relative;
   display: grid; place-items: center;
-  color: #7c8899; font-size: 16px; line-height: 1;
+  color: #7c8899; font-size: 17px; line-height: 1;
   transition: color 0.12s;
 }
 .trade-terminal .pair-row .p-star::after {
   content: ''; position: absolute;
   top: 50%; transform: translateY(-50%);
-  /* 15px column + the row's 9px left padding + the 4px column gap = 28px,
-     which is the whole budget available without reaching the asset logo. */
-  left: -9px; right: -4px; height: 28px;
+  /* 15px column + the row's 9px left padding and 2px border + the 3px
+     column gap = 29px wide, the whole budget available before reaching the
+     asset logo; 30px tall inside a 35px row. */
+  left: -11px; right: -3px; height: 30px;
 }
 /* Brightness only, no plate behind the glyph — the star stays part of the
    row rather than becoming a button sitting on it. */
@@ -823,12 +880,22 @@
 /* Gold means favourited and nothing else. It used to also apply to
    .pair-row.active, which made the open pair's star look favourited when
    it wasn't — selection is already shown by the row itself. */
-.trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); font-size: 17px; }
+.trade-terminal .pair-row .p-star.on { color: var(--accent-yellow); font-size: 18px; }
 .trade-terminal .pair-row .p-star.on:hover { color: #f0cb4a; }
+/* The base asset is the part a trader scans for, so it never truncates:
+   the name is two spans, and only the quote is allowed to shrink. Worst
+   case now reads "DOGE/USD…" instead of "DOGE/U…" — and at the widths
+   above, nothing in the listed universe actually reaches that. */
 .trade-terminal .pair-row .p-name {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  min-width: 0; display: flex; align-items: baseline; white-space: nowrap;
   font-size: 11px; font-weight: 650; color: #e3e8ed;
 }
+.trade-terminal .pair-row .p-name .p-base { flex-shrink: 0; }
+.trade-terminal .pair-row .p-name .p-quote {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  color: #9aa6b4; font-weight: 600;
+}
+.trade-terminal .pair-row.active .p-name .p-quote { color: inherit; }
 .trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
 .trade-terminal .pair-row .p-price {
   text-align: right; color: #c0c8d1;
@@ -958,6 +1025,23 @@
     border-bottom: 1px solid var(--border-color);
   }
   .trade-terminal .chart-area { order: 1; height: 340px; }
+  /* Below this width the chart panel is a fixed 340px tall, which is
+     shorter than the rail's own content — a vertical rail would put its
+     last tools out of reach. It becomes a horizontal strip above the chart
+     instead, the same move mobile trading terminals make. Nothing is
+     dropped and the desktop rail is untouched. */
+  .trade-terminal .chart-view { flex-direction: column; }
+  .trade-terminal .draw-toolbar {
+    flex-direction: row;
+    width: 100%;
+    height: 40px;
+    padding: 4px 6px;
+    border-right: none;
+    border-bottom: 1px solid var(--layer-border);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .trade-terminal .tool-divider { width: 1px; height: 18px; margin: 0 5px; }
   .trade-terminal .order-form-area { order: 2; }
   /* Was 480px to split between the pair list and the market-trades tape
      stacked under it; now the pair list alone, so a shorter fixed height

@@ -168,7 +168,10 @@ export function FuturesPairList({
               <span className="p-icon">
                 <CryptoIcon symbol={base} size={20} imageUrl={coinIcons.get(base)} />
               </span>
-              <span className="p-name">{r.symbol}</span>
+              <span className="p-name">
+                  <b className="p-base">{r.symbol.split('/')[0]}</b>
+                  <span className="p-quote">/{r.symbol.split('/')[1]}</span>
+                </span>
               <span className="p-price">{tickers[r.symbol] ? formatPrice(r.lastPrice) : '—'}</span>
               <span className={`p-change ${up ? 'up' : 'down'}`}>
                 {tickers[r.symbol] ? `${up ? '▲' : '▼'} ${up ? '+' : ''}${r.change.toFixed(2)}%` : '—'}

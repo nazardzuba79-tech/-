@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import {
   createChart,
   ColorType,
@@ -178,6 +179,14 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   const [brushStrokes, setBrushStrokes] = useState<BrushStroke[]>([]);
   const [pendingBrush, setPendingBrush] = useState<Point[] | null>(null);
   const [pendingPoint, setPendingPoint] = useState<Point | null>(null);
+  // Drawings stay in state while hidden — this only controls whether the
+  // overlay renders them, so toggling back shows exactly what was there.
+  const [drawingsHidden, setDrawingsHidden] = useState(false);
+  // A drawing tool currently stays selected until the trader picks another,
+  // which is TradingView's "stay in drawing mode" behaviour. Turning this
+  // off returns to the cursor after each completed shape. Both are real
+  // behaviours of this overlay; nothing here simulates anything.
+  const [stayInDrawMode, setStayInDrawMode] = useState(true);
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
   // screen coordinates from the stored (time, price) points.
@@ -195,6 +204,14 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
 
   const toolRef = useRef(tool);
   toolRef.current = tool;
+  // Read from inside native window listeners, which close over the value
+  // at bind time — a ref keeps them seeing the current setting.
+  const stayInDrawModeRef = useRef(stayInDrawMode);
+  stayInDrawModeRef.current = stayInDrawMode;
+  const textPromptRef = useRef('');
+  textPromptRef.current = `${t('draw.text')}:`;
+  const confirmClearRef = useRef('');
+  confirmClearRef.current = t('draw.deleteAllConfirm');
 
   // Create the chart once on mount.
   useEffect(() => {
@@ -377,23 +394,29 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           title: p.price.toFixed(2),
         });
         priceLinesRef.current.push(line);
+        if (!stayInDrawModeRef.current) setTool('cursor');
         return;
       }
 
       if (activeTool === 'ray') {
         setRays((prev) => [...prev, { id: nextDrawingId++, a: p }]);
+        if (!stayInDrawModeRef.current) setTool('cursor');
         return;
       }
 
       if (activeTool === 'vertical') {
         setVerticals((prev) => [...prev, { id: nextDrawingId++, time: p.time }]);
+        if (!stayInDrawModeRef.current) setTool('cursor');
         return;
       }
 
       if (activeTool === 'text') {
-        const text = window.prompt('Текст:');
+        // Prompt label read from a ref: this handler is bound once, so a
+        // captured `t` would keep showing the language active at mount.
+        const text = window.prompt(textPromptRef.current);
         if (text && text.trim()) {
           setLabels((prev) => [...prev, { id: nextDrawingId++, at: p, text: text.trim() }]);
+          if (!stayInDrawModeRef.current) setTool('cursor');
         }
       }
     }
@@ -422,6 +445,29 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     setCursorPoint(null);
   }, [tool, pair]);
 
+  // Esc abandons whatever is in progress and drops back to the cursor —
+  // the same escape hatch every charting package gives you, and the reason
+  // a half-drawn trend line can never trap the pointer in drawing mode.
+  // Bound to the window because the drag listeners are too, and a drag can
+  // legitimately be outside the chart when Esc is pressed.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      setPendingPoint(null);
+      setPendingBrush(null);
+      setCursorPoint(null);
+      setTool('cursor');
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  // Called the moment a shape is committed. With stay-in-drawing-mode off
+  // the tool releases back to the cursor, exactly one shape per selection.
+  const finishDrawing = useCallback(() => {
+    if (!stayInDrawModeRef.current) setTool('cursor');
+  }, []);
+
   // Drawings are per-pair — a trend line drawn on BTC/USDT shouldn't show
   // up on ETH/USDT. Native price lines also need explicit cleanup since
   // they live on the series object, not React state.
@@ -443,6 +489,10 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   }, [pair]);
 
   const clearAll = useCallback(() => {
+    // One click used to wipe every drawing on the chart with no way back.
+    // There is no undo and no per-object selection here, so the confirm is
+    // the only thing standing between a misclick and losing the lot.
+    if (!window.confirm(confirmClearRef.current)) return;
     setTrendLines([]);
     setRulers([]);
     setLabels([]);
@@ -717,7 +767,10 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           window.removeEventListener('mousemove', handleMove);
           window.removeEventListener('mouseup', handleUp);
           setPendingBrush(null);
-          if (points.length > 1) setBrushStrokes((prev) => [...prev, { id: nextDrawingId++, points }]);
+          if (points.length > 1) {
+            setBrushStrokes((prev) => [...prev, { id: nextDrawingId++, points }]);
+            finishDrawing();
+          }
         }
         window.addEventListener('mousemove', handleMove);
         window.addEventListener('mouseup', handleUp);
@@ -757,11 +810,12 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
         } else if (activeTool === 'fib') {
           setFibs((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
         }
+        finishDrawing();
       }
       window.addEventListener('mousemove', handleMove);
       window.addEventListener('mouseup', handleUp);
     },
-    [tool]
+    [tool, finishDrawing]
   );
 
   const intervalButtons = INTERVALS.map((i) => (
@@ -840,7 +894,17 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       )}
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
-        <DrawToolbar tool={tool} onSelect={setTool} onClear={clearAll} onFit={fitContent} terminal={terminal} />
+        <DrawToolbar
+          tool={tool}
+          onSelect={setTool}
+          onClear={clearAll}
+          onFit={fitContent}
+          terminal={terminal}
+          drawingsHidden={drawingsHidden}
+          onToggleHidden={() => setDrawingsHidden((v) => !v)}
+          stayInDrawMode={stayInDrawMode}
+          onToggleStay={() => setStayInDrawMode((v) => !v)}
+        />
 
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
@@ -848,9 +912,18 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
           <svg
+            className="drawing-overlay"
             style={{
               ...styles.overlay,
-              pointerEvents: ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) ? 'auto' : 'none',
+              // Hiding is purely visual — every shape stays in state, so
+              // toggling back restores exactly what was there. While hidden
+              // the overlay also stops taking pointer events, otherwise an
+              // invisible layer would swallow clicks meant for the chart.
+              display: drawingsHidden ? 'none' : undefined,
+              pointerEvents:
+                !drawingsHidden && ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool)
+                  ? 'auto'
+                  : 'none',
             }}
             onMouseDown={handleOverlayMouseDown}
           >
@@ -1094,70 +1167,222 @@ function RulerLabel({ x, y, pct, priceDiff, bars }: { x: number; y: number; pct:
   );
 }
 
+/**
+ * The left drawing rail, laid out the way a TradingView or Bybit user
+ * expects: cursor first, then the drawing tools grouped by kind, then
+ * measure/zoom, then the drawing-session toggles, and destructive actions
+ * last behind a separator.
+ *
+ * Only tools this chart actually implements are exposed. That is why there
+ * is no magnet and no lock button — this overlay has no snapping and no
+ * per-object selection, so either one would be a control that does
+ * nothing. Fibonacci, shapes, brush, text and measure each have exactly one
+ * implemented tool, so they stay direct buttons rather than one-item menus;
+ * trend lines are the one family with four, so they get the flyout.
+ *
+ * The trend group behaves like the reference terminals': the main button
+ * activates whichever tool of the group you used last, and the small
+ * chevron opens the list. Nothing about that is persisted beyond the
+ * session — see `lastTrend`.
+ */
 function DrawToolbar({
   tool,
   onSelect,
   onClear,
   onFit,
   terminal,
+  drawingsHidden,
+  onToggleHidden,
+  stayInDrawMode,
+  onToggleStay,
 }: {
   tool: Tool;
   onSelect: (t: Tool) => void;
   onClear: () => void;
   onFit: () => void;
   terminal?: boolean;
+  drawingsHidden: boolean;
+  onToggleHidden: () => void;
+  stayInDrawMode: boolean;
+  onToggleStay: () => void;
 }) {
-  const TOOLS: { id: Tool; icon: JSX.Element; title: string }[] = [
-    { id: 'cursor', icon: <CursorIcon />, title: 'Курсор' },
-    { id: 'trendline', icon: <TrendLineIcon />, title: 'Линия тренда' },
-    { id: 'ray', icon: <RayIcon />, title: 'Горизонтальный луч' },
-    { id: 'horizontal', icon: <HorizontalIcon />, title: 'Горизонтальная линия' },
-    { id: 'vertical', icon: <VerticalIcon />, title: 'Вертикальная линия' },
-    { id: 'rectangle', icon: <RectangleIcon />, title: 'Прямоугольник' },
-    { id: 'fib', icon: <FibIcon />, title: 'Уровни Фибоначчи' },
-    { id: 'brush', icon: <BrushIcon />, title: 'Кисть' },
-    { id: 'ruler', icon: <RulerIcon />, title: 'Линейка' },
-    { id: 'text', icon: <TextIcon />, title: 'Текст' },
-  ];
+  const { t } = useLanguage();
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  // Where to paint the flyout, in viewport coordinates. The rail has to
+  // scroll on short screens, and an element that scrolls on one axis can
+  // never let content overflow the other — `overflow-x: visible` computes
+  // to `auto` — so a flyout positioned inside the rail is clipped away
+  // rather than shown. Rendering it into a portal at fixed coordinates is
+  // what keeps it visible without giving up the rail's own scrolling.
+  const [flyoutPos, setFlyoutPos] = useState<{ top: number; left: number } | null>(null);
+  // Last tool picked inside the trend group, so its button keeps offering
+  // that one — the familiar behaviour from professional terminals.
+  const [lastTrend, setLastTrend] = useState<Tool>('trendline');
+  const groupRef = useRef<HTMLDivElement>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
 
-  // Every other toolbar in the terminal (chart-tab, chart-tool-btn, …)
-  // already gets a `.trade-terminal`-scoped class in terminal mode instead
-  // of these inline styles — this one never had, which is why it read as
-  // visually off: its inline styles pull from the site's global --panel/
-  // --border/--accent tokens rather than the terminal's own darker,
-  // slightly different palette, and inline styles can't express :hover at
-  // all, so the buttons had no hover feedback. Non-terminal chrome (other
-  // pages embedding this same chart) is untouched.
-  return (
-    <div className={terminal ? 'draw-toolbar' : undefined} style={terminal ? undefined : styles.drawToolbar}>
-      {TOOLS.map((tl) => (
-        <button
-          key={tl.id}
-          title={tl.title}
-          onClick={() => onSelect(tl.id)}
-          className={terminal ? `tool-btn ${tool === tl.id ? 'active' : ''}` : undefined}
-          style={terminal ? undefined : { ...styles.toolBtn, ...(tool === tl.id ? styles.toolBtnActive : {}) }}
-        >
-          {tl.icon}
+  // A flyout that outlives a click elsewhere would sit over the chart and
+  // eat the next drawing gesture.
+  useEffect(() => {
+    if (!openGroup) return;
+    function onDocDown(e: MouseEvent) {
+      const t = e.target as Node;
+      const inGroup = groupRef.current?.contains(t);
+      const inFlyout = flyoutRef.current?.contains(t);
+      if (!inGroup && !inFlyout) setOpenGroup(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpenGroup(null);
+    }
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openGroup]);
+
+  const TREND_TOOLS: { id: Tool; icon: JSX.Element; label: string }[] = [
+    { id: 'trendline', icon: <TrendLineIcon />, label: t('draw.trendline') },
+    { id: 'ray', icon: <RayIcon />, label: t('draw.ray') },
+    { id: 'horizontal', icon: <HorizontalIcon />, label: t('draw.horizontal') },
+    { id: 'vertical', icon: <VerticalIcon />, label: t('draw.vertical') },
+  ];
+  const trendActive = TREND_TOOLS.some((x) => x.id === tool);
+  const trendCurrent = TREND_TOOLS.find((x) => x.id === lastTrend) ?? TREND_TOOLS[0];
+
+  // Non-terminal chrome (other pages embedding this chart) keeps the plain
+  // inline-styled rail it always had; only the terminal gets the grouped
+  // presentation, whose hover/active states live in TradeTerminal.css.
+  if (!terminal) {
+    const FLAT: { id: Tool; icon: JSX.Element; title: string }[] = [
+      { id: 'cursor', icon: <CursorIcon />, title: t('draw.cursor') },
+      ...TREND_TOOLS.map((x) => ({ id: x.id, icon: x.icon, title: x.label })),
+      { id: 'rectangle', icon: <RectangleIcon />, title: t('draw.rectangle') },
+      { id: 'fib', icon: <FibIcon />, title: t('draw.fib') },
+      { id: 'brush', icon: <BrushIcon />, title: t('draw.brush') },
+      { id: 'ruler', icon: <RulerIcon />, title: t('draw.measure') },
+      { id: 'text', icon: <TextIcon />, title: t('draw.text') },
+    ];
+    return (
+      <div style={styles.drawToolbar}>
+        {FLAT.map((tl) => (
+          <button
+            key={tl.id}
+            title={tl.title}
+            onClick={() => onSelect(tl.id)}
+            style={{ ...styles.toolBtn, ...(tool === tl.id ? styles.toolBtnActive : {}) }}
+          >
+            {tl.icon}
+          </button>
+        ))}
+        <div style={styles.toolDivider} />
+        <button title={t('draw.zoom')} onClick={onFit} style={styles.toolBtn}>
+          <FitIcon />
         </button>
-      ))}
-      <div className={terminal ? 'tool-divider' : undefined} style={terminal ? undefined : styles.toolDivider} />
-      <button
-        title="Показать всё"
-        onClick={onFit}
-        className={terminal ? 'tool-btn' : undefined}
-        style={terminal ? undefined : styles.toolBtn}
-      >
-        <FitIcon />
-      </button>
-      <button
-        title="Очистить рисунки"
-        onClick={onClear}
-        className={terminal ? 'tool-btn' : undefined}
-        style={terminal ? undefined : styles.toolBtn}
-      >
-        <EraserIcon />
-      </button>
+        <button title={t('draw.deleteAll')} onClick={onClear} style={styles.toolBtn}>
+          <EraserIcon />
+        </button>
+      </div>
+    );
+  }
+
+  const btn = (
+    id: string,
+    title: string,
+    icon: JSX.Element,
+    onClick: () => void,
+    active: boolean
+  ) => (
+    <button key={id} title={title} aria-label={title} aria-pressed={active} onClick={onClick} className={`tool-btn ${active ? 'active' : ''}`}>
+      {icon}
+    </button>
+  );
+
+  return (
+    <div className="draw-toolbar">
+      {btn('cursor', t('draw.cursor'), <CursorIcon />, () => onSelect('cursor'), tool === 'cursor')}
+
+      <div className="tool-divider" />
+
+      {/* The one family with several implemented tools. Main button picks
+          the last-used one; the chevron opens the rest. */}
+      <div className={`tool-group ${openGroup === 'trend' ? 'open' : ''}`} ref={groupRef}>
+        <button
+          title={trendCurrent.label}
+          aria-label={trendCurrent.label}
+          aria-pressed={trendActive}
+          onClick={() => onSelect(trendCurrent.id)}
+          className={`tool-btn ${trendActive ? 'active' : ''}`}
+        >
+          {trendCurrent.icon}
+        </button>
+        <button
+          className="tool-group-chevron"
+          aria-label={t('draw.trend')}
+          aria-haspopup="menu"
+          aria-expanded={openGroup === 'trend'}
+          onClick={(e) => {
+            const wrap = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+            setFlyoutPos({ top: wrap.top - 4, left: wrap.right + 6 });
+            setOpenGroup((g) => (g === 'trend' ? null : 'trend'));
+          }}
+        >
+          <svg width="5" height="5" viewBox="0 0 5 5" aria-hidden="true">
+            <path d="M5 0v5H0z" fill="currentColor" />
+          </svg>
+        </button>
+        {openGroup === 'trend' && flyoutPos && createPortal(
+          <div
+            className="tool-flyout"
+            role="menu"
+            ref={flyoutRef}
+            style={{ top: flyoutPos.top, left: flyoutPos.left }}
+          >
+            {TREND_TOOLS.map((x) => (
+              <button
+                key={x.id}
+                role="menuitem"
+                className={`tool-flyout-item ${tool === x.id ? 'active' : ''}`}
+                onClick={() => {
+                  setLastTrend(x.id);
+                  onSelect(x.id);
+                  setOpenGroup(null);
+                }}
+              >
+                {x.icon}
+                <span>{x.label}</span>
+              </button>
+            ))}
+          </div>,
+          document.body
+        )}
+      </div>
+
+      {btn('fib', t('draw.fib'), <FibIcon />, () => onSelect('fib'), tool === 'fib')}
+      {btn('rectangle', t('draw.rectangle'), <RectangleIcon />, () => onSelect('rectangle'), tool === 'rectangle')}
+      {btn('brush', t('draw.brush'), <BrushIcon />, () => onSelect('brush'), tool === 'brush')}
+      {btn('text', t('draw.text'), <TextIcon />, () => onSelect('text'), tool === 'text')}
+
+      <div className="tool-divider" />
+
+      {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
+      {btn('fit', t('draw.zoom'), <FitIcon />, onFit, false)}
+
+      <div className="tool-divider" />
+
+      {btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
+      {btn(
+        'hide',
+        drawingsHidden ? t('draw.show') : t('draw.hide'),
+        drawingsHidden ? <EyeOffIcon /> : <EyeIcon />,
+        onToggleHidden,
+        drawingsHidden
+      )}
+
+      <div className="tool-divider" />
+
+      {btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
     </div>
   );
 }
@@ -1259,6 +1484,33 @@ function FitIcon() {
       <line x1="16.5" y1="16.5" x2="21" y2="21" />
       <line x1="11" y1="8" x2="11" y2="14" />
       <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+  );
+}
+/* Same stroke system as every other tool icon in this rail — one coherent
+   set, no mixed icon families. */
+function StayModeIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M14 4l6 6-9.5 9.5H4.5V13L14 4z" />
+      <line x1="12" y1="6" x2="18" y2="12" />
+    </svg>
+  );
+}
+function EyeIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="2.6" />
+    </svg>
+  );
+}
+function EyeOffIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M9.6 5.8A10.8 10.8 0 0 1 12 5.5c6.4 0 10 6.5 10 6.5a18 18 0 0 1-3.3 4.2" />
+      <path d="M6.3 7.7A17.6 17.6 0 0 0 2 12s3.6 6.5 10 6.5a10.6 10.6 0 0 0 3.4-.55" />
+      <line x1="3.5" y1="3.5" x2="20.5" y2="20.5" />
     </svg>
   );
 }

@@ -298,7 +298,10 @@ export const PairListSidebar = forwardRef<PairListHandle, { pair: string; onChan
                 <span className="p-icon">
                   <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
                 </span>
-                <span className="p-name">{tk.pair}</span>
+                <span className="p-name">
+                  <b className="p-base">{tk.pair.split('/')[0]}</b>
+                  <span className="p-quote">/{tk.pair.split('/')[1]}</span>
+                </span>
                 <span className="p-price">{formatPrice(parseFloat(tk.lastPrice))}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}
