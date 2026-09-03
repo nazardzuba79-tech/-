@@ -251,16 +251,13 @@ export function AuthPage() {
                 >
                   {t('auth.login')}
                 </button>
-                <button
-                  style={{ ...styles.tab, ...(mode === 'register' ? styles.tabActive : {}) }}
-                  onClick={() => {
-                    setMode('register');
-                    setError(null);
-                  }}
-                  type="button"
-                >
+                {/* Registration has its own approved screen (see
+                    pages/register). This tab navigates there rather than
+                    switching this form into a second, different-looking
+                    signup UI. */}
+                <Link to="/register" style={styles.tab}>
                   {t('auth.register')}
-                </button>
+                </Link>
               </div>
 
               {mode === 'register' && (

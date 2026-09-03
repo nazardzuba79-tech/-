@@ -102,7 +102,7 @@ export function HomeHeader() {
                 {t('auth.login')}
               </Link>
               <Link
-                to="/login?mode=register"
+                to="/register"
                 className="whitespace-nowrap rounded-[6px] bg-gold-500 px-4 py-[8px] text-[12.5px] font-semibold text-ink-950 transition-colors duration-150 hover:bg-gold-400 active:translate-y-[1px]"
               >
                 {t('home.cta.startTrading')}

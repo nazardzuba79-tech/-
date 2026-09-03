@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
+import { RegisterPage } from './pages/register/RegisterPage';
 import { TradePage } from './pages/TradePage';
 import { FuturesPage } from './pages/FuturesPage';
 import { MarketsPage } from './pages/MarketsPage';
@@ -40,6 +41,12 @@ export function App() {
             route and is never rewritten. */}
         <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
         <Route path="/login" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <AuthPage />} />
+        {/* Registration is its own screen (the approved two-column design)
+            rather than a mode of the login form. Both entry points now
+            point straight here: the homepage header's primary CTA and the
+            login card's own Регистрация tab. AuthPage keeps its /login
+            behaviour untouched. */}
+        <Route path="/register" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <RegisterPage />} />
         <Route
           path="/trade"
           element={
