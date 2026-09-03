@@ -1,7 +1,7 @@
-/* Trading terminal design, transcribed from the supplied
-   trading_terminal_binance_style.html. Every value here — colour, size,
-   padding, radius, weight, transition, breakpoint — is the reference's own,
-   unchanged. The only edits are structural, and only two of them:
+/* Spot Trade visual layer, matched to the supplied VOLTEX refinement
+   archive. The selectors remain scoped to `.trade-terminal`, so these
+   palette, typography and density corrections cannot repaint Futures,
+   Copy Trading, Wallet, or any other product surface.
 
    1. Every selector is prefixed with `.trade-terminal`. This file is
       imported globally (Vite has no build-time scoping here), and names
@@ -25,26 +25,38 @@
    widths belong to which panel changed. */
 
 .trade-terminal {
-  --bg-primary: #0b0e11;
-  --bg-secondary: #1e2329;
-  --bg-tertiary: #2b3139;
-  --bg-hover: #2b3139;
-  --border-color: #2b3139;
-  --text-primary: #eaecef;
-  --text-secondary: #848e9c;
-  --accent-yellow: #f0b90b;
-  --color-buy: #0ecb81;
-  --color-buy-hover: #0bc179;
-  --color-sell: #f6465d;
-  --color-sell-hover: #e03e53;
-  --color-buy-bg: rgba(14, 203, 129, 0.08);
-  --color-sell-bg: rgba(246, 70, 93, 0.08);
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bg-primary: #111821;
+  --body-bg: #0b1017;
+  --header-bg: #080d14;
+  --ticker-bg: #121b25;
+  --toolbar-bg: #151e28;
+  --workspace-bg: #151e29;
+  --grid-bg: #0e151e;
+  --chart-bg: #0d141d;
+  --control-bg: #202b36;
+  --bg-secondary: #151e28;
+  --bg-tertiary: #202b36;
+  --bg-hover: #202c38;
+  --border-color: #283340;
+  --layer-border: #212c38;
+  --panel-border: #29343f;
+  --text-primary: #eef2f6;
+  --text-secondary: #8e99a8;
+  --text-muted: #748191;
+  --accent-yellow: #d4b332;
+  --color-buy: #18c58b;
+  --color-buy-hover: #12b979;
+  --color-sell: #e25d63;
+  --color-sell-hover: #d6515b;
+  --color-buy-bg: rgba(24, 197, 139, 0.08);
+  --color-sell-bg: rgba(226, 93, 99, 0.08);
+  --font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   /* The reference's `overflow: hidden`, as `clip`: visually identical, but
      it is not a scroll container, so focusing or clicking a control near
      the bottom of the order form (which scrolls inside itself) can never
@@ -60,6 +72,87 @@
   display: flex;
   flex-direction: column;
 }
+
+.trade-terminal button,
+.trade-terminal input,
+.trade-terminal select {
+  font: inherit;
+}
+
+/* Header treatment from the archive, applied only while the Spot terminal
+   owns the shared header. Inline layout styles are intentionally retained. */
+.trade-terminal .global-header {
+  --h-bg-1: #080d14;
+  --h-bg-2: #080d14;
+  --h-border: #1a232e;
+  --h-text: #eef2f6;
+  --h-text-2: #9da7b4;
+  --h-text-3: #8e99a8;
+  --h-hover: #1b232d;
+  --h-accent: #d3af26;
+  --h-accent-hover: #edcf58;
+  --h-positive: #18c58b;
+  --h-negative: #e25d63;
+  height: 62px !important;
+  padding-inline: 24px !important;
+  background: #080d14;
+  border-bottom-color: #1a232e;
+  box-shadow: none;
+}
+.trade-terminal .global-header::before { display: none; }
+.trade-terminal .top-nav-link {
+  color: #9da7b4;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.trade-terminal .top-nav-link.nav-active {
+  color: #eef2f6;
+  background: #1b232d;
+  border-radius: 0;
+}
+.trade-terminal .top-nav-link.nav-active::after {
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  background: #d3af26;
+  border-radius: 0;
+}
+.trade-terminal .top-nav-fund-btn {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  color: #14150e !important;
+  background: #e7c13a !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+/* The approved Trade ticker is deliberately static. The duplicated data
+   used by the shared marquee remains harmlessly clipped after the first set. */
+.trade-terminal .market-ticker {
+  top: 62px;
+  height: 32px;
+  background: #121b25;
+  border-bottom-color: #27323e;
+  overflow: hidden;
+}
+.trade-terminal .market-ticker .ticker-track {
+  gap: 0;
+  padding: 0 8px;
+  animation: none !important;
+  transform: none !important;
+}
+.trade-terminal .market-ticker .ticker-item {
+  width: 112px;
+  flex: 0 0 112px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding: 0 8px;
+  font-family: var(--font-family);
+  font-size: 10px;
+}
+.trade-terminal .market-ticker .ticker-item strong,
+.trade-terminal .market-ticker .ticker-item b { font-size: 10px; }
 
 .trade-terminal *,
 .trade-terminal *::before,
@@ -82,23 +175,26 @@
 
 /* === TICKER BAR === */
 .trade-terminal .ticker-bar {
-  display: flex; align-items: center; gap: 20px;
-  padding: 0 16px; height: 52px;
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; gap: 38px;
+  padding: 12px 24px; min-height: 70px;
+  background: #151e28;
+  border-bottom: 1px solid #212c38;
   flex-shrink: 0;
 }
 .trade-terminal .pair-selector {
   display: flex; align-items: center; gap: 6px; cursor: pointer;
-  padding: 4px 8px; border-radius: 4px; transition: background 0.2s;
+  width: 90px; padding: 0; border-radius: 4px; transition: background 0.2s;
 }
 .trade-terminal .pair-selector:hover { background: var(--bg-tertiary); }
-.trade-terminal .pair-name { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.trade-terminal .pair-name { font-size: 17px; font-weight: 700; letter-spacing: -0.025em; color: var(--text-primary); }
 .trade-terminal .pair-arrow { color: var(--text-secondary); font-size: 10px; }
-.trade-terminal .ticker-item { display: flex; flex-direction: column; gap: 2px; }
-.trade-terminal .ticker-item .label { font-size: 11px; color: var(--text-secondary); }
-.trade-terminal .ticker-item .value { font-size: 13px; color: var(--text-primary); font-weight: 500; }
-.trade-terminal .ticker-item .value.price { font-size: 22px; font-weight: 700; }
+.trade-terminal .ticker-bar .ticker-item { display: grid; gap: 6px; min-width: 88px; padding: 0; }
+.trade-terminal .ticker-bar .ticker-item:has(.value.price) { min-width: 116px; }
+.trade-terminal .ticker-item .label { font-size: 11px; color: #8e99a8; white-space: nowrap; }
+.trade-terminal .ticker-item .value { font-size: 13px; line-height: 1.35; color: #e6ebef; font-weight: 650; white-space: nowrap; }
+.trade-terminal .ticker-item .value.price { color: #e9c53d; font-size: 28px; line-height: 1.08; font-weight: 680; letter-spacing: -0.02em; }
+.trade-terminal .ticker-item .value.price.up,
+.trade-terminal .ticker-item .value.price.down { color: #e9c53d; }
 .trade-terminal .ticker-item .value.up { color: var(--color-buy); }
 .trade-terminal .ticker-item .value.down { color: var(--color-sell); }
 .trade-terminal .ticker-item .value.mark { font-size: 12px; }
@@ -117,10 +213,9 @@
    same way the order book already did. */
 .trade-terminal .main-grid {
   display: grid;
-  /* Left column widened ~15% (260px -> 300px) so pair name/price/change
-     have breathing room and the new per-row logo fits without crowding —
-     the chart's 1fr share still easily dominates the layout. */
-  grid-template-columns: 300px 1fr 280px 320px;
+  grid-template-columns: 258px minmax(0, 1fr) 220px 264px;
+  grid-template-rows: minmax(0, 1fr);
+  background: #0e151e;
   flex: 1;
   min-height: 0;
   /* The reference's `overflow: hidden`, as `clip` — same reason as on the
@@ -133,33 +228,35 @@
 /* Chart Area */
 .trade-terminal .chart-area {
   grid-column: 2;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #293440;
   position: relative;
-  background: var(--bg-primary);
+  background: #0d141d;
   display: flex; flex-direction: column;
-  min-width: 0;
+  min-width: 0; min-height: 0;
 }
 .trade-terminal .chart-toolbar {
   display: flex; align-items: center; gap: 2px;
-  padding: 6px 12px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; padding: 0 10px;
+  color: #8b97a5; background: #151f2a;
+  border-bottom: 1px solid #26313c;
   flex-shrink: 0;
 }
 .trade-terminal .chart-tabs { display: flex; gap: 2px; }
 .trade-terminal .chart-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;
+  padding: 6px 7px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 500;
   transition: all 0.2s;
 }
 .trade-terminal .chart-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .chart-tab.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-tab.active { color: #e2c43e; background: #29291e; }
 .trade-terminal .chart-tools { margin-left: auto; display: flex; gap: 4px; }
 .trade-terminal .chart-tool-btn {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  padding: 6px 7px; border-radius: 3px; cursor: pointer; font-size: 11px;
   transition: all 0.2s;
 }
 .trade-terminal .chart-tool-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .chart-tool-btn.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-tool-btn.active { color: #e2c43e; background: #29291e; }
 .trade-terminal .chart-view { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 .trade-terminal .chart-placeholder {
   width: 100%; height: 100%;
@@ -176,26 +273,30 @@
 .trade-terminal .order-form-area {
   grid-column: 4;
   display: flex; flex-direction: column;
-  background: var(--bg-secondary);
+  background: #151e29;
+  border-left: 1px solid #29343f;
   min-width: 0;
 }
 .trade-terminal .order-form-tabs {
-  display: flex; border-bottom: 1px solid var(--border-color);
+  display: flex; gap: 3px;
+  min-height: 39px; margin: 10px 12px 2px; padding: 3px;
+  background: #202b36; border-radius: 6px;
 }
 .trade-terminal .order-form-tab {
   flex: 1; background: transparent; border: none;
-  padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+  padding: 7px 2px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer;
   transition: all 0.2s; color: var(--text-secondary);
 }
-.trade-terminal .order-form-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .order-form-tab.active.buy { background: var(--color-buy); color: #fff; }
-.trade-terminal .order-form-tab.active.sell { background: var(--color-sell); color: #fff; }
+.trade-terminal .order-form-tab:hover { color: var(--text-primary); }
+.trade-terminal .order-form-tab.active.buy { background: #12b979; color: #fff; }
+.trade-terminal .order-form-tab.active.sell { background: #d6515b; color: #fff; }
 .trade-terminal .order-type-tabs {
-  display: flex; gap: 8px; padding: 10px 16px;
+  min-height: 43px; display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 6px; padding: 8px 14px;
 }
 .trade-terminal .order-type-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 0;
+  font-size: 10px; font-weight: 500; cursor: pointer; padding: 5px 1px;
   border-bottom: 2px solid transparent; transition: all 0.2s;
 }
 .trade-terminal .order-type-tab:hover { color: var(--text-primary); }
@@ -205,27 +306,28 @@
    own `overflow-y: auto` never engages: instead of scrolling inside the
    340px form panel, the content grows past it and pushes the submit button
    out of the panel entirely. Everything else here is the reference's. */
-.trade-terminal .order-form-content { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
+.trade-terminal .order-form-content { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 9px; flex: 1; overflow-y: auto; min-height: 0; }
 .trade-terminal .form-group { display: flex; flex-direction: column; gap: 4px; }
 .trade-terminal .form-label { font-size: 11px; color: var(--text-secondary); display: flex; justify-content: space-between; }
 .trade-terminal .form-label .max-btn { color: var(--accent-yellow); cursor: pointer; font-weight: 600; background: transparent; border: none; font-size: 11px; padding: 0; }
 .trade-terminal .input-group {
   display: flex; align-items: center;
-  background: var(--bg-tertiary); border-radius: 4px;
-  border: 1px solid var(--bg-tertiary); transition: border-color 0.2s;
+  height: 36px; background: #202b36; border-radius: 4px;
+  border: 1px solid #2c3946; transition: border-color 0.2s;
 }
 .trade-terminal .input-group:focus-within { border-color: var(--accent-yellow); }
 .trade-terminal .input-group input {
   flex: 1; background: transparent; border: none; color: var(--text-primary);
-  padding: 10px 12px; font-size: 14px; outline: none; width: 100%;
+  min-width: 0; padding: 0 9px; font-size: 12px; outline: none; width: 100%;
   font-family: inherit;
+  font-variant-numeric: tabular-nums;
 }
 .trade-terminal .input-group input::placeholder { color: var(--text-secondary); }
 .trade-terminal .input-suffix {
-  padding: 0 12px; color: var(--text-secondary); font-size: 12px; font-weight: 500;
+  padding: 0 9px; color: #98a3af; font-size: 10px; font-weight: 600;
   border-left: 1px solid var(--border-color);
 }
-.trade-terminal .slider-container { padding: 4px 0; }
+.trade-terminal .slider-container { padding: 12px 2px 4px; }
 .trade-terminal .slider-track {
   display: flex; gap: 4px; align-items: center;
 }
@@ -243,18 +345,18 @@
 }
 .trade-terminal .available-balance {
   display: flex; justify-content: space-between; align-items: center;
-  font-size: 12px; color: var(--text-secondary); padding: 4px 0;
+  font-size: 10px; color: #82909d; padding: 3px 0;
 }
-.trade-terminal .available-balance .amount { color: var(--text-primary); font-weight: 600; }
+.trade-terminal .available-balance .amount { color: #dce2e7; font-weight: 650; }
 .trade-terminal .submit-btn {
-  width: 100%; padding: 12px; border: none; border-radius: 4px;
-  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+  width: 100%; min-height: 40px; padding: 0 10px; border: none; border-radius: 5px;
+  font-size: 12px; font-weight: 800; cursor: pointer; transition: filter 0.15s;
   margin-top: auto;
 }
-.trade-terminal .submit-btn.buy { background: var(--color-buy); color: #fff; }
-.trade-terminal .submit-btn.buy:hover { background: var(--color-buy-hover); }
-.trade-terminal .submit-btn.sell { background: var(--color-sell); color: #fff; }
-.trade-terminal .submit-btn.sell:hover { background: var(--color-sell-hover); }
+.trade-terminal .submit-btn.buy { background: #12bc81; color: #fff; }
+.trade-terminal .submit-btn.buy:hover { background: #12bc81; filter: brightness(1.12); }
+.trade-terminal .submit-btn.sell { background: #d6515b; color: #fff; }
+.trade-terminal .submit-btn.sell:hover { background: #d6515b; filter: brightness(1.12); }
 .trade-terminal .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* TP/SL Checkbox */
@@ -265,26 +367,27 @@
 /* === ORDER BOOK === */
 .trade-terminal .orderbook-area {
   grid-column: 3;
-  border-right: 1px solid var(--border-color);
+  border-left: 1px solid #283340;
+  border-right: 1px solid #283340;
   display: flex; flex-direction: column;
-  background: var(--bg-primary);
+  background: #151e29;
   min-width: 0;
 }
 .trade-terminal .orderbook-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; padding: 0 12px; border-bottom: 1px solid #24303c;
 }
-.trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.trade-terminal .orderbook-title { font-size: 12px; font-weight: 700; color: #f1f4f7; }
 .trade-terminal .orderbook-modes { display: flex; gap: 4px; }
 .trade-terminal .ob-mode-btn {
   background: transparent; border: none; color: var(--text-secondary);
-  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 12px;
+  cursor: pointer; padding: 2px 4px; border-radius: 3px; font-size: 10px;
 }
 .trade-terminal .ob-mode-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
 .trade-terminal .ob-mode-btn.active { color: var(--accent-yellow); }
 .trade-terminal .orderbook-col-headers {
-  display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  display: flex; padding: 0 12px 7px; font-size: 10px; color: #7e8b99;
+  border-bottom: 1px solid #202a35;
 }
 .trade-terminal .ob-col { flex: 1; }
 .trade-terminal .ob-col:last-child { text-align: right; }
@@ -297,10 +400,10 @@
   flex: 1; overflow: hidden; padding: 0; position: relative;
 }
 .trade-terminal .ob-row {
-  display: flex; padding: 2px 12px; font-size: 12px;
+  display: flex; align-items: center; height: 24px; padding: 0 12px; font-size: 10px;
   position: relative; cursor: pointer; transition: background 0.1s;
 }
-.trade-terminal .ob-row:hover { background: var(--bg-tertiary); }
+.trade-terminal .ob-row:hover { background: #202c38; }
 .trade-terminal .ob-row .cell { flex: 1; position: relative; z-index: 1; }
 .trade-terminal .ob-row .cell:nth-child(2) { text-align: center; color: var(--text-primary); }
 .trade-terminal .ob-row .cell:last-child { text-align: right; color: var(--text-secondary); }
@@ -314,11 +417,11 @@
 .trade-terminal .ob-depth-bar.bid { background: var(--color-buy); }
 .trade-terminal .orderbook-spread {
   padding: 8px 12px; text-align: center;
-  font-size: 16px; font-weight: 700; color: var(--text-primary);
-  border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  font-size: 15px; font-weight: 700; color: #f0f3f6;
+  border-top: 1px solid #222e39; border-bottom: 1px solid #222e39;
+  background: #111a23;
 }
-.trade-terminal .orderbook-spread .usd { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
+.trade-terminal .orderbook-spread .usd { font-size: 10px; color: #91a0ad; font-weight: 400; margin-left: 6px; }
 
 /* === LEFT PANEL: search + pair list ===
    Was the reference's right-hand column; moved to the left per a later
@@ -330,28 +433,42 @@
    whole column instead of sharing it. */
 .trade-terminal .left-panel {
   grid-column: 1;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #283340;
   display: flex; flex-direction: column;
-  background: var(--bg-secondary);
+  background: #151e29;
   overflow: hidden;
   min-width: 0;
 }
 .trade-terminal .pairs-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-.trade-terminal .pairs-search { padding: 8px 12px; border-bottom: 1px solid var(--border-color); }
+.trade-terminal .pairs-search { position: relative; padding: 10px; border-bottom: 1px solid #24303c; }
+.trade-terminal .pairs-search::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 19px;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.75;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237e8b99' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 .trade-terminal .pairs-search input {
-  width: 100%; background: var(--bg-tertiary); border: 1px solid var(--bg-tertiary);
-  color: var(--text-primary); padding: 8px 12px; border-radius: 4px;
-  font-size: 12px; outline: none; transition: border-color 0.2s;
+  width: 100%; height: 32px; background: #202b37; border: 1px solid #2a3743;
+  color: #d4dbe2; padding: 0 8px 0 29px; border-radius: 4px;
+  font-size: 11px; outline: none; transition: border-color 0.2s;
   font-family: inherit;
 }
 .trade-terminal .pairs-search input:focus { border-color: var(--accent-yellow); }
-.trade-terminal .pairs-search input::placeholder { color: var(--text-secondary); }
+.trade-terminal .pairs-search input::placeholder { color: #7e8997; }
 .trade-terminal .pairs-tabs {
-  display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; gap: 3px; min-height: 33px;
+  padding: 0 8px; overflow: hidden; border-bottom: 1px solid #24303c;
 }
 .trade-terminal .pairs-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 8px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+  height: 33px; padding: 0 5px; font-size: 10px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s;
   letter-spacing: 0.01em;
 }
@@ -359,7 +476,8 @@
 .trade-terminal .pairs-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
 .trade-terminal .pairs-list { overflow-y: auto; flex: 1; }
 .trade-terminal .pair-row {
-  display: flex; padding: 9px 12px; font-size: 12px; cursor: pointer;
+  display: grid; grid-template-columns: minmax(76px, 1fr) 65px 50px;
+  gap: 4px; min-height: 35px; padding: 0 7px; font-size: 10px; cursor: pointer;
   transition: background 0.15s, border-color 0.15s; align-items: center;
   width: 100%; background: transparent; border: none; text-align: left;
   font-family: inherit;
@@ -367,13 +485,13 @@
      shifts row content sideways by the border's own width. */
   border-left: 2px solid transparent;
 }
-.trade-terminal .pair-row:hover { background: var(--bg-tertiary); }
+.trade-terminal .pair-row:hover { background: #202c38; }
 /* Brighter surface + a left accent bar, restrained rather than a full
    accent fill — reads as "this is the open pair" without the row
    competing with the chart/order book for attention. */
 .trade-terminal .pair-row.active {
-  background: rgba(240, 185, 11, 0.1);
-  border-left-color: var(--accent-yellow);
+  background: #202c38;
+  border-left-color: #d4b32d;
 }
 .trade-terminal .pair-row .p-icon { flex-shrink: 0; margin-right: 6px; }
 .trade-terminal .pair-row.active .p-icon { filter: brightness(1.15); }
@@ -383,16 +501,16 @@
    names into an ellipsis on every row, which is the opposite of the
    "more readable" panel this was meant to be. */
 .trade-terminal .pair-row .p-name {
-  flex: 1.7; display: flex; align-items: center; min-width: 0;
-  font-weight: 700; color: var(--text-primary);
+  display: flex; align-items: center; min-width: 0; overflow: hidden;
+  font-size: 10px; font-weight: 650; color: #e3e8ed;
 }
 .trade-terminal .pair-row.active .p-name { color: var(--accent-yellow); }
 .trade-terminal .pair-row .p-price {
-  flex: 1; text-align: right; color: var(--text-primary);
+  text-align: right; color: #c0c8d1;
   font-variant-numeric: tabular-nums;
 }
 .trade-terminal .pair-row .p-change {
-  flex: 1.1; text-align: right; font-weight: 600;
+  text-align: right; font-weight: 650; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .trade-terminal .pair-row .p-change.up { color: var(--color-buy); }
@@ -401,22 +519,23 @@
 
 /* === BOTTOM PANEL === */
 .trade-terminal .bottom-panel {
-  height: 180px; background: var(--bg-secondary);
-  border-top: 1px solid var(--border-color);
+  height: 145px; background: #151e28;
+  border-top: 1px solid #293440;
   display: flex; flex-direction: column;
   flex-shrink: 0;
 }
 .trade-terminal .bottom-tabs {
-  display: flex; padding: 0 16px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; display: flex; padding: 0 24px; gap: 27px;
+  border-bottom: 1px solid #202b36;
   align-items: center;
 }
 .trade-terminal .bottom-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  height: 43px; padding: 0; font-size: 11px; font-weight: 500; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s; position: relative;
 }
 .trade-terminal .bottom-tab:hover { color: var(--text-primary); }
-.trade-terminal .bottom-tab.active { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+.trade-terminal .bottom-tab.active { color: #e4c43f; font-weight: 700; border-bottom-color: #d2b231; }
 .trade-terminal .bottom-tab .badge {
   position: absolute; top: 6px; right: 2px;
   background: var(--accent-yellow); color: var(--bg-primary);
@@ -448,16 +567,18 @@
 .trade-terminal .orders-table .cancel-btn:hover { background: rgba(240, 185, 11, 0.1); }
 .trade-terminal .empty-state {
   display: flex; align-items: center; justify-content: center;
-  height: 100%; color: var(--text-secondary); font-size: 13px;
+  height: 100%; color: #71808f; font-size: 11px;
 }
 
 /* Responsive helpers */
 @media (max-width: 1400px) {
-  .trade-terminal .main-grid { grid-template-columns: 272px 1fr 260px 300px; }
+  .trade-terminal .main-grid { grid-template-columns: 258px minmax(0, 1fr) 220px 264px; }
+  .trade-terminal .ticker-bar { gap: 30px; }
 }
 @media (max-width: 1200px) {
-  .trade-terminal .main-grid { grid-template-columns: 250px 1fr 240px 280px; }
-  .trade-terminal .ticker-bar { gap: 12px; font-size: 12px; }
+  .trade-terminal .main-grid { grid-template-columns: 240px minmax(0, 1fr) 210px 250px; }
+  .trade-terminal .ticker-bar { gap: 20px; font-size: 12px; }
+  .trade-terminal .ticker-bar .ticker-item:nth-last-of-type(-n + 2) { display: none; }
 }
 
 /* Below the reference's own breakpoints.
@@ -515,6 +636,15 @@
   .trade-terminal .chart-tools { flex-shrink: 0; }
   .trade-terminal .chart-tab,
   .trade-terminal .chart-tool-btn { white-space: nowrap; }
+}
+
+@media (max-width: 700px) {
+  .trade-terminal .global-header { height: 54px !important; padding-inline: 12px !important; }
+  .trade-terminal .market-ticker { top: 54px; }
+  .trade-terminal .ticker-bar { padding: 12px; }
+  .trade-terminal .ticker-bar .ticker-item:nth-last-of-type(-n + 4) { display: none; }
+  .trade-terminal .ticker-item .value.price { font-size: 22px; }
+  .trade-terminal .bottom-tabs { padding: 0 12px; gap: 18px; }
 }
 
 /* Below 900px the app's fixed bottom tab bar appears (see .bottom-nav in
