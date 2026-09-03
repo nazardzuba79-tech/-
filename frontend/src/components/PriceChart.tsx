@@ -225,15 +225,17 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     // pixel-identical to before.
     const chart = createChart(containerRef.current, {
       layout: {
-        // Pure black, not the panel's dark-gray — the chart is meant to
-        // read as its own "screen" rather than blend into the surrounding
-        // panel chrome.
-        background: { type: ColorType.Solid, color: '#000000' },
+        // The archive uses a distinct graphite-navy chart surface. Apply it
+        // through lightweight-charts' supported layout option for Spot only;
+        // Futures keeps its existing black chart treatment.
+        background: { type: ColorType.Solid, color: terminal ? '#0d141d' : '#000000' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
         textColor: terminal ? '#c7d2e0' : '#a3adba',
-        fontFamily: 'var(--font-ui)',
-        fontSize: terminal ? 12 : 11,
+        fontFamily: terminal
+          ? 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+          : 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        fontSize: terminal ? 11 : 11,
       },
       grid: {
         vertLines: { visible: false },

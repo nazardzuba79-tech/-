@@ -1,7 +1,7 @@
-/* Trading terminal design, transcribed from the supplied
-   trading_terminal_binance_style.html. Every value here — colour, size,
-   padding, radius, weight, transition, breakpoint — is the reference's own,
-   unchanged. The only edits are structural, and only two of them:
+/* Spot Trade visual layer, matched to the supplied VOLTEX refinement
+   archive. The selectors remain scoped to `.trade-terminal`, so these
+   palette, typography and density corrections cannot repaint Futures,
+   Copy Trading, Wallet, or any other product surface.
 
    1. Every selector is prefixed with `.trade-terminal`. This file is
       imported globally (Vite has no build-time scoping here), and names
@@ -64,7 +64,8 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-family);
-  font-size: 13px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   /* The reference's `overflow: hidden`, as `clip`: visually identical, but
      it is not a scroll container, so focusing or clicking a control near
      the bottom of the order form (which scrolls inside itself) can never
@@ -80,6 +81,87 @@
   display: flex;
   flex-direction: column;
 }
+
+.trade-terminal button,
+.trade-terminal input,
+.trade-terminal select {
+  font: inherit;
+}
+
+/* Header treatment from the archive, applied only while the Spot terminal
+   owns the shared header. Inline layout styles are intentionally retained. */
+.trade-terminal .global-header {
+  --h-bg-1: #080d14;
+  --h-bg-2: #080d14;
+  --h-border: #1a232e;
+  --h-text: #eef2f6;
+  --h-text-2: #9da7b4;
+  --h-text-3: #8e99a8;
+  --h-hover: #1b232d;
+  --h-accent: #d3af26;
+  --h-accent-hover: #edcf58;
+  --h-positive: #18c58b;
+  --h-negative: #e25d63;
+  height: 62px !important;
+  padding-inline: 24px !important;
+  background: #080d14;
+  border-bottom-color: #1a232e;
+  box-shadow: none;
+}
+.trade-terminal .global-header::before { display: none; }
+.trade-terminal .top-nav-link {
+  color: #9da7b4;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.trade-terminal .top-nav-link.nav-active {
+  color: #eef2f6;
+  background: #1b232d;
+  border-radius: 0;
+}
+.trade-terminal .top-nav-link.nav-active::after {
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  background: #d3af26;
+  border-radius: 0;
+}
+.trade-terminal .top-nav-fund-btn {
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  color: #14150e !important;
+  background: #e7c13a !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+/* The approved Trade ticker is deliberately static. The duplicated data
+   used by the shared marquee remains harmlessly clipped after the first set. */
+.trade-terminal .market-ticker {
+  top: 62px;
+  height: 32px;
+  background: #121b25;
+  border-bottom-color: #27323e;
+  overflow: hidden;
+}
+.trade-terminal .market-ticker .ticker-track {
+  gap: 0;
+  padding: 0 8px;
+  animation: none !important;
+  transform: none !important;
+}
+.trade-terminal .market-ticker .ticker-item {
+  width: 112px;
+  flex: 0 0 112px;
+  justify-content: flex-start;
+  gap: 7px;
+  padding: 0 8px;
+  font-family: var(--font-family);
+  font-size: 10px;
+}
+.trade-terminal .market-ticker .ticker-item strong,
+.trade-terminal .market-ticker .ticker-item b { font-size: 10px; }
 
 .trade-terminal *,
 .trade-terminal *::before,
@@ -347,19 +429,19 @@
 .trade-terminal .chart-tabs { display: flex; gap: 2px; }
 .trade-terminal .chart-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;
+  padding: 6px 7px; border-radius: 3px; cursor: pointer; font-size: 11px; font-weight: 500;
   transition: all 0.2s;
 }
 .trade-terminal .chart-tab:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .chart-tab.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-tab.active { color: #e2c43e; background: #29291e; }
 .trade-terminal .chart-tools { margin-left: auto; display: flex; gap: 4px; }
 .trade-terminal .chart-tool-btn {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  padding: 6px 7px; border-radius: 3px; cursor: pointer; font-size: 11px;
   transition: all 0.2s;
 }
 .trade-terminal .chart-tool-btn:hover { color: var(--text-primary); background: var(--bg-tertiary); }
-.trade-terminal .chart-tool-btn.active { color: var(--accent-yellow); background: var(--bg-tertiary); }
+.trade-terminal .chart-tool-btn.active { color: #e2c43e; background: #29291e; }
 .trade-terminal .chart-view { flex: 1; position: relative; overflow: hidden; min-height: 0; }
 /* The chart's own vertical drawing-tool rail (cursor / trend line /
    horizontal line / ruler / text, plus fit-to-view and clear). It used to
@@ -498,7 +580,7 @@
 }
 .trade-terminal .order-type-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 0;
+  font-size: 10px; font-weight: 500; cursor: pointer; padding: 5px 1px;
   border-bottom: 2px solid transparent; transition: all 0.2s;
 }
 .trade-terminal .order-type-tab:hover { color: var(--text-primary); }
@@ -644,14 +726,15 @@
 /* === ORDER BOOK === */
 .trade-terminal .orderbook-area {
   grid-column: 3;
-  border-right: 1px solid var(--border-color);
+  border-left: 1px solid #283340;
+  border-right: 1px solid #283340;
   display: flex; flex-direction: column;
   background: var(--workspace-bg);
   min-width: 0;
 }
 .trade-terminal .orderbook-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; padding: 0 12px; border-bottom: 1px solid #24303c;
 }
 .trade-terminal .orderbook-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .trade-terminal .orderbook-header-actions { display: flex; align-items: center; gap: 8px; }
@@ -663,8 +746,8 @@
 .trade-terminal .ob-group-select:hover { color: var(--text-primary); }
 .trade-terminal .ob-group-select:focus { border-color: var(--accent-yellow); }
 .trade-terminal .orderbook-col-headers {
-  display: flex; padding: 4px 12px; font-size: 11px; color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  display: flex; padding: 0 12px 7px; font-size: 10px; color: #7e8b99;
+  border-bottom: 1px solid #202a35;
 }
 .trade-terminal .ob-col { flex: 1; }
 .trade-terminal .ob-col:last-child { text-align: right; }
@@ -728,7 +811,7 @@
    whole column instead of sharing it. */
 .trade-terminal .left-panel {
   grid-column: 1;
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #283340;
   display: flex; flex-direction: column;
   background: var(--workspace-bg);
   overflow: hidden;
@@ -757,11 +840,12 @@
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397a1ae' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 .trade-terminal .pairs-tabs {
-  display: flex; padding: 0 12px; border-bottom: 1px solid var(--border-color);
+  display: flex; align-items: center; gap: 3px; min-height: 33px;
+  padding: 0 8px; overflow: hidden; border-bottom: 1px solid #24303c;
 }
 .trade-terminal .pairs-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 8px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+  height: 33px; padding: 0 5px; font-size: 10px; font-weight: 600; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s;
   letter-spacing: 0.01em;
 }
@@ -926,12 +1010,13 @@
   flex-shrink: 0;
 }
 .trade-terminal .bottom-tabs {
-  display: flex; padding: 0 16px; border-bottom: 1px solid var(--border-color);
+  min-height: 43px; display: flex; padding: 0 24px; gap: 27px;
+  border-bottom: 1px solid #202b36;
   align-items: center;
 }
 .trade-terminal .bottom-tab {
   background: transparent; border: none; color: var(--text-secondary);
-  padding: 10px 16px; font-size: 13px; font-weight: 500; cursor: pointer;
+  height: 43px; padding: 0; font-size: 11px; font-weight: 500; cursor: pointer;
   border-bottom: 2px solid transparent; transition: all 0.2s; position: relative;
 }
 .trade-terminal .bottom-tab:hover { color: var(--text-primary); }
@@ -1069,6 +1154,15 @@
   .trade-terminal .chart-tools { flex-shrink: 0; }
   .trade-terminal .chart-tab,
   .trade-terminal .chart-tool-btn { white-space: nowrap; }
+}
+
+@media (max-width: 700px) {
+  .trade-terminal .global-header { height: 54px !important; padding-inline: 12px !important; }
+  .trade-terminal .market-ticker { top: 54px; }
+  .trade-terminal .ticker-bar { padding: 12px; }
+  .trade-terminal .ticker-bar .ticker-item:nth-last-of-type(-n + 4) { display: none; }
+  .trade-terminal .ticker-item .value.price { font-size: 22px; }
+  .trade-terminal .bottom-tabs { padding: 0 12px; gap: 18px; }
 }
 
 /* Below 900px the app's fixed bottom tab bar appears (see .bottom-nav in

@@ -110,12 +110,10 @@ export function CopyTradingPage() {
     window.scrollTo(0, 0);
   }
 
-  // The profile view renders on a light ground, the way Bybit's own
-  // trader pages do — the dark grid of figures was hard to read. See the
-  // light block at the end of CopyTradingBolt.css. The marketplace
-  // listing keeps the dark look it already had.
+  // Profile styling is scoped separately so its compact analytical layout
+  // can evolve without changing the approved marketplace surface.
   return (
-    <div className={`copytrading-bolt-root ${view === 'profile' ? 'light' : ''}`}>
+    <div className={`copytrading-bolt-root ${view === 'profile' ? 'profile-view' : ''}`}>
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
