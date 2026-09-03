@@ -7,6 +7,7 @@ type Tab = 'open' | 'history';
 export function FuturesPositionsPanel({
   refreshKey,
   tab: controlledTab,
+  onCount,
 }: {
   refreshKey: number;
   /** When the page owns the tab row (the futures terminal does, so there is
@@ -14,6 +15,10 @@ export function FuturesPositionsPanel({
    *  this panel renders content only. Left out, it keeps its own tabs and
    *  works standalone. */
   tab?: 'open' | 'history';
+  /** Reports the real open-position count so the page's own Positions tab
+   *  can show it as a badge, the same way OpenOrdersPanel reports its count
+   *  to the spot terminal's Open Orders tab. */
+  onCount?: (n: number) => void;
 }) {
   const { t } = useLanguage();
   const [ownTab, setTab] = useState<Tab>('open');
@@ -28,7 +33,14 @@ export function FuturesPositionsPanel({
     let cancelled = false;
     function load() {
       if (tab === 'open') {
-        api.getFuturesPositions().then((res) => !cancelled && setPositions(res)).catch(() => {});
+        api
+          .getFuturesPositions()
+          .then((res) => {
+            if (cancelled) return;
+            setPositions(res);
+            onCount?.(res.length);
+          })
+          .catch(() => {});
       } else {
         api.getFuturesPositionHistory().then((res) => !cancelled && setHistory(res)).catch(() => {});
       }
@@ -39,7 +51,7 @@ export function FuturesPositionsPanel({
       cancelled = true;
       if (interval) clearInterval(interval);
     };
-  }, [tab, refreshKey, localRefresh]);
+  }, [tab, refreshKey, localRefresh, onCount]);
 
   async function handleClose(positionId: string) {
     setError(null);

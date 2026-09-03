@@ -1,9 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { Star } from 'lucide-react';
 import { api } from '../lib/api';
 import { useLanguage, Key } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
+import { loadFavorites, saveFavorites } from '../lib/pairList';
+
+export interface FuturesPairListHandle {
+  focusSearch: () => void;
+}
 
 interface Row {
   symbol: string;
@@ -38,21 +44,41 @@ const SORT_MODES: { id: string; field: SortField; dir: 1 | -1; labelKey: Key }[]
  * opened on (config/futuresConfig.ts on the backend rejects anything else).
  * Prices and 24h figures come from the same live ticker feed the rest of
  * the app uses; nothing is ordered by a hardcoded list.
+ *
+ * Favorites use the exact same store as Spot and Markets (lib/pairList's
+ * loadFavorites/saveFavorites, keyed by pair string) — a contract starred
+ * here shows starred there too, rather than three independent favorite
+ * lists under one product.
  */
-export function FuturesPairList({
-  symbols,
-  symbol,
-  onChange,
-}: {
-  symbols: string[];
-  symbol: string;
-  onChange: (symbol: string) => void;
-}) {
+export const FuturesPairList = forwardRef<
+  FuturesPairListHandle,
+  {
+    symbols: string[];
+    symbol: string;
+    onChange: (symbol: string) => void;
+  }
+>(function FuturesPairList({ symbols, symbol, onChange }, ref) {
   const { t } = useLanguage();
   const [tickers, setTickers] = useState<Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }>>({});
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('volume_desc');
   const [coinIcons, setCoinIcons] = useState<Map<string, string>>(new Map());
+  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
+
+  function toggleFavorite(pair: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(pair)) next.delete(pair);
+      else next.add(pair);
+      saveFavorites(next);
+      return next;
+    });
+  }
 
   const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
   const { field: sortField, dir: sortDir } = sortMode;
@@ -103,6 +129,7 @@ export function FuturesPairList({
   const rows: Row[] = useMemo(() => {
     const built = symbols
       .filter((s) => s.toLowerCase().replace('/', '').includes(search.trim().toLowerCase().replace('/', '')))
+      .filter((s) => !favoritesOnly || favorites.has(s))
       .map((s) => {
         const tk = tickers[s];
         return {
@@ -118,17 +145,28 @@ export function FuturesPairList({
       if (sortField === 'change') return (a.change - b.change) * sortDir;
       return (a.quoteVolume24h - b.quoteVolume24h) * sortDir;
     });
-  }, [symbols, tickers, search, sortField, sortDir]);
+  }, [symbols, tickers, search, sortField, sortDir, favoritesOnly, favorites]);
 
   return (
     <>
       <div className="pairs-search">
         <input
+          ref={searchRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('trade.searchPair')}
           aria-label={t('trade.searchPair')}
         />
+      </div>
+
+      <div className="pairs-tabs">
+        <button
+          type="button"
+          className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
+          onClick={() => setFavoritesOnly((v) => !v)}
+        >
+          <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
+        </button>
       </div>
 
       <div className="pairs-col-headers">
@@ -155,6 +193,7 @@ export function FuturesPairList({
       </div>
 
       <div className="pairs-list">
+        {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         {rows.map((r) => {
           const up = r.change >= 0;
           const base = r.symbol.split('/')[0];
@@ -164,7 +203,13 @@ export function FuturesPairList({
               className={`pair-row ${r.symbol === symbol ? 'active' : ''}`}
               onClick={() => onChange(r.symbol)}
             >
-              <span className="p-star" aria-hidden="true" />
+              <span
+                className={`p-star${favorites.has(r.symbol) ? ' on' : ''}`}
+                onClick={(e) => toggleFavorite(r.symbol, e)}
+                title={t('trade.favorites')}
+              >
+                <Star size={12} fill={favorites.has(r.symbol) ? 'currentColor' : 'none'} />
+              </span>
               <span className="p-icon">
                 <CryptoIcon symbol={base} size={20} imageUrl={coinIcons.get(base)} />
               </span>
@@ -182,7 +227,7 @@ export function FuturesPairList({
       </div>
     </>
   );
-}
+});
 
 function SortArrow({ active, dir }: { active: boolean; dir: 1 | -1 }) {
   if (!active) return <span className="pch-arrow idle">⇅</span>;

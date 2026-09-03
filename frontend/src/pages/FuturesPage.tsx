@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
-import { FuturesPairList } from '../components/FuturesPairList';
+import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { PriceChart } from '../components/PriceChart';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
@@ -61,7 +61,9 @@ export function FuturesPage() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
   const [pickedPrice, setPickedPrice] = useState<string | null>(null);
+  const [openPositionCount, setOpenPositionCount] = useState(0);
   const pickedSeq = useRef(0);
+  const pairListRef = useRef<FuturesPairListHandle>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -153,14 +155,22 @@ export function FuturesPage() {
       <ConnectionBanner />
 
       <div className="terminal">
-        <FuturesTickerBar symbol={symbol} />
+        <FuturesTickerBar symbol={symbol} onSelectSymbol={() => pairListRef.current?.focusSearch()} />
 
         <div className="main-grid">
           <div className="left-panel">
-            <FuturesPairList symbols={symbols} symbol={symbol} onChange={setSymbol} />
+            <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </div>
 
           <div className="chart-area">
+            {/* This exchange has no dedicated perpetual OHLC feed — the
+                candles below are the same live Kraken-mirrored spot/
+                reference price history the Trade terminal shows for this
+                base/quote pair, not futures-specific trade prints. Mark
+                price, funding and liquidation all read the real futures
+                index/mark price service (see FuturesTickerBar); only the
+                chart's history is the shared reference feed, and it is
+                never presented as anything else. */}
             <PriceChart pair={symbol} chrome="terminal" />
           </div>
 
@@ -195,12 +205,15 @@ export function FuturesPage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
+                {tab.id === 'positions' && <span className="badge">{openPositionCount}</span>}
               </button>
             ))}
           </div>
 
           <div className="bottom-content">
-            {bottomTab === 'positions' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />}
+            {bottomTab === 'positions' && (
+              <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" onCount={setOpenPositionCount} />
+            )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
             {bottomTab === 'assets' && <AssetsPanel refreshKey={positionsRefreshKey} />}
           </div>

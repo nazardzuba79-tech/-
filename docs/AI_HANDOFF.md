@@ -250,3 +250,164 @@ login, and Homepage/Trade/Futures/Copy Trading/Wallet/Analytics/Admin, are all u
 None identified within Markets. Production must still receive `EMAIL_VERIFICATION_SECRET`
 before this integration branch is ever promoted or deployed (unchanged from the prior
 entry — not touched by this task).
+
+## 2026-09-03 — Futures page audit and refinement (no reference archive)
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main`, Render, and production untouched.
+
+### Scope and approach
+No visual reference was attached for this task — the current repository and the
+approved Trade terminal design system were the source of truth. Audited
+FuturesPage/FuturesTickerBar/FuturesPairList/FuturesOrderForm/FuturesPositionsPanel/
+FuturesTransferModal/FuturesAccountSummary, the shared OrderBookPanel/PriceChart, and
+the backend futures stack (`src/api/routes/futures.ts`, `FuturesMarketRegistry`,
+`FuturesPositionService`, `marginMath.ts`, `MarkPriceService`, `FundingRateService`,
+`LiquidationEngine`, `futuresConfig.ts`) before changing anything. Confirmed the
+backend is real and thorough — dynamic volume-ranked market universe with in-flight
+symbol protection, real mark/index price, real funding derived from a real interval
+boundary, real self-reported open interest, real per-tier liquidation math for both
+ISOLATED and CROSS identical between backend and the frontend's live preview
+(`lib/futuresMath.ts` byte-matches `src/futures/marginMath.ts`'s sign conventions) —
+and left all of it untouched. This was a frontend-only refinement: five genuine,
+verifiable parity/correctness gaps found by direct comparison against Spot Trade's
+own already-working equivalents, not a rebuild.
+
+### Fixes applied
+1. **Real Favorites in FuturesPairList** (`FuturesPairList.tsx`) — the star column
+   existed as an inert, aria-hidden empty spacer; Spot Trade and Markets both already
+   have a real, working Favorites feature on the same shared store
+   (`lib/pairList.ts`'s `loadFavorites`/`saveFavorites`, keyed by pair string — a pair
+   starred on Futures now shows starred on Spot/Markets too, not three independent
+   lists). Wired the exact same star icon + `stopPropagation` toggle Spot uses, plus
+   an "Избранное" filter tab reusing the shared `.pairs-tabs`/`.pairs-tab` CSS, with
+   the existing `.empty-state` / `trade.nothingFound` message when a filter matches
+   nothing — no new CSS or i18n keys invented, both already existed for exactly this.
+2. **Ticker-bar → pair-list search focus wiring** — `FuturesTickerBar` already
+   accepted an optional `onSelectSymbol` prop (clicking the pair name/▼) but
+   `FuturesPage` never passed one, so it did nothing. Spot's `TickerBar` wires this to
+   focus its pair list's search input; gave `FuturesPairList` the same
+   `forwardRef`/`useImperativeHandle` `focusSearch()` handle `PairListSidebar` already
+   exposes, and wired it identically.
+3. **Real open-position count badge on the Positions tab** — Spot's Open Orders tab
+   shows a live count via `OpenOrdersPanel`'s `onCount` callback; Futures' Positions
+   tab had no equivalent. Added the same `onCount?: (n: number) => void` prop to
+   `FuturesPositionsPanel`, reporting `positions.length` from the same
+   `getFuturesPositions()` call already driving the table, and rendered it with the
+   same shared `.badge` CSS class Spot's tab already uses — pixel-identical to Spot's
+   own badge (confirmed by a side-by-side screenshot; a slightly enlarged, dropped-
+   baseline glyph is a pre-existing sandbox font-fallback characteristic of the shared
+   CSS, present identically on Spot's real badge, not something this change caused).
+4. **Stale "Available margin" figure in the order form** — `FuturesOrderForm`'s own
+   available-margin read only re-fetched on `[quoteAsset, side]`, so completing a
+   transfer in `FuturesTransferModal` (or a fill locking margin) left this figure
+   stale until the trader happened to flip Long/Short — while `FuturesAccountSummary`,
+   sitting directly below it on the same panel, already self-corrected within 5s via
+   its own poll. Gave the order form's balance read the identical 5s poll so both
+   figures on one panel never disagree.
+5. **Wired the dormant new-account leverage cap** — `FuturesPositionService.ts`
+   (backend, unchanged) genuinely rejects `leverage > newAccountMaxLeverage` for
+   accounts younger than `newAccountPeriodDays`, `/futures/config` already exposed
+   both numbers, and `futures.newAccountLimitNotice` already existed translated in
+   all 7 languages — but nothing client-side read any of it, so the slider (and its
+   2/5/10/20/50x presets) let a new account drag past the real cap and only find out
+   from a rejected order. `FuturesOrderForm` now reads `api.getMe().createdAt`
+   (already used the same way elsewhere in the app), computes the effective max
+   leverage, passes it as the slider's real `max` (which also correctly filters which
+   presets render), clamps down if the account turns out to be new after the slider
+   already had a value, and shows the existing notice text when the cap is active.
+   Verified end-to-end in the browser: on a freshly-registered QA account, the 20x/50x
+   presets correctly did not render, the slider's own scale topped out at 10x, and the
+   "Новым аккаунтам доступно плечо не выше 10x первые 30 дней" notice appeared.
+6. **Documented, not changed**: added a short comment at the `<PriceChart>` mount in
+   `FuturesPage.tsx` stating plainly that this exchange has no dedicated perpetual
+   OHLC feed — the candles are the same live Kraken-mirrored spot/reference price
+   history Trade shows for the pair, never presented as futures-specific trade
+   prints, while mark price/funding/liquidation all read the real futures index/mark
+   service. This was already true and already correct; it just wasn't written down
+   anywhere in this file the way the order book's identical honesty caveat already
+   was, two paragraphs above it.
+
+### Explicitly verified already correct / already deliberate (no action)
+- Market universe: `FuturesMarketRegistry` derives listed contracts from live 24h
+  volume with a real floor, never delists a symbol carrying an open position or
+  resting order, and never shrinks the list on a failed refresh — confirmed no
+  permanent BTC/ETH/SOL-only hardcoding (they're prioritized at the top, not
+  exclusive) and no independent frontend copy of the universe.
+- Order types: backend only ever accepted `LIMIT`/`MARKET` (`z.enum` in
+  `futures.ts`) — the form correctly never offered stop/trigger types.
+- Margin mode: ISOLATED and CROSS are both genuinely implemented with different
+  liquidation math in `FuturesPositionService`/`marginMath.ts` (CROSS backstops with
+  free futures-wallet balance) — not a decorative toggle.
+- Close position: real `reduceOnly` MARKET order through the same order-placement
+  path, no separate "force close" code. No partial-close control exists on either
+  side, so none was invented on the frontend.
+- Liquidation price: genuinely computed and stored by the backend at fill time
+  (`FuturesPositionService.computeLiqPrice`); the frontend's pre-submit preview uses
+  the byte-identical formula and is clearly informational only.
+- Order book: `OrderBookPanel` is purely presentational (props in, no subscription of
+  its own); `FuturesPage` owns a single `krakenSocket.subscribeBook` per symbol with
+  correct cleanup on symbol change/unmount and a REST-polling fallback if no WS data
+  arrives within 4s — no duplicate subscriptions, verified by reading the effect.
+- Top ticker strip: static (no marquee), fed by real symbols/tickers, trimmed to
+  width, and each entry selects that Futures contract in place — unchanged, already
+  correct from an earlier session.
+
+### Deliberately NOT invented
+No fake Open Interest, funding, mark/index price, liquidation volume, or long/short
+ratio — all real sources already existed and were used as-is. No stop/trigger order
+types added (backend doesn't support them). No partial-close control added (backend
+doesn't support it). No second "quote filter" tab row added to FuturesPairList since
+this exchange's futures symbols are effectively single-quote (USDT).
+
+### Files changed
+`frontend/src/pages/FuturesPage.tsx`, `frontend/src/components/FuturesPairList.tsx`,
+`frontend/src/components/FuturesOrderForm.tsx`,
+`frontend/src/components/FuturesPositionsPanel.tsx`. No backend file touched — the
+financial engine (position service, margin math, liquidation engine, funding,
+mark/index price, market registry) was audited and left exactly as-is.
+
+### Validation actually run
+- Backend `tsc --noEmit`: passed, no errors. `prisma validate`: schema valid.
+- Frontend `tsc --noEmit`: passed, no errors.
+- Frontend production build (`npm run build`): passed (`✓ built in 6.09s`).
+- Backend tests: full suite **63 suites / 624 tests passed**, unchanged from before
+  this task (no backend code was modified, so no new backend tests were needed or
+  added) — includes all futures-specific suites (`FuturesPositionService`,
+  `FuturesMarketRegistry`, `marginMath`, `MarkPriceService`, `FundingRateService`,
+  `LiquidationEngine`) run explicitly and confirmed green on their own first.
+- No frontend test runner exists in this repo (no `test` script, no jest/vitest
+  config, no `*.test.*` files) — none were skipped; correctness of the frontend
+  changes was instead verified by live browser interaction against the real backend
+  (see below).
+- Browser QA (Playwright/Chromium), authenticated with a real account (registered →
+  real OTP read from the local SMTP QA sink → verified → real session), at
+  1920/1440/1366/1280/1024/768/390/375: horizontal page overflow was 0px and 0
+  runtime `pageerror`s at every width. Interactively verified: pair switching via the
+  pair list (BTC→ETH), starring a pair without changing the active contract
+  (`stopPropagation` confirmed working), the Favorites tab correctly narrowing to
+  exactly the starred pair and restoring on toggle-off, clicking the ticker-bar pair
+  name correctly focusing the pair-list search input, Long/Short/Limit/Market/Cross
+  toggles, the 20x/50x leverage presets correctly absent (and the notice text shown)
+  for this new QA account while 2x/5x/10x remained selectable, and submitting a real
+  order against zero futures margin correctly returning a real, visible "Insufficient
+  USDT margin balance" rejection with no fake success state. `/trade?pair=BTC/USDT`
+  and `/markets` both still load correctly with 0 runtime errors (regression check;
+  neither was modified).
+- The `ConnectionBanner`'s "WebSocket lost, reconnecting…" message appears throughout
+  this sandbox's QA screenshots because `ws.kraken.com` is blocked by the sandbox's
+  outbound network policy — this is the banner correctly doing its job (a real,
+  honestly-surfaced disconnect), not an application defect; the REST fallback this
+  page already has for exactly this case kept the order book and tickers populated
+  throughout.
+
+### Known limitations
+- The QA account used had no futures margin funded (a fresh registration in this
+  sandbox), so a real filled order/open position could not be exercised end-to-end;
+  the honest-rejection path (zero margin → real 400 → visible error, no fake success)
+  was verified instead, and the position-service fill/PnL/liquidation math itself was
+  verified by direct code reading against its own passing test suite rather than a
+  live fill.
+- Mark/index price and the reference candle chart both ultimately trace back to the
+  same Kraken-mirrored ticker feed in this environment (see item 6 above) — this is
+  an existing, now-documented characteristic of the exchange's current data sources,
+  not something introduced or changed by this task.

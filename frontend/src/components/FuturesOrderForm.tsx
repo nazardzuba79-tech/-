@@ -41,6 +41,7 @@ export function FuturesOrderForm({
   const [availableMargin, setAvailableMargin] = useState(0);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
+  const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,15 +49,55 @@ export function FuturesOrderForm({
     api.getFuturesConfig().then(setConfig).catch(() => {});
   }, []);
 
+  // Account age gates leverage server-side (FuturesPositionService rejects
+  // > newAccountMaxLeverage for the first newAccountPeriodDays — see
+  // config/futuresConfig.ts) but nothing client-side knew about it, so the
+  // slider let a new account drag past that cap and only find out from a
+  // rejected order. /me is already fetched elsewhere in the app for exactly
+  // this field; nothing else here depends on the rest of the profile.
   useEffect(() => {
     api
-      .getFuturesBalances()
-      .then((balances) => {
-        const b = balances.find((x) => x.asset === quoteAsset);
-        setAvailableMargin(b ? parseFloat(b.available) : 0);
-      })
+      .getMe()
+      .then((me) => setAccountCreatedAt(me.createdAt))
       .catch(() => {});
-  }, [quoteAsset, side]);
+  }, []);
+
+  const accountAgeDays = accountCreatedAt ? (Date.now() - new Date(accountCreatedAt).getTime()) / 86_400_000 : null;
+  const isNewAccount = config !== null && accountAgeDays !== null && accountAgeDays < config.newAccountPeriodDays;
+  const effectiveMaxLeverage = config ? (isNewAccount ? Math.min(config.maxLeverage, config.newAccountMaxLeverage) : config.maxLeverage) : null;
+
+  // Clamp down if the effective cap drops below whatever is currently
+  // selected — e.g. the slider defaulted to 10x before /me answered, and
+  // the account turns out to still be within its first newAccountPeriodDays
+  // with a lower newAccountMaxLeverage.
+  useEffect(() => {
+    if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
+  }, [effectiveMaxLeverage, leverage]);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Polled on the same 5s cadence as FuturesAccountSummary's own margin
+    // balance, which sits right below this form — without it, a transfer
+    // completed in the modal (or a fill that just locked margin) left this
+    // figure stale until the trader happened to flip Long/Short, while the
+    // summary card below it had already caught up.
+    function load() {
+      api
+        .getFuturesBalances()
+        .then((balances) => {
+          if (cancelled) return;
+          const b = balances.find((x) => x.asset === quoteAsset);
+          setAvailableMargin(b ? parseFloat(b.available) : 0);
+        })
+        .catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [quoteAsset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,14 +219,24 @@ export function FuturesOrderForm({
       <form onSubmit={handleSubmit} style={styles.form}>
         <MarginTypeToggle value={marginType} onChange={setMarginType} />
 
-        {config && (
-          <LeverageSlider
-            value={leverage}
-            onChange={setLeverage}
-            min={config.minLeverage}
-            max={config.maxLeverage}
-            warningThreshold={config.highLeverageWarningThreshold}
-          />
+        {config && effectiveMaxLeverage !== null && (
+          <>
+            <LeverageSlider
+              value={leverage}
+              onChange={setLeverage}
+              min={config.minLeverage}
+              max={effectiveMaxLeverage}
+              warningThreshold={config.highLeverageWarningThreshold}
+            />
+            {isNewAccount && (
+              <div style={styles.newAccountNotice}>
+                {t('futures.newAccountLimitNotice', {
+                  max: config.newAccountMaxLeverage,
+                  days: config.newAccountPeriodDays,
+                })}
+              </div>
+            )}
+          </>
         )}
 
         {type === 'LIMIT' ? (
@@ -473,6 +524,11 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '6px 10px',
     borderRadius: 6,
     fontSize: 11,
+  },
+  newAccountNotice: {
+    fontSize: 10.5,
+    color: 'var(--text-tertiary)',
+    marginTop: -4,
   },
   tiersBox: {
     borderTop: '1px solid var(--border)',
