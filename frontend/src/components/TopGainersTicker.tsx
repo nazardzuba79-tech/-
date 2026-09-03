@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -39,18 +39,35 @@ interface Item {
  *   working, and gets keyboard focus for free. Callers build the URL from
  *   the app's existing `/trade?pair=` route rather than a new scheme.
  *
- * Passing neither renders plain, non-interactive text as before. */
+ * Passing neither renders plain, non-interactive text as before.
+ *
+ * `symbols` narrows the strip to a specific market universe instead of the
+ * TOP_COINS allowlist — the futures terminal passes its listed perpetuals,
+ * so the strip above a futures chart offers contracts that can actually be
+ * traded there rather than spot symbols that cannot.
+ *
+ * `fitToWidth` renders only as many items as fit the container, measured
+ * from the real rendered width. The alternative was a horizontally
+ * scrolling strip, which put a scrollbar track under the chart and could
+ * clip its last item mid-symbol. Ranking is by 24h volume, so the ones that
+ * survive the cut are the most traded rather than an arbitrary prefix. */
 export function TopGainersTicker({
   onSelect,
   hrefFor,
   staticStrip,
+  symbols,
+  fitToWidth,
 }: {
   onSelect?: (pair: string) => void;
   hrefFor?: (pair: string) => string;
   staticStrip?: boolean;
+  symbols?: string[];
+  fitToWidth?: boolean;
 }) {
   const { lang, t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [capacity, setCapacity] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,8 +76,11 @@ export function TopGainersTicker({
         .getExternalTickers()
         .then((res) => {
           if (cancelled) return;
+          const universe = symbols ? new Set(symbols) : null;
           const filtered = res.tickers
-            .filter((tk) => tk.pair.endsWith('/USDT') && TOP_COINS.has(tk.pair.split('/')[0]))
+            .filter((tk) =>
+              universe ? universe.has(tk.pair) : tk.pair.endsWith('/USDT') && TOP_COINS.has(tk.pair.split('/')[0])
+            )
             .map((tk) => ({
               pair: tk.pair,
               changePercent: parseChangePercent(tk.changePercent24h, tk.pair),
@@ -78,16 +98,47 @@ export function TopGainersTicker({
       cancelled = true;
       clearInterval(interval);
     };
-  }, [lang]);
+  }, [lang, symbols?.join(',')]);
+
+  // Measured, not assumed: item width comes from the first rendered child,
+  // so the slot size stays a CSS decision (see .market-ticker-static
+  // .ticker-item) rather than a number duplicated here.
+  useLayoutEffect(() => {
+    if (!fitToWidth) return;
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const track = el.firstElementChild as HTMLElement | null;
+      const first = track?.firstElementChild as HTMLElement | null;
+      const itemWidth = first?.offsetWidth || 0;
+      if (!itemWidth) return;
+      const trackPadding = track
+        ? parseFloat(getComputedStyle(track).paddingLeft) + parseFloat(getComputedStyle(track).paddingRight)
+        : 0;
+      const fits = Math.floor((el.clientWidth - trackPadding) / itemWidth);
+      setCapacity(Math.max(1, fits));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fitToWidth, items.length]);
 
   const hottest = staticStrip || items.length === 0
     ? null
     : items.reduce((max, it) => (Math.abs(it.changePercent) > Math.abs(max.changePercent) ? it : max), items[0]);
+  // Trimmed to what fits before anything is duplicated, so the marquee's
+  // seamless -50% loop still sees two identical runs.
+  const visible = fitToWidth && capacity !== null ? items.slice(0, capacity) : items;
   // Duplicated once so the CSS marquee can loop seamlessly from -50%.
-  const loop = staticStrip ? items : [...items, ...items];
+  const loop = staticStrip ? visible : [...visible, ...visible];
 
   return (
-    <div className={`market-ticker${staticStrip ? ' market-ticker-static' : ''}`} aria-label="Market ticker">
+    <div
+      ref={containerRef}
+      className={`market-ticker${staticStrip ? ' market-ticker-static' : ''}`}
+      aria-label="Market ticker"
+    >
       <div className="ticker-track">
         {loop.map((it, i) => {
           const positive = it.changePercent >= 0;
@@ -106,7 +157,7 @@ export function TopGainersTicker({
           // the second run is decoration, so it is hidden from screen
           // readers and taken out of the tab order rather than making every
           // symbol appear (and be tabbed through) twice.
-          const duplicate = i >= items.length;
+          const duplicate = i >= visible.length;
           // Reuses the existing nav label instead of adding a locale key —
           // "Торговля BTC/USDT" / "Trade BTC/USDT" in whichever of the
           // seven languages is active.

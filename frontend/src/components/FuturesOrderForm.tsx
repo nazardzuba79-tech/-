@@ -324,11 +324,20 @@ export function FuturesOrderForm({
 }
 
 const styles: Record<string, React.CSSProperties> = {
+  // This sits inside the terminal's own .order-form-area, which already
+  // draws the panel surface and seam. The standalone rounded card it used
+  // to draw here put a second border and radius inside that panel and,
+  // with `overflow: hidden`, clipped whatever ran past the column instead
+  // of letting it scroll. A plain full-height column that scrolls its own
+  // overflow is what the spot order form does.
   panel: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    minHeight: 0,
+    minWidth: 0,
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
   sideTabs: {
     display: 'grid',
@@ -342,19 +351,42 @@ const styles: Record<string, React.CSSProperties> = {
   sideTab: {
     padding: '10px 0',
     background: 'transparent',
-    border: 'none',
+    // Reserved rather than `none`, so selecting a side cannot resize the
+    // tab by the active state's border width.
+    border: '1px solid transparent',
     borderRadius: 8,
     color: 'var(--text-secondary)',
     fontWeight: 700,
     fontSize: 13,
+    // Equal halves of the grid already; this keeps "Продать / Шорт" on one
+    // line inside its half rather than wrapping or being clipped.
+    whiteSpace: 'nowrap',
+    minWidth: 0,
   },
-  sideTabBuy: { color: 'var(--on-accent)', background: 'var(--buy)' },
-  sideTabSell: { color: 'var(--on-accent)', background: 'var(--sell)' },
+  // Same active fills as the spot terminal's Buy/Sell segmented control
+  // (.order-form-tab.active.buy/.sell) so the two terminals' side selectors
+  // are visibly one control, instead of the flat accent block this used.
+  sideTabBuy: {
+    color: '#fff',
+    background: 'linear-gradient(180deg, #16d89a, #12c98d)',
+    border: '1px solid #16d89a',
+  },
+  sideTabSell: {
+    color: '#fff',
+    background: 'linear-gradient(180deg, #ff6262, #ef5350)',
+    border: '1px solid #ff6262',
+  },
   typeTabs: {
     display: 'flex',
-    gap: 16,
+    // Left-aligned with a fixed gap: with only two short labels,
+    // space-between pushed Лимит and Рынок to opposite edges and they
+    // stopped reading as one control. `flexWrap: nowrap` plus the minWidth
+    // below is what keeps them from overflowing if a locale is wordier.
+    gap: 18,
+    flexWrap: 'nowrap',
     padding: '0 14px 10px',
     borderBottom: '1px solid var(--border)',
+    minWidth: 0,
   },
   typeTab: {
     background: 'transparent',
@@ -363,6 +395,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 12,
     fontWeight: 600,
     color: 'var(--text-tertiary)',
+    whiteSpace: 'nowrap',
   },
   typeTabActive: { color: 'var(--accent)' },
   form: {
@@ -370,6 +403,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    minWidth: 0,
   },
   label: {
     display: 'flex',
@@ -377,6 +411,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     fontSize: 11,
     color: 'var(--text-secondary)',
+    minWidth: 0,
   },
   qtyLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
   input: {
@@ -386,8 +421,16 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '10px 12px',
     color: 'var(--text-primary)',
     fontSize: 13,
+    // A number input carries an intrinsic default width wider than this
+    // 264px column, and as a flex child its default `min-width: auto`
+    // means it refuses to shrink below that — which is what pushed the
+    // "Посл. цена" action out past the panel edge. Both have to be set.
+    width: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    fontVariantNumeric: 'tabular-nums',
   },
-  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 },
   lastPriceBtn: {
     flexShrink: 0,
     background: 'transparent',
@@ -396,6 +439,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 11,
     fontWeight: 700,
     padding: '0 4px',
+    // Two words that must never wrap or be clipped mid-word.
+    whiteSpace: 'nowrap',
   },
   reduceOnlyRow: {
     display: 'flex',
@@ -416,7 +461,11 @@ const styles: Record<string, React.CSSProperties> = {
   infoRow: {
     display: 'flex',
     justifyContent: 'space-between',
+    gap: 10,
     fontSize: 12,
+    // Order cost, margin and fee update on every keystroke — tabular
+    // figures keep the right-hand column from shifting as they do.
+    fontVariantNumeric: 'tabular-nums',
   },
   error: {
     background: 'var(--sell-dim)',

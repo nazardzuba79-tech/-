@@ -28,11 +28,12 @@ export interface Ticker {
 
 export type CoinRanking = PairListCoinRanking;
 
-// The only pairs this exchange actually offers leveraged futures on (see
-// FUTURES_SYMBOLS in FuturesPage.tsx — kept in sync manually since it's a
-// short, stable, real product-config list, not derived data worth wiring
-// through an API round-trip for).
-export const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+// The contracts the backend guarantees are always listed. Used only until
+// /futures/config answers, so the Futures tab's first paint shows real
+// markets rather than nothing. The listing is derived from live market data
+// (see FuturesMarketRegistry) and is no longer a fixed three — keeping a
+// manual copy here is what made this tab show only three.
+export const CORE_FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
 export function baseOf(pair: string): string {
   return pair.split('/')[0];

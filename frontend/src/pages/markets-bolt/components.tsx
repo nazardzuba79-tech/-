@@ -20,7 +20,7 @@ import { CATEGORIES, type CoinCategory, loadFavorites, saveFavorites } from '../
 import {
   type Ticker,
   type CoinRanking,
-  FUTURES_SYMBOLS,
+  CORE_FUTURES_SYMBOLS,
   formatPrice,
   formatCompactUsd,
   deriveQuoteList,
@@ -160,6 +160,22 @@ export function MarketsBoltPage() {
   const [activeSector, setActiveSector] = useState<'All' | 'Favorites' | CoinCategory>('All');
   const [search, setSearch] = useState('');
   const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  // The listed perpetuals, from the backend rather than a copy kept in sync
+  // by hand — see CORE_FUTURES_SYMBOLS for why the initial value exists.
+  const [futuresSymbols, setFuturesSymbols] = useState<string[]>(CORE_FUTURES_SYMBOLS);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getFuturesConfig()
+      .then((cfg) => {
+        if (!cancelled && cfg.symbols.length > 0) setFuturesSymbols(cfg.symbols);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [sortKey, setSortKey] = useState<SortKey>('volume');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
@@ -229,7 +245,7 @@ export function MarketsBoltPage() {
   }
 
   function goToTrade(pair: string) {
-    if (activeKind === 'Futures' && FUTURES_SYMBOLS.includes(pair)) {
+    if (activeKind === 'Futures' && futuresSymbols.includes(pair)) {
       navigate(`/futures?pair=${encodeURIComponent(pair)}`);
     } else {
       navigate(`/trade?pair=${encodeURIComponent(pair)}`);
@@ -240,9 +256,9 @@ export function MarketsBoltPage() {
 
   const kindTickers = useMemo(() => {
     if (activeKind === 'CFD') return [];
-    if (activeKind === 'Futures') return tickers.filter((tk) => FUTURES_SYMBOLS.includes(tk.pair));
+    if (activeKind === 'Futures') return tickers.filter((tk) => futuresSymbols.includes(tk.pair));
     return tickers;
-  }, [tickers, activeKind]);
+  }, [tickers, activeKind, futuresSymbols]);
 
   const filteredMarkets = useMemo(() => {
     const query = search.trim().toLowerCase();

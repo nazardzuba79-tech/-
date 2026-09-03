@@ -16,8 +16,13 @@ import { krakenSocket } from '../lib/krakenSocket';
 import { rememberTradingMode } from '../lib/tradingMode';
 import './trade-terminal/TradeTerminal.css';
 
-const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 const WS_FALLBACK_TIMEOUT_MS = 4000;
+
+// Until /futures/config answers. Deliberately the same three contracts the
+// backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
+// paint shows real markets rather than an empty panel — the full listing
+// replaces this as soon as the request lands.
+const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
 // Only tabs with a real endpoint behind them. Positions leads, because on a
 // futures terminal the open position is the thing a trader watches. There is
@@ -46,10 +51,11 @@ export function FuturesPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [symbol, setSymbol] = useState(() => {
-    const requested = searchParams.get('pair');
-    return requested && FUTURES_SYMBOLS.includes(requested) ? requested : 'BTC/USDT';
-  });
+  // The listed contracts come from the backend, which derives them from
+  // live market data (see FuturesMarketRegistry) — this page must not keep
+  // its own copy, which is exactly why it used to show only three markets.
+  const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
+  const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
@@ -57,12 +63,30 @@ export function FuturesPage() {
   const [pickedPrice, setPickedPrice] = useState<string | null>(null);
   const pickedSeq = useRef(0);
 
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .getFuturesConfig()
+      .then((cfg) => {
+        if (cancelled || cfg.symbols.length === 0) return;
+        setSymbols(cfg.symbols);
+        // A deep link to a contract that is no longer listed falls back to
+        // the first listed one rather than leaving the terminal pointed at
+        // a market the order route would reject.
+        setSymbol((current) => (cfg.symbols.includes(current) ? current : cfg.symbols[0]));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Same reason as the spot terminal: this page is not remounted when only
   // the query string changes, so without this a second deep-link into
   // /futures would leave the previous contract selected.
   useEffect(() => {
     const next = searchParams.get('pair');
-    if (next && FUTURES_SYMBOLS.includes(next)) setSymbol(next);
+    if (next) setSymbol(next);
   }, [searchParams]);
 
   // Landing here is itself the signal that futures is this user's current
@@ -100,26 +124,31 @@ export function FuturesPage() {
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
-  // A futures position can only ever be opened on FUTURES_SYMBOLS (the
+  // A position can only ever be opened on a listed contract (the
   // order-placement route rejects anything else outright). Clicking a symbol
-  // the strip shows but futures doesn't support sends the trader to spot
+  // the strip shows but futures doesn't list sends the trader to spot
   // instead of pretending a futures market exists for it.
   function handleTickerSelect(pair: string) {
-    if (FUTURES_SYMBOLS.includes(pair)) setSymbol(pair);
+    if (symbols.includes(pair)) setSymbol(pair);
     else navigate(`/trade?pair=${encodeURIComponent(pair)}`);
   }
 
   return (
     <div className="trade-terminal">
+      {/* The strip carries this terminal's own listed perpetuals, held
+          still, trimmed to what fits — and each one selects that contract
+          in place through handleTickerSelect, the same path the market
+          panel uses. The wallet-transfer button that used to sit in
+          `rightExtra` is gone from the shared header: transfer is still
+          reachable from the futures account summary in the order panel and
+          from the Wallet page, neither of which costs permanent header
+          space on every page of the site. */}
       <Nav
         active="/futures"
         onTickerSelect={handleTickerSelect}
         staticTicker
-        rightExtra={
-          <button className="bottom-action-btn" onClick={() => setShowTransfer(true)}>
-            {t('futures.transfer')}
-          </button>
-        }
+        tickerSymbols={symbols}
+        tickerFitToWidth
       />
       <ConnectionBanner />
 
@@ -128,7 +157,7 @@ export function FuturesPage() {
 
         <div className="main-grid">
           <div className="left-panel">
-            <FuturesPairList symbols={FUTURES_SYMBOLS} symbol={symbol} onChange={setSymbol} />
+            <FuturesPairList symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </div>
 
           <div className="chart-area">

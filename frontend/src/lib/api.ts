@@ -835,6 +835,14 @@ export const api = {
   getFuturesMarkPrice: (symbol: string) =>
     request<{ symbol: string; markPrice: string; indexPrice: string }>(`/futures/mark-price/${pairToSlug(symbol)}`),
 
+  /** Open interest on a contract, from this exchange's own position book —
+   *  the only authoritative source for it. `openInterestValue` is null when
+   *  there is no mark price to value the size with. */
+  getFuturesOpenInterest: (symbol: string) =>
+    request<{ symbol: string; openInterest: string; openInterestValue: string | null }>(
+      `/futures/open-interest/${pairToSlug(symbol)}`
+    ),
+
   getFuturesFundingRate: (symbol: string, limit = 10) =>
     request<{
       symbol: string;

@@ -25,6 +25,8 @@ export function Nav({
   tickerHrefFor,
   hideTicker,
   staticTicker,
+  tickerSymbols,
+  tickerFitToWidth,
 }: {
   active: string;
   middle?: ReactNode;
@@ -39,6 +41,11 @@ export function Nav({
   hideTicker?: boolean;
   /** Renders the strip without the marquee — see TopGainersTicker. */
   staticTicker?: boolean;
+  /** Narrows the strip to a specific market universe (the futures terminal
+   *  passes its listed perpetuals) — see TopGainersTicker. */
+  tickerSymbols?: string[];
+  /** Shows only the instruments that fit the width, instead of scrolling. */
+  tickerFitToWidth?: boolean;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -305,7 +312,15 @@ export function Nav({
         </button>
       </div>
     </header>
-    {!hideTicker && <TopGainersTicker onSelect={onTickerSelect} hrefFor={tickerHrefFor} staticStrip={staticTicker} />}
+    {!hideTicker && (
+      <TopGainersTicker
+        onSelect={onTickerSelect}
+        hrefFor={tickerHrefFor}
+        staticStrip={staticTicker}
+        symbols={tickerSymbols}
+        fitToWidth={tickerFitToWidth}
+      />
+    )}
     {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
     <BottomNav />
     </>

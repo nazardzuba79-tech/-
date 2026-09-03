@@ -44,6 +44,7 @@ import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
 import { MarkPriceService } from './futures/MarkPriceService';
 import { FuturesPositionService } from './futures/FuturesPositionService';
 import { FundingRateService } from './futures/FundingRateService';
+import { FuturesMarketRegistry } from './futures/FuturesMarketRegistry';
 import { LiquidationEngine } from './futures/LiquidationEngine';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
@@ -76,7 +77,10 @@ const kycEmailService = new KycEmailService();
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
 const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
-const fundingRateService = new FundingRateService(prisma, markPriceService);
+// Which contracts are listed is derived from live market data under the
+// listing rules in config/futuresConfig — see FuturesMarketRegistry.
+const futuresMarketRegistry = new FuturesMarketRegistry(marketDataService, prisma);
+const fundingRateService = new FundingRateService(prisma, markPriceService, () => futuresMarketRegistry.list());
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 
 // Shares the spot engine/prisma/priceSource with ordersRouter's own
@@ -143,7 +147,7 @@ app.use('/api/v1', adminAuditLogRouter(prisma));
 app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
-app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService));
+app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry));
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', portfolioRouter(prisma));
@@ -169,6 +173,7 @@ async function start() {
     console.log(`Recovered ${recoveredFuturesCount} resting futures order(s) into the futures matching engine`);
   }
 
+  futuresMarketRegistry.start();
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
   cfdLiquidationEngine.startScheduler();
@@ -183,6 +188,7 @@ start().catch((err) => {
 });
 
 process.on('SIGTERM', async () => {
+  futuresMarketRegistry.stop();
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();
   cfdLiquidationEngine.stopScheduler();

@@ -6,8 +6,8 @@ import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { FuturesPositionService } from '../../futures/FuturesPositionService';
 import { MarkPriceService } from '../../futures/MarkPriceService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
+import { FuturesMarketRegistry } from '../../futures/FuturesMarketRegistry';
 import {
-  FUTURES_SYMBOLS,
   MIN_LEVERAGE,
   MAX_LEVERAGE,
   NEW_ACCOUNT_MAX_LEVERAGE,
@@ -20,7 +20,10 @@ import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '.
 
 const placeOrderSchema = z
   .object({
-    symbol: z.enum(FUTURES_SYMBOLS as [string, ...string[]]),
+    // Validated against the live listing (see the router's refine below)
+    // rather than a compile-time enum — the set of contracts is derived at
+    // runtime now, so it cannot be baked into the schema's type.
+    symbol: z.string().min(1),
     side: z.enum(['BUY', 'SELL']),
     type: z.enum(['LIMIT', 'MARKET']).default('LIMIT'),
     price: z
@@ -55,13 +58,14 @@ export function futuresRouter(
   prisma: PrismaClient,
   engine: MatchingEngine,
   positionService: FuturesPositionService,
-  markPriceService: MarkPriceService
+  markPriceService: MarkPriceService,
+  marketRegistry: FuturesMarketRegistry
 ): Router {
   const router = Router();
 
   router.get('/futures/config', (_req, res) => {
     res.json({
-      symbols: FUTURES_SYMBOLS,
+      symbols: marketRegistry.list(),
       minLeverage: MIN_LEVERAGE,
       maxLeverage: MAX_LEVERAGE,
       newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
@@ -81,6 +85,11 @@ export function futuresRouter(
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const { symbol, side, type, price, quantity, leverage, marginType, reduceOnly } = parsed.data;
+    // The listing is the gate: an unlisted contract is rejected here, the
+    // same way the old z.enum rejected anything outside the constant.
+    if (!marketRegistry.has(symbol)) {
+      return res.status(400).json({ error: `${symbol} is not a listed perpetual contract` });
+    }
     try {
       const result = await positionService.placeOrder({
         userId: req.userId!,
@@ -175,6 +184,38 @@ export function futuresRouter(
         indexPrice: r.indexPrice.toString(),
         appliedAt: r.appliedAt,
       })),
+    });
+  });
+
+  /**
+   * Open interest: the total size of every position currently open on a
+   * contract, and its notional value at the current mark price. This is
+   * real and it is ours — the exchange's own position book is the only
+   * authoritative source for its own open interest, and no external feed
+   * could report it. Public, like mark price and funding: open interest is
+   * a market statistic, not per-user data, and the aggregate reveals
+   * nothing about who holds what.
+   *
+   * A contract nobody has traded yet honestly reports zero rather than
+   * being hidden or filled in from somewhere else.
+   */
+  router.get('/futures/open-interest/:symbol', async (req, res) => {
+    const symbol = symbolFromSlug(req.params.symbol);
+    const [aggregate, markPrice] = await Promise.all([
+      prisma.futuresPosition.aggregate({
+        where: { symbol, status: 'OPEN' },
+        _sum: { size: true },
+      }),
+      markPriceService.getMarkPrice(symbol),
+    ]);
+    const size = new BigNumber(aggregate._sum.size?.toString() ?? '0');
+    res.json({
+      symbol,
+      // Base-asset units of open contracts.
+      openInterest: size.toString(),
+      // Same figure in USDT, or null when there is no mark price to value
+      // it with — never a fabricated stand-in.
+      openInterestValue: markPrice ? size.times(markPrice).toString() : null,
     });
   });
 

@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { MarkPriceService } from './MarkPriceService';
-import { FUTURES_SYMBOLS, FUNDING_INTERVAL_HOURS } from '../config/futuresConfig';
+import { CORE_FUTURES_SYMBOLS, FUNDING_INTERVAL_HOURS } from '../config/futuresConfig';
 
 type TxClient = Prisma.TransactionClient;
 
@@ -33,7 +33,16 @@ export function msUntilNextFundingBoundary(now = new Date(), intervalHours = FUN
 export class FundingRateService {
   private timer?: NodeJS.Timeout;
 
-  constructor(private prisma: PrismaClient, private markPriceService: MarkPriceService) {}
+  /** `listSymbols` is the live futures listing (FuturesMarketRegistry.list).
+   *  Funding has to settle for whatever is actually listed, which is no
+   *  longer a compile-time constant. Defaults to the core contracts so a
+   *  caller that only needs the funding maths — the unit tests do — can
+   *  construct this without a registry. */
+  constructor(
+    private prisma: PrismaClient,
+    private markPriceService: MarkPriceService,
+    private listSymbols: () => string[] = () => CORE_FUTURES_SYMBOLS
+  ) {}
 
   computeFundingRate(markPrice: BigNumber, indexPrice: BigNumber): BigNumber {
     const premiumIndex = markPrice.minus(indexPrice).dividedBy(indexPrice);
@@ -92,7 +101,7 @@ export class FundingRateService {
 
   async settleFundingForAllSymbols() {
     const results = [];
-    for (const symbol of FUTURES_SYMBOLS) {
+    for (const symbol of this.listSymbols()) {
       results.push(await this.settleFundingForSymbol(symbol));
     }
     return results;

@@ -132,7 +132,7 @@ export function TradePage() {
   if (marketType === 'cfd') {
     return (
       <div className="page-mesh trading-page" style={styles.page}>
-        <Nav active="/trade" onTickerSelect={setPair} staticTicker />
+        <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
 
         <div className="trading-content" style={styles.content}>
@@ -167,7 +167,7 @@ export function TradePage() {
 
   return (
     <div className="trade-terminal">
-      <Nav active="/trade" onTickerSelect={setPair} staticTicker />
+      <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
       <div className="terminal">

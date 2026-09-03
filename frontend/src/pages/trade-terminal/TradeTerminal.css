@@ -116,11 +116,13 @@
 .trade-terminal .market-ticker-static {
   background: #0f141b;
   border-bottom: 1px solid var(--layer-border);
-  /* Manual horizontal scrolling when the symbols outrun the width —
-     never automatic, and never a page-level overflow. */
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
+  /* Nothing scrolls here. The strip renders only as many instruments as
+     fit the current width (TopGainersTicker's fitToWidth), so there is
+     never anything to scroll to — and a scrollbar track running under a
+     live chart is exactly the chrome this terminal is meant not to have.
+     `hidden` rather than `auto` also guarantees no clipped final item can
+     hint at more content. */
+  overflow: hidden;
 }
 .trade-terminal .market-ticker-static .ticker-track {
   animation: none !important;
@@ -197,6 +199,21 @@
   padding: 0; border-left: none;
 }
 .trade-terminal .ticker-bar .ticker-item:has(.value.price) { min-width: 116px; }
+/* Responsive priority for the futures instrument row, which carries more
+   stats than the spot one (mark, index, open interest, funding, next
+   funding on top of the usual price/24h set). Rather than letting the row
+   grow a horizontal scrollbar — the thing this terminal never does — the
+   lower-priority stats drop out as the viewport narrows. Last price, mark,
+   index, 24h change and funding rate carry no prio class and are therefore
+   always present. */
+@media (max-width: 1600px) {
+  .trade-terminal .ticker-bar { gap: 30px; }
+  .trade-terminal .ticker-bar .ticker-item.prio-3 { display: none; }
+}
+@media (max-width: 1280px) {
+  .trade-terminal .ticker-bar { gap: 24px; }
+  .trade-terminal .ticker-bar .ticker-item.prio-2 { display: none; }
+}
 .trade-terminal .ticker-item .label {
   font-size: 11px; color: #8e99a8; font-weight: 400;
   letter-spacing: 0; white-space: nowrap;

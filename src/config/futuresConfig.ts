@@ -49,8 +49,25 @@ export const FUNDING_INTERVAL_HOURS = 8;
 // against its liquidation price.
 export const LIQUIDATION_CHECK_INTERVAL_MS = 5_000;
 
-// Symbols perpetual futures are offered on — deliberately a short, curated
-// list (not "every spot pair") so mark-price/funding infrastructure only
-// has to be correct for markets we've actually vetted, same reasoning as
-// the deposit chain allowlist.
-export const FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+// The contracts that are always offered, whatever the market data says.
+// Everything else is admitted by FuturesMarketRegistry against the rules
+// below; these three are the floor, so the terminal is never empty even
+// with the upstream price feed down.
+export const CORE_FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
+
+// Listing rules for perpetuals. The old approach was a hand-typed list of
+// three symbols, which meant the market panel could only ever show three
+// markets. These express the same caution as a rule instead: a contract is
+// listed only if it settles in USDT, currently has a live index price (so
+// mark price, funding and liquidation all have something real to work
+// from), and trades enough that a leveraged position can actually be
+// unwound. Anything failing those is not listed, so we never offer
+// leverage on a market we cannot price or exit.
+export const PERP_QUOTE_ASSET = 'USDT';
+export const MIN_PERP_24H_QUOTE_VOLUME = 1_000_000; // USDT
+export const MAX_PERP_MARKETS = 40;
+
+// How often the listed set is recomputed. Deliberately slow: the panel
+// should not reshuffle under a trader's cursor, and nothing about an
+// intraday volume wobble needs to change which contracts exist.
+export const FUTURES_MARKET_REFRESH_MS = 15 * 60 * 1_000;
