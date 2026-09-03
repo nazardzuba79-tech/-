@@ -138,8 +138,7 @@ export function HomeCardSection() {
             </div>
           </div>
 
-          {/* Main card — sweep offset from the hero's so the two never
-              travel together. */}
+          {/* The only animated card presentation on the homepage. */}
           <div className="relative flex items-center justify-center py-4">
             <HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />
           </div>

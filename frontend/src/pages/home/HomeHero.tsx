@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { CreditCardIcon, StarIcon } from 'lucide-react';
 import { TerminalPreview } from './TerminalPreview';
 import { PhonePreview } from './PhonePreview';
-import { HomeCryptoCard } from './HomeCryptoCard';
 import { HomeMarket } from './useHomeMarket';
 import { useLanguage } from '../../lib/i18n';
 
@@ -95,12 +94,6 @@ export function HomeHero({ market }: { market: HomeMarket }) {
 
         {/* ---------------- right: product ---------------- */}
         <div className="relative lg:-mr-6 xl:-mr-10">
-          {/* Below lg the card leads instead of being tucked behind the
-              terminal, which would be unreadable at phone width. */}
-          <div className="vx-enter relative mx-auto mb-6 w-[230px] max-w-full lg:hidden" style={{ animationDelay: '220ms' }}>
-            <HomeCryptoCard width={230} animated sweepDelay={0} />
-          </div>
-
           <div className="vx-enter lg:pl-6">
             <TerminalPreview market={market} />
             <div className="mx-auto mt-[6px] h-[7px] w-[86%] rounded-b-[5px] bg-[#1a2029]" />
@@ -109,15 +102,6 @@ export function HomeHero({ market }: { market: HomeMarket }) {
           {/* phone overlay — secondary, clear of the terminal's own data */}
           <div className="vx-enter absolute -bottom-6 left-0 hidden lg:block" style={{ animationDelay: '120ms' }}>
             <PhonePreview market={market} />
-          </div>
-
-          {/* Approved card, lower-right. Sits outside the order-entry
-              column so it never covers Buy/Sell or the book's prices. */}
-          <div
-            className="vx-enter absolute -bottom-7 right-[13%] hidden lg:block xl:right-[15%]"
-            style={{ animationDelay: '220ms' }}
-          >
-            <HomeCryptoCard width={172} animated sweepDelay={0} hover className="xl:w-[188px]" />
           </div>
         </div>
       </div>

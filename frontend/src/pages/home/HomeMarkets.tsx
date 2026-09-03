@@ -158,8 +158,8 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
           </div>
         </div>
 
-        {/* Secondary card panel — deliberately NOT animated, so only the
-            hero and the main card section ever carry a sweep. */}
+        {/* Secondary card panel — deliberately not animated, leaving the
+            main card section as the page's single moving reflection. */}
         <aside className="relative flex flex-col overflow-hidden rounded-[8px] border border-white/6 bg-ink-850 p-6">
           <div
             aria-hidden="true"

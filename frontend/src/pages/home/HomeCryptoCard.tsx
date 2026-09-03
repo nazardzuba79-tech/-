@@ -9,10 +9,9 @@
  * recoloured or masked — all presentation (perspective, shadow, glow,
  * sweep) happens outside it.
  *
- * `animated` controls the sweep, `sweepDelay` staggers it. Only the hero
- * and the large card section pass `animated`; the small panel beside
- * Markets stays deliberately still so the page never has two or three
- * reflections travelling at once.
+ * `animated` controls the sweep, `sweepDelay` staggers it. Only the large
+ * card section passes `animated`; the small panel beside Markets stays
+ * deliberately still so the page has a single restrained reflection.
  */
 import { useLanguage } from '../../lib/i18n';
 
@@ -31,7 +30,7 @@ export function HomeCryptoCard({
   animated?: boolean;
   /** Seconds, offset so two animated cards never sweep together. */
   sweepDelay?: number;
-  /** Desktop lift on hover — hero and main card only. */
+  /** Desktop lift on hover for the featured card presentation. */
   hover?: boolean;
   glow?: boolean;
   className?: string;
