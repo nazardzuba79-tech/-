@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { CoinsIcon, CreditCardIcon, PercentIcon, WalletCardsIcon } from 'lucide-react';
+import { CreditCardIcon, LayersIcon, PercentIcon, WalletCardsIcon } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { HomeCryptoCard } from '../home/HomeCryptoCard';
@@ -22,9 +22,14 @@ import './auth-shell.css';
  * about submission, validation or error handling lives here.
  */
 
+/* Three marks of the same kind: flat geometric outlines, no glyphs inside
+   them, all rendered at one size and one stroke weight in the shell's own
+   gold tile. Lucide's Coins was tried here and rejected — it draws a small
+   "1" numeral inside the coin, which turns to noise at 17px and makes the
+   row read busier than its two neighbours. */
 const BENEFITS: { key: string; Icon: typeof PercentIcon; title: Key; text: Key }[] = [
   { key: 'trading', Icon: PercentIcon, title: 'authShell.benefit.trading.title', text: 'authShell.benefit.trading.text' },
-  { key: 'clients', Icon: CoinsIcon, title: 'authShell.benefit.clients.title', text: 'authShell.benefit.clients.text' },
+  { key: 'clients', Icon: LayersIcon, title: 'authShell.benefit.clients.title', text: 'authShell.benefit.clients.text' },
   { key: 'card', Icon: CreditCardIcon, title: 'authShell.benefit.card.title', text: 'authShell.benefit.card.text' },
 ];
 
