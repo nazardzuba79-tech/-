@@ -334,6 +334,11 @@
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 .vx-auth-input::placeholder { color: #a7aaac; }
+/* A requirement not met yet is not an error — the visitor is mid-typing.
+   The edge warms towards red without shouting, and sits BEFORE :focus so
+   the gold focus ring still wins while the field is the active one. */
+.vx-auth-input.vx-auth-input-warn { border-color: #cfa39c; }
+
 .vx-auth-input:focus {
   border-color: #b8862a;
   box-shadow: 0 0 0 3px rgba(184, 134, 42, 0.14);
@@ -373,6 +378,47 @@
 .vx-auth-toggle:hover { color: #30353a; background: #efeeea; }
 
 .vx-auth-hint { font-size: 11.5px; color: #85898d; margin-top: 9px; }
+
+/* Live password requirements (registration only).
+
+   Always rendered, always the same height, so nothing below it moves as
+   the states change. State is carried by three things — the glyph, the
+   screen-reader word inside .vx-auth-sr, and the colour — so it never
+   rests on colour alone. All three colours clear 4.5:1 on the #f6f5f2
+   workspace. */
+.vx-auth-reqs {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vx-auth-req {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: #6f747a;
+  transition: color 160ms ease;
+}
+.vx-auth-req svg { flex: 0 0 auto; }
+.vx-auth-req-met { color: #237e5a; }
+.vx-auth-req-unmet { color: #9d4038; }
+
+/* Available to assistive tech, not to the page. */
+.vx-auth-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .vx-auth-hint-ok { color: #237e5a; }
 .vx-auth-error-text {
   display: flex;

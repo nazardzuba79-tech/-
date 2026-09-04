@@ -58,6 +58,12 @@ type AuthPasswordFieldProps = {
   aside?: ReactNode;
   autoComplete?: string;
   required?: boolean;
+  /** id of an element describing the field — registration points this at
+   *  its live requirement list. Merged with the error message's own id. */
+  describedBy?: string;
+  /** A requirement is not satisfied yet, but the visitor is still typing:
+   *  warm the border without calling it an error. Registration only. */
+  warn?: boolean;
 };
 
 export function AuthPasswordField({
@@ -70,9 +76,12 @@ export function AuthPasswordField({
   aside,
   autoComplete = 'new-password',
   required,
+  describedBy,
+  warn,
 }: AuthPasswordFieldProps) {
   const { t } = useLanguage();
   const [visible, setVisible] = useState(false);
+  const described = [error ? `${id}-error` : null, describedBy].filter(Boolean).join(' ') || undefined;
 
   return (
     <AuthField id={id} label={label} error={error} hint={hint} aside={aside}>
@@ -85,9 +94,9 @@ export function AuthPasswordField({
           autoComplete={autoComplete}
           required={required}
           placeholder="••••••••"
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
-          className={`vx-auth-input${error ? ' vx-auth-input-error' : ''}`}
+          aria-invalid={error || warn ? true : undefined}
+          aria-describedby={described}
+          className={`vx-auth-input${error ? ' vx-auth-input-error' : warn ? ' vx-auth-input-warn' : ''}`}
         />
         <button
           type="button"
