@@ -798,3 +798,84 @@ balance, search, hide-zero, three sort columns and all five PnL periods
 exercised by click. Route regression sweep over 13 routes: all render, no
 error boundaries, no new console errors. No production trade, transfer or
 withdrawal was placed.
+
+## 2026-09-04 — Claude (Opus 5) — Authentication UI: one split screen for /register and /login
+
+Branch `claude/auth-ui-refine`, cut from `origin/main` (`32f7bbe`). Not merged,
+not deployed, Render untouched.
+
+### What changed
+
+`/register` and `/login` are now the same screen: a dark VOLTEX presentation
+column (~56%) and a light, warm-neutral auth workspace (~44%). New shared
+shell in `frontend/src/pages/auth-shell/`:
+
+- `AuthShell.tsx` — the split layout, the hero, the three benefit rows, the
+  Crypto Card section and the privacy footnote. Each page passes its own form
+  as children plus the header's switch prompt/link.
+- `AuthFields.tsx` — `AuthField` and `AuthPasswordField`, the two controls both
+  forms are built from (real `<label for>`, `${id}-error` + aria-describedby,
+  a real toggle button with aria-label/aria-pressed).
+- `auth-shell.css` — every selector prefixed `.vx-auth`; carries its own
+  `:where()`-wrapped preflight substitute, since Tailwind runs with
+  `corePlugins.preflight: false`.
+
+`AuthPage.tsx` was rewritten onto that shell and is now sign-in only (the
+former marketing fold — hero tickers, phone mockup, CFD section, perks banner,
+legal row and the `AUTH_V0_VARS` cyan palette — is gone). `RegisterPage.tsx`
+became a thin wrapper; `RegisterPanel.tsx` kept its logic verbatim and changed
+only presentation. `RegisterVisual.tsx`, `Field.tsx`, `PasswordField.tsx` and
+`register.css` were superseded and deleted.
+
+Copy: hero is `Торгуйте. / Управляйте. / Платите.` with gold on the third line
+only. The fake "Платформа работает" status dot and the
+"DIGITAL ASSET INFRASTRUCTURE" eyebrow are gone and are asserted absent by the
+QA script. The design source's fake submit confirmations ("Проверьте данные и
+продолжите регистрацию.", "Данные готовы к проверке.") were deliberately not
+ported — the forms show only the server's own messages.
+
+i18n: 22 now-unused keys removed, 27 added, across all 7 dictionaries
+(988 → 993 keys each, all seven equal and unique).
+
+### Preserved
+
+- Registration is still Email + Password only, 10+ chars with 1 uppercase, one
+  `POST /auth/register` that returns a session token and lands the user in the
+  platform. No confirm-password, phone, country, referral input, OTP, email
+  verification or terms checkbox. The referral code still arrives silently from
+  `REFERRAL_CODE_STORAGE_KEY`.
+- Login keeps `requires2fa` → pending-token → `loginWith2FA`, and `?next=`
+  handling via `readNext`/`defaultTradingPath`.
+- The approved physical card artwork is reused through `HomeCryptoCard`
+  (`/cards/voltex-card-dark.png`) — not redrawn, not recoloured, no invented
+  card number. The design source's CSS-drawn placeholder card was not ported.
+- Privacy microcopy is the repository's existing `auth.privacyNote` sentence,
+  not the design source's tax-authority wording.
+
+### Notes for whoever picks this up
+
+- "Забыли пароль?" opens the real support chat (`openSupportWidget`), because
+  there is no self-service reset endpoint on the backend. If one is ever added,
+  that is the single call site to change.
+- `frontend/src/components/PhoneMockup.tsx` is now unreferenced. It was left in
+  place rather than deleted — that is outside this task's scope.
+- The repository has no ESLint configuration (root or frontend), so no lint
+  step was run; `tsc -b` under strict mode is the static gate.
+- Google Fonts are blocked by this sandbox's egress proxy, so local screenshots
+  render in fallback faces. DM Sans and Manrope are already preloaded by
+  `index.html` in production; no new font request was added.
+
+### Checks actually run
+
+Frontend `tsc -b` clean; `npm run build` clean (`✓ built in 4.44s`). Full
+backend suite: 70 suites, 720 tests, all passing. Auth suites specifically:
+44 tests passing. Real browser QA against the running app (backend on :3000,
+Vite on :5173): registration with a fresh address returned a real token,
+stored it and navigated to `/futures`; a wrong password on `/login` rendered
+the server's own "Invalid email or password"; the correct password signed in;
+password toggle flips `type`; inline validation shows "Введите корректный
+email" / "Пароль слишком короткий"; tab order is logical on both pages and
+both labels are correctly associated; no page errors. Responsive sweep at
+1920/1440/1366/1280/1024/768/430/390/375 on both routes: zero page-level
+horizontal overflow, and none of the four banned strings present at any width.
+No production deployment was performed and none is claimed.
