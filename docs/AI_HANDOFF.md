@@ -798,3 +798,16 @@ balance, search, hide-zero, three sort columns and all five PnL periods
 exercised by click. Route regression sweep over 13 routes: all render, no
 error boundaries, no new console errors. No production trade, transfer or
 withdrawal was placed.
+
+## 2026-09-04 — Codex — approved registration/login refinement
+
+- Branch: `codex/auth-final-refine`, isolated worktree `.worktrees/auth-final-refine`, starting `origin/main` SHA `32f7bbe48eaa18ca731713a0095d87a315512ef8`.
+- Implementation commit: `4e13d3ae6c82615cfe7711d5e55155d1110ef332`.
+- Files: `frontend/src/pages/AuthPage.tsx`; new `pages/auth/{AuthLayout.tsx,auth.css,copy.ts}`; `pages/register/{RegisterPage.tsx,RegisterPanel.tsx,Field.tsx,PasswordField.tsx}`. Removed the superseded `RegisterVisual.tsx` and `register.css`.
+- Shared 57/43 graphite/amber hero and warm off-white form; approved `/cards/voltex-card-dark.png` retained intact; exact requested Russian hero, benefits, legal sentence, helper, and security note. Real seven-language selector and auth-only translations. Responsive form first on mobile.
+- Preserved real register/login endpoints, password validation (10+ with uppercase), hidden referral consumption, token storage, safe next/default redirects, server errors, account-enabled 2FA, and all backend logic. Initial forms contain only email/password. No signup OTP, verification, checkbox, phone, QR, or social auth was added. Forgot-password action opens the existing support widget; no reset API exists, and no fake email delivery is shown.
+- Validation: TypeScript build passed; production Vite build passed (existing large-bundle warning); 44 auth route/middleware tests and 10 returnTo tests passed. No configured lint script. Browser reviewed across two refinement passes plus a card-clearance correction. Both routes checked at 1920, 1440, 1366, 1280, 1024, 768, 430, 390, 375: no horizontal overflow, exactly two initial inputs. Password visibility, invalid signup, language switching, legal destination, support action, wrong-password error checked. Auth screens had zero console errors.
+- Local end-to-end QA used the actual unchanged authRouter/requireAuth and real bcrypt/JWT, with isolated in-memory persistence; browser registration/login each created a session accepted by /me and redirected to /card via ?next=. No production accounts/data touched. Non-auth services were intentionally unavailable in that local harness.
+- Screenshots and detailed report: `C:/Users/nazar/-/.auth-tools/`; final desktop/mobile screenshots are in `screenshots/`. Test harness and screenshots are outside this branch and are not application code.
+- Unrelated original six staged files and all unstaged changes preserved; original staged diff hash `70fd83b57f1d5b3092259b2089a8ed84013c09b4`, unstaged `e69de29bb2d1d6434b8b29ae775ad8c2e48c5391`.
+- Auth branch is local only. No merge or deployment. Awaiting user visual approval. The separate Analytics branch was pushed only after the user's later explicit request; no Analytics changes are included here.
