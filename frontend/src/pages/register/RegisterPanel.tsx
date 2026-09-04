@@ -1,6 +1,15 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangleIcon, ArrowLeftIcon, ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  CircleIcon,
+  Loader2Icon,
+  LockKeyholeIcon,
+  XIcon,
+} from 'lucide-react';
 import { api, ApiError, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
 import { readNext } from '../../lib/returnTo';
@@ -64,6 +73,29 @@ function useServerErrorLocalizer() {
     if (message.startsWith('Too many registration attempts')) return t('register.error.tooManyAttempts');
     return message;
   };
+}
+
+/**
+ * One line of the live password checklist.
+ *
+ * `state` is deliberately three-valued rather than a boolean: an empty
+ * field is not a failing field, and marking it red before the visitor has
+ * typed anything would be scolding them for not having started.
+ *
+ * The state reaches the reader three ways — a distinct glyph, a word only
+ * assistive tech sees, and the colour — so it never depends on colour
+ * alone, and a screen reader hears "выполнено"/"не выполнено" rather than
+ * inferring it from an icon name.
+ */
+function Requirement({ state, label, met, unmet }: { state: 'idle' | 'met' | 'unmet'; label: string; met: string; unmet: string }) {
+  const Icon = state === 'met' ? CheckIcon : state === 'unmet' ? XIcon : CircleIcon;
+  return (
+    <li className={`vx-auth-req${state === 'met' ? ' vx-auth-req-met' : state === 'unmet' ? ' vx-auth-req-unmet' : ''}`}>
+      <Icon size={state === 'idle' ? 8 : 13} strokeWidth={state === 'idle' ? 2 : 2.4} aria-hidden="true" />
+      {label}
+      {state !== 'idle' && <span className="vx-auth-sr"> — {state === 'met' ? met : unmet}</span>}
+    </li>
+  );
 }
 
 export function RegisterPanel() {
@@ -175,12 +207,29 @@ export function RegisterPanel() {
             if (errors.password) setErrors(({ password: _drop, ...rest }) => rest);
           }}
           error={errors.password}
-          hint={
-            <p className={`vx-auth-hint${password.length > 0 && passwordOk ? ' vx-auth-hint-ok' : ''}`}>
-              {t('register.passwordHint')}
-            </p>
-          }
+          describedBy="reg-password-reqs"
+          warn={password.length > 0 && !passwordOk}
         />
+
+        {/* Why the button is disabled, said plainly and while it is still
+            actionable. Rendered outside the field (not through AuthField's
+            `hint`, which an error message would replace) so it is always on
+            screen, and always two rows tall so nothing below it shifts as
+            the states change. aria-live announces each change once. */}
+        <ul id="reg-password-reqs" className="vx-auth-reqs" aria-live="polite">
+          <Requirement
+            state={password.length === 0 ? 'idle' : password.length >= PASSWORD_MIN ? 'met' : 'unmet'}
+            label={t('register.req.length')}
+            met={t('register.req.met')}
+            unmet={t('register.req.unmet')}
+          />
+          <Requirement
+            state={password.length === 0 ? 'idle' : hasUppercase(password) ? 'met' : 'unmet'}
+            label={t('register.req.uppercase')}
+            met={t('register.req.met')}
+            unmet={t('register.req.unmet')}
+          />
+        </ul>
 
         {globalError && (
           <div role="alert" className="vx-auth-alert">
