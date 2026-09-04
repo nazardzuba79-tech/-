@@ -38,7 +38,14 @@ const RANKINGS_POLL_MS = 15_000;
  * (price/24h/market cap for every listed asset) stays on the existing
  * rankings feed, unchanged.
  */
-export function useWalletData() {
+export interface WalletDataOptions {
+  /** The coin browser feed, needed only by the ledger table. The
+   *  performance page shows no coin list, so it opts out rather than
+   *  polling a 200-row market feed it never renders. */
+  rankings?: boolean;
+}
+
+export function useWalletData({ rankings: wantRankings = true }: WalletDataOptions = {}) {
   const [overview, setOverview] = useState<WalletOverview | null>(null);
   const [overviewState, setOverviewState] = useState<LoadState>('loading');
   const [performance, setPerformance] = useState<WalletPerformance | null>(null);
@@ -80,6 +87,10 @@ export function useWalletData() {
   }, [loadPerformance]);
 
   useEffect(() => {
+    if (!wantRankings) {
+      setRankingsLoaded(true);
+      return;
+    }
     function load() {
       api
         .getExternalRankings()
@@ -90,7 +101,7 @@ export function useWalletData() {
     load();
     const id = setInterval(load, RANKINGS_POLL_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [wantRankings]);
 
   /**
    * Today's snapshot, recorded once per page load from the account's real

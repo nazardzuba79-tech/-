@@ -943,3 +943,79 @@ enables it, and submitting returned a real token and landed on `/futures`.
 Header, six routes × seven widths (42 combinations): no balance control,
 Кошелёк / Пополнить / language / Профиль all present, zero trailing gap, no
 overflow.
+## 2026-09-04 — Claude (Opus 5) — Wallet: detailed PnL / performance page
+
+Branch `claude/wallet-pnl-detail`, cut from `origin/main` (`32f7bbe`). Not
+merged, not deployed, Render untouched.
+
+### What was added
+
+`/wallet/performance`, behind the Wallet's existing PnL card, under the same
+`RequireAuth` guard as `/wallet`. New folder
+`frontend/src/pages/wallet-performance/`:
+
+- `analytics.ts` — pure derivation over the canonical equity series: daily
+  PnL, drawdown, statistics, period buckets. No fetching, no data of its own.
+- `charts.tsx` — three hand-drawn SVG charts (equity, daily-PnL histogram,
+  drawdown) with a shared hover crosshair and tooltip.
+- `WalletPerformancePage.tsx`, `performance.css`.
+- `__tests__/analytics.test.ts` — 27 tests.
+
+### The single source of truth is unchanged
+
+`PortfolioPerformanceEngine` still builds the one time-weighted series and
+still measures the five windows off it; `GET /wallet/performance` still
+serves it. This page consumes `periods[period].points` and derives
+everything else from that array. No second engine, no hardcoded dataset, no
+backend change at all — `src/`, `prisma/` and `render.yaml` are untouched.
+
+Because the series is already cash-flow adjusted upstream, deposits,
+withdrawals and Spot↔Futures transfers cannot distort anything here. That is
+asserted in tests through the real engine, and it is visible in the live
+fixture: an account seeded with a $40,000 deposit reports all-time PnL of
+$12,564.85 (+23.45%), not $46k.
+
+Daily PnL is `equity[i] - equity[i-1]`, so it telescopes: the bars sum to the
+window's PnL exactly and the histogram cannot disagree with the curve. That
+invariant is a test.
+
+### Metrics
+
+Total PnL, ROI, days in period, profitable/losing days, win-day rate, average
+daily PnL, best/worst day, max drawdown (% and $), annualised volatility,
+Sharpe, Sortino, profit/loss ratio. Anything that cannot be computed honestly
+returns `null` and renders "Недостаточно данных" — a single return has no
+dispersion, and a window with no losing day has no P/L denominator.
+Risk-free rate is taken as zero for Sharpe/Sortino; this deployment has no
+rate curve and inventing one would silently change every figure.
+
+### Shared files touched, and why
+
+- `App.tsx` — the route.
+- `PortfolioStrip.tsx` — the PnL block became a `<Link>` to
+  `/wallet/performance?period=<current>`, carrying the selected window over.
+  The period buttons stayed outside the link; they are controls.
+- `useWalletData.ts` — an additive `{ rankings: false }` option so the
+  performance page does not poll a 200-row coin feed it never renders.
+  Default unchanged, so WalletPage behaves exactly as before.
+- `tailwind.config.js` — the new folder added to `content`.
+- `i18n.tsx` — 40 keys × 7 languages (988 → 1028 each, all equal and unique).
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean; full suite 71 files, 747
+tests passing. Browser QA at 1920/1440/1366/1024/768/430/390/375: no
+page-level horizontal overflow at any width (the breakdown table scrolls
+inside its own container below 768). All five periods verified against the
+API's own numbers; 1Y correctly shows the not-enough-history state on a
+140-day account. Tooltips confirmed on all three charts. The PnL card
+navigates in and the breadcrumb navigates back. Signed-out access redirects
+to `/login?next=%2Fwallet%2Fperformance`.
+
+### Limitations
+
+- Charts are pointer-driven, so tooltips do not arm on touch; every figure
+  they show is also printed as text beside the chart.
+- The breakdown keeps the most recent 60 buckets and reports the count.
+- Flow valuation inherits the engine's existing caveat: flows are valued at
+  today's price, exact for stablecoins and approximate otherwise.
