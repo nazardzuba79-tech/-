@@ -12,5 +12,20 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Production build config: `npm run build` runs `tsc -b` against this, and
+  // the Docker image copies only frontend/, so nothing here can see the
+  // repo-root node_modules. The test files under src are compiled by the
+  // root Jest project instead (jest.config.js -> tsconfig.jest.json, which
+  // includes frontend/src/lib and resolves @types/jest from the root), so
+  // excluding them here loses no type-checking — it only stops the
+  // production build failing on test-runner globals it has no types for.
+  // The root tsconfig.json already excludes its own tests the same way.
+  "exclude": [
+    "src/**/__tests__/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx"
+  ]
 }
