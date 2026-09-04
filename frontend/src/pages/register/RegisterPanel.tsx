@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangleIcon, Loader2Icon, ShieldIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertTriangleIcon, Loader2Icon, ArrowRightIcon } from 'lucide-react';
 import { api, ApiError, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
 import { readNext } from '../../lib/returnTo';
@@ -8,6 +8,7 @@ import { useLanguage } from '../../lib/i18n';
 import { REFERRAL_CODE_STORAGE_KEY } from '../ReferralRedirectPage';
 import { Field, inputClass } from './Field';
 import { PasswordField } from './PasswordField';
+import { useAuthCopy } from '../auth/copy';
 
 /**
  * The registration form, wired to the exchange's real auth.
@@ -23,13 +24,7 @@ import { PasswordField } from './PasswordField';
  * after the server has answered with a token.
  */
 
-/** Minimum accepted by the backend (registerSchema: z.string().min(10)).
- *  The approved design's hint reads "8+"; the server rejects 8- and
- *  9-character passwords, so the UI states the threshold that actually
- *  applies rather than one that would guarantee a failed submit. The hint
- *  keeps the approved two-part shape and adds no further requirements —
- *  no digit, no special character, no separate lowercase rule, no
- *  checklist. */
+/** Same threshold as the backend; no additional password requirements. */
 const PASSWORD_MIN = 10;
 
 function isValidEmail(value: string): boolean {
@@ -69,6 +64,7 @@ function useServerErrorLocalizer() {
 }
 
 export function RegisterPanel() {
+  const copy = useAuthCopy();
   const { t } = useLanguage();
   const localizeServerError = useServerErrorLocalizer();
   const navigate = useNavigate();
@@ -140,81 +136,28 @@ export function RegisterPanel() {
   }
 
   return (
-    <div className="w-full max-w-[430px]">
-      <div className="vx-enter rounded-[12px] border border-[#202a35] bg-ink-800 p-6 sm:p-7">
-        <div className="vx-step">
-          <h2 className="text-[21px] font-semibold tracking-[-0.01em] text-white">{t('register.title')}</h2>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-home-muted">{t('register.subtitle')}</p>
-
-          <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-[18px]">
-            <Field id="reg-email" label={t('register.email')} error={errors.email}>
-              <input
-                id="reg-email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(({ email: _drop, ...rest }) => rest);
-                }}
-                onBlur={() => {
-                  if (email && !isValidEmail(email)) {
-                    setErrors((prev) => ({ ...prev, email: t('register.error.email') }));
-                  }
-                }}
-                autoComplete="email"
-                placeholder="name@example.com"
-                aria-invalid={errors.email ? true : undefined}
-                aria-describedby={errors.email ? 'reg-email-error' : undefined}
-                className={`${inputClass} ${errors.email ? 'border-down/70' : 'border-line'}`}
-              />
-            </Field>
-
-            <PasswordField
-              id="reg-password"
-              label={t('register.password')}
-              value={password}
-              onChange={(value) => {
-                setPassword(value);
-                if (errors.password) setErrors(({ password: _drop, ...rest }) => rest);
-              }}
-              error={errors.password}
-              hint={
-                <p
-                  className={`mt-1.5 text-[10.5px] transition-colors duration-150 ease-out ${
-                    password.length > 0 && passwordOk ? 'text-up' : 'text-faint'
-                  }`}
-                >
-                  {t('register.passwordHint')}
-                </p>
-              }
-            />
-
-            {globalError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-[7px] border border-down/40 bg-down/[0.08] px-3 py-2.5 text-[11.5px] text-down"
-              >
-                <AlertTriangleIcon size={13} className="mt-[1px] shrink-0" />
-                {globalError}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[7px] bg-gold-500 text-[13.5px] font-semibold text-ink-950 transition-[background-color,transform] duration-150 ease-out hover:bg-gold-400 active:translate-y-[1px] active:bg-gold-600 disabled:cursor-not-allowed disabled:bg-ink-760 disabled:text-white/35"
-            >
-              {loading && <Loader2Icon size={15} className="animate-spin" />}
-              {loading ? t('register.submitting') : t('register.title')}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <p className="mt-3 flex items-start gap-2 px-1 text-[11px] leading-relaxed text-faint">
-        <ShieldIcon size={13} className="mt-[1px] shrink-0" strokeWidth={1.75} />
-        {t('register.securityNote')}
-      </p>
-    </div>
+    <>
+      <p className="vx-auth-overline">{copy.overline}</p>
+      <h1 id="auth-form-title">{t('register.title')}</h1>
+      <p className="vx-auth-subtitle">{copy.registerSubtitle}</p>
+      <form onSubmit={handleSubmit} noValidate className="vx-auth-form" aria-busy={loading}>
+        <Field id="reg-email" label={t('register.email')} error={errors.email}>
+          <input id="reg-email" type="email" value={email} required autoComplete="email" placeholder="you@example.com"
+            onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors(({ email: _drop, ...rest }) => rest); }}
+            onBlur={() => { if (email && !isValidEmail(email)) setErrors(prev => ({ ...prev, email: t('register.error.email') })); }}
+            aria-invalid={errors.email ? true : undefined} aria-describedby={errors.email ? 'reg-email-error' : undefined} className={inputClass} />
+        </Field>
+        <PasswordField id="reg-password" label={t('register.password')} value={password}
+          onChange={(value) => { setPassword(value); if (errors.password) setErrors(({ password: _drop, ...rest }) => rest); }}
+          error={errors.password} hint={<p id="reg-password-hint" className="vx-auth-hint">{t('register.passwordHint')}</p>} />
+        {globalError && <div role="alert" className="vx-auth-error vx-auth-alert"><AlertTriangleIcon size={15} />{globalError}</div>}
+        <button type="submit" disabled={!canSubmit} className="vx-auth-submit">
+          {loading && <Loader2Icon size={18} className="animate-spin" />}
+          {loading ? t('register.submitting') : t('register.title')}
+          {!loading && <ArrowRightIcon size={21} strokeWidth={1.7} />}
+        </button>
+      </form>
+      <p className="vx-auth-legal">{copy.legalStart} <Link to="/legal/terms">{copy.legalTerms ?? t('home.footer.terms')}</Link> {copy.legalAnd} <Link to="/legal/privacy">{copy.legalPrivacy ?? t('home.footer.privacy')}</Link>.</p>
+    </>
   );
 }

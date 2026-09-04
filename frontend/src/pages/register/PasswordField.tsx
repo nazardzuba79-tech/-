@@ -30,26 +30,27 @@ export function PasswordField({
 
   return (
     <Field id={id} label={label} error={error} hint={hint}>
-      <div className="relative">
+      <div className="vx-auth-password">
         <input
           id={id}
+          required
           type={visible ? 'text' : 'password'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           placeholder="••••••••"
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-error` : undefined}
-          className={`${inputClass} pr-11 ${error ? 'border-down/70' : 'border-line'}`}
+          aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+          className={inputClass}
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? t('register.hidePassword') : t('register.showPassword')}
           aria-pressed={visible}
-          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-[6px] text-faint transition-colors duration-150 ease-out hover:text-white"
+          className="vx-auth-eye"
         >
-          {visible ? <EyeOffIcon size={15} /> : <EyeIcon size={15} />}
+          {visible ? <EyeOffIcon size={19} /> : <EyeIcon size={15} />}
         </button>
       </div>
     </Field>
