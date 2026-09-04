@@ -9,6 +9,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { CardPage } from './pages/CardPage';
 import { OtcPage } from './pages/OtcPage';
 import { WalletPage } from './pages/WalletPage';
+import { WalletPerformancePage } from './pages/wallet-performance/WalletPerformancePage';
 import { CopyTradingPage } from './pages/CopyTradingPage';
 import { ArbitragePage } from './pages/ArbitragePage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
@@ -105,6 +106,16 @@ export function App() {
           element={
             <RequireAuth>
               <WalletPage />
+            </RequireAuth>
+          }
+        />
+        {/* The detail view behind the Wallet's PnL card. Same guard as
+            /wallet — it reads the same authenticated portfolio endpoints. */}
+        <Route
+          path="/wallet/performance"
+          element={
+            <RequireAuth>
+              <WalletPerformancePage />
             </RequireAuth>
           }
         />

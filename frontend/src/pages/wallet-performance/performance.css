@@ -1,0 +1,46 @@
+/* Performance page only. Every selector sits under `.vx-wallet`, the same
+   scope the Wallet workspace already establishes, so nothing here can reach
+   Trade, Futures, Markets, Copy Trading or Admin. */
+
+/* The breakdown table is the one element that may genuinely need to scroll
+   sideways on a phone — seven numeric columns do not usefully compress. The
+   scroll is confined to this container so the PAGE never scrolls. */
+.vx-wallet .vx-perf-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d0d5dd transparent;
+}
+.vx-wallet .vx-perf-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.vx-wallet .vx-perf-scroll::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 3px;
+}
+.vx-wallet .vx-perf-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Charts are pointer-driven; on a touch screen the tooltip would need a tap
+   that also scrolls the page, so the crosshair simply does not arm. The
+   figures beside every chart carry the same numbers in text. */
+@media (hover: none) {
+  .vx-wallet .vx-perf-scroll {
+    scrollbar-width: auto;
+  }
+}
+
+/* Two lines of label, then clip — enough for the longest of the five in
+   any of the seven languages, and a fixed height so the five tiles keep a
+   common baseline whether their label wraps or not. */
+.vx-wallet .vx-perf-tile-label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+@media (min-width: 1024px) {
+  .vx-wallet .vx-perf-tile-label {
+    min-height: 0;
+  }
+}
