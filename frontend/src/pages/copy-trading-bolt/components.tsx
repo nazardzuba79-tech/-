@@ -48,6 +48,7 @@ import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { selectSyntheticPeriod, syntheticChartData } from '../../lib/syntheticCopyTrading';
+import { dailyPnlChart } from '../../lib/dailyPnlChart';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -362,6 +363,8 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
   onMode: (mode: ProfileChartMode) => void;
   periodData?: SyntheticPeriodAnalytics;
 }) {
+  const displayMode = periodData ? mode : 'ROI';
+  const displayedRoi = periodData?.roi ?? getRoiForPeriod(trader, period);
   const chart = useMemo(() => {
     if (periodData?.equity.length) {
       const base = periodData.equity[0].equity;
@@ -375,14 +378,18 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
   return (
     <section className="profile-panel profile-performance-chart">
       <div className="profile-panel-heading">
-        <div><span>Динамика стратегии</span><h2>{mode === 'ROI' ? 'ROI' : 'Реализованный PnL'}</h2></div>
+        <div><span>Динамика стратегии</span><h2>{displayMode === 'ROI' ? 'ROI' : 'Реализованный PnL'}</h2></div>
         <div className="profile-segmented" aria-label="Тип графика">
-          {(['ROI', 'PnL'] as const).map((item) => <button key={item} className={mode === item ? 'active' : ''} onClick={() => onMode(item)}>{item}</button>)}
+          {(['ROI', 'PnL'] as const).map((item) => <button key={item} className={displayMode === item ? 'active' : ''} disabled={item === 'PnL' && !periodData} title={item === 'PnL' && !periodData ? 'PnL недоступен без истории сделок' : undefined} onClick={() => onMode(item)}>{item}</button>)}
         </div>
+      </div>
+      <div className="chart-readouts" aria-label="Результат за выбранный период">
+        <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}>{formatPercent(displayedRoi)}</strong></div>
+        <div><span>{periodData ? 'Накопленный PnL · USDT' : 'PnL · история недоступна'}</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}>{periodData ? signedUsd(periodData.pnl) : '—'}</strong></div>
       </div>
       <div className="profile-chart-wrap">
         <div className="profile-chart-y">{chart.axis.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
-        <svg viewBox="0 0 900 270" preserveAspectRatio="none" role="img" aria-label={`${mode}, ${period}`}>
+        <svg viewBox="0 0 900 270" preserveAspectRatio="none" role="img" aria-label={`${displayMode}, ${period}`}>
           <defs><linearGradient id="profile-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#f7a600" stopOpacity=".2" /><stop offset="100%" stopColor="#f7a600" stopOpacity="0" /></linearGradient></defs>
           <path className="profile-chart-grid" d="M0 22H900M0 96H900M0 170H900M0 244H900" />
           <path className="profile-chart-area" d={chart.area} />
@@ -398,17 +405,26 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
 
 function DailyPnlChart({ data }: { data?: SyntheticPeriodAnalytics }) {
   const days = data?.daily ?? [];
-  const max = Math.max(1, ...days.map((day) => Math.abs(day.realizedPnl)));
+  const plot = dailyPnlChart(days);
   return (
     <section className="profile-panel daily-pnl-panel">
-      <div className="profile-panel-heading"><div><span>Дневной результат</span><h2>Daily PnL</h2></div><strong className={roiClass(data?.pnl ?? 0)}>{signedUsd(data?.pnl ?? 0)}</strong></div>
+      <div className="profile-panel-heading"><div><span>Дневной результат · USDT</span><h2>Daily PnL</h2></div><span>{data?.period}</span></div>
+      {days.length > 0 && <div className="chart-readouts">
+        <div><span>PnL за период</span><strong className={roiClass(plot.total)}>{signedUsd(plot.total)}</strong></div>
+        <div><span>Средний PnL / день</span><strong className={roiClass(plot.average)}>{signedUsd(plot.average)}</strong></div>
+      </div>}
       {days.length ? (
-        <div className="daily-bars" aria-label="Daily PnL chart">
-          <i className="daily-zero" />
-          {days.map((day) => <span key={day.date} title={`${day.date}: ${signedUsd(day.realizedPnl)}`} className={day.realizedPnl >= 0 ? 'gain' : 'loss'} style={{ height: `${Math.max(2, Math.abs(day.realizedPnl) / max * 46)}%` }} />)}
+        <div className="daily-plot" tabIndex={0} role="region" aria-label="Daily PnL: дневная история, прокрутка по горизонтали">
+          <svg viewBox={`-65 0 ${plot.width + 75} 236`} style={{ minWidth: Math.max(540, days.length * 9) }} role="img" aria-label={`Daily PnL: ${days.length} дней, ${signedUsd(plot.total)}`}>
+            {plot.ticks.map((tick, index) => <g key={index}><line className="daily-grid" x1="0" x2={plot.width} y1={tick.y} y2={tick.y} /><text x="-8" y={tick.y + 4} textAnchor="end">{formatAccountSize(tick.value)}</text></g>)}
+            <line className="daily-baseline" x1="0" x2={plot.width} y1={plot.zero} y2={plot.zero} />
+            {plot.bars.map(bar => <rect key={bar.date} x={bar.x} y={bar.y} width={bar.width} height={bar.height} className={bar.realizedPnl >= 0 ? 'daily-gain' : 'daily-loss'}><title>{bar.date}: {signedUsd(bar.realizedPnl)}</title></rect>)}
+            {[0, Math.floor((days.length - 1) / 2), days.length - 1].map((index, labelIndex) => <text key={labelIndex} x={index / Math.max(1, days.length - 1) * plot.width} y="229" textAnchor={labelIndex === 0 ? 'start' : labelIndex === 2 ? 'end' : 'middle'}>{days[index].date}</text>)}
+          </svg>
         </div>
       ) : <div className="profile-empty">Дневная история недоступна для этого трейдера.</div>}
       <div className="daily-legend"><span><i className="gain" /> Прибыльный день</span><span><i className="loss" /> Убыточный день</span></div>
+      {days.length > 0 && <p className="daily-note">Синтетическая история · один столбец = один день · линейная шкала. Все дни сохранены; на узком экране график прокручивается.</p>}
     </section>
   );
 }
@@ -537,9 +553,10 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       </nav>
 
       {activeTab === 'statistics' ? <>
-        <MetricsPanel metrics={metrics} period={period} />
-        <ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} />
-        <div className="profile-secondary-grid"><DailyPnlChart data={periodData} /><TradingProfilePanel trader={trader} metrics={metrics} periodData={periodData} /></div>
+        <div className="profile-analytics-workspace">
+          <aside><MetricsPanel metrics={metrics} period={period} /><TradingProfilePanel trader={trader} metrics={metrics} periodData={periodData} /></aside>
+          <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyPnlChart data={periodData} /></div>
+        </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} />
       </> : <TradesPanel trader={trader} periodData={periodData} />}
     </main>
