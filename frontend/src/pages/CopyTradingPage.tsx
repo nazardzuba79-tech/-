@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
+import './copy-trading-bolt/CopyTradingRefinement.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
