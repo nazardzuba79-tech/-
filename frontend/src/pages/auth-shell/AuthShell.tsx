@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2Icon, CandlestickChartIcon, CreditCardIcon, WalletCardsIcon } from 'lucide-react';
+import { CoinsIcon, CreditCardIcon, PercentIcon, WalletCardsIcon } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { HomeCryptoCard } from '../home/HomeCryptoCard';
@@ -22,9 +22,9 @@ import './auth-shell.css';
  * about submission, validation or error handling lives here.
  */
 
-const BENEFITS: { key: string; Icon: typeof CandlestickChartIcon; title: Key; text: Key }[] = [
-  { key: 'trading', Icon: CandlestickChartIcon, title: 'authShell.benefit.trading.title', text: 'authShell.benefit.trading.text' },
-  { key: 'clients', Icon: Building2Icon, title: 'authShell.benefit.clients.title', text: 'authShell.benefit.clients.text' },
+const BENEFITS: { key: string; Icon: typeof PercentIcon; title: Key; text: Key }[] = [
+  { key: 'trading', Icon: PercentIcon, title: 'authShell.benefit.trading.title', text: 'authShell.benefit.trading.text' },
+  { key: 'clients', Icon: CoinsIcon, title: 'authShell.benefit.clients.title', text: 'authShell.benefit.clients.text' },
   { key: 'card', Icon: CreditCardIcon, title: 'authShell.benefit.card.title', text: 'authShell.benefit.card.text' },
 ];
 
@@ -51,10 +51,11 @@ export function AuthShell({ switchPrompt, switchLabel, switchTo, children }: Aut
           </header>
 
           <div className="vx-auth-hero">
-            {/* Three lines, one idea each. Only the last carries gold. */}
+            {/* One sentence over three lines: the subject in warm white,
+                the qualifier it earns in gold. */}
             <h1>
               <span>{t('authShell.hero.line1')}</span>
-              <span>{t('authShell.hero.line2')}</span>
+              <span className="vx-auth-hero-gold">{t('authShell.hero.line2')}</span>
               <span className="vx-auth-hero-gold">{t('authShell.hero.line3')}</span>
             </h1>
             <p className="vx-auth-lead">{t('authShell.lead')}</p>
