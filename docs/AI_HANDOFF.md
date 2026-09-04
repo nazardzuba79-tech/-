@@ -879,3 +879,27 @@ both labels are correctly associated; no page errors. Responsive sweep at
 1920/1440/1366/1280/1024/768/430/390/375 on both routes: zero page-level
 horizontal overflow, and none of the four banned strings present at any width.
 No production deployment was performed and none is claimed.
+
+### 2026-09-04 — follow-up on the same branch: final left-side copy
+
+Copy-only alignment on `claude/auth-ui-refine`. Layout, warm background
+treatment, spacing, responsive behaviour, auth logic, Crypto Card artwork,
+inputs, form structure and routing are all untouched.
+
+Hero is now `Биржа / институционального / уровня` — "Биржа" in warm white
+(`#F4F1EA`), the second and third lines in the existing restrained gold
+(`#D9A441`); the type scale is the one already in place, unchanged. Supporting
+line and the three benefit rows replaced with the approved wording ("0%
+комиссия", "500+ цифровых активов", "VOLTEX Crypto Card").
+
+One non-string change came with it: the first two benefit icons were a
+candlestick and a building, which described the previous copy. They are now a
+percent mark and coins. Revert is one line each in `AuthShell.tsx` if not
+wanted.
+
+Verified: frontend `tsc -b` exit 0, `npm run build` clean. Browser check at
+1920/1440/1280/1024/768/430/375 — no page-level horizontal overflow, the hero's
+long middle word fits on one line at every width, hero colours confirmed by
+computed style, and none of "60+ стран", "300+ криптовалют", "низкие комиссии",
+"Платформа работает", "DIGITAL ASSET INFRASTRUCTURE" or the retired
+"Торгуйте./Управляйте./Платите." lines appear at any width.
