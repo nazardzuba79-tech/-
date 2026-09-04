@@ -14,6 +14,8 @@ function makePrismaMock(overrides: Partial<any> = {}) {
     user: {
       findUnique: jest.fn().mockResolvedValue(null),
       create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'user-1', ...data })),
+      // The country backfill writes through updateMany, guarded on country: null.
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       ...overrides.user,
     },
     auditLog: { create: jest.fn() },
@@ -31,12 +33,23 @@ function makePrismaMock(overrides: Partial<any> = {}) {
 
 const passThrough = (_req: any, _res: any, next: any) => next();
 
-function buildApp(prisma: any) {
+function buildApp(prisma: any, countryDetection?: any) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', authRouter(prisma, { limiters: { register: passThrough, login: passThrough } }));
+  app.use(
+    '/api/v1',
+    authRouter(prisma, {
+      limiters: { register: passThrough, login: passThrough },
+      // Default: a detector that never finds anything, so the existing tests
+      // exercise registration without any country machinery running.
+      countryDetection: countryDetection ?? { detect: async () => null },
+    })
+  );
   return app;
 }
+
+/** Lets a test wait for the fire-and-forget backfill to finish. */
+const flush = () => new Promise((r) => setImmediate(r));
 
 /** A real session token, as requireAuth would see it. */
 function decodeSession(token: string) {
@@ -186,6 +199,194 @@ describe('auth routes', () => {
     expect(prisma.user.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ referredById: undefined }) })
     );
+  });
+
+  it('asks for nothing but an email and a password', async () => {
+    const prisma = makePrismaMock();
+    const app = buildApp(prisma);
+
+    // No confirm, no phone, no country, no referral, no terms acceptance,
+    // no verification code — exactly what the form now collects.
+    const res = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'minimal@team.com', password: 'Correcthorsebattery' });
+
+    expect(res.status).toBe(201);
+    expect(typeof res.body.token).toBe('string');
+
+    const created = prisma.user.create.mock.calls[0][0].data;
+    expect(created.phone).toBeUndefined();
+    expect(created.country).toBeUndefined();
+  });
+
+  it('enforces the same password rule the form does: 10+ chars, one uppercase', async () => {
+    const app = buildApp(makePrismaMock());
+
+    const short = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'a@team.com', password: 'Short1' });
+    expect(short.status).toBe(400);
+
+    const noUpper = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'b@team.com', password: 'alllowercaseletters' });
+    expect(noUpper.status).toBe(400);
+
+    const ok = await request(app)
+      .post('/api/v1/auth/register')
+      .send({ email: 'c@team.com', password: 'Exactlyten1' });
+    expect(ok.status).toBe(201);
+  });
+
+  describe('best-effort country', () => {
+    it('fills an empty country after a successful registration', async () => {
+      const prisma = makePrismaMock();
+      const app = buildApp(prisma, { detect: async () => 'PL' });
+
+      await request(app)
+        .post('/api/v1/auth/register')
+        .send({ email: 'geo@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        // Guarded on country: null — this is what makes it impossible to
+        // overwrite a country the user chose, even under a race.
+        where: { id: 'user-1', country: null },
+        data: { country: 'PL' },
+      });
+    });
+
+    it('writes nothing when detection comes back empty', async () => {
+      const prisma = makePrismaMock();
+      const app = buildApp(prisma, { detect: async () => null });
+
+      await request(app)
+        .post('/api/v1/auth/register')
+        .send({ email: 'nogeo@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(prisma.user.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('does not fail the registration when detection throws', async () => {
+      const prisma = makePrismaMock();
+      const app = buildApp(prisma, {
+        detect: async () => {
+          throw new Error('geoip provider unreachable');
+        },
+      });
+
+      const res = await request(app)
+        .post('/api/v1/auth/register')
+        .send({ email: 'broken@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(res.status).toBe(201);
+      expect(typeof res.body.token).toBe('string');
+    });
+
+    it('never re-detects for a user who already has a country', async () => {
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 4);
+      const detect = jest.fn(async () => 'FR');
+      const prisma = makePrismaMock({
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'user-1',
+            email: 'settled@team.com',
+            passwordHash,
+            country: 'UA', // the user's own saved choice
+            blockedAt: null,
+            twoFactorEnabled: false,
+          }),
+          updateMany: jest.fn(),
+        },
+      });
+      const app = buildApp(prisma, { detect });
+
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'settled@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(res.status).toBe(200);
+      expect(detect).not.toHaveBeenCalled();
+      expect(prisma.user.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('fills a country on login for an account that predates detection', async () => {
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 4);
+      const prisma = makePrismaMock({
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'user-1',
+            email: 'legacy@team.com',
+            passwordHash,
+            country: null,
+            blockedAt: null,
+            twoFactorEnabled: false,
+          }),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+      });
+      const app = buildApp(prisma, { detect: async () => 'DE' });
+
+      await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'legacy@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: { id: 'user-1', country: null },
+        data: { country: 'DE' },
+      });
+    });
+
+    it('does not block a login when detection hangs or fails', async () => {
+      const passwordHash = await bcrypt.hash('Correcthorsebattery', 4);
+      const prisma = makePrismaMock({
+        user: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'user-1',
+            email: 'slow@team.com',
+            passwordHash,
+            country: null,
+            blockedAt: null,
+            twoFactorEnabled: false,
+          }),
+          updateMany: jest.fn(),
+        },
+      });
+      const app = buildApp(prisma, {
+        detect: async () => {
+          throw new Error('lookup timed out');
+        },
+      });
+
+      const res = await request(app)
+        .post('/api/v1/auth/login')
+        .send({ email: 'slow@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      expect(res.status).toBe(200);
+      expect(typeof res.body.token).toBe('string');
+    });
+
+    it('stores only a country code — never a KYC or verification claim', async () => {
+      const prisma = makePrismaMock();
+      const app = buildApp(prisma, { detect: async () => 'IT' });
+
+      await request(app)
+        .post('/api/v1/auth/register')
+        .send({ email: 'kyc@team.com', password: 'Correcthorsebattery' });
+      await flush();
+
+      const written = prisma.user.updateMany.mock.calls[0][0].data;
+      expect(Object.keys(written)).toEqual(['country']);
+      expect(written.country).toBe('IT');
+      // Nothing here touches KYC status or claims the address was verified.
+      expect(written).not.toHaveProperty('kycStatus');
+      expect(written).not.toHaveProperty('emailVerifiedAt');
+    });
   });
 
   it('registers everyone else as a plain USER', async () => {

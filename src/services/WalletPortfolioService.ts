@@ -42,6 +42,18 @@ export type PriceMap = Map<string, number | null>;
 const USD_PEGGED = new Set(['USDT', 'USDC', 'USD', 'DAI', 'TUSD']);
 
 /**
+ * How the presentation profile's total is shown split between the two
+ * account views. PRESENTATION ONLY — see the header comment: these are
+ * fractions of a display number, never balances. Nothing is written
+ * anywhere, nothing becomes spendable, and the real ledger keeps deciding
+ * every actual operation. They are fractions rather than fixed amounts so
+ * the split tracks live prices: when the holdings revalue, so do both
+ * figures, and they always still sum to the total.
+ */
+const PRESENTATION_SPOT_SHARE = 0.8;
+const PRESENTATION_FUTURES_SHARE = 0.2;
+
+/**
  * A real ledger balance, valued with the same quote the totals are summed
  * from. Carrying the price here is what keeps the Wallet's asset rows and
  * its portfolio total in agreement: one feed, one number, no chance of the
@@ -81,8 +93,24 @@ export interface WalletOverview {
     totalValueUsd: number;
     startedOn: string;
   } | null;
-  /** What the page should show as the portfolio total. */
+  /**
+   * What the Wallet page shows as the portfolio total, and how that total
+   * splits across the two account views.
+   *
+   * For an ordinary account these are simply the real ledger's own numbers,
+   * so the page keeps showing exactly what the account holds. For the one
+   * presentation profile they are derived from the presentation total, which
+   * is what keeps the header and the Spot/Futures figures under it telling
+   * the same story instead of mixing a presentation total with real ledger
+   * subtotals.
+   *
+   * Computed here, once, rather than in the frontend: the page renders these
+   * verbatim and never needs to know which kind of account it is looking at.
+   * `displaySpotUsd + displayFuturesUsd === displayTotalUsd` always holds.
+   */
   displayTotalUsd: number;
+  displaySpotUsd: number;
+  displayFuturesUsd: number;
   btcPriceUsd: number | null;
 }
 
@@ -92,6 +120,29 @@ export interface WalletPerformance {
   ageDays: number;
   /** Day the series begins, or null when there is no series at all. */
   startedOn: string | null;
+}
+
+/**
+ * The three display figures, kept together so they cannot drift apart.
+ *
+ * An ordinary account shows its real ledger, untouched. The presentation
+ * profile shows its presentation total split 80/20 — the futures share is
+ * taken as the remainder rather than computed independently, so the two
+ * always add back to exactly the total with no rounding gap.
+ */
+function displaySplit(
+  total: number,
+  ctx: { presentation: boolean; realSpotUsd: number; realFuturesUsd: number }
+): { displayTotalUsd: number; displaySpotUsd: number; displayFuturesUsd: number } {
+  if (!ctx.presentation) {
+    return {
+      displayTotalUsd: total,
+      displaySpotUsd: ctx.realSpotUsd,
+      displayFuturesUsd: ctx.realFuturesUsd,
+    };
+  }
+  const spot = total * PRESENTATION_SPOT_SHARE;
+  return { displayTotalUsd: total, displaySpotUsd: spot, displayFuturesUsd: total - spot };
 }
 
 export class WalletPortfolioService {
@@ -226,7 +277,11 @@ export class WalletPortfolioService {
         totalValueUsd: realTotal,
       },
       presentation,
-      displayTotalUsd: presentation ? presentation.totalValueUsd : realTotal,
+      ...displaySplit(presentation ? presentation.totalValueUsd : realTotal, {
+        presentation: Boolean(presentation),
+        realSpotUsd: spotValueUsd,
+        realFuturesUsd: futuresValueUsd,
+      }),
       btcPriceUsd: prices.get('BTC') ?? null,
     };
   }

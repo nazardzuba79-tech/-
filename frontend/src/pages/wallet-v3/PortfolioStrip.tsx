@@ -170,9 +170,13 @@ export function PortfolioStrip({
   // What the page shows as the portfolio. For an ordinary account this is
   // the real ledger; the Spot/Futures split below is always the real ledger,
   // because that is what those two wallets actually hold.
+  // All three come from the same backend fields, so the split under the
+  // header can never disagree with the header itself. The page does not know
+  // or ask what kind of account it is rendering — /wallet/overview decides
+  // that once (see WalletPortfolioService.displaySplit).
   const totalUsd = overview?.displayTotalUsd ?? null;
-  const spotUsd = overview?.real.spotValueUsd ?? null;
-  const futuresUsd = overview?.real.futuresValueUsd ?? null;
+  const spotUsd = overview?.displaySpotUsd ?? null;
+  const futuresUsd = overview?.displayFuturesUsd ?? null;
 
   return (
     <section

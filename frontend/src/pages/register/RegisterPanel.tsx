@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangleIcon, Loader2Icon, ShieldIcon } from 'lucide-react';
 import { api, ApiError, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
@@ -75,42 +75,34 @@ export function RegisterPanel() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [referralOpen, setReferralOpen] = useState(false);
   const [referral, setReferral] = useState('');
-  const [terms, setTerms] = useState(false);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
 
   // A visitor who arrived through a referral link (/:code -> stored by
-  // ReferralRedirectPage) gets the field pre-filled and opened, so the code
-  // they followed is visible rather than applied invisibly. They can still
-  // clear or replace it.
+  // ReferralRedirectPage) still has that code applied, but the form does not
+  // ask for one: referral codes reach registration by following a link, not
+  // by being typed. There is deliberately no referral input — the signup form
+  // is email and password, nothing else.
   useEffect(() => {
     try {
       const stored = localStorage.getItem(REFERRAL_CODE_STORAGE_KEY);
-      if (stored) {
-        setReferral(stored);
-        setReferralOpen(true);
-      }
+      if (stored) setReferral(stored);
     } catch {
       // no localStorage access — registration simply proceeds without one
     }
   }, []);
 
   const passwordOk = isValidPassword(password);
-  const canSubmit =
-    isValidEmail(email) && passwordOk && confirm.length > 0 && confirm === password && terms && !loading;
+  const canSubmit = isValidEmail(email) && passwordOk && !loading;
 
   function validate(): Record<string, string> {
     const next: Record<string, string> = {};
     if (!isValidEmail(email)) next.email = t('register.error.email');
     if (password.length < PASSWORD_MIN) next.password = t('register.error.passwordShort');
     else if (!hasUppercase(password)) next.password = t('register.error.passwordUppercase');
-    if (!confirm || confirm !== password) next.confirm = t('register.error.mismatch');
-    if (!terms) next.terms = t('register.error.terms');
     return next;
   }
 
@@ -196,87 +188,6 @@ export function RegisterPanel() {
                 </p>
               }
             />
-
-            <PasswordField
-              id="reg-confirm"
-              label={t('register.confirm')}
-              value={confirm}
-              onChange={(value) => {
-                setConfirm(value);
-                if (errors.confirm) setErrors(({ confirm: _drop, ...rest }) => rest);
-              }}
-              error={confirm.length > 0 ? errors.confirm : undefined}
-            />
-
-            {/* Optional referral. The backend accepts it as `ref` and
-                silently ignores a code that matches no user, so a typo
-                never blocks a signup — which is why nothing here claims
-                the code was accepted. */}
-            {referralOpen ? (
-              <div className="vx-collapse vx-open">
-                <div>
-                  <Field id="reg-referral" label={t('register.referralLabel')}>
-                    <input
-                      id="reg-referral"
-                      value={referral}
-                      onChange={(e) => setReferral(e.target.value)}
-                      placeholder="VLTX-XXXX"
-                      autoComplete="off"
-                      className={`${inputClass} border-line font-mono uppercase`}
-                    />
-                  </Field>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setReferralOpen(true)}
-                className="block text-[12px] font-medium text-home-muted transition-colors duration-150 ease-out hover:text-gold-400"
-              >
-                {t('register.referralToggle')}
-              </button>
-            )}
-
-            <div>
-              <label htmlFor="reg-terms" className="flex cursor-pointer items-start gap-2.5">
-                <input
-                  id="reg-terms"
-                  type="checkbox"
-                  checked={terms}
-                  onChange={(e) => {
-                    setTerms(e.target.checked);
-                    if (errors.terms) setErrors(({ terms: _drop, ...rest }) => rest);
-                  }}
-                  aria-invalid={errors.terms ? true : undefined}
-                  aria-describedby={errors.terms ? 'reg-terms-error' : undefined}
-                  className={`mt-[2px] h-[15px] w-[15px] shrink-0 cursor-pointer appearance-none rounded-[3px] border bg-ink-850 outline-none transition-colors duration-150 ease-out checked:border-gold-500 checked:bg-gold-500 ${
-                    errors.terms ? 'border-down/70' : 'border-[#2a3542]'
-                  }`}
-                />
-                <span className="text-[11.5px] leading-relaxed text-home-muted">
-                  {t('register.termsPrefix')}{' '}
-                  <Link
-                    to="/legal/terms"
-                    className="text-gold-400 transition-colors duration-150 hover:text-gold-500"
-                  >
-                    {t('home.footer.terms')}
-                  </Link>{' '}
-                  {t('register.termsAnd')}{' '}
-                  <Link
-                    to="/legal/privacy"
-                    className="text-gold-400 transition-colors duration-150 hover:text-gold-500"
-                  >
-                    {t('register.privacyAccusative')}
-                  </Link>
-                </span>
-              </label>
-              {errors.terms && (
-                <p id="reg-terms-error" className="mt-1.5 flex items-center gap-1.5 text-[11.5px] text-down">
-                  <AlertTriangleIcon size={12} />
-                  {errors.terms}
-                </p>
-              )}
-            </div>
 
             {globalError && (
               <div

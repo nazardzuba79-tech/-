@@ -54,6 +54,91 @@ function serviceFor(prisma: any, opts: { cfdConfigured?: boolean } = {}) {
   return { service: new WalletPortfolioService(prisma, marketData, cfdData), marketData, cfdData };
 }
 
+describe('wallet overview — the displayed Spot/Futures split', () => {
+  it('shows an ordinary account its own real ledger, untouched', async () => {
+    const { service } = serviceFor(prismaStub());
+    const o = await service.overview(NORMAL_USER);
+
+    // 250 USDT spot + 50 USDT futures, pegged at 1.
+    expect(o.displayTotalUsd).toBeCloseTo(300, 6);
+    expect(o.displaySpotUsd).toBeCloseTo(250, 6);
+    expect(o.displayFuturesUsd).toBeCloseTo(50, 6);
+    expect(o.displaySpotUsd).toBe(o.real.spotValueUsd);
+    expect(o.displayFuturesUsd).toBe(o.real.futuresValueUsd);
+  });
+
+  it('splits the profile account 80/20 off its presentation total', async () => {
+    const { service } = serviceFor(prismaStub());
+    const o = await service.overview(PROFILE_USER);
+
+    expect(o.displayTotalUsd).toBeCloseTo(o.presentation!.totalValueUsd, 6);
+    expect(o.displaySpotUsd).toBeCloseTo(o.displayTotalUsd * 0.8, 6);
+    expect(o.displayFuturesUsd).toBeCloseTo(o.displayTotalUsd * 0.2, 6);
+  });
+
+  it('always adds back to exactly the displayed total', async () => {
+    const { service } = serviceFor(prismaStub());
+    for (const user of [PROFILE_USER, NORMAL_USER, OTHER_ADMIN]) {
+      const o = await service.overview(user);
+      expect(o.displaySpotUsd + o.displayFuturesUsd).toBeCloseTo(o.displayTotalUsd, 6);
+    }
+  });
+
+  it('never shows the profile account the legacy ledger figures underneath', async () => {
+    const { service } = serviceFor(prismaStub());
+    const o = await service.overview(PROFILE_USER);
+
+    // The bug this replaced: a multi-million presentation total sitting above
+    // a few hundred dollars of real spot and zero futures.
+    expect(o.real.spotValueUsd).toBeCloseTo(250, 6);
+    expect(o.displaySpotUsd).not.toBeCloseTo(o.real.spotValueUsd, 6);
+    expect(o.displaySpotUsd).toBeGreaterThan(1_000_000);
+    expect(o.displayFuturesUsd).toBeGreaterThan(1_000_000);
+  });
+
+  it('moves with live prices rather than any fixed amount', async () => {
+    const cheap = serviceFor(prismaStub());
+    const before = await cheap.service.overview(PROFILE_USER);
+
+    // Same holdings, BTC doubled.
+    const dear = serviceFor(prismaStub());
+    dear.marketData.getTickers.mockResolvedValue(
+      TICKERS.map((t) => (t.pair === 'BTC/USDT' ? { ...t, lastPrice: '212800' } : t))
+    );
+    const after = await dear.service.overview(PROFILE_USER);
+
+    expect(after.displayTotalUsd).toBeGreaterThan(before.displayTotalUsd);
+    expect(after.displaySpotUsd).toBeCloseTo(after.displayTotalUsd * 0.8, 6);
+    expect(after.displayFuturesUsd).toBeCloseTo(after.displayTotalUsd * 0.2, 6);
+    // Not a constant: the split tracked the revaluation.
+    expect(after.displaySpotUsd).toBeGreaterThan(before.displaySpotUsd);
+  });
+
+  it('leaves a different admin on the real ledger split', async () => {
+    const { service } = serviceFor(prismaStub());
+    const o = await service.overview(OTHER_ADMIN);
+    expect(o.presentation).toBeNull();
+    expect(o.displaySpotUsd).toBe(o.real.spotValueUsd);
+    expect(o.displayFuturesUsd).toBe(o.real.futuresValueUsd);
+  });
+
+  it('writes nothing while producing the split', async () => {
+    const prisma = prismaStub();
+    const { service } = serviceFor(prisma);
+    await service.overview(PROFILE_USER);
+
+    // The 80/20 figures are computed for the response and nowhere else.
+    expect(prisma.balance.update).not.toHaveBeenCalled();
+    expect(prisma.balance.upsert).not.toHaveBeenCalled();
+    expect(prisma.balance.create).not.toHaveBeenCalled();
+    expect(prisma.balance.updateMany).not.toHaveBeenCalled();
+    expect(prisma.futuresBalance.update).not.toHaveBeenCalled();
+    expect(prisma.futuresBalance.upsert).not.toHaveBeenCalled();
+    expect(prisma.futuresBalance.create).not.toHaveBeenCalled();
+    expect(prisma.futuresBalance.updateMany).not.toHaveBeenCalled();
+  });
+});
+
 describe('wallet overview — who sees the presentation profile', () => {
   it('gives a normal user no presentation holdings at all', async () => {
     const { service } = serviceFor(prismaStub());

@@ -271,7 +271,10 @@ export const api = {
         totalValueUsd: number;
         startedOn: string;
       } | null;
+      /** Rendered verbatim; `displaySpotUsd + displayFuturesUsd === displayTotalUsd`. */
       displayTotalUsd: number;
+      displaySpotUsd: number;
+      displayFuturesUsd: number;
       btcPriceUsd: number | null;
     }>('/wallet/overview'),
 

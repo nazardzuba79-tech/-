@@ -22,10 +22,8 @@ type HeroTicker = Awaited<ReturnType<typeof api.getExternalTickers>>['tickers'][
 
 export function AuthPage() {
   const { t, lang } = useLanguage();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [tickers, setTickers] = useState<HeroTicker[]>([]);
@@ -181,7 +179,7 @@ export function AuthPage() {
           <PhoneMockup style={{ width: 240, position: 'relative', zIndex: 1 }} />
         </div>
 
-        <div style={{ ...styles.card, ...(mode === 'register' && !pendingToken ? styles.cardRegisterGlow : {}) }}>
+        <div style={styles.card}>
           {pendingToken ? (
             <>
               <div style={styles.twoFaTitle}>{t('auth.twoFaTitle')}</div>
@@ -223,15 +221,8 @@ export function AuthPage() {
           ) : (
             <>
               <div style={styles.tabs}>
-                <button
-                  style={{ ...styles.tab, ...(mode === 'login' ? styles.tabActive : {}) }}
-                  onClick={() => {
-                    setMode('login');
-                    setConfirmPassword('');
-                    setError(null);
-                  }}
-                  type="button"
-                >
+                {/* Already the active tab — this page is sign-in only. */}
+                <button style={{ ...styles.tab, ...styles.tabActive }} onClick={() => setError(null)} type="button">
                   {t('auth.login')}
                 </button>
                 {/* Registration has its own approved screen (see
@@ -242,13 +233,6 @@ export function AuthPage() {
                   {t('auth.register')}
                 </Link>
               </div>
-
-              {mode === 'register' && (
-                <>
-                  <p style={styles.registerSubline}>{t('auth.registerSubline')}</p>
-                  <div style={styles.cardWaitlistBadge}>{t('auth.cardWaitlistBadge')}</div>
-                </>
-              )}
 
               <form onSubmit={handleSubmit} style={styles.form}>
                 <FormField label={t('auth.email')}>
@@ -261,51 +245,24 @@ export function AuthPage() {
                     autoComplete="email"
                   />
                 </FormField>
-                <FormField label={t('auth.password')} hint={mode === 'register' ? t('auth.minChars') : undefined}>
+                <FormField label={t('auth.password')}>
                   <input
                     type="password"
                     required
-                    minLength={mode === 'register' ? 10 : undefined}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     style={styles.input}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                    autoComplete="current-password"
                   />
                 </FormField>
-                {mode === 'register' && (
-                  <FormField
-                    label={t('auth.confirmPassword')}
-                    hint={
-                      confirmPassword
-                        ? confirmPassword === password
-                          ? `✓ ${t('auth.passwordMatch')}`
-                          : t('auth.passwordMismatch')
-                        : undefined
-                    }
-                    hintColor={confirmPassword ? (confirmPassword === password ? 'var(--buy)' : 'var(--sell)') : undefined}
-                  >
-                    <input
-                      type="password"
-                      required
-                      minLength={10}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      style={styles.input}
-                      autoComplete="new-password"
-                    />
-                  </FormField>
-                )}
-
                 {error && <div style={styles.error}>{error}</div>}
 
                 <button type="submit" disabled={loading} style={styles.submit}>
-                  {loading ? t('auth.wait') : mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
+                  {loading ? t('auth.wait') : t('auth.signIn')}
                 </button>
 
-                {/* Shown on both tabs, not just Регистрация — these are
-                    general exchange advantages, not a registration-only
-                    pitch (unlike registerSubline/cardWaitlistBadge above,
-                    which talk about signing up specifically). */}
+                {/* General exchange advantages, shown under the sign-in
+                    form — not a registration pitch. */}
                 <div style={styles.featureRow}>
                   <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
                   <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
@@ -589,10 +546,6 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 24px 70px rgba(0,0,0,0.4)',
     transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
   },
-  cardRegisterGlow: {
-    borderColor: 'rgba(24,200,255,0.4)',
-    boxShadow: '0 24px 70px rgba(0,0,0,0.4), 0 0 0 1px rgba(24,200,255,0.15), 0 0 40px rgba(24,200,255,0.12)',
-  },
   tabs: {
     display: 'flex',
     gap: 4,
@@ -615,26 +568,6 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'var(--panel)',
     color: 'var(--text-primary)',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-  },
-  registerSubline: {
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-    lineHeight: 1.5,
-    margin: '-14px 0 16px',
-  },
-  cardWaitlistBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    background: 'linear-gradient(90deg, var(--accent-dim), rgba(0,214,143,0.12))',
-    border: '1px solid var(--accent)',
-    borderRadius: 10,
-    padding: '9px 12px',
-    fontSize: 11,
-    fontWeight: 600,
-    color: 'var(--text-primary)',
-    lineHeight: 1.4,
-    marginBottom: 20,
   },
   featureRow: {
     display: 'flex',

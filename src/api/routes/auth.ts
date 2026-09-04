@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 import { generateReferralCode } from '../../services/referralCode';
+import { CountryDetectionService } from '../../services/CountryDetectionService';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -120,9 +121,38 @@ export function authRouter(
      * their own test.
      */
     limiters?: Partial<Record<'register' | 'login', RequestHandler>>;
+    /** Injected in tests; production builds the real one. */
+    countryDetection?: CountryDetectionService;
   } = {}
 ): Router {
   const router = Router();
+  const countryDetection = deps.countryDetection ?? new CountryDetectionService();
+
+  /**
+   * Fill in an account's country from the request, once, if it has none.
+   *
+   * Fire-and-forget on purpose. It runs after the response has already been
+   * sent, so it cannot add a millisecond to a signup or a sign-in, and every
+   * failure path inside it ends in "no country" rather than an error. A
+   * country the user has saved is never touched: the update is conditional on
+   * the column still being null, so even a race with the profile form cannot
+   * overwrite their choice.
+   *
+   * This is a convenience, not a claim. See CountryDetectionService — the
+   * value is never presented as verified and never feeds KYC.
+   */
+  function backfillCountry(userId: string, req: Request): void {
+    void (async () => {
+      try {
+        const code = await countryDetection.detect(req);
+        if (!code) return;
+        await prisma.user.updateMany({ where: { id: userId, country: null }, data: { country: code } });
+      } catch {
+        // Detection is best-effort; nothing about the account depends on it.
+      }
+    })();
+  }
+
   const limit = {
     register: deps.limiters?.register ?? registerLimiter,
     login: deps.limiters?.login ?? loginLimiter,
@@ -182,6 +212,9 @@ export function authRouter(
     // authentication reads that column any more; it is informational.
     const session = await createSession(prisma, user.id, req);
     res.status(201).json({ token: issueToken(user.id, session.id) });
+
+    // After the response: the new account has no country yet, so offer one.
+    backfillCountry(user.id, req);
   });
 
   router.post('/auth/login', limit.login, async (req, res) => {
@@ -219,6 +252,9 @@ export function authRouter(
 
     const session = await createSession(prisma, user.id, req);
     res.json({ token: issueToken(user.id, session.id) });
+
+    // Accounts that predate country detection get theirs on a later sign-in.
+    if (!user.country) backfillCountry(user.id, req);
   });
 
   router.post('/auth/login/2fa', twoFactorLimiter, async (req, res) => {
@@ -267,6 +303,8 @@ export function authRouter(
 
     const session = await createSession(prisma, user.id, req);
     res.json({ token: issueToken(user.id, session.id) });
+
+    if (!user.country) backfillCountry(user.id, req);
   });
 
   return router;
