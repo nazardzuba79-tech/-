@@ -15,6 +15,11 @@ import { TradePage } from '../pages/TradePage';
 import { HomePage } from '../pages/home/HomePage';
 import { LegalPage } from '../pages/LegalPage';
 import '../index.css';
+// Home, Wallet and Register use the repository's scoped Tailwind utility
+// layer. Production receives it through SettingsPage's lazy route import;
+// the isolated review entry does not import SettingsPage, so it must opt in
+// explicitly or those pages render as unstyled document flow on staging.
+import '../pages/settings-arctic/tailwind-utilities.css';
 import './review.css';
 
 // A separate, public component-review entry point, NOT an authenticated app.
