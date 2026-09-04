@@ -1,0 +1,5 @@
+.review-notice { position: relative; z-index: 300; display: grid; gap: 6px; padding: 12px 18px; background: #fff4ce; color: #473500; font: 12px/1.45 system-ui, sans-serif; border-bottom: 1px solid #d4b455; }
+.review-notice strong { letter-spacing: .06em; }
+.review-notice nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.review-notice a, .review-unavailable a { color: #674800; text-decoration: underline; }
+.review-unavailable { padding: 32px; color: #f5f5f5; }

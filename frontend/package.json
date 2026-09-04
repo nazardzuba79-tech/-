@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "node scripts/workflow.mjs build",
+    "build:review": "node scripts/workflow.mjs build-review",
+    "preview": "node scripts/workflow.mjs preview"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
