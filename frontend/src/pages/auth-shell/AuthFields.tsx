@@ -100,6 +100,11 @@ export function AuthPasswordField({
         />
         <button
           type="button"
+          // Keep the caret in the field: without this the mousedown blurs
+          // the input first, and a click that lands during the resulting
+          // re-render can be swallowed — the toggle then appears to fire
+          // only every other press.
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? t('register.hidePassword') : t('register.showPassword')}
           aria-pressed={visible}

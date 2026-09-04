@@ -362,11 +362,26 @@
 
 .vx-auth-password { position: relative; }
 .vx-auth-password .vx-auth-input { padding-right: 46px; }
+
+/* Browsers draw their own controls INSIDE a password field, at the right
+   edge — precisely where this toggle sits. Edge/Chromium on Windows adds
+   ::-ms-reveal, a second eye: the visitor then sees two, and the native one
+   only reveals while it is held down, so clicking it reads as a toggle that
+   does not toggle. We ship our own control, so the duplicates go. */
+.vx-auth-password .vx-auth-input::-ms-reveal,
+.vx-auth-password .vx-auth-input::-ms-clear {
+  display: none;
+}
+
 .vx-auth-toggle {
   position: absolute;
   right: 7px;
   top: 50%;
   transform: translateY(-50%);
+  /* Above anything the browser or a password manager injects into the
+     field, so the click always lands on this button and not on an overlay
+     sitting over it. */
+  z-index: 2;
   display: grid;
   place-items: center;
   width: 34px;
