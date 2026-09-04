@@ -798,3 +798,15 @@ balance, search, hide-zero, three sort columns and all five PnL periods
 exercised by click. Route regression sweep over 13 routes: all render, no
 error boundaries, no new console errors. No production trade, transfer or
 withdrawal was placed.
+
+## 2026-09-04 — Analytics approved-design refinement
+
+- Agent: Codex.
+- Implementation commit: `589bedcb7f40a4e88d3d40afc87721e51481a20c`.
+- Branch: `codex/analytics-v0-refine`, isolated from latest `origin/main` at `32f7bbe48eaa18ca731713a0095d87a315512ef8`, as explicitly requested by the owner. No merge, push or deployment.
+- Area: Analytics only. Material files: `frontend/src/pages/AnalyticsPage.tsx` and the new `frontend/src/pages/analytics/` components, scoped styles, snapshot hook, liquidity model, tests and QA report.
+- Implemented: approved light workspace and dense local histogram; exact local ranges; 220/200/180 asset buckets; multi-exchange filters; one canonical dataset for period totals, curves, walls, voids and clusters; fixed-source zoom that preserves volume; semantic risk presentation and requested 25/20/15/25/15 weights.
+- Preserved from the integrated Claude/Codex baseline: application Nav, market ticker, Footer, authentication, protected route and admin gating; existing availability-aware Analytics backend; every unrelated page and all trading/balance/backend logic. The six staged edits in the owner's original `codex-test` checkout were not changed.
+- Data honesty: default consumes the existing Analytics endpoint and leaves unsupported metrics unavailable. Explicit demo mode labels the synthetic reference fixtures. No provider freshness is invented. Cascade Risk stays unavailable until all five inputs exist; liquidation shares are not substituted for position imbalance.
+- Validation: frontend TypeScript and production build passed; 3 relevant Jest suites / 35 tests passed; staged diff whitespace check passed. Browser QA on the actual frontend with local test API responses covered both modes at 1920/1440/1366/1024/768/390/375, no page-level overflow, all asset/range/period/exchange controls, internal mobile scrolling, empty selection, API error/retry, unavailable sources and access redirects. No Analytics runtime errors during normal interactions. Non-blocking bundle-size and existing React Router future-flag warnings remain.
+- Limitations / next step: review the branch and screenshots. Live liquidation/history and cross-venue risk providers remain unconnected; the supplemental demo panels are illustrative. Browser QA did not establish real provider connectivity. New Analytics copy is Russian, matching the archive. Detailed evidence and file list: `frontend/src/pages/analytics/README.md`.
