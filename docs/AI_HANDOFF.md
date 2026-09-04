@@ -1019,3 +1019,43 @@ to `/login?next=%2Fwallet%2Fperformance`.
 - The breakdown keeps the most recent 60 buckets and reports the count.
 - Flow valuation inherits the engine's existing caveat: flows are valued at
   today's price, exact for stablecoins and approximate otherwise.
+
+## 2026-09-04 — Claude (Opus 5) — `claude/review-ready`: both approved features together
+
+Review branch cut fresh from `origin/main` (`32f7bbe`). Not merged, not
+deployed, Render untouched.
+
+Seven commits cherry-picked, no branch histories merged: the six from
+`claude/ui-polish-ready` (auth split screen, final copy, benefit icons,
+password checklist, header balance removal, its handoff note) and the one
+from `claude/wallet-pnl-detail` (the performance page).
+
+One conflict, in `docs/AI_HANDOFF.md`: both branches append their own entry
+at the end of the file. Resolved by keeping both entries in order — nothing
+was dropped. `frontend/src/lib/i18n.tsx` auto-merged cleanly because the two
+features add keys at different anchors (`auth.backToLogin` /
+`register.password` for auth, `wallet.notEnoughHistory` for performance);
+verified afterwards rather than assumed: 1036 keys per dictionary, all seven
+equal and unique, 26 auth keys and 40 `perf.` keys present, and the retired
+`register.passwordHint` gone.
+
+Every non-overlapping file is byte-identical to its source branch, and the
+tree differs from `origin/main` in exactly 23 paths — `src/`, `prisma/`,
+`render.yaml`, Copy Trading, Analytics, Markets, Trade, Futures, Admin, the
+Crypto Card artwork and `lib/api.ts` are all untouched.
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean; auth + wallet/performance +
+admin-profile suites 98 tests passing. Browser smoke at 1440/1024/390 over
+`/register`, `/login`, `/wallet`, `/wallet/performance`, `/trade`,
+`/futures`, `/copy-trading` — 21 combinations, no horizontal overflow, no
+error boundary, no console or page errors, and on every authenticated route
+the header carries Кошелёк/Пополнить/language/Профиль with no balance
+control. Registration is email + password only with the two-line checklist
+and correct CTA gating; login shares the shell and shows no checklist. The
+Wallet PnL card opens `/wallet/performance?period=7d`; all five periods
+render (1Y honestly empty on a 140-day account), the daily-PnL histogram's
+tallest bar is 2.0x-5.7x its median rather than one spike, and all-time PnL
+reads +$13,501.44 (+25.28%) on an account holding a $40,000 deposit — the
+deposit still excluded.
