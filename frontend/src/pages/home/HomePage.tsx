@@ -3,7 +3,9 @@ import { HomeHero } from './HomeHero';
 import { HomeTicker } from './HomeTicker';
 import { HomeMarketOverview } from './HomeMarketOverview';
 import { HomeCardSection } from './HomeCardSection';
+import { HomeCopyTrading } from './HomeCopyTrading';
 import { HomeMarkets } from './HomeMarkets';
+import { HomeInstitutional } from './HomeInstitutional';
 import { HomeFaq } from './HomeFaq';
 import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
@@ -14,7 +16,7 @@ import './home.css';
  * The VOLTEX homepage, in the approved section order:
  *
  *   header · hero · market strip · market overview · Crypto Card ·
- *   markets + secondary card · FAQ · footer
+ *   Copy Trading · markets · institutional standards · FAQ · footer
  *
  * One market hook feeds every section, so the whole page costs a single
  * ticker poll plus three one-shot requests rather than a fetch per block.
@@ -40,7 +42,13 @@ export function HomePage() {
           <HomeCardSection />
         </Reveal>
         <Reveal>
+          <HomeCopyTrading />
+        </Reveal>
+        <Reveal>
           <HomeMarkets market={market} />
+        </Reveal>
+        <Reveal>
+          <HomeInstitutional />
         </Reveal>
         <Reveal>
           <HomeFaq />
