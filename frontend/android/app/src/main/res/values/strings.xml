@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">VOLTEX</string>
-    <string name="title_activity_main">VOLTEX</string>
-    <string name="package_name">com.voltex.exchange</string>
-    <string name="custom_url_scheme">com.voltex.exchange</string>
-</resources>

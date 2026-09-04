@@ -1,8 +1,0 @@
-{
-	"appId": "com.voltex.exchange",
-	"appName": "VOLTEX",
-	"webDir": "dist",
-	"android": {
-		"allowMixedContent": false
-	}
-}

@@ -1,0 +1,6 @@
+import React from 'react';
+import { regimeSignals } from '../data/market';
+import { Eyebrow, InfoDot } from './ui/primitives';
+import { toneClass } from '../utils/tone';
+
+export function MarketRegime(){return <section className="grid bg-ink-panel lg:grid-cols-[minmax(0,34%)_minmax(0,66%)]"><div className="border-b border-ink-line px-7 py-8 lg:border-b-0 lg:border-r"><Eyebrow className="text-accent-bright">Режим рынка</Eyebrow><p className="mt-4 text-[34px] font-bold leading-none tracking-[0.01em] text-accent-bright">RISK-ON</p><p className="mt-4 max-w-sm text-[12.5px] leading-[1.6] text-ink-mute">Классификация на основе цены, OI, funding, потоков и реализованной волатильности.</p></div><dl className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">{regimeSignals.map((signal,index)=><div key={signal.label} className={`border-b border-ink-line px-5 py-7 sm:[&:nth-child(3n)]:border-r-0 lg:border-b-0 ${index===regimeSignals.length-1?'':'border-r'}`}><dt className="text-[11px] text-ink-mute">{signal.label}</dt><div className="mt-3"><InfoDot hint={signal.hint} /></div><dd className={`mt-3 text-[13px] font-medium ${toneClass(signal.tone,true)}`}>{signal.value}</dd></div>)}</dl></section>}
