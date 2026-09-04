@@ -1,13 +1,21 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AlertTriangleIcon, Loader2Icon, ShieldIcon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  AlertTriangleIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckIcon,
+  CircleIcon,
+  Loader2Icon,
+  LockKeyholeIcon,
+  XIcon,
+} from 'lucide-react';
 import { api, ApiError, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
 import { readNext } from '../../lib/returnTo';
 import { useLanguage } from '../../lib/i18n';
 import { REFERRAL_CODE_STORAGE_KEY } from '../ReferralRedirectPage';
-import { Field, inputClass } from './Field';
-import { PasswordField } from './PasswordField';
+import { AuthField, AuthPasswordField } from '../auth-shell/AuthFields';
 
 /**
  * The registration form, wired to the exchange's real auth.
@@ -19,17 +27,16 @@ import { PasswordField } from './PasswordField';
  * is no email code, no verification screen and no second step — the token is
  * stored and the user lands in the platform.
  *
- * Nothing here declares success on a timer: the navigation happens only
- * after the server has answered with a token.
+ * Nothing here declares success on a timer, and the form shows no message
+ * of its own after a submit: either the server answered with a token and
+ * this component navigates away, or it answered with an error and that
+ * error is what appears.
  */
 
 /** Minimum accepted by the backend (registerSchema: z.string().min(10)).
- *  The approved design's hint reads "8+"; the server rejects 8- and
- *  9-character passwords, so the UI states the threshold that actually
- *  applies rather than one that would guarantee a failed submit. The hint
- *  keeps the approved two-part shape and adds no further requirements —
- *  no digit, no special character, no separate lowercase rule, no
- *  checklist. */
+ *  The hint states the threshold that actually applies, and adds no
+ *  further requirements — no digit, no special character, no separate
+ *  lowercase rule, no checklist. */
 const PASSWORD_MIN = 10;
 
 function isValidEmail(value: string): boolean {
@@ -66,6 +73,29 @@ function useServerErrorLocalizer() {
     if (message.startsWith('Too many registration attempts')) return t('register.error.tooManyAttempts');
     return message;
   };
+}
+
+/**
+ * One line of the live password checklist.
+ *
+ * `state` is deliberately three-valued rather than a boolean: an empty
+ * field is not a failing field, and marking it red before the visitor has
+ * typed anything would be scolding them for not having started.
+ *
+ * The state reaches the reader three ways — a distinct glyph, a word only
+ * assistive tech sees, and the colour — so it never depends on colour
+ * alone, and a screen reader hears "выполнено"/"не выполнено" rather than
+ * inferring it from an icon name.
+ */
+function Requirement({ state, label, met, unmet }: { state: 'idle' | 'met' | 'unmet'; label: string; met: string; unmet: string }) {
+  const Icon = state === 'met' ? CheckIcon : state === 'unmet' ? XIcon : CircleIcon;
+  return (
+    <li className={`vx-auth-req${state === 'met' ? ' vx-auth-req-met' : state === 'unmet' ? ' vx-auth-req-unmet' : ''}`}>
+      <Icon size={state === 'idle' ? 8 : 13} strokeWidth={state === 'idle' ? 2 : 2.4} aria-hidden="true" />
+      {label}
+      {state !== 'idle' && <span className="vx-auth-sr"> — {state === 'met' ? met : unmet}</span>}
+    </li>
+  );
 }
 
 export function RegisterPanel() {
@@ -140,81 +170,100 @@ export function RegisterPanel() {
   }
 
   return (
-    <div className="w-full max-w-[430px]">
-      <div className="vx-enter rounded-[12px] border border-[#202a35] bg-ink-800 p-6 sm:p-7">
-        <div className="vx-step">
-          <h2 className="text-[21px] font-semibold tracking-[-0.01em] text-white">{t('register.title')}</h2>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-home-muted">{t('register.subtitle')}</p>
+    <div className="vx-auth-body vx-auth-enter">
+      <div className="vx-auth-overline">{t('authShell.overline.register')}</div>
+      <h1>{t('register.title')}</h1>
+      <p className="vx-auth-sub">{t('register.subtitle')}</p>
 
-          <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-[18px]">
-            <Field id="reg-email" label={t('register.email')} error={errors.email}>
-              <input
-                id="reg-email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(({ email: _drop, ...rest }) => rest);
-                }}
-                onBlur={() => {
-                  if (email && !isValidEmail(email)) {
-                    setErrors((prev) => ({ ...prev, email: t('register.error.email') }));
-                  }
-                }}
-                autoComplete="email"
-                placeholder="name@example.com"
-                aria-invalid={errors.email ? true : undefined}
-                aria-describedby={errors.email ? 'reg-email-error' : undefined}
-                className={`${inputClass} ${errors.email ? 'border-down/70' : 'border-line'}`}
-              />
-            </Field>
-
-            <PasswordField
-              id="reg-password"
-              label={t('register.password')}
-              value={password}
-              onChange={(value) => {
-                setPassword(value);
-                if (errors.password) setErrors(({ password: _drop, ...rest }) => rest);
-              }}
-              error={errors.password}
-              hint={
-                <p
-                  className={`mt-1.5 text-[10.5px] transition-colors duration-150 ease-out ${
-                    password.length > 0 && passwordOk ? 'text-up' : 'text-faint'
-                  }`}
-                >
-                  {t('register.passwordHint')}
-                </p>
+      <form onSubmit={handleSubmit} noValidate className="vx-auth-form">
+        <AuthField id="reg-email" label={t('register.email')} error={errors.email}>
+          <input
+            id="reg-email"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email) setErrors(({ email: _drop, ...rest }) => rest);
+            }}
+            onBlur={() => {
+              if (email && !isValidEmail(email)) {
+                setErrors((prev) => ({ ...prev, email: t('register.error.email') }));
               }
-            />
+            }}
+            autoComplete="email"
+            placeholder="name@example.com"
+            aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? 'reg-email-error' : undefined}
+            className={`vx-auth-input${errors.email ? ' vx-auth-input-error' : ''}`}
+          />
+        </AuthField>
 
-            {globalError && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-[7px] border border-down/40 bg-down/[0.08] px-3 py-2.5 text-[11.5px] text-down"
-              >
-                <AlertTriangleIcon size={13} className="mt-[1px] shrink-0" />
-                {globalError}
-              </div>
-            )}
+        <AuthPasswordField
+          id="reg-password"
+          label={t('register.password')}
+          value={password}
+          onChange={(value) => {
+            setPassword(value);
+            if (errors.password) setErrors(({ password: _drop, ...rest }) => rest);
+          }}
+          error={errors.password}
+          describedBy="reg-password-reqs"
+          warn={password.length > 0 && !passwordOk}
+        />
 
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="flex h-[48px] w-full items-center justify-center gap-2 rounded-[7px] bg-gold-500 text-[13.5px] font-semibold text-ink-950 transition-[background-color,transform] duration-150 ease-out hover:bg-gold-400 active:translate-y-[1px] active:bg-gold-600 disabled:cursor-not-allowed disabled:bg-ink-760 disabled:text-white/35"
-            >
-              {loading && <Loader2Icon size={15} className="animate-spin" />}
-              {loading ? t('register.submitting') : t('register.title')}
-            </button>
-          </form>
-        </div>
-      </div>
+        {/* Why the button is disabled, said plainly and while it is still
+            actionable. Rendered outside the field (not through AuthField's
+            `hint`, which an error message would replace) so it is always on
+            screen, and always two rows tall so nothing below it shifts as
+            the states change. aria-live announces each change once. */}
+        <ul id="reg-password-reqs" className="vx-auth-reqs" aria-live="polite">
+          <Requirement
+            state={password.length === 0 ? 'idle' : password.length >= PASSWORD_MIN ? 'met' : 'unmet'}
+            label={t('register.req.length')}
+            met={t('register.req.met')}
+            unmet={t('register.req.unmet')}
+          />
+          <Requirement
+            state={password.length === 0 ? 'idle' : hasUppercase(password) ? 'met' : 'unmet'}
+            label={t('register.req.uppercase')}
+            met={t('register.req.met')}
+            unmet={t('register.req.unmet')}
+          />
+        </ul>
 
-      <p className="mt-3 flex items-start gap-2 px-1 text-[11px] leading-relaxed text-faint">
-        <ShieldIcon size={13} className="mt-[1px] shrink-0" strokeWidth={1.75} />
+        {globalError && (
+          <div role="alert" className="vx-auth-alert">
+            <AlertTriangleIcon size={14} />
+            {globalError}
+          </div>
+        )}
+
+        <button type="submit" disabled={!canSubmit} className="vx-auth-submit">
+          {loading ? <Loader2Icon size={16} className="vx-auth-spin" /> : null}
+          {loading ? t('register.submitting') : t('register.title')}
+          {!loading && <ArrowRightIcon size={16} />}
+        </button>
+      </form>
+
+      {/* A statement, not a gate: there is no checkbox to tick and nothing
+          here blocks the submit. */}
+      <p className="vx-auth-legal">
+        {t('register.legal.prefix')}
+        <Link to="/legal/terms">{t('register.legal.terms')}</Link>
+        {t('register.legal.mid')}
+        <Link to="/legal/privacy">{t('register.legal.privacy')}</Link>
+        {t('register.legal.suffix')}
+      </p>
+
+      <p className="vx-auth-security">
+        <LockKeyholeIcon size={14} strokeWidth={1.8} />
         {t('register.securityNote')}
       </p>
+
+      <Link to="/" className="vx-auth-back">
+        <ArrowLeftIcon size={12} />
+        {t('register.backHome')}
+      </Link>
     </div>
   );
 }
