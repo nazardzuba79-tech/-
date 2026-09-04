@@ -26,4 +26,3 @@ export const HOME_INSTITUTION_NAMES = [
   'Saxo Bank',
   'UBS Switzerland',
 ] as const;
-

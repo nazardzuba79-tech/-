@@ -49,7 +49,6 @@ function PerformanceLine({ trader }: { trader: Trader }) {
     </svg>
   );
 }
-
 function TraderSpotlight({ trader }: { trader: Trader }) {
   const { lang, t } = useLanguage();
   const locale = localeOf(lang);
@@ -161,4 +160,3 @@ export function HomeCopyTrading() {
     </section>
   );
 }
-

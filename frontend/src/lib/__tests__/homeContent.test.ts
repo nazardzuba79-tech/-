@@ -30,4 +30,3 @@ describe('homepage product presentation', () => {
     expect(new Set(HOME_INSTITUTION_NAMES).size).toBe(HOME_INSTITUTION_NAMES.length);
   });
 });
-
