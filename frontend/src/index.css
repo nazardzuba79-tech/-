@@ -1831,6 +1831,22 @@ a:hover > .nav-card-icon {
   }
 }
 
+/* The login page's Crypto Card banner.
+   The artwork is a fixed 440px-wide image carrying a 3D tilt, so its
+   bounding box measures ~510px — wider than a phone viewport. Below 560px
+   that was pushing the whole /login page into horizontal scroll (~159px at
+   390, ~174px at 375). Clipping the banner leaves the approved artwork at
+   exactly its designed size, position and tilt; it only stops the part that
+   already sat outside the screen from dragging the page sideways with it.
+   `clip` rather than `hidden` so this never becomes a nested scroll
+   container — same choice the page-level resets in home.css, register.css
+   and wallet-v3/wallet.css already make. */
+@media (max-width: 560px) {
+  .auth-perks-banner {
+    overflow-x: clip;
+  }
+}
+
 .toast-item {
   animation: toast-slide-in 0.2s ease-out;
 }
