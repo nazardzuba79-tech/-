@@ -6,14 +6,6 @@ import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import { verifyAndConsume2FACode } from '../../services/TwoFactorService';
 import { generateReferralCode } from '../../services/referralCode';
-import {
-  EmailVerificationService,
-  MAX_VERIFICATION_ATTEMPTS,
-  RESEND_COOLDOWN_MS,
-  VERIFICATION_EXPIRY_MS,
-  maskEmail,
-} from '../../services/EmailVerificationService';
-import { VerificationEmailService } from '../../services/VerificationEmailService';
 
 // Real login metadata for the account's Security Log — never a placeholder.
 // req.ip depends on `trust proxy` being set (see index.ts) to reflect the
@@ -60,15 +52,6 @@ const registerSchema = z.object({
   ref: z.string().max(32).optional(),
 });
 
-const verifyEmailSchema = z.object({
-  challengeId: z.string().uuid(),
-  code: z.string().regex(/^\d{6}$/, 'code must be six digits'),
-});
-
-const resendVerificationSchema = z.object({
-  challengeId: z.string().uuid(),
-});
-
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
@@ -90,30 +73,8 @@ const loginLimiter = rateLimit({
   message: { error: 'Too many login attempts, try again later' },
 });
 
-// A six-digit code is a million possibilities; the per-challenge attempt
-// counter caps guesses against one challenge, and this caps how fast a
-// caller can cycle through challenges from one address.
-const verifyEmailLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  limit: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many verification attempts, try again later' },
-});
-
-// Each resend sends a real email. The per-challenge cooldown is the primary
-// control; this stops one address from driving resends across many
-// challenges (i.e. using the platform as a mail cannon).
-const resendVerificationLimiter = rateLimit({
-  windowMs: 60 * 60_000,
-  limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many verification emails requested, try again later' },
-});
-
-// Registration creates rows and sends mail; unlimited attempts from one
-// address is how a signup form becomes a spam relay.
+// Registration creates a real account and a real session; unlimited
+// attempts from one address is how a signup form becomes an account farm.
 const registerLimiter = rateLimit({
   windowMs: 60 * 60_000,
   limit: 20,
@@ -150,8 +111,6 @@ function issuePendingToken(userId: string): string {
 export function authRouter(
   prisma: PrismaClient,
   deps: {
-    emailVerification?: EmailVerificationService;
-    verificationEmail?: VerificationEmailService;
     /**
      * Override the per-route limiters. Production passes nothing and gets
      * the real ones defined above; tests that are exercising route logic
@@ -160,16 +119,12 @@ export function authRouter(
      * one test case into the next. The limiters themselves are covered by
      * their own test.
      */
-    limiters?: Partial<Record<'register' | 'verifyEmail' | 'resendVerification' | 'login', RequestHandler>>;
+    limiters?: Partial<Record<'register' | 'login', RequestHandler>>;
   } = {}
 ): Router {
   const router = Router();
-  const emailVerification = deps.emailVerification ?? new EmailVerificationService(prisma);
-  const verificationEmail = deps.verificationEmail ?? new VerificationEmailService();
   const limit = {
     register: deps.limiters?.register ?? registerLimiter,
-    verifyEmail: deps.limiters?.verifyEmail ?? verifyEmailLimiter,
-    resendVerification: deps.limiters?.resendVerification ?? resendVerificationLimiter,
     login: deps.limiters?.login ?? loginLimiter,
   };
 
@@ -219,132 +174,14 @@ export function authRouter(
       data: { userId: user.id, action: 'USER_REGISTERED', metadata: { email, ...loginMetadata(req) } },
     });
 
-    // NO SESSION HERE. The account exists but emailVerifiedAt is null, so it
-    // cannot log in yet. A token is issued only by /auth/verify-email, after
-    // the user proves they can read the address they typed.
-    const { challengeId, code } = await emailVerification.issueChallenge(user.id);
-    const delivered = await verificationEmail.send({
-      to: email,
-      code,
-      expiryMinutes: Math.round(VERIFICATION_EXPIRY_MS / 60_000),
-    });
-
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'EMAIL_VERIFICATION_SENT',
-        metadata: { delivered, ...loginMetadata(req) },
-      },
-    });
-
-    if (!delivered) {
-      // The account row stays: the user can come back and resend rather than
-      // being told the email is taken on their second attempt. What must not
-      // happen is a verification screen for a code that was never sent.
-      return res.status(201).json({
-        verificationRequired: true,
-        challengeId,
-        maskedEmail: maskEmail(email),
-        expiresInSeconds: Math.round(VERIFICATION_EXPIRY_MS / 1000),
-        resendAvailableInSeconds: Math.round(RESEND_COOLDOWN_MS / 1000),
-        emailDelivered: false,
-      });
-    }
-
-    res.status(201).json({
-      verificationRequired: true,
-      challengeId,
-      maskedEmail: maskEmail(email),
-      expiresInSeconds: Math.round(VERIFICATION_EXPIRY_MS / 1000),
-      resendAvailableInSeconds: Math.round(RESEND_COOLDOWN_MS / 1000),
-      emailDelivered: true,
-    });
-  });
-
-  // Second half of registration: the code proves the address is reachable,
-  // and only here does the account get a real session on the existing
-  // Session + JWT machinery — no second auth mechanism.
-  router.post('/auth/verify-email', limit.verifyEmail, async (req, res) => {
-    const parsed = verifyEmailSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-    const { challengeId, code } = parsed.data;
-
-    const result = await emailVerification.verify(challengeId, code);
-
-    if (!result.ok) {
-      if (result.reason === 'TOO_MANY_ATTEMPTS') {
-        await prisma.auditLog.create({
-          data: { action: 'EMAIL_VERIFICATION_ATTEMPT_LIMIT', metadata: { challengeId, ...loginMetadata(req) } },
-        });
-      }
-      const status = result.reason === 'CHALLENGE_NOT_FOUND' ? 404 : 400;
-      return res.status(status).json({
-        error: 'Verification failed',
-        code: result.reason,
-        attemptsRemaining: result.attemptsRemaining,
-        maxAttempts: MAX_VERIFICATION_ATTEMPTS,
-      });
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: result.userId } });
-    if (!user) return res.status(404).json({ error: 'Verification failed', code: 'CHALLENGE_NOT_FOUND' });
-
-    if (user.blockedAt) {
-      return res.status(403).json({
-        error: user.blockedReason ? `Аккаунт заблокирован: ${user.blockedReason}` : 'Аккаунт заблокирован',
-      });
-    }
-
-    await prisma.auditLog.create({
-      data: { userId: user.id, action: 'EMAIL_VERIFIED', metadata: loginMetadata(req) },
-    });
-
+    // A successful registration is a signed-in session, on exactly the same
+    // Session row + JWT machinery every login uses — no second auth path and
+    // no intermediate step. `emailVerifiedAt` stays null: nobody has proven
+    // ownership of the address, and writing a timestamp to unlock the door
+    // would be recording something that never happened. Nothing in
+    // authentication reads that column any more; it is informational.
     const session = await createSession(prisma, user.id, req);
-    res.json({ token: issueToken(user.id, session.id) });
-  });
-
-  // Keyed by challenge id, never by email address, so this endpoint cannot
-  // be used to discover which addresses are registered.
-  router.post('/auth/resend-verification', limit.resendVerification, async (req, res) => {
-    const parsed = resendVerificationSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
-    const result = await emailVerification.resend(parsed.data.challengeId);
-
-    if (!result.ok) {
-      if (result.reason === 'COOLDOWN') {
-        return res.status(429).json({
-          error: 'Please wait before requesting another code',
-          code: 'COOLDOWN',
-          retryAfterSeconds: result.retryAfterSeconds,
-        });
-      }
-      if (result.reason === 'ALREADY_VERIFIED') {
-        return res.status(400).json({ error: 'Verification failed', code: 'ALREADY_VERIFIED' });
-      }
-      return res.status(404).json({ error: 'Verification failed', code: 'CHALLENGE_NOT_FOUND' });
-    }
-
-    const delivered = await verificationEmail.send({
-      to: result.email,
-      code: result.code,
-      expiryMinutes: Math.round(VERIFICATION_EXPIRY_MS / 60_000),
-    });
-
-    await prisma.auditLog.create({
-      data: { action: 'EMAIL_VERIFICATION_SENT', metadata: { delivered, resend: true, ...loginMetadata(req) } },
-    });
-
-    if (!delivered) {
-      return res.status(502).json({ error: 'Could not send the verification email', code: 'MAIL_UNAVAILABLE' });
-    }
-
-    res.json({
-      challengeId: result.challengeId,
-      maskedEmail: maskEmail(result.email),
-      expiresInSeconds: Math.round(VERIFICATION_EXPIRY_MS / 1000),
-      resendAvailableInSeconds: Math.round(RESEND_COOLDOWN_MS / 1000),
-    });
+    res.status(201).json({ token: issueToken(user.id, session.id) });
   });
 
   router.post('/auth/login', limit.login, async (req, res) => {
@@ -368,36 +205,10 @@ export function authRouter(
       });
     }
 
-    // Password is right, but the address was never proven. No session, and
-    // a structured code the frontend can route into the verification screen.
-    // Accounts that predate this feature were backfilled as verified by the
-    // migration, so this can only ever catch someone who registered after it
-    // and stopped before entering their code.
-    if (!user.emailVerifiedAt) {
-      const { challengeId, code } = await emailVerification.issueChallenge(user.id);
-      const delivered = await verificationEmail.send({
-        to: user.email,
-        code,
-        expiryMinutes: Math.round(VERIFICATION_EXPIRY_MS / 60_000),
-      });
-      await prisma.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'EMAIL_VERIFICATION_SENT',
-          metadata: { delivered, viaLogin: true, ...loginMetadata(req) },
-        },
-      });
-      return res.status(403).json({
-        error: 'Email verification required',
-        code: 'EMAIL_VERIFICATION_REQUIRED',
-        challengeId,
-        maskedEmail: maskEmail(user.email),
-        expiresInSeconds: Math.round(VERIFICATION_EXPIRY_MS / 1000),
-        resendAvailableInSeconds: Math.round(RESEND_COOLDOWN_MS / 1000),
-        emailDelivered: delivered,
-      });
-    }
-
+    // No email-ownership gate: `emailVerifiedAt` is not consulted here, so an
+    // account created since mandatory verification was removed (null column)
+    // logs in exactly like one created before it. 2FA is untouched and still
+    // stands between a correct password and a session.
     if (user.twoFactorEnabled) {
       return res.json({ requires2fa: true, pendingToken: issuePendingToken(user.id) });
     }

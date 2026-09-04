@@ -70,14 +70,6 @@ export function AuthPage() {
         navigate(afterLogin());
       }
     } catch (err) {
-      // The password was right but the address was never confirmed. The
-      // server has already issued and sent a fresh code, so hand the user
-      // straight to the verification screen instead of leaving them at a
-      // login form that will keep refusing them.
-      if (err instanceof ApiError && err.body.code === 'EMAIL_VERIFICATION_REQUIRED') {
-        navigate(`/register${window.location.search}`, { state: { verification: err.body } });
-        return;
-      }
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);

@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { assertEmailVerificationSecretConfigured } from './config/emailVerificationSecret';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -57,14 +56,6 @@ import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
-
-// Fail fast, before anything binds or connects. A deployment without a
-// dedicated EMAIL_VERIFICATION_SECRET would accept registrations it could
-// never verify, so it should die at boot rather than at the first signup.
-// This is the first statement after the import block — imports are hoisted,
-// so it runs once every module above has loaded and before any of the
-// service construction below. Throws naming the variable, never its value.
-assertEmailVerificationSecretConfigured();
 
 const app = express();
 const prisma = new PrismaClient();

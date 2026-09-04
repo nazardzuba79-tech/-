@@ -141,17 +141,6 @@ export interface CfdPosition {
 
 /** What /auth/register answers with, and what a login rejected for an
  *  unverified address carries in its error body. */
-export interface RegistrationChallenge {
-  verificationRequired: true;
-  challengeId: string;
-  maskedEmail: string;
-  expiresInSeconds: number;
-  resendAvailableInSeconds: number;
-  /** False when the relay refused the message — the UI must say the code
-   *  could not be sent rather than asking for one that never arrived. */
-  emailDelivered: boolean;
-}
-
 /** A real ledger balance, valued by the same endpoint that totals it. */
 interface RealBalance {
   asset: string;
@@ -162,27 +151,13 @@ interface RealBalance {
 }
 
 export const api = {
-  /** Creates the account but issues NO session: the response carries the
-   *  verification challenge, and a token only comes back from verifyEmail. */
+  /** Creates the account and returns a real session token straight away —
+   *  the same token shape /auth/login issues. There is no intermediate
+   *  verification step and no second call to make. */
   register: (email: string, password: string, ref?: string) =>
-    request<RegistrationChallenge>('/auth/register', {
+    request<{ token: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, ref }),
-    }),
-
-  /** Exchanges the six-digit code for the real session token. */
-  verifyEmail: (challengeId: string, code: string) =>
-    request<{ token: string }>('/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ challengeId, code }),
-    }),
-
-  /** Issues a replacement code and invalidates the previous one. The new
-   *  challengeId replaces the one the caller was holding. */
-  resendVerification: (challengeId: string) =>
-    request<Omit<RegistrationChallenge, 'verificationRequired' | 'emailDelivered'>>('/auth/resend-verification', {
-      method: 'POST',
-      body: JSON.stringify({ challengeId }),
     }),
 
   login: (email: string, password: string) =>

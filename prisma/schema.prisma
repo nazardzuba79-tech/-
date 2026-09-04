@@ -87,16 +87,19 @@ model User {
   /// Rewards a referrer earned FROM this user's own deposits — the other
   /// side of the same rows as referralRewardsEarned above.
   referralRewardsGenerated ReferralReward[] @relation("ReferralRewardsFromDeposits")
-  /// Set the moment the user proves control of their email by entering the
-  /// six-digit code sent at registration (see EmailVerificationChallenge and
-  /// src/services/EmailVerificationService.ts). Null means the account was
-  /// created but never verified: it exists, holds a referral link and a
-  /// password hash, but /auth/login refuses it a session.
+  /// LEGACY / INFORMATIONAL. Nothing in authentication reads this column.
   ///
-  /// Every account that existed before this column was added is backfilled
-  /// to its own createdAt by the migration, so no established user is locked
-  /// out retroactively — verification is a requirement for accounts created
-  /// from this point on.
+  /// It records the moment an account proved control of its email address,
+  /// back when registration required a six-digit code. Mandatory email
+  /// verification has since been removed as a product decision: registration
+  /// issues a session immediately and /auth/login never consults this field,
+  /// so null here means only "ownership was never proven", not "blocked".
+  ///
+  /// Kept, rather than dropped, so the historical fact stays true for the
+  /// accounts that did verify and for the pre-feature accounts the migration
+  /// backfilled to their own createdAt. Accounts created from now on leave it
+  /// null — writing a timestamp for a verification that never happened would
+  /// record something false.
   emailVerifiedAt DateTime?
   emailVerificationChallenges EmailVerificationChallenge[]
   createdAt     DateTime  @default(now())
@@ -139,6 +142,10 @@ model User {
 /// One row per user is live at a time: issuing a new code (registration or
 /// resend) consumes/replaces the previous one, so an old code stops working
 /// the moment a new one is sent.
+/// LEGACY. No runtime code reads or writes this table any more — mandatory
+/// registration email verification was removed. It is kept (with its
+/// migration) so historical rows are not destroyed and the table can be
+/// reused if address verification returns as an opt-in step.
 model EmailVerificationChallenge {
   id        String   @id @default(uuid())
   userId    String
