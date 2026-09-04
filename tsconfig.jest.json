@@ -1,0 +1,13 @@
+{
+  // Test-only compile settings. Identical to the build config except that
+  // it also loads the DOM lib: the suite covers a few pure frontend modules
+  // (frontend/src/lib) alongside the backend, and those reference browser
+  // globals. `npm run build` still uses tsconfig.json, so no DOM type ever
+  // becomes visible to backend source.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2021", "DOM"],
+    "rootDir": "."
+  },
+  "include": ["src/**/*.ts", "frontend/src/lib/**/*.ts", "jest.setup.ts"]
+}

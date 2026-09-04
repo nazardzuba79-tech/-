@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
 import { RegisterPage } from './pages/register/RegisterPage';
@@ -15,6 +15,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { LegalPage } from './pages/LegalPage';
 import { ReferralRedirectPage } from './pages/ReferralRedirectPage';
 import { defaultTradingPath } from './lib/tradingMode';
+import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { AdminWalletsPage } from './pages/admin/AdminWalletsPage';
@@ -27,7 +28,19 @@ import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
-  return getToken() ? children : <Navigate to="/" replace />;
+  const location = useLocation();
+  // Not "/" — see lib/returnTo. Sending a signed-out visitor back to the
+  // homepage made every product link on it look broken; they go to the
+  // login screen, which then returns them here.
+  return getToken() ? children : <Navigate to={loginPathFor(location)} replace />;
+}
+
+/** A page only a signed-out visitor should see (login, registration). Once
+ *  signed in they go on to whatever they were originally after. */
+function RedirectIfAuthed({ children }: { children: JSX.Element }) {
+  const location = useLocation();
+  if (!getToken()) return children;
+  return <Navigate to={readNext(location.search) ?? defaultTradingPath()} replace />;
 }
 
 export function App() {
@@ -40,13 +53,13 @@ export function App() {
             see lib/tradingMode. A direct /trade or /futures URL is its own
             route and is never rewritten. */}
         <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
-        <Route path="/login" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <AuthPage />} />
+        <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         {/* Registration is its own screen (the approved two-column design)
             rather than a mode of the login form. Both entry points point
             straight here: the homepage header's primary CTA and the login
             card's own Регистрация tab. AuthPage keeps its /login behaviour
             untouched. */}
-        <Route path="/register" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <RegisterPage />} />
+        <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
         <Route
           path="/trade"
           element={

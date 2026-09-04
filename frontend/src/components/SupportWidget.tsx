@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError, getToken, type SupportConversation, type SupportMessage, type SupportSubject } from '../lib/api';
 import { useLanguage, type Key } from '../lib/i18n';
+import { onOpenSupportWidget } from '../lib/supportWidget';
 
 // Guest identity is just this id, kept in localStorage — same anonymous-
 // visitor-id trust model Intercom/Zendesk widgets themselves use (see the
@@ -28,6 +29,10 @@ const SUBJECT_LABEL_KEY: Record<SupportSubject, Key> = {
 export function SupportWidget() {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  // Opened from elsewhere in the app — the homepage footer's Contact entry
+  // (see lib/supportWidget). This widget lives outside the router, so an
+  // event is the only way in.
+  useEffect(() => onOpenSupportWidget(() => setOpen(true)), []);
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [conversation, setConversation] = useState<SupportConversation | null>(null);
   const [messages, setMessages] = useState<SupportMessage[]>([]);

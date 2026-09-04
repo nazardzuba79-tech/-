@@ -41,6 +41,10 @@ export interface HomeMarket {
   globalStatus: Status;
   cfd: Cfd | null;
   cfdStatus: Status;
+  /** The contracts the perpetual exchange actually lists right now, straight
+   *  from /futures/config (FuturesMarketRegistry). Never a hardcoded list. */
+  futuresSymbols: string[];
+  futuresStatus: Status;
   /** Logo for a base asset, from the exchange's own ranking feed. */
   logoOf: (base: string) => string | undefined;
 }
@@ -62,6 +66,8 @@ export function useHomeMarket(): HomeMarket {
   const [globalStatus, setGlobalStatus] = useState<Status>('loading');
   const [cfd, setCfd] = useState<Cfd | null>(null);
   const [cfdStatus, setCfdStatus] = useState<Status>('loading');
+  const [futuresSymbols, setFuturesSymbols] = useState<string[]>([]);
+  const [futuresStatus, setFuturesStatus] = useState<Status>('loading');
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +132,18 @@ export function useHomeMarket(): HomeMarket {
       })
       .catch(() => !cancelled && setCfdStatus('error'));
 
+    // Public endpoint (no auth) — the same listing the futures terminal
+    // reads, so the homepage's Фьючерсы tab shows the real contract
+    // universe rather than a marketing-side guess at it.
+    api
+      .getFuturesConfig()
+      .then((res) => {
+        if (cancelled) return;
+        setFuturesSymbols(res.symbols);
+        setFuturesStatus(res.symbols.length > 0 ? 'ok' : 'error');
+      })
+      .catch(() => !cancelled && setFuturesStatus('error'));
+
     return () => {
       cancelled = true;
       window.clearInterval(poll);
@@ -144,6 +162,8 @@ export function useHomeMarket(): HomeMarket {
     globalStatus,
     cfd,
     cfdStatus,
+    futuresSymbols,
+    futuresStatus,
     logoOf: (base: string) => logoByBase.get(base.toUpperCase()),
   };
 }

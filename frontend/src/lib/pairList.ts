@@ -51,6 +51,43 @@ export function saveFavorites(favs: Set<string>) {
   } catch {
     // best-effort — favorites just won't persist across reloads
   }
+  // localStorage is the store, but writing to it fires no event in the tab
+  // that did the writing, so every other component holding a copy of the
+  // set used to keep showing the old one until a full reload. Notifying
+  // here is what makes the terminal, Markets, Futures and the homepage
+  // agree about a starred pair the moment it is starred.
+  notifyFavorites(favs);
+}
+
+type FavoritesListener = (favs: Set<string>) => void;
+const favoritesListeners = new Set<FavoritesListener>();
+
+function notifyFavorites(favs: Set<string>) {
+  for (const listener of favoritesListeners) listener(new Set(favs));
+}
+
+/**
+ * Subscribe to favourite-pair changes. Fires on a local saveFavorites and
+ * on another tab's write to the same key (the browser's own `storage`
+ * event, which only ever reaches *other* tabs — hence the explicit
+ * notification above for this one). Returns an unsubscribe function.
+ */
+export function subscribeFavorites(listener: FavoritesListener): () => void {
+  favoritesListeners.add(listener);
+  if (favoritesListeners.size === 1 && typeof window !== 'undefined') {
+    window.addEventListener('storage', onStorage);
+  }
+  return () => {
+    favoritesListeners.delete(listener);
+    if (favoritesListeners.size === 0 && typeof window !== 'undefined') {
+      window.removeEventListener('storage', onStorage);
+    }
+  };
+}
+
+function onStorage(e: StorageEvent) {
+  if (e.key !== null && e.key !== FAVORITES_KEY) return;
+  notifyFavorites(loadFavorites());
 }
 
 export function filterAndSortPairs(

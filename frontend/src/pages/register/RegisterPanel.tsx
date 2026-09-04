@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AlertTriangleIcon, ArrowLeftIcon, CheckCircle2Icon, Loader2Icon, ShieldIcon } from 'lucide-react';
 import { api, ApiError, RegistrationChallenge, setToken } from '../../lib/api';
 import { defaultTradingPath } from '../../lib/tradingMode';
+import { readNext } from '../../lib/returnTo';
 import { useLanguage } from '../../lib/i18n';
 import { REFERRAL_CODE_STORAGE_KEY } from '../ReferralRedirectPage';
 import { Field, inputClass } from './Field';
@@ -534,7 +535,7 @@ export function RegisterPanel() {
                 stored, so this is a real signed-in entry to the platform. */}
             <button
               type="button"
-              onClick={() => navigate(defaultTradingPath())}
+              onClick={() => navigate(readNext(window.location.search) ?? defaultTradingPath())}
               className="mt-6 flex h-[48px] w-full items-center justify-center rounded-[7px] bg-gold-500 text-[13.5px] font-semibold text-ink-950 transition-[background-color,transform] duration-150 ease-out hover:bg-gold-400 active:translate-y-[1px] active:bg-gold-600"
             >
               {t('register.goToPlatform')}

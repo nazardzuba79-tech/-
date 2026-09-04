@@ -16,7 +16,8 @@ import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { CfdMarketsSection } from '../../components/CfdMarketsSection';
 import { parseChangePercent } from '../../lib/priceChange';
-import { CATEGORIES, type CoinCategory, loadFavorites, saveFavorites } from '../../lib/pairList';
+import { CATEGORIES, type CoinCategory } from '../../lib/pairList';
+import { useFavorites } from '../../lib/useFavorites';
 import {
   type Ticker,
   type CoinRanking,
@@ -159,7 +160,9 @@ export function MarketsBoltPage() {
   const [activeQuote, setActiveQuote] = useState('All');
   const [activeSector, setActiveSector] = useState<'All' | 'Favorites' | CoinCategory>('All');
   const [search, setSearch] = useState('');
-  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  // Shared store — see lib/useFavorites; the terminals and the homepage
+  // table read the same set, live.
+  const { favorites, toggle: toggleFavorite } = useFavorites();
   // The listed perpetuals, from the backend rather than a copy kept in sync
   // by hand — see CORE_FUTURES_SYMBOLS for why the initial value exists.
   const [futuresSymbols, setFuturesSymbols] = useState<string[]>(CORE_FUTURES_SYMBOLS);
@@ -233,16 +236,6 @@ export function MarketsBoltPage() {
   }, []);
 
   useEffect(() => setPage(1), [activeCategory, activeKind, activeQuote, activeSector, search]);
-
-  function toggleFavorite(pair: string) {
-    setFavorites((current) => {
-      const next = new Set(current);
-      if (next.has(pair)) next.delete(pair);
-      else next.add(pair);
-      saveFavorites(next);
-      return next;
-    });
-  }
 
   function goToTrade(pair: string) {
     if (activeKind === 'Futures' && futuresSymbols.includes(pair)) {

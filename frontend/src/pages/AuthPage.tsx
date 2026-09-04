@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api, setToken, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { defaultTradingPath } from '../lib/tradingMode';
+import { readNext } from '../lib/returnTo';
 import { Logo } from '../components/Logo';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { CryptoIcon } from '../components/CryptoIcon';
@@ -32,6 +33,9 @@ export function AuthPage() {
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [twoFaCode, setTwoFaCode] = useState('');
   const navigate = useNavigate();
+  // Where the visitor was actually heading when the auth guard stopped them
+  // (see lib/returnTo). Falls back to their usual terminal.
+  const afterLogin = () => readNext(window.location.search) ?? defaultTradingPath();
 
   // Live public prices behind the login card — no auth needed for this,
   // and it's what makes the login screen feel like a real, active market
@@ -63,7 +67,7 @@ export function AuthPage() {
         setPendingToken(result.pendingToken);
       } else {
         setToken(result.token);
-        navigate(defaultTradingPath());
+        navigate(afterLogin());
       }
     } catch (err) {
       // The password was right but the address was never confirmed. The
@@ -71,7 +75,7 @@ export function AuthPage() {
       // straight to the verification screen instead of leaving them at a
       // login form that will keep refusing them.
       if (err instanceof ApiError && err.body.code === 'EMAIL_VERIFICATION_REQUIRED') {
-        navigate('/register', { state: { verification: err.body } });
+        navigate(`/register${window.location.search}`, { state: { verification: err.body } });
         return;
       }
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
@@ -88,7 +92,7 @@ export function AuthPage() {
     try {
       const { token } = await api.loginWith2FA(pendingToken, twoFaCode);
       setToken(token);
-      navigate(defaultTradingPath());
+      navigate(afterLogin());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {
@@ -242,7 +246,7 @@ export function AuthPage() {
                     pages/register). This tab navigates there rather than
                     switching this form into a second, different-looking
                     signup UI. */}
-                <Link to="/register" style={styles.tab}>
+                <Link to={`/register${window.location.search}`} style={styles.tab}>
                   {t('auth.register')}
                 </Link>
               </div>

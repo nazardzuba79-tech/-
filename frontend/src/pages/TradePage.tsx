@@ -83,8 +83,21 @@ export function TradePage() {
   // Landing here is the signal that spot is this user's current trading
   // mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('spot'), []);
-  const [cfdSymbol, setCfdSymbol] = useState('XAUUSD');
+  // ?symbol= alongside ?market=cfd, so a CFD row on the homepage or in the
+  // market overview opens the instrument it names rather than always
+  // landing on gold. Validated against the instruments the backend
+  // actually lists (below) — an unknown symbol falls back rather than
+  // selecting an instrument that does not exist.
+  const [cfdSymbol, setCfdSymbol] = useState(searchParams.get('symbol')?.toUpperCase() || 'XAUUSD');
   const { tickers: cfdTickers, configured: cfdConfigured, loadError: cfdLoadError, reload: reloadCfd } = useCfdTickers();
+  // Same reason as marketType above: this page is not remounted when only
+  // the query string changes, so a second CFD deep-link would otherwise
+  // leave the previously selected instrument active.
+  useEffect(() => {
+    const requested = searchParams.get('symbol')?.toUpperCase();
+    if (!requested || cfdTickers.length === 0) return;
+    if (cfdTickers.some((tk) => tk.symbol === requested)) setCfdSymbol(requested);
+  }, [searchParams, cfdTickers]);
   const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);
 
   // The visible order book mirrors Kraken's real depth for a live, populated

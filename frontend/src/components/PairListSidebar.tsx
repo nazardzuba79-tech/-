@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
-import { QUOTE_PRIORITY, loadFavorites, saveFavorites, filterAndSortPairs, TickerRow } from '../lib/pairList';
+import { QUOTE_PRIORITY, filterAndSortPairs, TickerRow } from '../lib/pairList';
+import { useFavorites } from '../lib/useFavorites';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
 import { CryptoIcon } from './CryptoIcon';
@@ -91,7 +92,9 @@ export const PairListSidebar = forwardRef<
     const { field: sortField, dir: sortDir } = sortMode;
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
-    const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+    // Shared with Markets, the futures pair list and the homepage table —
+    // starring here shows up there immediately (see lib/useFavorites).
+    const { favorites, toggle: toggleFavoritePair } = useFavorites();
     const searchRef = useRef<HTMLInputElement>(null);
     // The row ORDER is driven by this snapshot of each pair's volume, not
     // the live figure straight off every 4s poll. Real quoteVolume24h is a
@@ -174,13 +177,7 @@ export const PairListSidebar = forwardRef<
 
     function toggleFavorite(p: string, e: React.MouseEvent) {
       e.stopPropagation();
-      setFavorites((prev) => {
-        const next = new Set(prev);
-        if (next.has(p)) next.delete(p);
-        else next.add(p);
-        saveFavorites(next);
-        return next;
-      });
+      toggleFavoritePair(p);
     }
 
     // Only quoteVolume24h is swapped for the frozen figure — lastPrice and

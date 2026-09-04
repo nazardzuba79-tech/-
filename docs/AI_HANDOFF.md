@@ -523,3 +523,96 @@ preceding task are intact.
 - Provider health/cache are per-process, correct for one Render instance.
 - This sandbox blocks Kraken/CoinGecko/alternative.me, so provider behaviour remains
   covered by deterministic mocked tests only.
+
+## 2026-09-04 — Full product functional audit + homepage repair
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main`, Render and production untouched.
+- Full route-by-route matrix and interaction inventory: **`docs/FUNCTIONAL_AUDIT.md`** (new).
+
+### What this was
+An end-to-end functional audit of every user-facing route, following each
+control from UI → handler → API → backend service → response → visible result,
+plus fixes for the defects that pass turned up. Not a redesign: the only
+visual changes are the explicitly requested removal of the homepage's
+secondary Crypto Card panel, the table expansion that follows it, and one 7px
+mobile overflow fix.
+
+### The biggest defect found and fixed
+`RequireAuth` in `frontend/src/App.tsx` redirected signed-out visitors to
+`"/"` — which for them *is* the homepage. Every product link on the public
+homepage therefore did nothing: all seven header nav links, both hero CTAs,
+the ticker symbols, every market row's Торговать, and every footer product
+link put the visitor straight back where they started, with no sign-in prompt.
+Verified by clicking all seven header links (each landed on `/`).
+
+Fixed with `frontend/src/lib/returnTo.ts`: the guard sends them to
+`/login?next=<path>`, and the login form, the 2FA step and the registration
+success screen all return them there. Only same-origin paths are accepted, so
+the parameter is not an open redirect. `App.tsx` also grew `RedirectIfAuthed`
+so `/login` and `/register` honour `next` for an already-signed-in visitor,
+and the login↔register cross-links carry it through.
+
+### Homepage Markets block (the defects the owner had already found)
+- **CFD tab** returned a hardcoded `[]` while `useHomeMarket` was already
+  fetching `/cfd/tickers` and discarding it. It now renders the real
+  instruments when a provider is configured, and says the provider is not
+  configured when the backend answers `configured:false` — a configuration
+  state, not "coming soon", and never a fabricated quote. Rows deep-link to
+  `/trade?market=cfd&symbol=…`; `TradePage` now honours `?symbol=`, validated
+  against the instruments the backend lists.
+- **"Все активы" and "Спот" were identical** (both hit the same `default:`).
+  "Спот" is spot markets; "Все активы" is the union of every listed product,
+  each asset once, tagged with what it actually trades on.
+- **"Фьючерсы" filtered spot tickers against a hardcoded BTC/ETH/SOL list.**
+  It now reads `GET /futures/config` (`FuturesMarketRegistry`) — the same
+  source the futures terminal and Markets use; 40 contracts here.
+- **Futures rows linked to `/trade?pair=`.** Now `/futures?pair=`. Spot rows
+  keep `/trade?pair=`.
+- **Favourites were a mount-time snapshot.** `lib/pairList` now notifies on
+  write and on another tab's `storage` event; `lib/useFavorites` is the shared
+  hook, and `PairListSidebar`, `FuturesPairList`, `markets-bolt` and the
+  homepage table all read one live set. No reload needed anywhere.
+- **Secondary Crypto Card panel removed** (small card, Apple Pay, NFC,
+  Получить карту). The main Crypto Card section and its approved artwork are
+  untouched. The Markets table now spans the section — 1392px at a 1440px
+  viewport, was ~1040px.
+- **Footer**: Центр помощи and Связаться с нами both pointed at `/settings`.
+  Help centre → `/legal/support`; Contact opens the globally mounted support
+  chat (a button — there is no page to link to); О нас → `/legal/about` added.
+
+### Other fixes
+- Wallet's portfolio-distribution card (`flexShrink: 0`, intrinsic 366px)
+  pushed the page 7px past a 375px viewport once the header row wrapped.
+  Capped with `maxWidth: '100%'`; desktop layout unchanged.
+
+### Verified working, not changed
+Markets (search, filters, favourites, sort, pagination, sparklines, correct
+Spot/Futures routing), Trade (deep links, invalid-pair fallback, order book →
+form, all five order families placing and cancelling real orders, honest
+errors), Futures (real universe, mark/index/funding/next-funding/open
+interest, new-account leverage cap, isolated/cross, transfer, positions),
+Wallet (deposit/transfer/withdraw modals, hide balance, hide zero, search,
+sort, history), Copy Trading (tabs, profiles, periods, $20,000 gate),
+Arbitrage, Card, OTC, Analytics permissions (401/403/200), and all seven Admin
+pages behind the role gate.
+
+### Deliberately left unavailable
+OTC (no desk behind it), Analytics UI sections (data foundation only),
+long/short ratio and liquidation volume on Futures. `/legal/support` copy is
+stale — it claims there is no live support channel while the chat widget runs
+on every page; flagged in the audit doc, not rewritten (seven languages).
+
+### Checks actually run
+Backend suite **69 suites / 680 tests pass** (was 67/666; +2 suites, +14
+tests covering `returnTo` and the favourites store). Backend `tsc --noEmit`
+clean, frontend `tsc --noEmit` clean, `prisma validate` clean, frontend
+production build `✓ built in 6.15s`. Browser QA at 1920/1440/1366/1280/1024/
+768/390/375 on Homepage, Markets, Trade, Futures and Wallet: no page-level
+horizontal overflow, no uncaught page errors on any route. Sandbox-blocked
+upstreams (CoinGecko, alternative.me, ws.kraken.com, TradingView, jsDelivr
+icons, Google Fonts) are recorded as environment, not application, defects.
+
+### Not done here
+Wallet redesign, Analytics redesign, any merge to `main`, any Render or
+production change. `EMAIL_VERIFICATION_SECRET` remains a production deployment
+prerequisite and was not configured.

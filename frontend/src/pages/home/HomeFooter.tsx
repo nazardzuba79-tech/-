@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
+import { openSupportWidget } from '../../lib/supportWidget';
 import { Key, useLanguage } from '../../lib/i18n';
 
 /**
@@ -7,6 +8,12 @@ import { Key, useLanguage } from '../../lib/i18n';
  * exist in this app — no Earn, no P2P, and CFD only as the Trade page's
  * own market tab rather than a route of its own. No social icon row, no
  * app-store badges.
+ *
+ * The Support column used to send both of its links to /settings, which is
+ * neither a help centre nor a contact form: two different promises, one
+ * unrelated destination. They now go to the real support document and to
+ * the support chat this app actually runs (see SupportWidget), which is
+ * reachable signed-out as well.
  */
 const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   {
@@ -23,6 +30,7 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   {
     titleKey: 'home.footer.company',
     links: [
+      { labelKey: 'footer.about', to: '/legal/about' },
       { labelKey: 'nav.markets', to: '/markets' },
       { labelKey: 'nav.wallet', to: '/wallet' },
       { labelKey: 'nav.settings', to: '/settings' },
@@ -30,10 +38,7 @@ const COLUMNS: { titleKey: Key; links: { labelKey: Key; to: string }[] }[] = [
   },
   {
     titleKey: 'home.footer.support',
-    links: [
-      { labelKey: 'home.footer.helpCenter', to: '/settings' },
-      { labelKey: 'home.footer.contact', to: '/settings' },
-    ],
+    links: [{ labelKey: 'home.footer.helpCenter', to: '/legal/support' }],
   },
   {
     titleKey: 'home.footer.legal',
@@ -72,6 +77,20 @@ export function HomeFooter() {
                     </Link>
                   </li>
                 ))}
+                {/* Contact isn't a route — it opens the support chat that is
+                    already mounted on every page, for signed-out visitors
+                    too. A link would have had nowhere honest to point. */}
+                {col.titleKey === 'home.footer.support' && (
+                  <li>
+                    <button
+                      type="button"
+                      onClick={openSupportWidget}
+                      className="text-left text-[12px] text-home-muted transition-colors duration-150 hover:text-white"
+                    >
+                      {t('home.footer.contact')}
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           ))}

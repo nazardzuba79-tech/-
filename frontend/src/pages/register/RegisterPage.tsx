@@ -31,7 +31,7 @@ export function RegisterPage() {
         <div className="ml-auto flex items-center gap-4">
           <span className="hidden text-[12px] text-home-muted sm:inline">{t('register.haveAccount')}</span>
           <Link
-            to="/login"
+            to={`/login${window.location.search}`}
             className="whitespace-nowrap text-[12.5px] font-medium text-gold-400 transition-colors duration-150 ease-out hover:text-gold-500"
           >
             {t('auth.login')}

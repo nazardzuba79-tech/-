@@ -5,7 +5,7 @@ import { useLanguage, Key } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
-import { loadFavorites, saveFavorites } from '../lib/pairList';
+import { useFavorites } from '../lib/useFavorites';
 
 export interface FuturesPairListHandle {
   focusSearch: () => void;
@@ -63,7 +63,9 @@ export const FuturesPairList = forwardRef<
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('volume_desc');
   const [coinIcons, setCoinIcons] = useState<Map<string, string>>(new Map());
-  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+  // Shared store — see lib/useFavorites; the spot terminal, Markets and
+  // the homepage table all read the same set, live.
+  const { favorites, toggle: toggleFavoritePair } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -71,13 +73,7 @@ export const FuturesPairList = forwardRef<
 
   function toggleFavorite(pair: string, e: React.MouseEvent) {
     e.stopPropagation();
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(pair)) next.delete(pair);
-      else next.add(pair);
-      saveFavorites(next);
-      return next;
-    });
+    toggleFavoritePair(pair);
   }
 
   const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];

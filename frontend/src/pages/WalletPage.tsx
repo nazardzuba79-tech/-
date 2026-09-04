@@ -1009,7 +1009,12 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: 12,
+    // flexShrink: 0 keeps the donut from being squashed next to the balance
+    // block on a wide screen; maxWidth is what stops it pushing the page
+    // 7px wider than the viewport once the row wraps at 375px, where its
+    // intrinsic width (366px) no longer fits the wrapped line.
     flexShrink: 0,
+    maxWidth: '100%',
   },
   donutTitle: { fontSize: 11, color: 'var(--text-tertiary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em' },
   donutRow: { display: 'flex', alignItems: 'center', gap: 16 },
