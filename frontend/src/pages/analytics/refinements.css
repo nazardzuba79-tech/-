@@ -1,0 +1,84 @@
+/* Scope every integration rule to this workspace, below the existing Nav. */
+.vx-analytics { color-scheme:light; --gold:#bc923e; --green:#168a65; --red:#c84e5c; --teal:#168a65; color:#18212e; background:#f5f6f8; font:13px/1.45 Arial,sans-serif; min-width:0; }
+.vx-analytics :is(h1,h2,h3,p,button,table) { font-family:inherit; }
+.vx-analytics button { text-transform:none; letter-spacing:normal; border-radius:3px; box-shadow:none; }
+.vx-analytics button:disabled { cursor:default; opacity:.5; }
+.vx-analytics :is(button,input,[tabindex]):focus-visible { outline:2px solid #527394; outline-offset:3px; }
+.vx-analytics input[type=checkbox] { accent-color:#445c70; width:14px; height:14px; margin:0; }
+.vx-analytics .workspace { width:100%; }
+.vx-analytics :is(.surface,.analytics-two-col,.analytics-three-col,.derivatives-grid,.intelligence-grid,.liq-grid-2,.liqchart-wrap,.liqchart-scroll,.structure-item) { min-width:0; }
+.vx-analytics .surface { box-shadow:none; border-radius:3px; }
+.vx-analytics .section-heading { gap:12px; padding-block:10px; flex-wrap:wrap; }
+.vx-analytics .section-heading>span { font-size:10px; color:#667085; }
+.vx-analytics :is(.source-banner,.demo-control,.exchange-filters) { display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; }
+.vx-analytics .demo-control { color:#44515f; font-size:12px; cursor:pointer; }
+.vx-analytics .source-banner { padding:12px 16px; margin-bottom:16px; border:1px solid #d8e0e7; background:#edf2f6; color:#4e5c6a; font-size:12px; }
+.vx-analytics .source-banner button { margin-left:auto; }
+.vx-analytics :is(.source-banner,.exchange-filters) button { background:white; color:#44515f; padding:5px 9px; border:1px solid #d2dae1; }
+.vx-analytics .exchange-filters { margin:12px 18px 0; padding:0; border:0; }
+.vx-analytics .exchange-filters legend { float:left; color:#667085; font-size:11px; margin-right:16px; }
+.vx-analytics .exchange-filters label { display:flex; align-items:center; gap:6px; font-size:11px; cursor:pointer; padding:5px 0; }
+.vx-analytics .module-source { margin:9px 18px 0; color:#667085; font-size:11px; }
+.vx-analytics .context-note { color:#667085; font-size:11px; margin:0 0 14px; }
+.vx-analytics .liqmap-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.vx-analytics .analytics-empty { padding:65px 24px; min-height:230px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; background:#fafbfc; color:#6c7785; }
+.vx-analytics .analytics-empty strong { color:#344054; font-size:15px; }
+.vx-analytics .analytics-empty p { max-width:490px; font-size:12px; line-height:1.7; }
+.vx-analytics .analytics-empty.compact { padding:24px 18px; min-height:90px; }
+.vx-analytics :is(.toggle,.asset-context) button.selected { background:#eef1f4; color:#253443; box-shadow:inset 0 -2px #bc923e; }
+.vx-analytics .pressure-head span,.vx-analytics .attention { color:#98606a!important; }
+.vx-analytics :is(.chart-line.primary,.basis-chart path,.poi-price) { stroke:#566b81; }
+.vx-analytics .chart-dot { stroke:#566b81; }
+.vx-analytics :is(.flow-bars i,.pressure-metrics .metric-row:after) { background:#6e8193; }
+.vx-analytics .gauge-progress { stroke:#168a65; }
+.vx-analytics .gauge span { color:#168a65; }
+.vx-analytics .dot.gold { background:#566b81; }
+.vx-analytics .liqchart-current-line { stroke:#d9e0e8; }
+.vx-analytics .liqchart-current-price b { color:#f0f3f6; }
+.vx-analytics .liqchart-callout text { fill:#dce4ec; }
+.vx-analytics .liqchart-callout :is(line,rect) { stroke:#536170; }
+.vx-analytics .liqchart-void-label text { fill:#8a96a4; }
+.vx-analytics .risk-factors { padding:0 20px 14px; }
+.vx-analytics .risk-factors>div { display:grid; grid-template-columns:1fr 32px 28px; gap:5px 12px; padding:6px 0; align-items:center; }
+.vx-analytics .risk-factors span { font-size:11px; color:#667085; }
+.vx-analytics .risk-factors small { color:#8994a1; }
+.vx-analytics .risk-factors b { text-align:right; }
+.vx-analytics .risk-factors meter { grid-column:1/-1; width:100%; height:5px; appearance:none; border:0; background:#edf0f3; }
+.vx-analytics meter::-webkit-meter-bar { border:0; background:#edf0f3; }
+.vx-analytics meter::-webkit-meter-optimum-value { background:#7e6670; }
+.vx-analytics .table-scroll,.vx-analytics .heatmap-scroll { overflow-x:auto; max-width:100%; }
+.vx-analytics .correlation { min-width:0; }
+.vx-analytics .correlation span { min-width:0; }
+.vx-analytics .liqmap>.liq-derived-summary { margin:0 18px 14px; border-color:#e4e7ec; }
+.vx-analytics .liqmap>.liq-derived-summary>div { border-color:#e4e7ec; }
+.vx-analytics .liqmap>.liq-derived-summary b { color:#344054; }
+.vx-analytics .pressure-metrics .metric-row:after { background:#6e8193; }
+.vx-analytics .sparkline path { fill:none; stroke:#168a65; stroke-width:2; }
+.vx-analytics .position-total { display:flex; align-items:baseline; gap:12px; }
+.vx-analytics .position-total span { margin-right:auto; }
+.vx-analytics .correlation>div:first-child { display:block; }
+.vx-analytics .structure-item>b { color:#c3cad4; }
+.vx-analytics .liqchart-scale { display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; padding-bottom:12px; font-size:10px; color:#9aa6b4; }
+@media(max-width:1100px) { .vx-analytics .overview { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:760px) {
+  .vx-analytics .structure-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px 0; }
+  .vx-analytics .structure-item { padding:0 8px; }
+  .vx-analytics .structure-item:nth-child(2) { border-right:0; }
+  .vx-analytics .structure-item:last-child { grid-column:1/-1; padding-top:10px; border-top:1px solid #26313d; }
+  .vx-analytics .overview { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vx-analytics .liqmap-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .vx-analytics .liqmap-summary>div { min-width:0; padding:0 8px; }
+  .vx-analytics .liqmap-summary b { font-size:12px; }
+  .vx-analytics .liqmap-summary strong { font-size:20px; }
+  .vx-analytics .liqmap-body { margin-inline:10px; }
+  .vx-analytics .liqchart-wrap { padding:10px 8px 6px; }
+  .vx-analytics .liqchart-svg { height:310px; }
+  .vx-analytics .liqmap-controls { gap:8px; }
+  .vx-analytics .source-banner { align-items:flex-start; }
+  .vx-analytics .source-banner button { margin-left:0; }
+  .vx-analytics .exchange-filters { gap:6px 12px; }
+  .vx-analytics .correlation { padding:10px; grid-template-columns:46px repeat(6,minmax(0,1fr)); }
+  .vx-analytics .correlation> b { font-size:7px; }
+  .vx-analytics .metric-row { grid-template-columns:minmax(0,1fr) auto; gap:6px; }
+  .vx-analytics .analytics-three-col .basis-compact { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+}
