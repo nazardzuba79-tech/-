@@ -903,3 +903,43 @@ long middle word fits on one line at every width, hero colours confirmed by
 computed style, and none of "60+ стран", "300+ криптовалют", "низкие комиссии",
 "Платформа работает", "DIGITAL ASSET INFRASTRUCTURE" or the retired
 "Торгуйте./Управляйте./Платите." lines appear at any width.
+
+## 2026-09-04 — Claude (Opus 5) — `claude/ui-polish-ready`: the two approved UI branches, consolidated
+
+Review branch cut fresh from `origin/main` (`32f7bbe`). Not merged, not
+deployed, Render untouched.
+
+Five commits cherry-picked, no merge commits and no branch histories pulled
+in — in order: the auth split screen, the final left-side copy, the benefit
+icon family, the registration password checklist, and the header balance
+removal. Every cherry-pick applied cleanly; there were no conflicts, because
+the two source branches share no file (auth touches `pages/auth-shell`,
+`pages/register`, `AuthPage.tsx`, `lib/i18n.tsx`; header touches `Nav.tsx`
+and `index.css`).
+
+Verified rather than assumed: the resulting tree is byte-identical to
+`claude/auth-ui-refine` on every auth file and to
+`claude/header-balance-cleanup` on every header file, and it differs from
+`origin/main` in exactly those 14 paths and no others. `src/`,
+`prisma/`, `render.yaml`, `package.json`, Wallet, Analytics, Copy Trading,
+Futures, Markets, Admin and `lib/api.ts` are all untouched.
+
+`WalletBalanceControl` is preserved and still imported by
+`pages/home/HomeHeader.tsx`; only the `Nav.tsx` call site is gone.
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean (`✓ built in 4.70s`); auth
+suites 44/44 passing; all seven i18n dictionaries at 996 keys, equal and
+unique.
+
+Browser regression at 1920/1440/1366/1024/768/390/375. Auth, both routes at
+every width: registration is `reg-email` + `reg-password` only, the two-row
+password checklist renders, login carries no checklist, and there is no
+checkbox, phone, OTP or confirm-password control anywhere; no page-level
+horizontal overflow; none of the retired strings present. Live flow: a
+password without an uppercase letter keeps the CTA disabled, a valid one
+enables it, and submitting returned a real token and landed on `/futures`.
+Header, six routes × seven widths (42 combinations): no balance control,
+Кошелёк / Пополнить / language / Профиль all present, zero trailing gap, no
+overflow.
