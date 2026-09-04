@@ -1,33 +1,32 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { AlertTriangleIcon, ArrowRightIcon, Loader2Icon, LockKeyholeIcon } from 'lucide-react';
 import { api, setToken, ApiError } from '../lib/api';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
 import { defaultTradingPath } from '../lib/tradingMode';
 import { readNext } from '../lib/returnTo';
-import { Logo } from '../components/Logo';
-import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { CryptoIcon } from '../components/CryptoIcon';
-import { Skeleton } from '../components/Skeleton';
-import { parseChangePercent } from '../lib/priceChange';
-import { CardFace, ICY_CARD_THEME } from '../components/CardFace';
-import { PhoneMockup } from '../components/PhoneMockup';
-import { CfdMarketsSection } from '../components/CfdMarketsSection';
-import { REFERRAL_CODE_STORAGE_KEY } from './ReferralRedirectPage';
-import { useCfdTickers } from '../lib/useCfdTickers';
-import { CFD_ICON_BY_SYMBOL } from '../components/CfdInstrumentList';
+import { openSupportWidget } from '../lib/supportWidget';
+import { AuthShell } from './auth-shell/AuthShell';
+import { AuthField, AuthPasswordField } from './auth-shell/AuthFields';
 
-const HERO_PAIRS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'BNB/USDT'];
-
-type HeroTicker = Awaited<ReturnType<typeof api.getExternalTickers>>['tickers'][number];
-
+/**
+ * /login — sign-in only, on the same split screen /register uses.
+ *
+ * Registration is its own approved route; the header's "Создать аккаунт"
+ * link goes there rather than switching this form into a second, different
+ * signup UI.
+ *
+ * Two real server calls and nothing else: POST /auth/login, and — when the
+ * account has 2FA enabled and the first call answers `requires2fa` — POST
+ * with the pending token and the code. Every message this form shows about
+ * a submit is the server's own.
+ */
 export function AuthPage() {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [tickers, setTickers] = useState<HeroTicker[]>([]);
-  const { tickers: cfdTickers } = useCfdTickers();
   const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [twoFaCode, setTwoFaCode] = useState('');
   const navigate = useNavigate();
@@ -35,31 +34,11 @@ export function AuthPage() {
   // (see lib/returnTo). Falls back to their usual terminal.
   const afterLogin = () => readNext(window.location.search) ?? defaultTradingPath();
 
-  // Live public prices behind the login card — no auth needed for this,
-  // and it's what makes the login screen feel like a real, active market
-  // instead of a static form on a plain background.
-  useEffect(() => {
-    function load() {
-      api
-        .getExternalTickers()
-        .then((res) => {
-          const byPair = new Map(res.tickers.map((tk) => [tk.pair, tk]));
-          setTickers(HERO_PAIRS.map((p) => byPair.get(p)).filter((tk): tk is HeroTicker => !!tk));
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      // This form is sign-in only; registration is its own approved screen
-      // at /register, which the Регистрация tab links to.
       const result = await api.login(email, password);
       if ('requires2fa' in result) {
         setPendingToken(result.pendingToken);
@@ -91,618 +70,124 @@ export function AuthPage() {
   }
 
   return (
-    <div className="page-mesh" style={styles.page}>
-      <div style={styles.langSwitch}>
-        <LanguageSwitcher />
-      </div>
-
-      <div style={styles.fold}>
-      <div className="bg-grid" />
-      <div className="hero-glow hero-glow-cyan" />
-      <div className="hero-glow hero-glow-purple" />
-      <div style={{ ...styles.layout, position: 'relative' }}>
-        <div className="auth-hero" style={styles.hero}>
-          <Logo size="large" />
-          <p style={styles.heroTagline}>{t('auth.heroTagline')}</p>
-
-          <div style={styles.tickerList}>
-            {tickers.map((tk) => {
-              const change = parseChangePercent(tk.changePercent24h, tk.pair);
-              const positive = change >= 0;
-              return (
-                <div key={tk.pair} style={styles.tickerRow}>
-                  <span style={styles.tickerLeft}>
-                    <CryptoIcon symbol={tk.pair.split('/')[0]} size={22} />
-                    <span className="mono" style={styles.tickerPair}>
-                      {tk.pair}
-                    </span>
-                  </span>
-                  <span className="mono" style={styles.tickerPrice}>
-                    {parseFloat(tk.lastPrice).toLocaleString(localeOf(lang), { maximumFractionDigits: 2 })}
-                  </span>
-                  <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.tickerChange}>
-                    {positive ? '+' : ''}
-                    {change.toFixed(2)}%
-                  </span>
-                </div>
-              );
-            })}
-            {tickers.length === 0 &&
-              HERO_PAIRS.map((p) => (
-                <div key={p} style={styles.tickerRow}>
-                  <span style={styles.tickerLeft}>
-                    <Skeleton width={22} height={22} radius={999} />
-                    <Skeleton width={70} height={13} />
-                  </span>
-                  <Skeleton width={60} height={13} />
-                  <Skeleton width={50} height={13} />
-                </div>
-              ))}
-
-            {cfdTickers.length > 0 && (
-              <>
-                <div style={styles.tickerDivider}>{t('trade.cfdTab')}</div>
-                {cfdTickers.slice(0, 3).map((tk) => {
-                  const change = parseChangePercent(tk.changePercent24h, tk.symbol);
-                  const positive = change >= 0;
-                  return (
-                    <div key={tk.symbol} style={styles.tickerRow}>
-                      <span style={styles.tickerLeft}>
-                        <span style={{ fontSize: 16 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
-                        <span className="mono" style={styles.tickerPair}>
-                          {tk.symbol}
-                        </span>
-                      </span>
-                      <span className="mono" style={styles.tickerPrice}>
-                        {tk.price}
-                      </span>
-                      <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.tickerChange}>
-                        {positive ? '+' : ''}
-                        {change.toFixed(2)}%
-                      </span>
-                    </div>
-                  );
-                })}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="auth-phone" style={styles.phoneCol}>
-          <div className="hero-phone-glow" />
-          <div className="hero-grid-orb" />
-          <div className="hero-star hero-star-1" />
-          <div className="hero-star hero-star-2" />
-          <div className="hero-star hero-star-3" />
-          <div className="hero-star hero-star-4" />
-          <div className="hero-star hero-star-5" />
-          <PhoneMockup style={{ width: 240, position: 'relative', zIndex: 1 }} />
-        </div>
-
-        <div style={styles.card}>
-          {pendingToken ? (
-            <>
-              <div style={styles.twoFaTitle}>{t('auth.twoFaTitle')}</div>
-              <p style={styles.twoFaHint}>{t('auth.twoFaHint')}</p>
-              <form onSubmit={handleTwoFaSubmit} style={styles.form}>
-                <label style={styles.label}>
-                  {t('auth.twoFaCode')}
-                  <input
-                    type="text"
-                    required
-                    autoFocus
-                    inputMode="text"
-                    autoComplete="one-time-code"
-                    value={twoFaCode}
-                    onChange={(e) => setTwoFaCode(e.target.value)}
-                    style={{ ...styles.input, ...styles.twoFaInput }}
-                    placeholder="123456"
-                  />
-                </label>
-
-                {error && <div style={styles.error}>{error}</div>}
-
-                <button type="submit" disabled={loading} style={styles.submit}>
-                  {loading ? t('auth.wait') : t('auth.confirm')}
-                </button>
-                <button
-                  type="button"
-                  style={styles.backLink}
-                  onClick={() => {
-                    setPendingToken(null);
-                    setTwoFaCode('');
-                    setError(null);
-                  }}
-                >
-                  {t('auth.backToLogin')}
-                </button>
-              </form>
-            </>
-          ) : (
-            <>
-              <div style={styles.tabs}>
-                {/* Already the active tab — this page is sign-in only. */}
-                <button style={{ ...styles.tab, ...styles.tabActive }} onClick={() => setError(null)} type="button">
-                  {t('auth.login')}
-                </button>
-                {/* Registration has its own approved screen (see
-                    pages/register). This tab navigates there rather than
-                    switching this form into a second, different-looking
-                    signup UI. */}
-                <Link to={`/register${window.location.search}`} style={styles.tab}>
-                  {t('auth.register')}
-                </Link>
-              </div>
-
-              <form onSubmit={handleSubmit} style={styles.form}>
-                <FormField label={t('auth.email')}>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={styles.input}
-                    autoComplete="email"
-                  />
-                </FormField>
-                <FormField label={t('auth.password')}>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    style={styles.input}
-                    autoComplete="current-password"
-                  />
-                </FormField>
-                {error && <div style={styles.error}>{error}</div>}
-
-                <button type="submit" disabled={loading} style={styles.submit}>
-                  {loading ? t('auth.wait') : t('auth.signIn')}
-                </button>
-
-                {/* General exchange advantages, shown under the sign-in
-                    form — not a registration pitch. */}
-                <div style={styles.featureRow}>
-                  <FeatureBadge icon={<PercentIcon />} label={t('auth.feature.noFee')} />
-                  <FeatureBadge icon={<ShieldIcon />} label={t('auth.feature.twoFa')} />
-                  <FeatureBadge icon={<CardChipIcon />} label={t('auth.feature.card')} />
-                  <FeatureBadge icon={<span style={{ fontSize: 15, lineHeight: 1 }}>🇸🇬</span>} label={t('auth.feature.jurisdiction')} />
-                </div>
-              </form>
-            </>
-          )}
-        </div>
-      </div>
-      </div>
-
-      <PerksSection t={t} />
-
-      <CfdMarketsSection />
-
-      <div style={styles.legalRow}>
-        <Link to="/legal/terms" style={styles.legalLink}>
-          {t('footer.terms')}
-        </Link>
-        <span style={styles.legalDot}>·</span>
-        <Link to="/legal/privacy" style={styles.legalLink}>
-          {t('footer.privacy')}
-        </Link>
-        <span style={styles.legalDot}>·</span>
-        <Link to="/legal/risk" style={styles.legalLink}>
-          {t('footer.risk')}
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-/** Big card banner + a grid of exchange-wide advantages, below the login
- * fold — the small feature badges near the submit button are a compact
- * reminder; this is the actual pitch, same idea as a real exchange's
- * marketing homepage (card hero image + benefits grid). */
-function PerksSection({ t }: { t: ReturnType<typeof useLanguage>['t'] }) {
-  return (
-    <div style={styles.perksSection}>
-      <div className="auth-perks-banner" style={styles.perksBanner}>
-        <div className="card-tilt-wrap-photo" style={{ ...styles.perksBannerCard, transform: 'translate(-18px, -20px)' }}>
-          <CardFace theme={ICY_CARD_THEME} imageSrc="/cards/voltex-card-dark.png" imageWidth={440} last4="4417" holderName="YOUR NAME HERE" network="mastercard" />
-        </div>
-        <div style={styles.perksBannerText}>
-          <span style={styles.perksBannerKicker}>{t('auth.perks.cardKicker')}</span>
-          <h2 style={styles.perksBannerTitle}>{t('auth.perks.cardTitle')}</h2>
-          <p style={styles.perksBannerLead}>{t('auth.perks.cardText')}</p>
-        </div>
-      </div>
-
-      <div style={styles.perksGrid}>
-        <PerkCard icon={<PercentIcon />} title={t('auth.perks.fee.title')} text={t('auth.perks.fee.text')} />
-        <PerkCard icon={<AssetsIcon />} title={t('auth.perks.assets.title')} text={t('auth.perks.assets.text')} />
-      </div>
-    </div>
-  );
-}
-
-function PerkCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
-  return (
-    <div className="card-hover" style={styles.perkCard}>
-      <div style={styles.perkIconBadge}>{icon}</div>
-      <h3 style={styles.perkTitle}>{title}</h3>
-      <p style={styles.perkText}>{text}</p>
-    </div>
-  );
-}
-
-/** Label + input wrapper with a small "alive" focus micro-interaction —
- * the label lifts in color to the accent while its field is focused,
- * instead of the field being the only thing that visibly reacts. */
-function FormField({
-  label,
-  hint,
-  hintColor,
-  children,
-}: {
-  label: string;
-  hint?: string;
-  hintColor?: string;
-  children: React.ReactElement;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <label
-      style={{
-        ...styles.label,
-        color: focused ? 'var(--accent)' : 'var(--text-secondary)',
-        transition: 'color 0.15s ease',
-      }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
+    <AuthShell
+      switchPrompt={t('auth.noAccount')}
+      switchLabel={t('auth.createAccount')}
+      switchTo={`/register${window.location.search}`}
     >
-      {label}
-      {children}
-      {hint && <span style={{ ...styles.hint, color: hintColor ?? 'var(--text-tertiary)' }}>{hint}</span>}
-    </label>
-  );
-}
+      <div className="vx-auth-body vx-auth-enter">
+        {pendingToken ? (
+          <>
+            <div className="vx-auth-overline">{t('authShell.overline.twoFa')}</div>
+            <h1>{t('auth.twoFaTitle')}</h1>
+            <p className="vx-auth-sub">{t('auth.twoFaHint')}</p>
 
-function FeatureBadge({ icon, label }: { icon: React.ReactNode; label: string }) {
-  return (
-    <div style={styles.featureBadge}>
-      {icon}
-      <span>{label}</span>
-    </div>
-  );
-}
+            <form onSubmit={handleTwoFaSubmit} className="vx-auth-form">
+              <AuthField id="login-2fa" label={t('auth.twoFaCode')}>
+                <input
+                  id="login-2fa"
+                  type="text"
+                  required
+                  autoFocus
+                  inputMode="text"
+                  autoComplete="one-time-code"
+                  value={twoFaCode}
+                  onChange={(e) => setTwoFaCode(e.target.value)}
+                  placeholder="123456"
+                  className="vx-auth-input"
+                />
+              </AuthField>
 
-const ICON_PROPS = {
-  width: 15,
-  height: 15,
-  viewBox: '0 0 24 24',
-  fill: 'none' as const,
-  stroke: 'var(--accent)',
-  strokeWidth: 2,
-  strokeLinecap: 'round' as const,
-  strokeLinejoin: 'round' as const,
-};
+              {error && (
+                <div role="alert" className="vx-auth-alert">
+                  <AlertTriangleIcon size={14} />
+                  {error}
+                </div>
+              )}
 
-function PercentIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <line x1="19" y1="5" x2="5" y2="19" />
-      <circle cx="6.5" cy="6.5" r="2.5" />
-      <circle cx="17.5" cy="17.5" r="2.5" />
-    </svg>
-  );
-}
-function ShieldIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-function CardChipIcon() {
-  return (
-    <svg {...ICON_PROPS}>
-      <rect x="2" y="5" width="20" height="14" rx="2" />
-      <line x1="2" y1="10" x2="22" y2="10" />
-    </svg>
-  );
-}
-function AssetsIcon() {
-  return (
-    <svg {...ICON_PROPS} width={20} height={20}>
-      <circle cx="9" cy="9" r="6" />
-      <circle cx="15" cy="15" r="6" opacity={0.5} />
-    </svg>
-  );
-}
+              <button type="submit" disabled={loading} className="vx-auth-submit">
+                {loading ? <Loader2Icon size={16} className="vx-auth-spin" /> : null}
+                {loading ? t('auth.wait') : t('auth.confirm')}
+              </button>
+            </form>
 
-// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
-// scoped to this page the same way FuturesPage/WalletPage/etc re-theme
-// themselves — every existing var(--panel)/var(--border)/var(--text-*)
-// rule below (and in the shared ticker/card UI) picks this up
-// automatically.
-const AUTH_V0_VARS = {
-  ['--bg' as any]: '#080b12',
-  ['--panel' as any]: '#121925',
-  ['--panel-alt' as any]: '#0e131d',
-  ['--panel-alt-hover' as any]: '#172131',
-  ['--border' as any]: '#1c2735',
-  ['--text-primary' as any]: '#f5f7fa',
-  ['--text-secondary' as any]: '#8b96a8',
-  ['--text-tertiary' as any]: '#6b7789',
-  ['--buy' as any]: '#19d98b',
-  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
-  ['--sell' as any]: '#ff4d67',
-  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
-  ['--accent' as any]: '#18c8ff',
-  ['--accent-hover' as any]: '#3fd4ff',
-  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
-  ['--on-accent' as any]: '#04121b',
-} as React.CSSProperties;
+            <p className="vx-auth-alt">
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingToken(null);
+                  setTwoFaCode('');
+                  setError(null);
+                }}
+                className="vx-auth-forgot"
+              >
+                {t('auth.backToLogin')}
+              </button>
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="vx-auth-overline">{t('authShell.overline.login')}</div>
+            <h1>{t('auth.loginTitle')}</h1>
+            <p className="vx-auth-sub">{t('auth.loginSubtitle')}</p>
 
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh',
-    padding: '32px 20px 40px',
-    ...AUTH_V0_VARS,
-  },
-  fold: {
-    position: 'relative',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '40px 0 64px',
-  },
-  langSwitch: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 2,
-  },
-  legalRow: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 40,
-  },
-  legalLink: { fontSize: 11, color: 'var(--text-tertiary)' },
-  legalDot: { fontSize: 11, color: 'var(--text-tertiary)' },
-  layout: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 48,
-    maxWidth: 1200,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  hero: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-    minWidth: 0,
-  },
-  phoneCol: {
-    flexShrink: 0,
-    position: 'relative',
-    width: 380,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroTagline: {
-    fontFamily: 'var(--font-display)',
-    fontSize: 26,
-    fontWeight: 800,
-    lineHeight: 1.25,
-    letterSpacing: '-0.01em',
-    margin: '4px 0 8px',
-    maxWidth: 420,
-    background: 'linear-gradient(120deg, var(--text-primary) 40%, var(--accent) 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-  },
-  tickerList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 2,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    padding: 8,
-    maxWidth: 420,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-  },
-  tickerRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '10px 12px',
-    borderRadius: 8,
-  },
-  tickerLeft: { display: 'flex', alignItems: 'center', gap: 10 },
-  tickerPair: { fontSize: 13, fontWeight: 700 },
-  tickerPrice: { fontSize: 13, color: 'var(--text-secondary)', flex: 1, textAlign: 'right', paddingRight: 16 },
-  tickerChange: { fontSize: 13, fontWeight: 700, width: 70, textAlign: 'right' },
-  tickerDivider: {
-    fontSize: 10,
-    fontWeight: 800,
-    letterSpacing: '0.08em',
-    color: 'var(--text-tertiary)',
-    padding: '6px 4px 2px',
-  },
-  card: {
-    width: 380,
-    flexShrink: 0,
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 16,
-    padding: 32,
-    boxShadow: '0 24px 70px rgba(0,0,0,0.4)',
-    transition: 'box-shadow 0.25s ease, border-color 0.25s ease',
-  },
-  tabs: {
-    display: 'flex',
-    gap: 4,
-    marginBottom: 24,
-    background: 'var(--panel-alt)',
-    borderRadius: 8,
-    padding: 3,
-  },
-  tab: {
-    flex: 1,
-    padding: '9px 0',
-    background: 'transparent',
-    border: 'none',
-    borderRadius: 6,
-    color: 'var(--text-secondary)',
-    fontSize: 13,
-    fontWeight: 700,
-  },
-  tabActive: {
-    background: 'var(--panel)',
-    color: 'var(--text-primary)',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-  },
-  featureRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 6,
-    marginTop: 4,
-  },
-  featureBadge: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 5,
-    padding: '10px 4px',
-    background: 'var(--panel-alt)',
-    borderRadius: 10,
-    fontSize: 9.5,
-    fontWeight: 700,
-    color: 'var(--text-secondary)',
-    textAlign: 'center',
-  },
-  twoFaTitle: { fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, marginBottom: 8 },
-  twoFaHint: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 20 },
-  twoFaInput: { fontFamily: 'var(--font-mono)', fontSize: 20, letterSpacing: '0.3em', textAlign: 'center' },
-  backLink: {
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--text-secondary)',
-    fontSize: 12,
-    padding: '4px 0',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 16,
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-  },
-  input: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '11px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 14,
-  },
-  hint: {
-    fontSize: 11,
-    color: 'var(--text-tertiary)',
-  },
-  error: {
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    padding: '8px 12px',
-    borderRadius: 8,
-    fontSize: 12,
-  },
-  submit: {
-    background: 'var(--accent)',
-    color: 'var(--on-accent)',
-    border: 'none',
-    borderRadius: 10,
-    padding: '12px 0',
-    fontWeight: 800,
-    fontSize: 14,
-    marginTop: 8,
-  },
-  perksSection: {
-    maxWidth: 1080,
-    margin: '0 auto',
-    paddingTop: 24,
-  },
-  perksBanner: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 56,
-    flexWrap: 'wrap',
-    background: 'linear-gradient(135deg, var(--panel) 0%, var(--panel-alt) 100%)',
-    border: '1px solid var(--border)',
-    borderRadius: 24,
-    padding: '48px 56px',
-    marginBottom: 40,
-    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-  },
-  perksBannerCard: { flexShrink: 0, margin: '0 auto' },
-  perksBannerText: { flex: '1 1 320px', minWidth: 280 },
-  perksBannerKicker: {
-    display: 'inline-block',
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    color: 'var(--accent)',
-    marginBottom: 10,
-  },
-  perksBannerTitle: {
-    fontSize: 26,
-    margin: '0 0 12px',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 800,
-    letterSpacing: '-0.01em',
-    lineHeight: 1.25,
-  },
-  perksBannerLead: { fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.65, maxWidth: 460, margin: 0 },
-  perksGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-    gap: 16,
-  },
-  perkCard: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 14,
-    padding: 24,
-  },
-  perkIconBadge: {
-    width: 40,
-    height: 40,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    background: 'var(--accent-dim)',
-    marginBottom: 14,
-  },
-  perkTitle: {
-    fontSize: 15,
-    margin: '0 0 6px',
-    fontFamily: 'var(--font-display)',
-    fontWeight: 700,
-  },
-  perkText: { fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 },
-};
+            <form onSubmit={handleSubmit} className="vx-auth-form">
+              <AuthField id="login-email" label={t('auth.email')}>
+                <input
+                  id="login-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                  className="vx-auth-input"
+                />
+              </AuthField>
+
+              <AuthPasswordField
+                id="login-password"
+                label={t('auth.password')}
+                value={password}
+                onChange={setPassword}
+                autoComplete="current-password"
+                required
+                aside={
+                  // There is no self-service reset endpoint, so this opens
+                  // the real support chat (mounted globally, and usable
+                  // signed-out) rather than linking to a page that would
+                  // have to be invented.
+                  <button type="button" onClick={openSupportWidget} className="vx-auth-forgot">
+                    {t('auth.forgotPassword')}
+                  </button>
+                }
+              />
+
+              {error && (
+                <div role="alert" className="vx-auth-alert">
+                  <AlertTriangleIcon size={14} />
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading} className="vx-auth-submit">
+                {loading ? <Loader2Icon size={16} className="vx-auth-spin" /> : null}
+                {loading ? t('auth.wait') : t('auth.signIn')}
+                {!loading && <ArrowRightIcon size={16} />}
+              </button>
+            </form>
+
+            <p className="vx-auth-alt">
+              {t('auth.noAccount')} <Link to={`/register${window.location.search}`}>{t('auth.createAccount')}</Link>
+            </p>
+          </>
+        )}
+
+        <p className="vx-auth-security">
+          <LockKeyholeIcon size={14} strokeWidth={1.8} />
+          {t('register.securityNote')}
+        </p>
+      </div>
+    </AuthShell>
+  );
+}
