@@ -53,6 +53,7 @@ import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
 import { portfolioRouter } from './api/routes/portfolio';
+import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
@@ -78,6 +79,9 @@ const fearGreedService = new FearGreedService(process.env.FEAR_GREED_API_BASE_UR
 const arbitrageService = new ArbitrageService(marketDataService);
 const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY);
 const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
+// Wallet valuation + portfolio performance. Reads the ledger, never writes
+// it; see WalletPortfolioService and AdminPortfolioProfile.
+const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
@@ -173,7 +177,7 @@ app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry));
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
-app.use('/api/v1', portfolioRouter(prisma));
+app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 

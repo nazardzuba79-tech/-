@@ -152,6 +152,15 @@ export interface RegistrationChallenge {
   emailDelivered: boolean;
 }
 
+/** A real ledger balance, valued by the same endpoint that totals it. */
+interface RealBalance {
+  asset: string;
+  available: string;
+  locked: string;
+  priceUsd: number | null;
+  valueUsd: number | null;
+}
+
 export const api = {
   /** Creates the account but issues NO session: the response carries the
    *  verification challenge, and a token only comes back from verifyEmail. */
@@ -267,6 +276,51 @@ export const api = {
 
   // Wallet page's profit chart — the client already computes total
   // portfolio value (spot + futures), this just persists/reads it back.
+  /**
+   * Everything the Wallet page needs about what the account is worth.
+   * `real` is always the spendable ledger; `presentation`, when present, is
+   * a display-only profile that no trading, margin or withdrawal path reads
+   * (see the backend's AdminPortfolioProfile).
+   */
+  getWalletOverview: () =>
+    request<{
+      real: {
+        spot: RealBalance[];
+        futures: RealBalance[];
+        spotValueUsd: number;
+        futuresValueUsd: number;
+        totalValueUsd: number;
+      };
+      presentation: {
+        holdings: { asset: string; quantity: string; priceUsd: number | null; valueUsd: number | null }[];
+        totalValueUsd: number;
+        startedOn: string;
+      } | null;
+      displayTotalUsd: number;
+      btcPriceUsd: number | null;
+    }>('/wallet/overview'),
+
+  /** 7D/30D/90D/1Y/all-time, all measured off one canonical daily series. */
+  getWalletPerformance: () =>
+    request<{
+      periods: Record<
+        '7d' | '30d' | '90d' | '1y' | 'all',
+        {
+          period: string;
+          available: boolean;
+          startDate: string | null;
+          endDate: string | null;
+          startEquity: number | null;
+          endEquity: number | null;
+          absolutePnl: number | null;
+          percent: number | null;
+          points: { date: string; equity: number }[];
+        }
+      >;
+      ageDays: number;
+      startedOn: string | null;
+    }>('/wallet/performance'),
+
   recordPortfolioSnapshot: (totalValueUsd: string) =>
     request<{ recorded: boolean }>('/wallet/portfolio-snapshot', {
       method: 'POST',
