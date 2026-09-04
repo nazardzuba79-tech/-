@@ -616,3 +616,62 @@ icons, Google Fonts) are recorded as environment, not application, defects.
 Wallet redesign, Analytics redesign, any merge to `main`, any Render or
 production change. `EMAIL_VERIFICATION_SECRET` remains a production deployment
 prerequisite and was not configured.
+
+## 2026-09-04 — Homepage hero copy rewrite + Crypto Card removed from the hero
+- Agent: Claude
+- Branch: `integration/claude-codex` only. `main`, Render and production untouched.
+- Files: `frontend/src/pages/home/HomeHero.tsx`, `frontend/src/lib/i18n.tsx`.
+
+### Where the physical card in the hero actually came from
+Nowhere in the hero, as of the previous commit. Verified rather than assumed:
+`HomeHero`, `TerminalPreview` and `PhonePreview` contain no card component,
+no card artwork and no card background; `home.css` has no `url()` or
+card-bearing pseudo-element; and a live DOM scan of the rendered homepage
+found the hero section (top 58 → 599) holding **zero images**, with the only
+`/cards/voltex-card-dark.png` on the page at y=980 — inside `HomeCardSection`,
+the dedicated Crypto Card section.
+
+The physical card the owner saw was the **secondary Crypto Card panel beside
+the Markets table** (small card + Apple Pay + NFC + Получить карту), which the
+preceding functional audit removed in `eaedfac`. Re-checked here: no card
+markup, no Apple Pay/NFC text and no `HomeCryptoCard`/`CreditCardIcon` import
+remain in `HomeMarkets.tsx`, and the table already spans the full section.
+Nothing further to remove.
+
+What *was* still advertising the card in the hero was its secondary CTA,
+**Получить карту** with a `CreditCardIcon`. That is now gone.
+
+### Hero changes
+- Secondary CTA replaced: `Получить карту` → `/card` becomes
+  **Смотреть рынки** → `/markets`; the `CreditCardIcon` import is dropped.
+- Primary CTA text is now **Открыть терминал** (still `/trade`), on a new key
+  `home.cta.openTerminal` — `home.cta.startTrading` is left untouched because
+  the header's registration CTA still uses it.
+- New key `home.cta.viewMarkets`. `home.cta.getCard` is **kept**: the
+  dedicated Crypto Card section still renders it.
+- Copy rewritten (RU is the source; the other six are transcreated, not
+  word-for-word, to hold the same short premium line):
+  badge `Торговая инфраструктура VOLTEX`, headline `Рынок сложный.` /
+  `Интерфейс — нет.` (gold second line), subtitle `Спот, фьючерсы,
+  копитрейдинг и арбитраж — в одной системе с реальными рыночными данными и
+  единым кошельком.`
+- The badge keeps its long/short responsive split; `badgeShort` is now
+  `Инфраструктура VOLTEX` and equivalents.
+
+Nothing else in the hero changed: the atmospheric background, the terminal
+preview and the phone preview are exactly as approved, and no decorative
+object replaced the CTA.
+
+### Untouched
+`HomeCardSection`, `HomeCryptoCard`, `CardFace`, `CardPage` and the card
+artwork itself — not recoloured, cropped, filtered or redesigned. `git diff`
+covers two files only.
+
+### Checks actually run
+Frontend `tsc --noEmit` clean; production build `✓ built in 7.87s`. Browser QA
+of the hero at 1920/1440/1366/1280/1024/768/390/375: zero card elements in the
+hero at every width, exactly one card image on the page (the dedicated
+section), no horizontal page overflow, headline 2 lines (3 at 1024), CTAs
+never wider than the viewport, no uncaught page errors. All seven languages
+checked at 1440 and 375: 2–3 headline lines, no overflow, no hero card. Backend
+suite not re-run — no backend file changed.

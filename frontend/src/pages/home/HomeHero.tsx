@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CreditCardIcon, StarIcon } from 'lucide-react';
+import { StarIcon } from 'lucide-react';
 import { TerminalPreview } from './TerminalPreview';
 import { PhonePreview } from './PhonePreview';
 import { HomeMarket } from './useHomeMarket';
@@ -75,19 +75,21 @@ export function HomeHero({ market }: { market: HomeMarket }) {
             {t('home.hero.subtitle')}
           </p>
 
+          {/* Both CTAs lead into the product itself. The Crypto Card has its
+              own dedicated section further down the page; advertising it up
+              here only competed with the terminal the hero is built around. */}
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
               to="/trade"
               className="rounded-[6px] bg-gold-500 px-5 py-[10px] text-[13px] font-semibold text-ink-950 transition-colors duration-150 ease-out hover:bg-gold-400 active:translate-y-[1px] active:bg-gold-600"
             >
-              {t('home.cta.startTrading')}
+              {t('home.cta.openTerminal')}
             </Link>
             <Link
-              to="/card"
+              to="/markets"
               className="inline-flex items-center gap-2 rounded-[6px] border border-white/12 bg-white/[0.03] px-5 py-[10px] text-[13px] font-medium text-white transition-colors duration-150 ease-out hover:border-white/25 hover:bg-white/[0.06] active:translate-y-[1px]"
             >
-              <CreditCardIcon size={15} className="text-home-muted" />
-              {t('home.cta.getCard')}
+              {t('home.cta.viewMarkets')}
             </Link>
           </div>
         </div>
