@@ -798,3 +798,264 @@ balance, search, hide-zero, three sort columns and all five PnL periods
 exercised by click. Route regression sweep over 13 routes: all render, no
 error boundaries, no new console errors. No production trade, transfer or
 withdrawal was placed.
+
+## 2026-09-04 — Claude (Opus 5) — Authentication UI: one split screen for /register and /login
+
+Branch `claude/auth-ui-refine`, cut from `origin/main` (`32f7bbe`). Not merged,
+not deployed, Render untouched.
+
+### What changed
+
+`/register` and `/login` are now the same screen: a dark VOLTEX presentation
+column (~56%) and a light, warm-neutral auth workspace (~44%). New shared
+shell in `frontend/src/pages/auth-shell/`:
+
+- `AuthShell.tsx` — the split layout, the hero, the three benefit rows, the
+  Crypto Card section and the privacy footnote. Each page passes its own form
+  as children plus the header's switch prompt/link.
+- `AuthFields.tsx` — `AuthField` and `AuthPasswordField`, the two controls both
+  forms are built from (real `<label for>`, `${id}-error` + aria-describedby,
+  a real toggle button with aria-label/aria-pressed).
+- `auth-shell.css` — every selector prefixed `.vx-auth`; carries its own
+  `:where()`-wrapped preflight substitute, since Tailwind runs with
+  `corePlugins.preflight: false`.
+
+`AuthPage.tsx` was rewritten onto that shell and is now sign-in only (the
+former marketing fold — hero tickers, phone mockup, CFD section, perks banner,
+legal row and the `AUTH_V0_VARS` cyan palette — is gone). `RegisterPage.tsx`
+became a thin wrapper; `RegisterPanel.tsx` kept its logic verbatim and changed
+only presentation. `RegisterVisual.tsx`, `Field.tsx`, `PasswordField.tsx` and
+`register.css` were superseded and deleted.
+
+Copy: hero is `Торгуйте. / Управляйте. / Платите.` with gold on the third line
+only. The fake "Платформа работает" status dot and the
+"DIGITAL ASSET INFRASTRUCTURE" eyebrow are gone and are asserted absent by the
+QA script. The design source's fake submit confirmations ("Проверьте данные и
+продолжите регистрацию.", "Данные готовы к проверке.") were deliberately not
+ported — the forms show only the server's own messages.
+
+i18n: 22 now-unused keys removed, 27 added, across all 7 dictionaries
+(988 → 993 keys each, all seven equal and unique).
+
+### Preserved
+
+- Registration is still Email + Password only, 10+ chars with 1 uppercase, one
+  `POST /auth/register` that returns a session token and lands the user in the
+  platform. No confirm-password, phone, country, referral input, OTP, email
+  verification or terms checkbox. The referral code still arrives silently from
+  `REFERRAL_CODE_STORAGE_KEY`.
+- Login keeps `requires2fa` → pending-token → `loginWith2FA`, and `?next=`
+  handling via `readNext`/`defaultTradingPath`.
+- The approved physical card artwork is reused through `HomeCryptoCard`
+  (`/cards/voltex-card-dark.png`) — not redrawn, not recoloured, no invented
+  card number. The design source's CSS-drawn placeholder card was not ported.
+- Privacy microcopy is the repository's existing `auth.privacyNote` sentence,
+  not the design source's tax-authority wording.
+
+### Notes for whoever picks this up
+
+- "Забыли пароль?" opens the real support chat (`openSupportWidget`), because
+  there is no self-service reset endpoint on the backend. If one is ever added,
+  that is the single call site to change.
+- `frontend/src/components/PhoneMockup.tsx` is now unreferenced. It was left in
+  place rather than deleted — that is outside this task's scope.
+- The repository has no ESLint configuration (root or frontend), so no lint
+  step was run; `tsc -b` under strict mode is the static gate.
+- Google Fonts are blocked by this sandbox's egress proxy, so local screenshots
+  render in fallback faces. DM Sans and Manrope are already preloaded by
+  `index.html` in production; no new font request was added.
+
+### Checks actually run
+
+Frontend `tsc -b` clean; `npm run build` clean (`✓ built in 4.44s`). Full
+backend suite: 70 suites, 720 tests, all passing. Auth suites specifically:
+44 tests passing. Real browser QA against the running app (backend on :3000,
+Vite on :5173): registration with a fresh address returned a real token,
+stored it and navigated to `/futures`; a wrong password on `/login` rendered
+the server's own "Invalid email or password"; the correct password signed in;
+password toggle flips `type`; inline validation shows "Введите корректный
+email" / "Пароль слишком короткий"; tab order is logical on both pages and
+both labels are correctly associated; no page errors. Responsive sweep at
+1920/1440/1366/1280/1024/768/430/390/375 on both routes: zero page-level
+horizontal overflow, and none of the four banned strings present at any width.
+No production deployment was performed and none is claimed.
+
+### 2026-09-04 — follow-up on the same branch: final left-side copy
+
+Copy-only alignment on `claude/auth-ui-refine`. Layout, warm background
+treatment, spacing, responsive behaviour, auth logic, Crypto Card artwork,
+inputs, form structure and routing are all untouched.
+
+Hero is now `Биржа / институционального / уровня` — "Биржа" in warm white
+(`#F4F1EA`), the second and third lines in the existing restrained gold
+(`#D9A441`); the type scale is the one already in place, unchanged. Supporting
+line and the three benefit rows replaced with the approved wording ("0%
+комиссия", "500+ цифровых активов", "VOLTEX Crypto Card").
+
+One non-string change came with it: the first two benefit icons were a
+candlestick and a building, which described the previous copy. They are now a
+percent mark and coins. Revert is one line each in `AuthShell.tsx` if not
+wanted.
+
+Verified: frontend `tsc -b` exit 0, `npm run build` clean. Browser check at
+1920/1440/1280/1024/768/430/375 — no page-level horizontal overflow, the hero's
+long middle word fits on one line at every width, hero colours confirmed by
+computed style, and none of "60+ стран", "300+ криптовалют", "низкие комиссии",
+"Платформа работает", "DIGITAL ASSET INFRASTRUCTURE" or the retired
+"Торгуйте./Управляйте./Платите." lines appear at any width.
+
+## 2026-09-04 — Claude (Opus 5) — `claude/ui-polish-ready`: the two approved UI branches, consolidated
+
+Review branch cut fresh from `origin/main` (`32f7bbe`). Not merged, not
+deployed, Render untouched.
+
+Five commits cherry-picked, no merge commits and no branch histories pulled
+in — in order: the auth split screen, the final left-side copy, the benefit
+icon family, the registration password checklist, and the header balance
+removal. Every cherry-pick applied cleanly; there were no conflicts, because
+the two source branches share no file (auth touches `pages/auth-shell`,
+`pages/register`, `AuthPage.tsx`, `lib/i18n.tsx`; header touches `Nav.tsx`
+and `index.css`).
+
+Verified rather than assumed: the resulting tree is byte-identical to
+`claude/auth-ui-refine` on every auth file and to
+`claude/header-balance-cleanup` on every header file, and it differs from
+`origin/main` in exactly those 14 paths and no others. `src/`,
+`prisma/`, `render.yaml`, `package.json`, Wallet, Analytics, Copy Trading,
+Futures, Markets, Admin and `lib/api.ts` are all untouched.
+
+`WalletBalanceControl` is preserved and still imported by
+`pages/home/HomeHeader.tsx`; only the `Nav.tsx` call site is gone.
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean (`✓ built in 4.70s`); auth
+suites 44/44 passing; all seven i18n dictionaries at 996 keys, equal and
+unique.
+
+Browser regression at 1920/1440/1366/1024/768/390/375. Auth, both routes at
+every width: registration is `reg-email` + `reg-password` only, the two-row
+password checklist renders, login carries no checklist, and there is no
+checkbox, phone, OTP or confirm-password control anywhere; no page-level
+horizontal overflow; none of the retired strings present. Live flow: a
+password without an uppercase letter keeps the CTA disabled, a valid one
+enables it, and submitting returned a real token and landed on `/futures`.
+Header, six routes × seven widths (42 combinations): no balance control,
+Кошелёк / Пополнить / language / Профиль all present, zero trailing gap, no
+overflow.
+## 2026-09-04 — Claude (Opus 5) — Wallet: detailed PnL / performance page
+
+Branch `claude/wallet-pnl-detail`, cut from `origin/main` (`32f7bbe`). Not
+merged, not deployed, Render untouched.
+
+### What was added
+
+`/wallet/performance`, behind the Wallet's existing PnL card, under the same
+`RequireAuth` guard as `/wallet`. New folder
+`frontend/src/pages/wallet-performance/`:
+
+- `analytics.ts` — pure derivation over the canonical equity series: daily
+  PnL, drawdown, statistics, period buckets. No fetching, no data of its own.
+- `charts.tsx` — three hand-drawn SVG charts (equity, daily-PnL histogram,
+  drawdown) with a shared hover crosshair and tooltip.
+- `WalletPerformancePage.tsx`, `performance.css`.
+- `__tests__/analytics.test.ts` — 27 tests.
+
+### The single source of truth is unchanged
+
+`PortfolioPerformanceEngine` still builds the one time-weighted series and
+still measures the five windows off it; `GET /wallet/performance` still
+serves it. This page consumes `periods[period].points` and derives
+everything else from that array. No second engine, no hardcoded dataset, no
+backend change at all — `src/`, `prisma/` and `render.yaml` are untouched.
+
+Because the series is already cash-flow adjusted upstream, deposits,
+withdrawals and Spot↔Futures transfers cannot distort anything here. That is
+asserted in tests through the real engine, and it is visible in the live
+fixture: an account seeded with a $40,000 deposit reports all-time PnL of
+$12,564.85 (+23.45%), not $46k.
+
+Daily PnL is `equity[i] - equity[i-1]`, so it telescopes: the bars sum to the
+window's PnL exactly and the histogram cannot disagree with the curve. That
+invariant is a test.
+
+### Metrics
+
+Total PnL, ROI, days in period, profitable/losing days, win-day rate, average
+daily PnL, best/worst day, max drawdown (% and $), annualised volatility,
+Sharpe, Sortino, profit/loss ratio. Anything that cannot be computed honestly
+returns `null` and renders "Недостаточно данных" — a single return has no
+dispersion, and a window with no losing day has no P/L denominator.
+Risk-free rate is taken as zero for Sharpe/Sortino; this deployment has no
+rate curve and inventing one would silently change every figure.
+
+### Shared files touched, and why
+
+- `App.tsx` — the route.
+- `PortfolioStrip.tsx` — the PnL block became a `<Link>` to
+  `/wallet/performance?period=<current>`, carrying the selected window over.
+  The period buttons stayed outside the link; they are controls.
+- `useWalletData.ts` — an additive `{ rankings: false }` option so the
+  performance page does not poll a 200-row coin feed it never renders.
+  Default unchanged, so WalletPage behaves exactly as before.
+- `tailwind.config.js` — the new folder added to `content`.
+- `i18n.tsx` — 40 keys × 7 languages (988 → 1028 each, all equal and unique).
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean; full suite 71 files, 747
+tests passing. Browser QA at 1920/1440/1366/1024/768/430/390/375: no
+page-level horizontal overflow at any width (the breakdown table scrolls
+inside its own container below 768). All five periods verified against the
+API's own numbers; 1Y correctly shows the not-enough-history state on a
+140-day account. Tooltips confirmed on all three charts. The PnL card
+navigates in and the breadcrumb navigates back. Signed-out access redirects
+to `/login?next=%2Fwallet%2Fperformance`.
+
+### Limitations
+
+- Charts are pointer-driven, so tooltips do not arm on touch; every figure
+  they show is also printed as text beside the chart.
+- The breakdown keeps the most recent 60 buckets and reports the count.
+- Flow valuation inherits the engine's existing caveat: flows are valued at
+  today's price, exact for stablecoins and approximate otherwise.
+
+## 2026-09-04 — Claude (Opus 5) — `claude/review-ready`: both approved features together
+
+Review branch cut fresh from `origin/main` (`32f7bbe`). Not merged, not
+deployed, Render untouched.
+
+Seven commits cherry-picked, no branch histories merged: the six from
+`claude/ui-polish-ready` (auth split screen, final copy, benefit icons,
+password checklist, header balance removal, its handoff note) and the one
+from `claude/wallet-pnl-detail` (the performance page).
+
+One conflict, in `docs/AI_HANDOFF.md`: both branches append their own entry
+at the end of the file. Resolved by keeping both entries in order — nothing
+was dropped. `frontend/src/lib/i18n.tsx` auto-merged cleanly because the two
+features add keys at different anchors (`auth.backToLogin` /
+`register.password` for auth, `wallet.notEnoughHistory` for performance);
+verified afterwards rather than assumed: 1036 keys per dictionary, all seven
+equal and unique, 26 auth keys and 40 `perf.` keys present, and the retired
+`register.passwordHint` gone.
+
+Every non-overlapping file is byte-identical to its source branch, and the
+tree differs from `origin/main` in exactly 23 paths — `src/`, `prisma/`,
+`render.yaml`, Copy Trading, Analytics, Markets, Trade, Futures, Admin, the
+Crypto Card artwork and `lib/api.ts` are all untouched.
+
+### Checks actually run
+
+Frontend `tsc -b` exit 0; `npm run build` clean; auth + wallet/performance +
+admin-profile suites 98 tests passing. Browser smoke at 1440/1024/390 over
+`/register`, `/login`, `/wallet`, `/wallet/performance`, `/trade`,
+`/futures`, `/copy-trading` — 21 combinations, no horizontal overflow, no
+error boundary, no console or page errors, and on every authenticated route
+the header carries Кошелёк/Пополнить/language/Профиль with no balance
+control. Registration is email + password only with the two-line checklist
+and correct CTA gating; login shares the shell and shows no checklist. The
+Wallet PnL card opens `/wallet/performance?period=7d`; all five periods
+render (1Y honestly empty on a 140-day account), the daily-PnL histogram's
+tallest bar is 2.0x-5.7x its median rather than one spike, and all-time PnL
+reads +$13,501.44 (+25.28%) on an account holding a $40,000 deposit — the
+deposit still excluded.

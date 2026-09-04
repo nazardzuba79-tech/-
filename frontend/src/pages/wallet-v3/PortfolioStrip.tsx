@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import {
   ArrowDownToLineIcon,
+  ChevronRightIcon,
   ArrowLeftRightIcon,
   ArrowUpFromLineIcon,
   EyeIcon,
@@ -88,7 +90,15 @@ function Performance({
 
   return (
     <div className="w-full">
-      <div className="mb-1.5 flex items-start justify-between gap-3">
+      {/* The whole PnL block is the way into the detailed view. A link
+          rather than a button so it opens in a new tab like any other, and
+          it carries the period the user is already looking at so the detail
+          page opens on the same window. The period buttons below stay
+          outside it — they are controls, not navigation. */}
+      <Link
+        to={`/wallet/performance?period=${period}`}
+        className="group -mx-1.5 mb-1.5 flex cursor-pointer items-start justify-between gap-3 rounded-w px-1.5 py-1 transition-colors duration-150 ease-exp hover:bg-panel-2"
+      >
         <div className="min-w-0">
           <p className="text-[10.5px] font-semibold uppercase tracking-[0.11em] text-ink-3">{t('wallet.pnl')}</p>
           <p className={`num mt-1 text-[15px] font-semibold tracking-[-0.015em] ${toneOf(percent)}`}>
@@ -98,7 +108,11 @@ function Performance({
             {available ? formatPercent(percent, lang) : EM_DASH}
           </p>
         </div>
-      </div>
+        <span className="mt-0.5 inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-[11px] text-ink-4 transition-colors duration-150 ease-exp group-hover:text-ink-2">
+          {t('perf.openDetails')}
+          <ChevronRightIcon size={12} />
+        </span>
+      </Link>
       <div className="h-10 w-full border-b border-hair-soft">
         {loading ? null : available && !hidden ? (
           <Sparkline points={selected!.points.map((pt) => pt.equity)} positive={positive} />

@@ -21,6 +21,7 @@ export default {
     './src/pages/register/**/*.{ts,tsx}',
     './src/pages/WalletPage.tsx',
     './src/pages/wallet-v3/**/*.{ts,tsx}',
+    './src/pages/wallet-performance/**/*.{ts,tsx}',
   ],
   corePlugins: { preflight: false },
   theme: {

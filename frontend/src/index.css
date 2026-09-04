@@ -833,11 +833,12 @@ body {
     padding: 0 7px;
   }
 }
-/* The balance is the last of the four to go, and only on a phone. Above
-   this the language control has already shrunk to its globe, which is the
-   compacting that buys the room; below it there is no width left for a
-   ~110px figure beside the deposit CTA and the profile control, which
-   outrank it. The balance stays one tap away on the wallet page. */
+/* The balance control is no longer in the app header at all — it was
+   removed from Nav in favour of Кошелёк + Пополнить, which already say
+   everything it did. It still renders in the homepage header, which hides
+   it below its own sm breakpoint; this rule stays as the belt-and-braces
+   phone hide for that instance. The balance itself lives on the wallet
+   page. */
 @media (max-width: 560px) {
   .wallet-balance-wrap {
     display: none;
