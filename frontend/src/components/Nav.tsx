@@ -1,10 +1,11 @@
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowUpRight, ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
 import { Logo } from './Logo';
+import { CryptoCardNavIcon } from './CryptoCardNavIcon';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
@@ -192,7 +193,7 @@ export function Nav({
           to="/card"
           className={`nav-item nav-secondary top-nav-link${active === '/card' ? ' nav-active is-active' : ''}`}
         >
-          <CreditCard size={14} />
+          <CryptoCardNavIcon />
           {t('nav.card')}
         </Link>
         <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active === '/otc' ? ' nav-active is-active' : ''}`}>
@@ -277,7 +278,7 @@ export function Nav({
           </Fragment>
         ))}
         <Link to="/card" style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}>
-          <CreditCard size={14} />
+          <CryptoCardNavIcon />
           {t('nav.card')}
         </Link>
         <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
