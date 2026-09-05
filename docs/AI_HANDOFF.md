@@ -807,3 +807,11 @@ withdrawal was placed.
 - Checks: frontend `tsc -b` passed; production Vite build passed (1995 modules, 3.81s; existing large-chunk warning only); 7 focused local SVG/accessibility/no-effects and exact icon-only Nav-diff assertions passed. No nav-specific test suite exists, and unrelated backend tests were not rerun.
 - Browser QA uses the real Nav and icon components in an isolated, local-only harness at `http://127.0.0.1:4177/`, not the production app or an authenticated account. Desktop 1280 and mobile 390: 14 x 14 glyph, unchanged Crypto Card accessible name and `/card` href, active state, mobile drawer, zero horizontal overflow, no console warning/error entries. Comparison and enlarged-detail preview left open. QA artifacts are outside the repository under workspace `outputs/crypto-card-nav-icon`.
 - Delivery: feature branch only, pending visual approval/integration. No merge into shared integration/review or main; no staging/production deployment, Render configuration or environment changes.
+
+### 2026-09-05 — Codex — white-card reference follow-up
+
+- User replaced the gold-chip direction with an Apple Card-style white silhouette bearing only VOLTEX and VISA, no holder name/surname. Code commit `52a72c0725fc1c29778b00d47a810bc31a2f66a9` on the same `codex/crypto-card-nav-icon` branch.
+- Only `CryptoCardNavIcon.tsx` changed: matte ivory face, fine grey border, existing VOLTEX crossed-orbit geometry in titanium grey, and VISA lettering. No Apple/Mastercard branding, chip, number or personal data. This is navigation artwork, not a change to card issuance/network functionality or a partnership claim.
+- Existing 14 x 14 slot, decorative accessibility, both Nav call sites, label/routing/layout, all other application files and pending Copy Trading work remain unchanged.
+- Frontend TypeScript and production build passed (1995 modules, 3.88s, existing chunk-size warning only). Updated local QA passed 10 assertions. Actual Nav harness at `http://127.0.0.1:4177/` checked at 1280 and 390: white-card details render, desktop/mobile icon remains 14 x 14, no overflow or console warnings/errors. Enlargement is provided only in the external QA harness, not the application.
+- Feature-branch delivery only; shared integration/review, main, Render and production are untouched.
