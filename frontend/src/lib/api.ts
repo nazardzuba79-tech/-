@@ -1,5 +1,4 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
-import { reviewReadPath, REVIEW_UNAVAILABLE } from './reviewPolicy';
 
 const TOKEN_KEY = 'exchange_token';
 
@@ -12,12 +11,10 @@ const TOKEN_KEY = 'exchange_token';
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export function getToken(): string | null {
-  if (import.meta.env.MODE === 'review') return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
 export function setToken(token: string) {
-  if (import.meta.env.MODE === 'review') throw new Error(REVIEW_UNAVAILABLE);
   localStorage.setItem(TOKEN_KEY, token);
 }
 
@@ -75,13 +72,6 @@ function extractErrorMessage(body: any, status: number): string {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  if (import.meta.env.MODE === 'review') {
-    const sample = reviewReadPath(path, options.method);
-    if (!sample) throw new ApiError(REVIEW_UNAVAILABLE, 503);
-    const response = await fetch(sample, { credentials: 'omit' });
-    if (!response.ok) throw new ApiError('Synthetic review sample unavailable', response.status);
-    return response.json();
-  }
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -104,7 +94,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 // Like request(), but for multipart/form-data (file uploads) — the browser
 // sets the Content-Type boundary itself, so it must NOT be set manually.
 async function requestForm<T>(path: string, formData: FormData): Promise<T> {
-  if (import.meta.env.MODE === 'review') throw new ApiError(REVIEW_UNAVAILABLE, 503);
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -123,7 +112,6 @@ async function requestForm<T>(path: string, formData: FormData): Promise<T> {
 // back an object URL the caller must revoke when done with it, plus its
 // content type (object URLs don't carry a file extension to sniff).
 async function requestBlobUrl(path: string): Promise<{ url: string; contentType: string }> {
-  if (import.meta.env.MODE === 'review') throw new ApiError(REVIEW_UNAVAILABLE, 503);
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
