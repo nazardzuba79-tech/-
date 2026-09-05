@@ -1,4 +1,4 @@
-/** Navigation-only card mark; keep the existing 14px slot and link colours. */
+/** Minimal white card artwork confined to the existing 14px navigation slot. */
 export function CryptoCardNavIcon() {
   return (
     <svg
@@ -10,9 +10,14 @@ export function CryptoCardNavIcon() {
       focusable="false"
       style={{ flexShrink: 0 }}
     >
-      <rect x="1.75" y="4.25" width="20.5" height="15.5" rx="3" fill="currentColor" fillOpacity="0.08" stroke="currentColor" strokeWidth="1.75" />
-      <rect x="5" y="8" width="5" height="4.5" rx="1" fill="var(--h-accent, #f0c43f)" />
-      <path d="M13.5 15.5H19" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+      <rect x="1" y="4.75" width="22" height="14.5" rx="2.2" fill="#f2f2f0" stroke="#cdd0d2" strokeWidth="0.75" />
+      {/* The same crossed-orbit geometry as LogoMark, in titanium grey. */}
+      <g transform="translate(3 6.25) scale(0.17)">
+        <ellipse cx="20" cy="20" rx="17" ry="6" stroke="#8c9096" strokeWidth="1.4" transform="rotate(-15 20 20)" />
+        <circle cx="20" cy="20" r="10" fill="#8c9096" />
+        <path d="M4 31 36 9" stroke="#f2f2f0" strokeWidth="3.4" strokeLinecap="round" />
+      </g>
+      <text x="20.5" y="17.5" fill="#686d76" fontFamily="Arial, sans-serif" fontSize="4.8" fontStyle="italic" fontWeight="800" textAnchor="end">VISA</text>
     </svg>
   );
 }
