@@ -1,6 +1,9 @@
 /** Linear, zero-based geometry. Never smooth, clip or redistribute ledger PnL. */
 export function dailyPnlChart(days: readonly { date: string; realizedPnl: number }[]) {
-  const width = Math.max(640, days.length * 9);
+  // Fit the complete period into the panel, not a nine-pixel/day strip that
+  // exposes only ~90 of 380 days on desktop. This changes x spacing only:
+  // one bar/day, original PnL, linear zero-based y scale, no aggregation.
+  const width = Math.max(640, Math.min(900, days.length * 2));
   const top = 18;
   const bottom = 202;
   const values = days.map(day => day.realizedPnl);

@@ -65,7 +65,7 @@ export interface SyntheticFollower {
 
 export interface SyntheticCopyState {
   // Earlier versions retain persisted inception history and outcome policies.
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5 | 6;
   seed: number;
   rngState: number;
   simulatedAt: string;
@@ -154,7 +154,7 @@ export interface SyntheticAnalytics {
 
 export interface SyntheticCopyResponse {
   trader: { id: string; name: string; vip: boolean };
-  simulation: { seed: number; mode: SyntheticMode; simulatedAt: string };
+  simulation: { seed: number; mode: SyntheticMode; simulatedAt: string; stateVersion: number };
   analytics: SyntheticAnalytics;
   trades: SyntheticTrade[];
   equityHistory: EquitySnapshot[];

@@ -19,7 +19,10 @@ test('all periods and +90 days preserve ledger totals and every daily bar', () =
     for (const period of ['7D', '30D', '90D', 'ALL'] as const) {
       const selected = selectSyntheticPeriod(response, period);
       const plot = dailyPnlChart(selected.daily);
+      expect(plot.width).toBeLessThanOrEqual(900);
       expect(plot.bars).toHaveLength(selected.daily.length);
+      expect(plot.bars[0].x).toBeGreaterThanOrEqual(0);
+      expect(plot.bars.at(-1)!.x + plot.bars.at(-1)!.width).toBeLessThanOrEqual(plot.width);
       expect(plot.total).toBeCloseTo(selected.pnl, 2);
       expect(plot.total).toBeCloseTo(selected.trades.reduce((sum, t) => sum + t.netPnl, 0), 2);
       expect(plot.bars.map(b => b.realizedPnl)).toEqual(selected.daily.map(d => d.realizedPnl));

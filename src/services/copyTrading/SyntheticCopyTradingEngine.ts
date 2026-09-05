@@ -219,20 +219,26 @@ function appendDay(state: SyntheticCopyState, date: string, endEquity: number, r
   if (state.followers.length) recordAum(state, date);
 }
 
-function initialTargets(rng: SeededRandom, days: number = SYNTHETIC_COPY_CONFIG.initialHistoryDays,
-  opening: number = SYNTHETIC_COPY_CONFIG.initialCapital,
-  closing: number = opening * (1 + SYNTHETIC_COPY_CONFIG.targetRoi90)): number[] {
-  // Synthetic scenario generation, never a transformation of recorded PnL.
-  // One additive capital budget across the full period replaces the old
-  // 60/23/7-day ROI anchors (which put 61% of profit into the final week).
-  // Seeded daily noise + overlapping cycles produce stronger/weaker clusters;
-  // each ten-session block has an irregularly placed, genuinely losing day.
-  const losingDays = new Set(Array.from({ length: Math.ceil(days / 10) },
-    (_, block) => block * 10 + rng.integer(2, 8)));
-  const weights = Array.from({ length: days }, (_, day) => losingDays.has(day)
-    ? -rng.between(0.06, 0.18)
-    : rng.between(0.7, 1.3) + 0.38 * Math.sin(day * 2 * Math.PI / 27 - 1)
-      + 0.17 * Math.sin(day * 2 * Math.PI / 11 + 0.4));
+function initialTargets(rng: SeededRandom, days: number, opening: number, closing: number): number[] {
+  // One additive lifetime budget. Irregular regime changes, daily noise and
+  // independently spaced losses replace the repeated sine/ten-day waveform.
+  // No window-specific anchor and no end-of-history boost.
+  let nextLoss = rng.integer(5, 13);
+  let nextRegime = 0;
+  let regime = 1;
+  let target = 1;
+  const weights = Array.from({ length: days }, (_, day) => {
+    if (day >= nextRegime) {
+      target = rng.between(0.65, 1.5);
+      nextRegime = day + rng.integer(9, 29);
+    }
+    regime += (target - regime) * 0.2;
+    if (day === nextLoss) {
+      nextLoss += rng.integer(5, 17);
+      return -rng.between(0.07, 0.2);
+    }
+    return regime * rng.between(0.5, 1.5);
+  });
   const totalWeight = weights.reduce((sum, value) => sum + value, 0);
   const netPnl = closing - opening;
   let cumulativeWeight = 0;
@@ -285,12 +291,12 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
   const today = utcDay(now);
   const config = SYNTHETIC_COPY_CONFIG;
   const firstDate = addUtcDays(addUtcMonths(today, -config.initialHistoryMonths), -config.initialHistoryExtraDays);
-  const earlierDays = dayDiff(firstDate, today) - config.initialHistoryDays;
-  const closingEquity = config.initialCapital * (1 + config.targetRoiAll);
-  const recentOpening = round(closingEquity / (1 + config.targetRoi90), 4);
+  const historyDays = dayDiff(firstDate, today);
+  const earlierDays = historyDays - config.initialHistoryDays;
+  const closingEquity = config.initialCapital + config.targetPnlAll;
   const rng = new SeededRandom(SYNTHETIC_COPY_CONFIG.seed);
   const state: SyntheticCopyState = {
-    version: 4,
+    version: config.stateVersion,
     seed: SYNTHETIC_COPY_CONFIG.seed,
     rngState: rng.state,
     simulatedAt: `${today}T23:59:59.999Z`,
@@ -303,18 +309,17 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
     dailyResults: [],
     followers: [],
   };
-  // One chronological ledger with two compatible bootstrap anchors. Keeping
-  // +841% over the latest 90 days and +3727% since inception necessarily puts
-  // ~91.77% of lifetime dollar PnL in those 90 days; never disguise this by
-  // redistributing the ALL chart independently of its underlying trades.
-  const recentTargets = initialTargets(rng, config.initialHistoryDays, recentOpening, closingEquity);
+  // Reconcile the previous unfinished additive-history work semantically:
+  // generate ALL once; split only the count plan to retain 97.2% trade outcomes.
+  const targets = initialTargets(rng, historyDays, config.initialCapital, closingEquity);
+  const earlierTargets = targets.slice(0, earlierDays);
+  const recentTargets = targets.slice(earlierDays);
+  const recentOpening = earlierTargets[earlierTargets.length - 1];
   const recentPlans = initialTradePlan(recentTargets, rng, recentOpening, config.initialTradeCount);
-  const earlierTargets = initialTargets(rng, earlierDays, config.initialCapital, recentOpening);
   // 243/250 is the exact rational 97.2% win rate. Balance the older cadence
   // in whole groups of 250, retaining 4–12 trades/day and exact full-ledger ROI.
   const earlierTradeCount = Math.round(earlierDays * config.initialTradeCount / config.initialHistoryDays / 250) * 250;
   const earlierPlans = initialTradePlan(earlierTargets, rng, config.initialCapital, earlierTradeCount);
-  const targets = [...earlierTargets, ...recentTargets];
   const plans = [...earlierPlans, ...recentPlans];
   for (let index = 0; index < targets.length; index++) {
     appendDay(state, addUtcDays(firstDate, index + 1), targets[index], rng, plans[index]);
@@ -418,7 +423,7 @@ export function toResponse(state: SyntheticCopyState): SyntheticCopyResponse {
   ensureAumHistory(state);
   return {
     trader: { id: 'VX-001', name: 'Nazara', vip: true },
-    simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt },
+    simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt, stateVersion: state.version },
     analytics: calculateAnalytics(state),
     trades: [...state.trades].sort((a, b) => b.closedAt.localeCompare(a.closedAt)),
     equityHistory: state.equityHistory,

@@ -1,7 +1,13 @@
+const targetRoiAll = 37.27; // Ratio: +3727%, NOT +37.27%.
+const targetPnlAll = 4_711_027; // Owner-approved synthetic lifetime result.
+
 export const SYNTHETIC_COPY_CONFIG = {
   stateId: 'nazara-v1',
+  stateVersion: 6 as const,
   seed: 20260902,
-  initialCapital: 100_000,
+  // Reconcile the approved dollar result with the primary ALL ROI constraint.
+  // This is scenario capital only; never a user balance or deposit.
+  initialCapital: Number((targetPnlAll / targetRoiAll).toFixed(4)),
   initialHistoryMonths: 12,
   initialHistoryExtraDays: 15,
   initialHistoryDays: 90,
@@ -10,12 +16,9 @@ export const SYNTHETIC_COPY_CONFIG = {
   targetWinRate: 0.972,
   minWinRate: 0.965,
   maxWinRate: 0.98,
-  // Bootstrap scenario anchors only, never displayed KPI overrides. ALL and
-  // rolling periods are then computed from the same append-only ledger.
-  targetRoiAll: 37.27,
-  targetRoi90: 8.41,
-  minRoi90: 8,
-  maxRoi90: 9.2,
+  // One lifetime anchor. Rolling windows are projections, not other targets.
+  targetRoiAll,
+  targetPnlAll,
   targetProfitFactor: 4.6,
   minProfitFactor: 3.5,
   maxProfitFactor: 6,

@@ -55,7 +55,12 @@ describe('synthetic Copy Trading performance engine', () => {
     // not separately forced to the retired, end-loaded ROI anchors.
     expect(response.analytics.roi7).toBeGreaterThan(0);
     expect(response.analytics.roi30).toBeGreaterThan(response.analytics.roi7);
-    expect(response.analytics.roi90).toBeCloseTo(841, 1);
+    expect(response.analytics.roi90).toBeGreaterThan(response.analytics.roi30);
+    expect(response.analytics.roi90).toBeCloseTo(rollingRoi(first.equityHistory, 90), 3);
+    expect(response.analytics.roi90).not.toBe(841);
+    expect(response.analytics.allTime.pnl).toBe(4_711_027);
+    expect(response.analytics.allTime.roi).toBe(3727);
+    expect(first.version).toBe(6);
     expect(response.analytics.winRate).toBeGreaterThanOrEqual(94);
     expect(response.analytics.winRate).toBeLessThanOrEqual(98);
     expect(response.analytics.plRatio).toBeGreaterThan(0.65);

@@ -444,7 +444,7 @@ function DailyPnlChart({ data }: { data?: SyntheticPeriodAnalytics }) {
       </div>}
       {days.length ? (
         <div className="daily-plot" tabIndex={0} role="region" aria-label="Daily PnL: дневная история, прокрутка по горизонтали">
-          <svg viewBox={`-65 0 ${plot.width + 75} 236`} style={{ minWidth: Math.max(540, days.length * 9) }} role="img" aria-label={`Daily PnL: ${days.length} дней, ${signedUsd(plot.total)}`}>
+          <svg viewBox={`-65 0 ${plot.width + 75} 236`} style={{ minWidth: 540 }} role="img" aria-label={`Daily PnL: ${days.length} дней, ${signedUsd(plot.total)}`}>
             {plot.ticks.map((tick, index) => <g key={index}><line className="daily-grid" x1="0" x2={plot.width} y1={tick.y} y2={tick.y} /><text x="-8" y={tick.y + 4} textAnchor="end">{formatAccountSize(tick.value)}</text></g>)}
             <line className="daily-baseline" x1="0" x2={plot.width} y1={plot.zero} y2={plot.zero} />
             {plot.bars.map(bar => <rect key={bar.date} x={bar.x} y={bar.y} width={bar.width} height={bar.height} className={bar.realizedPnl >= 0 ? 'daily-gain' : 'daily-loss'}><title>{bar.date}: {signedUsd(bar.realizedPnl)}</title></rect>)}

@@ -15,8 +15,10 @@ describe('synthetic since-inception history and follower cohorts', () => {
     const recent = selectSyntheticPeriod(response, '90D');
 
     expect(state.initialEquityDate).toBe('2025-08-21');
-    expect(state.equityHistory[0]).toEqual({ date: '2025-08-21', equity: 100_000 });
-    expect(state.equityHistory.at(-1)).toEqual({ date: '2026-09-05', equity: 3_827_000 });
+    const opening = Number((4_711_027 / 37.27).toFixed(4));
+    expect(opening).toBe(126_402.6563);
+    expect(state.equityHistory[0]).toEqual({ date: '2025-08-21', equity: opening });
+    expect(state.equityHistory.at(-1)).toEqual({ date: '2026-09-05', equity: 4_837_429.6563 });
     expect(state.dailyResults).toHaveLength(380);
     expect(all.equity).toHaveLength(381);
     expect(all.tradingDays).toBe(380);
@@ -24,17 +26,21 @@ describe('synthetic since-inception history and follower cohorts', () => {
     expect(all.winningTrades).toBe(3159);
     expect(all.losingTrades).toBe(91);
     expect(all.winRate).toBe(97.2);
-    expect(all.roi).toBeCloseTo(3727, 8);
-    expect(all.pnl).toBe(3_727_000);
+    // Four-decimal opening equity represents the requested ratio to better
+    // than 0.00001 percentage point; published ROI correctly rounds to 3727.
+    expect(all.roi).toBeCloseTo(3727, 5);
+    expect(all.roi).toBeCloseTo(all.pnl / opening * 100, 8);
+    expect(all.pnl).toBe(4_711_027);
     expect(response.analytics.allTime.roi).toBe(3727);
     expect(response.analytics.allTime.pnl).toBe(all.pnl);
     expect(response.analytics.masterPnl).toBe(all.pnl);
     expect(sum(state.trades.map(trade => trade.netPnl))).toBeCloseTo(all.pnl, 3);
     expect(sum(state.dailyResults.map(day => day.realizedPnl))).toBeCloseTo(all.pnl, 3);
-    expect(recent.equity[0].equity).toBeCloseTo(3_827_000 / 9.41, 3);
-    expect(recent.roi).toBeCloseTo(841, 5);
-    expect(recent.pnl).toBeCloseTo(3_827_000 - 3_827_000 / 9.41, 3);
-    expect(all.pnl - recent.pnl).toBeCloseTo(recent.equity[0].equity - 100_000, 3);
+    expect(recent.equity[0]).toEqual(state.equityHistory.at(-91));
+    expect(recent.roi).toBeCloseTo(recent.pnl / recent.equity[0].equity * 100, 8);
+    expect(recent.roi).not.toBe(841);
+    expect(recent.pnl).toBeCloseTo(4_837_429.6563 - recent.equity[0].equity, 3);
+    expect(all.pnl - recent.pnl).toBeCloseTo(recent.equity[0].equity - opening, 3);
     expect(recent.trades.every(trade => all.trades.some(item => item.id === trade.id))).toBe(true);
     expect(new Set(state.trades.map(trade => trade.id)).size).toBe(state.trades.length);
   });
@@ -150,7 +156,7 @@ describe('synthetic since-inception history and follower cohorts', () => {
       if (period !== 'ALL') expect(selected.trades.every(trade => !originalIds.has(trade.id))).toBe(true);
       else {
         expect(selected.totalTrades).toBeGreaterThan(initial.trades.length);
-        expect(selected.pnl).toBeGreaterThan(3_727_000);
+        expect(selected.pnl).toBeGreaterThan(4_711_027);
         expect(selected.roi).toBeGreaterThan(3727);
         expect(selected.equity[0]).toEqual(initial.equityHistory[0]);
       }
@@ -158,8 +164,8 @@ describe('synthetic since-inception history and follower cohorts', () => {
     expect(response.analytics.allTime.followersPnl).toBeGreaterThan(toResponse(initial).analytics.allTime.followersPnl);
   });
 
-  test('persisted v3 keeps its original inception and join-day basis until an explicit reset', async () => {
-    const stored: SyntheticCopyState = { ...createInitialState(NOW), version: 3, mode: 'FAST_FORWARD' };
+  test.each([3, 4] as const)('persisted v%i keeps its original inception and join-day basis until an explicit reset', async version => {
+    const stored: SyntheticCopyState = { ...createInitialState(NOW), version, mode: 'FAST_FORWARD' };
     const store = new MemorySyntheticStateStore(stored);
     const service = new SyntheticCopyTradingService(store, () => NOW);
     const save = jest.spyOn(store, 'save');
@@ -167,18 +173,19 @@ describe('synthetic since-inception history and follower cohorts', () => {
     expect(save).not.toHaveBeenCalled();
     await service.advance(7);
     const advanced: SyntheticCopyState = (await store.load())!;
-    expect(advanced.version).toBe(3);
+    expect(advanced.version).toBe(version);
     expect(advanced.initialEquityDate).toBe(stored.initialEquityDate);
     expect(advanced.equityHistory.slice(0, stored.equityHistory.length)).toEqual(stored.equityHistory);
     expect(advanced.trades.slice(0, stored.trades.length)).toEqual(stored.trades);
     for (const follower of advanced.followers) {
-      const basis = [...advanced.equityHistory].reverse().find(point => point.date <= follower.copyStartDate)!.equity;
+      const basis = ([...advanced.equityHistory].reverse().find(point => version >= 4
+        ? point.date < follower.copyStartDate : point.date <= follower.copyStartDate) ?? advanced.equityHistory[0]).equity;
       const expected = sum(advanced.trades.filter(trade => trade.closedAt.slice(0, 10) >= follower.copyStartDate)
         .map(trade => follower.allocatedCapital / basis * (trade.netPnl * follower.copyRatio
           - Math.abs(trade.netPnl) * (follower.slippageBps / 10_000 + follower.latencyMs / 50_000_000))));
       expect(follower.realizedPnl).toBeCloseTo(expected, 2);
     }
     expect((await service.reset()).analytics.allTime.roi).toBe(3727);
-    expect((await store.load())!.version).toBe(4);
+    expect((await store.load())!.version).toBe(6);
   });
 });

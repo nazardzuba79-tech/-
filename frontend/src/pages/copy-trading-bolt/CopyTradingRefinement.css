@@ -53,6 +53,20 @@
 }
 
 .copytrading-bolt-root.profile-view { --profile-ink: #202735; --profile-muted: #647083; --profile-line: #e3e7ed; --profile-gold: #9d701d; color: var(--profile-ink); background: #f3f5f8; }
+/* The shared Logo uses these tokens, including --bg for its orbit cut.
+   Limit the light remap to this profile's footer; the header stays dark. */
+.copytrading-bolt-root.profile-view > footer {
+  padding-inline: clamp(16px, 2.2vw, 32px);
+  --text-primary: var(--profile-ink);
+  --text-secondary: var(--profile-muted);
+  --text-tertiary: var(--profile-muted);
+  --border: var(--profile-line);
+  --bg: #f3f5f8;
+}
+@media (max-width: 900px) {
+  /* Keep footer links/copyright above the existing fixed mobile navigation. */
+  .copytrading-bolt-root.profile-view > footer { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+}
 .copytrading-bolt-root.profile-view .app { background: #f3f5f8; }
 .copytrading-bolt-root.profile-view .trader-profile-page { max-width: 1480px; }
 .copytrading-bolt-root.profile-view .back-button { color: var(--profile-muted); }

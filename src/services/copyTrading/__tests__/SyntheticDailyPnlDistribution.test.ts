@@ -7,6 +7,8 @@ import type { SyntheticCopyState } from '../types';
 
 const NOW = new Date('2026-09-05T12:00:00Z');
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
+const scaled = (value: number) => Math.round(value * 10_000);
+const sumScaled = (values: number[]) => sum(values.map(scaled));
 
 function independentlyCalculateRisk(equity: { equity: number }[]) {
   const returns = equity.slice(1).map((point, index) => point.equity / equity[index].equity - 1);
@@ -50,19 +52,61 @@ describe('synthetic daily PnL distribution', () => {
   test('fresh history distributes the same cumulative result across the full period', () => {
     const state = createInitialState(NOW);
     expect(state).toEqual(createInitialState(NOW));
-    expect(state.version).toBe(4);
+    expect(state.version).toBe(6);
     const values = state.dailyResults.slice(-90).map(day => day.realizedPnl);
     verifyDistributedWindow(values);
-    expect(values.filter(value => value < 0)).toHaveLength(9);
-    expect(sum(values)).toBeCloseTo(3_827_000 - 3_827_000 / 9.41, 3);
-    expect(sum(state.dailyResults.map(day => day.realizedPnl))).toBeCloseTo(3_727_000, 4);
-    expect(toResponse(state).analytics.roi90).toBe(841);
+    expect(values.filter(value => value < 0)).toHaveLength(7);
+    const recentOpening = state.equityHistory.at(-91)!.equity;
+    const closing = state.equityHistory.at(-1)!.equity;
+    expect(sumScaled(values)).toBe(scaled(closing) - scaled(recentOpening));
+    expect(sumScaled(state.dailyResults.map(day => day.realizedPnl))).toBe(scaled(4_711_027));
+    expect(toResponse(state).analytics.roi90).toBeCloseTo((closing / recentOpening - 1) * 100, 3);
     const sevenDayTotals = values.slice(0, -6).map((_, index) => sum(values.slice(index, index + 7)));
     // A stronger cluster must exist away from the ending; do not flatten bars.
     expect(Math.max(...sevenDayTotals.slice(0, -7))).toBeGreaterThan(sevenDayTotals[sevenDayTotals.length - 1]);
   });
 
-  test.each([0, 7, 30, 90, 180])('+%i days keeps rolling PnL distributed and every period ledger-derived', days => {
+  test('ALL profit is distributed across every quarter, not a final-day or final-week residual spike', () => {
+    const state = createInitialState(NOW);
+    const values = state.dailyResults.map(day => day.realizedPnl);
+    const total = sum(values);
+    expect(values).toHaveLength(380);
+    expect(Math.max(...values) / total).toBeLessThan(0.01);
+    expect(sum(values.slice(-7)) / total).toBeLessThan(0.04);
+    for (let quarter = 0; quarter < 4; quarter++) {
+      const contribution = sum(values.slice(quarter * 95, (quarter + 1) * 95)) / total;
+      expect(contribution).toBeGreaterThan(0.15);
+      expect(contribution).toBeLessThan(0.35);
+    }
+    const meanWeek = total / values.length * 7;
+    const finalWeek = sum(values.slice(-7));
+    // Non-overlapping blocks make distinct stronger periods observable,
+    // rather than counting the same spike in seven overlapping windows.
+    const strongWeeks = Array.from({ length: Math.floor(values.length / 7) }, (_, index) => ({
+      start: index * 7, pnl: sum(values.slice(index * 7, index * 7 + 7)),
+    })).filter(week => week.start < values.length - 14 && week.pnl > meanWeek * 1.25 && week.pnl > finalWeek);
+    expect(strongWeeks.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(strongWeeks.map(week => Math.floor(week.start / 95))).size).toBeGreaterThanOrEqual(3);
+    const positive = values.filter(value => value > 0);
+    expect(Math.max(...positive) / Math.min(...positive)).toBeGreaterThan(2);
+    expect(new Set(values.map(scaled)).size).toBeGreaterThan(370);
+    expect(values.at(-1)).toBeLessThan(Math.max(...values.slice(0, -7)));
+  });
+
+  test('small loss days have irregular spacing instead of a repeated weekly or ten-day waveform', () => {
+    const values = createInitialState(NOW).dailyResults.map(day => day.realizedPnl);
+    const lossDays = values.flatMap((pnl, index) => pnl < 0 ? [index] : []);
+    const gaps = lossDays.slice(1).map((day, index) => day - lossDays[index]);
+    expect(lossDays).toHaveLength(31);
+    expect(gaps.every(gap => gap >= 5 && gap <= 17)).toBe(true);
+    expect(new Set(gaps).size).toBeGreaterThanOrEqual(8);
+    for (const period of [7, 10, 14]) {
+      expect(new Set(lossDays.map(day => day % period)).size).toBeGreaterThan(1);
+    }
+    expect(Math.abs(Math.min(...values)) / Math.max(...values)).toBeLessThan(0.15);
+  });
+
+  test.each([0, 1, 7, 30, 90, 180])('+%i days keeps rolling PnL distributed and every period ledger-derived', days => {
     const initial = createInitialState(NOW);
     const state = days ? advanceState(initial, days) : initial;
     const response = toResponse(state);
@@ -71,11 +115,22 @@ describe('synthetic daily PnL distribution', () => {
     expect(state.dailyResults.slice(0, initial.dailyResults.length)).toEqual(initial.dailyResults);
     expect(state.trades.slice(0, initial.trades.length)).toEqual(initial.trades);
     expect(state.aumHistory.slice(0, initial.aumHistory.length)).toEqual(initial.aumHistory);
+    const allTradeUnits = sumScaled(state.trades.map(trade => trade.netPnl));
+    const allDailyUnits = sumScaled(state.dailyResults.map(day => day.realizedPnl));
+    const equityUnits = scaled(state.equityHistory.at(-1)!.equity) - scaled(state.equityHistory[0].equity);
+    expect(Number.isSafeInteger(allTradeUnits)).toBe(true);
+    expect(allTradeUnits).toBe(allDailyUnits);
+    expect(allDailyUnits).toBe(equityUnits);
+    if (!days) expect(allTradeUnits).toBe(47_110_270_000);
 
-    for (const day of state.dailyResults) {
+    for (const [index, day] of state.dailyResults.entries()) {
       const trades = state.trades.filter(trade => trade.closedAt.slice(0, 10) === day.date);
-      expect(sum(trades.map(trade => trade.netPnl))).toBeCloseTo(day.realizedPnl, 3);
-      expect(day.endEquity - day.startEquity).toBeCloseTo(day.realizedPnl, 3);
+      // Exact 0.0001-USDT ledger units catch accumulated rounding residuals
+      // that a loose currency/display tolerance could hide on the last day.
+      expect(sumScaled(trades.map(trade => trade.netPnl))).toBe(scaled(day.realizedPnl));
+      expect(scaled(day.endEquity) - scaled(day.startEquity)).toBe(scaled(day.realizedPnl));
+      expect(scaled(day.startEquity)).toBe(scaled(state.equityHistory[index].equity));
+      expect(scaled(day.endEquity)).toBe(scaled(state.equityHistory[index + 1].equity));
       expect(sum(trades.map(trade => trade.fees))).toBeCloseTo(day.fees, 3);
       expect(sum(trades.map(trade => trade.funding))).toBeCloseTo(day.funding, 3);
       expect(trades.filter(trade => trade.netPnl >= 0)).toHaveLength(day.wins);
@@ -98,6 +153,9 @@ describe('synthetic daily PnL distribution', () => {
       expect(selected.daily.every(day => day.date > cutoff && day.date <= currentDate)).toBe(true);
       expect(selected.totalTrades).toBe(expectedTrades.length);
       const tradeTotal = sum(expectedTrades.map(trade => trade.netPnl));
+      expect(sumScaled(expectedTrades.map(trade => trade.netPnl))).toBe(sumScaled(selected.daily.map(day => day.realizedPnl)));
+      expect(sumScaled(expectedTrades.map(trade => trade.netPnl)))
+        .toBe(scaled(selected.equity.at(-1)!.equity) - scaled(selected.equity[0].equity));
       expect(selected.pnl).toBeCloseTo(tradeTotal, 2);
       expect(dailyPnlChart(selected.daily).total).toBeCloseTo(tradeTotal, 2);
       expect(selected.roi).toBeCloseTo(tradeTotal / selected.equity[0].equity * 100, 5);
@@ -157,7 +215,7 @@ describe('synthetic daily PnL distribution', () => {
     expect(continued.dailyResults.slice(0, stored.dailyResults.length)).toEqual(stored.dailyResults);
     expect(continued.trades.slice(0, stored.trades.length)).toEqual(stored.trades);
     await service.reset();
-    expect((await store.load())!.version).toBe(4);
+    expect((await store.load())!.version).toBe(6);
     expect(await service.get()).toEqual(toResponse(createInitialState(NOW)));
   });
 

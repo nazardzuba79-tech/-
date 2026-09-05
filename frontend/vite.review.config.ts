@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
-import { createInitialState, toResponse } from '../src/services/copyTrading/SyntheticCopyTradingEngine';
+import { toResponse } from '../src/services/copyTrading/SyntheticCopyTradingEngine';
+import { createReviewSyntheticState, REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';
 
 // Loaded ONLY for the isolated review build/preview, never by frontend Docker.
 export default defineConfig({
@@ -10,13 +11,17 @@ export default defineConfig({
   plugins: [react(), {
     name: 'isolated-voltex-review',
     generateBundle() {
+      const synthetic = createReviewSyntheticState(new Date());
       this.emitFile({ type: 'asset', fileName: 'review-build.json', source: JSON.stringify({
         kind: 'isolated-visual-review', commit: process.env.RENDER_GIT_COMMIT ?? 'local',
         productionApi: false, builtAt: new Date().toISOString(),
+        synthetic: { stateId: REVIEW_SYNTHETIC_STATE_ID, version: synthetic.version,
+          inception: synthetic.initialEquityDate, simulatedAt: synthetic.simulatedAt },
       }) });
-      // Explicitly labelled synthetic sample, produced by the unchanged engine.
+      // Explicitly versioned presentation reset on this revision, then append
+      // elapsed days on future builds. The middleware disables stale caching.
       // No user record, account, token, balance fixture, database or API proxy.
-      this.emitFile({ type: 'asset', fileName: 'review-synthetic.json', source: JSON.stringify(toResponse(createInitialState(new Date()))) });
+      this.emitFile({ type: 'asset', fileName: 'review-synthetic.json', source: JSON.stringify(toResponse(synthetic)) });
     },
     configurePreviewServer(server) {
       server.middlewares.use((req, res, next) => {
