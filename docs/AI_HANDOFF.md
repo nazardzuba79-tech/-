@@ -798,3 +798,12 @@ balance, search, hide-zero, three sort columns and all five PnL periods
 exercised by click. Route regression sweep over 13 routes: all render, no
 error boundaries, no new console errors. No production trade, transfer or
 withdrawal was placed.
+
+## 2026-09-05 — Codex — Crypto Card navigation icon only
+
+- Isolated branch `codex/crypto-card-nav-icon`, based on freshly fetched `origin/integration/claude-codex` `32f7bbe48eaa18ca731713a0095d87a315512ef8`. Code commit: `34048570a26757476438c0c52a43335d07657504`.
+- Replaced the two desktop/mobile Lucide card glyphs in `frontend/src/components/Nav.tsx` with `CryptoCardNavIcon.tsx`: a restrained rounded card outline, gold chip and short detail line. SVG stays 14 x 14, inherits the link colour, uses the existing header gold token, and is decorative/non-focusable. No raster asset, dependency, animation, glow or global CSS change.
+- Preserved Claude/shared link labels, `/card` destinations, permissions/auth, header dimensions/spacing, menu behaviour, balance/deposit controls and every other product area. Existing uncommitted Copy Trading work in `staging-setup` was not modified or staged.
+- Checks: frontend `tsc -b` passed; production Vite build passed (1995 modules, 3.81s; existing large-chunk warning only); 7 focused local SVG/accessibility/no-effects and exact icon-only Nav-diff assertions passed. No nav-specific test suite exists, and unrelated backend tests were not rerun.
+- Browser QA uses the real Nav and icon components in an isolated, local-only harness at `http://127.0.0.1:4177/`, not the production app or an authenticated account. Desktop 1280 and mobile 390: 14 x 14 glyph, unchanged Crypto Card accessible name and `/card` href, active state, mobile drawer, zero horizontal overflow, no console warning/error entries. Comparison and enlarged-detail preview left open. QA artifacts are outside the repository under workspace `outputs/crypto-card-nav-icon`.
+- Delivery: feature branch only, pending visual approval/integration. No merge into shared integration/review or main; no staging/production deployment, Render configuration or environment changes.
