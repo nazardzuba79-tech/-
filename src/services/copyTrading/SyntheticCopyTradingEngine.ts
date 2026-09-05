@@ -14,19 +14,6 @@ class SeededRandom {
   integer(min: number, max: number): number { return Math.floor(this.between(min, max + 1)); }
 }
 
-function buildSegment(start: number, end: number, days: number, rng: SeededRandom, shocks: Map<number, number>): number[] {
-  const logs = Array.from({ length: days }, (_, index) => rng.between(-0.012, 0.012) + (shocks.get(index) ?? 0));
-  const correction = (Math.log(end / start) - logs.reduce((sum, value) => sum + value, 0)) / days;
-  const values: number[] = [];
-  let equity = start;
-  for (const value of logs) {
-    equity *= Math.exp(value + correction);
-    values.push(equity);
-  }
-  values[values.length - 1] = end;
-  return values;
-}
-
 function weightedSymbol(rng: SeededRandom) {
   const total = SYNTHETIC_COPY_CONFIG.symbols.reduce((sum, item) => sum + item.weight, 0);
   let cursor = rng.between(0, total);
@@ -202,10 +189,25 @@ function appendDay(state: SyntheticCopyState, date: string, endEquity: number, r
 }
 
 function initialTargets(rng: SeededRandom): number[] {
-  const first = buildSegment(100_000, 253_640, 60, rng, new Map([[19, -0.075], [20, -0.032], [44, -0.025]]));
-  const second = buildSegment(253_640, 423_870, 23, rng, new Map([[8, -0.035]]));
-  const third = buildSegment(423_870, 941_000, 7, rng, new Map([[2, -0.025]]));
-  return [...first, ...second, ...third];
+  const { initialCapital, initialHistoryDays, targetRoi90 } = SYNTHETIC_COPY_CONFIG;
+  // Synthetic scenario generation, never a transformation of recorded PnL.
+  // One additive capital budget across the full period replaces the old
+  // 60/23/7-day ROI anchors (which put 61% of profit into the final week).
+  // Seeded daily noise + overlapping cycles produce stronger/weaker clusters;
+  // each ten-session block has an irregularly placed, genuinely losing day.
+  const losingDays = new Set(Array.from({ length: Math.ceil(initialHistoryDays / 10) },
+    (_, block) => block * 10 + rng.integer(2, 8)));
+  const weights = Array.from({ length: initialHistoryDays }, (_, day) => losingDays.has(day)
+    ? -rng.between(0.25, 0.75)
+    : rng.between(0.7, 1.3) + 0.38 * Math.sin(day * 2 * Math.PI / 27 - 1)
+      + 0.17 * Math.sin(day * 2 * Math.PI / 11 + 0.4));
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  const netPnl = initialCapital * targetRoi90;
+  let cumulativeWeight = 0;
+  return weights.map((weight, index) => {
+    cumulativeWeight += weight;
+    return round(initialCapital + netPnl * (index === weights.length - 1 ? 1 : cumulativeWeight / totalWeight), 4);
+  });
 }
 
 export function createInitialState(now = new Date()): SyntheticCopyState {
@@ -213,7 +215,7 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
   const firstDate = addUtcDays(today, -90);
   const rng = new SeededRandom(SYNTHETIC_COPY_CONFIG.seed);
   const state: SyntheticCopyState = {
-    version: 1,
+    version: 2,
     seed: SYNTHETIC_COPY_CONFIG.seed,
     rngState: rng.state,
     simulatedAt: `${today}T23:59:59.999Z`,
@@ -245,6 +247,16 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
 
 function targetNextEquity(state: SyntheticCopyState): number {
   const current = state.equityHistory[state.equityHistory.length - 1];
+  if (state.version === 2) {
+    // Keep session exposure bounded rather than compounding each template
+    // return against ever-larger equity, which recreates end-loaded bars.
+    // Only append: neither past trades nor ALL history is rewritten. Existing
+    // version-1 environments retain their original regime until explicit reset.
+    const index = state.dailyResults.length;
+    const template = state.dailyResults[index % SYNTHETIC_COPY_CONFIG.initialHistoryDays];
+    const drift = 1 + 0.12 * Math.sin(index * 0.71) + 0.06 * Math.cos(index * 0.19);
+    return round(current.equity + template.realizedPnl * drift, 4);
+  }
   // Repeat the calibrated 90-day regime (including its flat sessions and
   // pullbacks) rather than incrementing an ROI label. This makes each full
   // 90-day rolling window stable while 7D/30D genuinely change as old

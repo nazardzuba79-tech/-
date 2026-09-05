@@ -52,8 +52,11 @@ function followerPnlForWindow(state: SyntheticCopyState, startDate: string): num
   return state.followers.filter((follower) => follower.active).reduce((followerSum, follower) => {
     const masterAtStart = equityAtOrBefore(state.equityHistory, follower.copyStartDate).equity;
     const scale = follower.allocatedCapital / Math.max(1, masterAtStart);
-    const effectiveStart = follower.copyStartDate > startDate ? follower.copyStartDate : startDate;
-    const pnl = state.trades.filter((trade) => utcDay(trade.closedAt) >= effectiveStart).reduce((sum, trade) => {
+    const pnl = state.trades.filter((trade) => {
+      const date = utcDay(trade.closedAt);
+      // The window boundary is opening equity, not an extra trading day.
+      return date > startDate && date >= follower.copyStartDate;
+    }).reduce((sum, trade) => {
       const penalty = Math.abs(trade.netPnl) * (follower.slippageBps / 10_000 + follower.latencyMs / 50_000_000);
       return sum + trade.netPnl * scale * follower.copyRatio - penalty * scale;
     }, 0);
