@@ -50,11 +50,12 @@ describe('synthetic daily PnL distribution', () => {
   test('fresh history distributes the same cumulative result across the full period', () => {
     const state = createInitialState(NOW);
     expect(state).toEqual(createInitialState(NOW));
-    expect(state.version).toBe(3);
-    const values = state.dailyResults.map(day => day.realizedPnl);
+    expect(state.version).toBe(4);
+    const values = state.dailyResults.slice(-90).map(day => day.realizedPnl);
     verifyDistributedWindow(values);
     expect(values.filter(value => value < 0)).toHaveLength(9);
-    expect(sum(values)).toBeCloseTo(841_000, 4);
+    expect(sum(values)).toBeCloseTo(3_827_000 - 3_827_000 / 9.41, 3);
+    expect(sum(state.dailyResults.map(day => day.realizedPnl))).toBeCloseTo(3_727_000, 4);
     expect(toResponse(state).analytics.roi90).toBe(841);
     const sevenDayTotals = values.slice(0, -6).map((_, index) => sum(values.slice(index, index + 7)));
     // A stronger cluster must exist away from the ending; do not flatten bars.
@@ -88,7 +89,7 @@ describe('synthetic daily PnL distribution', () => {
     const currentDate = state.equityHistory[state.equityHistory.length - 1].date;
     for (const period of ['7D', '30D', '90D', 'ALL'] as const) {
       const selected = selectSyntheticPeriod(response, period);
-      const count = period === 'ALL' ? 90 + days : Number(period.slice(0, -1));
+      const count = period === 'ALL' ? initial.dailyResults.length + days : Number(period.slice(0, -1));
       const cutoff = period === 'ALL' ? state.initialEquityDate : addUtcDays(currentDate, -count);
       const expectedTrades = state.trades.filter(trade => trade.closedAt.slice(0, 10) > cutoff);
       expect(selected.daily).toHaveLength(count);
@@ -116,7 +117,9 @@ describe('synthetic daily PnL distribution', () => {
         expect(response.analytics.maximumDrawdown).toBeCloseTo(risk.drawdown, 3);
       }
       if (period === 'ALL') {
-        expect(response.analytics.allTime.pnl).toBeCloseTo(tradeTotal, 2);
+        // Published currency rounds to cents; tolerate exactly half a cent
+        // plus floating-point summation noise over thousands of ledger rows.
+        expect(Math.abs(response.analytics.allTime.pnl - tradeTotal)).toBeLessThanOrEqual(0.005001);
         expect(response.analytics.allTime.totalTrades).toBe(expectedTrades.length);
         expect(response.analytics.allTime.sharpe).toBeCloseTo(risk.sharpe, 4);
         expect(response.analytics.allTime.sortino).toBeCloseTo(risk.sortino, 4);
@@ -154,7 +157,7 @@ describe('synthetic daily PnL distribution', () => {
     expect(continued.dailyResults.slice(0, stored.dailyResults.length)).toEqual(stored.dailyResults);
     expect(continued.trades.slice(0, stored.trades.length)).toEqual(stored.trades);
     await service.reset();
-    expect((await store.load())!.version).toBe(3);
+    expect((await store.load())!.version).toBe(4);
     expect(await service.get()).toEqual(toResponse(createInitialState(NOW)));
   });
 
@@ -165,7 +168,7 @@ describe('synthetic daily PnL distribution', () => {
     for (const startDate of [addUtcDays(cutoff, -3), cutoff, addUtcDays(cutoff, 3)]) {
       const follower = { ...state.followers[0], copyStartDate: startDate, active: true };
       state.followers = [follower, { ...follower, id: 'inactive', active: false }];
-      const basis = [...state.equityHistory].reverse().find(point => point.date <= startDate)!.equity;
+      const basis = [...state.equityHistory].reverse().find(point => point.date < startDate)!.equity;
       const scale = follower.allocatedCapital / basis;
       const contribution = (pnl: number) => (pnl * follower.copyRatio
         - Math.abs(pnl) * (follower.slippageBps / 10_000 + follower.latencyMs / 50_000_000)) * scale;

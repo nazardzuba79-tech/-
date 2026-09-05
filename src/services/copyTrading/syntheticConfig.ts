@@ -2,14 +2,17 @@ export const SYNTHETIC_COPY_CONFIG = {
   stateId: 'nazara-v1',
   seed: 20260902,
   initialCapital: 100_000,
+  initialHistoryMonths: 12,
+  initialHistoryExtraDays: 15,
   initialHistoryDays: 90,
   // 729 wins / 750 trades = exactly 97.2% in the fresh 90-day scenario.
   initialTradeCount: 750,
   targetWinRate: 0.972,
   minWinRate: 0.965,
   maxWinRate: 0.98,
-  // Only the initial 90-day scenario total is calibrated. Shorter ROI and
-  // drawdown values must follow its ledger, not conflicting window targets.
+  // Bootstrap scenario anchors only, never displayed KPI overrides. ALL and
+  // rolling periods are then computed from the same append-only ledger.
+  targetRoiAll: 37.27,
   targetRoi90: 8.41,
   minRoi90: 8,
   maxRoi90: 9.2,

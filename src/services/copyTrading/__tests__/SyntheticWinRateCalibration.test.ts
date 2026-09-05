@@ -11,32 +11,37 @@ describe('synthetic win-rate calibration and smaller daily losses', () => {
   test('97.2% comes from 729 actual winning trades out of 750, not a display override', () => {
     const state = createInitialState(NOW);
     const response = toResponse(state);
-    const wins = state.trades.filter(trade => trade.netPnl > 0);
-    const losses = state.trades.filter(trade => trade.netPnl < 0);
-    expect(state.version).toBe(3);
-    expect(state.trades).toHaveLength(750);
+    const recent = selectSyntheticPeriod(response, '90D');
+    const recentDays = state.dailyResults.slice(-90);
+    const wins = recent.trades.filter(trade => trade.netPnl > 0);
+    const losses = recent.trades.filter(trade => trade.netPnl < 0);
+    expect(state.version).toBe(4);
+    expect(recent.trades).toHaveLength(750);
     expect(wins).toHaveLength(729);
     expect(losses).toHaveLength(21);
-    expect(wins.length / state.trades.length * 100).toBe(97.2);
+    expect(wins.length / recent.trades.length * 100).toBe(97.2);
     expect(response.analytics.winningTrades).toBe(wins.length);
     expect(response.analytics.losingTrades).toBe(losses.length);
     expect(response.analytics.winRate).toBe(97.2);
     expect(response.analytics.allTime.winRate).toBe(97.2);
     for (const period of ['90D', 'ALL'] as const) {
       const selected = selectSyntheticPeriod(response, period);
-      expect(selected.totalTrades).toBe(750);
-      expect(selected.winningTrades).toBe(729);
-      expect(selected.losingTrades).toBe(21);
+      expect(selected.totalTrades).toBe(period === 'ALL' ? 3250 : 750);
+      expect(selected.winningTrades).toBe(period === 'ALL' ? 3159 : 729);
+      expect(selected.losingTrades).toBe(period === 'ALL' ? 91 : 21);
       expect(selected.winRate).toBe(97.2);
     }
-    expect(sum(state.dailyResults.map(day => day.numberOfTrades))).toBe(750);
-    expect(sum(state.dailyResults.map(day => day.wins))).toBe(729);
-    expect(sum(state.dailyResults.map(day => day.losses))).toBe(21);
+    expect(sum(recentDays.map(day => day.numberOfTrades))).toBe(750);
+    expect(sum(recentDays.map(day => day.wins))).toBe(729);
+    expect(sum(recentDays.map(day => day.losses))).toBe(21);
+    expect(sum(state.dailyResults.map(day => day.numberOfTrades))).toBe(3250);
+    expect(sum(state.dailyResults.map(day => day.wins))).toBe(3159);
+    expect(sum(state.dailyResults.map(day => day.losses))).toBe(91);
     expect(state.dailyResults.every(day => day.numberOfTrades >= 4 && day.numberOfTrades <= 12)).toBe(true);
     expect(new Set(state.dailyResults.map(day => day.numberOfTrades)).size).toBeGreaterThanOrEqual(5);
     // Activity remains spread across the period, not inserted only on the last day.
     for (let index = 0; index < 90; index += 30) {
-      const count = sum(state.dailyResults.slice(index, index + 30).map(day => day.numberOfTrades));
+      const count = sum(recentDays.slice(index, index + 30).map(day => day.numberOfTrades));
       expect(count).toBeGreaterThan(190);
       expect(count).toBeLessThan(310);
     }
@@ -44,8 +49,9 @@ describe('synthetic win-rate calibration and smaller daily losses', () => {
 
   test('nine small red days are genuine daily trade sums with the original cumulative result', () => {
     const state = createInitialState(NOW);
-    const reds = state.dailyResults.filter(day => day.realizedPnl < 0);
-    const greens = state.dailyResults.filter(day => day.realizedPnl > 0);
+    const recent = state.dailyResults.slice(-90);
+    const reds = recent.filter(day => day.realizedPnl < 0);
+    const greens = recent.filter(day => day.realizedPnl > 0);
     expect(reds).toHaveLength(9);
     expect(greens).toHaveLength(81);
     const largestGreen = Math.max(...greens.map(day => day.realizedPnl));
@@ -59,9 +65,10 @@ describe('synthetic win-rate calibration and smaller daily losses', () => {
       expect(pnl).toBeCloseTo(day.realizedPnl, 3);
     }
     expect(greens.filter(day => day.losses > 0)).toHaveLength(12);
-    expect(sum(state.dailyResults.map(day => day.realizedPnl))).toBeCloseTo(841_000, 3);
-    expect(sum(state.trades.map(trade => trade.netPnl))).toBeCloseTo(841_000, 3);
-    expect(state.equityHistory[state.equityHistory.length - 1].equity).toBe(941_000);
+    expect(sum(recent.map(day => day.realizedPnl))).toBeCloseTo(3_827_000 - 3_827_000 / 9.41, 3);
+    expect(sum(state.dailyResults.map(day => day.realizedPnl))).toBeCloseTo(3_727_000, 3);
+    expect(sum(state.trades.map(trade => trade.netPnl))).toBeCloseTo(3_727_000, 3);
+    expect(state.equityHistory[state.equityHistory.length - 1].equity).toBe(3_827_000);
     expect(toResponse(state).analytics.roi90).toBe(841);
     expect(state).toEqual(createInitialState(NOW));
   });
@@ -111,7 +118,7 @@ describe('synthetic win-rate calibration and smaller daily losses', () => {
       expect(day.losses).toBe(index % 5 === 1 || day.realizedPnl < 0 ? 1 : 0);
     }
     await service.reset();
-    expect((await store.load())!.version).toBe(3);
+    expect((await store.load())!.version).toBe(4);
     expect((await service.get()).analytics.winRate).toBe(97.2);
   });
 });

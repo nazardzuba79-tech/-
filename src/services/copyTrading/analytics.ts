@@ -1,4 +1,4 @@
-import { DailyResult, EquitySnapshot, PeriodSummary, SyntheticAnalytics, SyntheticCopyState, SyntheticTrade } from './types';
+import { DailyResult, EquitySnapshot, PeriodSummary, SyntheticAnalytics, SyntheticCopyState, SyntheticFollower, SyntheticTrade } from './types';
 
 const DAY_MS = 86_400_000;
 const round = (value: number, digits = 6) => Number(value.toFixed(digits));
@@ -11,6 +11,17 @@ export function addUtcDays(value: string | Date, days: number): string {
   const date = new Date(`${utcDay(value)}T00:00:00.000Z`);
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+}
+
+/** Calendar months, clamped at month-end (including leap-day anniversaries). */
+export function addUtcMonths(value: string | Date, months: number): string {
+  const date = new Date(`${utcDay(value)}T00:00:00.000Z`);
+  const day = date.getUTCDate();
+  date.setUTCDate(1);
+  date.setUTCMonth(date.getUTCMonth() + months);
+  const monthEnd = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+  date.setUTCDate(Math.min(day, monthEnd));
+  return utcDay(date);
 }
 
 export function dayDiff(from: string, to: string): number {
@@ -48,9 +59,16 @@ function tradesSince(trades: SyntheticTrade[], date: string): SyntheticTrade[] {
   return trades.filter((trade) => utcDay(trade.closedAt) > date);
 }
 
+export function followerMasterAtStart(state: SyntheticCopyState, follower: SyntheticFollower): number {
+  // New cohorts join at the start of their UTC date, before that day's trades.
+  // Retain the exposure convention of already persisted v1–v3 environments.
+  const basisDate = state.version >= 4 ? addUtcDays(follower.copyStartDate, -1) : follower.copyStartDate;
+  return equityAtOrBefore(state.equityHistory, basisDate).equity;
+}
+
 function followerPnlForWindow(state: SyntheticCopyState, startDate: string): number {
   return state.followers.filter((follower) => follower.active).reduce((followerSum, follower) => {
-    const masterAtStart = equityAtOrBefore(state.equityHistory, follower.copyStartDate).equity;
+    const masterAtStart = followerMasterAtStart(state, follower);
     const scale = follower.allocatedCapital / Math.max(1, masterAtStart);
     const pnl = state.trades.filter((trade) => {
       const date = utcDay(trade.closedAt);
