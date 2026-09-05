@@ -15,6 +15,7 @@ import { TradePage } from '../pages/TradePage';
 import { HomePage } from '../pages/home/HomePage';
 import { LegalPage } from '../pages/LegalPage';
 import { PhysicalCardsReview } from './PhysicalCardsReview';
+import { CardPage } from '../pages/CardPage';
 import '../index.css';
 // Home, Wallet and Register use the repository's scoped Tailwind utility
 // layer. Production receives it through SettingsPage's lazy route import;
@@ -35,6 +36,7 @@ function Review() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/physical-cards" element={<PhysicalCardsReview />} />
+      <Route path="/card" element={<CardPage reviewOnly />} />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/copy-trading" element={<CopyTradingPage />} />
