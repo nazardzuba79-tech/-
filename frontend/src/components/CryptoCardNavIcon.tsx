@@ -17,7 +17,7 @@ export function CryptoCardNavIcon() {
         <circle cx="20" cy="20" r="10" fill="#8c9096" />
         <path d="M4 31 36 9" stroke="#f2f2f0" strokeWidth="3.4" strokeLinecap="round" />
       </g>
-      <text x="20.5" y="17.5" fill="#686d76" fontFamily="Arial, sans-serif" fontSize="4.8" fontStyle="italic" fontWeight="800" textAnchor="end">VISA</text>
+      <text x="20.5" y="17.5" fill="#1434cb" fontFamily="Arial, sans-serif" fontSize="4.8" fontStyle="italic" fontWeight="800" textAnchor="end">VISA</text>
     </svg>
   );
 }
