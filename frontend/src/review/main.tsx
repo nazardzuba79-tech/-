@@ -14,6 +14,7 @@ import { FuturesPage } from '../pages/FuturesPage';
 import { TradePage } from '../pages/TradePage';
 import { HomePage } from '../pages/home/HomePage';
 import { LegalPage } from '../pages/LegalPage';
+import { PhysicalCardsReview } from './PhysicalCardsReview';
 import '../index.css';
 // Home, Wallet and Register use the repository's scoped Tailwind utility
 // layer. Production receives it through SettingsPage's lazy route import;
@@ -29,10 +30,11 @@ function Review() {
     <aside className="review-notice" role="note">
       <strong>VOLTEX · ISOLATED VISUAL REVIEW</strong>
       <span>No production connection. Do not enter real credentials. Account data and all API writes are disabled. Copy Trading figures are synthetic; market feeds may be unavailable.</span>
-      <nav aria-label="Review pages">{['login', 'register', 'copy-trading', 'wallet', 'markets', 'futures'].map(path => <Link key={path} to={`/${path}`}>{path}</Link>)}</nav>
+      <nav aria-label="Review pages">{['login', 'register', 'copy-trading', 'wallet', 'markets', 'futures', 'physical-cards'].map(path => <Link key={path} to={`/${path}`}>{path}</Link>)}</nav>
     </aside>
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/physical-cards" element={<PhysicalCardsReview />} />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/copy-trading" element={<CopyTradingPage />} />

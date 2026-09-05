@@ -1,0 +1,98 @@
+{
+  "black-signature": {
+    "sourceFilename": "ChatGPT Image 4 \u0441\u0435\u043d\u0442. 2026 \u0433., 21_19_15.png",
+    "sourceSha256": "57de0112bfaacb39239dac2be970c7049aa0e42a379e2c041e09d1a40035742b",
+    "cornersTLTRBRBL": [
+      [
+        288,
+        421
+      ],
+      [
+        907,
+        586
+      ],
+      [
+        740,
+        1007
+      ],
+      [
+        78,
+        801
+      ]
+    ],
+    "size": [
+      1000,
+      630
+    ],
+    "homography": [
+      [
+        1.685814991203944,
+        0.9316346004021793,
+        -877.7328842360533
+      ],
+      [
+        -0.47154995264452293,
+        1.76902679204218,
+        -608.9538930881351
+      ],
+      [
+        3.880413760450669e-05,
+        0.00027857043249242497,
+        1.0
+      ]
+    ],
+    "preservedOpaquePercent": 97.09,
+    "hiddenOpaquePercent": 0.0,
+    "maxPreservedChannelDifference": 0,
+    "generativeModelUsed": false,
+    "masterSha256": "224a23380bfb32737573102bbc234cc3a03b7ef400a0f326c851dd0ba5bf1c57"
+  },
+  "titanium": {
+    "sourceFilename": "ChatGPT Image 4 \u0441\u0435\u043d\u0442. 2026 \u0433., 21_16_30.png",
+    "sourceSha256": "1abe2da72bbb6e4236e019e82f2a9e2e0994d7e2401817bf403226294d01b2b4",
+    "cornersTLTRBRBL": [
+      [
+        706,
+        460
+      ],
+      [
+        1156,
+        602
+      ],
+      [
+        1018,
+        962
+      ],
+      [
+        562,
+        777
+      ]
+    ],
+    "size": [
+      1000,
+      630
+    ],
+    "homography": [
+      [
+        2.763010281509625,
+        1.2551213897078421,
+        -2528.0410980114025
+      ],
+      [
+        -0.7346389117623978,
+        2.3280810584019638,
+        -552.2622151606504
+      ],
+      [
+        0.00021987431753804702,
+        0.00028044876713081236,
+        1.0
+      ]
+    ],
+    "preservedOpaquePercent": 58.11,
+    "hiddenOpaquePercent": 39.17,
+    "maxPreservedChannelDifference": 0,
+    "generativeModelUsed": false,
+    "masterSha256": "1c5165a67dfec667720c1c15942e70fc0859f7db266cde6001f38733e876054a"
+  }
+}

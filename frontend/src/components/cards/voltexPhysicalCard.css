@@ -1,0 +1,25 @@
+.voltex-physical-card {
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  aspect-ratio: 1000 / 630;
+  min-width: 0;
+}
+
+.voltex-physical-card picture,
+.voltex-physical-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.voltex-physical-card img {
+  object-fit: contain;
+  user-select: none;
+}
+
+.voltex-physical-card .voltex-physical-card__repair-map {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
