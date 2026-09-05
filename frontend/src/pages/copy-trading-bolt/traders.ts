@@ -9,8 +9,8 @@
 export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Very High';
 export type StrategyCategory = 'trend' | 'swing' | 'quant' | 'arbitrage' | 'futures' | 'long-term' | 'multi-asset';
 
-/** The four periods the whole page speaks in. 'ALL' is a trader's full
- * history — for Nazar that is ~12 months (see NAZAR_HISTORY_MONTHS). */
+/** The four periods the whole page speaks in. ALL is complete history,
+ * whose actual inception date is supplied by the strategy ledger. */
 export type Period = '7D' | '30D' | '90D' | 'ALL';
 export const PERIODS: Period[] = ['7D', '30D', '90D', 'ALL'];
 export const PERIOD_LABEL_RU: Record<Period, string> = {
@@ -64,11 +64,6 @@ export type Trade = {
   positive: boolean;
 };
 
-/** How long Nazar has been running copy trading here. Every all-time
- * figure below is over exactly this window — the UI never presents it as
- * an annualised or projected number. */
-export const NAZAR_HISTORY_MONTHS = 12;
-
 export const nazarTrader: Trader = {
   id: 'VX-001',
   name: 'Nazara',
@@ -79,161 +74,23 @@ export const nazarTrader: Trader = {
   region: 'Singapore',
   strategy: 'Professional Strategy',
   category: 'multi-asset',
-  roi7: 122,
-  roi30: 271,
-  roi90: 841,
-  roiAll: 3741,
-  winRate: 97.1,
-  drawdown: 9,
-  copiers: 32,
-  aum: 7_200_000,
-  volume: 4.8,
+  // Missing is not zero: these values are replaced only by a canonical payload.
+  roi7: Number.NaN,
+  roi30: Number.NaN,
+  roi90: Number.NaN,
+  roiAll: Number.NaN,
+  winRate: Number.NaN,
+  drawdown: Number.NaN,
+  copiers: Number.NaN,
+  aum: Number.NaN,
+  volume: Number.NaN,
   risk: 'Moderate',
-  activeMonths: NAZAR_HISTORY_MONTHS,
-  performanceFee: 0.2,
+  activeMonths: Number.NaN,
+  performanceFee: Number.NaN,
 };
 
-// ---------------------------------------------------------------------------
-// Nazar's economics — derived, not typed in
-// ---------------------------------------------------------------------------
-//
-// The four ROI figures above are the input. They are internally consistent
-// only as an ACCELERATING curve, which is worth spelling out because the
-// naive reading is a contradiction:
-//
-//   if the last 90 days returned x9.41, four such quarters would be
-//   x9.41^4 = x7,842 (+784,100%), not the stated x38.41 (+3,741%).
-//
-// They coexist because the strategy scaled up recently. Splitting the
-// stated numbers into consecutive segments gives the implied pace:
-//
-//   months 4-12 (the first 9): x4.08 total   ~17%/month
-//   days 31-90:                x2.54 total   ~59%/month
-//   days 8-30:                 x1.67 total
-//   last 7 days:               x2.22
-//
-// Each segment is individually plausible for a momentum book that grew its
-// size and conviction over the year; it is the compounding of the FASTEST
-// segment across the whole year that would not be. So the ladder stands and
-// the curve is front-loaded — which is also why almost all copier profit
-// below lands in recent windows.
-//
-// Everything financial then follows from one function (cumulativeFactor)
-// plus the copier cohorts. Nothing downstream is a typed-in figure, so the
-// numbers cannot drift out of agreement with each other.
-
-/** [months ago, cumulative growth factor from then until now] — read
- * straight off Nazar's own ROI ladder, so the curve and the displayed
- * percentages are the same data. */
-const GROWTH_ANCHORS: [number, number][] = [
-  [0, 1],
-  [7 / 30, 1 + 122 / 100],
-  [1, 1 + 271 / 100],
-  [3, 1 + 841 / 100],
-  [12, 1 + 3741 / 100],
-];
-
-/** Growth multiple over the last `monthsAgo` months, interpolated
- * log-linearly between the anchors (log-linear because returns compound —
- * linear interpolation would understate the middle of every segment). */
-function cumulativeFactor(monthsAgo: number): number {
-  if (monthsAgo <= 0) return 1;
-  for (let i = 0; i < GROWTH_ANCHORS.length - 1; i++) {
-    const [m0, f0] = GROWTH_ANCHORS[i];
-    const [m1, f1] = GROWTH_ANCHORS[i + 1];
-    if (monthsAgo <= m1) {
-      const t = (monthsAgo - m0) / (m1 - m0);
-      return Math.exp(Math.log(f0) + t * (Math.log(f1) - Math.log(f0)));
-    }
-  }
-  return GROWTH_ANCHORS[GROWTH_ANCHORS.length - 1][1];
-}
-
-/** The copier book, as cohorts that joined at different points. A single
- * average copier cannot reproduce this book: someone who joined on day one
- * is up x38, someone who joined a fortnight ago is up x2.7, and the mix is
- * what determines both AUM and total profit. Weighted toward recent
- * joiners, which is what a 12-month-old product with 32 clients looks
- * like. */
-const COPIER_COHORTS: { count: number; joinedMonthsAgo: number; principalEach: number }[] = [
-  { count: 2, joinedMonthsAgo: 12, principalEach: 20_000 },
-  { count: 2, joinedMonthsAgo: 9, principalEach: 25_000 },
-  { count: 4, joinedMonthsAgo: 6, principalEach: 25_000 },
-  { count: 5, joinedMonthsAgo: 3, principalEach: 35_000 },
-  { count: 8, joinedMonthsAgo: 1, principalEach: 50_000 },
-  { count: 11, joinedMonthsAgo: 0.5, principalEach: 60_000 },
-];
-
-const PERIOD_MONTHS: Record<Period, number> = { '7D': 7 / 30, '30D': 1, '90D': 3, ALL: NAZAR_HISTORY_MONTHS };
-
-export type CopierEconomics = {
-  copiers: number;
-  /** Total the copiers put in, summed across cohorts. */
-  principal: number;
-  /** What that principal is worth today, before withdrawals. */
-  equity: number;
-  /** equity - principal: everything the strategy has made for copiers. */
-  lifetimeProfit: number;
-  /** Profit generated inside each window, counting each cohort only from
-   * the point it actually joined. */
-  profitByPeriod: Record<Period, number>;
-  /** equity - AUM. The balancing item: profit copiers have taken off the
-   * table, which is why AUM is lower than the equity generated. */
-  withdrawn: number;
-  aum: number;
-  performanceFee: number;
-  /** lifetimeProfit x performanceFee — never typed in separately. */
-  lifetimeEarnings: number;
-  earningsByPeriod: Record<Period, number>;
-  averagePrincipal: number;
-};
-
-function computeCopierEconomics(trader: Trader): CopierEconomics {
-  let principal = 0;
-  let equity = 0;
-  for (const cohort of COPIER_COHORTS) {
-    principal += cohort.count * cohort.principalEach;
-    equity += cohort.count * cohort.principalEach * cumulativeFactor(cohort.joinedMonthsAgo);
-  }
-
-  const profitByPeriod = {} as Record<Period, number>;
-  for (const period of PERIODS) {
-    const windowMonths = PERIOD_MONTHS[period];
-    let profit = 0;
-    for (const cohort of COPIER_COHORTS) {
-      const stake = cohort.count * cohort.principalEach;
-      const now = stake * cumulativeFactor(cohort.joinedMonthsAgo);
-      // A cohort that joined inside the window contributes its whole gain;
-      // one that predates it contributes only what it made since the
-      // window opened. Dividing today's equity by the window factor is the
-      // same as growing its balance at the window's start forward.
-      const atWindowStart =
-        cohort.joinedMonthsAgo <= windowMonths ? stake : now / cumulativeFactor(windowMonths);
-      profit += now - atWindowStart;
-    }
-    profitByPeriod[period] = Math.round(profit);
-  }
-
-  const lifetimeProfit = Math.round(equity - principal);
-  const earningsByPeriod = {} as Record<Period, number>;
-  for (const period of PERIODS) earningsByPeriod[period] = Math.round(profitByPeriod[period] * trader.performanceFee);
-
-  return {
-    copiers: COPIER_COHORTS.reduce((sum, c) => sum + c.count, 0),
-    principal: Math.round(principal),
-    equity: Math.round(equity),
-    lifetimeProfit,
-    profitByPeriod,
-    withdrawn: Math.round(equity - trader.aum),
-    aum: trader.aum,
-    performanceFee: trader.performanceFee,
-    lifetimeEarnings: Math.round(lifetimeProfit * trader.performanceFee),
-    earningsByPeriod,
-    averagePrincipal: Math.round(principal / COPIER_COHORTS.reduce((sum, c) => sum + c.count, 0)),
-  };
-}
-
-export const nazarEconomics: CopierEconomics = computeCopierEconomics(nazarTrader);
+// Nazara's economics are supplied by the synthetic trade/copy/fee ledger.
+// The illustrative catalogue below is never a fallback for that strategy.
 
 // ---------------------------------------------------------------------------
 // The rest of the marketplace
@@ -299,6 +156,7 @@ export const allTraders: Trader[] = [nazarTrader, ...marketplaceTraders];
 // ---------------------------------------------------------------------------
 
 export function formatPercent(value: number): string {
+  if (!Number.isFinite(value)) return '—';
   if (value > 0) return `+${value.toFixed(1)}%`;
   if (value < 0) return `${value.toFixed(1)}%`;
   return '0.0%';
@@ -312,6 +170,7 @@ export function roiClass(value: number): string {
 
 /** Compact USD with the $ sign — for AUM, profit and other aggregates. */
 export function formatAccountSize(value: number): string {
+  if (!Number.isFinite(value)) return '—';
   const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `${sign}$${(abs / 1_000_000).toFixed(1)}M`;
@@ -322,6 +181,7 @@ export function formatAccountSize(value: number): string {
 /** Compact USD without the $ sign, for places that print the currency
  * separately ("7.7M USDT"). */
 export function formatUsd(value: number): string {
+  if (!Number.isFinite(value)) return '—';
   const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
   if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
@@ -330,6 +190,7 @@ export function formatUsd(value: number): string {
 }
 
 export function formatVolume(value: number): string {
+  if (!Number.isFinite(value)) return '—';
   return `$${value.toFixed(1)}M`;
 }
 
@@ -403,12 +264,10 @@ function dailyJitter(id: string, magnitude: number): number {
   return Math.round((seededRandom(seed) * 2 - 1) * magnitude);
 }
 
-/** Copier profit for a period. Nazar's comes from the cohort model; every
- * other trader's is derived from their own AUM and period ROI, so the
- * relationship (profit is what the book actually made) holds for all. */
+/** Illustrative catalogue only. Nazara requires the canonical response. */
 export function getCopierProfit(trader: Trader, period: Period = '30D'): number {
   if (trader.id === nazarTrader.id) {
-    return nazarEconomics.profitByPeriod[period] + dailyJitter(trader.id + period, 900);
+    return Number.NaN;
   }
   const roi = getRoiForPeriod(trader, period) / 100;
   // Today's AUM already contains the gain, so the capital that earned it
@@ -423,19 +282,26 @@ export function getCopierProfit(trader: Trader, period: Period = '30D'): number 
  * rather than a negative fee (which is what a plain multiplication
  * produced, and which no venue actually pays out). */
 export function getTraderEarnings(trader: Trader, period: Period = '30D'): number {
+  if (trader.id === nazarTrader.id) return Number.NaN;
   return Math.max(0, Math.round(getCopierProfit(trader, period) * trader.performanceFee));
 }
 
 export function getLifetimeCopierProfit(trader: Trader): number {
-  if (trader.id === nazarTrader.id) return nazarEconomics.lifetimeProfit + dailyJitter(trader.id + 'life', 2400);
+  if (trader.id === nazarTrader.id) return Number.NaN;
   return getCopierProfit(trader, 'ALL');
 }
 
 export function getLifetimeTraderEarnings(trader: Trader): number {
+  if (trader.id === nazarTrader.id) return Number.NaN;
   return Math.max(0, Math.round(getLifetimeCopierProfit(trader) * trader.performanceFee));
 }
 
 export function generateProfileData(trader: Trader) {
+  if (trader.id === nazarTrader.id) return {
+    totalTrades: NaN, winningTrades: NaN, losingTrades: NaN, avgProfit: '—', avgLoss: '—',
+    profitFactor: '—', holdingTime: '—', volume: '—', newThisWeek: NaN,
+    avgCopierDeposit: NaN, totalCopiedVolume: NaN,
+  };
   // Trade count grows with both how much the book turns over and how long
   // it has been running — volume alone gave a 12-month strategy fewer
   // trades than a 3-month one with the same turnover.
@@ -445,9 +311,8 @@ export function generateProfileData(trader: Trader) {
   const avgProfit = trader.roi90 > 0 ? Math.min(8, Math.max(1.2, trader.roi90 / 50)) : 1.5;
 
   // Profit factor is the modelled quantity and the average loss follows
-  // from it, not the other way round. Fixing the loss at a share of the
-  // average win instead made the factor a hostage to the win rate: at
-  // Nazar's 97.1% it came out above 100, which no real book reports.
+  // from it, not the other way round. These are illustrative catalogue
+  // figures only; Nazara always uses the independent canonical ledger.
   // Deriving it this way also produces the shape a very high win rate
   // actually implies — many small gains against rare, much larger losses.
   // Position-level loss size is not account drawdown: a 40% loss on a 5%
@@ -467,7 +332,6 @@ export function generateProfileData(trader: Trader) {
     futures: '6h 24m',
     'multi-asset': '7h 30m',
   };
-  const isNazar = trader.id === nazarTrader.id;
   return {
     totalTrades,
     winningTrades,
@@ -478,9 +342,7 @@ export function generateProfileData(trader: Trader) {
     holdingTime: holdingTimes[trader.category],
     volume: `$${trader.volume.toFixed(1)}M`,
     newThisWeek: Math.max(0, Math.round(trader.copiers * 0.08)),
-    // Nazar's average comes from the cohort model so it agrees with his
-    // AUM; every other trader's is a share of their own book.
-    avgCopierDeposit: isNazar ? nazarEconomics.averagePrincipal : Math.round((trader.aum * 0.04) / 100) * 100,
+    avgCopierDeposit: Math.round((trader.aum * 0.04) / 100) * 100,
     totalCopiedVolume: Math.round(trader.volume * trader.copiers * 0.12 * 100) / 100,
   };
 }
@@ -501,6 +363,7 @@ function formatPrice(price: number): string {
 }
 
 export function generateTrades(trader: Trader): Trade[] {
+  if (trader.id === nazarTrader.id) return [];
   const seed = hashId(trader.id);
   const trades: Trade[] = [];
   const count = 6;
@@ -616,6 +479,7 @@ function xLabelsForPeriod(trader: Trader, period: Period): string[] {
  * that period's own ROI — the endpoint is pinned to the displayed
  * percentage, so chart and number can never disagree. */
 export function getChartData(trader: Trader, period: Period): ChartData {
+  if (trader.id === nazarTrader.id) return { linePath: '', areaPath: '', marketPath: '', btcPath: '', yLabels: [], xLabels: [], endY: 245 };
   const seedBase = hashId(trader.id) + periodDays(trader, period) * 31 + dayIndex();
   const startValue = 10_000;
   const endValue = startValue * (1 + getRoiForPeriod(trader, period) / 100);

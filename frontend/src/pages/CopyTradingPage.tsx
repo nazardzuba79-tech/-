@@ -9,7 +9,7 @@ import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
-import type { SyntheticCopyTradingResponse } from '../lib/syntheticCopyTrading';
+import { syntheticNazaraTrader, type SyntheticCopyTradingResponse } from '../lib/syntheticCopyTrading';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -60,22 +60,7 @@ export function CopyTradingPage() {
     api.getSyntheticCopyTrading().then(setSynthetic).catch(() => {});
   }, []);
 
-  const liveNazara = useMemo<Trader>(() => {
-    if (!synthetic) return { ...nazarTrader, name: 'Nazara' };
-    const { analytics } = synthetic;
-    return {
-      ...nazarTrader,
-      name: synthetic.trader.name,
-      roi7: analytics.roi7,
-      roi30: analytics.roi30,
-      roi90: analytics.roi90,
-      roiAll: analytics.roiAll,
-      winRate: analytics.winRate,
-      drawdown: analytics.maximumDrawdown,
-      copiers: analytics.activeFollowers,
-      aum: analytics.aum,
-    };
-  }, [synthetic]);
+  const liveNazara = useMemo(() => syntheticNazaraTrader(synthetic), [synthetic]);
 
   const visibleTrader = selectedTrader.id === nazarTrader.id ? liveNazara : selectedTrader;
 

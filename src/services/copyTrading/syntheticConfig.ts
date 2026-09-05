@@ -1,3 +1,6 @@
+// Legacy v1-v6 compatibility only. The isolated v7 review uses
+// reviewEconomicsConfig/reviewMasterLedger, never this static-capital model.
+// Keep existing production synthetic state behavior until explicitly promoted.
 const targetRoiAll = 37.27; // Ratio: +3727%, NOT +37.27%.
 const targetPnlAll = 4_711_027; // Owner-approved synthetic lifetime result.
 

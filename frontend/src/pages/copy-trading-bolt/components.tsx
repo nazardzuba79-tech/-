@@ -33,12 +33,8 @@ import {
   formatAccountSize,
   generateProfileData,
   generateTrades,
-  getChartData,
   getCopierProfit,
-  getLifetimeCopierProfit,
   getRoiForPeriod,
-  getTraderEarnings,
-  formatUsd,
   compositeScore,
   sortTraders,
   searchTraders,
@@ -47,7 +43,7 @@ import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
-import { formatSyntheticHistoryDate, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets } from '../../lib/syntheticCopyTrading';
+import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyPnlChart } from '../../lib/dailyPnlChart';
 import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
@@ -152,6 +148,10 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
   const { following, toggleFollowing } = useFollowing();
   const isFollowing = following.has(trader.id);
 
+  if (trader.id === nazarTrader.id && !Number.isFinite(trader.performanceFee) && !isFollowing) {
+    return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled title="Условия стратегии недоступны">Данные недоступны</button>;
+  }
+
   if (!eligible) {
     return (
       <button
@@ -204,6 +204,7 @@ function FavoriteButton({ trader, large = false }: { trader: Trader; large?: boo
 
 function followerProfitForPeriod(data: SyntheticCopyTradingResponse | null | undefined, period: Period): number | null {
   if (!data) return null;
+  if (data.economics) return data.economics.periods[period].netFollowersPnl;
   if (period === '7D') return data.analytics.followerPnl7;
   if (period === '30D') return data.analytics.followerPnl30;
   if (period === '90D') return data.analytics.followerPnl90;
@@ -213,13 +214,14 @@ function followerProfitForPeriod(data: SyntheticCopyTradingResponse | null | und
 function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; period: Period; synthetic?: SyntheticCopyTradingResponse | null }) {
   const chart = useMemo(
     () => trader.id === nazarTrader.id
-      ? synthetic ? syntheticChartData(synthetic, period) : getChartData(trader, period)
+      ? synthetic ? syntheticChartData(synthetic, period) : null
       : demoChartData(trader, period),
     [trader, period, synthetic]
   );
   const roi = getRoiForPeriod(trader, period);
   const lineColor = roi < 0 ? '#f6465d' : '#19b979';
   const gradientId = `mini-area-${trader.id.replace(/[^a-z0-9]/gi, '')}-${period}`;
+  if (!chart) return <div className="mini-performance-chart profile-empty">История недоступна</div>;
   return (
     <svg className={`mini-performance-chart ${roi < 0 ? 'negative' : 'positive'}`} viewBox="0 0 900 280" preserveAspectRatio="none" role="img" aria-label={`${trader.name} ${period} ROI chart`}>
       <defs>
@@ -256,7 +258,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <div className="card-identity">
           <div className="avatar-wrap"><Avatar trader={trader} />{trader.id === nazarTrader.id && trader.verified && <span className="verified-dot"><Check size={9} /></span>}</div>
           <div className="trader-name-row">
-            <div><h3>{trader.name}</h3><p><Users size={11} /> {trader.copiers.toLocaleString('ru-RU')} подписчиков</p></div>
+            <div><h3>{trader.name}</h3><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
             {trader.vip && <VipBadge />}
           </div>
         </div>
@@ -277,7 +279,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
       </div>
       <div className="card-meta">
-        <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>
+        <div><span>{trader.id === nazarTrader.id && synthetic?.economics ? 'Чистая прибыль подписчиков' : 'Прибыль подписчиков'} · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>
         <div><span>AUM</span><b>{formatAccountSize(trader.aum)}</b></div>
       </div>
       <div className="card-cta-area">
@@ -298,21 +300,33 @@ type ProfileMetrics = Pick<SyntheticPeriodAnalytics,
   'tradingDays' | 'followerPnl'>;
 
 function durationLabel(minutes: number): string {
+  if (!Number.isFinite(minutes)) return '—';
   if (minutes >= 1_440) return `${Math.floor(minutes / 1_440)}д ${Math.round(minutes % 1_440 / 60)}ч`;
   if (minutes >= 60) return `${Math.floor(minutes / 60)}ч ${Math.round(minutes % 60)}м`;
   return `${Math.round(minutes)}м`;
 }
 
-function numberLabel(value: number, maximumFractionDigits = 2): string {
-  if (!Number.isFinite(value)) return '—';
+function numberLabel(value: number | null | undefined, maximumFractionDigits = 2): string {
+  if (value == null || !Number.isFinite(value)) return '—';
   return value.toLocaleString('ru-RU', { minimumFractionDigits: maximumFractionDigits, maximumFractionDigits });
 }
 
 function signedUsd(value: number): string {
+  if (!Number.isFinite(value)) return '—';
   return `${value >= 0 ? '+' : '−'}${Math.abs(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} USDT`;
 }
 
+function unsignedPercent(value: number): string {
+  return Number.isFinite(value) ? `${numberLabel(value)}%` : '—';
+}
+
 function fallbackMetrics(trader: Trader, period: Period): ProfileMetrics {
+  if (trader.id === nazarTrader.id) return {
+    roi: NaN, pnl: NaN, winRate: NaN, maximumDrawdown: NaN, averagePnl: NaN,
+    profitFactor: null, averageTradesPerWeek: NaN, averageHoldingTimeMinutes: NaN,
+    annualizedVolatility: NaN, sharpe: null, sortino: null, totalTrades: NaN,
+    winningTrades: NaN, losingTrades: NaN, tradingDays: NaN, followerPnl: NaN,
+  };
   const curve = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, period);
   const profile = generateProfileData(trader);
   const factor = period === 'ALL' ? 1 : period === '90D' ? Math.min(1, 3 / trader.activeMonths) : period === '30D' ? Math.min(1, 1 / trader.activeMonths) : Math.min(1, 7 / (trader.activeMonths * 30));
@@ -383,16 +397,14 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
   const displayedRoi = periodData?.roi ?? getRoiForPeriod(trader, period);
   const chart = useMemo(() => {
     if (periodData?.equity.length) {
-      const base = periodData.equity[0].equity;
-      const values = periodData.equity.map((point) => mode === 'ROI' ? (point.equity / base - 1) * 100 : point.equity - base);
-      return profileChart(values, periodData.equity.map((point) => point.date), mode, period === 'ALL');
+      const points = syntheticPerformancePoints(periodData, mode);
+      return profileChart(points.map(point => point.value), points.map(point => point.date), mode, period === 'ALL');
     }
     if (trader.id !== nazarTrader.id) {
       const selected = selectDemoPerformance(trader, period);
       return profileChart(selected.rebasedEquity.map(value => (value / 10_000 - 1) * 100), selected.equity.map(point => point.date), 'ROI', period === 'ALL');
     }
-    const fallback = getChartData(trader, period);
-    return { line: fallback.linePath, area: fallback.areaPath, endY: fallback.endY, axis: fallback.yLabels, labels: fallback.xLabels };
+    return null;
   }, [mode, period, periodData, trader]);
 
   return (
@@ -404,17 +416,17 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         </div>
       </div>
       {periodData && periodData.equity.length > 0 && <p className="profile-period-range">
-        {period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.tradingDays} дней
+        {period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней
       </p>}
       <div className="chart-readouts" aria-label="Результат за выбранный период">
         <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}>{formatPercent(displayedRoi)}</strong></div>
         <div><span>{periodData ? 'Накопленный PnL · USDT' : 'PnL · история недоступна'}</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}>{periodData ? signedUsd(periodData.pnl) : '—'}</strong></div>
       </div>
-      {period === 'ALL' && periodData && periodData.equity.length > 0 && <div className="profile-equity-readouts" aria-label="Капитал стратегии с момента запуска">
-        <span>Начальный капитал <strong>{numberLabel(periodData.equity[0].equity)} USDT</strong></span>
-        <span>Текущий капитал <strong>{numberLabel(periodData.equity[periodData.equity.length - 1].equity)} USDT</strong></span>
+      {periodData && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
+        <span>Оборот мастера · {period} <strong>{numberLabel(periodData.economics?.masterTradingVolume ?? periodData.trades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0))} USDT</strong></span>
+        <span>Оборот копирования · {period} <strong>{periodData.economics ? `${numberLabel(periodData.economics.copiedTradingVolume)} USDT` : '—'}</strong></span>
       </div>}
-      <div className="profile-chart-wrap">
+      {chart ? <div className="profile-chart-wrap">
         <div className="profile-chart-y">{chart.axis.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
         <svg viewBox="0 0 900 270" preserveAspectRatio="none" role="img" aria-label={`${displayMode}, ${period}`}>
           <defs><linearGradient id="profile-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#f7a600" stopOpacity=".2" /><stop offset="100%" stopColor="#f7a600" stopOpacity="0" /></linearGradient></defs>
@@ -424,10 +436,10 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
           <circle className="profile-chart-point" cx="900" cy={chart.endY} r="4" />
         </svg>
         <div className={`profile-chart-x${period === 'ALL' ? ' profile-chart-x-inception' : ''}`}>{chart.labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
-      </div>
+      </div> : <div className="profile-empty">История стратегии недоступна. График появится после загрузки данных.</div>}
       <p className="profile-trust"><ShieldCheck size={14} />{periodData
-        ? 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
-        : 'Демонстрационная модель: ROI и риск рассчитаны из одной кривой капитала. Это не подтверждённая история реальных сделок.'}</p>
+        ? periodData.economics ? 'Единая синтетическая история · ROI — ежедневный TWR. Вывод средств не является торговым убытком и не меняет PnL.' : 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
+        : trader.id === nazarTrader.id ? 'Статистика недоступна без единой истории стратегии.' : 'Демонстрационная модель: ROI и риск рассчитаны из одной кривой капитала. Это не подтверждённая история реальных сделок.'}</p>
     </section>
   );
 }
@@ -463,19 +475,19 @@ function MetricsPanel({ metrics, period }: { metrics: ProfileMetrics; period: Pe
   const rows: [string, string, string?][] = [
     [all ? 'All-Time ROI' : 'ROI', formatPercent(metrics.roi), roiClass(metrics.roi)],
     [all ? 'All-Time PnL' : 'Trader PnL', signedUsd(metrics.pnl), roiClass(metrics.pnl)],
-    ['Win Rate', `${numberLabel(metrics.winRate)}%`],
-    ['Max Drawdown', `${numberLabel(metrics.maximumDrawdown)}%`],
+    ['Win Rate', unsignedPercent(metrics.winRate)],
+    ['Max Drawdown', unsignedPercent(metrics.maximumDrawdown)],
     ['Average P/L', signedUsd(metrics.averagePnl), roiClass(metrics.averagePnl)],
     ['Profit Factor', numberLabel(metrics.profitFactor)],
     ['Weekly Trades', numberLabel(metrics.averageTradesPerWeek, 1)],
     ['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)],
-    ['Volatility', `${numberLabel(metrics.annualizedVolatility)}%`],
+    ['Volatility', unsignedPercent(metrics.annualizedVolatility)],
     ['Sharpe Ratio', numberLabel(metrics.sharpe)],
     ['Sortino Ratio', numberLabel(metrics.sortino)],
-    ['Total Trades', metrics.totalTrades.toLocaleString('ru-RU')],
-    ['Winning Trades', metrics.winningTrades.toLocaleString('ru-RU'), 'positive'],
-    ['Losing Trades', metrics.losingTrades.toLocaleString('ru-RU'), 'negative'],
-    [all ? 'Total Trading Days' : 'Trading Days', metrics.tradingDays.toLocaleString('ru-RU')],
+    ['Total Trades', numberLabel(metrics.totalTrades, 0)],
+    ['Winning Trades', numberLabel(metrics.winningTrades, 0), 'positive'],
+    ['Losing Trades', numberLabel(metrics.losingTrades, 0), 'negative'],
+    [all ? 'Total Trading Days' : 'Trading Days', numberLabel(metrics.tradingDays, 0)],
   ];
   return (
     <section className="profile-panel profile-metrics-panel">
@@ -488,21 +500,22 @@ function MetricsPanel({ metrics, period }: { metrics: ProfileMetrics; period: Pe
 function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: SyntheticPeriodAnalytics }) {
   const fallback = useMemo(() => generateTrades(trader), [trader]);
   const visibleTrades = periodData?.trades.slice(0, 100);
+  const cashflowHistory = periodData?.economics !== undefined;
   return (
     <section className="profile-panel profile-trades-panel">
-      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>История сделок</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : `${fallback.length} закрытых`}</strong></div>
+      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>История сделок</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
       <div className="table-scroll">
         <table>
-          <thead><tr>{['Pair', 'Side', 'Entry', 'Exit', 'Size', 'PnL', 'ROI', 'Open Time', 'Close Time', 'Holding', 'Status'].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
+          <thead><tr>{['Pair', 'Side', 'Entry', 'Exit', 'Size', 'PnL', 'ROI', cashflowHistory ? 'Open Time · UTC' : 'Open Time', cashflowHistory ? 'Close Time · UTC' : 'Close Time', 'Holding', 'Status'].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
           <tbody>{periodData ? visibleTrades?.map((trade) => (
             <tr key={trade.id}>
               <td><strong>{trade.symbol}</strong></td>
               <td><span className={`direction ${trade.side === 'LONG' ? 'direction-long' : 'direction-short'}`}>{trade.side === 'LONG' ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}{trade.side}</span></td>
-              <td>{numberLabel(trade.entryPrice, 2)}</td><td>{numberLabel(trade.exitPrice, 2)}</td>
+              <td>{cashflowHistory ? formatSyntheticTradePrice(trade.entryPrice) : numberLabel(trade.entryPrice, 2)}</td><td>{cashflowHistory ? formatSyntheticTradePrice(trade.exitPrice) : numberLabel(trade.exitPrice, 2)}</td>
               <td>{formatAccountSize(trade.entryPrice * trade.quantity)}</td>
               <td className={roiClass(trade.netPnl)}>{signedUsd(trade.netPnl)}</td>
               <td className={roiClass(trade.returnPct)}>{formatPercent(trade.returnPct)}</td>
-              <td>{new Date(trade.openedAt).toLocaleString('ru-RU')}</td><td>{new Date(trade.closedAt).toLocaleString('ru-RU')}</td>
+              <td>{cashflowHistory ? formatSyntheticTradeTime(trade.openedAt) : new Date(trade.openedAt).toLocaleString('ru-RU')}</td><td>{cashflowHistory ? formatSyntheticTradeTime(trade.closedAt) : new Date(trade.closedAt).toLocaleString('ru-RU')}</td>
               <td>{durationLabel(trade.holdingTimeMinutes)}</td><td><span className="closed-status">Закрыта</span></td>
             </tr>
           )) : fallback.map((trade, index) => (
@@ -518,7 +531,7 @@ function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { 
   const markets = periodData?.trades.reduce<Record<string, number>>((map, trade) => ({ ...map, [trade.symbol]: (map[trade.symbol] ?? 0) + 1 }), {}) ?? {};
   const mainMarkets = strategyTrades
     ? syntheticMainMarkets(strategyTrades).join(' · ') || '—'
-    : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || 'BTC · ETH · SOL';
+    : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || (trader.id === nazarTrader.id ? '—' : 'BTC · ETH · SOL');
   const style: Record<Trader['category'], string> = { trend: 'Trend', swing: 'Swing', quant: 'Quant', arbitrage: 'Market Neutral', futures: 'Futures', 'long-term': 'Long Term', 'multi-asset': 'Intraday / Swing' };
   const rows = [
     ['Trading Style', style[trader.category]],
@@ -526,6 +539,7 @@ function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { 
     ['Risk Level', RISK_LABEL_RU[trader.risk]],
     ['Main Markets', mainMarkets],
     ['Trades / Week', numberLabel(metrics.averageTradesPerWeek, 1)],
+    ...(trader.id === nazarTrader.id ? [['Performance Fee', unsignedPercent(trader.performanceFee * 100)]] : []),
   ];
   return <section className="profile-panel trading-profile-panel"><div className="profile-panel-heading"><div><span>Структура стратегии</span><h2>Trading Profile</h2></div><LineChart size={20} /></div><div>{rows.map(([label, value]) => <p key={label}><span>{label}</span><strong>{value}</strong></p>)}</div></section>;
 }
@@ -578,22 +592,32 @@ function FollowerHistory({ history }: { history: SyntheticCopyTradingResponse['a
 }
 
 function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader; metrics: ProfileMetrics; synthetic?: SyntheticCopyTradingResponse | null; period: Period }) {
+  const [showAll, setShowAll] = useState(false);
   const followers = trader.id === nazarTrader.id ? synthetic?.followers.filter((follower) => follower.active) ?? [] : [];
-  const profitable = followers.filter((follower) => follower.realizedPnl + follower.unrealizedPnl > 0).length;
+  const economics = synthetic?.economics?.periods[period];
+  const profitable = followers.filter((follower) => (follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl) > 0).length;
   return (
     <section className="profile-panel followers-performance-panel">
       <div className="profile-panel-heading"><div><span>Результаты копирования</span><h2>Follower Performance</h2></div><Users size={20} /></div>
       <div className="followers-summary">
-        <div><span>Followers PnL · {period === 'ALL' ? 'с момента запуска' : period}</span><strong className={roiClass(metrics.followerPnl)}>{signedUsd(metrics.followerPnl)}</strong></div>
+        <div><span>{economics ? 'Чистая прибыль подписчиков' : 'Followers PnL'} · {period === 'ALL' ? 'с момента запуска' : period}</span><strong className={roiClass(metrics.followerPnl)}>{signedUsd(metrics.followerPnl)}</strong></div>
         <div><span>Прибыльные · с начала копирования</span><strong>{followers.length ? `${profitable} / ${followers.length}` : '—'}</strong></div>
-        <div><span>Активные подписчики сейчас</span><strong>{(synthetic ? followers.length : trader.copiers).toLocaleString('ru-RU')}</strong></div>
+        <div><span>Активные подписчики сейчас</span><strong>{numberLabel(synthetic ? followers.length : trader.copiers, 0)}</strong></div>
       </div>
+      {trader.id === nazarTrader.id && <div className="followers-summary" aria-label="Экономика копирования за выбранный период">
+        <div><span>Gross Followers PnL · {period}</span><strong className={roiClass(economics?.grossFollowersPnl ?? NaN)}>{signedUsd(economics?.grossFollowersPnl ?? NaN)}</strong></div>
+        <div><span>Доход Nazara · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
+        <div><span>Комиссия за результат</span><strong>{unsignedPercent((synthetic?.economics?.performanceFeeRate ?? NaN) * 100)}</strong></div>
+      </div>}
+      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Nazara рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
       {period === 'ALL' && synthetic && <FollowerHistory history={synthetic.aumHistory} />}
       {followers.length > 0 && <p className="follower-list-note">Активные подписчики · индивидуальный PnL и ROI с даты начала копирования</p>}
-      {followers.length > 0 && <div className="follower-list">{followers.slice(0, 8).map((follower) => {
-        const pnl = follower.realizedPnl + follower.unrealizedPnl;
-        return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small></p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · с начала копирования</small></p></div>;
+      {followers.length > 0 && <div className="follower-list">{(showAll ? followers : followers.slice(0, 8)).map((follower) => {
+        const pnl = follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl;
+        return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small>{follower.startingAllocation !== undefined && <small>При старте: {numberLabel(follower.startingAllocation)} USDT</small>}</p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · чистый PnL с начала копирования</small>{follower.grossPnl !== undefined && <small>Gross: {signedUsd(follower.grossPnl)} · Комиссии: {numberLabel(follower.performanceFees)} USDT</small>}</p></div>;
       })}</div>}
+      {followers.length > 8 && <button className="button button-outline" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}
+      {synthetic?.economics && <p className="daily-note">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. В синтетическом сценарии действует с {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}
     </section>
   );
 }
@@ -606,10 +630,10 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
   const demoAll = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, 'ALL');
-  const allTradingDays = liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
-  const heroDrawdown = liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
-  const heroAum = liveSynthetic?.analytics.aum ?? trader.aum;
-  const heroFollowers = liveSynthetic?.analytics.activeFollowers ?? trader.copiers;
+  const allTradingDays = liveSynthetic?.economics?.periods.ALL.activeTradingDays ?? liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
+  const heroDrawdown = liveSynthetic?.economics?.periods.ALL.maximumDrawdown ?? liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
+  const heroAum = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0) : trader.aum;
+  const heroFollowers = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).length : trader.copiers;
 
   return (
     <main className="page-shell profile-page trader-profile-page">
@@ -620,15 +644,16 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
           <div><div className="profile-title-row"><h1>{trader.name}</h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
         </div>
         <div className="trader-hero-metrics">
-          <div><span>Followers</span><strong>{heroFollowers.toLocaleString('ru-RU')}</strong></div>
-          <div><span>Trading Days</span><strong>{allTradingDays.toLocaleString('ru-RU')}</strong></div>
+          <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
+          <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>
           <div><span>AUM</span><strong>{formatAccountSize(heroAum)} USDT</strong></div>
-          <div><span>Max Drawdown</span><strong>{numberLabel(heroDrawdown)}%</strong></div>
+          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
         </div>
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
 
       {!liveSynthetic && trader.id !== nazarTrader.id && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
+      {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazara недоступна. Показатели не заменяются примерными значениями.</p>}
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
@@ -649,9 +674,9 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
   const all = synthetic?.analytics.allTime;
   const totalFollowers = marketplaceTraders.reduce((sum, item) => sum + item.copiers, trader.copiers);
   const stats = [
-    ['Successful Trades', `${(all?.winningTrades ?? generateProfileData(trader).winningTrades).toLocaleString('en-US')}+`],
-    ['Total Followers', `${totalFollowers.toLocaleString('en-US')}+`],
-    ['Realized P&L', `${formatAccountSize(all?.pnl ?? getLifetimeCopierProfit(trader))}+`],
+    ['Successful Trades', all ? `${numberLabel(all.winningTrades, 0)}+` : '—'],
+    ['Total Followers', Number.isFinite(totalFollowers) ? `${numberLabel(totalFollowers, 0)}+` : '—'],
+    ['Realized P&L', synthetic ? `${formatAccountSize(synthetic.economics?.periods.ALL.masterPnl ?? all?.pnl ?? NaN)}+` : '—'],
   ];
   return (
     <section className="copy-hero">

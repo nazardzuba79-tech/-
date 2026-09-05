@@ -1,4 +1,5 @@
 import { DailyResult, EquitySnapshot, PeriodSummary, SyntheticAnalytics, SyntheticCopyState, SyntheticFollower, SyntheticTrade } from './types';
+import { calculateCashflowAnalytics, requireCashflowState, summarizeCashflowPeriods } from './reviewEconomics';
 
 const DAY_MS = 86_400_000;
 const round = (value: number, digits = 6) => Number(value.toFixed(digits));
@@ -101,6 +102,7 @@ function seriesRiskStatistics(history: EquitySnapshot[]) {
 }
 
 export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytics {
+  if (state.version === 7) return calculateCashflowAnalytics(state);
   const currentDate = state.equityHistory[state.equityHistory.length - 1].date;
   const windowStart = addUtcDays(currentDate, -90);
   const rollingEquity = state.equityHistory.filter((point) => point.date >= windowStart);
@@ -186,6 +188,7 @@ export function calculateAnalytics(state: SyntheticCopyState): SyntheticAnalytic
 }
 
 export function summarizePeriods(state: SyntheticCopyState, unit: 'week' | 'month'): PeriodSummary[] {
+  if (state.version === 7) return summarizeCashflowPeriods(requireCashflowState(state), unit);
   const groups = new Map<string, DailyResult[]>();
   for (const day of state.dailyResults) {
     const date = new Date(`${day.date}T00:00:00Z`);

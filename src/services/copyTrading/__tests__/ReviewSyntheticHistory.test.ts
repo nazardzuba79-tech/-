@@ -5,8 +5,8 @@ import { selectSyntheticPeriod } from '../../../../frontend/src/lib/syntheticCop
 describe('versioned isolated review history', () => {
   test('current revision replaces the old build sample with full inception history', () => {
     const state = createReviewSyntheticState(new Date('2026-09-05'));
-    expect(REVIEW_SYNTHETIC_STATE_ID).toBe('nazara-review-v6');
-    expect(state.version).toBe(6);
+    expect(REVIEW_SYNTHETIC_STATE_ID).toBe('nazara-review-v7');
+    expect(state.version).toBe(7);
     expect(state.initialEquityDate).toBe('2025-08-21');
     expect(state.dailyResults).toHaveLength(380);
     expect(toResponse(state).analytics.allTime.roi).toBe(3727);

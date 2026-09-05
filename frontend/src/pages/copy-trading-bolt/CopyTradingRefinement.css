@@ -19,6 +19,7 @@
 .copytrading-bolt-root .copy-marketplace .card-return,
 .copytrading-bolt-root .copy-marketplace .card-stats > div + div,
 .copytrading-bolt-root .market-toolbar { border-color: #414650; }
+.copytrading-bolt-root .copy-marketplace .access-strip > .eligibility { border-color: #e4e7ec; }
 
 /* Distinct catalogue identities and calm, separated chart/number regions. */
 .copytrading-bolt-root .copy-marketplace .trader-card { container-type: inline-size; border-radius: 14px; border-color: #3b4048; background: linear-gradient(155deg, #242830, #1f2229 70%); }
