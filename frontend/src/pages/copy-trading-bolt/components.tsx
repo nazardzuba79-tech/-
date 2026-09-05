@@ -49,6 +49,9 @@ import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { formatSyntheticHistoryDate, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets } from '../../lib/syntheticCopyTrading';
 import { dailyPnlChart } from '../../lib/dailyPnlChart';
+import { demoChartData, selectDemoPerformance } from './demoPerformance';
+import { getTraderVisual } from './traderVisuals';
+import { TraderAvatarArt } from './TraderAvatarArt';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -111,16 +114,18 @@ function VipBadge() {
   return <span className="vip-badge"><Crown size={12} /> VIP</span>;
 }
 
-/** The featured leader shows the operator's real uploaded profile photo
- * (Settings -> Profile); everyone else, and the featured leader before a
- * photo exists, shows the initials circle. */
+/** Uploaded operator photos take precedence. Catalogue artwork belongs only
+ * to the disclosed fictional demo aliases, never to real customer identities. */
 function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) {
   const featuredAvatar = useFeaturedAvatar();
-  const photo = trader.id === nazarTrader.id ? featuredAvatar : null;
+  const visual = getTraderVisual(trader.id);
+  const photo = trader.id === nazarTrader.id ? featuredAvatar : visual.avatarSrc;
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const className = `avatar avatar-${trader.tone} ${large ? 'avatar-large' : ''}`;
-  if (photo) {
-    return <img className={`${className} avatar-photo`} src={photo} alt="" />;
+  if (photo && failedPhoto !== photo) {
+    return <img className={`${className} avatar-photo`} src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} />;
   }
+  if (visual.mark) return <div className={`${className} avatar-art`}><TraderAvatarArt traderId={trader.id} /></div>;
   return <div className={className}>{trader.initials}</div>;
 }
 
@@ -132,7 +137,7 @@ function EligibilityGate({ compact = false }: { compact?: boolean }) {
       <div className="eligibility-icon"><ShieldCheck size={17} /></div>
       <div>
         <strong>{compact ? 'Депозит от $20 000 для копирования' : 'Разблокируйте копитрейдинг'}</strong>
-        {!compact && <p>Копитрейдинг доступен только клиентам с депозитом от $20 000.</p>}
+        {!compact && <p>Копитрейдинг доступен профессиональным участникам рынка с депозитом от $20 000.</p>}
       </div>
       {!compact && <button className="button button-outline">Увеличить депозит <ChevronRight size={15} /></button>}
     </div>
@@ -152,7 +157,7 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
       <button
         className={`button button-copy ${compact ? 'button-small' : ''}`}
         disabled
-        title="Копитрейдинг доступен клиентам с депозитом от $20 000"
+        title="Копитрейдинг доступен профессиональным участникам рынка с депозитом от $20 000"
       >
         <Lock size={14} /> Депозит от $20 000
       </button>
@@ -207,7 +212,9 @@ function followerProfitForPeriod(data: SyntheticCopyTradingResponse | null | und
 
 function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; period: Period; synthetic?: SyntheticCopyTradingResponse | null }) {
   const chart = useMemo(
-    () => synthetic && trader.id === nazarTrader.id ? syntheticChartData(synthetic, period) : getChartData(trader, period),
+    () => trader.id === nazarTrader.id
+      ? synthetic ? syntheticChartData(synthetic, period) : getChartData(trader, period)
+      : demoChartData(trader, period),
     [trader, period, synthetic]
   );
   const roi = getRoiForPeriod(trader, period);
@@ -217,11 +224,11 @@ function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; p
     <svg className={`mini-performance-chart ${roi < 0 ? 'negative' : 'positive'}`} viewBox="0 0 900 280" preserveAspectRatio="none" role="img" aria-label={`${trader.name} ${period} ROI chart`}>
       <defs>
         <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={lineColor} stopOpacity=".3" />
+          <stop offset="0%" stopColor={lineColor} stopOpacity=".2" />
           <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path className="mini-chart-guide" d="M0 238H900" />
+      <path className="mini-chart-guide" d="M0 24H900M0 244H900" />
       <path className="mini-chart-area" d={chart.areaPath} fill={`url(#${gradientId})`} />
       <path className="mini-chart-line" d={chart.linePath} />
     </svg>
@@ -230,6 +237,10 @@ function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; p
 
 function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; period: Period; onOpen: (trader: Trader) => void; synthetic?: SyntheticCopyTradingResponse | null }) {
   const { following } = useFollowing();
+  const visual = getTraderVisual(trader.id);
+  const selectedMetrics = trader.id === nazarTrader.id
+    ? synthetic ? selectSyntheticPeriod(synthetic, period) : undefined
+    : selectDemoPerformance(trader, period);
   const periodRoi = getRoiForPeriod(trader, period);
   // Copiers' profit is shown for the SAME period as the ROI above it, and
   // labelled with it — an unlabelled figure can't be checked against
@@ -237,13 +248,13 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   // two belong together when they don't.
   const liveProfit = trader.id === nazarTrader.id ? followerProfitForPeriod(synthetic, period) : null;
   const copierProfit = liveProfit ?? getCopierProfit(trader, period);
-  const liveSharpe = trader.id === nazarTrader.id ? synthetic?.analytics.sharpe : null;
-  const sharpe = liveSharpe ?? Math.max(0.1, Math.min(9.99, trader.roi90 / Math.max(1, trader.drawdown) / 10));
+  const sharpe = selectedMetrics?.sharpe;
+  const drawdown = selectedMetrics?.maximumDrawdown;
   return (
-    <article className={`trader-card ${trader.vip ? 'trader-card-vip' : ''}`} onClick={() => onOpen(trader)}>
+    <article className={`trader-card ${trader.vip ? 'trader-card-vip' : ''} ${visual.highlight ? `trader-card-highlight-${visual.highlight}` : ''}`} data-trader-id={trader.id} onClick={() => onOpen(trader)}>
       <div className="card-topline">
         <div className="card-identity">
-          <div className="avatar-wrap"><Avatar trader={trader} />{trader.verified && <span className="verified-dot"><Check size={9} /></span>}</div>
+          <div className="avatar-wrap"><Avatar trader={trader} />{trader.id === nazarTrader.id && trader.verified && <span className="verified-dot"><Check size={9} /></span>}</div>
           <div className="trader-name-row">
             <div><h3>{trader.name}</h3><p><Users size={11} /> {trader.copiers.toLocaleString('ru-RU')} подписчиков</p></div>
             {trader.vip && <VipBadge />}
@@ -262,8 +273,8 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
       <div className="card-stats">
-        <div><span>Просадка</span><strong>{trader.drawdown}%</strong></div>
-        <div><span>Коэффициент Шарпа</span><strong className={roiClass(sharpe)}>{sharpe >= 0 ? '+' : ''}{sharpe.toFixed(2)}</strong></div>
+        <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
+        <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
       </div>
       <div className="card-meta">
         <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>
@@ -293,6 +304,7 @@ function durationLabel(minutes: number): string {
 }
 
 function numberLabel(value: number, maximumFractionDigits = 2): string {
+  if (!Number.isFinite(value)) return '—';
   return value.toLocaleString('ru-RU', { minimumFractionDigits: maximumFractionDigits, maximumFractionDigits });
 }
 
@@ -301,6 +313,7 @@ function signedUsd(value: number): string {
 }
 
 function fallbackMetrics(trader: Trader, period: Period): ProfileMetrics {
+  const curve = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, period);
   const profile = generateProfileData(trader);
   const factor = period === 'ALL' ? 1 : period === '90D' ? Math.min(1, 3 / trader.activeMonths) : period === '30D' ? Math.min(1, 1 / trader.activeMonths) : Math.min(1, 7 / (trader.activeMonths * 30));
   const totalTrades = Math.max(1, Math.round(profile.totalTrades * factor));
@@ -311,18 +324,18 @@ function fallbackMetrics(trader: Trader, period: Period): ProfileMetrics {
     roi,
     pnl: trader.aum * roi / 100,
     winRate: totalTrades ? winningTrades / totalTrades * 100 : 0,
-    maximumDrawdown: trader.drawdown,
+    maximumDrawdown: curve?.maximumDrawdown ?? trader.drawdown,
     averagePnl: trader.aum * roi / 100 / totalTrades,
     profitFactor: Number(profile.profitFactor),
     averageTradesPerWeek: profile.totalTrades / Math.max(1, trader.activeMonths * 4.345),
     averageHoldingTimeMinutes: 450,
-    annualizedVolatility: trader.drawdown * 2.4,
-    sharpe: compositeScore(trader) / 20,
-    sortino: compositeScore(trader) / 14,
+    annualizedVolatility: curve?.annualizedVolatility ?? trader.drawdown * 2.4,
+    sharpe: curve ? curve.sharpe ?? NaN : compositeScore(trader) / 20,
+    sortino: curve ? curve.sortino ?? NaN : compositeScore(trader) / 14,
     totalTrades,
     winningTrades,
     losingTrades,
-    tradingDays: period === 'ALL' ? trader.activeMonths * 30 : Number(period.slice(0, -1)),
+    tradingDays: curve?.tradingDays ?? (period === 'ALL' ? trader.activeMonths * 30 : Number(period.slice(0, -1))),
     followerPnl: getCopierProfit(trader, period),
   };
 }
@@ -374,6 +387,10 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
       const values = periodData.equity.map((point) => mode === 'ROI' ? (point.equity / base - 1) * 100 : point.equity - base);
       return profileChart(values, periodData.equity.map((point) => point.date), mode, period === 'ALL');
     }
+    if (trader.id !== nazarTrader.id) {
+      const selected = selectDemoPerformance(trader, period);
+      return profileChart(selected.rebasedEquity.map(value => (value / 10_000 - 1) * 100), selected.equity.map(point => point.date), 'ROI', period === 'ALL');
+    }
     const fallback = getChartData(trader, period);
     return { line: fallback.linePath, area: fallback.areaPath, endY: fallback.endY, axis: fallback.yLabels, labels: fallback.xLabels };
   }, [mode, period, periodData, trader]);
@@ -408,7 +425,9 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         </svg>
         <div className={`profile-chart-x${period === 'ALL' ? ' profile-chart-x-inception' : ''}`}>{chart.labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
       </div>
-      <p className="profile-trust"><ShieldCheck size={14} /> Performance and risk metrics are calculated from the strategy&apos;s trading history.</p>
+      <p className="profile-trust"><ShieldCheck size={14} />{periodData
+        ? 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
+        : 'Демонстрационная модель: ROI и риск рассчитаны из одной кривой капитала. Это не подтверждённая история реальных сделок.'}</p>
     </section>
   );
 }
@@ -586,8 +605,9 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const liveSynthetic = trader.id === nazarTrader.id ? synthetic : null;
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
-  const allTradingDays = liveSynthetic?.analytics.allTime.tradingDays ?? trader.activeMonths * 30;
-  const heroDrawdown = liveSynthetic?.analytics.allTime.maximumDrawdown ?? trader.drawdown;
+  const demoAll = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, 'ALL');
+  const allTradingDays = liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
+  const heroDrawdown = liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
   const heroAum = liveSynthetic?.analytics.aum ?? trader.aum;
   const heroFollowers = liveSynthetic?.analytics.activeFollowers ?? trader.copiers;
 
@@ -596,7 +616,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       <button className="back-button" onClick={onBack}><ArrowLeft size={16} /> Назад к копитрейдингу</button>
       <section className="trader-profile-hero">
         <div className="trader-profile-identity">
-          <div className="profile-avatar-wrap"><Avatar trader={trader} large />{trader.verified && <span className="profile-verified"><Check size={11} /></span>}</div>
+          <div className="profile-avatar-wrap"><Avatar trader={trader} large />{trader.id === nazarTrader.id && trader.verified && <span className="profile-verified"><Check size={11} /></span>}</div>
           <div><div className="profile-title-row"><h1>{trader.name}</h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
         </div>
         <div className="trader-hero-metrics">
@@ -608,6 +628,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
 
+      {!liveSynthetic && trader.id !== nazarTrader.id && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
@@ -722,14 +743,16 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpe
   }, [tab, favorites, following, dynamicRoster]);
 
   const visibleTraders = useMemo(() => {
-    let result = searchTraders(tabRoster, query);
+    let result = searchTraders(tabRoster, query).map(item => ({ ...item, drawdown: item.id === nazara.id
+      ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
+      : selectDemoPerformance(item, period).maximumDrawdown }));
     result = sortTraders(result, sortBy, period);
     if (tab === 'leaderboard') {
       const featured = result.find((item) => item.id === nazara.id);
       if (featured) result = [featured, ...result.filter((item) => item.id !== nazara.id)];
     }
     return result;
-  }, [tabRoster, query, sortBy, period, tab, nazara.id]);
+  }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic]);
 
   const totalPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -796,6 +819,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpe
           </div>
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
+        <p className="catalogue-disclosure">Демонстрационный каталог · вымышленные профили и аватары, синтетические результаты. Не подтверждённая доходность и не рекомендация.</p>
         <div className="trader-grid">
           {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={synthetic} />)}
         </div>
