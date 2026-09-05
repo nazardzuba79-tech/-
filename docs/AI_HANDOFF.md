@@ -815,3 +815,11 @@ withdrawal was placed.
 - Existing 14 x 14 slot, decorative accessibility, both Nav call sites, label/routing/layout, all other application files and pending Copy Trading work remain unchanged.
 - Frontend TypeScript and production build passed (1995 modules, 3.88s, existing chunk-size warning only). Updated local QA passed 10 assertions. Actual Nav harness at `http://127.0.0.1:4177/` checked at 1280 and 390: white-card details render, desktop/mobile icon remains 14 x 14, no overflow or console warnings/errors. Enlargement is provided only in the external QA harness, not the application.
 - Feature-branch delivery only; shared integration/review, main, Render and production are untouched.
+
+### 2026-09-05 — Codex — coloured VISA and current local navigation
+
+- User requested coloured VISA lettering and the icon in the current local VOLTEX navigation. Code commit `24044c6cab457e7d51614f749906d8a91918eada` changes only the lettering fill to blue `#1434cb`; the matte white card and titanium VOLTEX mark remain unchanged.
+- Semantically applied the finalized component and two icon-only Nav substitutions to the existing `staging-setup` local worktree. Preserved its newer removal of WalletBalanceControl; no wholesale Nav replacement. These local preview changes remain unstaged alongside, but separate from, the seven pre-existing Copy Trading edits. No Copy Trading file was edited in this task.
+- Validation: frontend TypeScript passed in both worktrees; normal production builds passed (1995/2003 modules), existing local review build passed (1963 modules), 11 SVG/accessibility/icon-only-diff assertions passed, and git diff checks passed. Existing large-chunk warning only in the final correctly rooted builds.
+- Browser verified actual shared Nav at `http://127.0.0.1:4176/copy-trading`: white face, blue VISA, unchanged 14px slot and `/card` link, no horizontal overflow or warning/error entries. This is isolated synthetic review, not authenticated production. Closed five obsolete/duplicate browser tabs and left only this current review open; document/review panels outside browser-tab control were not changed.
+- Delivery remains isolated icon feature branch and current local preview only. No shared staging/main merge, Render operation or production deployment.
