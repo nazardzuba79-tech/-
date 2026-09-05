@@ -28,6 +28,8 @@ export interface EquitySnapshot {
 export interface AumSnapshot {
   date: string;
   aum: number;
+  // Recorded at the time, not reconstructed from today's active followers.
+  followerCount?: number;
 }
 
 export interface DailyResult {
@@ -62,12 +64,15 @@ export interface SyntheticFollower {
 }
 
 export interface SyntheticCopyState {
-  version: 1;
+  // Earlier versions retain persisted inception history and outcome policies.
+  version: 1 | 2 | 3 | 4;
   seed: number;
   rngState: number;
   simulatedAt: string;
   mode: SyntheticMode;
   initialEquityDate: string;
+  // v4 replays its original recent 90 sessions, not the older prehistory.
+  continuationTemplateStart?: number;
   trades: SyntheticTrade[];
   equityHistory: EquitySnapshot[];
   aumHistory: AumSnapshot[];

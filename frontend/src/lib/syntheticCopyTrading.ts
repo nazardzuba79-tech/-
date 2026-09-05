@@ -42,7 +42,7 @@ export interface SyntheticCopyTradingResponse {
   };
   trades: SyntheticTradeDto[];
   equityHistory: { date: string; equity: number }[];
-  aumHistory: { date: string; aum: number }[];
+  aumHistory: { date: string; aum: number; followerCount?: number }[];
   dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];
   followers: { id: string; displayName: string; copyStartDate: string; allocatedCapital: number; currentEquity: number; realizedPnl: number; unrealizedPnl: number; roi: number; copiedTrades: number; copyRatio: number; slippageBps: number; latencyMs: number; active: boolean }[];
   weekly: { period: string; roi: number; pnl: number; trades: number; winRate: number; maxDrawdown: number }[];
@@ -50,6 +50,52 @@ export interface SyntheticCopyTradingResponse {
 }
 
 const periodDays: Record<Period, number> = { '7D': 7, '30D': 30, '90D': 90, ALL: Number.POSITIVE_INFINITY };
+
+/** Rank actual markets, retaining XRP as an explicitly tracked strategy market. */
+export function syntheticMainMarkets(trades: Pick<SyntheticTradeDto, 'symbol'>[]): string[] {
+  const counts = trades.reduce<Record<string, number>>((result, trade) => {
+    const symbol = trade.symbol.replace('/USDT', '').replace(/USDT$/, '');
+    result[symbol] = (result[symbol] ?? 0) + 1;
+    return result;
+  }, {});
+  const markets = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3).map(([symbol]) => symbol);
+  if (counts.XRP && !markets.includes('XRP')) markets.push('XRP');
+  return markets;
+}
+
+export function formatSyntheticHistoryDate(date: string, includeYear = true): string {
+  return new Date(`${date}T00:00:00Z`).toLocaleDateString('ru-RU', {
+    day: '2-digit', month: '2-digit', ...(includeYear ? { year: 'numeric' as const } : {}), timeZone: 'UTC',
+  });
+}
+
+/** Milestones select recorded daily snapshots; neither counts nor AUM are inferred. */
+export function syntheticAumMilestones(history: SyntheticCopyTradingResponse['aumHistory']) {
+  if (!history.length) return [];
+  const first = history[0].date;
+  const last = history[history.length - 1].date;
+  const addMonths = (months: number) => {
+    const date = new Date(`${first}T00:00:00Z`);
+    const day = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + months);
+    const monthEnd = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+    date.setUTCDate(Math.min(day, monthEnd));
+    return date.toISOString().slice(0, 10);
+  };
+  const secondWeek = new Date(Date.parse(`${first}T00:00:00Z`) + 7 * 86_400_000).toISOString().slice(0, 10);
+  const checkpoints = [
+    { label: 'Старт', date: first }, { label: 'Вторая неделя', date: secondWeek },
+    { label: '1 месяц', date: addMonths(1) }, { label: '2 месяца', date: addMonths(2) },
+    { label: '6 месяцев', date: addMonths(6) }, { label: 'Текущая дата', date: last },
+  ];
+  return checkpoints.filter((point, index) => point.date <= last
+    && checkpoints.findIndex(other => other.date === point.date) === index).flatMap(checkpoint => {
+    const snapshot = [...history].reverse().find(point => point.date <= checkpoint.date);
+    return snapshot ? [{ ...snapshot, label: checkpoint.label }] : [];
+  });
+}
 
 export interface SyntheticPeriodAnalytics {
   period: Period;
@@ -203,7 +249,10 @@ export function syntheticChartData(data: SyntheticCopyTradingResponse, period: P
   const min = rawMin - padding;
   const max = rawMax + padding;
   const traderPath = path(trader, min, max);
-  const labels = Array.from({ length: 5 }, (_, index) => selected[Math.round(index * (selected.length - 1) / 4)]?.date.slice(5) ?? '');
+  const labels = Array.from({ length: 5 }, (_, index) => {
+    const date = selected[Math.round(index * (selected.length - 1) / 4)]?.date;
+    return date ? formatSyntheticHistoryDate(date, period === 'ALL') : '';
+  });
   return {
     linePath: traderPath.line,
     areaPath: traderPath.area,
