@@ -3,6 +3,7 @@ import { cryptoCurrencies, fiatCurrencies } from '../data/currencies';
 import type { CurrencyItem } from '../data/currencies';
 import { CurrencyMark } from './CurrencyMarks';
 import { VoltexCard } from './VoltexCard';
+import { useCardCopy } from '../useCardCopy';
 
 const RADIUS_X = 39;
 const RADIUS_Y = 41;
@@ -28,17 +29,17 @@ const fiatArc = buildArc(fiatCurrencies, 'left');
 const cryptoArc = buildArc(cryptoCurrencies, 'right');
 
 export function CurrencySection() {
+  const { c } = useCardCopy();
   return (
     <section className="voltex-grid vc-relative vc-overflow-hidden vc-bg-voltex-black vc-px-5 vc-py-24 vc-text-white sm:vc-px-8 lg:vc-px-12 lg:vc-py-36">
       <div className="vc-mx-auto vc-max-w-[1344px]">
         <div className="vc-grid vc-gap-8 lg:vc-grid-cols-[1fr_0.4fr] lg:vc-items-end">
-          <h2 className="vc-max-w-5xl vc-text-[clamp(3.1rem,6vw,6.9rem)] vc-font-medium vc-leading-[0.94] vc-tracking-[-0.065em]">Криптовалюта и фиат — всё в одной карте.</h2>
-          <p className="vc-max-w-sm vc-text-base vc-leading-7 vc-text-voltex-muted lg:vc-justify-self-end">Выбирайте источник средств в приложении. VOLTEX соединяет цифровые активы и ежедневные расчёты.</p>
+          <h2 className="vc-max-w-5xl vc-text-[clamp(3.1rem,6vw,6.9rem)] vc-font-medium vc-leading-[0.94] vc-tracking-[-0.065em]">{c.currencyTitle}</h2>
         </div>
 
         <div className="vc-relative vc-mt-16 vc-hidden vc-min-h-[720px] vc-border-y vc-border-white/10 sm:vc-block lg:vc-min-h-[860px]">
-          <div className="vc-absolute vc-left-0 vc-top-6 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-muted"><span className="vc-mr-2 vc-text-voltex-goldLight">01</span>Fiat</div>
-          <div className="vc-absolute vc-right-0 vc-top-6 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-muted">Crypto<span className="vc-ml-2 vc-text-voltex-goldLight">02</span></div>
+          <div className="vc-absolute vc-left-0 vc-top-6 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-muted"><span className="vc-mr-2 vc-text-voltex-goldLight">01</span>{c.fiat}</div>
+          <div className="vc-absolute vc-right-0 vc-top-6 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-muted">{c.crypto}<span className="vc-ml-2 vc-text-voltex-goldLight">02</span></div>
 
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="vc-absolute vc-inset-0 vc-h-full vc-w-full" aria-hidden="true">
             <g fill="none" vectorEffect="non-scaling-stroke">
@@ -56,14 +57,13 @@ export function CurrencySection() {
           <div className="vc-absolute vc-left-1/2 vc-top-1/2 vc-w-[34%] vc-max-w-[430px] -vc-translate-x-1/2 -vc-translate-y-1/2">
             <div className="vc-absolute -vc-inset-x-10 -vc-inset-y-16 vc-rounded-[50%] vc-border vc-border-voltex-gold/20" />
             <VoltexCard />
-            <p className="vc-mt-8 vc-text-center vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-muted">Settlement layer</p>
           </div>
         </div>
 
         <div className="vc-mt-14 sm:vc-hidden">
           <VoltexCard className="vc-mx-auto vc-w-full vc-max-w-[340px]" />
           <div className="vc-mt-10 vc-grid vc-grid-cols-2 vc-gap-x-4 vc-gap-y-3">
-            <p className="vc-col-span-2 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-goldLight">Fiat &amp; crypto</p>
+            <p className="vc-col-span-2 vc-text-[11px] vc-font-medium vc-uppercase vc-tracking-wide3 vc-text-voltex-goldLight">{c.fiat} &amp; {c.crypto}</p>
             {[...fiatCurrencies, ...cryptoCurrencies].map((item) =>
             <div key={item.code} className="vc-flex vc-items-center vc-gap-2.5 vc-border-b vc-border-white/10 vc-pb-3">
                 <CurrencyMark code={item.code} type={fiatCurrencies.includes(item) ? 'fiat' : 'crypto'} className="vc-h-8 vc-w-8" />
@@ -92,6 +92,7 @@ interface ArcNodeProps {
 }
 
 function ArcNode({ point, type, align, delay }: ArcNodeProps) {
+  const { c } = useCardCopy();
   return (
     <div className="vc-absolute -vc-translate-x-1/2 -vc-translate-y-1/2" style={{ left: `${point.x}%`, top: `${point.y}%` }}>
       <motion.div
@@ -104,7 +105,7 @@ function ArcNode({ point, type, align, delay }: ArcNodeProps) {
         
         <div className={align === 'left' ? "vc-text-left" : "vc-text-right"}>
           <div className="vc-text-[15px] vc-font-semibold vc-leading-none">{point.item.code}</div>
-          <div className="vc-mt-2 vc-whitespace-nowrap vc-text-[12px] vc-leading-none vc-text-voltex-muted">{point.item.name}</div>
+          <div className="vc-mt-2 vc-max-w-[125px] vc-text-[12px] vc-leading-tight vc-text-voltex-muted">{point.item.nameKey ? c[point.item.nameKey] : point.item.name}</div>
         </div>
         <CurrencyMark code={point.item.code} type={type} className="vc-h-12 vc-w-12 vc-ring-1 vc-ring-white/15 lg:vc-h-14 lg:vc-w-14" />
       </motion.div>

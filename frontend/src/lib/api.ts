@@ -1,4 +1,5 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
+import type { CardApplicationSnapshot, CardProduct } from '../pages/crypto-card-final/cardApplicationState';
 import { reviewReadPath, REVIEW_UNAVAILABLE } from './reviewPolicy';
 
 const TOKEN_KEY = 'exchange_token';
@@ -805,16 +806,13 @@ export const api = {
       body: JSON.stringify({ approve, reason }),
     }),
 
-  // Crypto card waitlist (card doesn't exist yet — see CardPage)
-  getCardWaitlist: () =>
-    request<{
-      joined: boolean;
-      joinedAt: string | null;
-      kycStatus: 'NOT_STARTED' | 'PENDING' | 'APPROVED' | 'REJECTED';
-    }>('/card/waitlist/me'),
+  // Backend-authoritative eligibility and persisted card requests, not issuance.
+  getCardApplication: () => request<CardApplicationSnapshot>('/card/application/me'),
 
-  joinCardWaitlist: () =>
-    request<{ joined: boolean; joinedAt: string }>('/card/waitlist/join', { method: 'POST' }),
+  submitCardApplication: (product: CardProduct) =>
+    request<CardApplicationSnapshot>('/card/application', {
+      method: 'POST', body: JSON.stringify({ product }),
+    }),
 
   // API keys for connecting a trading bot/script
   getApiKeys: () =>

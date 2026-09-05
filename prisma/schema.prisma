@@ -42,6 +42,7 @@ model User {
   /// as any real card issuer (Visa/Mastercard + the issuing bank require it
   /// regardless of where the operating company is registered).
   cardWaitlistJoinedAt DateTime?
+  cardApplication CardApplication?
   /// Set by an admin (see adminUsers.ts) to lock an account out at login —
   /// e.g. rule violations or long-dormant accounts with no deposits. Never
   /// derived automatically; existing sessions still expire naturally
@@ -179,6 +180,29 @@ enum Role {
   ADMIN
 }
 
+/// A real request for manual card processing, NOT an issued/activated card.
+/// Kept separate from User.cardWaitlistJoinedAt: historical interest is never
+/// promoted into an application. One outstanding application per account.
+model CardApplication {
+  id                  String                @id @default(uuid())
+  userId              String                @unique
+  user                User                  @relation(fields: [userId], references: [id])
+  product             CardProduct
+  status              CardApplicationStatus @default(SUBMITTED)
+  submittedAt         DateTime              @default(now())
+  /// Server-computed qualification evidence at submission, not client input.
+  eligibilitySnapshot Json
+}
+
+enum CardProduct {
+  TITANIUM
+  BLACK_SIGNATURE
+}
+
+enum CardApplicationStatus {
+  SUBMITTED
+}
+
 /// One row per (user, asset). `available` can be traded; `locked` is reserved
 /// by open orders or pending withdrawals. available + locked = total owned.
 /// Stored as Decimal (NOT float) — precision loss on money is unacceptable.
@@ -243,6 +267,8 @@ model Trade {
   executedAt    DateTime @default(now())
 
   @@index([pair, executedAt])
+  @@index([takerUserId])
+  @@index([makerUserId])
 }
 
 /// Custodial deposit address assigned to a user for a given asset/chain.

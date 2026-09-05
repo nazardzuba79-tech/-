@@ -15,13 +15,15 @@ import { FeesSection } from './crypto-card-final/components/FeesSection';
 import { FaqSection } from './crypto-card-final/components/FaqSection';
 import { FinalCtaFooter } from './crypto-card-final/components/FinalCtaFooter';
 import './crypto-card-final/crypto-card.css';
+import { useCardCopy } from './crypto-card-final/useCardCopy';
 
 /** /card remains behind the existing RequireAuth route. No issuing APIs are invented. */
 export function CardPage({ reviewOnly = false }: { reviewOnly?: boolean }) {
+  const { lang } = useCardCopy();
   return <>
     <Nav active="/card" />
     <MotionConfig reducedMotion="user">
-      <div className="crypto-card-page" lang="ru">
+      <div className="crypto-card-page" lang={lang}>
         <Header />
         <main>
           <Hero />

@@ -1,16 +1,19 @@
+import type { CardCopy } from './cardCopy.ru';
+
 export interface CurrencyItem {
   code: string;
   name: string;
+  nameKey?: keyof CardCopy;
 }
 
 // Fiat currencies supported by the VOLTEX Card.
 export const fiatCurrencies: CurrencyItem[] = [
-{ code: 'USD', name: 'Доллар США' },
-{ code: 'EUR', name: 'Евро' },
-{ code: 'GBP', name: 'Фунт стерлингов' },
-{ code: 'CHF', name: 'Швейцарский франк' },
-{ code: 'RUB', name: 'Российский рубль' },
-{ code: 'CNY', name: 'Китайский юань' }];
+{ code: 'USD', name: 'USD', nameKey: 'fiatUsd' },
+{ code: 'EUR', name: 'EUR', nameKey: 'fiatEur' },
+{ code: 'GBP', name: 'GBP', nameKey: 'fiatGbp' },
+{ code: 'CHF', name: 'CHF', nameKey: 'fiatChf' },
+{ code: 'RUB', name: 'RUB', nameKey: 'fiatRub' },
+{ code: 'CNY', name: 'CNY', nameKey: 'fiatCny' }];
 
 
 // Crypto assets supported by the VOLTEX Card.

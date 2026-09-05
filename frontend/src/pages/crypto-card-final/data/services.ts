@@ -11,7 +11,7 @@ export const services: ServiceItem[] = [
 { name: 'Claude', group: 'work', mark: 'claude' },
 { name: 'Netflix', group: 'entertainment', mark: 'netflix' },
 { name: 'Spotify', group: 'entertainment', mark: 'spotify' },
-{ name: 'Apple Music', group: 'entertainment', mark: 'apple' },
+{ name: 'App Store', group: 'entertainment', mark: 'apple' },
 { name: 'YouTube Premium', group: 'entertainment', mark: 'youtube' },
 { name: 'TradingView', group: 'markets', mark: 'tradingview' },
 { name: 'Financial Times', group: 'markets', mark: 'ft' }];

@@ -1,26 +1,12 @@
-export interface FaqItem {
-  question: string;
-  answer: string;
+import type { CardCopy } from './cardCopy.ru';
+export function getCardFaq(c: CardCopy) {
+  return [
+    { question: c.faqAccessQ, answer: c.faqAccessA },
+    { question: c.faqEligibilityQ, answer: c.eligibilityLead },
+    { question: c.faqDifferenceQ, answer: c.faqDifferenceA },
+    { question: c.faqFeesQ, answer: c.freeBoth },
+    { question: c.faqCashbackQ, answer: c.faqCashbackA },
+    { question: c.faqSubscriptionsQ, answer: c.faqSubscriptionsA },
+    { question: c.faqUseQ, answer: c.globalLead },
+  ];
 }
-
-export const faqItems: FaqItem[] = [
-{
-  question: 'Как пополнять VOLTEX Card?',
-  answer: 'Пополняйте баланс поддерживаемыми криптоактивами или фиатными валютами в приложении VOLTEX. Доступные способы зависят от региона и уровня верификации.'
-},
-{
-  question: 'Где можно использовать карту?',
-  answer: 'Оплачивайте покупки и используйте VOLTEX Card в поддерживаемых точках по всему миру. Доступность отдельных операций определяется регионом и условиями программы.'
-},
-{
-  question: 'Как начисляется кэшбэк?',
-  answer: 'Размер кэшбэка зависит от категории покупки, выбранного тарифа и условий действующей программы VOLTEX Card. Актуальные условия всегда доступны до совершения операции.'
-},
-{
-  question: 'Можно ли управлять лимитами?',
-  answer: 'Да. В приложении можно менять доступные лимиты, отключать отдельные типы операций и мгновенно замораживать карту.'
-},
-{
-  question: 'Как защищены средства?',
-  answer: 'Операции контролируются в реальном времени. Для чувствительных действий используются подтверждение в приложении и многоуровневая проверка безопасности.'
-}];

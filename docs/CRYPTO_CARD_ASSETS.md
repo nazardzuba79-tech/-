@@ -24,7 +24,9 @@ Printed names, network marks and the phone's example balance/transactions are
 part of the owner's supplied product artwork. They are illustrative pixels,
 not account data or evidence of card issuance, a payment-network partnership,
 an available card balance or live transaction capability. Real application
-functionality remains the existing KYC-gated waitlist.
+functionality is now a backend-authoritative, eligibility-gated persisted
+card application (`SUBMITTED`), not issuance. The isolated review disables
+account reads and submissions. See `CRYPTO_CARD_PRODUCT.md`.
 
 ## Combined compositions and approved copy
 
@@ -129,6 +131,16 @@ this document records asset preparation only and does not claim deployment.
 ## Self-hosted archive dependencies
 
 ### Responsive scene placement
+
+The final product cleanup also uses `CinematicCardScene.tsx` for the hero and
+final CTA. Existing phone-composition WebPs are masked to retain only the
+phone; their precomposed card faces are excluded. Both overlaid card faces
+reference the exact same approved PNG masters as comparison and currency
+sections. SVG viewports exclude external source-canvas margins; affine
+placement/tilt and external shadows position the assets without writing or
+changing a single source-image byte. Comparison cards remain unoverlapped,
+Titanium first and Black Signature second. All public asset hashes above
+remain unchanged in the product-cleanup pass.
 
 `CardScene.tsx` renders the original POS/ATM JPG and an SVG viewport of the
 approved Black Signature master in a shared 1200 x 896 coordinate system.

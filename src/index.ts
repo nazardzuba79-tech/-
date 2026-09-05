@@ -162,7 +162,7 @@ app.use('/api/v1', kycRouter(prisma, kycEmailService));
 app.use('/api/v1', adminRouter(prisma));
 app.use('/api/v1', adminUsersRouter(prisma, demoTradingService));
 app.use('/api/v1', adminAuditLogRouter(prisma));
-app.use('/api/v1', cardRouter(prisma));
+app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry));

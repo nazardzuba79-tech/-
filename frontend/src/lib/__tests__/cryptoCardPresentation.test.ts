@@ -1,6 +1,10 @@
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import * as ts from 'typescript';
+import { createHash } from 'crypto';
+import { cardCopyRu } from '../../pages/crypto-card-final/data/cardCopy.ru';
+import { cardProducts } from '../../pages/crypto-card-final/data/products';
+import { getCardFaq } from '../../pages/crypto-card-final/data/faq';
 
 const frontend = resolve(__dirname, '../../..');
 const pageDirectory = resolve(frontend, 'src/pages/crypto-card-final');
@@ -50,24 +54,39 @@ test('the landing preserves the approved archive section order inside the existi
 });
 
 test('final approved marketing copy and monthly Black Signature limit are explicit HTML, not an old placeholder', () => {
-  expect(component('Hero')).toContain('Карта,<br />которой можно<br />платить каждый день');
-  expect(component('Hero')).toContain('Оплачивайте покупки, онлайн-сервисы и подписки, а также снимайте наличные во всем мире.');
-  expect(component('Hero')).not.toContain('Презентация программы.');
-  const hero = parse(component('Hero'));
-  const lists = nodes(hero, ts.isArrayLiteralExpression) as ts.ArrayLiteralExpression[];
-  const benefits = ['До 20% кешбека.', 'Без комиссий.', '$1 млн в месяц.'];
-  expect(lists.some(list => JSON.stringify(list.elements.map(item => ts.isStringLiteral(item) ? item.text : null)) === JSON.stringify(benefits))).toBe(true);
-  expect(component('PaymentSection')).toContain('До 20%');
-  const blackLimit = elements(parse(component('FeesSection')), 'ValueCell')
-    .find(element => attributeText(element, 'tier') === 'Black Signature' && attributeText(element, 'value') === '$1 000 000');
-  expect(blackLimit).toBeDefined();
-  expect(attributeText(blackLimit!, 'caption')).toBe('в месяц');
+  expect(cardCopyRu.heroTitle).toBe('Криптовалюта, которой можно платить каждый день');
+  expect(component('Hero')).toContain('{c.heroTitle}');
+  expect(component('Hero')).toContain('{c.heroLead}');
+  expect([cardCopyRu.benefitCashback, cardCopyRu.benefitFees, cardCopyRu.benefitLimit])
+    .toEqual(['До 20% кешбека.', 'Без комиссий.', '$1 млн в месяц.']);
+  expect([cardCopyRu.benefitCashbackNote, cardCopyRu.benefitFeesNote, cardCopyRu.benefitLimitNote])
+    .toEqual(['На повседневные покупки и выбранные категории.', 'За транзакции в любой валюте.', 'Решение для крупных платежей.']);
+  expect(component('PaymentSection')).toContain('c.cashbackUpTo');
+  expect(component('FeesSection')).toContain('cardProducts.map');
+  expect(component('FeesSection')).toContain('card.monthlyLimit');
+  expect(cardCopyRu.monthly).toBe('в месяц');
 
   const activeSources = [read('src/pages/CardPage.tsx'), ...componentFiles.map(name => component(name.slice(0, -4))),
     ...readdirSync(resolve(pageDirectory, 'data')).filter(name => name.endsWith('.ts')).map(name => readFileSync(resolve(pageDirectory, 'data', name), 'utf8'))];
   for (const source of activeSources) {
     expect(source).not.toMatch(/asset\s*placeholder|card\s*placeholder|дневной\s+лимит|\$?\s*[15]\s*млн\s*в\s*(?:день|сутки)|до\s*\$1\s*млн/i);
   }
+});
+
+test('two product tiers have independent approved terms and comparison order', () => {
+  expect(cardProducts.map(card => [card.id, card.name, card.network, card.ring, card.cashback, card.monthlyLimitUsd]))
+    .toEqual([
+      ['TITANIUM', 'VOLTEX Titanium', 'Visa', 'gold', '10–15%', 50000],
+      ['BLACK_SIGNATURE', 'VOLTEX Black Signature', 'Mastercard', 'rainbow', '15–20%', 1000000],
+    ]);
+  for (const card of cardProducts) {
+    expect(card.issuance).toBe(0);
+    expect(card.servicing).toBe(0);
+    expect(card.subscriptionCompensation).toBe('100%');
+  }
+  expect(component('CardChoiceSection')).toContain('cardProducts.map');
+  expect(component('CardChoiceSection')).toContain('<VoltexCard tone={card.tone}');
+  expect(component('CardChoiceSection')).not.toMatch(/vc-absolute|vc-overlap|vc--m/);
 });
 
 test('approved physical masters are actual RGBA PNGs at their supplied dimensions', () => {
@@ -79,6 +98,9 @@ test('approved physical masters are actual RGBA PNGs at their supplied dimension
     expect(data.toString('ascii', 12, 16)).toBe('IHDR');
     expect([data.readUInt32BE(16), data.readUInt32BE(20)]).toEqual([1580, 996]);
     expect(data[25]).toBe(6); // True-colour with alpha, not a flattened replacement.
+    expect(createHash('sha256').update(data).digest('hex')).toBe(filename.includes('black')
+      ? '494de1377e5fb5ae1108398a1788cd6b98981215b6315edc4aea0cc54f4a3ad1'
+      : 'b4d69e2b18dd4459127ecedcd21876a569275bc83e9878a54466dfc6737195f8');
   }
   const source = component('VoltexCard');
   expect(source).toContain('/cards/crypto-card-final/voltex-');
@@ -92,7 +114,11 @@ test('all literal presentation image URLs point to present production assets wit
     const source = component(name.slice(0, -4));
     for (const match of source.matchAll(/['"](\/cards\/crypto-card-final\/[^'"\s]+\.(?:jpg|png|webp))['"]/g)) paths.add(match[1]);
   }
-  expect(paths.size).toBeGreaterThanOrEqual(8); // Six scenes plus both cropped phone/card composites.
+  // Cinematic scene names share a literal directory constant.
+  for (const match of component('CinematicCardScene').matchAll(/source: '(voltex-cards-phone-[^']+\.webp)'/g)) {
+    paths.add(`/cards/crypto-card-final/${match[1]}`);
+  }
+  expect(paths.size).toBeGreaterThanOrEqual(8);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-hero.webp')).toBe(true);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-register.webp')).toBe(true);
   for (const asset of paths) {
@@ -127,7 +153,30 @@ test('product links target actual sections, including both visible application C
   expect(targets).toContain('possibilities');
   for (const target of targets) expect(ids.has(target)).toBe(true);
   expect(attributeText(elements(parse(component('FinalCtaFooter')), 'section')[0], 'id')).toBe('apply');
-  expect(elements(parse(component('FinalCtaFooter')), 'CardWaitlist')).toHaveLength(1);
+  expect(elements(parse(component('FinalCtaFooter')), 'CardApplication')).toHaveLength(1);
+});
+
+test('all card renders use the same masters, including phone-only cinematic compositions', () => {
+  const scene = component('CinematicCardScene');
+  expect(scene).toContain('voltex-titanium-final.png');
+  expect(scene).toContain('voltex-black-signature-final.png');
+  expect(scene).toContain('clipPath={`url(#phone-');
+  expect(scene).toContain('mask={`url(#phone-face-');
+  expect(elements(parse(component('Hero')), 'CinematicCardScene')).toHaveLength(1);
+  expect(elements(parse(component('FinalCtaFooter')), 'CinematicCardScene')).toHaveLength(1);
+  expect(component('CardScene')).toContain('/cards/crypto-card-final/voltex-black-signature-final.png');
+  expect(component('CurrencySection')).toContain('VoltexCard');
+});
+
+test('obsolete product terms are absent and approved privacy is exact', () => {
+  const sources = [cardCopyRu, ...componentFiles.map(name => component(name.slice(0, -4)))];
+  expect(JSON.stringify(sources)).not.toMatch(/waitlist|coming soon|демонстрационн|лист ожидания|Icy White|Rose Gold|(?<![\d.])8%|staking|500k|90-day|Apple Music|JPY|XRP/i);
+  expect(cardCopyRu.privacyText).toBe('VOLTEX не передаёт данные пользователей налоговым органам или регуляторам по собственной инициативе. Раскрытие информации возможно только при наличии прямого законного требования.');
+  expect(component('ControlSecuritySection')).toContain('{c.privacyText}');
+  expect(component('HowItWorksSection')).toContain('c.eligibilityLead');
+  expect(getCardFaq(cardCopyRu)).toHaveLength(7);
+  expect([cardCopyRu.controlFreeze, cardCopyRu.controlLimits, cardCopyRu.controlAlerts])
+    .toEqual(['Верификация аккаунта', 'Выбор карты', 'Статус заявки']);
 });
 
 test('the production card route retains RequireAuth and only the isolated review explicitly opts out of actions', () => {

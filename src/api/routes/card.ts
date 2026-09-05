@@ -1,37 +1,52 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { z } from 'zod';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
+import { CardApplicationError, CardApplicationService, CardUsdPriceSource } from '../../services/CardApplicationService';
 
 /**
- * Crypto card — waitlist only, the card itself doesn't exist yet (no card
- * network or issuing bank partnership). Joining requires full KYC: this
- * isn't a business choice we could relax later, it's a hard requirement
- * from Visa/Mastercard and the issuing bank on ANY card program, wherever
- * the operating company is registered — a card can't be anonymous.
+ * Authenticated eligibility and persisted requests, with no issuance effects.
  */
-export function cardRouter(prisma: PrismaClient): Router {
+export function cardRouter(prisma: PrismaClient, prices: CardUsdPriceSource): Router {
   const router = Router();
+  const applications = new CardApplicationService(prisma, prices);
+  const applicationInput = z.object({ product: z.enum(['TITANIUM', 'BLACK_SIGNATURE']) }).strict();
+  router.use(['/card/application', '/card/application/me'], (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
 
+  router.get('/card/application/me', requireAuth(prisma), async (req: AuthedRequest, res, next) => {
+    try {
+      res.json(await applications.getSnapshot(req.userId!));
+    } catch (error) {
+      if (error instanceof CardApplicationError) return res.status(error.statusCode).json({ error: error.code });
+      next(error);
+    }
+  });
+
+  router.post('/card/application', requireAuth(prisma), async (req: AuthedRequest, res, next) => {
+    const parsed = applicationInput.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'INVALID_CARD_PRODUCT' });
+    try {
+      res.json(await applications.submit(req.userId!, parsed.data.product));
+    } catch (error) {
+      if (error instanceof CardApplicationError) {
+        return res.status(error.statusCode).json({ error: error.code, ...error.snapshot });
+      }
+      next(error);
+    }
+  });
+
+  // Read-only legacy history remains intact; it is never a card application.
   router.get('/card/waitlist/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ joined: user.cardWaitlistJoinedAt != null, joinedAt: user.cardWaitlistJoinedAt, kycStatus: user.kycStatus });
   });
 
-  router.post('/card/waitlist/join', requireAuth(prisma), async (req: AuthedRequest, res) => {
-    const user = await prisma.user.findUnique({ where: { id: req.userId } });
-    if (!user) return res.status(404).json({ error: 'User not found' });
-    if (user.kycStatus !== 'APPROVED') {
-      return res.status(400).json({ error: 'Card waitlist requires an approved identity verification' });
-    }
-
-    const joinedAt = user.cardWaitlistJoinedAt ?? new Date();
-    if (!user.cardWaitlistJoinedAt) {
-      await prisma.user.update({ where: { id: user.id }, data: { cardWaitlistJoinedAt: joinedAt } });
-      await prisma.auditLog.create({ data: { userId: user.id, action: 'CARD_WAITLIST_JOINED', metadata: {} } });
-    }
-
-    res.json({ joined: true, joinedAt });
+  router.post('/card/waitlist/join', requireAuth(prisma), (_req, res) => {
+    res.status(410).json({ error: 'CARD_APPLICATION_REQUIRED' });
   });
 
   return router;
