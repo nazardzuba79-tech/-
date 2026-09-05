@@ -1,9 +1,10 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 import { useToast } from '../lib/toast';
 import { parseChangePercent } from '../lib/priceChange';
+import { createTerminalOrderDraft, TerminalOrderDraft } from '../lib/terminalExecution';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -23,13 +24,19 @@ export function OrderForm({
   pair,
   onPlaced,
   pickedPrice,
+  onDraftChange,
+  compact = false,
 }: {
   pair: string;
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
+  onDraftChange?: (draft: TerminalOrderDraft | null) => void;
+  /** Spot's market spine/context replace the redundant detailed panels. */
+  compact?: boolean;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
+  const reviewOnly = import.meta.env.MODE === 'review';
   const [baseAsset, quoteAsset] = pair.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [family, setFamily] = useState<OrderFamily>('LIMIT');
@@ -41,7 +48,8 @@ export function OrderForm({
   const [ocoStopLimitPrice, setOcoStopLimitPrice] = useState('');
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
-  const [available, setAvailable] = useState<{ base: number; quote: number }>({ base: 0, quote: 0 });
+  const [available, setAvailable] = useState<{ base: number; quote: number } | null>(null);
+  const [fieldsPair, setFieldsPair] = useState(pair);
   const [marketPrice, setMarketPrice] = useState<number | null>(null);
   // Everything the new market-info block below the CTA shows — same ticker
   // poll that already drove marketPrice, just keeping the rest of the
@@ -55,6 +63,8 @@ export function OrderForm({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const draftCallback = useRef(onDraftChange);
+  draftCallback.current = onDraftChange;
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
   const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
@@ -70,6 +80,21 @@ export function OrderForm({
       ? 'TAKE_PROFIT_LIMIT'
       : 'TAKE_PROFIT_MARKET';
 
+  const draft = useMemo(() => fieldsPair === pair ? createTerminalOrderDraft({
+    pair, side, type: family === 'OCO' ? 'OCO' : type, price, triggerPrice,
+    ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice, quantity,
+  }) : null, [fieldsPair, pair, side, family, type, price, triggerPrice, ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice, quantity]);
+  useEffect(() => { onDraftChange?.(draft); }, [draft, onDraftChange]);
+  useEffect(() => () => draftCallback.current?.(null), []);
+
+  // Changing instruments must not relabel a previous pair's draft prices.
+  useEffect(() => {
+    if (fieldsPair === pair) return;
+    resetFields();
+    setFieldsPair(pair);
+    setError(null);
+  }, [pair, fieldsPair]);
+
   // Clicking a level in the order book fills the price here — the reason
   // the reference gives every `.ob-row` a pointer cursor. A picked price is
   // a limit price, so the form switches to LIMIT rather than silently
@@ -82,14 +107,19 @@ export function OrderForm({
   }, [pickedPrice]);
 
   useEffect(() => {
+    let cancelled = false;
+    setAvailable(null);
     api
       .getBalances()
       .then((balances) => {
+        if (cancelled) return;
         const base = balances.find((b) => b.asset === baseAsset);
         const quote = balances.find((b) => b.asset === quoteAsset);
-        setAvailable({ base: base ? parseFloat(base.available) : 0, quote: quote ? parseFloat(quote.available) : 0 });
+        const values = { base: base ? Number(base.available) : 0, quote: quote ? Number(quote.available) : 0 };
+        if (Object.values(values).every(value => Number.isFinite(value) && value >= 0)) setAvailable(values);
       })
       .catch(() => {});
+    return () => { cancelled = true; };
   }, [baseAsset, quoteAsset, side]);
 
   // A live reference price is needed for more than just MARKET orders now:
@@ -98,6 +128,8 @@ export function OrderForm({
   // own trigger-direction validation.
   useEffect(() => {
     let cancelled = false;
+    setMarketPrice(null);
+    setMarketStats(null);
     function load() {
       api
         .getExternalTicker(pair)
@@ -131,6 +163,7 @@ export function OrderForm({
   // side of the trade — quote balance (e.g. USDT) for a buy, base balance
   // (e.g. BTC) for a sell — driven by real balances, not a fake number.
   function applyPercent(pct: number) {
+    if (!available) return;
     setPercent(pct);
     if (side === 'BUY') {
       if (!effectivePrice || effectivePrice <= 0) return;
@@ -230,6 +263,7 @@ export function OrderForm({
         <button
           type="button"
           className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
+          aria-pressed={side === 'BUY'}
           onClick={() => setSide('BUY')}
         >
           {t('trade.buy')} {baseAsset}
@@ -237,6 +271,7 @@ export function OrderForm({
         <button
           type="button"
           className={`order-form-tab sell ${side === 'SELL' ? 'active' : ''}`}
+          aria-pressed={side === 'SELL'}
           onClick={() => setSide('SELL')}
         >
           {t('trade.sell')} {baseAsset}
@@ -249,6 +284,7 @@ export function OrderForm({
             key={f.id}
             type="button"
             className={`order-type-tab ${family === f.id ? 'active' : ''}`}
+            aria-pressed={family === f.id}
             onClick={() => setFamily(f.id)}
           >
             {f.label}
@@ -285,7 +321,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.takeProfitPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoTakeProfitPrice} onChange={(e) => setOcoTakeProfitPrice(e.target.value)} placeholder="0.00" />
+                <input type="number" step="any" required aria-label={`${t('trade.takeProfitPrice')} (${quoteAsset})`} value={ocoTakeProfitPrice} onChange={(e) => setOcoTakeProfitPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
               {triggerHint('TAKE_PROFIT') && <div className="form-label"><span>{triggerHint('TAKE_PROFIT')}</span></div>}
@@ -293,7 +329,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.stopTriggerPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
+                <input type="number" step="any" required aria-label={`${t('trade.stopTriggerPrice')} (${quoteAsset})`} value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
               {triggerHint('STOP') && <div className="form-label"><span>{triggerHint('STOP')}</span></div>}
@@ -301,7 +337,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.stopLimitPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoStopLimitPrice} onChange={(e) => setOcoStopLimitPrice(e.target.value)} placeholder="0.00" />
+                <input type="number" step="any" required aria-label={`${t('trade.stopLimitPrice')} (${quoteAsset})`} value={ocoStopLimitPrice} onChange={(e) => setOcoStopLimitPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
             </div>
@@ -314,7 +350,7 @@ export function OrderForm({
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.triggerPrice')}</span></div>
                 <div className="input-group">
-                  <input type="number" step="any" required value={triggerPrice} onChange={(e) => setTriggerPrice(e.target.value)} placeholder="0.00" />
+                  <input type="number" step="any" required aria-label={`${t('trade.triggerPrice')} (${quoteAsset})`} value={triggerPrice} onChange={(e) => setTriggerPrice(e.target.value)} placeholder="0.00" />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
                 {triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT') && (
@@ -334,7 +370,7 @@ export function OrderForm({
                   )}
                 </div>
                 <div className="input-group">
-                  <input type="number" step="any" required value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+                  <input type="number" step="any" required aria-label={`${t('trade.price')} (${quoteAsset})`} value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
               </div>
@@ -344,7 +380,7 @@ export function OrderForm({
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.price')}</span></div>
                 <div className="input-group">
-                  <input readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
+                  <input readOnly aria-label={`${t('trade.price')} (${quoteAsset})`} value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
               </div>
@@ -359,6 +395,7 @@ export function OrderForm({
               type="number"
               step="any"
               required
+              aria-label={`${t('trade.quantity')} (${baseAsset})`}
               value={quantity}
               onChange={(e) => {
                 setQuantity(e.target.value);
@@ -373,7 +410,7 @@ export function OrderForm({
         <div className="form-group">
           <div className="form-label"><span>{t('trade.total')}</span></div>
           <div className="input-group">
-            <input type="number" step="any" value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
+            <input type="number" step="any" aria-label={`${t('trade.total')} (${quoteAsset})`} value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
             <span className="input-suffix">{quoteAsset}</span>
           </div>
         </div>
@@ -385,6 +422,9 @@ export function OrderForm({
                 key={step}
                 type="button"
                 data-label={`${step}%`}
+                aria-label={`${step}%`}
+                aria-pressed={percent === step}
+                disabled={!available}
                 className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
                 onClick={() => applyPercent(SLIDER_STEPS[idx])}
               />
@@ -401,7 +441,7 @@ export function OrderForm({
           <div className="available-balance">
             <span>{t('trade.available')}</span>
             <span className="amount">
-              {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
+              {available ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6) : '—'}{' '}
               {side === 'BUY' ? quoteAsset : baseAsset}
             </span>
           </div>
@@ -409,7 +449,7 @@ export function OrderForm({
           <div className="available-balance">
             <span>{t('trade.fee')}</span>
             <span className="amount">
-              {feeAmount} {quoteAsset} (0%)
+              {reviewOnly ? '—' : `${feeAmount} ${quoteAsset} (0%)`}
             </span>
           </div>
         </div>
@@ -420,17 +460,13 @@ export function OrderForm({
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
+        <button type="submit" disabled={submitting || reviewOnly} className={`submit-btn ${sideClass}`}>
           {submitting ? t('auth.wait') : `${side === 'BUY' ? t('trade.buy') : t('trade.sell')} ${baseAsset}`}
         </button>
 
-        {/* Fills the space that used to sit empty below the CTA — the same
-            ticker poll driving marketPrice above, plus the same balances
-            call from the effect near the top of this component. Nothing
-            here is fetched or computed just for this block, and nothing
-            futures-only (funding rate, mark/index price, open interest)
-            is shown, since this is a spot pair and doesn't have any of
-            those. */}
+        {/* Compact Spot keeps the real summary above; shared/default form
+            consumers retain their existing detailed market/account panels. */}
+        {!compact && <>
         <div className="info-section">
           <div className="info-heading">{t('trade.marketInfo')}</div>
           <div className="info-row">
@@ -479,13 +515,14 @@ export function OrderForm({
           <div className="info-heading">{t('trade.accountInfo')}</div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span>
-            <span className="info-value">{formatPrice(available.base)}</span>
+            <span className="info-value" title={!available ? t('wallet.dataUnavailable') : undefined}>{available ? formatPrice(available.base) : '—'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span>
-            <span className="info-value">{formatAmount(available.quote)}</span>
+            <span className="info-value" title={!available ? t('wallet.dataUnavailable') : undefined}>{available ? formatAmount(available.quote) : '—'}</span>
           </div>
         </div>
+        </>}
       </form>
     </>
   );

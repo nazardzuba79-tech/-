@@ -1,83 +1,16 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
-import { formatPrice } from '../lib/formatNumber';
 import { PanelRightClose } from 'lucide-react';
-
-interface Level {
-  price: string;
-  quantity: string;
-  orders?: number;
-}
-
-interface AggregatedLevel {
-  price: number;
-  quantity: number;
-  cumulative: number;
-}
-
-// The reference's price-step "group by" control, same idea as every real
-// exchange's DOM: pick a coarser grid and every raw resting order lands in
-// one of these fixed buckets instead of its own row.
-const GROUP_STEPS = [0.1, 1, 10, 50];
-
-function defaultGroupStep(price: number | null): number {
-  if (price === null) return GROUP_STEPS[0];
-  if (price >= 10000) return 10;
-  if (price >= 1000) return 1;
-  if (price >= 10) return 0.5;
-  return 0.1;
-}
-
-// All five GROUP_STEPS values need at most one decimal place; this just
-// keeps a step like 5 or 10 from printing a pointless ".0".
-function decimalsForStep(step: number): number {
-  return step >= 1 ? 0 : 1;
-}
-
-// Rounds every raw level onto the selected price grid (bids and asks both
-// round down, the same convention real exchange "grouped" views use) and
-// sums the quantity of every raw level that lands in the same bucket. This
-// is what turns a noisy stream of individual resting orders into a small,
-// stable set of aggregated liquidity rows.
-function aggregate(levels: Level[], step: number, sortDir: 1 | -1): { price: number; quantity: number }[] {
-  const buckets = new Map<number, number>();
-  for (const l of levels) {
-    const price = parseFloat(l.price);
-    const quantity = parseFloat(l.quantity);
-    if (!Number.isFinite(price) || !Number.isFinite(quantity)) continue;
-    const bucket = Math.floor(price / step) * step;
-    buckets.set(bucket, (buckets.get(bucket) ?? 0) + quantity);
-  }
-  return Array.from(buckets.entries())
-    .map(([price, quantity]) => ({ price, quantity }))
-    .sort((a, b) => (a.price - b.price) * sortDir);
-}
-
-// True order-book "depth" — cumulative quantity from the best price
-// outward, same convention every real exchange DOM uses: a level right
-// next to the spread shows just its own size, a level far from it shows
-// everything resting ahead of it too, so the bars visibly grow with
-// distance from the mid price rather than jumping around independently.
-// Runs on the already-aggregated levels, so the bars reflect grouped
-// liquidity, not a raw per-order count.
-function withDepth(levels: { price: number; quantity: number }[]): AggregatedLevel[] {
-  let running = 0;
-  return levels.map((l) => {
-    running += l.quantity;
-    return { ...l, cumulative: running };
-  });
-}
+import { aggregateTerminalBook, defaultTerminalGroupStep, formatTerminalLevelPrice, formatTerminalQuote,
+  formatTerminalSpreadPercent, hasTerminalUsdApproximation, terminalGroupSteps,
+  TerminalAggregatedLevel as AggregatedLevel, TerminalBookLevel as Level } from '../lib/terminalExecution';
+import { terminalBookMetrics } from '../lib/terminalMarket';
 
 // Real order-book DOMs don't scroll through the whole book by default —
 // they show a fixed window of levels closest to the spread, so the
 // buy/sell split is always visible together without the trader having to
 // scroll past a wall of asks first.
 const VISIBLE_LEVELS_PER_SIDE = 15;
-
-// The "≈ $" line only means anything when the pair is actually quoted in
-// something dollar-equivalent — showing it on a BTC- or ETH-quoted pair
-// would silently mislabel that price as USD.
-const USD_QUOTES = new Set(['USDT', 'USDC', 'USD']);
 
 /**
  * The reference's `.orderbook-area`, whole: header with the display-mode
@@ -101,43 +34,48 @@ export function OrderBookPanel({
   pair,
   onPickPrice,
   onCollapse,
+  onHoverPrice,
 }: {
   bids: Level[];
   asks: Level[];
   pair?: string;
   onPickPrice?: (price: string) => void;
   onCollapse?: () => void;
+  onHoverPrice?: (price: number | null) => void;
 }) {
   const { t } = useLanguage();
 
-  const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
-  const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
-  const midPrice = bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
+  const { mid: midPrice, spread, spreadPercent: spreadPct } = useMemo(() => terminalBookMetrics(bids, asks), [bids, asks]);
 
-  const [groupStep, setGroupStep] = useState(() => defaultGroupStep(midPrice));
+  const [groupSteps, setGroupSteps] = useState(() => terminalGroupSteps(midPrice));
+  const [groupStep, setGroupStep] = useState(() => defaultTerminalGroupStep(midPrice));
   // Re-pick a sensible default step once real data first arrives (the very
   // first render has no price yet to size the default from) and again
   // whenever the instrument itself changes — a "10" step that was fine for
   // BTC would collapse most of a lower-priced coin's book into a single
   // row. Never while the same pair's own price just ticks, or the grouping
   // would keep resetting under the trader mid-use.
-  const lastPairRef = useRef<string | undefined>(undefined);
+  const lastPairRef = useRef<string | undefined | null>(null);
   useEffect(() => {
     if (midPrice !== null && pair !== lastPairRef.current) {
       lastPairRef.current = pair;
-      setGroupStep(defaultGroupStep(midPrice));
+      setGroupSteps(terminalGroupSteps(midPrice));
+      setGroupStep(defaultTerminalGroupStep(midPrice));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pair, midPrice]);
 
-  const decimals = decimalsForStep(groupStep);
+  useEffect(() => { onHoverPrice?.(null); }, [pair, groupStep, onHoverPrice]);
+  const hoverCallback = useRef(onHoverPrice);
+  hoverCallback.current = onHoverPrice;
+  useEffect(() => () => hoverCallback.current?.(null), []);
 
   const asksDepth = useMemo(
-    () => withDepth(aggregate(asks, groupStep, 1)).slice(0, VISIBLE_LEVELS_PER_SIDE),
+    () => aggregateTerminalBook(asks, groupStep, 'SELL').slice(0, VISIBLE_LEVELS_PER_SIDE),
     [asks, groupStep]
   );
   const bidsDepth = useMemo(
-    () => withDepth(aggregate(bids, groupStep, -1)).slice(0, VISIBLE_LEVELS_PER_SIDE),
+    () => aggregateTerminalBook(bids, groupStep, 'BUY').slice(0, VISIBLE_LEVELS_PER_SIDE),
     [bids, groupStep]
   );
 
@@ -147,10 +85,7 @@ export function OrderBookPanel({
     0.0001
   );
 
-  const spread = bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
-  const spreadPct = spread !== null && midPrice ? (spread / midPrice) * 100 : null;
-  const quoteAsset = pair?.split('/')[1];
-  const showUsd = quoteAsset ? USD_QUOTES.has(quoteAsset) : false;
+  const showUsd = hasTerminalUsdApproximation(pair);
 
   return (
     <>
@@ -164,14 +99,14 @@ export function OrderBookPanel({
             title={t('trade.groupBy')}
             aria-label={t('trade.groupBy')}
           >
-            {GROUP_STEPS.map((step) => (
+            {groupSteps.map((step) => (
               <option key={step} value={step}>
-                {step}
+                {formatTerminalLevelPrice(step, step)}
               </option>
             ))}
           </select>
           {onCollapse && (
-            <button className="orderbook-collapse" type="button" onClick={onCollapse} title="Свернуть стакан" aria-label="Свернуть стакан">
+            <button className="orderbook-collapse" type="button" onClick={() => { onHoverPrice?.(null); onCollapse(); }} title="Свернуть стакан" aria-label="Свернуть стакан">
               <PanelRightClose size={16} />
             </button>
           )}
@@ -184,27 +119,27 @@ export function OrderBookPanel({
         <span className="ob-col">{t('trade.sum')}</span>
       </div>
 
-      <div className="orderbook-asks">
+      <div className="orderbook-asks" onMouseLeave={() => onHoverPrice?.(null)}>
         {asksDepth.map((level) => (
-          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
+          <Row key={formatTerminalLevelPrice(level.price, groupStep)} level={level} step={groupStep} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} onHover={onHoverPrice} />
         ))}
       </div>
 
       <div className="orderbook-spread">
         <div className="ob-spread-price">
-          {midPrice !== null ? formatPrice(midPrice) : '—'}
-          {showUsd && midPrice !== null && <span className="usd">≈ ${formatPrice(midPrice)}</span>}
+          {midPrice !== null ? formatTerminalQuote(midPrice) : '—'}
+          {showUsd && midPrice !== null && <span className="usd">≈ ${formatTerminalQuote(midPrice)}</span>}
         </div>
         {spread !== null && spreadPct !== null && (
           <div className="ob-spread-detail">
-            {t('trade.spread')} {formatPrice(spread)} ({spreadPct.toFixed(3)}%)
+            {t('trade.spread')} {formatTerminalQuote(spread)} ({formatTerminalSpreadPercent(spreadPct)})
           </div>
         )}
       </div>
 
-      <div className="orderbook-bids">
+      <div className="orderbook-bids" onMouseLeave={() => onHoverPrice?.(null)}>
         {bidsDepth.map((level) => (
-          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
+          <Row key={formatTerminalLevelPrice(level.price, groupStep)} level={level} step={groupStep} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} onHover={onHoverPrice} />
         ))}
       </div>
     </>
@@ -242,25 +177,38 @@ function useRowFlash(quantity: number): boolean {
 // haven't changed either.
 const Row = memo(function Row({
   level,
-  decimals,
+  step,
   side,
   maxDepth,
   onPick,
+  onHover,
 }: {
   level: AggregatedLevel;
-  decimals: number;
+  step: number;
   side: 'BUY' | 'SELL';
   maxDepth: number;
   onPick?: (price: string) => void;
+  onHover?: (price: number | null) => void;
 }) {
   const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
   const flashing = useRowFlash(level.quantity);
   const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
+  const priceText = formatTerminalLevelPrice(level.price, step);
 
   return (
-    <div className={`ob-row ${flashClass}`} onClick={() => onPick?.(level.price.toFixed(2))}>
+    <div className={`ob-row ${flashClass}`} role={onPick ? 'button' : undefined} tabIndex={onPick ? 0 : undefined}
+      aria-label={`${side === 'BUY' ? 'Bid' : 'Ask'} ${priceText}`}
+      onClick={() => onPick?.(priceText)}
+      onKeyDown={event => {
+        if (onPick && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          onPick(priceText);
+        }
+      }}
+      onMouseEnter={() => onHover?.(level.price)} onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(level.price)} onBlur={() => onHover?.(null)}>
       <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ width: `${pct}%` }} />
-      <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`}>{level.price.toFixed(decimals)}</span>
+      <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`}>{priceText}</span>
       <span className="cell">{level.quantity.toFixed(5)}</span>
       <span className="cell">{(level.price * level.quantity).toFixed(2)}</span>
     </div>

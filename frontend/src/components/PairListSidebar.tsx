@@ -78,9 +78,11 @@ export const PairListSidebar = forwardRef<
     onChange: (pair: string) => void;
     onCollapse?: () => void;
     onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+    /** Optional display precision only; sorting still uses the raw ticker. */
+    priceFormatter?: (price: number) => string;
   }
 >(
-  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart }, ref) {
+  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart, priceFormatter = formatPrice }, ref) {
     const { t } = useLanguage();
     const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
@@ -297,7 +299,7 @@ export const PairListSidebar = forwardRef<
                   <b className="p-base">{tk.pair.split('/')[0]}</b>
                   <span className="p-quote">/{tk.pair.split('/')[1]}</span>
                 </span>
-                <span className="p-price">{formatPrice(parseFloat(tk.lastPrice))}</span>
+                <span className="p-price">{priceFormatter(parseFloat(tk.lastPrice))}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}
                   {change.toFixed(2)}%

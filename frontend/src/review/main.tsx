@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { LanguageProvider } from '../lib/i18n';
 import { ToastProvider } from '../lib/toast';
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -26,13 +26,14 @@ import './review.css';
 
 // A separate, public component-review entry point, NOT an authenticated app.
 // Production App.tsx and its permission guards remain unchanged.
-function Review() {
-  return <BrowserRouter>
-    <aside className="review-notice" role="note">
+function ReviewContent() {
+  const tradeReview = useLocation().pathname === '/trade';
+  return <>
+    {tradeReview ? <aside className="review-notice review-notice--terminal" role="note"><strong>VOLTEX · REVIEW</strong><span>Публичные данные Kraken. Операции с аккаунтом отключены.</span></aside> : <aside className="review-notice" role="note">
       <strong>VOLTEX · ISOLATED VISUAL REVIEW</strong>
       <span>No production connection. Do not enter real credentials. Account data and all API writes are disabled. Copy Trading figures are synthetic; market feeds may be unavailable.</span>
       <nav aria-label="Review pages">{['login', 'register', 'copy-trading', 'wallet', 'markets', 'futures', 'physical-cards'].map(path => <Link key={path} to={`/${path}`}>{path}</Link>)}</nav>
-    </aside>
+    </aside>}
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/physical-cards" element={<PhysicalCardsReview />} />
@@ -48,7 +49,11 @@ function Review() {
       <Route path="/legal/:doc" element={<LegalPage />} />
       <Route path="*" element={<p className="review-unavailable">This screen requires an authenticated staging backend and is not available in visual review. <Link to="/copy-trading">Back to review</Link></p>} />
     </Routes>
-  </BrowserRouter>;
+  </>;
+}
+
+function Review() {
+  return <BrowserRouter><ReviewContent /></BrowserRouter>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

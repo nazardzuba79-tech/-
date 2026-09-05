@@ -18,6 +18,7 @@ import {
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { computeSMA, computeBollingerBands, computeRSI, computeMACD, Candle } from '../lib/indicators';
+import { positiveTerminalNumber, terminalDraftGuides, terminalGroupSteps, TerminalOrderDraft } from '../lib/terminalExecution';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -136,9 +137,16 @@ let nextDrawingId = 1;
  * the original inline-styled toolbar — those rules are scoped to the trade
  * terminal, so a Futures chart rendering them would come out unstyled.
  */
-export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?: 'default' | 'terminal' }) {
+export function PriceChart({ pair, chrome = 'default', appearance = 'default', draft, guidePrice }: {
+  pair: string;
+  chrome?: 'default' | 'terminal';
+  appearance?: 'default' | 'premium';
+  draft?: TerminalOrderDraft | null;
+  guidePrice?: number | null;
+}) {
   const { t } = useLanguage();
   const terminal = chrome === 'terminal';
+  const premium = terminal && appearance === 'premium';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The candlestick series stays the single coordinate-conversion
@@ -159,6 +167,18 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   const macdSignalRef = useRef<ISeriesApi<'Line'> | null>(null);
   const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  // Unsaved draft/book guides are never real conditional orders or drawings.
+  // Keep ownership separate so drawing clear/hide and server-order dragging
+  // cannot delete, persist, submit or edit a preview accidentally.
+  const previewPriceLinesRef = useRef<{
+    series: ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'>;
+    line: IPriceLine;
+  }[]>([]);
+  const clearPreviewPriceLines = useCallback(() => {
+    for (const { series, line } of previewPriceLinesRef.current) series.removePriceLine(line);
+    previewPriceLinesRef.current = [];
+  }, []);
+  const guidePairRef = useRef(pair);
   const candlesRef = useRef<Candle[]>([]);
   const [interval, setInterval_] = useState<Interval>('15m');
   const [empty, setEmpty] = useState(false);
@@ -228,10 +248,10 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
         // Pure black, not the panel's dark-gray — the chart is meant to
         // read as its own "screen" rather than blend into the surrounding
         // panel chrome.
-        background: { type: ColorType.Solid, color: '#000000' },
+        background: { type: ColorType.Solid, color: premium ? '#10151d' : '#000000' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
-        textColor: terminal ? '#c7d2e0' : '#a3adba',
+        textColor: premium ? '#e2e7ee' : terminal ? '#c7d2e0' : '#a3adba',
         fontFamily: 'var(--font-ui)',
         fontSize: terminal ? 12 : 11,
       },
@@ -263,11 +283,11 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     // directly on the series rather than hoping a third-party widget
     // honors a config flag.
     const series = chart.addSeries(CandlestickSeries, {
-      upColor: '#eaecef',
-      downColor: '#f7a600',
+      upColor: premium ? '#31bd94' : '#eaecef',
+      downColor: premium ? '#df6475' : '#f7a600',
       borderVisible: false,
-      wickUpColor: '#eaecef',
-      wickDownColor: '#f7a600',
+      wickUpColor: premium ? '#31bd94' : '#eaecef',
+      wickDownColor: premium ? '#df6475' : '#f7a600',
       // The current-price line + its axis tag were "too weak" by design
       // request: a single accent color regardless of up/down direction
       // reads as one deliberate "you are here" marker, rather than
@@ -433,6 +453,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     return () => {
       resizeObserver.disconnect();
       chart.unsubscribeClick(handleClick);
+      clearPreviewPriceLines();
       chart.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -525,6 +546,16 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
         const res = await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
+        const referencePrice = res.candles[res.candles.length - 1]?.close;
+        if (premium && positiveTerminalNumber(referencePrice) !== null) {
+          // Low-priced instruments need a real price scale, not 0.00 tags.
+          // Derive precision from the observed candle; Futures is unchanged.
+          const precision = Math.max(2, Math.min(20, -Math.floor(Math.log10(terminalGroupSteps(referencePrice)[0]))));
+          const priceFormat = { type: 'price' as const, precision, minMove: 10 ** -precision };
+          seriesRef.current.applyOptions({ priceFormat });
+          lineSeriesRef.current?.applyOptions({ priceFormat });
+          areaSeriesRef.current?.applyOptions({ priceFormat });
+        }
         seriesRef.current.setData(
           res.candles.map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
         );
@@ -532,7 +563,9 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           res.candles.map((c) => ({
             time: c.time as any,
             value: c.volume,
-            color: c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',
+            color: premium
+              ? c.close >= c.open ? 'rgba(49,189,148,0.28)' : 'rgba(223,100,117,0.28)'
+              : c.close >= c.open ? 'rgba(234,236,239,0.5)' : 'rgba(247,166,0,0.5)',
           }))
         );
         maSeriesRef.current?.setData(computeSMA(res.candles, MA_PERIOD) as any);
@@ -585,7 +618,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [pair, interval]);
+  }, [pair, interval, premium]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at.
@@ -642,6 +675,29 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     macdHistRef.current?.applyOptions({ visible: showMACD });
     macdLineRef.current?.priceScale().applyOptions({ visible: showMACD });
   }, [showMACD]);
+
+  useEffect(() => {
+    clearPreviewPriceLines();
+    const pairChanged = guidePairRef.current !== pair;
+    guidePairRef.current = pair;
+    if (!terminal) return;
+    const series = chartType === 'line' ? lineSeriesRef.current
+      : chartType === 'area' ? areaSeriesRef.current : seriesRef.current;
+    if (!series) return;
+    const guides = terminalDraftGuides(draft, pair);
+    for (const guide of guides) {
+      const line = series.createPriceLine({ price: guide.price, color: guide.color,
+        lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: guide.title });
+      previewPriceLinesRef.current.push({ series, line });
+    }
+    const hovered = pairChanged ? null : positiveTerminalNumber(guidePrice);
+    if (hovered !== null) {
+      const line = series.createPriceLine({ price: hovered, color: '#7d94b1', lineWidth: 1,
+        lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: 'BOOK · GUIDE' });
+      previewPriceLinesRef.current.push({ series, line });
+    }
+    return clearPreviewPriceLines;
+  }, [draft, guidePrice, pair, interval, chartType, terminal, clearPreviewPriceLines]);
 
   const priceToY = useCallback((price: number): number | null => {
     const y = seriesRef.current?.priceToCoordinate(price);

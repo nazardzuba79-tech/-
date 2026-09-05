@@ -77,6 +77,12 @@ function extractErrorMessage(body: any, status: number): string {
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (import.meta.env.MODE === 'review') {
+    if ((options.method ?? 'GET').toUpperCase() === 'GET' && path.startsWith('/market/external/')) {
+      const publicMarket = await import('./reviewMarketData');
+      if (publicMarket.isReviewMarketRead(path, options.method)) {
+        return publicMarket.readReviewMarketData(path, options) as Promise<T>;
+      }
+    }
     const sample = reviewReadPath(path, options.method);
     if (!sample) throw new ApiError(REVIEW_UNAVAILABLE, 503);
     const response = await fetch(sample, { credentials: 'omit' });
@@ -535,6 +541,9 @@ export const api = {
         volume24h: string;
         quoteVolume24h: string;
         changePercent24h: string;
+        /** Review single-pair values use a real 5m-close rolling reference;
+         * an empty percentage means the reference history is unavailable. */
+        changeReference?: 'ROLLING_24H_5M';
       };
     }>(`/market/external/tickers/${pairToSlug(pair)}`),
 

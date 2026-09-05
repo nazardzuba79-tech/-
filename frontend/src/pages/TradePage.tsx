@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
-import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
@@ -19,8 +18,13 @@ import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { rememberTradingMode } from '../lib/tradingMode';
-import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
+import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, X, CandlestickChart, Layers3, ArrowRightLeft, ListOrdered } from 'lucide-react';
+import { MarketSpine } from './trade-terminal/MarketSpine';
+import { FlowContext, FlowDepth, FlowTape } from './trade-terminal/FlowContext';
+import { workspacePreset, type TerminalWorkspace } from '../lib/terminalMarket';
+import { formatTerminalQuote, type TerminalOrderDraft } from '../lib/terminalExecution';
 import './trade-terminal/TradeTerminal.css';
+import './trade-terminal/TerminalPremium.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -66,10 +70,15 @@ export function TradePage() {
   const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
-  const [marketPanelWidth, setMarketPanelWidth] = useState(258);
-  const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
-  const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
-  const marketResizeStart = useRef({ x: 0, width: 258 });
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [workspace, setWorkspace] = useState<TerminalWorkspace>('standard');
+  const [railCollapsed, setRailCollapsed] = useState(false);
+  const [railTab, setRailTab] = useState<'order' | 'book' | 'depth' | 'tape'>('order');
+  const [dockOpen, setDockOpen] = useState(true);
+  const [draft, setDraft] = useState<TerminalOrderDraft | null>(null);
+  const [guidePrice, setGuidePrice] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const selectorReturnFocus = useRef<HTMLElement | null>(null);
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
   // Nav.tsx's TradeMenu. TradePage stays mounted across a /trade <-> /trade?market=cfd
   // navigation (same route, React Router doesn't remount it), so the
@@ -103,10 +112,14 @@ export function TradePage() {
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
+  const activePair = useRef(pair);
+  const bookVersion = useRef(0);
+  activePair.current = pair;
   const refreshBook = useCallback(() => {
+    const version = bookVersion.current;
     api
       .getExternalOrderBook(pair)
-      .then((res) => setBook({ bids: res.bids, asks: res.asks }))
+      .then((res) => { if (activePair.current === pair && bookVersion.current === version) setBook({ bids: res.bids, asks: res.asks }); })
       .catch(() => {});
   }, [pair]);
 
@@ -115,27 +128,29 @@ export function TradePage() {
   // seconds — connection blocked, schema drift, whatever — fall back to
   // the old 2s REST poll instead of leaving the book frozen.
   useEffect(() => {
-    let gotWsData = false;
-    let restInterval: number | null = null;
+    let lastWsAt = 0;
+    bookVersion.current += 1;
+    setBook({ bids: [], asks: [] });
+    setPickedPrice(null);
+    setDraft(null);
+    setGuidePrice(null);
 
     const unsubscribe = krakenSocket.subscribeBook(pair, (snapshot) => {
-      gotWsData = true;
-      if (restInterval !== null) {
-        clearInterval(restInterval);
-        restInterval = null;
-      }
-      setBook(snapshot);
+      lastWsAt = Date.now();
+      if (activePair.current === pair) { bookVersion.current += 1; setBook(snapshot); }
     });
 
     refreshBook();
-    const fallbackTimer = window.setTimeout(() => {
-      if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
-    }, WS_FALLBACK_TIMEOUT_MS);
+    // Keep the watchdog after the first snapshot, so a later socket failure
+    // also resumes REST. A delayed REST response cannot overwrite newer WS data.
+    const fallbackTimer = window.setInterval(() => {
+      if (krakenSocket.getStatus() !== 'connected' || Date.now() - lastWsAt > WS_FALLBACK_TIMEOUT_MS) refreshBook();
+    }, 2000);
 
     return () => {
       unsubscribe();
-      clearTimeout(fallbackTimer);
-      if (restInterval !== null) clearInterval(restInterval);
+      bookVersion.current += 1;
+      clearInterval(fallbackTimer);
     };
   }, [pair, refreshBook]);
 
@@ -144,23 +159,48 @@ export function TradePage() {
     setOrdersRefreshKey((k) => k + 1);
   }
 
-  function handleMarketResizeStart(event: React.PointerEvent<HTMLDivElement>) {
-    marketResizeStart.current = { x: event.clientX, width: marketPanelWidth };
-    event.currentTarget.setPointerCapture(event.pointerId);
+  const pickPrice = useCallback((value: string) => {
+    setPickedPrice(prev => ({ value, seq: (prev?.seq ?? 0) + 1 }));
+    setRailTab('order'); setRailCollapsed(false); setGuidePrice(null);
+  }, []);
 
-    function move(moveEvent: PointerEvent) {
-      const nextWidth = marketResizeStart.current.width + moveEvent.clientX - marketResizeStart.current.x;
-      setMarketPanelWidth(Math.min(340, Math.max(240, nextWidth)));
-    }
+  const openMarkets = useCallback(() => {
+    selectorReturnFocus.current = document.activeElement as HTMLElement | null;
+    setSelectorOpen(true);
+  }, []);
+  const closeMarkets = useCallback(() => {
+    setSelectorOpen(false);
+    selectorReturnFocus.current?.focus();
+  }, []);
 
-    function stop() {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', stop);
-    }
-
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', stop);
+  function applyWorkspace(next: TerminalWorkspace) {
+    const preset = workspacePreset(next);
+    setWorkspace(next); setRailCollapsed(preset.railCollapsed);
+    setDockOpen(preset.dockOpen); setRailTab(preset.railTab); setGuidePrice(null);
   }
+
+  useEffect(() => {
+    if (selectorOpen) pairListRef.current?.focusSearch();
+  }, [selectorOpen]);
+  useEffect(() => {
+    if (marketType !== 'spot') return;
+    function onKey(event: KeyboardEvent) {
+      const editing = (event.target as HTMLElement | null)?.closest('input,textarea,select,[contenteditable="true"]');
+      if (((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') || (event.key === '/' && !editing)) {
+        event.preventDefault();
+        if (selectorOpen) closeMarkets(); else openMarkets();
+      }
+      if (event.key === 'Escape' && selectorOpen) { event.preventDefault(); closeMarkets(); }
+      if (event.key === 'Tab' && selectorOpen) {
+        const items = [...(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input, select, a[href], [tabindex="0"]') ?? [])].filter(el => el.getClientRects().length > 0);
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [marketType, selectorOpen, openMarkets, closeMarkets]);
 
   // Spot renders the ported terminal; CFD keeps the page's previous layout,
   // because the supplied design covers a spot terminal only and its
@@ -202,68 +242,25 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal">
+    <div className="trade-terminal terminal-premium" data-workspace={workspace}>
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
       <div className="terminal">
-        <TickerBar pair={pair} onSelectPair={() => pairListRef.current?.focusSearch()} />
-
-        {/* Left to right: search/pair list, chart, order book, order-entry
-            form — the reference had the form under the chart and the pair
-            list on the far right; this is the requested reorder, done via
-            grid-column placement in TradeTerminal.css, not by moving
-            anything with absolute positioning or transforms. */}
-        <div
-          className={`main-grid${marketPanelCollapsed ? ' market-panel-collapsed' : ''}${orderBookCollapsed ? ' orderbook-collapsed' : ''}`}
-          style={{ '--market-panel-width': `${marketPanelWidth}px` } as React.CSSProperties}
-        >
-          <div className="left-panel">
-            <PairListSidebar
-              ref={pairListRef}
-              pair={pair}
-              onChange={setPair}
-              onCollapse={() => setMarketPanelCollapsed(true)}
-              onResizeStart={handleMarketResizeStart}
-            />
-          </div>
-          {marketPanelCollapsed && (
-            <button className="restore-market-panel" onClick={() => setMarketPanelCollapsed(false)} title="Открыть рынки" aria-label="Открыть рынки">
-              <PanelLeftOpen size={17} />
-            </button>
-          )}
-
-          <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" />
-          </div>
-
-          <div className="orderbook-area">
-            <OrderBookPanel
-              bids={book.bids}
-              asks={book.asks}
-              pair={pair}
-              onPickPrice={(value) => setPickedPrice((prev) => ({ value, seq: (prev?.seq ?? 0) + 1 }))}
-              onCollapse={() => setOrderBookCollapsed(true)}
-            />
-          </div>
-          {orderBookCollapsed && (
-            <button className="restore-orderbook" onClick={() => setOrderBookCollapsed(false)} title="Открыть стакан" aria-label="Открыть стакан">
-              <PanelRightOpen size={17} />
-            </button>
-          )}
-
-          <div className="order-form-area">
-            <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
-          </div>
-        </div>
-
-        <div className="bottom-panel">
-          <div className="bottom-tabs">
+        <MarketSpine pair={pair} book={book} onOpenMarkets={openMarkets} workspace={workspace} onWorkspaceChange={applyWorkspace} />
+        <div className={`signature-workspace${railCollapsed ? ' rail-collapsed' : ''}`}>
+          <main className="chart-main">
+            <div className="chart-area">
+              <PriceChart pair={pair} chrome="terminal" appearance="premium" draft={draft?.pair === pair ? draft : null} guidePrice={guidePrice} />
+            </div>
+            <section className={`trading-dock bottom-panel${!dockOpen ? ' dock-collapsed' : ''}`} aria-label="Ордера и активы">
+          <div className="dock-tabs bottom-tabs" role="tablist" aria-label="Ордера и активы">
             {BOTTOM_TABS.map((tab) => (
               <button
                 key={tab.id}
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
-                onClick={() => setBottomTab(tab.id)}
+                role="tab" aria-selected={bottomTab === tab.id} aria-controls="terminal-dock-content"
+                onClick={() => { setBottomTab(tab.id); setDockOpen(true); }}
               >
                 {t(tab.labelKey)}
                 {tab.id === 'open' && <span className="badge">{openOrderCount}</span>}
@@ -277,17 +274,47 @@ export function TradePage() {
                 </button>
               </div>
             )}
+            <button className="dock-toggle" aria-label={dockOpen ? 'Свернуть ордера' : 'Развернуть ордера'} aria-expanded={dockOpen} onClick={() => setDockOpen(v => !v)}>{dockOpen ? <ChevronDown size={15} /> : <ChevronUp size={15} />}</button>
           </div>
 
-          <div className="bottom-content">
+          <div id="terminal-dock-content" className="dock-body bottom-content" hidden={!dockOpen}>
             {bottomTab === 'open' && (
               <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} />
             )}
             {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
           </div>
+            </section>
+          </main>
+          <aside className="flow-rail" aria-label="Flow Rail">
+            <div className="flow-tabs" role="tablist" aria-label="Исполнение и поток">
+              {([{ id: 'order', text: 'Ордер', icon: ListOrdered }, { id: 'book', text: 'Стакан', icon: Layers3 }, { id: 'depth', text: 'Глубина', icon: CandlestickChart }, { id: 'tape', text: 'Лента', icon: ArrowRightLeft }] as const).map(tab => <button key={tab.id} role="tab" aria-label={tab.text} aria-selected={railTab === tab.id} title={tab.text} onClick={() => { setRailTab(tab.id); setRailCollapsed(false); setGuidePrice(null); }} className={railTab === tab.id ? 'active' : ''}><tab.icon size={15}/><span>{tab.text}</span></button>)}
+              <button className="rail-collapse" aria-label={railCollapsed ? 'Развернуть Flow Rail' : 'Свернуть Flow Rail'} aria-expanded={!railCollapsed} onClick={() => { setRailCollapsed(v => !v); setGuidePrice(null); }}>{railCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
+            </div>
+            <div className="flow-pane" hidden={railCollapsed || railTab !== 'order'}>
+              <div className="order-form-area"><OrderForm compact key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} onDraftChange={setDraft} /></div>
+              <FlowContext book={book} pair={pair} onPick={pickPrice} />
+            </div>
+            <div className="flow-pane orderbook-area" hidden={railCollapsed || railTab !== 'book'}>
+              <OrderBookPanel bids={book.bids} asks={book.asks} pair={pair} onPickPrice={pickPrice} onHoverPrice={setGuidePrice} />
+              <p className="flow-source">Kraken · наведение проецирует цену на график</p>
+            </div>
+            <div className="flow-pane" hidden={railCollapsed || railTab !== 'depth'}><FlowDepth book={book} pair={pair}/></div>
+            <div className="flow-pane" hidden={railCollapsed || railTab !== 'tape'}>{railTab === 'tape' && !railCollapsed && <FlowTape pair={pair} onPick={pickPrice} onHover={setGuidePrice}/>}</div>
+          </aside>
         </div>
       </div>
+      {selectorOpen && <div className="market-dialog-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) closeMarkets(); }}>
+        <div className="market-dialog" role="dialog" aria-modal="true" aria-label="Рынки и команды" ref={dialogRef}>
+          <div className="market-dialog-header"><strong>Рынки и команды</strong><button onClick={closeMarkets} aria-label="Закрыть рынки"><X size={18}/></button></div>
+          <div className="market-commands" aria-label="Команды рабочего пространства">
+            {(['standard', 'chart', 'flow'] as const).map(mode => <button key={mode} onClick={() => { applyWorkspace(mode); closeMarkets(); }}>{mode === 'standard' ? 'Standard' : mode === 'chart' ? 'Chart focus' : 'Flow'}</button>)}
+            <button onClick={() => { setDockOpen(v => !v); closeMarkets(); }}>Ордера ↕</button>
+          </div>
+          <PairListSidebar priceFormatter={formatTerminalQuote} ref={pairListRef} pair={pair} onChange={next => { setPair(next); closeMarkets(); }} />
+          <div className="market-dialog-hint"><kbd>Esc</kbd> Закрыть <span><kbd>Ctrl / ⌘ K</kbd> Команды</span></div>
+        </div>
+      </div>}
     </div>
   );
 }

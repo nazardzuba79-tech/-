@@ -3,3 +3,6 @@
 .review-notice nav { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .review-notice a, .review-unavailable a { color: #674800; text-decoration: underline; }
 .review-unavailable { padding: 32px; color: #f5f5f5; }
+.review-notice--terminal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 7px 18px; background: #202a35; color: #c4d0df; border-color: #344354; font-size: 11px; }
+.review-notice--terminal + .trade-terminal { height: calc(100dvh - 31px); }
+@media (max-width: 1024px) { .review-notice--terminal + .trade-terminal { height: auto; } }
