@@ -62,8 +62,8 @@ export interface SyntheticFollower {
 }
 
 export interface SyntheticCopyState {
-  // v1 remains readable without resetting persisted inception history.
-  version: 1 | 2;
+  // Earlier versions retain persisted inception history and outcome policies.
+  version: 1 | 2 | 3;
   seed: number;
   rngState: number;
   simulatedAt: string;

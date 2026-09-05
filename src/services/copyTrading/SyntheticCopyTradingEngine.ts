@@ -137,21 +137,27 @@ function recordAum(state: SyntheticCopyState, date: string): void {
   else state.aumHistory.push(snapshot);
 }
 
-function appendDay(state: SyntheticCopyState, date: string, endEquity: number, rng: SeededRandom, forcedLossBudget?: number): void {
+function appendDay(state: SyntheticCopyState, date: string, endEquity: number, rng: SeededRandom,
+  plan?: { count: number; loss: boolean; lossBudget: number }): void {
   const startEquity = state.equityHistory[state.equityHistory.length - 1].equity;
   const netDayPnl = endEquity - startEquity;
-  const count = rng.integer(SYNTHETIC_COPY_CONFIG.tradesPerDay.min, SYNTHETIC_COPY_CONFIG.tradesPerDay.max);
-  // One loss roughly every four trading days gives ~2.9% losing trades at
-  // the configured 4–12/day cadence. A down day always gets a losing trade
-  // so a positive-labelled trade can never carry a negative PnL.
+  const count = plan?.count ?? rng.integer(SYNTHETIC_COPY_CONFIG.tradesPerDay.min, SYNTHETIC_COPY_CONFIG.tradesPerDay.max);
+  // Count trade outcomes, not losing days: a red day can contain several
+  // smaller wins and one larger loss. v3 budgets ~2.8% losing trades across
+  // the accumulating ledger instead of adding a periodic loss on top of
+  // every red day. Previously stored versions retain their original policy.
   const outcomes = Array.from({ length: count }, () => 'WIN');
-  if (state.dailyResults.length % 5 === 1 || netDayPnl < 0) outcomes[count - 1] = 'LOSS';
+  const lossDue = plan ? plan.loss : state.version === 3
+    ? state.trades.filter((trade) => trade.result === 'LOSS').length
+      < Math.round((state.trades.length + count) * (1 - SYNTHETIC_COPY_CONFIG.targetWinRate))
+    : state.dailyResults.length % 5 === 1;
+  if (lossDue || netDayPnl < 0) outcomes[count - 1] = 'LOSS';
   if (!outcomes.includes('WIN')) outcomes[0] = 'WIN';
   const lossCount = outcomes.filter((outcome) => outcome === 'LOSS').length;
   const existingLoss = Math.abs(state.trades.filter((trade) => trade.result === 'LOSS').reduce((sum, trade) => sum + trade.netPnl, 0));
   const totalNet = state.trades.reduce((sum, trade) => sum + trade.netPnl, 0) + netDayPnl;
   const catchUpLoss = Math.max(0, totalNet / (SYNTHETIC_COPY_CONFIG.targetProfitFactor - 1) - existingLoss);
-  const lossBudget = lossCount ? Math.max(Math.abs(netDayPnl) * 1.15, forcedLossBudget ?? catchUpLoss) : 0;
+  const lossBudget = lossCount ? Math.max(Math.abs(netDayPnl) * 1.15, plan?.lossBudget ?? catchUpLoss) : 0;
   const winBudget = netDayPnl + lossBudget;
   const winWeights = outcomes.map((outcome) => outcome === 'WIN' ? rng.between(SYNTHETIC_COPY_CONFIG.winningRiskR.min, SYNTHETIC_COPY_CONFIG.winningRiskR.max) : 0);
   const lossWeights = outcomes.map((outcome) => outcome === 'LOSS' ? rng.between(Math.abs(SYNTHETIC_COPY_CONFIG.losingRiskR.max), Math.abs(SYNTHETIC_COPY_CONFIG.losingRiskR.min)) : 0);
@@ -198,7 +204,7 @@ function initialTargets(rng: SeededRandom): number[] {
   const losingDays = new Set(Array.from({ length: Math.ceil(initialHistoryDays / 10) },
     (_, block) => block * 10 + rng.integer(2, 8)));
   const weights = Array.from({ length: initialHistoryDays }, (_, day) => losingDays.has(day)
-    ? -rng.between(0.25, 0.75)
+    ? -rng.between(0.06, 0.18)
     : rng.between(0.7, 1.3) + 0.38 * Math.sin(day * 2 * Math.PI / 27 - 1)
       + 0.17 * Math.sin(day * 2 * Math.PI / 11 + 0.4));
   const totalWeight = weights.reduce((sum, value) => sum + value, 0);
@@ -210,12 +216,47 @@ function initialTargets(rng: SeededRandom): number[] {
   });
 }
 
+function initialTradePlan(targets: number[], rng: SeededRandom) {
+  const { initialTradeCount, targetWinRate, initialCapital, targetProfitFactor, tradesPerDay } = SYNTHETIC_COPY_CONFIG;
+  const counts = targets.map(() => rng.integer(tradesPerDay.min, tradesPerDay.max));
+  const order = targets.map((_, index) => index);
+  for (let index = order.length - 1; index > 0; index--) {
+    const other = rng.integer(0, index);
+    [order[index], order[other]] = [order[other], order[index]];
+  }
+  // Balance the integer count across shuffled sessions, never by adding a
+  // last-day cluster. Keep the established 4–12 trades/day range.
+  let remaining = initialTradeCount - counts.reduce((sum, count) => sum + count, 0);
+  for (let cursor = 0; remaining !== 0; cursor++) {
+    const day = order[cursor % order.length];
+    const adjustment = Math.sign(remaining);
+    const count = counts[day] + adjustment;
+    if (count >= tradesPerDay.min && count <= tradesPerDay.max) {
+      counts[day] = count;
+      remaining -= adjustment;
+    }
+  }
+  const dailyPnl = targets.map((target, index) => target - (index ? targets[index - 1] : initialCapital));
+  const lossDays = new Set(dailyPnl.flatMap((pnl, index) => pnl < 0 ? [index] : []));
+  const targetLossCount = Math.round(initialTradeCount * (1 - targetWinRate));
+  for (const day of order) {
+    if (lossDays.size >= targetLossCount) break;
+    lossDays.add(day);
+  }
+  // Both daily results and the trade-level win rate are real projections of
+  // this synthetic ledger: some profitable days also include a losing trade.
+  const lossWeight = [...lossDays].reduce((sum, day) => sum + Math.abs(dailyPnl[day]), 0);
+  const desiredGrossLoss = (targets[targets.length - 1] - initialCapital) / (targetProfitFactor - 1);
+  return counts.map((count, day) => ({ count, loss: lossDays.has(day),
+    lossBudget: lossDays.has(day) ? desiredGrossLoss * Math.abs(dailyPnl[day]) / lossWeight : 0 }));
+}
+
 export function createInitialState(now = new Date()): SyntheticCopyState {
   const today = utcDay(now);
   const firstDate = addUtcDays(today, -90);
   const rng = new SeededRandom(SYNTHETIC_COPY_CONFIG.seed);
   const state: SyntheticCopyState = {
-    version: 2,
+    version: 3,
     seed: SYNTHETIC_COPY_CONFIG.seed,
     rngState: rng.state,
     simulatedAt: `${today}T23:59:59.999Z`,
@@ -228,15 +269,9 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
     followers: [],
   };
   const targets = initialTargets(rng);
-  const totalNet = targets[targets.length - 1] - SYNTHETIC_COPY_CONFIG.initialCapital;
-  const desiredGrossLoss = totalNet / (SYNTHETIC_COPY_CONFIG.targetProfitFactor - 1);
-  const lossDays = targets.map((_, index) => index).filter((index) => index % 5 === 1);
-  const weights = lossDays.map((index) => state.equityHistory[0].equity * (1 + index / 90));
-  const weightTotal = weights.reduce((sum, value) => sum + value, 0);
+  const plans = initialTradePlan(targets, rng);
   for (let index = 0; index < targets.length; index++) {
-    const lossIndex = lossDays.indexOf(index);
-    const budget = lossIndex >= 0 ? desiredGrossLoss * weights[lossIndex] / weightTotal : undefined;
-    appendDay(state, addUtcDays(firstDate, index + 1), targets[index], rng, budget);
+    appendDay(state, addUtcDays(firstDate, index + 1), targets[index], rng, plans[index]);
   }
   state.followers = generateFollowers(firstDate, rng);
   state.aumHistory = buildInitialAumHistory(state);
@@ -247,7 +282,7 @@ export function createInitialState(now = new Date()): SyntheticCopyState {
 
 function targetNextEquity(state: SyntheticCopyState): number {
   const current = state.equityHistory[state.equityHistory.length - 1];
-  if (state.version === 2) {
+  if (state.version >= 2) {
     // Keep session exposure bounded rather than compounding each template
     // return against ever-larger equity, which recreates end-loaded bars.
     // Only append: neither past trades nor ALL history is rewritten. Existing

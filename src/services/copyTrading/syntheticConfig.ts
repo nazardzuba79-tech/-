@@ -3,7 +3,9 @@ export const SYNTHETIC_COPY_CONFIG = {
   seed: 20260902,
   initialCapital: 100_000,
   initialHistoryDays: 90,
-  targetWinRate: 0.971,
+  // 729 wins / 750 trades = exactly 97.2% in the fresh 90-day scenario.
+  initialTradeCount: 750,
+  targetWinRate: 0.972,
   minWinRate: 0.965,
   maxWinRate: 0.98,
   // Only the initial 90-day scenario total is calibrated. Shorter ROI and

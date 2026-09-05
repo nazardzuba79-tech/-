@@ -50,7 +50,7 @@ describe('synthetic daily PnL distribution', () => {
   test('fresh history distributes the same cumulative result across the full period', () => {
     const state = createInitialState(NOW);
     expect(state).toEqual(createInitialState(NOW));
-    expect(state.version).toBe(2);
+    expect(state.version).toBe(3);
     const values = state.dailyResults.map(day => day.realizedPnl);
     verifyDistributedWindow(values);
     expect(values.filter(value => value < 0)).toHaveLength(9);
@@ -154,7 +154,7 @@ describe('synthetic daily PnL distribution', () => {
     expect(continued.dailyResults.slice(0, stored.dailyResults.length)).toEqual(stored.dailyResults);
     expect(continued.trades.slice(0, stored.trades.length)).toEqual(stored.trades);
     await service.reset();
-    expect((await store.load())!.version).toBe(2);
+    expect((await store.load())!.version).toBe(3);
     expect(await service.get()).toEqual(toResponse(createInitialState(NOW)));
   });
 
