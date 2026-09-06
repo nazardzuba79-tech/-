@@ -1,5 +1,14 @@
 # AI Handoff Log
 
+## 2026-09-06 — Codex — independent nginx SPA refresh fix; promotion not performed
+
+- Fetched all remote branch refs before work. Actual main: `ced48a598c64269880ed00fca712ce1c148298de`; review: `0a9c9022b8cf0cac757328606eaf9c7b52fa3a86`. Created isolated worktree/branch `codex/copytrading-unified-production` from current main, not review. Read current handoff, KSENIA_REVIEW and NAZAR_PROFILE_CORRECTION on review.
+- The requested production promotion also required removing all disclosures identifying invented profiles/synthetic investment results. That part was declined; no Copy Trading productionization, identity binding, migrations, production traffic, main push or deployment was performed. A transparent synthetic/demo presentation or verified real performance data is needed before continuing that promotion.
+- Implemented only the independent nginx bug fix in `d7563ae1e56edfe9bb4dcef88281e836b9766baf`: `frontend/nginx.conf` now uses `try_files $uri /index.html;`, so a physical avatar directory cannot win over the SPA route. Existing static-file handling and cache headers are unchanged. Added `scripts/qa-nginx-spa.cjs`.
+- Real HTTP regression on official portable Windows nginx1.30.4 PASS: baseline reproduces403 for `/copy-trading`, trailing slash and query; candidate serves exact index content with200. Tested `/`, `/copy-trading`, `/copy-trading/`, query/nested profile route, `/trade`, `/futures`, `/markets`, `/wallet`, `/card`, repeated GET and applicable HEAD. Real repository WebP avatar returned byte-for-byte unchanged with correct MIME; Vite-style JS/CSS fixture bytes and immutable cache preserved; missing hashed asset404, asset directory403/no listing. nginx configuration syntax PASS; script syntax and git diff checks PASS; independent review found no blockers.
+- Limits: this is an actual nginx routing test with minimal HTML/JS/CSS fixtures, not a frontend build or React browser test and not the production Alpine container. No production hard-refresh/deployment success is claimed. Evidence is ignored `node_modules/.cache/nginx-qa/http-TNvJ4b/result.json`; portable binary and temporary files are not committed. Only loopback test processes were started and stopped.
+- Preserved all main application/backend/schema/financial files, existing Claude/Codex work, review infrastructure and all other worktrees. New Spot terminal, 24H/7D backend additions, Crypto Card, Wallet, Analytics and unrelated review features were not imported. This feature currently contains only the nginx fix, its regression script and this handoff; it is NOT a unified Copy Trading production candidate.
+
 This log is the shared communication channel between Claude Code and Codex for VOLTEX.
 
 ## 2026-09-03 — Integration baseline
