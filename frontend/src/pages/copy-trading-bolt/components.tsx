@@ -50,6 +50,7 @@ import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
+import { VerifiedBadge } from './VerifiedBadge';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -263,10 +264,10 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           <div className="avatar-wrap"><Avatar trader={trader} /></div>
           <div className="trader-name-row">
             {isNazara ? <div className="nazara-identity-copy">
-              <div className="nazara-name"><h3>{trader.name}</h3>{trader.verified && <span className="nazara-verified" role="img" aria-label="Верифицирован" title="Верифицирован"><Check size={10} /></span>}</div>
+              <div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div>
               <div className="nazara-status">{trader.vip && <VipBadge />}</div>
             </div> : <>
-              <div><h3>{trader.name}</h3><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
+              <div><div className="trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
               {trader.vip && <VipBadge />}
             </>}
           </div>
@@ -667,8 +668,8 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
       <button className="back-button" onClick={onBack}><ArrowLeft size={16} /> Назад к копитрейдингу</button>
       <section className="trader-profile-hero">
         <div className="trader-profile-identity">
-          <div className="profile-avatar-wrap"><Avatar trader={trader} large />{trader.id === nazarTrader.id && trader.verified && <span className="profile-verified"><Check size={11} /></span>}</div>
-          <div><div className="profile-title-row"><h1>{trader.name}</h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
+          <div className="profile-avatar-wrap"><Avatar trader={trader} large /></div>
+          <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
         </div>
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>

@@ -141,9 +141,7 @@
 .copytrading-bolt-root .avatar-orange { background: linear-gradient(145deg, #b9855e, #563423); }
 .copytrading-bolt-root .avatar-green { background: linear-gradient(145deg, #73a183, #26493d); }
 .copytrading-bolt-root .avatar-large { width: 58px; height: 58px; font-size: 20px; }
-.copytrading-bolt-root .verified-dot,
-.copytrading-bolt-root .profile-verified { position: absolute; right: -2px; bottom: 1px; display: grid; place-items: center; width: 15px; height: 15px; color: #07120c; border: 2px solid #111214; border-radius: 50%; background: #5dbe86; }
-.copytrading-bolt-root .profile-verified { width: 17px; height: 17px; right: -2px; }
+.copytrading-bolt-root .verified-dot { position: absolute; right: -2px; bottom: 1px; display: grid; place-items: center; width: 15px; height: 15px; color: #07120c; border: 2px solid #111214; border-radius: 50%; background: #5dbe86; }
 .copytrading-bolt-root .profile-title-row { display: flex; align-items: center; gap: 9px; }
 .copytrading-bolt-root .profile-title-row h3,
 .copytrading-bolt-root .profile-title-row h1 { font-size: 20px; }
@@ -460,8 +458,7 @@
 /* The avatar discs stay as they are — coloured discs read on either
    ground — but their verified tick is ringed in the card colour behind
    it, which is now white. */
-.copytrading-bolt-root.light .verified-dot,
-.copytrading-bolt-root.light .profile-verified { border-color: var(--l-surface); background: var(--l-positive); color: #ffffff; }
+.copytrading-bolt-root.light .verified-dot { border-color: var(--l-surface); background: var(--l-positive); color: #ffffff; }
 .copytrading-bolt-root.light .vip-badge { color: var(--l-accent-text); border-color: var(--l-accent-border); background: var(--l-accent-soft); }
 .copytrading-bolt-root.light .large-icon { border-color: var(--l-border-strong); }
 .copytrading-bolt-root.light .icon-button { color: var(--l-secondary); }

@@ -9,6 +9,7 @@ import { selectSyntheticPeriod, syntheticNazaraTrader } from '../syntheticCopyTr
 import { nazarTrader, marketplaceTraders, getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU } from '../../pages/copy-trading-bolt/traders';
 import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerformance';
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
+import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 
 const frontend = resolve(__dirname, '../../..');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
@@ -31,7 +32,7 @@ const dependencies = {
   getTraderVisual, nazarTrader, selectSyntheticPeriod, selectDemoPerformance,
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
   followerProfitForPeriod: () => null, Avatar: empty, FavoriteButton: empty,
-  MiniPerformanceChart: empty, Users: empty, Check: empty, ChevronRight: empty,
+  MiniPerformanceChart: empty, Users: empty, Check: empty, ChevronRight: empty, VerifiedBadge,
   VipBadge: () => React.createElement('span', { className: 'vip-badge' }, 'VIP'),
   CopyButton: () => React.createElement('button', { className: 'copy-child' }, 'Copy'),
 };
@@ -62,12 +63,33 @@ describe('Nazara marketplace presentation only', () => {
     expect(JSON.stringify(response)).toBe(before);
   });
 
-  test('VIP and verification use existing flags, not an invented rank or new endorsement', () => {
-    expect(render('ALL')).toContain('aria-label="Верифицирован"');
+  test('VIP remains independent and identity verification never inherits the static catalogue flag', () => {
+    expect(render('ALL')).not.toContain('aria-label="Верифицирован"');
+    expect(render('ALL', { ...trader, identityVerified: true })).toContain('aria-label="Верифицирован"');
     const plain = render('ALL', { ...trader, vip: false, verified: false });
     expect(plain).not.toContain('vip-badge');
     expect(plain).not.toContain('aria-label="Верифицирован"');
     expect(render('ALL')).not.toMatch(/#1|лучший в мире|гарантирован/i);
+  });
+
+  test.each([true, false, undefined])('the real card renders identityVerified=%s beside the name, never over the avatar', identityVerified => {
+    const html = render('ALL', { ...trader, verified: true, identityVerified });
+    expect((html.match(/class="copy-verified-badge"/g) ?? [])).toHaveLength(identityVerified === true ? 1 : 0);
+    if (identityVerified === true) {
+      expect(html).toMatch(/<div class="nazara-name trader-display-name"><h3>Nazar<\/h3><svg class="copy-verified-badge"/);
+      expect(html).toContain('fill="#1d9bf0"');
+      expect(html).toContain('stroke="#fff"');
+    }
+    expect(html.match(/<div class="avatar-wrap">[\s\S]*?<\/div>/)?.[0]).not.toContain('copy-verified-badge');
+    expect(html).not.toContain('class="verified-badge"');
+  });
+
+  test('ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names', () => {
+    const ordinary = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
+    const html = render('90D', { ...ordinary, name: 'Renamed trader', identityVerified: true });
+    expect(html).toMatch(/<div class="trader-display-name"><h3>Renamed trader<\/h3><svg class="copy-verified-badge"/);
+    expect((html.match(/class="copy-verified-badge"/g) ?? [])).toHaveLength(1);
+    expect(render('90D', { ...ordinary, verified: true, identityVerified: undefined })).not.toContain('copy-verified-badge');
   });
 
   test('ordinary card content is preserved; absent Nazara metrics do not become fake constants', () => {

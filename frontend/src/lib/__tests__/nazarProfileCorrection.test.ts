@@ -8,6 +8,7 @@ import { selectSyntheticPeriod, syntheticNazaraTrader, formatSyntheticHistoryDat
 import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
 import { dailyReturnChart } from '../dailyReturnChart';
 import { nazarTrader, formatPercent, formatAccountSize, roiClass, PERIODS } from '../../pages/copy-trading-bolt/traders';
+import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 
 const frontend = resolve(__dirname, '../../..');
 const requireFrontend = createRequire(resolve(frontend, 'package.json'));
@@ -32,7 +33,7 @@ const deps = {
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
   publicSignedUsdt, publicUsdtNumber, dailyReturnChart, formatSyntheticHistoryDate,
   Avatar: empty, VipBadge: empty, FavoriteButton: empty, CopyButton: empty, ArrowLeft: empty,
-  Check: empty, BarChart3: empty, Users: empty, FollowerHistory: empty, TradingProfilePanel: empty,
+  Check: empty, BarChart3: empty, Users: empty, FollowerHistory: empty, TradingProfilePanel: empty, VerifiedBadge,
   ProfilePerformanceChart: ({ period }: { period: string }) => React.createElement('div', { 'data-yellow-period': period }),
 };
 const compiled = ts.transpileModule(`${declarations.join('\n')}\nexports.Profile=Profile;`, {
@@ -41,8 +42,8 @@ const compiled = ts.transpileModule(`${declarations.join('\n')}\nexports.Profile
 const exportsObject: Record<string, any> = {};
 new Function('require', 'exports', ...Object.keys(deps), compiled)(requireFrontend, exportsObject, ...Object.values(deps));
 const baseline = toResponse(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')));
-const render = () => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
-  trader: syntheticNazaraTrader(baseline), synthetic: baseline, onBack: empty,
+const render = (trader = syntheticNazaraTrader(baseline)) => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
+  trader, synthetic: baseline, onBack: empty,
 }));
 const plain = (value: string) => value.replace(/\u00a0|\u202f/g, ' ');
 
@@ -60,11 +61,25 @@ test.each(PERIODS)('%s keeps lifetime statistics separate from the selected char
   expect(html).toContain(formatPercent(selectSyntheticPeriod(baseline, period).roi));
   expect(html).toContain('Дневная доходность');
   expect(html).not.toMatch(/Средняя доходность|Average Return|Средний PnL|plot.average/);
-  expect(html).toContain('<h1>Nazar</h1>');
+  expect(html).toContain('<h1 class="trader-display-name">Nazar</h1>');
   expect(html).toContain('Доход Nazar');
   expect(html).not.toMatch(/Nazara/);
   expect(html).toContain('7 200 000 USDT');
   expect(html).not.toMatch(/\d[\d ]{3,},\d{2} USDT/);
+});
+
+test.each([true, false, undefined])('actual profile shows identityVerified=%s only inline with its heading', identityVerified => {
+  const trader = { ...syntheticNazaraTrader(baseline), identityVerified, verified: true };
+  const before = JSON.stringify({ trader, baseline });
+  const html = render(trader);
+  expect((html.match(/class="copy-verified-badge"/g) ?? [])).toHaveLength(identityVerified === true ? 1 : 0);
+  if (identityVerified === true) {
+    expect(html).toMatch(/<h1 class="trader-display-name">Nazar<svg class="copy-verified-badge"[\s\S]*?<\/svg><\/h1>/);
+    expect(html).toContain('fill="#1d9bf0"');
+  }
+  expect(html.match(/<div class="profile-avatar-wrap">[\s\S]*?<\/div>/)?.[0]).not.toContain('copy-verified-badge');
+  expect(html).not.toContain('class="verified-badge"');
+  expect(JSON.stringify({ trader, baseline })).toBe(before);
 });
 
 test('public name ignores stale legacy response names without renaming identifiers', () => {

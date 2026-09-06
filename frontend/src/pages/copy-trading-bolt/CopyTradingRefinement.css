@@ -49,6 +49,10 @@
 .copytrading-bolt-root .catalogue-disclosure { margin: 0 0 20px; color: #a5adb9; font-size: 11px; line-height: 1.6; }
 .copytrading-bolt-root.profile-view .catalogue-disclosure { margin-top: 22px; color: #687487; }
 
+/* Real owner identity verification stays beside the name, separate from VIP. */
+.copytrading-bolt-root .trader-display-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.copytrading-bolt-root .copy-verified-badge { display: inline-block; flex: 0 0 15px; width: 15px; height: 15px; vertical-align: middle; }
+
 /* Marketplace-only flagship hierarchy. Data, profile and eligibility stay untouched. */
 .copytrading-bolt-root .copy-marketplace .trader-card:not(.trader-card-vip) {
   border-color: #454a53;
@@ -75,16 +79,6 @@
 }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara h3 { font-size: 20px; font-weight: 750; letter-spacing: -.025em; line-height: 1.25; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-verified {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 14px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #a8beb9;
-  color: #273431;
-}
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-status { display: flex; margin-top: 7px; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .vip-badge {
   padding: 3px 6px;

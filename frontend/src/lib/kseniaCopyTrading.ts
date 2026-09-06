@@ -6,8 +6,11 @@ export interface PublicStrategyIdentity {
   avatarVersion: string | null; verified: boolean; premium: boolean;
 }
 export type KseniaResponse = SyntheticCopyTradingResponse & { provenance: 'SYNTHETIC_REVIEW'; traderEarnings365: number };
+export function withStrategyIdentityVerification(trader: Trader, identity?: PublicStrategyIdentity): Trader {
+  return { ...trader, identityVerified: identity?.traderId === trader.id && identity.verified === true };
+}
 export function kseniaTrader(data: KseniaResponse, identity?: PublicStrategyIdentity): Trader {
   // Stateless DTO projection only; no Nazar state or engine mutation.
-  return { ...syntheticNazaraTrader(data), id: KSENIA_TRADER_ID, name: 'Ksenia', initials: 'K', tone: 'slate',
-    strategy: 'Multi-Asset Strategy', verified: identity?.verified ?? false, ownerAvatarUrl: identity?.avatarUrl ?? null };
+  return withStrategyIdentityVerification({ ...syntheticNazaraTrader(data), id: KSENIA_TRADER_ID, name: 'Ksenia', initials: 'K', tone: 'slate',
+    strategy: 'Multi-Asset Strategy', verified: identity?.verified ?? false, ownerAvatarUrl: identity?.avatarUrl ?? null }, identity);
 }

@@ -29,6 +29,8 @@ export type Trader = {
   tone: string;
   vip?: boolean;
   verified?: boolean;
+  /** Bound backend owner verification, distinct from legacy catalogue flags. */
+  identityVerified?: boolean;
   /** Sanitized strategy-owner profile media; never catalogue art. */
   ownerAvatarUrl?: string | null;
   /** Where the trader operates from. VOLTEX is a Singapore-based

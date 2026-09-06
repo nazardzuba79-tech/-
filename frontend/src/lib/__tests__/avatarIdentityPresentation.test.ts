@@ -107,14 +107,17 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
     expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({
-    'src/pages/copy-trading-bolt/CopyTradingRefinement.css': '0c2d79cb276006943f7528e5f7abd17b434ea642e7447211f41258a62babdce4',
+    // Explicitly approved inline blue identity badge; chart styling is unchanged.
+    'src/pages/copy-trading-bolt/CopyTradingRefinement.css': 'f391f43bc96c58b2356b3e7590d931a232dc5af366eaab3677a7618462ae267b',
     'src/pages/copy-trading-bolt/traders.ts': '90e35a2b9d37ee079b94ebf37bcc10cdf211028f134d30ca59d53c304ad31aba',
     'src/pages/copy-trading-bolt/demoPerformance.ts': '1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead',
   })) {
     const contents = readFileSync(resolve(frontend, file), 'utf8').replace(/\r\n/g, '\n');
-    // Only an optional TypeScript owner-media field was added to Trader;
+    // Only optional TypeScript owner-media/identity fields were added to Trader;
     // every runtime business value and fictional avatar mapping stays exact.
-    expect(digest(contents.replace('  /** Sanitized strategy-owner profile media; never catalogue art. */\n  ownerAvatarUrl?: string | null;\n', ''))).toBe(hash);
+    expect(digest(contents
+      .replace('  /** Sanitized strategy-owner profile media; never catalogue art. */\n  ownerAvatarUrl?: string | null;\n', '')
+      .replace('  /** Bound backend owner verification, distinct from legacy catalogue flags. */\n  identityVerified?: boolean;\n', ''))).toBe(hash);
   }
 });
 

@@ -11,7 +11,7 @@ import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 import { syntheticNazaraTrader, type SyntheticCopyTradingResponse } from '../lib/syntheticCopyTrading';
-import { kseniaTrader, KSENIA_TRADER_ID, type KseniaResponse, type PublicStrategyIdentity } from '../lib/kseniaCopyTrading';
+import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification, type KseniaResponse, type PublicStrategyIdentity } from '../lib/kseniaCopyTrading';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -86,11 +86,9 @@ export function CopyTradingPage() {
     return () => { disposed = true; window.clearInterval(timer); window.removeEventListener('focus', onFocus); };
   }, []);
 
-  const liveNazara = useMemo(() => ({
-    ...syntheticNazaraTrader(synthetic),
-    // This badge describes the bound owner's KYC, never modeled performance.
-    verified: identities.find(i => i.traderId === nazarTrader.id)?.verified ?? false,
-  }), [synthetic, identities]);
+  const liveNazara = useMemo(() => withStrategyIdentityVerification(
+    syntheticNazaraTrader(synthetic), identities.find(i => i.traderId === nazarTrader.id),
+  ), [synthetic, identities]);
   const liveKsenia = useMemo(() => ksenia ? kseniaTrader(ksenia, identities.find(i => i.traderId === KSENIA_TRADER_ID)) : undefined, [ksenia, identities]);
 
   const visibleTrader = selectedTrader.id === nazarTrader.id ? liveNazara : selectedTrader.id === KSENIA_TRADER_ID ? liveKsenia ?? selectedTrader : selectedTrader;

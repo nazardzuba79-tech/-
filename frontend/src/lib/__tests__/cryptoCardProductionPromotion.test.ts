@@ -41,7 +41,11 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/CardPage.tsx": "a6fb72e68a9edc6860edc2f49de4d374efc32f917b0e5ad43059b9e8853cf285",
   "frontend/tailwind.crypto-card.config.js": "d2021c8b7de7d4be48d0a42f5902cfef95d3cbd03fa70bc5f457c99946953c53"
 };
-// Production base cb29b7f1afce7fb17cf68462573949166933640e.
+// Production base cb29b7f1afce7fb17cf68462573949166933640e. Six Copy-only
+// fingerprints were advanced for the explicitly approved identity-bound blue
+// badge: page/adapter/type wiring, inline SVG placement and its CSS only.
+// copyVerifiedBadge and the existing canonical/renderer fingerprints verify
+// those boundaries separately. Every unrelated original fingerprint remains.
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
@@ -63,20 +67,20 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
   "frontend/src/pages/home/TerminalPreview.tsx": "278010a479c9102267599c93e9f4b712a313088bb6b115786ee3ee0a4b2c3ceb",
   "frontend/src/pages/home/useHomeMarket.ts": "28d77b6950b9a944cf80d12f9ede522f598a32471fc62309b69e64518a58880e",
-  "frontend/src/pages/CopyTradingPage.tsx": "9a306ea372609f7e461d0f9bff03484959a78ade23b27b144cc3c8836ad39118",
-  "frontend/src/pages/copy-trading-bolt/components.tsx": "6454a338edf6dc56357f5b1e4a2fb28aa90a07d8c64d68cf45250f1cef2b8b35",
+  "frontend/src/pages/CopyTradingPage.tsx": "023cc003fb8301e49e235e0b8dbdaa841f6b7e551831fbc270d70f5955d063ce",
+  "frontend/src/pages/copy-trading-bolt/components.tsx": "0a7c8d48876e168daa955c391320aaf7e2d7d650a28fe3eee36787e194a28692",
   "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "4b8a2e6359d5d03dbe33a91094b75f75b703ec5ee22b74467c22ff7eae9b363c",
-  "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "b3bf487a18e76a75376e5f655bfdd52345f8c5f7bf448c5d1f67ad6f9ccd64b5",
-  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "0c2d79cb276006943f7528e5f7abd17b434ea642e7447211f41258a62babdce4",
+  "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "7b287821fe20bdd9eba8ec86ae0b392ae373b75c11cd48309031f4bbc80daf33",
+  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "f391f43bc96c58b2356b3e7590d931a232dc5af366eaab3677a7618462ae267b",
   "frontend/src/pages/copy-trading-bolt/demoPerformance.ts": "1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead",
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
   "frontend/src/pages/copy-trading-bolt/TraderAvatarArt.tsx": "6fa00d21147656ac4ec0a56ee908bb1f1a05f777cbaf2044a7866c2bd11f51d7",
-  "frontend/src/pages/copy-trading-bolt/traders.ts": "af84e7d951554559d39bfc9331eaf090710efff67082ef04a3d7bda9e263cb2b",
+  "frontend/src/pages/copy-trading-bolt/traders.ts": "ab4d3408ef96696f88570fc75d31d227e705a0f84733bb173b9071bf7c5ed469",
   "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "c87ac8d078d4d9038a33b18ddded787630a93834a7444042cc7899723ae4e74a",
   "frontend/src/pages/copy-trading-bolt/useCopyLists.ts": "322cc598e49f4d64a3d058d0d8f232ddce43e5ce3e604bfd88de7cd9cac10480",
   "frontend/src/lib/syntheticCopyTrading.ts": "f7f9664a0630d3eda53a2ca6ba61c1a20613fb2991d57ae0a5ecc53ed27ca4ea",
-  "frontend/src/lib/kseniaCopyTrading.ts": "c0a2bc61eb5939f23a4cf7f1f715d00e559d30c20b85c4edeedd874ed6a9ea49",
+  "frontend/src/lib/kseniaCopyTrading.ts": "dec995b8c3e11223a1f878c884db47c6823e7a12e60c34d7f7b75e4fa9b313ab",
   "frontend/src/lib/dailyReturnChart.ts": "6f6e1c0394cc3c581dac03b6b2e7e2ffb4dd49fa85454135bf667c7dc82f6407",
   "frontend/src/lib/copyTradingMoney.ts": "1d29908f9517ed1f9de08965fc84cda4d39c29577dbba5dce62b50488d7da539",
   "frontend/src/pages/TradePage.tsx": "477d3745f8c5bca1ef680282e0942e06a9b49ee3afb52be3e152fddeab7eba11",
@@ -117,7 +121,7 @@ test('all fifteen approved assets are byte-exact and no superseded source compos
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
 
-test('Copy Trading, pre-launch notice, main Homepage, navigation and existing Trade remain untouched', () => {
+test('Copy stays at its approved badge revision; pre-launch, Homepage, navigation and Trade remain untouched', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     expect({ file, sha256: digest(source(file)) }).toEqual({ file, sha256: expected });
   }

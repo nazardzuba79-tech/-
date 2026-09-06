@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import { kseniaTrader } from '../kseniaCopyTrading';
+import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
 import { createKseniaReviewState, kseniaReviewResponse } from '../../../../src/services/copyTrading/canonical/kseniaReview';
 
 const frontend = resolve(__dirname, '../../..');
@@ -81,7 +82,9 @@ test('owner media never falls back to a viewer or an unrelated administrator', (
   expect(FeaturedAvatarProvider({ ownerAvatar: 'data:image/png;base64,dGVzdA==', children: null }).props.value).toBe('data:image/png;base64,dGVzdA==');
   const page = source('src/pages/CopyTradingPage.tsx');
   expect(page).toContain('ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}');
-  expect(page).toContain('verified: identities.find(i => i.traderId === nazarTrader.id)?.verified ?? false');
+  expect(page).toContain('withStrategyIdentityVerification(');
+  expect(page).toContain('syntheticNazaraTrader(synthetic), identities.find(i => i.traderId === nazarTrader.id)');
+  expect(page).not.toMatch(/identityVerified:\s*true/);
 });
 
 test('Ksenia identity projection uses only the owner photo and factual KYC state', () => {
@@ -89,12 +92,16 @@ test('Ksenia identity projection uses only the owner photo and factual KYC state
   const withoutIdentity = kseniaTrader(data);
   expect(withoutIdentity.name).toBe('Ksenia');
   expect(withoutIdentity.verified).toBe(false);
+  expect(withoutIdentity.identityVerified).toBe(false);
+  expect(renderToStaticMarkup(React.createElement(VerifiedBadge, { verified: withoutIdentity.identityVerified }))).toBe('');
   expect(withoutIdentity.ownerAvatarUrl).toBeNull();
   const withIdentity = kseniaTrader(data, {
     traderId: 'VX-KSENIA', displayName: 'Ksenia', avatarUrl: 'data:image/png;base64,AAAA',
     avatarVersion: 'version', verified: false, premium: true,
   });
   expect(withIdentity.verified).toBe(false);
+  expect(withIdentity.identityVerified).toBe(false);
+  expect(renderToStaticMarkup(React.createElement(VerifiedBadge, { verified: withIdentity.identityVerified }))).toBe('');
   expect(withIdentity.ownerAvatarUrl).toBe('data:image/png;base64,AAAA');
   expect(withIdentity.roiAll).toBe(withoutIdentity.roiAll);
   expect(withIdentity.aum).toBe(withoutIdentity.aum);
