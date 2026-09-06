@@ -92,7 +92,7 @@ Fixture-array SHA-256: `5a5743083e2fb7e3d65c9cf624397d43d5083a956620b3d92a07ccb6
 
 Real bcrypt 6 tests accept the old correct passwords and reject the wrong ones, reproduce old hashes with the saved salt, verify fresh cost-12 hashes, and cover `$2a$`/`$2b$`, Unicode, ASCII/multibyte 72-byte boundaries and embedded NUL. Existing 72-byte truncation is explicitly characterized, not changed or hidden by this migration. Real backup-code tests verify cost 10, eight generated hashes, trim/uppercase normalization and one-time consumption.
 
-Real HTTP auth regression tests use the unchanged Express auth/account routers, bcrypt, JWT, TOTP, QR and auth middleware against stateful in-memory User/Session/Audit adapters. They exercise registration, correct/wrong/unknown login, blocked accounts, protected `/me`, password changes and rejection of the old password, session claims/revocation, legacy password/backup fixtures, TOTP setup/login and persisted backup replay rejection after reconstructing the app. Optional country lookup is isolated; no real database or email is used.
+Real HTTP auth regression tests use the unchanged Express auth/account routers, bcrypt, JWT, TOTP, QR and auth middleware against stateful in-memory User/Session/Audit adapters. They exercise registration, correct/wrong/unknown login, blocked accounts, protected `/me`, password changes and rejection of the old password, session claims/revocation, legacy password/backup fixtures, TOTP setup/login and persisted backup replay rejection after reconstructing the app. Optional country lookup is isolated; no real database or email is used. Registration/login rate-limit middleware is replaced only inside this test harness with pass-through adapters to focus on bcrypt-dependent behavior; this new suite does not claim to test rate-limit enforcement. Production limiters remain byte-for-byte unchanged.
 
 ## Native Node20 Alpine gate
 
@@ -117,7 +117,7 @@ All container executions explicitly override the image entrypoint/CMD and disabl
 | Dockerfile integrity | Unchanged SHA-256 `386accace13ce978b4821d4a63a050b3f5911430ee8892508a75796cae5564cd` |
 | Runtime image | `sha256:b4aa346e857deca519ca42919b8f23321e42ec83a700aed499dcde220e2ea8cb`, Linux/amd64 |
 
-The resolved `node:20-alpine` base digest was `sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293`. No Dockerfile or runtime workaround was necessary. Both original Dockerfile stages built cleanly; the isolated builder-stage auth tests passed separately with no network, production database, email, server startup or migration execution.
+The resolved `node:20-alpine` base digest was `sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293`. No Dockerfile or runtime workaround was necessary. Both original Dockerfile stages built cleanly; the isolated builder-stage auth tests passed separately with no external network, production database, email, production entrypoint or migration execution. Supertest uses only the container's isolated loopback HTTP server; that is distinct from starting the production application.
 
 Evidence artifact: `9993326110`, `security-phase2a-bcrypt-849afee5272109054b2a29c0f32c0724b33840c8`, SHA-256 `135e4b880c92e7aaed2977c54a3a6ec8c10effda86c3bf10ae5ba1709cf89a6b`. GitHub retention ends 2026-09-13; a verified local copy is also retained outside Git. It contains native JSON, both build logs, installed production tree, input hashes and machine-readable Jest results.
 
