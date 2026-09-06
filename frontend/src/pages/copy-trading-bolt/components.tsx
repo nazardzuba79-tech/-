@@ -239,6 +239,7 @@ function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; p
 
 function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; period: Period; onOpen: (trader: Trader) => void; synthetic?: SyntheticCopyTradingResponse | null }) {
   const { following } = useFollowing();
+  const isNazara = trader.id === nazarTrader.id;
   const visual = getTraderVisual(trader.id);
   const selectedMetrics = trader.id === nazarTrader.id
     ? synthetic ? selectSyntheticPeriod(synthetic, period) : undefined
@@ -252,14 +253,20 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   const copierProfit = liveProfit ?? getCopierProfit(trader, period);
   const sharpe = selectedMetrics?.sharpe;
   const drawdown = selectedMetrics?.maximumDrawdown;
+  const winRate = selectedMetrics && 'winRate' in selectedMetrics ? selectedMetrics.winRate : undefined;
   return (
-    <article className={`trader-card ${trader.vip ? 'trader-card-vip' : ''} ${visual.highlight ? `trader-card-highlight-${visual.highlight}` : ''}`} data-trader-id={trader.id} onClick={() => onOpen(trader)}>
+    <article className={`trader-card ${isNazara ? 'trader-card-nazara' : ''} ${trader.vip ? 'trader-card-vip' : ''} ${visual.highlight ? `trader-card-highlight-${visual.highlight}` : ''}`} data-trader-id={trader.id} onClick={() => onOpen(trader)}>
       <div className="card-topline">
         <div className="card-identity">
-          <div className="avatar-wrap"><Avatar trader={trader} />{trader.id === nazarTrader.id && trader.verified && <span className="verified-dot"><Check size={9} /></span>}</div>
+          <div className="avatar-wrap"><Avatar trader={trader} /></div>
           <div className="trader-name-row">
-            <div><h3>{trader.name}</h3><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
-            {trader.vip && <VipBadge />}
+            {isNazara ? <div className="nazara-identity-copy">
+              <div className="nazara-name"><h3>{trader.name}</h3>{trader.verified && <span className="nazara-verified" role="img" aria-label="Верифицирован" title="Верифицирован"><Check size={10} /></span>}</div>
+              <div className="nazara-status">{trader.vip && <VipBadge />}</div>
+            </div> : <>
+              <div><h3>{trader.name}</h3><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
+              {trader.vip && <VipBadge />}
+            </>}
           </div>
         </div>
         <div className="card-topline-right">
@@ -267,6 +274,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           <FavoriteButton trader={trader} />
         </div>
       </div>
+      {isNazara && <p className="nazara-strategy">{trader.strategy}</p>}
       <div className="card-return">
         <div className="card-roi-copy">
           <span>ROI <small>{period}</small></span>
@@ -275,11 +283,18 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
       <div className="card-stats">
-        <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
-        <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
+        {isNazara ? <>
+          <div><span>Win Rate <small>{period}</small></span><strong>{winRate == null ? '—' : `${numberLabel(winRate, 1)}%`}</strong></div>
+          <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
+        </> : <>
+          <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
+          <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
+        </>}
       </div>
       <div className="card-meta">
-        <div><span>{trader.id === nazarTrader.id && synthetic?.economics ? 'Чистая прибыль подписчиков' : 'Прибыль подписчиков'} · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>
+        {isNazara
+          ? <div><span>Подписчики</span><b>{numberLabel(trader.copiers, 0)}</b></div>
+          : <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>}
         <div><span>AUM</span><b>{formatAccountSize(trader.aum)}</b></div>
       </div>
       <div className="card-cta-area">
