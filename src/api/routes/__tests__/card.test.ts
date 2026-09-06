@@ -12,7 +12,7 @@ function authHeader(userId: string) {
 function buildApp(prisma: any) {
   const app = express();
   app.use(express.json());
-  app.use('/api/v1', cardRouter(prisma));
+  app.use('/api/v1', cardRouter(prisma, { pricesFor: async () => new Map() }));
   return app;
 }
 
@@ -29,17 +29,17 @@ describe('GET /card/waitlist/me', () => {
 });
 
 describe('POST /card/waitlist/join', () => {
-  it('rejects joining without approved KYC', async () => {
+  it('retires legacy joining without mutating KYC-pending accounts', async () => {
     const prisma = { user: { findUnique: jest.fn().mockResolvedValue({ id: 'user-1', kycStatus: 'PENDING', cardWaitlistJoinedAt: null }) } } as any;
     const app = buildApp(prisma);
 
     const res = await request(app).post('/api/v1/card/waitlist/join').set('Authorization', authHeader('user-1'));
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/approved identity verification/i);
+    expect(res.status).toBe(410);
+    expect(res.body.error).toBe('CARD_APPLICATION_REQUIRED');
   });
 
-  it('joins the waitlist for a KYC-approved user', async () => {
+  it('does not create new waitlist entries even for KYC-approved users', async () => {
     const prisma = {
       user: {
         findUnique: jest.fn().mockResolvedValue({ id: 'user-1', kycStatus: 'APPROVED', cardWaitlistJoinedAt: null }),
@@ -51,11 +51,9 @@ describe('POST /card/waitlist/join', () => {
 
     const res = await request(app).post('/api/v1/card/waitlist/join').set('Authorization', authHeader('user-1'));
 
-    expect(res.status).toBe(200);
-    expect(res.body.joined).toBe(true);
-    expect(prisma.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'user-1' } })
-    );
+    expect(res.status).toBe(410);
+    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('is idempotent: joining twice does not re-write the timestamp', async () => {
@@ -71,7 +69,7 @@ describe('POST /card/waitlist/join', () => {
 
     const res = await request(app).post('/api/v1/card/waitlist/join').set('Authorization', authHeader('user-1'));
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     expect(prisma.user.update).not.toHaveBeenCalled();
   });
 });
