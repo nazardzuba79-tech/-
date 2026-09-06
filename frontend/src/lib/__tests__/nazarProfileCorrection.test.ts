@@ -27,6 +27,8 @@ const empty = () => null;
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
   ReviewDisclosure: ({ children }: { children: unknown }) => children,
+  // Production-mode profile verification: the review-only label renders null.
+  ReviewModeledLabel: empty,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,

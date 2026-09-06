@@ -11,6 +11,7 @@ import {
 } from '../copy-trading-bolt/traders';
 import { HOME_COPY_TRADERS } from './homeContent';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
+import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';
 
 const AVATAR_TONES: Record<string, string> = {
   blue: 'from-[#375b8d] to-[#17253a] text-[#d8e8ff]',
@@ -155,6 +156,7 @@ export function HomeCopyTrading() {
             {HOME_COPY_TRADERS.map((trader) => <TraderSpotlight key={trader.id} trader={trader} />)}
           </div>
 
+          <ReviewModeledLabel />
           <ReviewDisclosure><p className="mt-4 text-[10.5px] leading-relaxed text-white/35">{t('home.copy.disclaimer')}</p></ReviewDisclosure>
         </div>
       </div>

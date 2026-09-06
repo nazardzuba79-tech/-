@@ -103,7 +103,12 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
   })) {
     const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)!;
     // Review-only duplicate-copy wrapper changes no approved chart rendering.
-    const renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+    let renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+    // Keep the approved hero fingerprint after removing only its single new
+    // review-provenance line. Financial/chart renderers have no such additions.
+    const labelLine = '        <ReviewModeledLabel />\n';
+    expect(renderer.split('\n').filter(line => line + '\n' === labelLine)).toHaveLength(name === 'MarketplaceHero' ? 1 : 0);
+    if (name === 'MarketplaceHero') renderer = renderer.replace('\n' + labelLine, '\n');
     expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({

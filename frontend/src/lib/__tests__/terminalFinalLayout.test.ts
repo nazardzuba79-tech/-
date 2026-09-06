@@ -48,7 +48,25 @@ test.each(Object.entries({
   'lib/reviewMarketData.ts': 'f0c6c4936eb0d60d4ab63b65f0f3a4e617ba5dd9cb8e0e7a2c83b53fbb29f197',
   'lib/krakenSocket.ts': 'a78c8a52a38752a91ea20282a25c88a29e35ff355c14505584c7d88ad3715dc3',
 }))('%s is preserved exactly', (file, expected) => {
-  expect(createHash('sha256').update(read(file)).digest('hex')).toBe(expected);
+  let source = read(file);
+  if (file === 'pages/copy-trading-bolt/components.tsx') {
+    // Preserve the original whole-file fingerprint after stripping only the
+    // four exact reviewed label additions; never normalize other markup/math.
+    const additions = [
+      "import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';\n",
+      '      <ReviewModeledLabel />\n',
+      '        <ReviewModeledLabel />\n',
+      '            <ReviewModeledLabel />\n',
+    ];
+    expect(source.match(/<ReviewModeledLabel \/>/g)).toHaveLength(3);
+    for (const addition of additions) {
+      const exactLines = source.split('\n').filter(line => line + '\n' === addition);
+      expect(exactLines).toHaveLength(1);
+      source = source.replace('\n' + addition, '\n');
+    }
+    expect(source).not.toContain('ReviewModeledLabel');
+  }
+  expect(createHash('sha256').update(source).digest('hex')).toBe(expected);
 });
 
 test('chart implementation is unchanged except the explicit stale-market transition guard', () => {

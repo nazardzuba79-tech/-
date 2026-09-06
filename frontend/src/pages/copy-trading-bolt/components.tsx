@@ -50,6 +50,7 @@ import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
+import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -678,6 +679,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         </div>
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
+      <ReviewModeledLabel />
 
       {!liveSynthetic && trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA' && <ReviewDisclosure><p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p></ReviewDisclosure>}
       {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazar недоступна. Показатели не заменяются примерными значениями.</p>}
@@ -715,6 +717,7 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
         <div className="hero-stats">
           {stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
         </div>
+        <ReviewModeledLabel />
       </div>
       <button className="hero-guide" onClick={() => onOpen(trader)}>
         <div className="hero-guide-copy">
@@ -869,6 +872,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
           <div>
             <span className="eyebrow">{MARKET_TABS.find((t) => t.id === tab)?.label}</span>
             <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Вы копируете' : 'Профессиональные трейдеры'}</h2>
+            <ReviewModeledLabel />
           </div>
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
