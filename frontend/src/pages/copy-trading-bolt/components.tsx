@@ -45,6 +45,7 @@ import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
 import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
+import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
 import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
@@ -327,8 +328,7 @@ function numberLabel(value: number | null | undefined, maximumFractionDigits = 2
 }
 
 function signedUsd(value: number): string {
-  if (!Number.isFinite(value)) return '—';
-  return `${value >= 0 ? '+' : '−'}${Math.abs(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} USDT`;
+  return publicSignedUsdt(value);
 }
 
 function unsignedPercent(value: number): string {
@@ -471,20 +471,19 @@ function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
       <div className="profile-panel-heading"><div><span>Daily Return · %</span><h2>Дневная доходность</h2></div><span>{data?.period}</span></div>
       {days.length > 0 && <div className="chart-readouts">
         <div><span>ROI за период</span><strong className={roiClass(plot.roi)}>{formatPercent(plot.roi)}</strong></div>
-        <div title="Среднее арифметическое дневных доходностей за все календарные дни периода, включая дни без сделок"><span>Средняя доходность / день</span><strong className={roiClass(plot.average)}>{percent(plot.average)}</strong></div>
       </div>}
       {days.length ? (
         <div className="daily-plot" tabIndex={0} role="region" aria-label="Дневная доходность: история в процентах, прокрутка по горизонтали">
           <svg viewBox={`-65 0 ${plot.width + 75} 236`} style={{ minWidth: 540 }} role="img" aria-label={`Дневная доходность: ${days.length} дней, ROI ${formatPercent(plot.roi)}`}>
             {plot.ticks.map((tick, index) => <g key={index}><line className="daily-grid" x1="0" x2={plot.width} y1={tick.y} y2={tick.y} />{(tick.value === 0 || Math.abs(tick.y - plot.zero) >= 14) && <text x="-8" y={tick.y + 4} textAnchor="end">{percent(tick.value)}</text>}</g>)}
             <line className="daily-baseline" strokeWidth="1.5" x1="0" x2={plot.width} y1={plot.zero} y2={plot.zero} />
-            {plot.bars.map(bar => <rect key={bar.date} x={bar.x} y={bar.y} width={bar.width} height={bar.height} className={bar.returnPct >= 0 ? 'daily-gain' : 'daily-loss'}><title>{bar.date}: {percent(bar.returnPct)}{bar.realizedPnl !== undefined ? ` · PnL: ${signedUsd(bar.realizedPnl)}` : ''}</title></rect>)}
+            {plot.bars.map(bar => <rect key={bar.date} x={bar.x} y={bar.y} width={bar.width} height={bar.height} className={bar.returnPct >= 0 ? 'daily-gain' : 'daily-loss'}><title>{`${bar.date}: ${percent(bar.returnPct)}${bar.realizedPnl !== undefined ? ` · PnL: ${signedUsd(bar.realizedPnl)}` : ''}`}</title></rect>)}
             {[0, Math.floor((days.length - 1) / 2), days.length - 1].map((index, labelIndex) => <text key={labelIndex} x={index / Math.max(1, days.length - 1) * plot.width} y="229" textAnchor={labelIndex === 0 ? 'start' : labelIndex === 2 ? 'end' : 'middle'}>{days[index].date}</text>)}
           </svg>
         </div>
       ) : <div className="profile-empty">Дневная история недоступна для этого трейдера.</div>}
       <div className="daily-legend"><span><i className="gain" /> Прибыльный день</span><span><i className="loss" /> Убыточный день</span></div>
-      {days.length > 0 && <p className="daily-note">Один столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. {data?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? 'ROI — сумма дневных доходностей, без геометрического реинвестирования;' : 'ROI — произведение дневных факторов;'} средняя доходность — арифметическая, включая дни без сделок. Все дни сохранены; на узком экране график прокручивается.</p>}
+      {days.length > 0 && <p className="daily-note">Один столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. {data?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? 'ROI — сумма дневных доходностей, без геометрического реинвестирования.' : 'ROI — произведение дневных факторов.'} Все дни сохранены; на узком экране график прокручивается.</p>}
     </section>
   );
 }
@@ -626,15 +625,15 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
       </div>
       {trader.id === nazarTrader.id && <div className="followers-summary" aria-label="Экономика копирования за выбранный период">
         <div><span>Gross Followers PnL · {period}</span><strong className={roiClass(economics?.grossFollowersPnl ?? NaN)}>{signedUsd(economics?.grossFollowersPnl ?? NaN)}</strong></div>
-        <div><span>Доход Nazara · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
+        <div><span>Доход Nazar · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
         <div><span>Комиссия за результат</span><strong>{unsignedPercent((synthetic?.economics?.performanceFeeRate ?? NaN) * 100)}</strong></div>
       </div>}
-      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Nazara рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
+      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Nazar рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
       {period === 'ALL' && synthetic && synthetic.economics?.methodology !== 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' && <FollowerHistory history={synthetic.aumHistory} />}
       {followers.length > 0 && <p className="follower-list-note">Активные подписчики · индивидуальный PnL и ROI с даты начала копирования</p>}
       {followers.length > 0 && <div className="follower-list">{(showAll ? followers : followers.slice(0, 8)).map((follower) => {
         const pnl = follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl;
-        return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small>{follower.startingAllocation !== undefined && <small>При старте: {numberLabel(follower.startingAllocation)} USDT</small>}</p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · чистый PnL с начала копирования</small>{follower.grossPnl !== undefined && <small>Gross: {signedUsd(follower.grossPnl)} · Комиссии: {numberLabel(follower.performanceFees)} USDT</small>}</p></div>;
+        return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small>{follower.startingAllocation !== undefined && <small>При старте: {publicUsdtNumber(follower.startingAllocation)} USDT</small>}</p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · чистый PnL с начала копирования</small>{follower.grossPnl !== undefined && <small>Gross: {signedUsd(follower.grossPnl)} · Комиссии: {publicUsdtNumber(follower.performanceFees)} USDT</small>}</p></div>;
       })}</div>}
       {followers.length > 8 && <button className="button button-outline" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}
       {synthetic?.economics && <p className="daily-note">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. В синтетическом сценарии действует с {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}
@@ -649,6 +648,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const liveSynthetic = trader.id === nazarTrader.id ? synthetic : null;
   const simpleReturn = liveSynthetic?.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
+  const strategyData = useMemo(() => simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [simpleReturn, liveSynthetic]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
   const demoAll = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, 'ALL');
   const allTradingDays = liveSynthetic?.economics?.periods.ALL.activeTradingDays ?? liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
@@ -667,14 +667,14 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
           {!simpleReturn && <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>}
-          <div><span>AUM</span><strong>{formatAccountSize(heroAum)} USDT</strong></div>
+          <div><span>AUM</span><strong>{publicUsdtNumber(heroAum)} USDT</strong></div>
           <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
         </div>
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
 
       {!liveSynthetic && trader.id !== nazarTrader.id && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
-      {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazara недоступна. Показатели не заменяются примерными значениями.</p>}
+      {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazar недоступна. Показатели не заменяются примерными значениями.</p>}
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
@@ -682,7 +682,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
 
       {activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
-          <aside><MetricsPanel metrics={metrics} period={period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} /></aside>
+          <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} /></aside>
           <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /></div>
         </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} period={period} />

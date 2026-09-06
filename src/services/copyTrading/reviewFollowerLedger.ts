@@ -203,7 +203,7 @@ export function buildReviewAumHistory(state: CashflowReviewState): AumSnapshot[]
  */
 export function refreshReviewFollowerLedgers(state: CashflowReviewState): void {
   if (![7, 8].includes(state.version) || state.cashflow.policy.performanceFeeRate !== 0.10) {
-    throw new Error('Follower ledger is restricted to the v7/v8 Nazara 10% review policy');
+    throw new Error('Follower ledger is restricted to the v7/v8 Nazar 10% review policy');
   }
   const ledgers = allocationLedgers(state);
   const masterDays = new Map(state.cashflow.masterDays.map(day => [day.date, day]));

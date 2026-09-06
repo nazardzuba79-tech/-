@@ -90,12 +90,12 @@ describe('v8 economics dispatch and baseline reconciliation', () => {
     const wins = state.trades.filter(trade => trade.netPnl > 0);
     const losses = state.trades.filter(trade => trade.netPnl < 0);
     expect(state.trades).toHaveLength(471);
-    expect(wins).toHaveLength(458);
-    expect(losses).toHaveLength(13);
+    expect(wins).toHaveLength(434);
+    expect(losses).toHaveLength(34);
     expect(analytics.totalTrades).toBe(471);
-    expect(analytics.winningTrades).toBe(458);
-    expect(analytics.losingTrades).toBe(13);
-    expect(analytics.winRate).toBeCloseTo(458 / 471 * 100, 3);
+    expect(analytics.winningTrades).toBe(434);
+    expect(analytics.losingTrades).toBe(34);
+    expect(analytics.winRate).toBeCloseTo(434 / 468 * 100, 3);
     expect(analytics.allTime.averageTrade).toBeCloseTo(4_711_027 / 471, 6);
     expect(analytics.averageHoldingTimeMinutes).toBeCloseTo(state.trades.reduce((sum, trade) => sum + trade.holdingTimeMinutes, 0) / 471, 10);
     const p90 = calculateReviewPeriod(state, '90D');

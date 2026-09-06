@@ -25,7 +25,7 @@ export function reviewReconciliationReport(state: CashflowReviewState) {
     const losingTrades = trades.filter(trade => trade.netPnl < 0).length;
     const zeroPnlTrades = trades.length - winningTrades - losingTrades;
     return { winningTrades, losingTrades, zeroPnlTrades,
-      exactWinRate: winningTrades / Math.max(1, trades.length) * 100,
+      exactWinRate: winningTrades / Math.max(1, simple ? winningTrades + losingTrades : trades.length) * 100,
       averagePnl: r(sum(trades.map(trade => trade.netPnl)) / Math.max(1, trades.length)),
       averageHoldingMinutes: r(sum(trades.map(trade => trade.holdingTimeMinutes)) / Math.max(1, trades.length)),
     };
@@ -42,7 +42,7 @@ export function reviewReconciliationReport(state: CashflowReviewState) {
       return { period, ...economics, averageDeployedCapital: r(average),
         masterTurnoverToAverageDeployedCapital: r(economics.masterTradingVolume / average),
         masterTrades: selected.trades.length,
-        winRate: r(selected.trades.filter(trade => trade.netPnl > 0).length / Math.max(1, selected.trades.length) * 100),
+        winRate: r(outcomes(selected.trades).exactWinRate),
         ...outcomes(selected.trades),
       };
     }),

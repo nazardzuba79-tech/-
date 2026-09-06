@@ -18,8 +18,10 @@ export const REVIEW_PERFORMANCE_V8_CONFIG = {
   fundingRatePerEightHours: V7.fundingRatePerEightHours,
   assets: V7.assets,
   initialTrades: 471,
-  winningTrades: 458,
-  losingTrades: 13,
+  winningTrades: 434,
+  losingTrades: 34,
+  breakevenTrades: 3,
+  baselineMaximumDrawdown: 0.0579,
   returns: { '7D': 1.12, previous7D: 1.15, '30D': 2.71, '90D': 8.41, ALL: 37.27 },
   /** Sunday–Saturday strategy weeks. A return ceiling is enforced by generation,
    * not presentation clipping; 0.218 leaves room for monetary rounding. */

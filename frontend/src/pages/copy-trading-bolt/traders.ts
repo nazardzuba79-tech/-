@@ -66,7 +66,7 @@ export type Trade = {
 
 export const nazarTrader: Trader = {
   id: 'VX-001',
-  name: 'Nazara',
+  name: 'Nazar',
   initials: 'N',
   tone: 'gold',
   vip: true,

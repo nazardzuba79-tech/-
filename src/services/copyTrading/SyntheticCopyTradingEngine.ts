@@ -444,7 +444,7 @@ export function toResponse(state: SyntheticCopyState): SyntheticCopyResponse {
   if (state.version === 7 || state.version === 8) return toCashflowReviewResponse(state);
   ensureAumHistory(state);
   return {
-    trader: { id: 'VX-001', name: 'Nazara', vip: true },
+    trader: { id: 'VX-001', name: 'Nazar', vip: true },
     simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt, stateVersion: state.version },
     analytics: calculateAnalytics(state),
     trades: [...state.trades].sort((a, b) => b.closedAt.localeCompare(a.closedAt)),

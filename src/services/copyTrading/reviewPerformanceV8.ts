@@ -5,7 +5,8 @@ import { REVIEW_PERFORMANCE_V8_CONFIG as C } from './reviewPerformanceV8Config';
 
 const DAY_MS = 86_400_000;
 const MONEY_SCALE = 10_000;
-const money = (value: number) => Math.round(value * MONEY_SCALE) / MONEY_SCALE;
+// JSON persistence has no signed zero; normalize it before freezing the ledger.
+const money = (value: number) => Math.round(value * MONEY_SCALE) / MONEY_SCALE || 0;
 const round = (value: number, digits: number) => Number(value.toFixed(digits));
 const addDays = (date: string, days: number) => new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10);
 const weekday = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
@@ -18,7 +19,7 @@ class Random {
   between(min: number, max: number) { return min + this.next() * (max - min); }
   integer(min: number, max: number) { return Math.floor(this.between(min, max + 1)); }
 }
-interface DayPlan { date: string; return: number; count: number; losses: number; pnl?: number }
+interface DayPlan { date: string; return: number; count: number; losses: number; breakevens?: number; pnl?: number }
 interface WeightedDay { date: string; weight: number; fixed: number | null }
 
 /** Hash-mixed dates keep adjacent weeks irregular without mutable global RNG. */
@@ -50,13 +51,10 @@ function allocateBounded(weights: number[], ceilings: number[], total: number): 
   return weights.map((weight, i) => Math.min(ceilings[i], weight * (low + high) / 2));
 }
 
-/** Exactly thirteen negative sessions imply exactly thirteen losing trades.
- * Two short losing weeks use five sessions, not seven forced losing trades.
- * The other negative sessions are dispersed over the full baseline. */
+/** Approved V8 reference regimes, retained solely to recover the original
+ * weekly/period budgets. correctBaselineSessions replaces their extreme losses
+ * BEFORE any corrected priced trade is generated. These are not UI values. */
 const LOSING_WEEKS = new Set(['2025-10-12', '2026-02-08']);
-// Rare losses are material (18–30% of operating capital), not cosmetic red
-// pixels. High win frequency therefore does NOT imply low tail risk. The two
-// deliberately losing weeks still sum to -15%, without outsized >22% gains.
 const LOSING_WEEK_DAYS = [0.195, -0.18, 0, -0.185, 0.20, -0.18, 0];
 const NEGATIVE_DAYS: Record<string, number> = {
   '2025-09-11': -0.235,
@@ -134,7 +132,66 @@ function assignBaselineCounts(plans: DayPlan[]) {
       plan.count++; weekCounts.set(start, current + 1); remaining--;
     }
   }
-  if (plans.reduce((sum, plan) => sum + plan.losses, 0) !== C.losingTrades) throw new Error('Invalid v8 loss plan');
+  // Some profitable sessions contain a losing execution. Net daily return is
+  // not a trade win rate; zero-net executions pay both actual fee legs too.
+  const mixed = plans.filter(plan => plan.return > 0 && plan.count > 1)
+    .sort((a, b) => randomFor(a.date, 0x5b71).next() - randomFor(b.date, 0x5b71).next());
+  for (const plan of mixed.slice(0, C.breakevenTrades)) plan.breakevens = 1;
+  let missingLosses = C.losingTrades - plans.reduce((sum, plan) => sum + plan.losses, 0);
+  for (const plan of mixed) {
+    if (missingLosses && plan.count - (plan.breakevens ?? 0) > 1) { plan.losses++; missingLosses--; }
+  }
+  if (missingLosses || plans.reduce((sum, plan) => sum + (plan.breakevens ?? 0), 0) !== C.breakevenTrades) {
+    throw new Error('Invalid corrected v8 outcome plan');
+  }
+}
+
+/** Local, pre-execution reconciliation. Keep every approved Sunday-week and
+ * nested period boundary, not just the final headline. Positive sessions in
+ * the SAME slice absorb the reduced loss; no final balancing spike exists. */
+function correctBaselineSessions(plans: DayPlan[]) {
+  const boundaries = new Set([290, 350, 366, 373]);
+  const groups: DayPlan[][] = [];
+  plans.forEach((plan, i) => {
+    if (!i || boundaries.has(i) || weekStart(plan.date) !== weekStart(plans[i - 1].date)) groups.push([]);
+    groups.at(-1)!.push(plan);
+  });
+  let priorIndex = 100;
+  for (const days of groups) {
+    const target = days.reduce((total, day) => total + day.return, 0);
+    if (days.some(day => day.return < 0)) {
+      const start = weekStart(days[0].date);
+      if (start === '2025-09-07') {
+        // Five smaller consecutive losses replace one -23.5% shock. The
+        // actual additive peak/trough derives 5.79%; no metric is overwritten.
+        const firstGain = 0.03;
+        const drawdownBudget = (priorIndex + firstGain * 100) * C.baselineMaximumDrawdown / 100;
+        const losses = [0.0325, 0.0338, 0.0328, drawdownBudget - 0.1341, 0.035];
+        const values = [firstGain, ...losses.map(value => -value), target - firstGain + drawdownBudget];
+        days.forEach((day, i) => { day.return = values[i]; });
+      } else if (LOSING_WEEKS.has(start)) {
+        const values = [.008, -.030, -.031, -.033, .007, -.036, -.035];
+        days.forEach((day, i) => { day.return = values[i]; });
+      } else if (target < 0) {
+        const gains = .01;
+        const lossSlots = [1, 2, 3, 5, 6];
+        const values = allocateBounded(lossSlots.map(i => randomFor(days[i].date, 0x512d).between(.8, 1.2)), lossSlots.map(() => .037), gains - target);
+        days.forEach((day, i) => { day.return = i === 0 ? .004 : i === 4 ? .006 : -values[lossSlots.indexOf(i)]; });
+      } else {
+        const positive = days.filter(day => day.return > 0);
+        const oldGains = positive.reduce((sum, day) => sum + day.return, 0);
+        for (const day of days.filter(day => day.return < 0)) {
+          day.return = -randomFor(day.date, 0x691c).between(.012, .034);
+        }
+        const requiredGains = target - days.filter(day => day.return < 0).reduce((sum, day) => sum + day.return, 0);
+        if (requiredGains < 0 || !oldGains) throw new Error(`Infeasible local correction ${start}`);
+        for (const day of positive) day.return *= requiredGains / oldGains;
+      }
+    }
+    const corrected = days.reduce((total, day) => total + day.return, 0);
+    if (Math.abs(corrected - target) > 1e-10) throw new Error('Correction changed an approved local budget');
+    priorIndex += corrected * 100;
+  }
 }
 
 function baselinePlans(): DayPlan[] {
@@ -145,6 +202,7 @@ function baselinePlans(): DayPlan[] {
     C.returns['30D'] - C.returns.previous7D - C.returns['7D'], C.returns.previous7D, C.returns['7D']];
   const returns = totals.flatMap((total, i) => calibrateSegment(weighted.slice(boundaries[i], boundaries[i + 1]), total));
   const plans = dates.map((date, i) => ({ date, return: returns[i], count: 0, losses: 0 }));
+  correctBaselineSessions(plans);
   assignBaselineCounts(plans);
   return plans;
 }
@@ -225,7 +283,7 @@ function makeTrade(rng: Random, id: number, plan: DayPlan, desiredNet: number, c
   return { id: `REV8-${String(id).padStart(7, '0')}`, symbol: asset.symbol, side, entryPrice, exitPrice,
     quantity, leverage, openedAt, closedAt, grossPnl, fees, funding, netPnl,
     returnPct: round(netPnl / margin * 100, 8), holdingTimeMinutes,
-    riskR: round(netPnl / (margin * 0.01), 8), result: netPnl > 0 ? 'WIN' : 'LOSS' };
+    riskR: round(netPnl / (margin * 0.01), 8), result: netPnl > 0 ? 'WIN' : netPnl < 0 ? 'LOSS' : 'BREAKEVEN' };
 }
 
 function appendDay(state: CashflowReviewState, plan: DayPlan, initialCapital: number) {
@@ -235,9 +293,16 @@ function appendDay(state: CashflowReviewState, plan: DayPlan, initialCapital: nu
   const capital = Math.min(opening, target);
   const plannedPnl = plan.pnl ?? money(capital * plan.return);
   const rng = randomFor(plan.date, 0x72b31);
-  const weights = Array.from({ length: plan.count }, () => rng.between(0.55, 1.45));
-  const sumWeights = weights.reduce((sum, value) => sum + value, 0);
-  const tradePnl = plan.count ? roundedAllocation(weights.map(value => value / sumWeights * plannedPnl), plannedPnl) : [];
+  const wins = plan.count - plan.losses - (plan.breakevens ?? 0);
+  const lossBudget = plan.losses ? money(Math.max(0, -plannedPnl) + (wins ? capital * rng.between(.004, .025) * plan.losses : 0)) : 0;
+  const gainBudget = money(plannedPnl + lossBudget);
+  const split = (count: number, total: number) => {
+    const weights = Array.from({ length: count }, () => rng.between(.55, 1.45));
+    const sum = weights.reduce((total, value) => total + value, 0);
+    return count ? roundedAllocation(weights.map(value => value / sum * total), total) : [];
+  };
+  const tradePnl = [...split(wins, gainBudget), ...split(plan.losses, -lossBudget), ...Array(plan.breakevens ?? 0).fill(0)]
+    .map(pnl => ({ pnl, order: rng.next() })).sort((a, b) => a.order - b.order).map(item => item.pnl);
   const trades = tradePnl.map((pnl, slot) => makeTrade(rng, state.trades.length + slot + 1, plan, pnl, capital, slot));
   const pnl = money(trades.reduce((sum, trade) => sum + trade.netPnl, 0));
   const weekPnl = state.cashflow.masterDays.filter(day => day.date >= weekStart(plan.date)).reduce((sum, day) => sum + day.tradingPnl, pnl);
@@ -301,18 +366,17 @@ function futurePlans(start: string): DayPlan[] {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const plans = dates.map(date => ({ date, return: 0, count: 0, losses: 0 }));
   if (target < 0) {
-    // Two gains, three losses, two pauses. The target governs the signed daily
-    // net ledger; no losing-week adjustment is placed on Saturday.
-    const gainTotal = rng.between(0.025, 0.075);
-    const gains = [0, 4], losses = [1, 3, 5];
+    // The same weekly regime now resolves through small losing sessions.
+    const gainTotal = rng.between(0.003, 0.014);
+    const gains = [0, 4], losses = [1, 2, 3, 5, 6];
     gains.forEach(i => { plans[i].return = gainTotal / 2; });
     const weights = losses.map(() => rng.between(0.6, 1.4));
-    const total = weights.reduce((sum, value) => sum + value, 0);
-    losses.forEach((i, n) => { plans[i].return = (target - gainTotal) * weights[n] / total; });
+    const values = allocateBounded(weights, losses.map(() => .035), gainTotal - target);
+    losses.forEach((i, n) => { plans[i].return = -values[n]; });
   } else {
     const active = target < 0.25 ? [1, 3, 5] : [0, 1, 2, 3, 4, 5, 6];
     const loss = target < 0.9 && target > 0.25 && rng.next() < 0.20 ? rng.integer(0, 6) : -1;
-    const lossReturn = loss >= 0 ? -rng.between(0.025, 0.08) : 0;
+    const lossReturn = loss >= 0 ? -rng.between(0.005, 0.035) : 0;
     const positive = active.filter(i => i !== loss);
     const values = allocateBounded(positive.map(() => rng.between(0.55, 1.45)), positive.map(i => dailyCeiling(dates[i])), target - lossReturn);
     positive.forEach((index, i) => { plans[index].return = values[i]; });
@@ -338,7 +402,17 @@ export function advanceSimpleReturnMasterState(original: CashflowReviewState, da
   for (let i = 0; i < days; i++) {
     const date = addDays(state.simulatedAt.slice(0, 10), 1);
     const plans = futurePlans(weekStart(date));
-    appendDay(state, plans[weekday(date)], initialCapital);
+    const plan = plans[weekday(date)];
+    if (plan.return > 0) {
+      const resolved = state.trades.filter(trade => trade.netPnl !== 0).length;
+      const losses = state.trades.filter(trade => trade.netPnl < 0).length;
+      const wanted = Math.max(0, Math.round((resolved + plan.count) * C.losingTrades / (C.winningTrades + C.losingTrades)) - losses);
+      // A profitable single execution cannot be relabelled as a loss. When a
+      // mixed session is due, emit a genuine additional priced losing trade.
+      if (wanted && plan.count === 1) plan.count++;
+      plan.losses = Math.min(wanted, plan.count - 1);
+    }
+    appendDay(state, plan, initialCapital);
   }
   if (days > 0) state.mode = 'FAST_FORWARD';
   return state;

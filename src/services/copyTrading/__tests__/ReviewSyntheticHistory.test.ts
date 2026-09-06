@@ -48,8 +48,9 @@ describe('current v8 calendar-driven isolated review history', () => {
     expect(original.initialEquityDate).toBe('2025-08-21');
     expect(original.dailyResults).toHaveLength(380);
     expect(original.trades).toHaveLength(471);
-    expect(original.trades.filter(trade => trade.netPnl > 0)).toHaveLength(458);
-    expect(original.trades.filter(trade => trade.netPnl < 0)).toHaveLength(13);
+    expect(original.trades.filter(trade => trade.netPnl > 0)).toHaveLength(434);
+    expect(original.trades.filter(trade => trade.netPnl < 0)).toHaveLength(34);
+    expect(original.trades.filter(trade => trade.netPnl === 0)).toHaveLength(3);
     const response = toResponse(original);
     expect(response.economics?.methodology).toBe('CASH_FLOW_ADJUSTED_SIMPLE_RETURN');
     expect(response.analytics.allTime.roi).toBe(3727);

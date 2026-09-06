@@ -50,7 +50,7 @@ describe('synthetic Copy Trading performance engine', () => {
     const second = createInitialState(FIXED_NOW);
     expect(first).toEqual(second);
     const response = toResponse(first);
-    expect(response.trader).toEqual({ id: 'VX-001', name: 'Nazara', vip: true });
+    expect(response.trader).toEqual({ id: 'VX-001', name: 'Nazar', vip: true });
     // Shorter windows are derived from the distributed dollar-PnL ledger,
     // not separately forced to the retired, end-loaded ROI anchors.
     expect(response.analytics.roi7).toBeGreaterThan(0);

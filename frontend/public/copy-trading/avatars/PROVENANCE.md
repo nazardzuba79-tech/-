@@ -1,6 +1,6 @@
 # Fictional demo avatars
 
-Created 2026-09-05 using the built-in imagegen tool. Original generated PNGs, not photos of real customers, endorsements, or identities copied from Bybit. Use only with the fictional catalogue/demo profiles. The existing operator-uploaded portrait takes precedence for Nazara and is not replaced.
+Created 2026-09-05 using the built-in imagegen tool. Original generated PNGs, not photos of real customers, endorsements, or identities copied from Bybit. Use only with the fictional catalogue/demo profiles. The existing operator-uploaded portrait takes precedence for Nazar and is not replaced.
 
 ## Final prompts
 

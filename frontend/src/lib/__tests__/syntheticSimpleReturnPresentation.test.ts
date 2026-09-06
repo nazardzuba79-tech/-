@@ -29,10 +29,10 @@ describe('one canonical v8 strategy history across every presentation', () => {
     const all = selected[3];
     expect(all.pnl).toBeCloseTo(4_711_027, 4);
     expect(all.totalTrades).toBe(471);
-    expect(all.winningTrades).toBe(458);
-    expect(all.losingTrades).toBe(13);
-    expect(all.winRate).toBe(458 / 471 * 100);
-    expect(all.winRate.toFixed(1)).toBe('97.2');
+    expect(all.winningTrades).toBe(434);
+    expect(all.losingTrades).toBe(34);
+    expect(all.winRate).toBe(434 / 468 * 100);
+    expect(all.winRate.toFixed(1)).toBe('92.7');
     expect(syntheticNazaraTrader(baseline).winRate).toBeCloseTo(all.winRate, 3);
     expect(syntheticNazaraTrader(baseline).risk).toBe('High');
   });

@@ -176,8 +176,8 @@ describe('v8 follower economics use the new trade ledger, never the public addit
     expect(JSON.stringify(report.reconciliation)).not.toContain('equityIndexFactor');
     expect(report.reconciliation.simpleRoiFromLedger).toBeCloseTo(3727, 5);
     expect(report.reconciliation.performanceIndex.kind).toBe('CASH_FLOW_ADJUSTED_SIMPLE_RETURN_POINTS');
-    expect(report.execution).toMatchObject({ winningTrades: 458, losingTrades: 13, zeroPnlTrades: 0 });
-    expect(report.execution.exactWinRate).toBe(458 / 471 * 100);
+    expect(report.execution).toMatchObject({ winningTrades: 434, losingTrades: 34, zeroPnlTrades: 3 });
+    expect(report.execution.exactWinRate).toBe(434 / 468 * 100);
     expect(report.execution.averagePnl).toBe(Number((4_711_027 / 471).toFixed(4)));
     expect(report.execution.averageHoldingMinutes).toBe(Number((plainSum(state.trades.map(trade => trade.holdingTimeMinutes)) / 471).toFixed(4)));
     expect(report.execution.averageTradesPerCalendarWeek).toBeCloseTo(471 / 380 * 7, 10);

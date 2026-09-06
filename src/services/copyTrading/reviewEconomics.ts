@@ -82,11 +82,12 @@ export function calculateReviewPeriod(state: CashflowReviewState, period: Review
   };
 }
 
-function outcomes(trades: SyntheticTrade[]) {
+function outcomes(trades: SyntheticTrade[], excludeBreakeven = false) {
   const wins = trades.filter(trade => trade.netPnl > 0);
   const losses = trades.filter(trade => trade.netPnl < 0);
   const holding = trades.map(trade => trade.holdingTimeMinutes).sort((a, b) => a - b);
-  return { wins, losses, holding, winRate: trades.length ? wins.length / trades.length * 100 : 0,
+  const resolved = excludeBreakeven ? wins.length + losses.length : trades.length;
+  return { wins, losses, holding, winRate: resolved ? wins.length / resolved * 100 : 0,
     grossProfit: money(wins.map(trade => trade.netPnl)), grossLoss: -money(losses.map(trade => trade.netPnl)) };
 }
 
@@ -97,7 +98,7 @@ export function calculateCashflowAnalytics(input: SyntheticCopyState): Synthetic
   const p30 = calculateReviewPeriod(state, '30D');
   const p90 = calculateReviewPeriod(state, '90D');
   const recent = reviewSlice(state, '90D');
-  const lifetime = outcomes(state.trades);
+  const lifetime = outcomes(state.trades, state.version === 8);
   // v8's headline count and win rate describe the same complete trade book.
   // Window-specific ratios remain in economics.periods; preserve v7's legacy
   // numeric DTO convention, which used the recent 90-day outcomes here.
@@ -118,7 +119,9 @@ export function calculateCashflowAnalytics(input: SyntheticCopyState): Synthetic
     grossProfit: result.grossProfit, grossLoss: result.grossLoss,
     profitFactor: p90.profitFactor ?? 0,
     expectancy: resultTrades.length ? round(resultPnl / resultTrades.length) : 0,
-    expectancyR: round(result.winRate / 100 * averageWinR - (1 - result.winRate / 100) * averageLossR),
+    expectancyR: state.version === 8
+      ? round(sum(resultTrades.map(trade => trade.riskR)) / Math.max(1, resultTrades.length))
+      : round(result.winRate / 100 * averageWinR - (1 - result.winRate / 100) * averageLossR),
     sharpe: p90.sharpe ?? 0, sortino: p90.sortino ?? 0,
     // Simple-return annualization is linear. Retaining the old geometric
     // exponent would reintroduce the very reinvestment assumption v8 removes.
@@ -164,7 +167,7 @@ export function summarizeCashflowPeriods(state: CashflowReviewState, unit: 'week
     const history = state.equityHistory.filter(point => point.date >= addUtcDays(days[0].date, -1) && point.date <= days.at(-1)!.date);
     return { period, roi: round(reviewPeriodReturn(state, days.map(day => day.dailyReturn)), 3),
       pnl: money(trades.map(trade => trade.netPnl)), trades: trades.length,
-      winRate: round(outcomes(trades).winRate, 3), maxDrawdown: reviewPerformanceDrawdown(state, days, history) };
+      winRate: round(outcomes(trades, state.version === 8).winRate, 3), maxDrawdown: reviewPerformanceDrawdown(state, days, history) };
   });
 }
 
@@ -177,7 +180,7 @@ export function toCashflowReviewResponse(input: SyntheticCopyState): SyntheticCo
     return { date: day.date, pnl: cumulativePnl };
   })];
   return {
-    trader: { id: 'VX-001', name: 'Nazara', vip: true },
+    trader: { id: 'VX-001', name: 'Nazar', vip: true },
     simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt, stateVersion: state.version },
     analytics: calculateCashflowAnalytics(state),
     economics: { methodology: state.version === 8 ? 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' : 'DAILY_TWR', performanceFeeRate: state.cashflow.policy.performanceFeeRate,

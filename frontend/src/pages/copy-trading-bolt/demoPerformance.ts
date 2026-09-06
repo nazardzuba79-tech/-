@@ -61,7 +61,7 @@ export function demoCurveStyle(trader: Trader): DemoCurveStyle {
 }
 
 function assertCatalogueTrader(trader: Trader) {
-  if (trader.id === 'VX-001') throw new Error('Nazara must use its existing synthetic trade ledger, not the catalogue curve model.');
+  if (trader.id === 'VX-001') throw new Error('Nazar must use its existing synthetic trade ledger, not the catalogue curve model.');
   if (![trader.roiAll, trader.roi90, trader.roi30, trader.roi7].every(value => Number.isFinite(value) && value > -100)
     || !Number.isFinite(trader.activeMonths) || trader.activeMonths <= 0) {
     throw new Error('Illustrative catalogue history requires positive duration and finite ROI greater than -100%.');

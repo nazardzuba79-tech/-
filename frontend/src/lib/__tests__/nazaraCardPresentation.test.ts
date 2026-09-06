@@ -83,12 +83,12 @@ describe('Nazara marketplace presentation only', () => {
 
 // Exact function fingerprints from the approved a484789 V8 starting state.
 // These guard the particularly important non-visual scope boundaries.
+// Profile and FollowersPanel are now intentionally covered by functional SSR
+// tests in nazarProfileCorrection: lifetime stats/name/money were approved.
 test.each(Object.entries({
   CopyButton: 'cd2ed289d64d986e9355f26557e9428ff19c98b7bf6f5246576cf861e0afa2ce',
-  Profile: 'd9b895657a5a46492476d3cde886da15eaba85a0e71875ad2b2aba37fd33ade8',
   MetricsPanel: '584b60a9d224f8194e0450717490a62a80c3732ec5790852e55ff3b9980a7053',
   ProfilePerformanceChart: '68921d09f3d5a0e24c53e553c89487462f7b0b51a2c1453ce9fc1dd6d19091fe',
-  FollowersPanel: 'c52bbaac2c6d6dcf1ae6a2622b3c4579be3f25d9fa1019ad3ee4454988b3077b',
   MiniPerformanceChart: 'e2ea6405405bd0ff8e3f5058eacb2a37e32a518b7fba34e6fc0029d5d51215a8',
 }))('%s remains byte-equivalent to approved V8', (name, hash) => {
   expect(createHash('sha256').update(body(name)).digest('hex')).toBe(hash);

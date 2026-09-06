@@ -17,7 +17,7 @@ export interface SyntheticTrade {
   returnPct: number;
   holdingTimeMinutes: number;
   riskR: number;
-  result: 'WIN' | 'LOSS';
+  result: 'WIN' | 'LOSS' | 'BREAKEVEN';
 }
 
 export interface EquitySnapshot {

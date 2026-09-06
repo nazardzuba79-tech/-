@@ -39,7 +39,7 @@ export interface SyntheticTradeDto {
   returnPct: number;
   holdingTimeMinutes: number;
   riskR: number;
-  result: 'WIN' | 'LOSS';
+  result: 'WIN' | 'LOSS' | 'BREAKEVEN';
 }
 
 export interface SyntheticCopyTradingResponse {
@@ -79,7 +79,7 @@ export function syntheticNazaraTrader(data?: SyntheticCopyTradingResponse | null
   if (!data) return { ...nazarTrader };
   const { analytics, economics } = data;
   return {
-    ...nazarTrader, name: data.trader.name,
+    ...nazarTrader, name: nazarTrader.name,
     roi7: economics?.periods['7D'].roi ?? analytics.roi7,
     roi30: economics?.periods['30D'].roi ?? analytics.roi30,
     roi90: economics?.periods['90D'].roi ?? analytics.roi90,
@@ -232,8 +232,10 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   const pnl = data.economics
     ? daily.reduce((sum, day) => sum + day.realizedPnl, 0)
     : closingEquity - openingEquity;
-  const wins = trades.filter((trade) => trade.result === 'WIN');
-  const losses = trades.filter((trade) => trade.result === 'LOSS');
+  const wins = trades.filter((trade) => trade.netPnl > 0);
+  const losses = trades.filter((trade) => trade.netPnl < 0);
+  const resolvedTrades = data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+    ? wins.length + losses.length : trades.length;
   const grossProfit = wins.reduce((sum, trade) => sum + trade.netPnl, 0);
   const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + trade.netPnl, 0));
   const economics = data.economics?.periods[period];
@@ -265,7 +267,7 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
       ? returns.reduce((total, value) => total + value, 0) * 100
       : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100,
     pnl,
-    winRate: trades.length ? wins.length / trades.length * 100 : 0,
+    winRate: resolvedTrades ? wins.length / resolvedTrades * 100 : 0,
     maximumDrawdown: economics?.maximumDrawdown ?? maxDrawdown(equity),
     averagePnl: trades.length ? trades.reduce((sum, trade) => sum + trade.netPnl, 0) / trades.length : 0,
     profitFactor: economics ? economics.profitFactor : grossLoss ? grossProfit / grossLoss : 0,

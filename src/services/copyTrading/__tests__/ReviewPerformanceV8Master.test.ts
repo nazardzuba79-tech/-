@@ -2,7 +2,7 @@ import { advanceSimpleReturnMasterState, createSimpleReturnMasterState } from '.
 import { REVIEW_PERFORMANCE_V8_CONFIG as C } from '../reviewPerformanceV8Config';
 import type { CashflowReviewState } from '../reviewEconomicsTypes';
 
-const money = (value: number) => Math.round(value * 10_000) / 10_000;
+const money = (value: number) => Math.round(value * 10_000) / 10_000 || 0;
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
 const units = (values: number[]) => values.reduce((total, value) => total + Math.round(value * 10_000), 0);
 const week = (date: string) => {
@@ -21,9 +21,11 @@ describe('review v8 canonical simple-return master ledger', () => {
     expect(baseline.simulatedAt).toBe('2026-09-05T23:59:59.999Z');
     expect(baseline.cashflow.policy.methodology).toBe('CASH_FLOW_ADJUSTED_SIMPLE_RETURN');
     expect(baseline.trades).toHaveLength(471);
-    expect(baseline.trades.filter(trade => trade.netPnl > 0)).toHaveLength(458);
-    expect(baseline.trades.filter(trade => trade.netPnl < 0)).toHaveLength(13);
-    expect((458 / baseline.trades.length * 100).toFixed(1)).toBe('97.2');
+    expect(baseline.trades.filter(trade => trade.netPnl > 0)).toHaveLength(434);
+    expect(baseline.trades.filter(trade => trade.netPnl < 0)).toHaveLength(34);
+    expect(baseline.trades.filter(trade => trade.netPnl === 0)).toHaveLength(3);
+    expect(baseline.trades.filter(trade => trade.result === 'BREAKEVEN')).toHaveLength(3);
+    expect((434 / 468 * 100).toFixed(1)).toBe('92.7');
     expect(units(baseline.trades.map(trade => trade.netPnl))).toBe(4_711_027 * 10_000);
     expect(units(baseline.dailyResults.map(day => day.realizedPnl))).toBe(4_711_027 * 10_000);
     expect(baseline.cashflow.masterDays.at(-1)!.cumulativeTradingPnl).toBe(4_711_027);
@@ -147,14 +149,16 @@ describe('review v8 canonical simple-return master ledger', () => {
     expect(weekly.get('2026-02-08')).toBeCloseTo(-0.15, 7);
     expect(earlier.filter(([, value]) => value < -0.10).length).toBeGreaterThanOrEqual(2);
     expect(earlier.filter(([, value]) => value >= 0.55 && value <= 0.90).length).toBeGreaterThan(15);
-    expect(baseline.dailyResults.filter(day => day.dailyReturn < -0.04)).toHaveLength(13);
+    expect(baseline.dailyResults.filter(day => day.dailyReturn < 0)).toHaveLength(25);
     expect(baseline.dailyResults.filter(day => !day.dailyReturn).length).toBeGreaterThan(22);
     expect(returnOf(baseline, -30) / returnOf(baseline, 0)).toBeLessThan(0.08);
     const weeksWithLargeBars = new Set(baseline.dailyResults.filter(day => day.date < '2026-08-23' && day.dailyReturn >= 0.18).map(day => week(day.date)));
-    expect(weeksWithLargeBars.size).toBeGreaterThan(15);
+    // Smaller corrected losses also reduce nearby gains; strong bars still
+    // occur in 15 earlier weeks, not in a terminal balancing cluster.
+    expect(weeksWithLargeBars.size).toBeGreaterThanOrEqual(15);
   });
 
-  test('rare substantial trade losses generate risk ratios instead of cosmetic red days or statistic caps', () => {
+  test('corrected small losing sessions generate uncapped risk ratios from the canonical ledger', () => {
     const returns = baseline.dailyResults.map(day => day.dailyReturn);
     const mean = sum(returns) / returns.length;
     const downside = Math.sqrt(sum(returns.map(value => Math.min(0, value) ** 2)) / returns.length);
@@ -168,14 +172,14 @@ describe('review v8 canonical simple-return master ledger', () => {
     }
     // Wide qualitative scenario bounds, independently derived from every
     // execution/day. Production risk formulas contain no metric clamps.
-    expect(sortino).toBeGreaterThan(40);
-    expect(sortino).toBeLessThan(65);
-    expect(profit / loss).toBeGreaterThan(10);
-    expect(profit / loss).toBeLessThan(20);
-    expect(maximumDrawdown).toBeGreaterThan(5);
-    expect(maximumDrawdown).toBeLessThan(12);
-    expect(returns.filter(value => value < -0.15)).toHaveLength(12);
-    expect(Math.min(...returns)).toBeGreaterThanOrEqual(-0.300001);
+    expect(sortino).toBeGreaterThan(100);
+    expect(Number.isFinite(sortino)).toBe(true);
+    expect(profit / loss).toBeGreaterThan(30);
+    expect(Number.isFinite(profit / loss)).toBe(true);
+    expect(maximumDrawdown).toBeCloseTo(5.79, 5);
+    expect(maximumDrawdown.toFixed(2)).toBe('5.79');
+    expect(returns.filter(value => value < -0.05)).toHaveLength(0);
+    expect(Math.min(...returns)).toBeGreaterThanOrEqual(-0.05);
   });
 
   test('same seed/date produce the identical whole canonical baseline', () => {
