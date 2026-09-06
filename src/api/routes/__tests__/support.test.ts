@@ -66,6 +66,48 @@ describe('support routes', () => {
         .send({ name: 'X', email: 'x@example.com', subject: 'NOT_A_SUBJECT', message: 'hi' });
       expect(res.status).toBe(400);
     });
+
+    it.each([
+      'not-an-email',
+      'group:member@example.com;',
+      'outer:inner:member@example.com;;',
+      'Display Name <member@example.com>',
+      'member@example.com\r\nBcc:other@example.com',
+      'member@example.com\n',
+      'member@example.com\u0000',
+      '"member@other.example"@example.com',
+    ])('rejects malformed/group-style address %j before persistence or mail notification', async (email) => {
+      const create = jest.fn();
+      const notifyNewMessage = jest.fn();
+      const app = buildApp({ supportConversation: { create } }, { notifyNewMessage });
+      const res = await request(app).post('/api/v1/support/conversations')
+        .send({ name: 'Local Test', email, subject: 'TECHNICAL', message: 'Local validation only' });
+      expect(res.status).toBe(400);
+      expect(create).not.toHaveBeenCalled();
+      expect(notifyNewMessage).not.toHaveBeenCalled();
+    });
+
+    it('preserves valid plus-address email while dropping arbitrary mail options from the public request', async () => {
+      const create = jest.fn().mockResolvedValue({ id: 'local-mail-options', userId: null });
+      const notifyNewMessage = jest.fn().mockResolvedValue(undefined);
+      const app = buildApp({ supportConversation: { create } }, { notifyNewMessage });
+      const res = await request(app).post('/api/v1/support/conversations').send({
+        name: 'Local Test', email: 'member+support@example.com', subject: 'TECHNICAL', message: 'Local validation only',
+        raw: { href: 'https://blocked.example.invalid/mail' }, href: 'https://blocked.example.invalid/',
+        path: '/not-an-allowed-file', to: 'untrusted@example.com',
+        envelope: { size: 'untrusted' }, attachments: [{ path: '/not-an-allowed-file' }],
+      });
+      expect(res.status).toBe(201);
+      expect(notifyNewMessage).toHaveBeenCalledWith({
+        conversationId: 'local-mail-options', subjectLabel: 'Техническая проблема',
+        name: 'Local Test', email: 'member+support@example.com', body: 'Local validation only',
+      });
+      expect(create).toHaveBeenCalledWith({
+        data: { userId: null, guestName: 'Local Test', guestEmail: 'member+support@example.com',
+          subject: 'TECHNICAL', messages: { create: { sender: 'USER', body: 'Local validation only' } } },
+        include: { messages: true },
+      });
+    });
   });
 
   describe('GET /support/conversations/mine', () => {
