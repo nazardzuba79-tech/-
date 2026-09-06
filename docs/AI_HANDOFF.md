@@ -1,5 +1,13 @@
 # AI Handoff Log
 
+## 2026-09-06 — Codex global prelaunch banner removal / contextual Copy notice
+
+- Owner authorized production deployment after accepting removal of the global banner with one concise explanation retained only beside modeled Copy Trading results. Branch `codex/contextual-copy-notice` starts from freshly fetched main `9cf83c51fde6498c0d4e4d416508f1807c1eb6b0`; this commit carries the complete isolated change.
+- Removed exactly the App `PrelaunchApplication` import/wrapper and deleted unused `PrelaunchNotice.tsx` / `prelaunchNotice.css`, including global sticky positioning offsets. Added one seven-language, normal-flow `CopyTradingNoticeScope` only in Copy Trading. `ReviewDisclosure` suppresses duplicate paragraphs within that scope, preserves neutral information and retains standalone fail-open behavior. There is no replacement global warning or dismiss/persistence logic.
+- Preserved all routes/auth helpers, legal pages, general risk copy, trade/card/other products, backend/schema, dependencies, configuration and financial histories/calculations. Copy cards, charts, Nazar/Ksenia outputs and existing component/style/data files are byte-unchanged. Preservation tests retain their original hashes with exact wrapper-line normalization only.
+- Validation before promotion: frontend TypeScript and production build PASS; frontend Jest **28 suites / 422 tests PASS**; independent final diff review and `git diff --check` PASS. Vite initially hit sandbox `spawn EPERM`; the authorized retry completed successfully with only the existing large-chunk warning. Built assets: `index-DxG4iJJQ.js`, `index-CCqgdQ25.css`.
+- Deployment authorization is main fast-forward/push and existing production auto-deploy only; no Render configuration changes. At commit time deployment and live route verification remain pending, and must be checked against this exact SHA before reporting DONE. Preserve the unrelated untracked local `outputs/` artifacts.
+
 ## 2026-09-06 — Codex — independent nginx SPA refresh fix; promotion not performed
 
 - Fetched all remote branch refs before work. Actual main: `ced48a598c64269880ed00fca712ce1c148298de`; review: `0a9c9022b8cf0cac757328606eaf9c7b52fa3a86`. Created isolated worktree/branch `codex/copytrading-unified-production` from current main, not review. Read current handoff, KSENIA_REVIEW and NAZAR_PROFILE_CORRECTION on review.

@@ -1,0 +1,14 @@
+.copytrading-bolt-root .copy-trading-notice {
+  box-sizing: border-box;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 32px 0;
+  color: #a5adb9;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.copytrading-bolt-root.profile-view .copy-trading-notice { color: #687487; }
+@media (max-width: 720px) {
+  .copytrading-bolt-root .copy-trading-notice { padding-right: 16px; padding-left: 16px; }
+}

@@ -3,6 +3,7 @@ import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
+import { CopyTradingNoticeScope } from '../components/CopyTradingNotice';
 import './copy-trading-bolt/CopyTradingBolt.css';
 import './copy-trading-bolt/CopyTradingRefinement.css';
 import './copy-trading-bolt/KseniaReview.css';
@@ -111,6 +112,7 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
+          <CopyTradingNoticeScope>
           <CopyEligibilityProvider depositUsd={depositUsd}>
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
@@ -118,6 +120,7 @@ export function CopyTradingPage() {
                 : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
           </CopyEligibilityProvider>
+          </CopyTradingNoticeScope>
         </div>
       </div>
       <Footer />

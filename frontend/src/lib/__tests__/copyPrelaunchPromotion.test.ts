@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
@@ -21,34 +21,51 @@ function evaluate(path: string, overrides: Record<string, unknown> = {}) {
   new Function('exports', 'require', code)(output, load);
   return output;
 }
-const notice = evaluate('src/components/PrelaunchNotice.tsx', {
+const notice = evaluate('src/components/CopyTradingNotice.tsx', {
   '../lib/i18n': { useLanguage: () => ({ lang: language }) },
 });
-const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx', { './PrelaunchNotice': notice });
+const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx', { './CopyTradingNotice': notice });
 
-test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('one clear global notice replaces only redundant product labels in %s', lang => {
+test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('one contextual Copy notice replaces only redundant product labels in %s', lang => {
   language = lang;
   const repeated = React.createElement(ReviewDisclosure, { neutral: React.createElement('p', null, 'Neutral product information') },
     React.createElement('p', null, 'Demonstration catalogue'));
-  const html = renderToStaticMarkup(React.createElement(notice.PrelaunchApplication, null,
-    React.createElement('main', null, repeated, React.createElement('button', null, 'Copy'))));
-  expect((html.match(/class="voltex-prelaunch-notice"/g) ?? [])).toHaveLength(1);
-  expect(html).toContain('VOLTEX · DEMO / PRE-LAUNCH');
-  expect(html).toContain(notice.PRELAUNCH_COPY[lang]);
+  const redundant = React.createElement(ReviewDisclosure, null, 'Repeated modeled-results explanation');
+  const html = renderToStaticMarkup(React.createElement(notice.CopyTradingNoticeScope, null,
+    React.createElement('main', null, repeated, redundant, React.createElement('button', null, 'Copy'))));
+  expect(Object.keys(notice.COPY_TRADING_NOTICE_COPY).sort()).toEqual(['en', 'es', 'hi', 'ja', 'ko', 'ru', 'zh']);
+  expect(typeof notice.COPY_TRADING_NOTICE_COPY[lang]).toBe('string');
+  expect(notice.COPY_TRADING_NOTICE_COPY[lang].trim().length).toBeGreaterThan(20);
+  expect((html.match(/class="copy-trading-notice"/g) ?? [])).toHaveLength(1);
+  expect((html.match(/data-copy-trading-notice/g) ?? [])).toHaveLength(1);
+  expect(html).toContain(notice.COPY_TRADING_NOTICE_COPY[lang]);
+  expect(html).not.toMatch(/voltex-prelaunch|DEMO \/ PRE-LAUNCH|--prelaunch-notice-height/);
   expect(html).toContain('Neutral product information');
   expect(html).not.toContain('Demonstration catalogue');
+  expect(html).not.toContain('Repeated modeled-results explanation');
   expect(html).toContain('<button>Copy</button>');
-  // If the global provider is accidentally removed, individual disclosure
-  // remains visible rather than silently hiding the modeled-data context.
+  // A standalone profile must still fail open if its contextual notice scope
+  // is absent; duplicate suppression never silently removes all disclosure.
   expect(renderToStaticMarkup(repeated)).toContain('Demonstration catalogue');
+  expect(renderToStaticMarkup(redundant)).toBe('Repeated modeled-results explanation');
 });
 
-test('notice is application-wide, cannot be dismissed, and does not gate auth or routes', () => {
+test('notice is Copy-only, non-sticky, cannot be dismissed, and does not gate auth or routes', () => {
   const app = source('src/App.tsx');
-  expect(app.indexOf('<PrelaunchApplication>')).toBeLessThan(app.indexOf('<Routes>'));
-  expect(app.indexOf('</PrelaunchApplication>')).toBeGreaterThan(app.indexOf('</Routes>'));
-  expect(source('src/components/PrelaunchNotice.tsx')).not.toMatch(/localStorage|sessionStorage|isAdmin|pathname|setTimeout|onClick/);
-  expect(source('src/components/prelaunchNotice.css')).not.toMatch(/display:\s*none|opacity:\s*0|visibility:\s*hidden/);
+  expect(app).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice|voltex-prelaunch/);
+  expect(existsSync(resolve(frontend, 'src/components/PrelaunchNotice.tsx'))).toBe(false);
+  expect(existsSync(resolve(frontend, 'src/components/prelaunchNotice.css'))).toBe(false);
+  const page = source('src/pages/CopyTradingPage.tsx');
+  expect((page.match(/<CopyTradingNoticeScope>/g) ?? [])).toHaveLength(1);
+  expect((page.match(/<\/CopyTradingNoticeScope>/g) ?? [])).toHaveLength(1);
+  expect(page.indexOf('<CopyTradingNoticeScope>')).toBeLessThan(page.indexOf('<CopyEligibilityProvider'));
+  expect(page.indexOf('</CopyTradingNoticeScope>')).toBeGreaterThan(page.indexOf('</CopyEligibilityProvider>'));
+  expect(page.indexOf('<CopyTradingNoticeScope>')).toBeLessThan(page.indexOf('<Marketplace '));
+  expect(page.indexOf('</CopyTradingNoticeScope>')).toBeGreaterThan(page.indexOf('<Profile '));
+  expect(source('src/components/CopyTradingNotice.tsx')).not.toMatch(/localStorage|sessionStorage|isAdmin|pathname|setTimeout|onClick|ResizeObserver/);
+  const css = source('src/components/copyTradingNotice.css');
+  expect(css).not.toMatch(/display:\s*none|opacity:\s*0|visibility:\s*hidden|position:\s*(?:fixed|sticky)|prelaunch-notice-height|global-header|nav-mobile-menu/);
+  expect(css).toContain('.copytrading-bolt-root');
 });
 
 test.each([0, -1, 19_999.99, 20_000, 20_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {

@@ -47,13 +47,13 @@ const approvedCardSources: Record<string, string> = {
 // copyVerifiedBadge and the existing canonical/renderer fingerprints verify
 // those boundaries separately. The later authorized Spot task may change
 // TradePage independently; Card's authenticated route is asserted below instead
-// of freezing an unrelated product page. All other fingerprints remain exact.
+// of freezing an unrelated product page. The later contextual Copy notice
+// removes only the global wrapper and adds a Copy-local wrapper; the exact
+// source reversal below retains the original App/Copy-page fingerprints.
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
-  "frontend/src/components/PrelaunchNotice.tsx": "c9826297950fe522d3dcbd7f39bdd8cb8a5a6dc3e0cbcdfa9af0fb189d4d4651",
-  "frontend/src/components/prelaunchNotice.css": "d604497c962ceaf8fc5c026499cdc4b466e73e83a69c461cdf7113e41b8f9ab1",
   "frontend/src/pages/home/home.css": "f2e53a7bd3f0d3e61d5f71d9d12d45ac3bde9149930747d1019b102b70a4f23b",
   "frontend/src/pages/home/HomeCardSection.tsx": "6c59eaba4532371e58ae531c2fdc800a96c3756cc9910d4ff7405995fbadbaeb",
   "frontend/src/pages/home/HomeCryptoCard.tsx": "ce5a19d0d45c56cd38485e72790e96cb6c2093e0666a176aae2c45c161984535",
@@ -122,10 +122,36 @@ test('all fifteen approved assets are byte-exact and no superseded source compos
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
 
-test('Copy stays at its approved badge revision; pre-launch, Homepage and navigation remain untouched', () => {
+test('Copy stays at its approved badge revision; only the agreed notice wrappers change around identical product/auth source', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
-    expect({ file, sha256: digest(source(file)) }).toEqual({ file, sha256: expected });
+    let text = source(file);
+    if (file === 'frontend/src/App.tsx') {
+      expect(text).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
+      const importAnchor = "import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';\n";
+      expect(text.split(importAnchor)).toHaveLength(2);
+      expect(text.split('    <BrowserRouter>\n')).toHaveLength(2);
+      expect(text.split('      </Routes>\n')).toHaveLength(2);
+      // Reverse only the three owner-approved removed lines. Every route,
+      // RequireAuth/redirect function, import and other byte remains frozen.
+      text = text.replace(importAnchor, importAnchor + "import { PrelaunchApplication } from './components/PrelaunchNotice';\n")
+        .replace('    <BrowserRouter>\n', '    <BrowserRouter>\n      <PrelaunchApplication>\n')
+        .replace('      </Routes>\n', '      </Routes>\n      </PrelaunchApplication>\n');
+    }
+    if (file === 'frontend/src/pages/CopyTradingPage.tsx') {
+      const importLine = "import { CopyTradingNoticeScope } from '../components/CopyTradingNotice';\n";
+      expect(text.split(importLine)).toHaveLength(2);
+      expect(text.match(/^[ \t]*<CopyTradingNoticeScope>\n/gm)).toHaveLength(1);
+      expect(text.match(/^[ \t]*<\/CopyTradingNoticeScope>\n/gm)).toHaveLength(1);
+      // Remove only the added import and wrapper lines, not anything inside
+      // them: canonical reads, identity wiring and eligibility stay exact.
+      text = text.replace(importLine, '')
+        .replace(/^[ \t]*<CopyTradingNoticeScope>\n/m, '')
+        .replace(/^[ \t]*<\/CopyTradingNoticeScope>\n/m, '');
+    }
+    expect({ file, sha256: digest(text) }).toEqual({ file, sha256: expected });
   }
+  expect(existsSync(resolve(repository, 'frontend/src/components/PrelaunchNotice.tsx'))).toBe(false);
+  expect(existsSync(resolve(repository, 'frontend/src/components/prelaunchNotice.css'))).toBe(false);
 });
 
 test('Card remains an authenticated standalone route, independent of Spot terminal changes', () => {

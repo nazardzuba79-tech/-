@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { useGlobalPrelaunchNotice } from './PrelaunchNotice';
+import { useCopyTradingNotice } from './CopyTradingNotice';
 
-/** Duplicate product copy can be omitted only when the application itself
- * renders the clear global notice. Outside that provider disclosure fails open. */
+/** Duplicate Copy copy is omitted only within the scope that renders its
+ * contextual results notice. Standalone components still disclose their source. */
 export function ReviewDisclosure({ children, neutral = null }: { children: ReactNode; neutral?: ReactNode }) {
-  return useGlobalPrelaunchNotice() ? neutral : children;
+  return useCopyTradingNotice() ? neutral : children;
 }

@@ -26,7 +26,6 @@ import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
 import { AdminDepositsPage } from './pages/admin/AdminDepositsPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
-import { PrelaunchApplication } from './components/PrelaunchNotice';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation();
@@ -47,7 +46,6 @@ function RedirectIfAuthed({ children }: { children: JSX.Element }) {
 export function App() {
   return (
     <BrowserRouter>
-      <PrelaunchApplication>
       <Routes>
         {/* These two, and AuthPage's post-sign-in redirect, are the only
             places the app picks a terminal without the user naming one, so
@@ -176,7 +174,6 @@ export function App() {
           <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>
       </Routes>
-      </PrelaunchApplication>
     </BrowserRouter>
   );
 }
