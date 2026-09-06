@@ -1,5 +1,14 @@
 # AI Handoff Log
 
+## 2026-09-06 — Codex — isolated review duplicate disclosure copy cleanup
+
+- Fresh owner-requested review base `9edebffca167651bd779f6ebd413779bb796f90a`; feature `codex/copytrading-review-copy-cleanup`; implementation `e08b6d7e251d02536f08b06a0020b6d5d32f76e4`.
+- Presentation-only: new ReviewDisclosure wrapper, Copy Trading components and HomeCopyTrading. Removes duplicate catalogue/profile/home demonstration copy only in explicit review mode, where the unchanged global synthetic-data review banner remains. No replacement disclaimer. Normal production/development disclosure behavior and all seven translation dictionaries remain intact; the entire translated homepage paragraph is absent from review in ru/en/zh/es/hi/ja/ko. Mixed paragraphs retain neutral ROI/AUM/HWM/minimum/owner-avatar information. No CSS changes or empty placeholder elements.
+- Review-visible removals: complete catalogue paragraph beginning «Демонстрационный каталог»; complete ordinary «Демопрофиль» paragraph; «Синтетическая review-стратегия Ksenia.» and its non-real-results clause (neutral ownership sentence retained); «Демонстрационная модель:» and «Это не подтверждённая история реальных сделок.»; «Единая синтетическая история ·»; «Показатели рассчитаны из единой синтетической истории сделок стратегии.»; «Синтетическая история ·»; «Синтетическая модель ·»; «В синтетическом сценарии»; translated home.copy.disclaimer paragraph. Internal/admin technical wording is deliberately untouched.
+- Preserved all Claude/Codex financial data, Nazar/Ksenia engines, routing, ranking, cards, avatar assets, charts, copy eligibility and other products. Updated existing source-fingerprint guards to strip only the new text wrapper, retaining original renderer hashes. Added review/normal-mode and translation visibility tests plus actual-browser comparison script.
+- Local validation: backend TypeScript, frontend TypeScript via production/review workflows, both builds PASS (existing large-chunk advisory).30tests/5suites PASS. Actual1440/390 browser comparison against original staging: card DOM/dimensions, yellow and daily SVG DOM/dimensions, statistics and homepage cards exactly equal; removed text absent, no horizontal overflow, all7home languages verified. Existing favicon.ico404 appears on both old staging and local; no new application console/page errors. No unrelated favicon fix in this text-only task.
+- Delivery: only existing review auto-deploy from claude/review-ready. No main, production service/env/domain/DB changes. Final verification must confirm new SHA live, repeat saved-baseline1440/390 comparison, and unchanged public Nazar/Ksenia hashes. This entry records pre-push validation, not an assumed deploy result.
+
 This log is the shared communication channel between Claude Code and Codex for VOLTEX.
 
 ## 2026-09-03 — Integration baseline
