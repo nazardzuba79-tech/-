@@ -1,0 +1,99 @@
+name: Security Phase 2A - bcrypt Node20 Alpine
+
+# Deliberately isolated owner-review branch only: no main, PR, schedule or deploy trigger.
+on:
+  push:
+    branches:
+      - codex/security-remediation-phase2a-bcrypt
+
+permissions:
+  contents: read
+
+jobs:
+  bcrypt-native-alpine:
+    if: github.repository == 'nazardzuba79-tech/-' && github.ref == 'refs/heads/codex/security-remediation-phase2a-bcrypt'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out exact feature commit without persistent credentials
+        # Official v7.0.1 tag verified against actions/checkout on 2026-09-06.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Record inputs and enforce the unchanged production Dockerfile
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/jest
+          test "$GITHUB_REF" = 'refs/heads/codex/security-remediation-phase2a-bcrypt'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          printf '%s  Dockerfile\n' '386accace13ce978b4821d4a63a050b3f5911430ee8892508a75796cae5564cd' | sha256sum --check
+          git rev-parse HEAD > qa-artifacts/commit.txt
+          sha256sum Dockerfile package.json package-lock.json scripts/qa-bcrypt-native.cjs src/services/__tests__/fixtures/bcrypt-5.1.1-compatibility.json > qa-artifacts/inputs.sha256
+          docker version > qa-artifacts/docker-version.txt
+          # Build only committed Dockerfile inputs, never .git, local .env, caches or runner files.
+          mkdir -p "$RUNNER_TEMP/voltex-bcrypt-phase2a-context"
+          git archive HEAD Dockerfile package.json package-lock.json tsconfig.json src prisma | tar -x -C "$RUNNER_TEMP/voltex-bcrypt-phase2a-context"
+          cmp Dockerfile "$RUNNER_TEMP/voltex-bcrypt-phase2a-context/Dockerfile"
+
+      - name: Build clean production image using both existing Dockerfile stages
+        run: |
+          set -euo pipefail
+          # No cache import, build secrets, database variables, image push or custom Dockerfile.
+          # This executes builder npm ci/tsc and runtime npm ci --omit=dev, never image CMD.
+          docker build --platform linux/amd64 --pull --no-cache --progress=plain --file "$RUNNER_TEMP/voltex-bcrypt-phase2a-context/Dockerfile" --tag voltex-bcrypt-phase2a:runtime "$RUNNER_TEMP/voltex-bcrypt-phase2a-context" 2>&1 | tee qa-artifacts/runtime-build.log
+          docker image inspect --format '{{json .Id}} {{json .Os}} {{json .Architecture}}' voltex-bcrypt-phase2a:runtime > qa-artifacts/runtime-image.txt
+
+      - name: Verify actual production native addon and unchanged old hashes offline
+        run: |
+          set -euo pipefail
+          # ALWAYS override CMD: the application's normal CMD would run migrations.
+          docker run --rm --platform linux/amd64 --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 128 --memory 1g --user "$(id -u):$(id -g)" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/scripts/qa-bcrypt-native.cjs,dst=/app/qa-bcrypt-native.cjs,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/src/services/__tests__/fixtures/bcrypt-5.1.1-compatibility.json,dst=/app/qa-bcrypt-legacy.json,readonly" \
+            --entrypoint node voltex-bcrypt-phase2a:runtime /app/qa-bcrypt-native.cjs /app/qa-bcrypt-legacy.json \
+            2> >(tee qa-artifacts/native-stderr.log >&2) | tee qa-artifacts/native-result.json
+
+      - name: Record actual installed production dependency graph offline
+        run: |
+          set -euo pipefail
+          docker run --rm --platform linux/amd64 --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 128 --memory 1g --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:rw,noexec,nosuid,size=64m \
+            --entrypoint node voltex-bcrypt-phase2a:runtime /usr/local/lib/node_modules/npm/bin/npm-cli.js \
+            ls --all --omit=dev --json --logs-max=0 --cache=/tmp/npm-cache > qa-artifacts/production-dependency-tree.json
+
+      - name: Build unchanged builder stage for isolated auth regression
+        run: |
+          set -euo pipefail
+          docker build --platform linux/amd64 --pull --no-cache --progress=plain --file "$RUNNER_TEMP/voltex-bcrypt-phase2a-context/Dockerfile" --target builder --tag voltex-bcrypt-phase2a:builder "$RUNNER_TEMP/voltex-bcrypt-phase2a-context" 2>&1 | tee qa-artifacts/builder-build.log
+
+      - name: Run real auth and 2FA tests with in-memory fixtures on Alpine
+        run: |
+          set -euo pipefail
+          # Existing test bootstrap supplies only public test keys. No env-file/secret forwarding.
+          # Network none permits isolated loopback Supertest, not external APIs or databases.
+          docker run --rm --platform linux/amd64 --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --pids-limit 128 --memory 2g --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:rw,noexec,nosuid,size=512m \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/jest.config.js,dst=/app/jest.config.js,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/tsconfig.jest.json,dst=/app/tsconfig.jest.json,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/jest.setup.ts,dst=/app/jest.setup.ts,readonly" \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/qa-artifacts/jest,dst=/qa-results" \
+            --entrypoint node voltex-bcrypt-phase2a:builder /app/node_modules/jest/bin/jest.js \
+            --runInBand --cacheDirectory=/tmp/jest-cache --json --outputFile=/qa-results/results.json \
+            --runTestsByPath src/services/__tests__/BcryptCompatibility.test.ts src/services/__tests__/TwoFactorService.test.ts src/api/routes/__tests__/bcryptAuthRegression.test.ts \
+            2>&1 | tee qa-artifacts/alpine-auth-tests.log
+
+      - name: Upload bounded build and native evidence only
+        if: always()
+        # Official v7.0.1 tag verified against actions/upload-artifact on 2026-09-06.
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: security-phase2a-bcrypt-${{ github.sha }}
+          path: qa-artifacts/
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: false

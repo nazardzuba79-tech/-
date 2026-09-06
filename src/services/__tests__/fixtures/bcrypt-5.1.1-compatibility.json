@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "provenance": {
+    "notice": "PUBLIC NON-PRODUCTION TEST FIXTURES. Passwords and salts are intentionally public and must never be used for an account.",
+    "generatorPackage": "bcrypt",
+    "generatorVersion": "5.1.1",
+    "generatorRuntime": "v24.19.0",
+    "generatorPlatform": "win32",
+    "generatorArchitecture": "x64",
+    "generatedAt": "2026-09-06T16:32:31.378Z",
+    "sourceMainSha": "27d531b0140471654adf3f18203b06de73ed5598",
+    "generation": "Actual installed bcrypt 5.1.1: hashSync(password, genSaltSync(cost, minor)). Every correct/wrong/alias expectation verified with 5.1.1 before saving.",
+    "fixturesSha256": "5a5743083e2fb7e3d65c9cf624397d43d5083a956620b3d92a07ccb68093ddd7"
+  },
+  "fixtures": [
+    {
+      "id": "password-ascii",
+      "purpose": "password",
+      "password": "VoltexLegacyPasswordA1",
+      "wrongPassword": "WrongLegacyPasswordA1",
+      "cost": 12,
+      "utf8Bytes": 22,
+      "hash": "$2b$12$Ewrk3Yjz9oqtH7ZQbGVxNugaWxNwZpVhj./w6adaYTOkswcrBE8KS"
+    },
+    {
+      "id": "password-unicode",
+      "purpose": "password",
+      "password": "VOLTEXПароль🚀ЗахистA1",
+      "wrongPassword": "VOLTEXПароль🚀ЗахистB2",
+      "cost": 12,
+      "utf8Bytes": 36,
+      "hash": "$2b$12$NcRumZ9TpEoC/uy.ZMifC.AK.5vXzxrajAyQJSOVRyQMdlBXRsPMO"
+    },
+    {
+      "id": "password-ascii-72-bytes",
+      "purpose": "password",
+      "password": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZ",
+      "wrongPassword": "BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZ",
+      "cost": 12,
+      "aliases": [
+        "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAZIgnoredSuffixBeyond72"
+      ],
+      "utf8Bytes": 72,
+      "hash": "$2b$12$R7g9BIxxrQ2S9ylUQ0VcZuxovBj0tgRZt8lmh47WrPh9kVVkjwljK"
+    },
+    {
+      "id": "password-unicode-72-bytes",
+      "purpose": "password",
+      "password": "🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀A1xy",
+      "wrongPassword": "🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀A1xz",
+      "cost": 12,
+      "aliases": [
+        "🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀A1xyIgnoredSuffixBeyond72"
+      ],
+      "utf8Bytes": 72,
+      "hash": "$2b$12$f1k5NmvI9/N2UHm8GOyE8.s4Inb67H9jCIOo6TqBRfYE.NO/ssUp."
+    },
+    {
+      "id": "password-embedded-nul",
+      "purpose": "password",
+      "password": "VoltexBefore\u0000AfterA1",
+      "wrongPassword": "VoltexBefore\u0000AfterB2",
+      "cost": 12,
+      "rejectedAliases": [
+        "VoltexBefore"
+      ],
+      "utf8Bytes": 20,
+      "hash": "$2b$12$wb/vKNGQnMVAzXhqqiJR4etEEqQmaHrzk0QNZFcQnauXu8BcoRMra"
+    },
+    {
+      "id": "password-2a-prefix",
+      "purpose": "password",
+      "password": "VoltexLegacyPrefixA1",
+      "wrongPassword": "WrongLegacyPrefixA1",
+      "cost": 12,
+      "minor": "a",
+      "utf8Bytes": 20,
+      "hash": "$2a$12$k9n0HwIFM1DZIBFesZY2P.sWyoFiVSTjID559VAFjB8QAIgpAq766"
+    },
+    {
+      "id": "backup-code-one",
+      "purpose": "backup-code",
+      "password": "ABCD-EFGH",
+      "wrongPassword": "ABCD-EFGJ",
+      "cost": 10,
+      "utf8Bytes": 9,
+      "hash": "$2b$10$juil4eCuo9GN1ppESuHtROkFrUA4NPKWaZ6DVla1Ak2QN7EqfZtwS"
+    },
+    {
+      "id": "backup-code-two",
+      "purpose": "backup-code",
+      "password": "JKLM-NPQR",
+      "wrongPassword": "JKLM-NPQS",
+      "cost": 10,
+      "utf8Bytes": 9,
+      "hash": "$2b$10$QXtQt5SLO8zhCCIYyk9hsOhFEI64qaUJD5Pzm1Q6W7KZh/3t4pIa."
+    }
+  ]
+}
