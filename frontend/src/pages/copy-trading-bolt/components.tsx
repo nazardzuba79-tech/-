@@ -123,7 +123,7 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
     return <img className={`${className} avatar-photo`} src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} />;
   }
   if (visual.mark) return <div className={`${className} avatar-art`}><TraderAvatarArt traderId={trader.id} /></div>;
-  return <div className={className}>{trader.initials}</div>;
+  return <div className={className} style={visual.category === 'initials' ? { background: visual.background, color: visual.accent } : undefined}>{trader.initials}</div>;
 }
 
 function EligibilityGate({ compact = false }: { compact?: boolean }) {
