@@ -54,6 +54,7 @@ import { demoTradingRouter } from './api/routes/demoTrading';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
+import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
 
@@ -170,6 +171,7 @@ app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
+app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 
 // Centralized error handler — never leak stack traces to clients.

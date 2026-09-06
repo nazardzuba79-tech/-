@@ -5,9 +5,15 @@
 export type TraderMark = 'quant' | 'red-dot' | 'globe' | 'mountain' | 'mandala'
   | 'coffee' | 'atlas' | 'river' | 'constellation' | 'tiger' | 'flow' | 'leaf'
   | 'delta' | 'nexa' | 'kite' | 'zen' | 'lion' | 'blocks' | 'dragon' | 'whale'
-  | 'lightning' | 'owl' | 'monogram';
+  | 'lightning' | 'owl' | 'monogram' | 'coffee-creature' | 'sleepy-tiger'
+  | 'kiwi-bird' | 'pixel-dragon' | 'moon-owl' | 'chrome-visor' | 'prism-face'
+  | 'pixel-sentinel' | 'neon-orbit' | 'ink-reader' | 'coral-editor' | 'aqua-pilot';
+
+export type TraderIdentityCategory = 'mascot' | 'digital' | 'portrait' | 'abstract' | 'initials';
 
 export type TraderVisual = Readonly<{
+  /** Artwork taxonomy only; never consumed by ranking or business logic. */
+  category?: TraderIdentityCategory;
   avatarSrc?: string;
   mark?: TraderMark;
   initials?: string;
@@ -18,36 +24,36 @@ export type TraderVisual = Readonly<{
 }>;
 
 const TRADER_VISUALS: Readonly<Record<string, TraderVisual>> = {
-  'VX-002': { mark: 'quant', accent: '#a7e2f2', background: '#182934', highlight: 'silver' },
-  'VX-003': { mark: 'red-dot', accent: '#ee776a', background: '#291c21', highlight: 'copper' },
-  'VX-004': { avatarSrc: '/copy-trading/avatars/sakura-quant.webp', accent: '#e6a8ad' },
-  'VX-005': { avatarSrc: '/copy-trading/avatars/seoul-sigma.webp', accent: '#8ebbad' },
-  'VX-006': { mark: 'globe', accent: '#a8cce2', background: '#1c273b' },
-  'VX-007': { avatarSrc: '/copy-trading/avatars/moon-rabbit.webp', accent: '#c7a9f2', highlight: 'copper' },
-  'VX-008': { mark: 'mountain', accent: '#e7dac1', background: '#293238', highlight: 'gold' },
-  'VX-009': { mark: 'mandala', accent: '#ddaf69', background: '#33291f' },
-  'VX-010': { avatarSrc: '/copy-trading/avatars/panda-block.webp', accent: '#a3cc9b' },
-  'VX-011': { mark: 'coffee', accent: '#edc299', background: '#483329' },
-  'VX-012': { mark: 'atlas', accent: '#e9e1c8', background: '#313b47' },
-  'VX-013': { mark: 'river', accent: '#a4dfd6', background: '#183a3e' },
-  'VX-014': { mark: 'constellation', accent: '#b4b8ff', background: '#232140' },
-  'VX-015': { mark: 'tiger', accent: '#eac181', background: '#463027' },
-  'VX-016': { mark: 'flow', accent: '#eaeee2', background: '#52625c' },
-  'VX-017': { mark: 'leaf', accent: '#b5d295', background: '#283c2c' },
-  'VX-018': { mark: 'delta', accent: '#d1d6dc', background: '#353947' },
-  'VX-019': { mark: 'nexa', accent: '#81cadc', background: '#16323b' },
-  'VX-020': { mark: 'kite', accent: '#f1b688', background: '#4a3332' },
-  'VX-021': { mark: 'monogram', initials: 'iq', accent: '#e9dfbf', background: '#4b403b' },
-  'VX-022': { mark: 'zen', accent: '#d6d5c8', background: '#343d3a' },
-  'VX-023': { mark: 'lion', accent: '#9ecbf0', background: '#243752' },
-  'VX-024': { mark: 'mandala', accent: '#f0a6b2', background: '#452834' },
-  'VX-025': { mark: 'blocks', accent: '#c0a4f1', background: '#34274e' },
-  'VX-026': { mark: 'dragon', accent: '#9fd8b1', background: '#19382d' },
-  'VX-027': { mark: 'whale', accent: '#9bd8ee', background: '#1f344f' },
-  'VX-028': { mark: 'lightning', accent: '#f4c783', background: '#573929' },
-  'VX-029': { mark: 'owl', accent: '#c1b6ee', background: '#322b49' },
-  'VX-030': { mark: 'monogram', initials: 'VH', accent: '#f0ada9', background: '#452b33' },
-  'VX-031': { mark: 'delta', accent: '#b4d6c6', background: '#284138' },
+  'VX-002': { category: 'initials', accent: '#c9d0d9', background: '#303640', highlight: 'silver' },
+  'VX-003': { category: 'digital', avatarSrc: '/copy-trading/avatars/red-glass-mask.webp', mark: 'red-dot', accent: '#ee776a', background: '#291c21', highlight: 'copper' },
+  'VX-004': { category: 'portrait', avatarSrc: '/copy-trading/avatars/sakura-ink.webp', mark: 'ink-reader', accent: '#e6a8ad', background: '#efe5d5' },
+  'VX-005': { category: 'portrait', avatarSrc: '/copy-trading/avatars/seoul-cyber.webp', mark: 'aqua-pilot', accent: '#8ebbad', background: '#162b42' },
+  'VX-006': { category: 'initials', accent: '#c5cbcc', background: '#363c3d' },
+  'VX-007': { category: 'mascot', avatarSrc: '/copy-trading/avatars/moon-rabbit.webp', mark: 'owl', accent: '#c7a9f2', background: '#272137', highlight: 'copper' },
+  'VX-008': { category: 'abstract', mark: 'mountain', accent: '#e7dac1', background: '#293238', highlight: 'gold' },
+  'VX-009': { category: 'initials', accent: '#d8cebf', background: '#403b35' },
+  'VX-010': { category: 'mascot', avatarSrc: '/copy-trading/avatars/panda-block.webp', mark: 'tiger', accent: '#a3cc9b', background: '#26392c' },
+  'VX-011': { category: 'mascot', mark: 'coffee-creature', accent: '#edc299', background: '#c8e3dc' },
+  'VX-012': { category: 'digital', mark: 'chrome-visor', accent: '#e9e1c8', background: '#181d2a' },
+  'VX-013': { category: 'abstract', mark: 'river', accent: '#a4dfd6', background: '#183a3e' },
+  'VX-014': { category: 'abstract', mark: 'constellation', accent: '#b4b8ff', background: '#232140' },
+  'VX-015': { category: 'mascot', mark: 'sleepy-tiger', accent: '#eac181', background: '#e6b562' },
+  'VX-016': { category: 'mascot', avatarSrc: '/copy-trading/avatars/otter-break.webp', mark: 'coffee', accent: '#eaeee2', background: '#52625c' },
+  'VX-017': { category: 'mascot', mark: 'kiwi-bird', accent: '#b5d295', background: '#e1ead0' },
+  'VX-018': { category: 'abstract', mark: 'delta', accent: '#d1d6dc', background: '#353947' },
+  'VX-019': { category: 'initials', accent: '#bbc9cf', background: '#283940' },
+  'VX-020': { category: 'digital', mark: 'prism-face', accent: '#f1b688', background: '#eacbd6' },
+  'VX-021': { category: 'initials', accent: '#ccc9be', background: '#393c36' },
+  'VX-022': { category: 'portrait', mark: 'ink-reader', accent: '#d6d5c8', background: '#efe5d5' },
+  'VX-023': { category: 'portrait', mark: 'coral-editor', accent: '#9ecbf0', background: '#e7b8ab' },
+  'VX-024': { category: 'initials', accent: '#d2c8cd', background: '#3d343b' },
+  'VX-025': { category: 'digital', mark: 'pixel-sentinel', accent: '#c0a4f1', background: '#272140' },
+  'VX-026': { category: 'mascot', mark: 'pixel-dragon', accent: '#9fd8b1', background: '#d1deb1' },
+  'VX-027': { category: 'portrait', mark: 'aqua-pilot', accent: '#9bd8ee', background: '#193f56' },
+  'VX-028': { category: 'digital', mark: 'neon-orbit', accent: '#f4c783', background: '#160d29' },
+  'VX-029': { category: 'mascot', mark: 'moon-owl', accent: '#c1b6ee', background: '#18293d' },
+  'VX-030': { category: 'initials', accent: '#cecbd5', background: '#37333f' },
+  'VX-031': { category: 'abstract', mark: 'zen', accent: '#b4d6c6', background: '#284138' },
 };
 
 const DEFAULT_VISUAL: TraderVisual = Object.freeze({});

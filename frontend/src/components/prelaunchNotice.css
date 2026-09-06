@@ -1,0 +1,44 @@
+.voltex-prelaunch-shell { --prelaunch-notice-height: 33px; min-width: 0; }
+/* Keep existing sticky navigation below the notice, including after a locale
+   change wraps its text. No header dimensions, links or visual tokens change. */
+.voltex-prelaunch-shell .global-header,
+.voltex-prelaunch-shell .vx-home > header { top: var(--prelaunch-notice-height); }
+.voltex-prelaunch-shell .market-ticker,
+.voltex-prelaunch-shell .nav-mobile-menu { top: calc(64px + var(--prelaunch-notice-height)); }
+.voltex-prelaunch-notice {
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid #424a56;
+  background: #19212c;
+  color: #c2cad5;
+  font: 11px/1.5 'Manrope', sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.voltex-prelaunch-notice strong {
+  flex: 0 0 auto;
+  color: #f0f2f6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+}
+.voltex-prelaunch-notice span { min-width: 0; }
+@media (max-width: 600px) {
+  .voltex-prelaunch-shell { --prelaunch-notice-height: 61px; }
+  .voltex-prelaunch-notice { gap: 2px; padding: 6px 12px; }
+  .voltex-prelaunch-notice strong { flex-basis: 100%; }
+}
+@media (max-width: 720px) {
+  .voltex-prelaunch-shell .market-ticker,
+  .voltex-prelaunch-shell .nav-mobile-menu { top: calc(56px + var(--prelaunch-notice-height)); }
+}

@@ -151,6 +151,11 @@ interface RealBalance {
 }
 
 export const api = {
+  // Read-only modeled strategy history on the normal backend. The legacy
+  // internal simulation controls remain separate and cannot reset these ledgers.
+  getNazarCopyTrading: () => request<SyntheticCopyTradingResponse>('/copy-trading/nazar'),
+  getKseniaCopyTrading: () => request<import('./kseniaCopyTrading').KseniaResponse>('/copy-trading/ksenia'),
+  getCopyStrategyIdentities: () => request<{ identities: (import('./kseniaCopyTrading').PublicStrategyIdentity | null)[] }>('/copy-trading/identities'),
   /** Creates the account and returns a real session token straight away —
    *  the same token shape /auth/login issues. There is no intermediate
    *  verification step and no second call to make. */

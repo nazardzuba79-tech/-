@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
-import { toast, Toaster } from 'sonner';
+import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
 import './copy-trading-bolt/CopyTradingRefinement.css';
+import './copy-trading-bolt/KseniaReview.css';
 import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
-import type { SyntheticCopyTradingResponse } from '../lib/syntheticCopyTrading';
+import { syntheticNazaraTrader, type SyntheticCopyTradingResponse } from '../lib/syntheticCopyTrading';
+import { kseniaTrader, KSENIA_TRADER_ID, type KseniaResponse, type PublicStrategyIdentity } from '../lib/kseniaCopyTrading';
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -26,9 +28,20 @@ export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
   const [depositUsd, setDepositUsd] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [synthetic, setSynthetic] = useState<SyntheticCopyTradingResponse | null>(null);
-  const [simulationBusy, setSimulationBusy] = useState(false);
+  const [ksenia, setKsenia] = useState<KseniaResponse | null>(null);
+  const [identities, setIdentities] = useState<PublicStrategyIdentity[]>([]);
+  useEffect(() => {
+    let disposed = false;
+    const refresh = () => {
+      void api.getCopyStrategyIdentities().then(data => { if (!disposed) setIdentities(data.identities.filter((value): value is PublicStrategyIdentity => value !== null)); }).catch(() => {});
+      void api.getKseniaCopyTrading().then(data => { if (!disposed) setKsenia(data); }).catch(() => {});
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    return () => { disposed = true; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, []);
 
   // The archive hardcoded a USER_DEPOSIT constant to gate the $20,000
   // threshold; this account's real deposit is the most recent portfolio
@@ -46,59 +59,41 @@ export function CopyTradingPage() {
       .catch(() => setDepositUsd(0));
   }, []);
 
-  // Admins review this page without necessarily funding the account it
-  // runs under — don't make them stare at the $20,000 deposit gate to see
-  // what a real copier would see.
   useEffect(() => {
-    api
-      .getMe()
-      .then((me) => setIsAdmin(me.isAdmin))
-      .catch(() => {});
+    let disposed = false;
+    let loading = false;
+    let loadedDay = '';
+    async function refresh() {
+      if (loading) return;
+      loading = true;
+      try {
+        const next = await api.getNazarCopyTrading();
+        if (!disposed) {
+          loadedDay = next.simulation.simulatedAt.slice(0, 10);
+          setSynthetic(next);
+        }
+      } catch { /* Keep unavailable/last known state; never invent returns. */ }
+      finally { loading = false; }
+    }
+    void refresh();
+    // The normal backend appends the canonical UTC history without replacing
+    // older sessions. Refresh across midnight and when the owner returns.
+    const timer = window.setInterval(() => {
+      if (loadedDay !== new Date().toISOString().slice(0, 10)) void refresh();
+    }, 60_000);
+    const onFocus = () => { void refresh(); };
+    window.addEventListener('focus', onFocus);
+    return () => { disposed = true; window.clearInterval(timer); window.removeEventListener('focus', onFocus); };
   }, []);
 
-  useEffect(() => {
-    api.getSyntheticCopyTrading().then(setSynthetic).catch(() => {});
-  }, []);
+  const liveNazara = useMemo(() => ({
+    ...syntheticNazaraTrader(synthetic),
+    // This badge describes the bound owner's KYC, never modeled performance.
+    verified: identities.find(i => i.traderId === nazarTrader.id)?.verified ?? false,
+  }), [synthetic, identities]);
+  const liveKsenia = useMemo(() => ksenia ? kseniaTrader(ksenia, identities.find(i => i.traderId === KSENIA_TRADER_ID)) : undefined, [ksenia, identities]);
 
-  const liveNazara = useMemo<Trader>(() => {
-    if (!synthetic) return { ...nazarTrader, name: 'Nazara' };
-    const { analytics } = synthetic;
-    return {
-      ...nazarTrader,
-      name: synthetic.trader.name,
-      roi7: analytics.roi7,
-      roi30: analytics.roi30,
-      roi90: analytics.roi90,
-      roiAll: analytics.roiAll,
-      winRate: analytics.winRate,
-      drawdown: analytics.maximumDrawdown,
-      copiers: analytics.activeFollowers,
-      aum: analytics.aum,
-    };
-  }, [synthetic]);
-
-  const visibleTrader = selectedTrader.id === nazarTrader.id ? liveNazara : selectedTrader;
-
-  async function advanceSimulation(days: 1 | 7 | 30 | 90) {
-    setSimulationBusy(true);
-    try { setSynthetic(await api.advanceSyntheticCopyTrading(days)); }
-    catch (error) { toast.error(error instanceof Error ? error.message : 'Не удалось изменить синтетическое время'); }
-    finally { setSimulationBusy(false); }
-  }
-
-  async function resetSimulation() {
-    setSimulationBusy(true);
-    try { setSynthetic(await api.resetSyntheticCopyTrading()); }
-    catch (error) { toast.error(error instanceof Error ? error.message : 'Не удалось сбросить синтетическую историю'); }
-    finally { setSimulationBusy(false); }
-  }
-
-  async function returnToRealTime() {
-    setSimulationBusy(true);
-    try { setSynthetic(await api.setSyntheticCopyTradingMode('REAL_TIME')); }
-    catch (error) { toast.error(error instanceof Error ? error.message : 'Не удалось включить real-time режим'); }
-    finally { setSimulationBusy(false); }
-  }
+  const visibleTrader = selectedTrader.id === nazarTrader.id ? liveNazara : selectedTrader.id === KSENIA_TRADER_ID ? liveKsenia ?? selectedTrader : selectedTrader;
 
   function openProfile(trader: Trader) {
     setSelectedTrader(trader);
@@ -118,24 +113,11 @@ export function CopyTradingPage() {
       <Nav active="/copy-trading" />
       <div className="app">
         <div className="content-wrap">
-          {isAdmin && synthetic && (
-            <aside className="synthetic-admin" aria-label="Внутреннее управление синтетическим временем">
-              <div>
-                <strong>INTERNAL · Synthetic Copy Trading</strong>
-                <span>{synthetic.simulation.mode} · seed {synthetic.simulation.seed} · {new Date(synthetic.simulation.simulatedAt).toLocaleDateString('ru-RU')}</span>
-              </div>
-              <div className="synthetic-admin-actions">
-                {([1, 7, 30, 90] as const).map((days) => <button key={days} disabled={simulationBusy} onClick={() => advanceSimulation(days)}>+{days}Д</button>)}
-                <button disabled={simulationBusy || synthetic.simulation.mode === 'REAL_TIME'} onClick={returnToRealTime}>Real-time</button>
-                <button disabled={simulationBusy} onClick={resetSimulation}>Сброс</button>
-              </div>
-            </aside>
-          )}
-          <CopyEligibilityProvider depositUsd={depositUsd} isAdmin={isAdmin}>
-            <FeaturedAvatarProvider>
+          <CopyEligibilityProvider depositUsd={depositUsd}>
+            <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
-                ? <Marketplace onOpen={openProfile} nazara={liveNazara} synthetic={synthetic} />
-                : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={synthetic} />}
+                ? <Marketplace onOpen={openProfile} nazara={liveNazara} synthetic={synthetic} ksenia={liveKsenia} kseniaSynthetic={ksenia} />
+                : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
           </CopyEligibilityProvider>
         </div>

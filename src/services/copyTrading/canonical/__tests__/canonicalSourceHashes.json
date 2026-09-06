@@ -1,0 +1,16 @@
+{
+  "analytics.ts": "b7a22ece17b65f07cf3bf1bb194e0e38b2069060d14e5bfbeb32cc30bcd4713f",
+  "kseniaReview.ts": "4c59579e22f46d684fe314c315a82f553313dbc13f254ac7b3765efe709b8700",
+  "reviewEconomics.ts": "458b90d1286aa6cbf81e9f7f977827721f604fba5d50d00a4e9deffb425ebcd4",
+  "reviewEconomicsConfig.ts": "37846d9618ef7a7852aac675dfd34a22af3017fee1a32f2ef5b713b4acf40ee0",
+  "reviewEconomicsTypes.ts": "86dd4440a81e7efb7fbd59c88c6c6c27fbfb1eda5b3a9c7f889fcde08d453a5a",
+  "reviewFollowerLedger.ts": "2d3716dbd2d5bd31cae9436b195c5da83dc170ffc94fc2ac64590ef1524e01a3",
+  "reviewMasterLedger.ts": "7027ced62f9ba777563d812c0781f62f876a179a8b2f0be5dab0a919694a598f",
+  "reviewPerformanceV8.ts": "2664b5ca4ddf4b8f07e25a2df0c6879d0740b881c87d7a0a406b27c3b29e0795",
+  "reviewPerformanceV8Config.ts": "786299d67ac12ba8ab2a43b3c08b9ef965199aaa7fb575f18085f7bad2572202",
+  "reviewReconciliationReport.ts": "ab66d2a32d2972c984caf77d6db42edccb7be445f06c2310306e732e83a1bfad",
+  "reviewSyntheticHistory.ts": "2bf46db76aee844b5d4d3330591415a54216e9a25e3378fceeaced90b527f308",
+  "syntheticConfig.ts": "414f5a30dd0509c057d728b9ff6f57800b6be89efb7b8909a368e68165015c1a",
+  "SyntheticCopyTradingEngine.ts": "b7a0696a5aa01719c02ed45566caa2e8492298d1932eb190be8219c73068acc9",
+  "types.ts": "e48b5e8ba45f953dc71d50fdf47929a39ab83f608c0d5f53e7a81c5e29bf2785"
+}

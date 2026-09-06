@@ -20,6 +20,7 @@ datasource db {
 }
 
 model User {
+  copyStrategyOwnerships CopyStrategyOwner[]
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
@@ -810,4 +811,28 @@ model SyntheticCopyTradingState {
   state       Json
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Public strategy identity only. The optional same-environment User relation
+/// supplies the profile photo/KYC state; it never links performance to money.
+model CopyStrategyOwner {
+  traderId String @id
+  publicName String
+  ownerUserId String?
+  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  premium Boolean @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+/// Approved pre-launch modeled histories, isolated from all account/financial
+/// tables and from the older admin-managed SyntheticCopyTradingState. JSON is
+/// TEXT intentionally: PostgreSQL/Prisma must preserve every numeric token.
+/// revision provides compare-and-swap protection for multi-instance appends.
+model CopyPerformanceScenario {
+  id String @id
+  revision Int @default(0)
+  stateText String @db.Text
+  simulatedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { api } from '../../lib/api';
+import { createContext, useContext } from 'react';
 
 // The featured strategy leader's real photo, fetched once for the page and
 // read wherever that trader's avatar is drawn (marketplace card, grid card,
@@ -12,17 +11,10 @@ import { api } from '../../lib/api';
 
 const FeaturedAvatarContext = createContext<string | null>(null);
 
-export function FeaturedAvatarProvider({ children }: { children: React.ReactNode }) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    api
-      .getFeaturedTraderAvatar()
-      .then((res) => setAvatarUrl(res.avatarUrl))
-      .catch(() => {});
-  }, []);
-
-  return <FeaturedAvatarContext.Provider value={avatarUrl}>{children}</FeaturedAvatarContext.Provider>;
+export function FeaturedAvatarProvider({ children, ownerAvatar }: { children: React.ReactNode; ownerAvatar: string | null }) {
+  // Only the explicit strategy-owner identity is eligible. Never fall back to
+  // the viewer or the legacy oldest-admin endpoint while this read is pending.
+  return <FeaturedAvatarContext.Provider value={ownerAvatar}>{children}</FeaturedAvatarContext.Provider>;
 }
 
 export function useFeaturedAvatar(): string | null {
