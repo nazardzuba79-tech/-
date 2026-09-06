@@ -57,7 +57,10 @@ export function TradePage() {
     const next = searchParams.get('pair');
     if (next && PAIR_PATTERN.test(next)) setPair(next);
   }, [searchParams]);
-  const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
+  const [book, setBook] = useState<{ pair: string; bids: any[]; asks: any[] }>({ pair, bids: [], asks: [] });
+  // Effects run after render: never expose the previous instrument's depth
+  // during that first new-pair render or initialize grouping from its prices.
+  const visibleBook = book.pair === pair ? book : { bids: [], asks: [] };
   const [bottomTab, setBottomTab] = useState<BottomTab>('open');
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Reference chrome: the tab badge and the Cancel All action both need the
@@ -69,6 +72,13 @@ export function TradePage() {
   const [marketPanelWidth, setMarketPanelWidth] = useState(258);
   const [marketPanelCollapsed, setMarketPanelCollapsed] = useState(false);
   const [orderBookCollapsed, setOrderBookCollapsed] = useState(false);
+  const [ordersHeight, setOrdersHeight] = useState(172);
+  const bookPairRef = useRef(pair);
+  const bookGenerationRef = useRef(0);
+  const bookRequestRef = useRef(0);
+  const bookWsVersionRef = useRef(0);
+  const bookPendingRef = useRef<{ generation: number; request: number } | null>(null);
+  bookPairRef.current = pair;
   const marketResizeStart = useRef({ x: 0, width: 258 });
   // Deep-linked from the nav's Trading hover dropdown (?market=cfd) — see
   // Nav.tsx's TradeMenu. TradePage stays mounted across a /trade <-> /trade?market=cfd
@@ -104,10 +114,27 @@ export function TradePage() {
   // look — actual order matching always happens on our own internal book
   // (see OrderForm), this is display only.
   const refreshBook = useCallback(() => {
+    if (bookPairRef.current !== pair) return;
+    const generation = bookGenerationRef.current;
+    // A slow fallback must finish instead of being invalidated by every 2s
+    // poll. A new pair/generation can still start immediately while its old
+    // request settles; that old promise may not unlock the newer request.
+    if (bookPendingRef.current?.generation === generation) return;
+    const request = ++bookRequestRef.current;
+    const pending = { generation, request };
+    bookPendingRef.current = pending;
+    const wsVersion = bookWsVersionRef.current;
     api
       .getExternalOrderBook(pair)
-      .then((res) => setBook({ bids: res.bids, asks: res.asks }))
-      .catch(() => {});
+      .then((res) => {
+        if (bookPairRef.current === pair && generation === bookGenerationRef.current && request === bookRequestRef.current && wsVersion === bookWsVersionRef.current) {
+          setBook({ pair, bids: res.bids, asks: res.asks });
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (bookPendingRef.current === pending) bookPendingRef.current = null;
+      });
   }, [pair]);
 
   // Primary source is Kraken's WebSocket for real live updates (see
@@ -115,27 +142,29 @@ export function TradePage() {
   // seconds — connection blocked, schema drift, whatever — fall back to
   // the old 2s REST poll instead of leaving the book frozen.
   useEffect(() => {
-    let gotWsData = false;
-    let restInterval: number | null = null;
+    const generation = ++bookGenerationRef.current;
+    setBook({ pair, bids: [], asks: [] });
+    setPickedPrice(null);
+    let lastWsData = 0;
 
     const unsubscribe = krakenSocket.subscribeBook(pair, (snapshot) => {
-      gotWsData = true;
-      if (restInterval !== null) {
-        clearInterval(restInterval);
-        restInterval = null;
-      }
-      setBook(snapshot);
+      if (bookPairRef.current !== pair || generation !== bookGenerationRef.current) return;
+      lastWsData = Date.now();
+      bookWsVersionRef.current += 1;
+      setBook({ pair, bids: snapshot.bids, asks: snapshot.asks });
     });
 
     refreshBook();
-    const fallbackTimer = window.setTimeout(() => {
-      if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
-    }, WS_FALLBACK_TIMEOUT_MS);
+    // Re-enter REST fallback after a later WS interruption as well as on
+    // initial connection failure. Never let delayed REST overwrite newer WS.
+    const fallbackTimer = window.setInterval(() => {
+      if (Date.now() - lastWsData >= WS_FALLBACK_TIMEOUT_MS) refreshBook();
+    }, 2000);
 
     return () => {
       unsubscribe();
-      clearTimeout(fallbackTimer);
-      if (restInterval !== null) clearInterval(restInterval);
+      bookGenerationRef.current += 1;
+      clearInterval(fallbackTimer);
     };
   }, [pair, refreshBook]);
 
@@ -156,10 +185,31 @@ export function TradePage() {
     function stop() {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
     }
 
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  }
+
+  function resizeOrders(delta: number) {
+    setOrdersHeight(height => Math.min(360, Math.max(136, height + delta)));
+  }
+
+  function startOrdersResize(event: React.PointerEvent<HTMLDivElement>) {
+    const startY = event.clientY;
+    const startHeight = ordersHeight;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const move = (e: PointerEvent) => setOrdersHeight(Math.min(360, Math.max(136, startHeight + startY - e.clientY)));
+    const stop = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
   }
 
   // Spot renders the ported terminal; CFD keeps the page's previous layout,
@@ -202,12 +252,19 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal">
+    <div className="trade-terminal spot-terminal">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
       <div className="terminal">
-        <TickerBar pair={pair} onSelectPair={() => pairListRef.current?.focusSearch()} />
+        <TickerBar key={pair} pair={pair} spotPrecision onSelectPair={() => {
+          setMarketPanelCollapsed(false);
+          requestAnimationFrame(() => pairListRef.current?.focusSearch());
+        }} />
+        {(marketPanelCollapsed || orderBookCollapsed) && <div className="terminal-panel-restores" aria-label="Панели терминала">
+          {marketPanelCollapsed && <button onClick={() => setMarketPanelCollapsed(false)} aria-label="Открыть рынки"><PanelLeftOpen size={16} />Рынки</button>}
+          {orderBookCollapsed && <button onClick={() => setOrderBookCollapsed(false)} aria-label="Открыть стакан"><PanelRightOpen size={16} />Стакан</button>}
+        </div>}
 
         {/* Left to right: search/pair list, chart, order book, order-entry
             form — the reference had the form under the chart and the pair
@@ -225,43 +282,43 @@ export function TradePage() {
               onChange={setPair}
               onCollapse={() => setMarketPanelCollapsed(true)}
               onResizeStart={handleMarketResizeStart}
+              onResizeBy={(delta) => setMarketPanelWidth(width => Math.min(340, Math.max(240, width + delta)))}
+              marketWidth={marketPanelWidth}
             />
           </div>
-          {marketPanelCollapsed && (
-            <button className="restore-market-panel" onClick={() => setMarketPanelCollapsed(false)} title="Открыть рынки" aria-label="Открыть рынки">
-              <PanelLeftOpen size={17} />
-            </button>
-          )}
 
           <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" />
+            <PriceChart pair={pair} chrome="terminal" spotTools />
           </div>
 
           <div className="orderbook-area">
             <OrderBookPanel
-              bids={book.bids}
-              asks={book.asks}
+              bids={visibleBook.bids}
+              asks={visibleBook.asks}
               pair={pair}
-              onPickPrice={(value) => setPickedPrice((prev) => ({ value, seq: (prev?.seq ?? 0) + 1 }))}
+              spotPrecision
+              onPickPrice={(value) => setPickedPrice((prev) => ({ value, pair, seq: (prev?.seq ?? 0) + 1 }))}
               onCollapse={() => setOrderBookCollapsed(true)}
             />
           </div>
-          {orderBookCollapsed && (
-            <button className="restore-orderbook" onClick={() => setOrderBookCollapsed(false)} title="Открыть стакан" aria-label="Открыть стакан">
-              <PanelRightOpen size={17} />
-            </button>
-          )}
 
           <div className="order-form-area">
-            <OrderForm pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} />
+            <OrderForm key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} refreshKey={ordersRefreshKey} />
           </div>
         </div>
 
-        <div className="bottom-panel">
-          <div className="bottom-tabs">
+        <div className="bottom-panel" style={{ '--orders-height': `${ordersHeight}px` } as React.CSSProperties}>
+          <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label="Высота панели ордеров" aria-orientation="horizontal" aria-valuemin={136} aria-valuemax={360} aria-valuenow={ordersHeight} onPointerDown={startOrdersResize} onKeyDown={event => {
+            if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeOrders(event.key === 'ArrowUp' ? 24 : -24); }
+          }} />
+          <div className="bottom-tabs" role="tablist" aria-label="Ордера и активы">
             {BOTTOM_TABS.map((tab) => (
               <button
                 key={tab.id}
+                role="tab"
+                id={`spot-tab-${tab.id}`}
+                aria-selected={bottomTab === tab.id}
+                aria-controls="spot-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
                 onClick={() => setBottomTab(tab.id)}
               >
@@ -279,12 +336,12 @@ export function TradePage() {
             )}
           </div>
 
-          <div className="bottom-content">
+          <div className="bottom-content" id="spot-bottom-content" role="tabpanel" aria-labelledby={`spot-tab-${bottomTab}`}>
             {bottomTab === 'open' && (
               <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} />
             )}
             {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
-            {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
+            {bottomTab === 'assets' && <AssetsPanel compact refreshKey={ordersRefreshKey} />}
           </div>
         </div>
       </div>

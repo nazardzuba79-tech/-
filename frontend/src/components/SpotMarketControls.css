@@ -1,0 +1,42 @@
+/* Keep the approved five-cell grid while giving selection/favourite their own
+   native keyboard buttons (no button nested inside a button). */
+.trade-terminal .pairs-section .pair-select {
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: 21px minmax(50px, 1fr) 60px 42px;
+  gap: 3px;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+@supports (grid-template-columns: subgrid) {
+  .trade-terminal .pairs-section .pair-select { grid-template-columns: subgrid; }
+}
+.trade-terminal .pairs-section button.p-star { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.trade-terminal .pairs-section .pair-select:focus-visible,
+.trade-terminal .pairs-section button.p-star:focus-visible,
+.trade-terminal .pairs-resize-handle[role="separator"]:focus-visible,
+.trade-terminal .ob-row[role="button"]:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 2px; }
+
+/* Tiny-token prices and large quantities must not run into each other in the
+   existing 220px Spot book. Full unchanged values remain available on hover. */
+.trade-terminal .ob-row.ob-row--spot { gap: 6px; }
+.trade-terminal .ob-row.ob-row--spot .cell {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trade-terminal .ob-row.ob-row--spot .cell.bid-price,
+.trade-terminal .ob-row.ob-row--spot .cell.ask-price {
+  flex: 0 0 auto;
+  max-width: 55%;
+}

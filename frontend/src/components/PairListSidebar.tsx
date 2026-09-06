@@ -4,9 +4,10 @@ import { useLanguage } from '../lib/i18n';
 import { QUOTE_PRIORITY, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { useFavorites } from '../lib/useFavorites';
 import { parseChangePercent } from '../lib/priceChange';
-import { formatPrice } from '../lib/formatNumber';
+import { formatSpotBookNumber } from '../lib/spotOrderBook';
 import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
+import './SpotMarketControls.css';
 
 // Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
 // ENA, …) that the static jsDelivr icon set CryptoIcon falls back to has
@@ -78,9 +79,11 @@ export const PairListSidebar = forwardRef<
     onChange: (pair: string) => void;
     onCollapse?: () => void;
     onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
+    onResizeBy?: (delta: number) => void;
+    marketWidth?: number;
   }
 >(
-  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart }, ref) {
+  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart, onResizeBy, marketWidth }, ref) {
     const { t } = useLanguage();
     const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
@@ -108,14 +111,20 @@ export const PairListSidebar = forwardRef<
     // True once the ticker feed has returned a non-empty list at least
     // once — see loadTickers below.
     const hasLoadedTickersRef = useRef(false);
+    const requestSequence = useRef(0);
+    const requestPending = useRef(false);
 
     useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
 
     function loadTickers() {
+      if (requestPending.current) return;
+      requestPending.current = true;
+      const sequence = ++requestSequence.current;
       setLoadError(false);
       api
         .getExternalTickers()
         .then((res) => {
+          if (sequence !== requestSequence.current) return;
           if (res.tickers.length === 0) {
             // The feed can come back with an empty array instead of throwing
             // (a real backend hiccup, not a thrown error). Before any real
@@ -138,13 +147,14 @@ export const PairListSidebar = forwardRef<
             lastSnapshotAtRef.current = now;
           }
         })
-        .catch(() => setLoadError(true));
+        .catch(() => { if (sequence === requestSequence.current) setLoadError(true); })
+        .finally(() => { if (sequence === requestSequence.current) requestPending.current = false; });
     }
 
     useEffect(() => {
       loadTickers();
       const poll = window.setInterval(loadTickers, 4000);
-      return () => window.clearInterval(poll);
+      return () => { window.clearInterval(poll); requestSequence.current += 1; requestPending.current = false; };
     }, []);
 
     useEffect(() => {
@@ -200,6 +210,7 @@ export const PairListSidebar = forwardRef<
       categoryFilter: null,
       sortField,
       sortDir,
+      stableSort: true,
     });
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
@@ -225,6 +236,7 @@ export const PairListSidebar = forwardRef<
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('trade.searchPairPlaceholder')}
+            aria-label={t('trade.searchPairPlaceholder')}
           />
           <kbd>/</kbd>
         </div>
@@ -232,6 +244,7 @@ export const PairListSidebar = forwardRef<
         <div className="pairs-tabs">
           <button
             className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
+            aria-pressed={favoritesOnly}
             onClick={() => setFavoritesOnly((v) => !v)}
           >
             <Star size={12} fill={favoritesOnly ? 'currentColor' : 'none'} /> {t('trade.favorites')}
@@ -240,6 +253,7 @@ export const PairListSidebar = forwardRef<
             <button
               key={q}
               className={`pairs-tab ${!favoritesOnly && effectiveQuoteFilter === q ? 'active' : ''}`}
+              aria-pressed={!favoritesOnly && effectiveQuoteFilter === q}
               onClick={() => {
                 setFavoritesOnly(false);
                 setQuoteFilter(q);
@@ -251,16 +265,16 @@ export const PairListSidebar = forwardRef<
         </div>
 
         <div className="pairs-sort">
-          <button type="button" onClick={() => toggleSort('volume')}>
+          <button type="button" data-sort-field="volume" data-sort-dir={sortField === 'volume' ? sortDir : undefined} aria-pressed={sortField === 'volume'} onClick={() => toggleSort('volume')}>
             {t('trade.volume24h')} <SortArrow active={sortField === 'volume'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('price')}>
+          <button type="button" data-sort-field="price" data-sort-dir={sortField === 'price' ? sortDir : undefined} aria-pressed={sortField === 'price'} onClick={() => toggleSort('price')}>
             {t('trade.price')} <SortArrow active={sortField === 'price'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('change')}>
+          <button type="button" data-sort-field="change" data-sort-dir={sortField === 'change' ? sortDir : undefined} aria-pressed={sortField === 'change'} onClick={() => toggleSort('change')}>
             {t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('symbol')} title="Символ A–Z">
+          <button type="button" data-sort-field="symbol" data-sort-dir={sortField === 'symbol' ? sortDir : undefined} aria-pressed={sortField === 'symbol'} onClick={() => toggleSort('symbol')} title="Символ A–Z">
             A–Z <SortArrow active={sortField === 'symbol'} dir={sortDir} />
           </button>
         </div>
@@ -273,23 +287,29 @@ export const PairListSidebar = forwardRef<
             const change = Number(parseChangePercent(tk.changePercent24h, tk.pair).toFixed(2));
             const up = change >= 0;
             return (
-              <button
+              <div
                 key={tk.pair}
+                data-pair={tk.pair}
+                role="group"
+                aria-label={tk.pair}
                 className={`pair-row ${tk.pair === pair ? 'active' : ''}`}
-                onClick={() => onChange(tk.pair)}
               >
                 {/* Five sibling grid cells, matching the reference's
                     .market-row template (star | logo | pair | price |
                     change) — nesting the first three inside one flex cell
                     made the pair column's width depend on the icon's own
                     layout instead of on the grid. */}
-                <span
+                <button
+                  type="button"
                   className={`p-star${favorites.has(tk.pair) ? ' on' : ''}`}
                   onClick={(e) => toggleFavorite(tk.pair, e)}
                   title={t('trade.favorites')}
+                  aria-label={`${t('trade.favorites')}: ${tk.pair}`}
+                  aria-pressed={favorites.has(tk.pair)}
                 >
                   <Star size={12} fill={favorites.has(tk.pair) ? 'currentColor' : 'none'} />
-                </span>
+                </button>
+                <button type="button" className="pair-select" aria-label={tk.pair} aria-pressed={tk.pair === pair} onClick={() => onChange(tk.pair)}>
                 <span className="p-icon">
                   <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
                 </span>
@@ -297,12 +317,13 @@ export const PairListSidebar = forwardRef<
                   <b className="p-base">{tk.pair.split('/')[0]}</b>
                   <span className="p-quote">/{tk.pair.split('/')[1]}</span>
                 </span>
-                <span className="p-price">{formatPrice(parseFloat(tk.lastPrice))}</span>
+                <span className="p-price">{formatSpotBookNumber(parseFloat(tk.lastPrice))}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
                   {up ? '▲' : '▼'} {up ? '+' : ''}
                   {change.toFixed(2)}%
                 </span>
-              </button>
+                </button>
+              </div>
             );
           })}
 
@@ -314,8 +335,13 @@ export const PairListSidebar = forwardRef<
           {tickers.length > 0 && filtered.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         </div>
 
-        {onResizeStart && (
-          <div className="pairs-resize-handle" onPointerDown={onResizeStart} aria-hidden="true">
+        {(onResizeStart || onResizeBy) && (
+          <div className="pairs-resize-handle" onPointerDown={onResizeStart}
+            role={onResizeBy ? 'separator' : undefined} tabIndex={onResizeBy ? 0 : undefined}
+            aria-hidden={onResizeBy ? undefined : true} aria-label={onResizeBy ? t('nav.markets') : undefined}
+            aria-orientation={onResizeBy ? 'vertical' : undefined}
+            aria-valuemin={onResizeBy ? 240 : undefined} aria-valuemax={onResizeBy ? 340 : undefined} aria-valuenow={onResizeBy ? marketWidth : undefined}
+            onKeyDown={event => { if (onResizeBy && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) { event.preventDefault(); onResizeBy(event.key === 'ArrowLeft' ? -10 : 10); } }}>
             <GripVertical size={14} />
           </div>
         )}

@@ -1,9 +1,12 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
+import { formatSpotBookNumber } from '../lib/spotOrderBook';
 import { useToast } from '../lib/toast';
 import { parseChangePercent } from '../lib/priceChange';
+import { positiveOrderNumber, orderFundingPrice, balancePercentageQuantity } from '../lib/spotOrderEntry';
+import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedback';
 
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
@@ -15,6 +18,7 @@ type Execution = 'LIMIT' | 'MARKET';
 
 export interface PickedPrice {
   value: string;
+  pair?: string;
   /** Bumped on every pick so clicking the same level twice still applies. */
   seq: number;
 }
@@ -23,10 +27,12 @@ export function OrderForm({
   pair,
   onPlaced,
   pickedPrice,
+  refreshKey = 0,
 }: {
   pair: string;
   onPlaced: () => void;
   pickedPrice?: PickedPrice | null;
+  refreshKey?: number;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -55,6 +61,10 @@ export function OrderForm({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
+  const [balanceReady, setBalanceReady] = useState(false);
+  const [balanceError, setBalanceError] = useState(false);
+  const [balanceVersion, setBalanceVersion] = useState(0);
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
   const type: 'LIMIT' | 'MARKET' | 'STOP_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_LIMIT' | 'TAKE_PROFIT_MARKET' =
@@ -75,22 +85,35 @@ export function OrderForm({
   // a limit price, so the form switches to LIMIT rather than silently
   // setting a field the active order type would ignore.
   useEffect(() => {
-    if (!pickedPrice) return;
+    if (!pickedPrice || (pickedPrice.pair && pickedPrice.pair !== pair)) return;
     setPrice(pickedPrice.value);
     setFamily('LIMIT');
     setExecution('LIMIT');
-  }, [pickedPrice]);
+  }, [pickedPrice, pair]);
 
   useEffect(() => {
-    api
+    let cancelled = false;
+    let pending = false;
+    async function load() {
+      if (pending) return;
+      pending = true;
+      await api
       .getBalances()
       .then((balances) => {
+        if (cancelled) return;
         const base = balances.find((b) => b.asset === baseAsset);
         const quote = balances.find((b) => b.asset === quoteAsset);
         setAvailable({ base: base ? parseFloat(base.available) : 0, quote: quote ? parseFloat(quote.available) : 0 });
+        setBalanceReady(true);
+        setBalanceError(false);
       })
-      .catch(() => {});
-  }, [baseAsset, quoteAsset, side]);
+      .catch(() => { if (!cancelled) setBalanceError(true); })
+      .finally(() => { pending = false; });
+    }
+    void load();
+    const timer = window.setInterval(load, 4000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion]);
 
   // A live reference price is needed for more than just MARKET orders now:
   // the % slider/total estimate for conditional orders, and the inline
@@ -103,7 +126,7 @@ export function OrderForm({
         .getExternalTicker(pair)
         .then((res) => {
           if (cancelled) return;
-          setMarketPrice(parseFloat(res.ticker.lastPrice));
+          setMarketPrice(positiveOrderNumber(res.ticker.lastPrice));
           setMarketStats({
             changePercent24h: parseChangePercent(res.ticker.changePercent24h, pair),
             high24h: parseFloat(res.ticker.high24h),
@@ -123,7 +146,8 @@ export function OrderForm({
   }, [pair]);
 
   const effectivePrice =
-    family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? parseFloat(price) || 0 : marketPrice ?? 0;
+    family === 'OCO' ? Math.max(Number(ocoTakeProfitPrice) || 0, Number(ocoStopLimitPrice) || 0) :
+    family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? positiveOrderNumber(price) ?? 0 : marketPrice ?? 0;
   const total = effectivePrice && quantity ? (effectivePrice * parseFloat(quantity)).toFixed(2) : '0.00';
   const feeAmount = (parseFloat(total) * FEE_RATE).toFixed(2);
 
@@ -131,12 +155,13 @@ export function OrderForm({
   // side of the trade — quote balance (e.g. USDT) for a buy, base balance
   // (e.g. BTC) for a sell — driven by real balances, not a fake number.
   function applyPercent(pct: number) {
+    if (!balanceReady || balanceError) return;
     setPercent(pct);
     if (side === 'BUY') {
-      if (!effectivePrice || effectivePrice <= 0) return;
-      setQuantity(((available.quote * (pct / 100)) / effectivePrice).toFixed(8));
+      const funding = orderFundingPrice(family, execution, price, triggerPrice, ocoTakeProfitPrice, ocoStopLimitPrice, marketPrice);
+      setQuantity(balancePercentageQuantity(available.quote, pct, funding));
     } else {
-      setQuantity((available.base * (pct / 100)).toFixed(8));
+      setQuantity(balancePercentageQuantity(available.base, pct));
     }
   }
 
@@ -162,9 +187,20 @@ export function OrderForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submittingRef.current) return;
     setError(null);
+    const requiredValues = [quantity, ...(family === 'OCO' ? [ocoTakeProfitPrice, ocoStopTriggerPrice, ocoStopLimitPrice] : [
+      ...(family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? [price] : []),
+      ...(isConditional ? [triggerPrice] : []),
+    ])];
+    if (requiredValues.some(value => positiveOrderNumber(value) === null)) {
+      setError(t('trade.positiveInputRequired'));
+      return;
+    }
+    submittingRef.current = true;
     setSubmitting(true);
     try {
+      let feedback: SpotOrderFeedback = { kind: 'placed' };
       if (family === 'OCO') {
         await api.placeOcoOrder({
           pair,
@@ -175,7 +211,7 @@ export function OrderForm({
           stopLimitPrice: ocoStopLimitPrice,
         });
       } else {
-        await api.placeOrder({
+        const result = await api.placeOrder({
           pair,
           side,
           type,
@@ -183,16 +219,30 @@ export function OrderForm({
           triggerPrice: isConditional ? triggerPrice : undefined,
           quantity,
         });
+        feedback = spotOrderFeedback(result);
       }
-      resetFields();
       onPlaced();
-      toast.success(t('trade.orderPlaced'));
+      setBalanceVersion(version => version + 1);
+      if (feedback.kind === 'cancelledEmpty') {
+        const message = t('trade.orderCancelledNoFill');
+        setError(message);
+        toast.error(message);
+      } else if (feedback.kind === 'cancelledPartial') {
+        resetFields();
+        toast.info(t('trade.orderPartiallyFilledCancelled', { filled: feedback.filled, remaining: feedback.remaining, asset: baseAsset }));
+      } else if (feedback.kind === 'unknown') {
+        toast.info(t('trade.orderStatusUnconfirmed'));
+      } else {
+        resetFields();
+        toast.success(t('trade.orderPlaced'));
+      }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : t('trade.placeOrderError');
       setError(message);
       toast.error(message);
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   }
 
@@ -216,7 +266,7 @@ export function OrderForm({
   function applyTotal(value: string) {
     const totalValue = parseFloat(value) || 0;
     if (!effectivePrice || effectivePrice <= 0) return;
-    setQuantity((totalValue / effectivePrice).toFixed(8));
+    setQuantity(balancePercentageQuantity(totalValue, 100, effectivePrice));
     setPercent(0);
   }
 
@@ -230,14 +280,16 @@ export function OrderForm({
         <button
           type="button"
           className={`order-form-tab buy ${side === 'BUY' ? 'active' : ''}`}
-          onClick={() => setSide('BUY')}
+          aria-pressed={side === 'BUY'}
+          onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}
         >
           {t('trade.buy')} {baseAsset}
         </button>
         <button
           type="button"
           className={`order-form-tab sell ${side === 'SELL' ? 'active' : ''}`}
-          onClick={() => setSide('SELL')}
+          aria-pressed={side === 'SELL'}
+          onClick={() => { setSide('SELL'); setPercent(0); setError(null); }}
         >
           {t('trade.sell')} {baseAsset}
         </button>
@@ -249,7 +301,8 @@ export function OrderForm({
             key={f.id}
             type="button"
             className={`order-type-tab ${family === f.id ? 'active' : ''}`}
-            onClick={() => setFamily(f.id)}
+            aria-pressed={family === f.id}
+            onClick={() => { setFamily(f.id); setPercent(0); setError(null); }}
           >
             {f.label}
           </button>
@@ -266,6 +319,7 @@ export function OrderForm({
             <button
               type="button"
               className={`order-type-tab ${execution === 'LIMIT' ? 'active' : ''}`}
+              aria-pressed={execution === 'LIMIT'}
               onClick={() => setExecution('LIMIT')}
             >
               {t('trade.limitOrder')}
@@ -273,6 +327,7 @@ export function OrderForm({
             <button
               type="button"
               className={`order-type-tab ${execution === 'MARKET' ? 'active' : ''}`}
+              aria-pressed={execution === 'MARKET'}
               onClick={() => setExecution('MARKET')}
             >
               {t('trade.marketOrder')}
@@ -285,7 +340,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.takeProfitPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoTakeProfitPrice} onChange={(e) => setOcoTakeProfitPrice(e.target.value)} placeholder="0.00" />
+                <input aria-label={t('trade.takeProfitPrice')} type="number" step="any" required value={ocoTakeProfitPrice} onChange={(e) => setOcoTakeProfitPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
               {triggerHint('TAKE_PROFIT') && <div className="form-label"><span>{triggerHint('TAKE_PROFIT')}</span></div>}
@@ -293,7 +348,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.stopTriggerPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
+                <input aria-label={t('trade.stopTriggerPrice')} type="number" step="any" required value={ocoStopTriggerPrice} onChange={(e) => setOcoStopTriggerPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
               {triggerHint('STOP') && <div className="form-label"><span>{triggerHint('STOP')}</span></div>}
@@ -301,7 +356,7 @@ export function OrderForm({
             <div className="form-group">
               <div className="form-label"><span>{t('trade.stopLimitPrice')}</span></div>
               <div className="input-group">
-                <input type="number" step="any" required value={ocoStopLimitPrice} onChange={(e) => setOcoStopLimitPrice(e.target.value)} placeholder="0.00" />
+                <input aria-label={t('trade.stopLimitPrice')} type="number" step="any" required value={ocoStopLimitPrice} onChange={(e) => setOcoStopLimitPrice(e.target.value)} placeholder="0.00" />
                 <span className="input-suffix">{quoteAsset}</span>
               </div>
             </div>
@@ -314,7 +369,7 @@ export function OrderForm({
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.triggerPrice')}</span></div>
                 <div className="input-group">
-                  <input type="number" step="any" required value={triggerPrice} onChange={(e) => setTriggerPrice(e.target.value)} placeholder="0.00" />
+                  <input aria-label={t('trade.triggerPrice')} type="number" step="any" required value={triggerPrice} onChange={(e) => setTriggerPrice(e.target.value)} placeholder="0.00" />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
                 {triggerHint(family === 'STOP' ? 'STOP' : 'TAKE_PROFIT') && (
@@ -334,7 +389,7 @@ export function OrderForm({
                   )}
                 </div>
                 <div className="input-group">
-                  <input type="number" step="any" required value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+                  <input aria-label={t('trade.price')} type="number" step="any" required value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
               </div>
@@ -344,7 +399,7 @@ export function OrderForm({
               <div className="form-group">
                 <div className="form-label"><span>{t('trade.price')}</span></div>
                 <div className="input-group">
-                  <input readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
+                  <input aria-label={t('trade.price')} readOnly value={marketPrice !== null ? `≈ ${marketPrice}` : t('trade.loading')} />
                   <span className="input-suffix">{quoteAsset}</span>
                 </div>
               </div>
@@ -356,6 +411,7 @@ export function OrderForm({
           <div className="form-label"><span>{t('trade.quantity')}</span></div>
           <div className="input-group">
             <input
+              aria-label={t('trade.quantity')}
               type="number"
               step="any"
               required
@@ -373,7 +429,7 @@ export function OrderForm({
         <div className="form-group">
           <div className="form-label"><span>{t('trade.total')}</span></div>
           <div className="input-group">
-            <input type="number" step="any" value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
+            <input aria-label={t('trade.total')} type="number" step="any" value={total === '0.00' ? '' : total} onChange={(e) => applyTotal(e.target.value)} placeholder="0.00" />
             <span className="input-suffix">{quoteAsset}</span>
           </div>
         </div>
@@ -385,6 +441,9 @@ export function OrderForm({
                 key={step}
                 type="button"
                 data-label={`${step}%`}
+                aria-label={`${step}%`}
+                aria-pressed={percent === step}
+                disabled={!balanceReady || balanceError}
                 className={`slider-step ${percent >= step ? 'active' : ''} ${sideClass}`}
                 onClick={() => applyPercent(SLIDER_STEPS[idx])}
               />
@@ -401,7 +460,7 @@ export function OrderForm({
           <div className="available-balance">
             <span>{t('trade.available')}</span>
             <span className="amount">
-              {(side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6)}{' '}
+              {balanceReady ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6) : '—'}{' '}
               {side === 'BUY' ? quoteAsset : baseAsset}
             </span>
           </div>
@@ -414,8 +473,9 @@ export function OrderForm({
           </div>
         </div>
 
+        {balanceError && <div className="order-entry-error" role="status">{t('trade.loadAssetsError')} <button type="button" onClick={() => setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button></div>}
         {error && (
-          <div className="available-balance" style={{ color: 'var(--color-sell)' }}>
+          <div role="alert" className="available-balance" style={{ color: 'var(--color-sell)' }}>
             <span style={{ color: 'inherit' }}>{error}</span>
           </div>
         )}
@@ -436,7 +496,7 @@ export function OrderForm({
           <div className="info-row">
             <span className="info-label">{t('trade.lastPrice')}</span>
             <span className="info-value">
-              {marketPrice !== null ? formatPrice(marketPrice) : '—'}
+              {marketPrice !== null ? formatSpotBookNumber(marketPrice) : '—'}
             </span>
           </div>
           <div className="info-row">
@@ -450,13 +510,13 @@ export function OrderForm({
           <div className="info-row">
             <span className="info-label">{t('trade.high24h')}</span>
             <span className="info-value">
-              {marketStats ? formatPrice(marketStats.high24h) : '—'}
+              {marketStats ? formatSpotBookNumber(marketStats.high24h) : '—'}
             </span>
           </div>
           <div className="info-row">
             <span className="info-label">{t('trade.low24h')}</span>
             <span className="info-value">
-              {marketStats ? formatPrice(marketStats.low24h) : '—'}
+              {marketStats ? formatSpotBookNumber(marketStats.low24h) : '—'}
             </span>
           </div>
           <div className="info-row">

@@ -1139,3 +1139,61 @@
 @media (max-width: 900px) {
   .trade-terminal { padding-bottom: 64px; }
 }
+
+/* Final Spot-only reconciliation. Keep the approved panel split and live
+   controls; restore buttons live in their own row, never over candles. */
+.trade-terminal.spot-terminal { height: calc(100dvh - var(--prelaunch-notice-height, 0px)); }
+.trade-terminal.spot-terminal .terminal-panel-restores {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  min-height: 32px; padding: 4px 10px; background: var(--toolbar-bg);
+  border-bottom: 1px solid var(--layer-border);
+}
+.trade-terminal.spot-terminal .terminal-panel-restores button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px;
+  background: #1e2936; border: 1px solid #354354; border-radius: 4px;
+  color: #cad5e0; font-size: 11px; cursor: pointer;
+}
+.trade-terminal.spot-terminal .terminal-panel-restores button:hover { color: #f1cd67; background: #293445; }
+.trade-terminal.spot-terminal .chart-toolbar { flex-wrap: wrap; gap: 3px 6px; padding: 5px 8px; }
+.trade-terminal.spot-terminal .chart-tools { max-width: 100%; overflow-x: auto; }
+.trade-terminal.spot-terminal .chart-tabs { flex-shrink: 0; }
+.trade-terminal.spot-terminal .order-type-tabs { height: auto; min-height: 43px; flex-shrink: 0; flex-wrap: wrap; gap: 0 10px; }
+.trade-terminal.spot-terminal .order-type-tab { flex: 0 0 auto; min-width: 0; min-height: 36px; white-space: nowrap; font-size: 10px; padding-inline: 2px; }
+.trade-terminal.spot-terminal .order-entry-error { font-size: 11px; color: var(--color-sell); padding-block: 5px; }
+.trade-terminal.spot-terminal .order-entry-error button { background: none; border: 0; color: inherit; padding: 4px; cursor: pointer; text-decoration: underline; }
+.trade-terminal.spot-terminal .slider-step:focus-visible,
+.trade-terminal.spot-terminal .terminal-panel-restores button:focus-visible,
+.trade-terminal.spot-terminal .bottom-tab:focus-visible { outline: 2px solid #98bbde; outline-offset: -2px; }
+.trade-terminal.spot-terminal .slider-step:disabled { opacity: .4; cursor: not-allowed; }
+.trade-terminal.spot-terminal .bottom-panel { position: relative; height: var(--orders-height, 172px); }
+.trade-terminal.spot-terminal .bottom-content { min-width: 0; min-height: 0; }
+.trade-terminal.spot-terminal .orders-resize-handle { position: absolute; top: -4px; left: 0; right: 0; height: 7px; z-index: 9; cursor: row-resize; touch-action: none; }
+.trade-terminal.spot-terminal .orders-resize-handle:hover,
+.trade-terminal.spot-terminal .orders-resize-handle:focus-visible { background: #7d9ab144; outline: none; }
+.trade-terminal.spot-terminal .pairs-resize-handle { touch-action: none; }
+.trade-terminal.spot-terminal .bottom-tab { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; white-space: nowrap; }
+.trade-terminal.spot-terminal .bottom-tab .badge { flex: 0 0 auto; margin: 0; line-height: 1; }
+.trade-terminal.spot-terminal .bottom-tab .badge::before { display: none; content: none; }
+.trade-terminal.spot-terminal .bottom-tabs { min-width: 0; overflow-x: auto; gap: 22px; padding-inline: 16px; }
+.trade-terminal.spot-terminal .bottom-actions { flex-shrink: 0; }
+@media (min-width: 768px) {
+  .trade-terminal.spot-terminal .spot-drawing-tools > .chart-view { flex-direction: row; }
+  .trade-terminal.spot-terminal .spot-drawing-tools .spot-drawing-rail { flex-direction: column; height: auto; border-bottom: 0; }
+}
+@media (max-width: 1024px) {
+  .trade-terminal.spot-terminal { height: auto; }
+  .trade-terminal.spot-terminal .chart-area { height: 460px; flex-shrink: 0; }
+  .trade-terminal.spot-terminal .bottom-panel { height: var(--orders-height, 172px); min-height: 172px; }
+  .trade-terminal.spot-terminal .order-form-area { max-width: 100%; }
+  .trade-terminal.spot-terminal .orders-resize-handle { display: none; }
+}
+@media (max-width: 767px) {
+  .trade-terminal.spot-terminal .chart-area { height: 440px; }
+  .trade-terminal.spot-terminal .ticker-bar { gap: 12px 18px; }
+  .trade-terminal.spot-terminal .bottom-tabs { gap: 18px; padding-inline: 12px; }
+  .trade-terminal.spot-terminal .spot-drawing-tools > .chart-view { flex-direction: column; }
+}
+@media (min-width: 1025px) and (max-height: 700px) {
+  .trade-terminal.spot-terminal { height: auto; min-height: calc(100dvh - var(--prelaunch-notice-height, 0px)); }
+  .trade-terminal.spot-terminal .main-grid { height: 360px; flex: 0 0 360px; }
+}

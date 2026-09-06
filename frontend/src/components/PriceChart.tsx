@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import {
   createChart,
@@ -18,6 +18,9 @@ import {
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { computeSMA, computeBollingerBands, computeRSI, computeMACD, Candle } from '../lib/indicators';
+import { drawingFlyoutPosition, drawingMeasurement, drawingRetracements, formatDrawingPrice, trackDrawingGesture } from '../lib/chartDrawings';
+import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
+import './SpotDrawingTools.css';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -136,9 +139,10 @@ let nextDrawingId = 1;
  * the original inline-styled toolbar — those rules are scoped to the trade
  * terminal, so a Futures chart rendering them would come out unstyled.
  */
-export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?: 'default' | 'terminal' }) {
-  const { t } = useLanguage();
+export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pair: string; chrome?: 'default' | 'terminal'; spotTools?: boolean }) {
+  const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
+  const spotDrawingTools = terminal && spotTools;
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The candlestick series stays the single coordinate-conversion
@@ -188,6 +192,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   // behaviours of this overlay; nothing here simulates anything.
   const [stayInDrawMode, setStayInDrawMode] = useState(true);
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
+  const [spotDialog, setSpotDialog] = useState<{ kind: 'text'; at: Point } | { kind: 'clear' } | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
   // screen coordinates from the stored (time, price) points.
   const [, forceRedraw] = useState(0);
@@ -204,6 +209,9 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
 
   const toolRef = useRef(tool);
   toolRef.current = tool;
+  const cancelGestureRef = useRef<(() => void) | null>(null);
+  const hiddenRef = useRef(drawingsHidden);
+  hiddenRef.current = drawingsHidden;
   // Read from inside native window listeners, which close over the value
   // at bind time — a ref keeps them seeing the current setting.
   const stayInDrawModeRef = useRef(stayInDrawMode);
@@ -379,6 +387,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     }
 
     function handleClick(param: MouseEventParams<Time>) {
+      if (spotDrawingTools && hiddenRef.current) return;
       const activeTool = toolRef.current;
       if (activeTool !== 'horizontal' && activeTool !== 'text' && activeTool !== 'ray' && activeTool !== 'vertical') return;
       const p = pointFromEvent(param);
@@ -391,7 +400,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           lineWidth: 1,
           lineStyle: 2,
           axisLabelVisible: true,
-          title: p.price.toFixed(2),
+          title: spotDrawingTools ? formatDrawingPrice(p.price) : p.price.toFixed(2),
         });
         priceLinesRef.current.push(line);
         if (!stayInDrawModeRef.current) setTool('cursor');
@@ -411,6 +420,13 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       }
 
       if (activeTool === 'text') {
+        // Embedded review browsers do not support native prompt(). Store the
+        // actual chart anchor until the user submits the Spot text editor.
+        if (spotDrawingTools) {
+          cancelGestureRef.current?.();
+          setSpotDialog({ kind: 'text', at: p });
+          return;
+        }
         // Prompt label read from a ref: this handler is bound once, so a
         // captured `t` would keep showing the language active at mount.
         const text = window.prompt(textPromptRef.current);
@@ -444,6 +460,21 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     setPendingPoint(null);
     setCursorPoint(null);
   }, [tool, pair]);
+
+  // Spot gestures cannot survive a tool, instrument or timeframe change,
+  // Clear, Escape, focus loss or an unmount and then commit stale anchors.
+  useEffect(() => {
+    if (!spotDrawingTools) return;
+    setSpotDialog(null);
+    return () => cancelGestureRef.current?.();
+  }, [spotDrawingTools, tool, pair, interval]);
+
+  useEffect(() => {
+    if (!spotDrawingTools) return;
+    for (const line of priceLinesRef.current) {
+      line.applyOptions({ lineVisible: !drawingsHidden, axisLabelVisible: !drawingsHidden });
+    }
+  }, [spotDrawingTools, drawingsHidden]);
 
   // Esc abandons whatever is in progress and drops back to the cursor —
   // the same escape hatch every charting package gives you, and the reason
@@ -488,11 +519,8 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
     priceLinesRef.current = [];
   }, [pair]);
 
-  const clearAll = useCallback(() => {
-    // One click used to wipe every drawing on the chart with no way back.
-    // There is no undo and no per-object selection here, so the confirm is
-    // the only thing standing between a misclick and losing the lot.
-    if (!window.confirm(confirmClearRef.current)) return;
+  const clearDrawings = useCallback(() => {
+    if (spotDrawingTools) cancelGestureRef.current?.();
     setTrendLines([]);
     setRulers([]);
     setLabels([]);
@@ -507,7 +535,18 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       seriesRef.current?.removePriceLine(line);
     }
     priceLinesRef.current = [];
-  }, []);
+  }, [spotDrawingTools]);
+
+  const clearAll = useCallback(() => {
+    // Only local drawing objects are cleared, never conditional orders.
+    // Preserve the existing Futures confirmation; Spot uses an in-app modal.
+    if (spotDrawingTools) {
+      cancelGestureRef.current?.();
+      setSpotDialog({ kind: 'clear' });
+      return;
+    }
+    if (window.confirm(confirmClearRef.current)) clearDrawings();
+  }, [spotDrawingTools, clearDrawings]);
 
   const fitContent = useCallback(() => {
     chartRef.current?.timeScale().fitContent();
@@ -525,6 +564,18 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
         const res = await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
+        if (spotDrawingTools) {
+          const priceFormat = spotChartPriceFormat(res.candles);
+          // All series sharing the price axis need the same formatter, even
+          // when candles are hidden by Line/Area or an indicator toggle.
+          // Volume, RSI and MACD keep their own existing scale semantics.
+          if (priceFormat) for (const ref of [seriesRef, lineSeriesRef, areaSeriesRef, maSeriesRef, bollUpperRef, bollMiddleRef, bollLowerRef]) {
+            const previous = ref.current?.options().priceFormat;
+            if (previous?.type !== 'price' || previous.precision !== priceFormat.precision || previous.minMove !== priceFormat.minMove) {
+              ref.current?.applyOptions({ priceFormat });
+            }
+          }
+        }
         seriesRef.current.setData(
           res.candles.map((c) => ({ time: c.time as any, open: c.open, high: c.high, low: c.low, close: c.close }))
         );
@@ -552,7 +603,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
 
         rsiSeriesRef.current?.setData(computeRSI(res.candles) as any);
 
-        const macd = computeMACD(res.candles);
+        const macd = computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotDrawingTools });
         macdLineRef.current?.setData(macd.macd as any);
         macdSignalRef.current?.setData(macd.signal as any);
         macdHistRef.current?.setData(macd.histogram as any);
@@ -585,7 +636,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [pair, interval]);
+  }, [pair, interval, spotDrawingTools]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at.
@@ -751,6 +802,22 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   // keeps tracking even if the cursor leaves the chart area mid-gesture.
   const handleOverlayMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (spotDrawingTools) {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        cancelGestureRef.current?.();
+      }
+      const bind = (move: (event: MouseEvent) => void, finish: (event: MouseEvent) => void) => {
+        if (spotDrawingTools) {
+          cancelGestureRef.current = trackDrawingGesture(window, {
+            move, finish,
+            cancel: () => { setPendingBrush(null); setPendingPoint(null); setCursorPoint(null); },
+          });
+        } else {
+          window.addEventListener('mousemove', move);
+          window.addEventListener('mouseup', finish);
+        }
+      };
       if (tool === 'brush') {
         const start = pointFromClientXY(e.clientX, e.clientY);
         if (!start) return;
@@ -772,8 +839,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
             finishDrawing();
           }
         }
-        window.addEventListener('mousemove', handleMove);
-        window.addEventListener('mouseup', handleUp);
+        bind(handleMove, handleUp);
         return;
       }
 
@@ -812,10 +878,9 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
         }
         finishDrawing();
       }
-      window.addEventListener('mousemove', handleMove);
-      window.addEventListener('mouseup', handleUp);
+      bind(handleMove, handleUp);
     },
-    [tool, finishDrawing]
+    [tool, finishDrawing, spotDrawingTools]
   );
 
   const intervalButtons = INTERVALS.map((i) => (
@@ -874,7 +939,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
   ));
 
   return (
-    <div style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
+    <div className={spotDrawingTools ? 'spot-drawing-tools' : undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
         <div className="chart-toolbar">
           <div className="chart-tabs">{intervalButtons}</div>
@@ -896,12 +961,16 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
           tool={tool}
-          onSelect={setTool}
+          onSelect={(next) => { if (spotDrawingTools) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
+          spotTools={spotDrawingTools}
           drawingsHidden={drawingsHidden}
-          onToggleHidden={() => setDrawingsHidden((v) => !v)}
+          onToggleHidden={() => {
+            if (spotDrawingTools) { cancelGestureRef.current?.(); setTool('cursor'); }
+            setDrawingsHidden((v) => !v);
+          }}
           stayInDrawMode={stayInDrawMode}
           onToggleStay={() => setStayInDrawMode((v) => !v)}
         />
@@ -919,7 +988,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
               // toggling back restores exactly what was there. While hidden
               // the overlay also stops taking pointer events, otherwise an
               // invisible layer would swallow clicks meant for the chart.
-              display: drawingsHidden ? 'none' : undefined,
+              display: drawingsHidden && !spotDrawingTools ? 'none' : undefined,
               pointerEvents:
                 !drawingsHidden && ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool)
                   ? 'auto'
@@ -931,10 +1000,11 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
                 empty viewport — without this transparent (not "none") rect
                 covering the whole area, drags over blank chart space would
                 fall straight through to the canvas underneath. */}
-            {['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) && (
+            {!drawingsHidden && ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) && (
               <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
             )}
 
+            <g data-chart-drawings={spotDrawingTools ? 'shapes' : undefined} display={spotDrawingTools && drawingsHidden ? 'none' : undefined}>
             {trendLines.map((l) => {
               const a = toScreen(l.a);
               const b = toScreen(l.b);
@@ -980,17 +1050,17 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
               if (!a || !b) return null;
               const x1 = Math.min(a.x, b.x);
               const x2 = Math.max(a.x, b.x);
+              const labelsInside = spotDrawingTools && x2 + 125 > (containerRef.current?.clientWidth ?? Infinity);
               return (
                 <g key={f.id}>
-                  {FIB_LEVELS.map((level) => {
-                    const price = f.a.price + (f.b.price - f.a.price) * level;
+                  {(spotDrawingTools ? drawingRetracements(f.a.price, f.b.price) : FIB_LEVELS.map((level) => ({ level, price: f.a.price + (f.b.price - f.a.price) * level }))).map(({ level, price }) => {
                     const y = priceToY(price);
                     if (y === null) return null;
                     return (
                       <g key={level}>
                         <line x1={x1} y1={y} x2={x2} y2={y} stroke="#c084fc" strokeWidth={1} strokeDasharray="3 3" />
-                        <text x={x2 + 4} y={y + 3} fontSize={10} fontWeight={600} fill="#c084fc">
-                          {level.toFixed(3)} ({price.toFixed(2)})
+                        <text x={labelsInside ? x2 - 4 : x2 + 4} textAnchor={labelsInside ? 'end' : undefined} y={y + 3} fontSize={10} fontWeight={600} fill="#c084fc">
+                          {level.toFixed(3)} ({spotDrawingTools ? formatDrawingPrice(price, lang) : price.toFixed(2)})
                         </text>
                       </g>
                     );
@@ -1017,13 +1087,14 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
               const b = toScreen(r.b);
               if (!a || !b) return null;
               const priceDiff = r.b.price - r.a.price;
-              const pct = (priceDiff / r.a.price) * 100;
-              const bars = Math.round(Math.abs(r.b.time - r.a.time) / INTERVAL_SECONDS[interval]);
+              const measured = drawingMeasurement(r.a, r.b, INTERVAL_SECONDS[interval], candlesRef.current.map((c) => c.time));
+              const pct = spotDrawingTools ? measured.pct : (priceDiff / r.a.price) * 100;
+              const bars = spotDrawingTools ? measured.bars : Math.round(Math.abs(r.b.time - r.a.time) / INTERVAL_SECONDS[interval]);
               const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
               return (
                 <g key={r.id}>
                   <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="4 3" />
-                  <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} />
+                  <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} spotTools={spotDrawingTools} locale={lang} />
                 </g>
               );
             })}
@@ -1036,13 +1107,14 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
                 if (!a || !b) return null;
                 if (tool === 'ruler') {
                   const priceDiff = cursorPoint.price - pendingPoint.price;
-                  const pct = (priceDiff / pendingPoint.price) * 100;
-                  const bars = Math.round(Math.abs(cursorPoint.time - pendingPoint.time) / INTERVAL_SECONDS[interval]);
+                  const measured = drawingMeasurement(pendingPoint, cursorPoint, INTERVAL_SECONDS[interval], candlesRef.current.map((c) => c.time));
+                  const pct = spotDrawingTools ? measured.pct : (priceDiff / pendingPoint.price) * 100;
+                  const bars = spotDrawingTools ? measured.bars : Math.round(Math.abs(cursorPoint.time - pendingPoint.time) / INTERVAL_SECONDS[interval]);
                   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
                   return (
                     <g>
                       <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="3 3" />
-                      <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} />
+                      <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} spotTools={spotDrawingTools} locale={lang} />
                     </g>
                   );
                 }
@@ -1080,6 +1152,7 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
                   <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f7a600" strokeWidth={1.5} strokeDasharray="3 3" />
                 );
               })()}
+            </g>
 
             {conditionalOrders.map((o) => {
               const isDragging = draggingOrderId === o.id;
@@ -1107,11 +1180,11 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
             })}
           </svg>
 
-          {labels.map((l) => {
+          {(!spotDrawingTools || !drawingsHidden) && labels.map((l) => {
             const p = toScreen(l.at);
             if (!p) return null;
             return (
-              <div key={l.id} style={{ ...styles.textLabel, left: p.x, top: p.y }}>
+              <div key={l.id} style={{ ...styles.textLabel, left: p.x, top: p.y, ...(spotDrawingTools ? { zIndex: 4 } : {}) }}>
                 {l.text}
               </div>
             );
@@ -1133,8 +1206,64 @@ export function PriceChart({ pair, chrome = 'default' }: { pair: string; chrome?
           )}
         </div>
       </div>
+      {spotDrawingTools && spotDialog && createPortal(<SpotDrawingDialog
+        kind={spotDialog.kind} t={t}
+        onCancel={() => setSpotDialog(null)}
+        onConfirm={text => {
+          if (spotDialog.kind === 'text') {
+            const value = text.trim();
+            if (!value) return;
+            setLabels(previous => [...previous, { id: nextDrawingId++, at: spotDialog.at, text: value }]);
+            finishDrawing();
+          } else clearDrawings();
+          setSpotDialog(null);
+        }}
+      />, document.body)}
     </div>
   );
+}
+
+/** Modal content is React text, not HTML; no prompt/confirm or network action. */
+function SpotDrawingDialog({ kind, t, onConfirm, onCancel }: {
+  kind: 'text' | 'clear'; t: (key: any) => string;
+  onConfirm: (text: string) => void; onCancel: () => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const id = useId();
+  const dialogRef = useRef<HTMLFormElement>(null);
+  const textMode = kind === 'text';
+  useEffect(() => {
+    const previous = document.activeElement;
+    // Confirming destructive local Clear is deliberately not the default focus.
+    dialogRef.current?.querySelector<HTMLElement>(textMode ? 'input' : '[data-drawing-cancel]')?.focus();
+    return () => { if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
+  }, [textMode]);
+  return <div className="spot-chart-dialog-backdrop" onMouseDown={event => {
+    if (event.target === event.currentTarget) onCancel();
+  }}>
+    <form ref={dialogRef} className="spot-chart-dialog" role="dialog" aria-modal="true"
+      aria-labelledby={`${id}-title`} aria-describedby={textMode ? undefined : `${id}-description`}
+      onSubmit={event => { event.preventDefault(); if (!textMode || draft.trim()) onConfirm(draft.trim()); }}
+      onKeyDown={event => {
+        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onCancel(); return; }
+        if (event.key !== 'Tab') return;
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button') ?? []).filter(control => !control.disabled);
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}>
+      <h2 id={`${id}-title`}>{t(textMode ? 'draw.text' : 'draw.deleteAll')}</h2>
+      {textMode ? <label className="spot-chart-dialog-label" htmlFor={`${id}-text`}>
+        <span>{t('draw.text')}</span>
+        <input id={`${id}-text`} type="text" value={draft} maxLength={280} autoComplete="off"
+          onChange={event => setDraft(event.target.value)} />
+      </label> : <p id={`${id}-description`}>{t('draw.deleteAllConfirm')}</p>}
+      <div className="spot-chart-dialog-actions">
+        <button type="button" data-drawing-cancel onClick={onCancel}>{t('trade.cancel')}</button>
+        <button type="submit" className={textMode ? 'primary' : 'danger'} disabled={textMode && !draft.trim()}>{t(textMode ? 'draw.addText' : 'draw.deleteAll')}</button>
+      </div>
+    </form>
+  </div>;
 }
 
 function LegendItem({ color, label }: { color: string; label: string }) {
@@ -1146,13 +1275,14 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   );
 }
 
-function RulerLabel({ x, y, pct, priceDiff, bars }: { x: number; y: number; pct: number; priceDiff: number; bars: number }) {
-  const positive = pct >= 0;
+function RulerLabel({ x, y, pct, priceDiff, bars, spotTools = false, locale = 'en' }: { x: number; y: number; pct: number | null; priceDiff: number; bars: number; spotTools?: boolean; locale?: string }) {
+  const positive = (pct ?? 0) >= 0;
   const sign = positive ? '+' : '';
-  const pctText = `${sign}${pct.toFixed(2)}%`;
+  const pctText = pct === null ? '—' : `${sign}${pct.toFixed(2)}%`;
   const diffMagnitude = Math.abs(priceDiff);
-  const diffText = `${sign}${priceDiff.toFixed(diffMagnitude !== 0 && diffMagnitude < 1 ? 6 : 2)}`;
-  const detailText = `${diffText} · ${bars} бар${bars === 1 ? '' : 'ів'}`;
+  const diffText = `${priceDiff >= 0 ? '+' : ''}${spotTools ? formatDrawingPrice(priceDiff, locale) : priceDiff.toFixed(diffMagnitude !== 0 && diffMagnitude < 1 ? 6 : 2)}`;
+  const barWord = spotTools ? ({ ru: 'бар.', en: 'bars', zh: '根', es: 'velas', hi: 'बार', ja: '本', ko: '봉' }[locale] ?? 'bars') : `бар${bars === 1 ? '' : 'ів'}`;
+  const detailText = `${diffText} · ${bars} ${barWord}`;
   const width = Math.max(pctText.length, detailText.length) * 6.6 + 14;
   return (
     <g transform={`translate(${x - width / 2}, ${y - 20})`}>
@@ -1191,6 +1321,7 @@ function DrawToolbar({
   onClear,
   onFit,
   terminal,
+  spotTools = false,
   drawingsHidden,
   onToggleHidden,
   stayInDrawMode,
@@ -1201,6 +1332,7 @@ function DrawToolbar({
   onClear: () => void;
   onFit: () => void;
   terminal?: boolean;
+  spotTools?: boolean;
   drawingsHidden: boolean;
   onToggleHidden: () => void;
   stayInDrawMode: boolean;
@@ -1220,6 +1352,15 @@ function DrawToolbar({
   const [lastTrend, setLastTrend] = useState<Tool>('trendline');
   const groupRef = useRef<HTMLDivElement>(null);
   const flyoutRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
+
+  useEffect(() => {
+    if (!spotTools || !openGroup) return;
+    flyoutRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"], button')?.focus();
+    const close = () => setOpenGroup(null);
+    window.addEventListener('resize', close);
+    return () => window.removeEventListener('resize', close);
+  }, [spotTools, openGroup]);
 
   // A flyout that outlives a click elsewhere would sit over the chart and
   // eat the next drawing gesture.
@@ -1232,7 +1373,10 @@ function DrawToolbar({
       if (!inGroup && !inFlyout) setOpenGroup(null);
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpenGroup(null);
+      if (e.key === 'Escape') {
+        setOpenGroup(null);
+        if (spotTools) groupRef.current?.querySelector<HTMLButtonElement>('.tool-group-chevron')?.focus();
+      }
     }
     document.addEventListener('mousedown', onDocDown);
     document.addEventListener('keydown', onKey);
@@ -1240,7 +1384,7 @@ function DrawToolbar({
       document.removeEventListener('mousedown', onDocDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [openGroup]);
+  }, [openGroup, spotTools]);
 
   const TREND_TOOLS: { id: Tool; icon: JSX.Element; label: string }[] = [
     { id: 'trendline', icon: <TrendLineIcon />, label: t('draw.trendline') },
@@ -1294,13 +1438,13 @@ function DrawToolbar({
     onClick: () => void,
     active: boolean
   ) => (
-    <button key={id} title={title} aria-label={title} aria-pressed={active} onClick={onClick} className={`tool-btn ${active ? 'active' : ''}`}>
+    <button key={id} type="button" data-drawing-tool={spotTools ? id : undefined} title={title} aria-label={title} aria-pressed={active} onClick={onClick} className={`tool-btn ${active ? 'active' : ''}`}>
       {icon}
     </button>
   );
 
   return (
-    <div className="draw-toolbar">
+    <div className={`draw-toolbar${spotTools ? ' spot-drawing-rail' : ''}`} role={spotTools ? 'toolbar' : undefined} aria-label={spotTools ? t('draw.shapes') : undefined} onScroll={spotTools ? () => setOpenGroup(null) : undefined}>
       {btn('cursor', t('draw.cursor'), <CursorIcon />, () => onSelect('cursor'), tool === 'cursor')}
 
       <div className="tool-divider" />
@@ -1309,6 +1453,8 @@ function DrawToolbar({
           the last-used one; the chevron opens the rest. */}
       <div className={`tool-group ${openGroup === 'trend' ? 'open' : ''}`} ref={groupRef}>
         <button
+          type="button"
+          data-drawing-tool={spotTools ? trendCurrent.id : undefined}
           title={trendCurrent.label}
           aria-label={trendCurrent.label}
           aria-pressed={trendActive}
@@ -1318,13 +1464,16 @@ function DrawToolbar({
           {trendCurrent.icon}
         </button>
         <button
+          type="button"
           className="tool-group-chevron"
           aria-label={t('draw.trend')}
           aria-haspopup="menu"
           aria-expanded={openGroup === 'trend'}
+          aria-controls={spotTools ? menuId : undefined}
+          title={t('draw.trend')}
           onClick={(e) => {
             const wrap = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
-            setFlyoutPos({ top: wrap.top - 4, left: wrap.right + 6 });
+            setFlyoutPos(spotTools ? drawingFlyoutPosition(wrap, { width: window.innerWidth, height: window.innerHeight }, window.innerWidth <= 767) : { top: wrap.top - 4, left: wrap.right + 6 });
             setOpenGroup((g) => (g === 'trend' ? null : 'trend'));
           }}
         >
@@ -1334,15 +1483,28 @@ function DrawToolbar({
         </button>
         {openGroup === 'trend' && flyoutPos && createPortal(
           <div
-            className="tool-flyout"
+            className={`tool-flyout${spotTools ? ' spot-drawing-flyout' : ''}`}
+            id={spotTools ? menuId : undefined}
             role="menu"
             ref={flyoutRef}
             style={{ top: flyoutPos.top, left: flyoutPos.left }}
+            onKeyDown={spotTools ? (event) => {
+              const items = Array.from(flyoutRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []);
+              const index = items.indexOf(document.activeElement as HTMLButtonElement);
+              const next = event.key === 'ArrowDown' ? (index + 1) % items.length
+                : event.key === 'ArrowUp' ? (index + items.length - 1) % items.length
+                : event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : null;
+              if (next !== null) { event.preventDefault(); items[next]?.focus(); }
+              if (event.key === 'Tab') setOpenGroup(null);
+            } : undefined}
           >
             {TREND_TOOLS.map((x) => (
               <button
                 key={x.id}
-                role="menuitem"
+                type="button"
+                data-drawing-tool={spotTools ? x.id : undefined}
+                role={spotTools ? 'menuitemradio' : 'menuitem'}
+                aria-checked={spotTools ? tool === x.id : undefined}
                 className={`tool-flyout-item ${tool === x.id ? 'active' : ''}`}
                 onClick={() => {
                   setLastTrend(x.id);
@@ -1367,7 +1529,7 @@ function DrawToolbar({
       <div className="tool-divider" />
 
       {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
-      {btn('fit', t('draw.zoom'), <FitIcon />, onFit, false)}
+      {btn('fit', t('draw.zoom'), spotTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
@@ -1486,6 +1648,9 @@ function FitIcon() {
       <line x1="8" y1="11" x2="14" y2="11" />
     </svg>
   );
+}
+function FitContentIcon() {
+  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M3 16v5h5M21 16v5h-5M7 12h10M12 7v10" /></svg>;
 }
 /* Same stroke system as every other tool icon in this rail — one coherent
    set, no mixed icon families. */

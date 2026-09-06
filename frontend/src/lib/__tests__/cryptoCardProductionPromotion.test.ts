@@ -45,7 +45,9 @@ const approvedCardSources: Record<string, string> = {
 // fingerprints were advanced for the explicitly approved identity-bound blue
 // badge: page/adapter/type wiring, inline SVG placement and its CSS only.
 // copyVerifiedBadge and the existing canonical/renderer fingerprints verify
-// those boundaries separately. Every unrelated original fingerprint remains.
+// those boundaries separately. The later authorized Spot task may change
+// TradePage independently; Card's authenticated route is asserted below instead
+// of freezing an unrelated product page. All other fingerprints remain exact.
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
@@ -83,7 +85,6 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/lib/kseniaCopyTrading.ts": "dec995b8c3e11223a1f878c884db47c6823e7a12e60c34d7f7b75e4fa9b313ab",
   "frontend/src/lib/dailyReturnChart.ts": "6f6e1c0394cc3c581dac03b6b2e7e2ffb4dd49fa85454135bf667c7dc82f6407",
   "frontend/src/lib/copyTradingMoney.ts": "1d29908f9517ed1f9de08965fc84cda4d39c29577dbba5dce62b50488d7da539",
-  "frontend/src/pages/TradePage.tsx": "477d3745f8c5bca1ef680282e0942e06a9b49ee3afb52be3e152fddeab7eba11",
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
 };
 const approvedAssets: Record<string, string> = {
@@ -121,16 +122,32 @@ test('all fifteen approved assets are byte-exact and no superseded source compos
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
 
-test('Copy stays at its approved badge revision; pre-launch, Homepage, navigation and Trade remain untouched', () => {
+test('Copy stays at its approved badge revision; pre-launch, Homepage and navigation remain untouched', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     expect({ file, sha256: digest(source(file)) }).toEqual({ file, sha256: expected });
   }
 });
 
-test('shared translations change only by removing the obsolete seven-language card namespace', () => {
+test('Card remains an authenticated standalone route, independent of Spot terminal changes', () => {
+  const app = source('frontend/src/App.tsx').replace(/\s+/g, ' ');
+  expect(app).toContain('path="/card" element={ <RequireAuth> <CardPage /> </RequireAuth> }');
+  expect(source('frontend/src/pages/CardPage.tsx')).toContain('<FinalCtaFooter reviewOnly={reviewOnly} />');
+  expect(source('frontend/src/pages/crypto-card-final/components/FinalCtaFooter.tsx')).toContain('<CardApplication reviewOnly={reviewOnly} />');
+  const trade = source('frontend/src/pages/TradePage.tsx');
+  expect(trade).not.toMatch(/import[^\n]+(?:CardApplication|CardPage|crypto-card-final)/);
+  expect(trade).not.toMatch(/(?:getCardApplication|submitCardApplication)\s*\(/);
+});
+
+test('all 196 existing Card-related shared translations stay exact while Spot may add its own keys', () => {
   const text = source('frontend/src/lib/i18n.tsx');
   expect(text).not.toMatch(/^\s*'card\./m);
-  expect(digest(text)).toBe('fb90fb404ebb68f15ae5b9ecf0c5ea28feb4fc19c0e175545e68b93ad8441b6a');
+  // Snapshot only the reviewed Card/Home/Auth/support entry points, across all
+  // seven dictionaries. The complete Card product dictionaries remain byte-exact
+  // in approvedCardSources above. An unrelated Trade error label must not force
+  // replacement of a whole-file i18n hash or invalidate these Card guarantees.
+  const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
+  expect(entries).toHaveLength(196);
+  expect(digest(entries.join('\n'))).toBe('9d42978eef5f862316cdb8ac0510c773fea669f252e9f0be23e36f42dd71284a');
 });
 
 test('Card API uses normal authenticated backend requests without review or client eligibility branches', () => {

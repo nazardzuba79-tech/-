@@ -114,6 +114,8 @@ export function filterAndSortPairs(
     // appear at the top only when their real turnover puts them there.
     sortField?: 'volume' | 'change' | 'price' | 'symbol';
     sortDir?: 1 | -1;
+    /** Spot list only: deterministic equal-value order and invalid values last. */
+    stableSort?: boolean;
   }
 ): TickerRow[] {
   const rankByBase = opts.rankByBase;
@@ -146,6 +148,15 @@ export function filterAndSortPairs(
         const rankA = rankByBase.get(a.pair.split('/')[0])?.rank ?? Infinity;
         const rankB = rankByBase.get(b.pair.split('/')[0])?.rank ?? Infinity;
         if (rankA !== rankB) return rankA - rankB;
+      }
+      if (opts.stableSort && opts.sortField !== 'symbol') {
+        const field = opts.sortField === 'price' ? 'lastPrice' : opts.sortField === 'change' ? 'changePercent24h' : 'quoteVolume24h';
+        const number = (ticker: TickerRow) => ticker[field].trim() ? Number(ticker[field]) : NaN;
+        const valueA = number(a), valueB = number(b);
+        const validA = Number.isFinite(valueA) && (field === 'changePercent24h' || valueA >= 0);
+        const validB = Number.isFinite(valueB) && (field === 'changePercent24h' || valueB >= 0);
+        if (!validA || !validB) return validA ? -1 : validB ? 1 : a.pair.localeCompare(b.pair);
+        return (valueA - valueB) * sortDir || a.pair.localeCompare(b.pair);
       }
       if (opts.sortField === 'change') {
         const changeA = parseChangePercent(a.changePercent24h, a.pair);

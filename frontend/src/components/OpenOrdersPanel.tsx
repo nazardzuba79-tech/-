@@ -1,41 +1,13 @@
-import { useEffect, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { LayoutList } from 'lucide-react';
-
-interface Order {
-  id: string;
-  pair: string;
-  side: 'BUY' | 'SELL';
-  type: string;
-  price: string | null;
-  triggerPrice: string | null;
-  ocoGroupId: string | null;
-  originalQuantity: string;
-  remainingQuantity: string;
-  status: string;
-  createdAt: string;
-}
+import { SpotOrdersView } from './SpotOrdersView';
+import { cancelSpotOrders, spotOrderCancelIds, createSpotReadController, type SpotReadController, type SpotOrderRow } from './spotOrderPresentation';
+import './SpotOrders.css';
 
 export interface OpenOrdersHandle {
   cancelAll: () => Promise<void>;
-}
-
-function typeLabel(order: Order, t: (k: any) => string): string {
-  if (order.ocoGroupId) return t('trade.orderType.OCO');
-  switch (order.type) {
-    case 'STOP_LIMIT':
-    case 'STOP_MARKET':
-      return t('trade.orderType.STOP_LIMIT');
-    case 'TAKE_PROFIT_LIMIT':
-    case 'TAKE_PROFIT_MARKET':
-      return t('trade.orderType.TAKE_PROFIT_LIMIT');
-    case 'MARKET':
-      return t('trade.orderType.MARKET');
-    default:
-      return t('trade.orderType.LIMIT');
-  }
 }
 
 /**
@@ -52,22 +24,23 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
   function OpenOrdersPanel({ pair, refreshKey, onCount }, ref) {
     const { t, lang } = useLanguage();
     const toast = useToast();
-    const [orders, setOrders] = useState<Order[]>([]);
+    const [orders, setOrders] = useState<SpotOrderRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [failed, setFailed] = useState(false);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-    const load = useCallback(() => {
-      api
-        .getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED')
-        .then(setOrders)
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    }, []);
+    const [cancelling, setCancelling] = useState(false);
+    const cancelInFlight = useRef(false);
+    const reader = useRef<SpotReadController | null>(null);
+    if (!reader.current) reader.current = createSpotReadController(() => api.getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED'), {
+      accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true), settled: () => setLoading(false),
+    });
+    const load = useCallback((fresh = false) => reader.current!.read(fresh), []);
 
     useEffect(() => {
-      load();
+      reader.current!.resume();
+      void load(true);
       const interval = setInterval(load, 4000);
-      return () => clearInterval(interval);
+      return () => { clearInterval(interval); reader.current!.pause(); };
     }, [load, refreshKey]);
 
     const pairOrders = orders.filter((o) => o.pair === pair);
@@ -77,14 +50,19 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
     }, [pairOrders.length, onCount]);
 
     async function handleCancel(orderId: string) {
+      if (cancelInFlight.current) return;
+      cancelInFlight.current = true;
+      setCancelling(true);
       setCancellingId(orderId);
       try {
         await api.cancelOrder(orderId);
-        load();
+        await load(true);
         toast.success(t('trade.orderCancelled'));
       } catch (err) {
         toast.error(err instanceof ApiError ? err.message : t('trade.cancelOrderError'));
       } finally {
+        cancelInFlight.current = false;
+        setCancelling(false);
         setCancellingId(null);
       }
     }
@@ -93,79 +71,27 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
       ref,
       () => ({
         async cancelAll() {
+          if (cancelInFlight.current || pairOrders.length === 0) return;
+          cancelInFlight.current = true;
+          setCancelling(true);
           // Sequential rather than parallel: these all hit the same account
           // and the same book, and a burst of concurrent cancels is exactly
           // the shape a rate limiter rejects.
-          for (const order of pairOrders) {
-            try {
-              await api.cancelOrder(order.id);
-            } catch {
-              // One failure must not abandon the rest; the reload below
-              // shows whatever actually survived.
-            }
+          try {
+            const result = await cancelSpotOrders(spotOrderCancelIds(pairOrders), id => api.cancelOrder(id));
+            await load(true);
+            if (result.failed) toast.error(t('trade.cancelOrderError'));
+            else toast.success(t('trade.orderCancelled'));
+          } finally {
+            cancelInFlight.current = false;
+            setCancelling(false);
           }
-          load();
-          toast.success(t('trade.orderCancelled'));
         },
       }),
       [pairOrders, load, toast, t]
     );
 
-    if (!loading && pairOrders.length === 0) {
-      return (
-        <div className="open-orders-empty">
-          <span className="open-orders-empty-icon" aria-hidden="true"><LayoutList size={20} /></span>
-          <strong>{t('trade.noOrdersForPair')}</strong>
-          <span>{t('trade.placeOrderPrompt')}</span>
-        </div>
-      );
-    }
-
-    return (
-      <table className="orders-table">
-        <thead>
-          <tr>
-            <th>{t('trade.time')}</th>
-            <th>{t('markets.pair')}</th>
-            <th>{t('trade.orderTypeCol')}</th>
-            <th>{t('trade.side')}</th>
-            <th>{t('trade.price')}</th>
-            <th>{t('trade.quantity')}</th>
-            <th>{t('trade.filled')}</th>
-            <th>{t('trade.total')}</th>
-            <th>{t('trade.trigger')}</th>
-            <th>{t('trade.action')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pairOrders.map((o) => {
-            const original = parseFloat(o.originalQuantity);
-            const remaining = parseFloat(o.remainingQuantity);
-            const price = o.price ? parseFloat(o.price) : null;
-            const [, quoteAsset] = o.pair.split('/');
-            return (
-              <tr key={o.id}>
-                <td>{new Date(o.createdAt).toLocaleString(localeOf(lang))}</td>
-                <td>{o.pair}</td>
-                <td>{typeLabel(o, t)}</td>
-                <td className={o.side === 'BUY' ? 'side-buy' : 'side-sell'}>
-                  {o.side === 'BUY' ? t('trade.buy') : t('trade.sell')}
-                </td>
-                <td>{price !== null ? price.toFixed(2) : t('trade.market')}</td>
-                <td>{original.toFixed(4)}</td>
-                <td>{(original - remaining).toFixed(4)}</td>
-                <td>{price !== null ? `${(price * original).toFixed(2)} ${quoteAsset}` : '—'}</td>
-                <td>{o.triggerPrice ? parseFloat(o.triggerPrice).toFixed(2) : '—'}</td>
-                <td>
-                  <button className="cancel-btn" onClick={() => handleCancel(o.id)} disabled={cancellingId === o.id}>
-                    {cancellingId === o.id ? t('trade.cancelling') : t('trade.cancel')}
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    );
+    return <SpotOrdersView orders={pairOrders} loading={loading} error={failed ? t('trade.loadOrdersError') : null}
+      cancelling={cancelling} cancellingId={cancellingId} locale={localeOf(lang)} t={t} onCancel={handleCancel} onRetry={() => { void load(true); }} />;
   }
 );

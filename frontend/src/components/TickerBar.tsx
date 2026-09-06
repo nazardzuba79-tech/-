@@ -3,6 +3,7 @@ import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
+import { formatSpotBookNumber } from '../lib/spotOrderBook';
 
 interface Stats {
   lastPrice: number;
@@ -23,10 +24,11 @@ interface Stats {
  * Labels stay translated rather than hard-coded English, since the app ships
  * seven languages.
  */
-export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?: () => void }) {
+export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair: string; onSelectPair?: () => void; spotPrecision?: boolean }) {
   const { t } = useLanguage();
   const [stats, setStats] = useState<Stats | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
+  const displayPrice = spotPrecision ? formatSpotBookNumber : formatPrice;
 
   useEffect(() => {
     let cancelled = false;
@@ -84,7 +86,7 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
 
       <div className="ticker-item">
         <span className="label">{t('trade.lastPrice')}</span>
-        <span className={`value price ${dir}`}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
+        <span className={`value price ${dir}`}>{stats ? displayPrice(stats.lastPrice) : '—'}</span>
       </div>
       <div className="ticker-item">
         {/* "Изменение 24ч", not "24ч %" — this cell leads with the absolute
@@ -95,17 +97,17 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
         <span className="label">{t('trade.change24h')}</span>
         <span className={`value change ${dir}`}>
           {stats && absoluteChange !== null
-            ? `${positive ? '+' : ''}${formatPrice(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
+            ? `${positive ? '+' : ''}${displayPrice(absoluteChange)} (${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
             : '—'}
         </span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('trade.high24h')}</span>
-        <span className="value">{stats ? formatPrice(stats.high24h) : '—'}</span>
+        <span className="value">{stats ? displayPrice(stats.high24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('trade.low24h')}</span>
-        <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
+        <span className="value">{stats ? displayPrice(stats.low24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
@@ -119,4 +121,3 @@ export function TickerBar({ pair, onSelectPair }: { pair: string; onSelectPair?:
     </div>
   );
 }
-

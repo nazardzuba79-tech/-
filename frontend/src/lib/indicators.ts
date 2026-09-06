@@ -118,16 +118,20 @@ export function computeMACD(
   candles: Candle[],
   fastPeriod = 12,
   slowPeriod = 26,
-  signalPeriod = 9
+  signalPeriod = 9,
+  options: { warmupFromValidMacd?: boolean } = {}
 ): { macd: LinePoint[]; signal: LinePoint[]; histogram: (LinePoint & { color: string })[] } {
   const closes = candles.map((c) => c.close);
   const fast = ema(closes, fastPeriod);
   const slow = ema(closes, slowPeriod);
   const macdValues = closes.map((_, i) => (Number.isNaN(fast[i]) || Number.isNaN(slow[i]) ? NaN : fast[i] - slow[i]));
-  const signalValues = ema(
-    macdValues.map((v) => (Number.isNaN(v) ? 0 : v)),
-    signalPeriod
-  );
+  const firstMacdIndex = fast.findIndex((v, idx) => !Number.isNaN(v) && !Number.isNaN(slow[idx]));
+  // Spot opt-in: seed the signal from its first full window of actual MACD
+  // values, never invented pre-warm-up zeroes. Keep the existing default
+  // path for unrelated shared-chart consumers in this scoped correction.
+  const signalValues = options.warmupFromValidMacd && firstMacdIndex >= 0
+    ? [...Array<number>(firstMacdIndex).fill(NaN), ...ema(macdValues.slice(firstMacdIndex), signalPeriod)]
+    : ema(macdValues.map((v) => (Number.isNaN(v) ? 0 : v)), signalPeriod);
 
   const macd: LinePoint[] = [];
   const signal: LinePoint[] = [];
@@ -136,7 +140,6 @@ export function computeMACD(
     if (Number.isNaN(macdValues[i]) || Number.isNaN(signalValues[i])) continue;
     // signalValues only becomes meaningful once macdValues has been
     // non-NaN for a full signalPeriod window.
-    const firstMacdIndex = fast.findIndex((v, idx) => !Number.isNaN(v) && !Number.isNaN(slow[idx]));
     if (i < firstMacdIndex + signalPeriod - 1) continue;
     const time = candles[i].time;
     macd.push({ time, value: macdValues[i] });

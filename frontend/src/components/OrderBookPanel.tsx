@@ -2,6 +2,8 @@ import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice } from '../lib/formatNumber';
 import { PanelRightClose } from 'lucide-react';
+import { aggregateSpotBook, defaultSpotGroupStep, formatSpotBookNumber, formatSpotSpreadPercent,
+  spotBookMetrics, spotGroupSteps, spotLevelPrice } from '../lib/spotOrderBook';
 
 interface Level {
   price: string;
@@ -101,20 +103,25 @@ export function OrderBookPanel({
   pair,
   onPickPrice,
   onCollapse,
+  spotPrecision = false,
 }: {
   bids: Level[];
   asks: Level[];
   pair?: string;
   onPickPrice?: (price: string) => void;
   onCollapse?: () => void;
+  /** Opt in only for Spot; the shared Futures presentation remains unchanged. */
+  spotPrecision?: boolean;
 }) {
   const { t } = useLanguage();
 
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
-  const midPrice = bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
+  const spotMetrics = useMemo(() => spotBookMetrics(bids, asks), [bids, asks]);
+  const midPrice = spotPrecision ? spotMetrics.mid : bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
 
-  const [groupStep, setGroupStep] = useState(() => defaultGroupStep(midPrice));
+  const [storedGroupStep, setGroupStep] = useState(() => spotPrecision ? defaultSpotGroupStep(midPrice) : defaultGroupStep(midPrice));
+  const [storedGroupSteps, setGroupSteps] = useState(() => spotPrecision ? spotGroupSteps(midPrice) : GROUP_STEPS);
   // Re-pick a sensible default step once real data first arrives (the very
   // first render has no price yet to size the default from) and again
   // whenever the instrument itself changes — a "10" step that was fine for
@@ -122,23 +129,30 @@ export function OrderBookPanel({
   // row. Never while the same pair's own price just ticks, or the grouping
   // would keep resetting under the trader mid-use.
   const lastPairRef = useRef<string | undefined>(undefined);
+  // The first valid new-pair snapshot must already render with its own step,
+  // not wait one effect/paint with the previous pair's stored grouping. Once
+  // initialized, same-pair live ticks keep the trader's manual selection.
+  const initializeSpotGroup = spotPrecision && midPrice !== null && pair !== lastPairRef.current;
+  const groupStep = initializeSpotGroup ? defaultSpotGroupStep(midPrice) : storedGroupStep;
+  const groupSteps = initializeSpotGroup ? spotGroupSteps(midPrice) : storedGroupSteps;
   useEffect(() => {
     if (midPrice !== null && pair !== lastPairRef.current) {
       lastPairRef.current = pair;
-      setGroupStep(defaultGroupStep(midPrice));
+      setGroupStep(spotPrecision ? defaultSpotGroupStep(midPrice) : defaultGroupStep(midPrice));
+      setGroupSteps(spotPrecision ? spotGroupSteps(midPrice) : GROUP_STEPS);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pair, midPrice]);
+  }, [pair, midPrice, spotPrecision]);
 
   const decimals = decimalsForStep(groupStep);
 
   const asksDepth = useMemo(
-    () => withDepth(aggregate(asks, groupStep, 1)).slice(0, VISIBLE_LEVELS_PER_SIDE),
-    [asks, groupStep]
+    () => (spotPrecision ? aggregateSpotBook(asks, groupStep, 'SELL') : withDepth(aggregate(asks, groupStep, 1))).slice(0, VISIBLE_LEVELS_PER_SIDE),
+    [asks, groupStep, spotPrecision]
   );
   const bidsDepth = useMemo(
-    () => withDepth(aggregate(bids, groupStep, -1)).slice(0, VISIBLE_LEVELS_PER_SIDE),
-    [bids, groupStep]
+    () => (spotPrecision ? aggregateSpotBook(bids, groupStep, 'BUY') : withDepth(aggregate(bids, groupStep, -1))).slice(0, VISIBLE_LEVELS_PER_SIDE),
+    [bids, groupStep, spotPrecision]
   );
 
   const maxDepth = Math.max(
@@ -147,8 +161,9 @@ export function OrderBookPanel({
     0.0001
   );
 
-  const spread = bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
-  const spreadPct = spread !== null && midPrice ? (spread / midPrice) * 100 : null;
+  const spread = spotPrecision ? spotMetrics.spread : bestAsk !== null && bestBid !== null ? bestAsk - bestBid : null;
+  const spreadPct = spotPrecision ? spotMetrics.spreadPercent : spread !== null && midPrice ? (spread / midPrice) * 100 : null;
+  const priceLabel = spotPrecision ? formatSpotBookNumber : formatPrice;
   const quoteAsset = pair?.split('/')[1];
   const showUsd = quoteAsset ? USD_QUOTES.has(quoteAsset) : false;
 
@@ -160,13 +175,13 @@ export function OrderBookPanel({
           <select
             className="ob-group-select"
             value={groupStep}
-            onChange={(e) => setGroupStep(parseFloat(e.target.value))}
+            onChange={(e) => { const value = Number(e.target.value); if (groupSteps.includes(value)) setGroupStep(value); }}
             title={t('trade.groupBy')}
             aria-label={t('trade.groupBy')}
           >
-            {GROUP_STEPS.map((step) => (
+            {groupSteps.map((step) => (
               <option key={step} value={step}>
-                {step}
+                {spotPrecision ? spotLevelPrice(step, step) : step}
               </option>
             ))}
           </select>
@@ -186,25 +201,25 @@ export function OrderBookPanel({
 
       <div className="orderbook-asks">
         {asksDepth.map((level) => (
-          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
+          <Row key={spotPrecision ? spotLevelPrice(level.price, groupStep) : level.price.toFixed(decimals)} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}
       </div>
 
       <div className="orderbook-spread">
         <div className="ob-spread-price">
-          {midPrice !== null ? formatPrice(midPrice) : '—'}
-          {showUsd && midPrice !== null && <span className="usd">≈ ${formatPrice(midPrice)}</span>}
+          {midPrice !== null ? priceLabel(midPrice) : '—'}
+          {showUsd && midPrice !== null && <span className="usd">≈ ${priceLabel(midPrice)}</span>}
         </div>
         {spread !== null && spreadPct !== null && (
           <div className="ob-spread-detail">
-            {t('trade.spread')} {formatPrice(spread)} ({spreadPct.toFixed(3)}%)
+            {t('trade.spread')} {priceLabel(spread)} ({spotPrecision ? formatSpotSpreadPercent(spreadPct) : `${spreadPct.toFixed(3)}%`})
           </div>
         )}
       </div>
 
       <div className="orderbook-bids">
         {bidsDepth.map((level) => (
-          <Row key={level.price.toFixed(decimals)} level={level} decimals={decimals} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
+          <Row key={spotPrecision ? spotLevelPrice(level.price, groupStep) : level.price.toFixed(decimals)} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}
       </div>
     </>
@@ -246,23 +261,32 @@ const Row = memo(function Row({
   side,
   maxDepth,
   onPick,
+  spotStep,
 }: {
   level: AggregatedLevel;
   decimals: number;
   side: 'BUY' | 'SELL';
   maxDepth: number;
   onPick?: (price: string) => void;
+  spotStep?: number;
 }) {
   const pct = Math.min(100, (level.cumulative / maxDepth) * 100);
   const flashing = useRowFlash(level.quantity);
   const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
+  const priceText = spotStep === undefined ? level.price.toFixed(decimals) : spotLevelPrice(level.price, spotStep);
+  const quantityText = spotStep === undefined ? level.quantity.toFixed(5) : formatSpotBookNumber(level.quantity);
+  const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);
+  const pick = () => onPick?.(spotStep === undefined ? level.price.toFixed(2) : priceText);
 
   return (
-    <div className={`ob-row ${flashClass}`} onClick={() => onPick?.(level.price.toFixed(2))}>
+    <div className={`ob-row ${flashClass}${spotStep !== undefined ? ' ob-row--spot' : ''}`} onClick={pick}
+      role={spotStep !== undefined && onPick ? 'button' : undefined} tabIndex={spotStep !== undefined && onPick ? 0 : undefined}
+      aria-label={spotStep !== undefined && onPick ? `${side === 'BUY' ? 'Bid' : 'Ask'} ${priceText}` : undefined}
+      onKeyDown={event => { if (spotStep !== undefined && onPick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); pick(); } }}>
       <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ width: `${pct}%` }} />
-      <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`}>{level.price.toFixed(decimals)}</span>
-      <span className="cell">{level.quantity.toFixed(5)}</span>
-      <span className="cell">{(level.price * level.quantity).toFixed(2)}</span>
+      <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`} title={spotStep !== undefined ? priceText : undefined}>{priceText}</span>
+      <span className="cell" title={spotStep !== undefined ? quantityText : undefined}>{quantityText}</span>
+      <span className="cell" title={spotStep !== undefined ? totalText : undefined}>{totalText}</span>
     </div>
   );
 });
