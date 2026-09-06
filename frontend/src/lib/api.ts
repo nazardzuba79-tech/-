@@ -170,6 +170,8 @@ interface RealBalance {
 }
 
 export const api = {
+  getCopyStrategyIdentities: () => request<{ identities: (import('./kseniaCopyTrading').PublicStrategyIdentity | null)[] }>('/copy-trading/identities'),
+  getKseniaReview: () => request<import('./kseniaCopyTrading').KseniaResponse>('/copy-trading/ksenia'),
   /** Creates the account and returns a real session token straight away —
    *  the same token shape /auth/login issues. There is no intermediate
    *  verification step and no second call to make. */

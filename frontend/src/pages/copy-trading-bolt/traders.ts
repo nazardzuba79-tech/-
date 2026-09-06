@@ -29,6 +29,8 @@ export type Trader = {
   tone: string;
   vip?: boolean;
   verified?: boolean;
+  /** Sanitized strategy-owner profile media; never catalogue art. */
+  ownerAvatarUrl?: string | null;
   /** Where the trader operates from. VOLTEX is a Singapore-based
    * international venue, so the roster is spread across its real regions
    * rather than concentrated in one. */

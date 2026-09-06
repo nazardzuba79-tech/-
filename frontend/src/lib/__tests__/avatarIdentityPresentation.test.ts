@@ -89,15 +89,31 @@ test('actual onError removes broken image, retains geometry and retries changed 
   }
 });
 
-test('non-avatar markup, yellow curve, business data and premium card remain source-identical to d66f01a', () => {
+test('approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring', () => {
   const digest = (s: string) => createHash('sha256').update(s).digest('hex');
-  expect(digest(source.slice(0, avatarNode.pos) + '<AVATAR>' + source.slice(avatarNode.end)))
-    .toBe('453c6498fd188d2dc61053c4b222673ed836dbac8f6d09153a79136f6c924b0d');
+  // Marketplace/Profile now accept a second canonical ledger. Keep strict
+  // fingerprints of the unchanged renderers instead of freezing all wiring.
+  for (const [name, hash] of Object.entries({
+    ProfilePerformanceChart: '68921d09f3d5a0e24c53e553c89487462f7b0b51a2c1453ce9fc1dd6d19091fe',
+    DailyReturnChart: '7460b3ad35cc7191ef47e99cb633c212d01afc6ad68b67b06fdd6eac17fef9a1',
+    MetricsPanel: '584b60a9d224f8194e0450717490a62a80c3732ec5790852e55ff3b9980a7053',
+    TradingProfilePanel: 'c076b5505d930e2802a6aed17b836b505f6ee5c7a96b1935d905472d6417dcd8',
+    TradesPanel: 'f239e1748cbaefdca7c7bf693fee2150565bf5422d0df00dcb0e1c2e49bc5f49',
+    MarketplaceHero: '6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258',
+  })) {
+    const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)!;
+    expect(digest(node.getText(ast))).toBe(hash);
+  }
   for (const [file, hash] of Object.entries({
     'src/pages/copy-trading-bolt/CopyTradingRefinement.css': '0c2d79cb276006943f7528e5f7abd17b434ea642e7447211f41258a62babdce4',
     'src/pages/copy-trading-bolt/traders.ts': '90e35a2b9d37ee079b94ebf37bcc10cdf211028f134d30ca59d53c304ad31aba',
     'src/pages/copy-trading-bolt/demoPerformance.ts': '1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead',
-  })) expect(digest(readFileSync(resolve(frontend, file), 'utf8').replace(/\r\n/g, '\n'))).toBe(hash);
+  })) {
+    const contents = readFileSync(resolve(frontend, file), 'utf8').replace(/\r\n/g, '\n');
+    // Only an optional TypeScript owner-media field was added to Trader;
+    // every runtime business value and fictional avatar mapping stays exact.
+    expect(digest(contents.replace('  /** Sanitized strategy-owner profile media; never catalogue art. */\n  ownerAvatarUrl?: string | null;\n', ''))).toBe(hash);
+  }
 });
 
 test.each([

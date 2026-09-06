@@ -20,6 +20,7 @@ datasource db {
 }
 
 model User {
+  copyStrategyOwnerships CopyStrategyOwner[]
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
@@ -129,6 +130,25 @@ model User {
   portfolioSnapshots PortfolioSnapshot[]
 
   @@index([email])
+}
+
+/// Strategy identity only. An isolated review can retain the owner-confirmed
+/// external ID without importing/creating a customer or copying private media.
+model CopyStrategyOwner {
+  traderId String @id
+  publicName String
+  ownerUserId String?
+  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull)
+  externalOwnerUserId String?
+  premium Boolean @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+/// Isolated synthetic state; no real financial-account relation by design.
+model CopyReviewScenario {
+  id String @id
+  state Json
+  updatedAt DateTime @updatedAt
 }
 
 /// One outstanding email-verification attempt for one user.

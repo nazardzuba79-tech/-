@@ -1,0 +1,8 @@
+/* Additive identity treatment: never selects Nazar or catalogue cards. */
+.copytrading-bolt-root .trader-card[data-trader-id="VX-KSENIA"] {
+  border-color: #71747a;
+  background: linear-gradient(145deg, #30343a 0%, #202329 42%, #181b20 100%);
+}
+.copytrading-bolt-root .trader-card[data-trader-id="VX-KSENIA"] .vip-badge {
+  color: #d3ccbc; border-color: #6a655b; background: #39372f;
+}

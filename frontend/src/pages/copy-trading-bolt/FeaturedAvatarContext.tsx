@@ -12,7 +12,7 @@ import { api } from '../../lib/api';
 
 const FeaturedAvatarContext = createContext<string | null>(null);
 
-export function FeaturedAvatarProvider({ children }: { children: React.ReactNode }) {
+export function FeaturedAvatarProvider({ children, ownerAvatar }: { children: React.ReactNode; ownerAvatar?: string | null }) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -22,7 +22,7 @@ export function FeaturedAvatarProvider({ children }: { children: React.ReactNode
       .catch(() => {});
   }, []);
 
-  return <FeaturedAvatarContext.Provider value={avatarUrl}>{children}</FeaturedAvatarContext.Provider>;
+  return <FeaturedAvatarContext.Provider value={ownerAvatar === undefined ? avatarUrl : ownerAvatar}>{children}</FeaturedAvatarContext.Provider>;
 }
 
 export function useFeaturedAvatar(): string | null {

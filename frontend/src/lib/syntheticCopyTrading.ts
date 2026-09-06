@@ -43,6 +43,7 @@ export interface SyntheticTradeDto {
 }
 
 export interface SyntheticCopyTradingResponse {
+  traderEarnings365?: number;
   trader: { id: string; name: string; vip: boolean };
   simulation: { seed: number; mode: 'REAL_TIME' | 'FAST_FORWARD'; simulatedAt: string; stateVersion?: number };
   economics?: SyntheticReviewEconomics;

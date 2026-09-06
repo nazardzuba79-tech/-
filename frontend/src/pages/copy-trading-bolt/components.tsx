@@ -116,7 +116,7 @@ function VipBadge() {
 function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) {
   const featuredAvatar = useFeaturedAvatar();
   const visual = getTraderVisual(trader.id);
-  const photo = trader.id === nazarTrader.id ? featuredAvatar : visual.avatarSrc;
+  const photo = trader.id === nazarTrader.id ? featuredAvatar : trader.id === 'VX-KSENIA' ? trader.ownerAvatarUrl : visual.avatarSrc;
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
   const className = `avatar avatar-${trader.tone} ${large ? 'avatar-large' : ''}`;
   if (photo && failedPhoto !== photo) {
@@ -214,7 +214,7 @@ function followerProfitForPeriod(data: SyntheticCopyTradingResponse | null | und
 
 function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; period: Period; synthetic?: SyntheticCopyTradingResponse | null }) {
   const chart = useMemo(
-    () => trader.id === nazarTrader.id
+    () => trader.id === nazarTrader.id || trader.id === 'VX-KSENIA'
       ? synthetic ? syntheticChartData(synthetic, period) : null
       : demoChartData(trader, period),
     [trader, period, synthetic]
@@ -242,15 +242,15 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   const { following } = useFollowing();
   const isNazara = trader.id === nazarTrader.id;
   const visual = getTraderVisual(trader.id);
-  const selectedMetrics = trader.id === nazarTrader.id
-    ? synthetic ? selectSyntheticPeriod(synthetic, period) : undefined
+  const selectedMetrics = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA'
+    ? synthetic ? selectSyntheticPeriod(synthetic, trader.id === 'VX-KSENIA' ? 'ALL' : period) : undefined
     : selectDemoPerformance(trader, period);
   const periodRoi = getRoiForPeriod(trader, period);
   // Copiers' profit is shown for the SAME period as the ROI above it, and
   // labelled with it — an unlabelled figure can't be checked against
   // anything, and a lifetime figure next to a 30-day ROI reads as if the
   // two belong together when they don't.
-  const liveProfit = trader.id === nazarTrader.id ? followerProfitForPeriod(synthetic, period) : null;
+  const liveProfit = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? followerProfitForPeriod(synthetic, period) : null;
   const copierProfit = liveProfit ?? getCopierProfit(trader, period);
   const sharpe = selectedMetrics?.sharpe;
   const drawdown = selectedMetrics?.maximumDrawdown;
@@ -284,9 +284,9 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
       <div className="card-stats">
-        {isNazara ? <>
-          <div><span>Win Rate <small>{period}</small></span><strong>{winRate == null ? '—' : `${numberLabel(winRate, 1)}%`}</strong></div>
-          <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
+        {isNazara || trader.id === 'VX-KSENIA' ? <>
+          <div><span>Win Rate <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong>{winRate == null ? '—' : `${numberLabel(winRate, 1)}%`}</strong></div>
+          <div><span>Просадка <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
         </> : <>
           <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
           <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
@@ -612,7 +612,7 @@ function FollowerHistory({ history }: { history: SyntheticCopyTradingResponse['a
 
 function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader; metrics: ProfileMetrics; synthetic?: SyntheticCopyTradingResponse | null; period: Period }) {
   const [showAll, setShowAll] = useState(false);
-  const followers = trader.id === nazarTrader.id ? synthetic?.followers.filter((follower) => follower.active) ?? [] : [];
+  const followers = synthetic?.trader.id === trader.id ? synthetic.followers.filter((follower) => follower.active) : [];
   const economics = synthetic?.economics?.periods[period];
   const profitable = followers.filter((follower) => (follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl) > 0).length;
   return (
@@ -623,13 +623,14 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
         <div><span>Прибыльные · с начала копирования</span><strong>{followers.length ? `${profitable} / ${followers.length}` : '—'}</strong></div>
         <div><span>Активные подписчики сейчас</span><strong>{numberLabel(synthetic ? followers.length : trader.copiers, 0)}</strong></div>
       </div>
-      {trader.id === nazarTrader.id && <div className="followers-summary" aria-label="Экономика копирования за выбранный период">
+      {(trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && <div className="followers-summary" aria-label="Экономика копирования за выбранный период">
         <div><span>Gross Followers PnL · {period}</span><strong className={roiClass(economics?.grossFollowersPnl ?? NaN)}>{signedUsd(economics?.grossFollowersPnl ?? NaN)}</strong></div>
-        <div><span>Доход Nazar · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
+        <div><span>Доход {trader.name} · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
         <div><span>Комиссия за результат</span><strong>{unsignedPercent((synthetic?.economics?.performanceFeeRate ?? NaN) * 100)}</strong></div>
       </div>}
-      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Nazar рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
+      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход {trader.name} рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
       {period === 'ALL' && synthetic && synthetic.economics?.methodology !== 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' && <FollowerHistory history={synthetic.aumHistory} />}
+      {trader.id === 'VX-KSENIA' && synthetic?.traderEarnings365 !== undefined && <div className="followers-summary"><div><span>Доход Ksenia · последние 365 дней</span><strong>{signedUsd(synthetic.traderEarnings365)}</strong></div></div>}
       {followers.length > 0 && <p className="follower-list-note">Активные подписчики · индивидуальный PnL и ROI с даты начала копирования</p>}
       {followers.length > 0 && <div className="follower-list">{(showAll ? followers : followers.slice(0, 8)).map((follower) => {
         const pnl = follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl;
@@ -645,12 +646,12 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const [activeTab, setActiveTab] = useState<ProfileTab>('statistics');
   const [period, setPeriod] = useState<Period>('90D');
   const [chartMode, setChartMode] = useState<ProfileChartMode>('ROI');
-  const liveSynthetic = trader.id === nazarTrader.id ? synthetic : null;
+  const liveSynthetic = synthetic?.trader.id === trader.id ? synthetic : null;
   const simpleReturn = liveSynthetic?.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
   const strategyData = useMemo(() => simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [simpleReturn, liveSynthetic]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
-  const demoAll = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, 'ALL');
+  const demoAll = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? null : selectDemoPerformance(trader, 'ALL');
   const allTradingDays = liveSynthetic?.economics?.periods.ALL.activeTradingDays ?? liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
   const heroDrawdown = liveSynthetic?.economics?.periods.ALL.maximumDrawdown ?? liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
   const heroAum = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0) : trader.aum;
@@ -673,8 +674,9 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
 
-      {!liveSynthetic && trader.id !== nazarTrader.id && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
+      {!liveSynthetic && trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA' && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
       {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazar недоступна. Показатели не заменяются примерными значениями.</p>}
+      {trader.id === 'VX-KSENIA' && <p className="catalogue-disclosure">Синтетическая review-стратегия Ksenia. Связь с аккаунтом используется только для профиля и аватара; показатели не являются результатами реального счёта.</p>}
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
@@ -762,7 +764,7 @@ function MarketplaceBottom() {
   );
 }
 
-export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null }) {
+export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, kseniaSynthetic }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null }) {
   const { depositUsd, eligible } = useCopyEligibility();
   const { favorites } = useFavorites();
   const { following } = useFollowing();
@@ -778,7 +780,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpe
   // grid — listing him twice on the same screen would be a duplicate);
   // every other tab searches the full roster including him, which is what
   // makes searching for "Nazar" or starring him actually work.
-  const dynamicRoster = useMemo(() => [nazara, ...marketplaceTraders], [nazara]);
+  const dynamicRoster = useMemo(() => [nazara, ...(ksenia ? [ksenia] : []), ...marketplaceTraders], [nazara, ksenia]);
   const tabRoster = useMemo(() => {
     switch (tab) {
       case 'favorites': return dynamicRoster.filter((t) => favorites.has(t.id));
@@ -791,14 +793,14 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpe
   const visibleTraders = useMemo(() => {
     let result = searchTraders(tabRoster, query).map(item => ({ ...item, drawdown: item.id === nazara.id
       ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
-      : selectDemoPerformance(item, period).maximumDrawdown }));
+      : item.id === ksenia?.id && kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : selectDemoPerformance(item, period).maximumDrawdown }));
     result = sortTraders(result, sortBy, period);
     if (tab === 'leaderboard') {
       const featured = result.find((item) => item.id === nazara.id);
       if (featured) result = [featured, ...result.filter((item) => item.id !== nazara.id)];
     }
     return result;
-  }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic]);
+  }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic, ksenia, kseniaSynthetic]);
 
   const totalPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -867,7 +869,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic }: { onOpe
         </div>
         <p className="catalogue-disclosure">Демонстрационный каталог · вымышленные профили и аватары, синтетические результаты. Не подтверждённая доходность и не рекомендация.</p>
         <div className="trader-grid">
-          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={synthetic} />)}
+          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}
         </div>
         {visibleTraders.length === 0 && (
           <div className="empty-state">

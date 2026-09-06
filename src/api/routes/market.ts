@@ -3,6 +3,7 @@ import { KrakenMarketDataService, ExternalMarketDataError } from '../../services
 import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
 import { FearGreedService } from '../../services/FearGreedService';
 import { PrismaClient } from '@prisma/client';
+import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrading/strategyOwner';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -22,6 +23,11 @@ export function marketRouter(
   prisma: PrismaClient
 ): Router {
   const router = Router();
+  router.get('/copy-trading/identities', async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try { res.json({ identities: await Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))) }); }
+    catch { res.status(503).json({ error: 'Public strategy identity temporarily unavailable' }); }
+  });
 
   // The photo shown for the platform's featured strategy leader on the
   // Copy Trading page. It is the operator's own profile photo, published
