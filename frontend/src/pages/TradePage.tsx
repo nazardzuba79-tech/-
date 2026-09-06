@@ -18,10 +18,9 @@ import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { rememberTradingMode } from '../lib/tradingMode';
-import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, X, CandlestickChart, Layers3, ArrowRightLeft, ListOrdered } from 'lucide-react';
+import { ChevronDown, ChevronUp, PanelRightClose, PanelRightOpen, X, Layers3, ListOrdered } from 'lucide-react';
 import { MarketSpine } from './trade-terminal/MarketSpine';
-import { FlowContext, FlowDepth, FlowTape } from './trade-terminal/FlowContext';
-import { workspacePreset, type TerminalWorkspace } from '../lib/terminalMarket';
+import { FlowContext } from './trade-terminal/FlowContext';
 import { formatTerminalQuote, type TerminalOrderDraft } from '../lib/terminalExecution';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/TerminalPremium.css';
@@ -71,9 +70,9 @@ export function TradePage() {
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const [workspace, setWorkspace] = useState<TerminalWorkspace>('standard');
+  const [compactMarkets, setCompactMarkets] = useState(() => window.matchMedia('(max-width: 1024px)').matches);
   const [railCollapsed, setRailCollapsed] = useState(false);
-  const [railTab, setRailTab] = useState<'order' | 'book' | 'depth' | 'tape'>('order');
+  const [railTab, setRailTab] = useState<'order' | 'book'>('order');
   const [dockOpen, setDockOpen] = useState(true);
   const [draft, setDraft] = useState<TerminalOrderDraft | null>(null);
   const [guidePrice, setGuidePrice] = useState<number | null>(null);
@@ -165,23 +164,33 @@ export function TradePage() {
   }, []);
 
   const openMarkets = useCallback(() => {
+    if (!compactMarkets) { pairListRef.current?.focusSearch(); return; }
     selectorReturnFocus.current = document.activeElement as HTMLElement | null;
     setSelectorOpen(true);
-  }, []);
+  }, [compactMarkets]);
   const closeMarkets = useCallback(() => {
     setSelectorOpen(false);
     selectorReturnFocus.current?.focus();
   }, []);
 
-  function applyWorkspace(next: TerminalWorkspace) {
-    const preset = workspacePreset(next);
-    setWorkspace(next); setRailCollapsed(preset.railCollapsed);
-    setDockOpen(preset.dockOpen); setRailTab(preset.railTab); setGuidePrice(null);
-  }
+  // One mounted list keeps search, favourites, period and sort across desktop /
+  // mobile transitions and drawer openings. Desktop never hides its markets.
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 1024px)');
+    const update = () => { setCompactMarkets(media.matches); if (!media.matches) setSelectorOpen(false); };
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     if (selectorOpen) pairListRef.current?.focusSearch();
   }, [selectorOpen]);
+  useEffect(() => {
+    if (!selectorOpen || !compactMarkets) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = previous; };
+  }, [selectorOpen, compactMarkets]);
   useEffect(() => {
     if (marketType !== 'spot') return;
     function onKey(event: KeyboardEvent) {
@@ -242,17 +251,23 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal terminal-premium" data-workspace={workspace}>
+    <div className="trade-terminal terminal-premium">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
       <div className="terminal">
-        <MarketSpine pair={pair} book={book} onOpenMarkets={openMarkets} workspace={workspace} onWorkspaceChange={applyWorkspace} />
         <div className={`signature-workspace${railCollapsed ? ' rail-collapsed' : ''}`}>
+          {compactMarkets && selectorOpen && <div className="market-dialog-backdrop" onMouseDown={closeMarkets} aria-hidden="true" />}
+          <div className={`markets-panel${selectorOpen ? ' is-open' : ''}`} ref={dialogRef} role={compactMarkets ? 'dialog' : 'complementary'} aria-modal={compactMarkets && selectorOpen ? true : undefined} aria-label="Рынки">
+            {compactMarkets && <div className="market-dialog-header"><strong>Рынки</strong><button onClick={closeMarkets} aria-label="Закрыть рынки"><X size={18}/></button></div>}
+            <PairListSidebar periodControls priceFormatter={formatTerminalQuote} ref={pairListRef} pair={pair} onChange={next => { setPair(next); if (compactMarkets) closeMarkets(); }} />
+          </div>
           <main className="chart-main">
+            <MarketSpine pair={pair} book={book} onOpenMarkets={openMarkets} />
             <div className="chart-area">
               <PriceChart pair={pair} chrome="terminal" appearance="premium" draft={draft?.pair === pair ? draft : null} guidePrice={guidePrice} />
             </div>
+          </main>
             <section className={`trading-dock bottom-panel${!dockOpen ? ' dock-collapsed' : ''}`} aria-label="Ордера и активы">
           <div className="dock-tabs bottom-tabs" role="tablist" aria-label="Ордера и активы">
             {BOTTOM_TABS.map((tab) => (
@@ -285,36 +300,22 @@ export function TradePage() {
             {bottomTab === 'assets' && <AssetsPanel refreshKey={ordersRefreshKey} />}
           </div>
             </section>
-          </main>
           <aside className="flow-rail" aria-label="Flow Rail">
             <div className="flow-tabs" role="tablist" aria-label="Исполнение и поток">
-              {([{ id: 'order', text: 'Ордер', icon: ListOrdered }, { id: 'book', text: 'Стакан', icon: Layers3 }, { id: 'depth', text: 'Глубина', icon: CandlestickChart }, { id: 'tape', text: 'Лента', icon: ArrowRightLeft }] as const).map(tab => <button key={tab.id} role="tab" aria-label={tab.text} aria-selected={railTab === tab.id} title={tab.text} onClick={() => { setRailTab(tab.id); setRailCollapsed(false); setGuidePrice(null); }} className={railTab === tab.id ? 'active' : ''}><tab.icon size={15}/><span>{tab.text}</span></button>)}
+              {([{ id: 'order', text: 'Ордер', icon: ListOrdered }, { id: 'book', text: 'Стакан', icon: Layers3 }] as const).map(tab => <button key={tab.id} role="tab" aria-label={tab.text} aria-selected={railTab === tab.id} title={tab.text} onClick={() => { setRailTab(tab.id); setRailCollapsed(false); setGuidePrice(null); }} className={railTab === tab.id ? 'active' : ''}><tab.icon size={15}/><span>{tab.text}</span></button>)}
               <button className="rail-collapse" aria-label={railCollapsed ? 'Развернуть Flow Rail' : 'Свернуть Flow Rail'} aria-expanded={!railCollapsed} onClick={() => { setRailCollapsed(v => !v); setGuidePrice(null); }}>{railCollapsed ? <PanelRightOpen size={16} /> : <PanelRightClose size={16} />}</button>
             </div>
             <div className="flow-pane" hidden={railCollapsed || railTab !== 'order'}>
               <div className="order-form-area"><OrderForm compact key={pair} pair={pair} onPlaced={handleOrderPlaced} pickedPrice={pickedPrice} onDraftChange={setDraft} /></div>
-              <FlowContext book={book} pair={pair} onPick={pickPrice} />
+              <FlowContext book={book} pair={pair} />
             </div>
             <div className="flow-pane orderbook-area" hidden={railCollapsed || railTab !== 'book'}>
               <OrderBookPanel bids={book.bids} asks={book.asks} pair={pair} onPickPrice={pickPrice} onHoverPrice={setGuidePrice} />
-              <p className="flow-source">Kraken · наведение проецирует цену на график</p>
+              <p className="flow-source">Наведение проецирует цену на график · нажатие заполняет цену ордера</p>
             </div>
-            <div className="flow-pane" hidden={railCollapsed || railTab !== 'depth'}><FlowDepth book={book} pair={pair}/></div>
-            <div className="flow-pane" hidden={railCollapsed || railTab !== 'tape'}>{railTab === 'tape' && !railCollapsed && <FlowTape pair={pair} onPick={pickPrice} onHover={setGuidePrice}/>}</div>
           </aside>
         </div>
       </div>
-      {selectorOpen && <div className="market-dialog-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) closeMarkets(); }}>
-        <div className="market-dialog" role="dialog" aria-modal="true" aria-label="Рынки и команды" ref={dialogRef}>
-          <div className="market-dialog-header"><strong>Рынки и команды</strong><button onClick={closeMarkets} aria-label="Закрыть рынки"><X size={18}/></button></div>
-          <div className="market-commands" aria-label="Команды рабочего пространства">
-            {(['standard', 'chart', 'flow'] as const).map(mode => <button key={mode} onClick={() => { applyWorkspace(mode); closeMarkets(); }}>{mode === 'standard' ? 'Standard' : mode === 'chart' ? 'Chart focus' : 'Flow'}</button>)}
-            <button onClick={() => { setDockOpen(v => !v); closeMarkets(); }}>Ордера ↕</button>
-          </div>
-          <PairListSidebar priceFormatter={formatTerminalQuote} ref={pairListRef} pair={pair} onChange={next => { setPair(next); closeMarkets(); }} />
-          <div className="market-dialog-hint"><kbd>Esc</kbd> Закрыть <span><kbd>Ctrl / ⌘ K</kbd> Команды</span></div>
-        </div>
-      </div>}
     </div>
   );
 }

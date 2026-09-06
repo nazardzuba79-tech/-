@@ -7,6 +7,8 @@ import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
 import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
+import { spotPeriodReturn, type SpotReturnPeriod } from '../lib/spotPeriodReturns';
+import { useSpotPeriodReferences } from '../lib/useSpotPeriodReferences';
 
 // Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
 // ENA, …) that the static jsDelivr icon set CryptoIcon falls back to has
@@ -80,10 +82,12 @@ export const PairListSidebar = forwardRef<
     onResizeStart?: (event: React.PointerEvent<HTMLDivElement>) => void;
     /** Optional display precision only; sorting still uses the raw ticker. */
     priceFormatter?: (price: number) => string;
+    /** Spot-only rolling period controls. Futures/default consumers unchanged. */
+    periodControls?: boolean;
   }
 >(
-  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart, priceFormatter = formatPrice }, ref) {
-    const { t } = useLanguage();
+  function PairListSidebar({ pair, onChange, onCollapse, onResizeStart, priceFormatter = formatPrice, periodControls = false }, ref) {
+    const { t, lang } = useLanguage();
     const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
@@ -94,9 +98,21 @@ export const PairListSidebar = forwardRef<
     const { field: sortField, dir: sortDir } = sortMode;
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
     const [favoritesOnly, setFavoritesOnly] = useState(false);
+    const [returnPeriod, setReturnPeriod] = useState<SpotReturnPeriod>('24H');
     // Shared with Markets, the futures pair list and the homepage table —
     // starring here shows up there immediately (see lib/useFavorites).
     const { favorites, toggle: toggleFavoritePair } = useFavorites();
+    const historyPairs = useMemo(() => {
+      const candidates = filterAndSortPairs(tickers, { search, quoteFilter, favoritesOnly, favorites });
+      // Current instrument first, then the visible universe by real turnover.
+      // The hook keys the membership set, so ticker resorting never restarts it.
+      return [...new Set([pair, ...candidates.map(ticker => ticker.pair)])];
+    }, [tickers, pair, search, quoteFilter, favoritesOnly, favorites]);
+    const { references, loading: historyLoading } = useSpotPeriodReferences(historyPairs, periodControls);
+    const changeByPair = periodControls ? new Map(tickers.map(ticker => {
+      const record = references.get(ticker.pair);
+      return [ticker.pair, spotPeriodReturn(ticker.lastPrice, returnPeriod === '7D' ? record?.week : record?.day, returnPeriod)] as const;
+    })) : undefined;
     const searchRef = useRef<HTMLInputElement>(null);
     // The row ORDER is driven by this snapshot of each pair's volume, not
     // the live figure straight off every 4s poll. Real quoteVolume24h is a
@@ -202,6 +218,7 @@ export const PairListSidebar = forwardRef<
       categoryFilter: null,
       sortField,
       sortDir,
+      changeByPair,
     });
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
@@ -252,17 +269,27 @@ export const PairListSidebar = forwardRef<
           ))}
         </div>
 
+        {periodControls && <div className="pairs-periods" role="group" aria-label={lang === 'ru' ? 'Период изменения цены' : 'Price change period'}>
+          {(['24H', '7D'] as const).map(period => <button type="button" key={period} aria-pressed={returnPeriod === period}
+            className={returnPeriod === period ? 'active' : ''} onClick={() => setReturnPeriod(period)}>{period}</button>)}
+          <span className="pairs-period-status" aria-live="polite" title={lang === 'ru'
+            ? 'Изменение к закрытию перед границей периода. Точность истории: 15 минут; без истории — прочерк.'
+            : 'Return from the completed close before the rolling boundary. Historical resolution: 15 minutes; missing history is unavailable.'}>
+            {historyLoading ? (lang === 'ru' ? 'История…' : 'History…') : `${historyPairs.filter(candidate => changeByPair?.get(candidate) != null).length}/${historyPairs.length}`}
+          </span>
+        </div>}
+
         <div className="pairs-sort">
-          <button type="button" onClick={() => toggleSort('volume')}>
+          <button type="button" data-sort-field="volume" data-sort-dir={sortField === 'volume' ? sortDir : undefined} onClick={() => toggleSort('volume')}>
             {t('trade.volume24h')} <SortArrow active={sortField === 'volume'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('price')}>
+          <button type="button" data-sort-field="price" data-sort-dir={sortField === 'price' ? sortDir : undefined} onClick={() => toggleSort('price')}>
             {t('trade.price')} <SortArrow active={sortField === 'price'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('change')}>
-            {t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
+          <button type="button" data-sort-field="change" data-sort-dir={sortField === 'change' ? sortDir : undefined} onClick={() => toggleSort('change')}>
+            {periodControls ? (returnPeriod === '7D' ? (lang === 'ru' ? '7д %' : '7d %') : (lang === 'ru' ? '24ч %' : '24h %')) : t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
           </button>
-          <button type="button" onClick={() => toggleSort('symbol')} title="Символ A–Z">
+          <button type="button" data-sort-field="symbol" data-sort-dir={sortField === 'symbol' ? sortDir : undefined} onClick={() => toggleSort('symbol')} title="Символ A–Z">
             A–Z <SortArrow active={sortField === 'symbol'} dir={sortDir} />
           </button>
         </div>
@@ -272,11 +299,15 @@ export const PairListSidebar = forwardRef<
             // Rounded before the direction is picked from it, not after: a
             // change of -0.001% otherwise printed as a red, downward
             // "▼ -0.00%" — an arrow and a sign pointing at nothing.
-            const change = Number(parseChangePercent(tk.changePercent24h, tk.pair).toFixed(2));
-            const up = change >= 0;
+            const rawChange = periodControls ? changeByPair?.get(tk.pair) ?? null : parseChangePercent(tk.changePercent24h, tk.pair);
+            const change = rawChange === null ? null : Number(rawChange.toFixed(2));
+            const up = change !== null && change >= 0;
+            const reference = references.get(tk.pair)?.[returnPeriod === '7D' ? 'week' : 'day'];
             return (
               <button
                 key={tk.pair}
+                data-pair={tk.pair}
+                data-last-price={tk.lastPrice}
                 className={`pair-row ${tk.pair === pair ? 'active' : ''}`}
                 onClick={() => onChange(tk.pair)}
               >
@@ -300,9 +331,10 @@ export const PairListSidebar = forwardRef<
                   <span className="p-quote">/{tk.pair.split('/')[1]}</span>
                 </span>
                 <span className="p-price">{priceFormatter(parseFloat(tk.lastPrice))}</span>
-                <span className={`p-change ${up ? 'up' : 'down'}`}>
-                  {up ? '▲' : '▼'} {up ? '+' : ''}
-                  {change.toFixed(2)}%
+                <span className={`p-change ${change === null ? 'unavailable' : up ? 'up' : 'down'}`}
+                  data-change-value={rawChange ?? undefined} data-reference-price={periodControls ? reference?.price : undefined}
+                  data-reference-time={periodControls ? reference?.time : undefined}>
+                  {change === null ? '—' : <>{periodControls ? '' : up ? '▲ ' : '▼ '}{up ? '+' : ''}{change.toFixed(2)}%</>}
                 </span>
               </button>
             );

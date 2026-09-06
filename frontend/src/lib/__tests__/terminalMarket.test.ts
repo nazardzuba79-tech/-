@@ -30,7 +30,9 @@ test('spine contains no duplicate bid/ask labels, financial constants or archive
   expect(spine).toContain('api.getExternalTicker(pair)'); expect(spine).toContain('terminalBookMetrics');
   expect(spine).toContain("t('trade.spread')");
   const flow = fs.readFileSync(path.join(root, 'FlowContext.tsx'), 'utf8');
-  expect(flow).toContain('Best bid'); expect(flow).toContain('Best ask');
+  expect(flow).not.toMatch(/Best\s*(Bid|Ask)|Лучший\s*(бид|аск)/i);
+  expect(flow).toContain('terminalBookMetrics(book.bids, book.asks)');
+  expect(flow).toContain('m.spread'); expect(flow).toContain('m.depth');
 });
 test('entry and hover props reach the chart; one real order form stays mounted across rail tabs', () => {
   const page = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');

@@ -6,6 +6,9 @@ import { resolve } from 'path';
 import { createKseniaReviewState, advanceKseniaReview, kseniaReviewResponse } from '../services/copyTrading/kseniaReview';
 import { resolveStrategyOwner, KSENIA_EXTERNAL_OWNER_ID, PUBLIC_STRATEGIES } from '../services/copyTrading/strategyOwner';
 import type { CashflowReviewState } from '../services/copyTrading/reviewEconomicsTypes';
+import { KrakenMarketDataService } from '../services/KrakenMarketDataService';
+import { SpotPeriodReferenceService } from '../services/marketData/SpotPeriodReferenceService';
+import { spotPeriodReferenceRouter } from '../services/marketData/SpotPeriodReferenceRouter';
 
 /** Dedicated entry point, never src/index.ts. No matching, wallet, auth,
  * deposit or copy-execution service is even imported. Only allowlisted GETs. */
@@ -64,6 +67,9 @@ export async function startReviewBackend() {
   app.use(helmet());
   app.use((_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); res.setHeader('X-Robots-Tag', 'noindex, nofollow'); next(); });
   app.use((req, res, next) => { if (!['GET', 'HEAD'].includes(req.method)) { res.status(403).json({ error: 'Isolated review: account operations disabled' }); return; } next(); });
+  // Only a bounded read-only historical-reference route, no general API proxy.
+  // Match the review terminal's native USD/USDT feeds, not legacy quote aliases.
+  app.use('/api/v1', spotPeriodReferenceRouter(new SpotPeriodReferenceService(new KrakenMarketDataService(undefined, undefined, {}, true))));
   app.get('/health', async (_req, res) => {
     try { await db.$queryRaw`SELECT 1`; res.json({ status: 'ok', environment: 'isolated-review', database: 'voltex-review-db', commit: process.env.RENDER_GIT_COMMIT ?? 'local', productionConnection: false }); }
     catch { res.status(503).json({ status: 'unavailable' }); }

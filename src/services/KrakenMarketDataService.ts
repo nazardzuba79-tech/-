@@ -168,7 +168,8 @@ export class KrakenMarketDataService {
   constructor(
     private readonly baseUrl = 'https://api.kraken.com',
     private readonly fetchFn: typeof fetch = fetch,
-    policy: ProviderRequestPolicy = {}
+    policy: ProviderRequestPolicy = {},
+    private readonly nativeQuotes = false
   ) {
     this.health = providerHealthRegistry.register(
       new ProviderHealth('kraken', { onStateChange: logCircuitTransition })
@@ -356,7 +357,7 @@ export class KrakenMarketDataService {
     // USDT pair is missing outright. A coin genuinely listed only against
     // USDT on Kraken (no USD counterpart at all) is unaffected — this loop
     // only runs for entries that came from a real "/USD" pair.
-    for (const info of Array.from(byPair.values())) {
+    for (const info of this.nativeQuotes ? [] : Array.from(byPair.values())) {
       if (info.quoteAsset !== 'USD') continue;
       // USDT/USD would relabel to "USDT/USDT" — an asset quoted against
       // itself, which is not a market and showed up in the pair list as a

@@ -29,7 +29,7 @@ import './review.css';
 function ReviewContent() {
   const tradeReview = useLocation().pathname === '/trade';
   return <>
-    {tradeReview ? <aside className="review-notice review-notice--terminal" role="note"><strong>VOLTEX · REVIEW</strong><span>Публичные данные Kraken. Операции с аккаунтом отключены.</span></aside> : <aside className="review-notice" role="note">
+    {tradeReview ? <aside className="review-notice review-notice--terminal" role="note"><strong>VOLTEX · REVIEW</strong><span>Операции с аккаунтом отключены.</span></aside> : <aside className="review-notice" role="note">
       <strong>VOLTEX · ISOLATED VISUAL REVIEW</strong>
       <span>No production connection. Do not enter real credentials. Account data and all API writes are disabled. Copy Trading figures are synthetic; market feeds may be unavailable.</span>
       <nav aria-label="Review pages">{['login', 'register', 'copy-trading', 'wallet', 'markets', 'futures', 'physical-cards'].map(path => <Link key={path} to={`/${path}`}>{path}</Link>)}</nav>

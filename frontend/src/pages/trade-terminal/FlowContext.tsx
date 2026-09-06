@@ -5,19 +5,17 @@ import { formatTerminalQuote as formatPrice } from '../../lib/terminalExecution'
 import { krakenSocket, type BookSnapshot, type LiveTrade } from '../../lib/krakenSocket';
 import { terminalBookMetrics } from '../../lib/terminalMarket';
 
-export function FlowContext({ book, pair, onPick }: { book: BookSnapshot; pair: string; onPick: (price: string) => void }) {
+export function FlowContext({ book, pair }: { book: BookSnapshot; pair: string }) {
   const m = terminalBookMetrics(book.bids, book.asks);
   const currency = pair.split('/')[1];
   return <section className="rail-context" aria-label="Контекст исполнения">
-    <div className="context-heading"><strong>MARKET CONTEXT</strong><span>Kraken · {currency}</span></div>
+    <div className="context-heading"><strong>MARKET CONTEXT</strong><span>{currency}</span></div>
     <div className="context-metrics">
-      <button disabled={m.bestBid === null} onClick={() => onPick(String(m.bestBid))}><span>Best bid</span><strong className="up">{m.bestBid === null ? '—' : formatPrice(m.bestBid)}</strong></button>
-      <button disabled={m.bestAsk === null} onClick={() => onPick(String(m.bestAsk))}><span>Best ask</span><strong className="down">{m.bestAsk === null ? '—' : formatPrice(m.bestAsk)}</strong></button>
       <div><span>Спред</span><strong>{m.spread === null ? '—' : formatPrice(m.spread)}</strong></div>
       <div><span>Глубина ±0,5%</span><strong>{m.depth === null ? '—' : `${formatCompact(m.depth)} ${currency}`}</strong></div>
     </div>
     {m.bidShare !== null && <><div className="liquidity-balance" aria-label={`Bids ${(m.bidShare * 100).toFixed(1)}%, asks ${((1 - m.bidShare) * 100).toFixed(1)}%`}><span style={{ width: `${m.bidShare * 100}%` }} /></div><div className="liquidity-labels"><span>BID {(m.bidShare * 100).toFixed(1)}%</span><span>ASK {((1 - m.bidShare) * 100).toFixed(1)}%</span></div></>}
-    <p className="flow-source">Публичная глубина Kraken. Ордер исполняется в стакане VOLTEX.</p>
+    <p className="flow-source">Рыночная глубина. Ордер исполняется в стакане VOLTEX.</p>
   </section>;
 }
 
@@ -40,7 +38,7 @@ export function FlowDepth({ book, pair }: { book: BookSnapshot; pair: string }) 
       <path d={`${path(bids)} L${x(bids[bids.length-1].price)},210 L${x(bids[0].price)},210 Z`} fill="rgba(46,189,133,.12)" /><path d={path(bids)} fill="none" stroke="#40c99c" strokeWidth="2" />
       <path d={`${path(asks)} L${x(asks[asks.length-1].price)},210 L${x(asks[0].price)},210 Z`} fill="rgba(240,97,109,.12)" /><path d={path(asks)} fill="none" stroke="#ef7b87" strokeWidth="2" />
       <text x="30" y="234" fill="currentColor" fontSize="10">{formatPrice(min)}</text><text x="370" y="234" fill="currentColor" fontSize="10" textAnchor="end">{formatPrice(max)}</text>
-    </svg><p className="flow-source">Накопленный объём {pair.split('/')[0]} · доступные уровни Kraken</p>
+    </svg><p className="flow-source">Накопленный объём {pair.split('/')[0]} · доступные рыночные уровни</p>
   </section>;
 }
 
@@ -65,10 +63,10 @@ export function FlowTape({ pair, onPick, onHover }: { pair: string; onPick: (pri
     load(); const timer = window.setInterval(load, 5000);
     return () => { active = false; unsub(); unsubStatus(); window.clearInterval(timer); onHover(null); };
   }, [pair, onHover]);
-  return <section className="flow-tape" aria-label="Публичные сделки Kraken"><div className="flow-tape-head"><span>Цена</span><span>{pair.split('/')[0]}</span><span>Время</span></div>
+  return <section className="flow-tape" aria-label="Рыночные сделки"><div className="flow-tape-head"><span>Цена</span><span>{pair.split('/')[0]}</span><span>Время</span></div>
     {trades.length === 0 && <div className="flow-empty">Ожидание рыночных сделок</div>}
     {trades.map(trade => <button key={trade.id} onClick={() => onPick(trade.price)} onMouseEnter={() => onHover(Number(trade.price))} onMouseLeave={() => onHover(null)} onFocus={() => onHover(Number(trade.price))} onBlur={() => onHover(null)}>
       <strong className={trade.side === 'BUY' ? 'up' : 'down'}>{formatPrice(Number(trade.price))}</strong><span>{Number(trade.quantity).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span><time>{new Date(trade.time).toLocaleTimeString()}</time>
-    </button>)}<p className="flow-source">Kraken · публичные сделки, не ордера аккаунта</p>
+    </button>)}<p className="flow-source">Рыночные сделки, не ордера аккаунта</p>
   </section>;
 }

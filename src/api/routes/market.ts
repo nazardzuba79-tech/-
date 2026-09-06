@@ -4,6 +4,8 @@ import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGecko
 import { FearGreedService } from '../../services/FearGreedService';
 import { PrismaClient } from '@prisma/client';
 import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrading/strategyOwner';
+import { SpotPeriodReferenceService } from '../../services/marketData/SpotPeriodReferenceService';
+import { spotPeriodReferenceRouter } from '../../services/marketData/SpotPeriodReferenceRouter';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -23,6 +25,7 @@ export function marketRouter(
   prisma: PrismaClient
 ): Router {
   const router = Router();
+  router.use(spotPeriodReferenceRouter(new SpotPeriodReferenceService(marketDataService)));
   router.get('/copy-trading/identities', async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try { res.json({ identities: await Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))) }); }

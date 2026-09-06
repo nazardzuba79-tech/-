@@ -68,6 +68,20 @@ describe('pairToKrakenSymbol', () => {
 });
 
 describe('KrakenMarketDataService', () => {
+  it('opt-in native-quote review reader never substitutes USD history for a real USDT pair', async () => {
+    const nativePairs = { error: [], result: {
+      XBTUSDT: { altname: 'XBTUSDT', wsname: 'XBT/USDT', base: 'XBT', quote: 'USDT' },
+      XXBTZUSD: { altname: 'XBTUSD', wsname: 'XBT/USD', base: 'XBT', quote: 'USD' },
+      TRXUSD: { altname: 'TRXUSD', wsname: 'TRX/USD', base: 'TRX', quote: 'USD' },
+    } };
+    const fetchFn = jest.fn().mockImplementation(async (url: string) => jsonResponse(url.includes('AssetPairs') ? nativePairs : OHLC_BODY));
+    const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn, {}, true);
+    const symbols = await service.listSymbols();
+    expect(symbols.map(symbol => symbol.pair)).not.toContain('TRX/USDT');
+    await service.getCandles('BTC/USDT', '15m', 720);
+    expect(fetchFn.mock.calls.find(([url]) => url.includes('OHLC'))?.[0]).toContain('pair=XBTUSDT&interval=15');
+  });
+
   it('lists symbols from AssetPairs, normalizing XBT to BTC and skipping dark pool entries', async () => {
     const fetchFn = jest.fn().mockResolvedValue(jsonResponse(ASSET_PAIRS_BODY));
     const service = new KrakenMarketDataService('https://api.kraken.com', fetchFn);

@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, Command, LayoutTemplate } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { api } from '../../lib/api';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { formatCompact } from '../../lib/formatNumber';
 import { formatTerminalQuote, formatTerminalSpreadPercent } from '../../lib/terminalExecution';
 import { parseChangePercent } from '../../lib/priceChange';
 import { useLanguage } from '../../lib/i18n';
-import { terminalBookMetrics, type TerminalWorkspace } from '../../lib/terminalMarket';
+import { terminalBookMetrics } from '../../lib/terminalMarket';
 import type { BookSnapshot } from '../../lib/krakenSocket';
 
 type Ticker = Awaited<ReturnType<typeof api.getExternalTicker>>['ticker'];
 
-export function MarketSpine({ pair, book, onOpenMarkets, workspace, onWorkspaceChange }: {
+export function MarketSpine({ pair, book, onOpenMarkets }: {
   pair: string; book: BookSnapshot; onOpenMarkets: () => void;
-  workspace: TerminalWorkspace; onWorkspaceChange: (workspace: TerminalWorkspace) => void;
 }) {
   const { t } = useLanguage();
   const [quote, setQuote] = useState<{ pair: string; ticker: Ticker } | null>(null);
@@ -60,12 +59,6 @@ export function MarketSpine({ pair, book, onOpenMarkets, workspace, onWorkspaceC
       <Metric label={`24h ${currency}`} value={ticker ? formatCompact(Number(ticker.quoteVolume24h)) : '—'} />
       <Metric label={t('trade.spread')} value={metrics.spread === null ? '—' : `${formatTerminalQuote(metrics.spread)} · ${formatTerminalSpreadPercent(metrics.spreadPercent!)}`} />
       <Metric label="Глубина ±0,5%" value={metrics.depth === null ? '—' : `${formatCompact(metrics.depth)} ${currency}`} title="Сумма доступных уровней публичного стакана в пределах ±0,5% от середины. Не полный объём рынка." />
-    </div>
-    <div className="workspace-controls">
-      <button className="command-trigger" onClick={onOpenMarkets} aria-label="Командная панель" title="Поиск и команды · Ctrl/⌘ K"><Command size={16} /><kbd>⌘K</kbd></button>
-      <label title="Рабочее пространство"><LayoutTemplate size={15} /><select aria-label="Рабочее пространство" value={workspace} onChange={e => onWorkspaceChange(e.target.value as TerminalWorkspace)}>
-        <option value="standard">Standard</option><option value="chart">Chart focus</option><option value="flow">Flow</option>
-      </select></label>
     </div>
   </section>;
 }

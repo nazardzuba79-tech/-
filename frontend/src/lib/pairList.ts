@@ -114,6 +114,9 @@ export function filterAndSortPairs(
     // appear at the top only when their real turnover puts them there.
     sortField?: 'volume' | 'change' | 'price' | 'symbol';
     sortDir?: 1 | -1;
+    /** Opt-in actual rolling changes for Spot. An absent quote/history value
+     * sorts last in either direction; other consumers retain legacy defaults. */
+    changeByPair?: ReadonlyMap<string, number | null>;
   }
 ): TickerRow[] {
   const rankByBase = opts.rankByBase;
@@ -148,6 +151,14 @@ export function filterAndSortPairs(
         if (rankA !== rankB) return rankA - rankB;
       }
       if (opts.sortField === 'change') {
+        if (opts.changeByPair) {
+          const changeA = opts.changeByPair.get(a.pair);
+          const changeB = opts.changeByPair.get(b.pair);
+          const validA = typeof changeA === 'number' && Number.isFinite(changeA);
+          const validB = typeof changeB === 'number' && Number.isFinite(changeB);
+          if (!validA || !validB) return validA ? -1 : validB ? 1 : 0;
+          return (changeA - changeB) * sortDir;
+        }
         const changeA = parseChangePercent(a.changePercent24h, a.pair);
         const changeB = parseChangePercent(b.changePercent24h, b.pair);
         return (changeA - changeB) * sortDir;

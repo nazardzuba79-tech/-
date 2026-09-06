@@ -502,6 +502,13 @@ export const api = {
       }[];
     }>('/market/external/tickers'),
 
+  // Only historical closes from our own bounded read-only API. The terminal
+  // combines them with its live same-pair price; no browser provider fan-out.
+  getSpotPeriodReferences: (pairs: readonly string[]) =>
+    request<import('./spotPeriodReturns').SpotPeriodReferencesResponse>(
+      `/market/external/period-references?pairs=${encodeURIComponent(pairs.join(','))}`
+    ),
+
   getCfdTickers: () =>
     request<{
       source: string;

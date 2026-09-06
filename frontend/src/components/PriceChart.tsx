@@ -537,6 +537,17 @@ export function PriceChart({ pair, chrome = 'default', appearance = 'default', d
   // Load candles whenever pair/interval changes, and poll for updates.
   useEffect(() => {
     let cancelled = false;
+    // Spot transition guard: never label another instrument/timeframe's
+    // last-known series as this one when its initial history request fails.
+    // Same-market background polls still retain their last successful data.
+    if (premium) {
+      candlesRef.current = [];
+      for (const ref of [seriesRef, volumeSeriesRef, lineSeriesRef, areaSeriesRef,
+        maSeriesRef, bollUpperRef, bollMiddleRef, bollLowerRef, rsiSeriesRef,
+        macdLineRef, macdSignalRef, macdHistRef]) ref.current?.setData([]);
+      setEmpty(true);
+    }
+    // End Spot transition guard.
     // Only set the initial visible range once per pair/interval — every
     // later poll must leave the user's own pan/zoom alone.
     let hasSetInitialRange = false;
@@ -607,8 +618,8 @@ export function PriceChart({ pair, chrome = 'default', appearance = 'default', d
 
         forceRedraw((n) => n + 1);
       } catch {
-        // Chart just stays empty on failure — not worth a full error state
-        // for a background poll.
+        // Initial Spot failure keeps the existing no-data state, not another
+        // pair's candles. A same-market background poll keeps last-known data.
       }
     }
 
@@ -1174,7 +1185,7 @@ export function PriceChart({ pair, chrome = 'default', appearance = 'default', d
           })}
 
           {empty && (
-            <div style={styles.emptyOverlay}>
+            <div className={premium ? 'spot-chart-empty' : undefined} style={styles.emptyOverlay}>
               <span style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('trade.noChartData', { pair })}</span>
             </div>
           )}
