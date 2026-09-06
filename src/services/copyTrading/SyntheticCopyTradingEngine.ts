@@ -3,6 +3,7 @@ import { addUtcDays, addUtcMonths, calculateAnalytics, dayDiff, followerMasterAt
 import { DailyResult, SyntheticCopyResponse, SyntheticCopyState, SyntheticFollower, SyntheticFollowerEvent, SyntheticTrade } from './types';
 import { requireCashflowState, toCashflowReviewResponse } from './reviewEconomics';
 import { advanceCashflowMasterState } from './reviewMasterLedger';
+import { advanceSimpleReturnMasterState } from './reviewPerformanceV8';
 import { refreshReviewFollowerLedgers } from './reviewFollowerLedger';
 
 const round = (value: number, digits = 8) => Number(value.toFixed(digits));
@@ -366,8 +367,10 @@ function targetNextEquity(state: SyntheticCopyState): number {
 
 export function advanceState(state: SyntheticCopyState, days: number): SyntheticCopyState {
   if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Days must be an integer from 1 to 365');
-  if (state.version === 7) {
-    const advanced = advanceCashflowMasterState(requireCashflowState(state), days);
+  if (state.version === 7 || state.version === 8) {
+    const advanced = state.version === 8
+      ? advanceSimpleReturnMasterState(requireCashflowState(state), days)
+      : advanceCashflowMasterState(requireCashflowState(state), days);
     refreshReviewFollowerLedgers(advanced);
     return advanced;
   }
@@ -390,7 +393,14 @@ export function catchUpRealTime(state: SyntheticCopyState, now = new Date()): Sy
   const currentDate = state.equityHistory[state.equityHistory.length - 1].date;
   const today = utcDay(now);
   const days = Math.max(0, Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${currentDate}T00:00:00Z`)) / 86_400_000));
-  const advanced = days ? advanceState(state, days) : JSON.parse(JSON.stringify(state));
+  let advanced = days && (state.version !== 8 || days <= 365) ? advanceState(state, days) : JSON.parse(JSON.stringify(state));
+  if (state.version === 8 && days > 365) {
+    for (let remaining = days; remaining > 0;) {
+      const count = Math.min(365, remaining);
+      advanced = advanceState(advanced, count);
+      remaining -= count;
+    }
+  }
   advanced.mode = 'REAL_TIME';
   return advanced;
 }
@@ -398,7 +408,7 @@ export function catchUpRealTime(state: SyntheticCopyState, now = new Date()): Sy
 export function applyFollowerEvent(state: SyntheticCopyState, event: SyntheticFollowerEvent): SyntheticCopyState {
   // The review cohort is a versioned authored scenario, not an account API.
   // Legacy admin behavior is unchanged; do not replay v7 using its old scaler.
-  if (state.version === 7) throw new Error('Review cohort changes require explicit allocation-ledger events');
+  if (state.version === 7 || state.version === 8) throw new Error('Review cohort changes require explicit allocation-ledger events');
   const copy: SyntheticCopyState = JSON.parse(JSON.stringify(state));
   ensureAumHistory(copy);
   if (event.type === 'NEW') {
@@ -431,7 +441,7 @@ export function applyFollowerEvent(state: SyntheticCopyState, event: SyntheticFo
 }
 
 export function toResponse(state: SyntheticCopyState): SyntheticCopyResponse {
-  if (state.version === 7) return toCashflowReviewResponse(state);
+  if (state.version === 7 || state.version === 8) return toCashflowReviewResponse(state);
   ensureAumHistory(state);
   return {
     trader: { id: 'VX-001', name: 'Nazara', vip: true },

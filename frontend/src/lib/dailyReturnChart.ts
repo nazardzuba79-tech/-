@@ -1,10 +1,12 @@
 /** Canonical cash-flow-neutral returns, converted to percent only. On v7 the
  * public startEquity is a TWR index, NOT the private strategy capital: never
  * divide money PnL by that index. dailyReturn already comes from the ledger's
- * net trading PnL / full day-start capital, excluding external cash flows.
+ * net trading PnL / canonical capital at risk (v7 day-start account; v8
+ * available operating-capital target), excluding external cash flows.
  * Geometry is linear about zero; no smoothing, clipping or redistribution.
  */
-export function dailyReturnChart(days: readonly { date: string; dailyReturn: number; realizedPnl?: number }[]) {
+export function dailyReturnChart(days: readonly { date: string; dailyReturn: number; realizedPnl?: number }[],
+  methodology: 'DAILY_TWR' | 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' = 'DAILY_TWR') {
   // Fit the complete period into the panel, not a nine-pixel/day strip that
   // exposes only ~90 of 380 days on desktop. This changes x spacing only:
   // one bar/day, original return, linear zero-based y scale, no aggregation.
@@ -20,9 +22,11 @@ export function dailyReturnChart(days: readonly { date: string; dailyReturn: num
   const step = width / Math.max(1, days.length);
   return {
     width, zero,
-    roi: (days.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100,
+    roi: methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+      ? values.reduce((sum, value) => sum + value, 0)
+      : (days.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100,
     // Arithmetic mean across ALL visible calendar days, including leave/zeros.
-    // This is not period ROI divided by the number of days.
+    // Equals period ROI / day count only for the additive v8 methodology.
     average: values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0,
     bars: days.map((day, index) => ({
       ...day, returnPct: values[index], x: index * step + step * .2, width: step * .6,

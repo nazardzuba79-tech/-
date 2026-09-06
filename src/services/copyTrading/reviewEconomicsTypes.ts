@@ -3,6 +3,10 @@ import type { SyntheticCopyState, SyntheticFollower } from './types';
 /** Isolated synthetic review accounting. Never a real account/Wallet ledger. */
 export interface MasterCapitalDay {
   date: string;
+  /** v8: fixed within the strategy week, distinct from accumulated account cash. */
+  operatingCapitalTarget?: number;
+  nextOperatingCapitalTarget?: number;
+  retainedProfit?: number;
   openingEquity: number;
   capitalAtRisk: number;
   tradingPnl: number;
@@ -37,8 +41,9 @@ export interface ReviewFollower extends SyntheticFollower {
   startingAllocation: number; grossPnl: number; performanceFees: number;
   netPnl: number; copiedVolume: number; highWaterMark: number;
 }
+export type ReviewReturnMethodology = 'DAILY_TWR' | 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
 export interface ReviewEconomicsPolicy {
-  methodology: 'DAILY_TWR'; performanceFeeRate: number;
+  methodology: ReviewReturnMethodology; performanceFeeRate: number;
   feeCrystallization: string; copyMinimumPolicyEffectiveDate: string;
   currentCopyMinimum: number;
   holidays: { start: string; end: string; reason: string }[];
@@ -52,7 +57,7 @@ export interface CashflowLedger {
   performanceFeeEvents: PerformanceFeeEvent[];
 }
 export interface CashflowReviewState extends SyntheticCopyState {
-  version: 7;
+  version: 7 | 8;
   followers: ReviewFollower[];
   cashflow: CashflowLedger;
 }
@@ -67,7 +72,7 @@ export interface ReviewPeriodEconomics {
 }
 /** Public projection intentionally excludes private master capital/cash flows. */
 export interface ReviewEconomicsResponse {
-  methodology: 'DAILY_TWR'; performanceFeeRate: number;
+  methodology: ReviewReturnMethodology; performanceFeeRate: number;
   policy: ReviewEconomicsPolicy;
   periods: Record<ReviewPeriod, ReviewPeriodEconomics>;
   cumulativePnlHistory: { date: string; pnl: number }[];

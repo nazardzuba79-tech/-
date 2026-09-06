@@ -8,8 +8,31 @@ const money = (values: number[]) => round(sum(values));
 export const REVIEW_PERIODS: ReviewPeriod[] = ['7D', '30D', '90D', 'ALL'];
 
 export function requireCashflowState(state: SyntheticCopyState): CashflowReviewState {
-  if (state.version !== 7 || !('cashflow' in state)) throw new Error('Expected isolated cash-flow review state v7');
+  if ((state.version !== 7 && state.version !== 8) || !('cashflow' in state)) throw new Error('Expected isolated cash-flow review state v7 or v8');
   return state as CashflowReviewState;
+}
+
+/** v8 is simple return on operating capital, not geometric reinvestment.
+ * The historical v7 calculation deliberately remains unchanged. */
+export function reviewPeriodReturn(state: Pick<CashflowReviewState, 'version'>, returns: readonly number[]): number {
+  return state.version === 8
+    ? returns.reduce((total, value) => total + value, 0) * 100
+    : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100;
+}
+
+/** v8 drawdown is relative peak-to-trough loss on a selected-window additive
+ * performance index, rebased to 100. It is NOT account-balance drawdown: cash
+ * withdrawals/deposits are absent, and earlier ALL gains cannot dilute a
+ * rolling window's drawdown by leaving its opening index at a high level.
+ * No daily return, loss or resulting metric is clipped. */
+export function reviewPerformanceDrawdown(state: Pick<CashflowReviewState, 'version'>,
+  daily: readonly { date: string; dailyReturn: number }[], equity: { date: string; equity: number }[]): number {
+  if (state.version !== 8) return maximumDrawdown(equity);
+  let cumulativeReturn = 0;
+  const rebased = [{ date: equity[0]?.date ?? '', equity: 100 }, ...daily.map(day => ({
+    date: day.date, equity: 100 + (cumulativeReturn += day.dailyReturn) * 100,
+  }))];
+  return maximumDrawdown(rebased);
 }
 
 /** Calendar-day risk on cash-flow-neutral returns; target/risk-free return is 0. */
@@ -44,7 +67,7 @@ export function calculateReviewPeriod(state: CashflowReviewState, period: Review
   const gains = sum(trades.filter(trade => trade.netPnl > 0).map(trade => trade.netPnl));
   const losses = -sum(trades.filter(trade => trade.netPnl < 0).map(trade => trade.netPnl));
   return {
-    roi: (daily.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100,
+    roi: reviewPeriodReturn(state, daily.map(day => day.dailyReturn)),
     masterPnl: money(trades.map(trade => trade.netPnl)),
     masterTradingVolume: round(sum(trades.map(trade => trade.entryPrice * trade.quantity)), 2),
     copiedTradingVolume: round(sum(copied.map(trade => trade.notional)), 2),
@@ -54,7 +77,7 @@ export function calculateReviewPeriod(state: CashflowReviewState, period: Review
     activeTradingDays: daily.filter(day => day.numberOfTrades > 0).length,
     calendarDays: daily.length,
     ...reviewRisk(daily.map(day => day.dailyReturn)),
-    maximumDrawdown: maximumDrawdown(equity),
+    maximumDrawdown: reviewPerformanceDrawdown(state, daily, equity),
     profitFactor: losses > 0 ? gains / losses : null,
   };
 }
@@ -74,8 +97,13 @@ export function calculateCashflowAnalytics(input: SyntheticCopyState): Synthetic
   const p30 = calculateReviewPeriod(state, '30D');
   const p90 = calculateReviewPeriod(state, '90D');
   const recent = reviewSlice(state, '90D');
-  const result = outcomes(recent.trades);
   const lifetime = outcomes(state.trades);
+  // v8's headline count and win rate describe the same complete trade book.
+  // Window-specific ratios remain in economics.periods; preserve v7's legacy
+  // numeric DTO convention, which used the recent 90-day outcomes here.
+  const result = state.version === 8 ? lifetime : outcomes(recent.trades);
+  const resultTrades = state.version === 8 ? state.trades : recent.trades;
+  const resultPnl = state.version === 8 ? all.masterPnl : p90.masterPnl;
   const averageWinR = result.wins.length ? sum(result.wins.map(trade => trade.riskR)) / result.wins.length : 0;
   const averageLossR = result.losses.length ? -sum(result.losses.map(trade => trade.riskR)) / result.losses.length : 0;
   const active = state.followers.filter(follower => follower.active);
@@ -89,10 +117,14 @@ export function calculateCashflowAnalytics(input: SyntheticCopyState): Synthetic
     plRatio: averageLossR ? round(averageWinR / averageLossR) : 0,
     grossProfit: result.grossProfit, grossLoss: result.grossLoss,
     profitFactor: p90.profitFactor ?? 0,
-    expectancy: recent.trades.length ? round(p90.masterPnl / recent.trades.length) : 0,
+    expectancy: resultTrades.length ? round(resultPnl / resultTrades.length) : 0,
     expectancyR: round(result.winRate / 100 * averageWinR - (1 - result.winRate / 100) * averageLossR),
     sharpe: p90.sharpe ?? 0, sortino: p90.sortino ?? 0,
-    calmar: p90.maximumDrawdown ? ((1 + p90.roi / 100) ** (365 / Math.max(1, p90.calendarDays)) - 1) / (p90.maximumDrawdown / 100) : 0,
+    // Simple-return annualization is linear. Retaining the old geometric
+    // exponent would reintroduce the very reinvestment assumption v8 removes.
+    calmar: p90.maximumDrawdown ? (state.version === 8
+      ? p90.roi / 100 * 365 / Math.max(1, p90.calendarDays)
+      : (1 + p90.roi / 100) ** (365 / Math.max(1, p90.calendarDays)) - 1) / (p90.maximumDrawdown / 100) : 0,
     annualizedVolatility: p90.annualizedVolatility,
     totalTradingDays: all.calendarDays, totalTrades: state.trades.length,
     winningTrades: result.wins.length, losingTrades: result.losses.length,
@@ -119,7 +151,10 @@ export function summarizeCashflowPeriods(state: CashflowReviewState, unit: 'week
   const groups = new Map<string, typeof state.dailyResults>();
   for (const day of state.dailyResults) {
     const date = new Date(`${day.date}T00:00:00Z`);
-    const key = unit === 'month' ? day.date.slice(0, 7) : addUtcDays(day.date, -(date.getUTCDay() + 6) % 7);
+    // v8 operating-capital and return plans use Sunday–Saturday weeks. Keep
+    // the historical v7 Monday–Sunday summary boundaries unchanged.
+    const weekOffset = state.version === 8 ? date.getUTCDay() : (date.getUTCDay() + 6) % 7;
+    const key = unit === 'month' ? day.date.slice(0, 7) : addUtcDays(day.date, -weekOffset);
     const days = groups.get(key) ?? [];
     days.push(day);
     groups.set(key, days);
@@ -127,9 +162,9 @@ export function summarizeCashflowPeriods(state: CashflowReviewState, unit: 'week
   return [...groups].map(([period, days]) => {
     const trades = state.trades.filter(trade => utcDay(trade.closedAt) >= days[0].date && utcDay(trade.closedAt) <= days.at(-1)!.date);
     const history = state.equityHistory.filter(point => point.date >= addUtcDays(days[0].date, -1) && point.date <= days.at(-1)!.date);
-    return { period, roi: round((days.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100, 3),
+    return { period, roi: round(reviewPeriodReturn(state, days.map(day => day.dailyReturn)), 3),
       pnl: money(trades.map(trade => trade.netPnl)), trades: trades.length,
-      winRate: round(outcomes(trades).winRate, 3), maxDrawdown: maximumDrawdown(history) };
+      winRate: round(outcomes(trades).winRate, 3), maxDrawdown: reviewPerformanceDrawdown(state, days, history) };
   });
 }
 
@@ -145,11 +180,11 @@ export function toCashflowReviewResponse(input: SyntheticCopyState): SyntheticCo
     trader: { id: 'VX-001', name: 'Nazara', vip: true },
     simulation: { seed: state.seed, mode: state.mode, simulatedAt: state.simulatedAt, stateVersion: state.version },
     analytics: calculateCashflowAnalytics(state),
-    economics: { methodology: 'DAILY_TWR', performanceFeeRate: state.cashflow.policy.performanceFeeRate,
+    economics: { methodology: state.version === 8 ? 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' : 'DAILY_TWR', performanceFeeRate: state.cashflow.policy.performanceFeeRate,
       policy: state.cashflow.policy, periods, cumulativePnlHistory },
     trades: [...state.trades].sort((a, b) => b.closedAt.localeCompare(a.closedAt)),
     equityHistory: state.equityHistory, aumHistory: state.aumHistory,
-    // Old DTO field names are retained, but on v7 these are public performance
+    // Old DTO field names are retained, but on v7/v8 these are public performance
     // index levels. Never serialize private account/capital/cash-flow ledgers.
     dailyResults: state.dailyResults.map((day, index) => ({ ...day,
       startEquity: state.equityHistory[index].equity, endEquity: state.equityHistory[index + 1].equity })),

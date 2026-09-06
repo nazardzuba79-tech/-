@@ -54,9 +54,9 @@ function sumUnits(values: number[]): number {
   return sum;
 }
 
-/** Populate only a fresh, explicitly selected v7 review environment. */
+/** Populate only a fresh, explicitly selected cash-flow review environment. */
 export function populateReviewFollowers(state: CashflowReviewState): void {
-  if (state.version !== 7) throw new Error('Follower population requires an explicitly selected v7 review state');
+  if (![7, 8].includes(state.version)) throw new Error('Follower population requires an explicitly selected v7/v8 review state');
   if (state.followers.length || state.cashflow.followerAllocationEvents.length) {
     if (!state.followers.length || !state.cashflow.followerAllocationEvents.length) {
       throw new Error('Cannot replace a partially populated review follower ledger');
@@ -193,7 +193,7 @@ export function buildReviewAumHistory(state: CashflowReviewState): AumSnapshot[]
 
 /** Trade-level review copy accounting, never an exchange execution/account API.
  * Copies are sized at ENTRY by min(committed allocation, current account equity)
- * and master capital at risk, not by the TWR index or a displayed ROI. Profits
+ * and master capital at risk, not by the performance index or a displayed ROI. Profits
  * do not automatically increase allocation; losses reduce available margin.
  * Execution drag applies to both legs:
  * adverse slippage plus one basis point per second of modeled latency. Trading
@@ -202,8 +202,8 @@ export function buildReviewAumHistory(state: CashflowReviewState): AumSnapshot[]
  * costs and before performance fees. Contributions cannot reset that mark.
  */
 export function refreshReviewFollowerLedgers(state: CashflowReviewState): void {
-  if (state.version !== 7 || state.cashflow.policy.performanceFeeRate !== 0.10) {
-    throw new Error('Follower ledger is restricted to the v7 Nazara 10% review policy');
+  if (![7, 8].includes(state.version) || state.cashflow.policy.performanceFeeRate !== 0.10) {
+    throw new Error('Follower ledger is restricted to the v7/v8 Nazara 10% review policy');
   }
   const ledgers = allocationLedgers(state);
   const masterDays = new Map(state.cashflow.masterDays.map(day => [day.date, day]));

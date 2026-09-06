@@ -1,4 +1,4 @@
-import { dailyPnlChart } from '../../../../frontend/src/lib/dailyPnlChart';
+import { dailyReturnChart } from '../../../../frontend/src/lib/dailyReturnChart';
 import { selectSyntheticPeriod } from '../../../../frontend/src/lib/syntheticCopyTrading';
 import { advanceState, createInitialState, toResponse } from '../SyntheticCopyTradingEngine';
 import { MemorySyntheticStateStore, SyntheticCopyTradingService } from '../SyntheticCopyTradingService';
@@ -89,7 +89,12 @@ describe('synthetic win-rate calibration and smaller daily losses', () => {
       expect(selected.winRate).toBeCloseTo(wins.length / selected.trades.length * 100, 8);
       const pnl = sum(selected.trades.map(trade => trade.netPnl));
       expect(selected.pnl).toBeCloseTo(pnl, 2);
-      expect(dailyPnlChart(selected.daily).total).toBeCloseTo(pnl, 2);
+      const chart = dailyReturnChart(selected.daily);
+      // Daily returns drive the bars; their unchanged money metadata must
+      // still reconcile to the very same winning and losing trade history.
+      expect(sum(chart.bars.map(bar => bar.realizedPnl!))).toBeCloseTo(pnl, 2);
+      expect(chart.bars.map(bar => bar.returnPct)).toEqual(selected.daily.map(day => day.dailyReturn * 100));
+      expect(chart.roi).toBeCloseTo((selected.daily.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100, 10);
       if (period === '90D') expect(response.analytics.winRate).toBeCloseTo(selected.winRate, 3);
       if (period === 'ALL') expect(response.analytics.allTime.winRate).toBeCloseTo(selected.winRate, 3);
     }

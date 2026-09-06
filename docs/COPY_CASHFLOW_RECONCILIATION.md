@@ -1,150 +1,159 @@
-# Nazara v7 cash-flow reconciliation — internal synthetic review
+# Nazara v8 reconciliation — internal synthetic review
 
-Snapshot computed on 2026-09-05 from `reviewReconciliationReport(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')))`. The simulation accounts for complete UTC days, so the snapshot's effective end is **2026-09-05T23:59:59.999Z**. Inception is **2025-08-21**, with the first trading day on 2025-08-22: 380 calendar-day results and 381 performance-index observations.
+Computed from the final v8 code on **2026-09-06**, using `reviewReconciliationReport(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')))`. The approved bootstrap ends on **2026-09-05T23:59:59.999Z**. Inception is **2025-08-21**; there are 380 complete calendar-day results from August 22 and 381 public index observations.
 
-This is an engineering reconciliation of an explicitly authored **synthetic review scenario**, not independently verified trading history, real client balances, investment results, or proof of exchange execution. The unusually high requested performance is a scenario constraint. The internal account amounts below must not be published in the public performance DTO, rendered as a user's Wallet balance, or confused with follower AUM. This document is not a deployment confirmation.
+This is an explicitly authored **synthetic review scenario**, not actual exchange execution, verified investment performance, customer funds or a backtest against historical market fills. The requested return anchors are scenario inputs. Mathematical reconciliation does not establish economic attainability, safety or real liquidity. Private master-capital amounts below are engineering data, not public Wallet balances. This document is not a deployment confirmation.
 
-## 1. Canonical sources and isolation
+## 1. Sources, version boundary and the actual change from v7
 
-The v7 source of truth is the following set of linked ledgers, not a collection of separately assigned UI statistics:
+- `reviewPerformanceV8Config.ts`: approved v8 scenario inputs, dates, 471 trades, 458 wins, 13 losses, simple-return anchors and weekly operating policy.
+- `reviewPerformanceV8.ts`: priced master trade ledger, daily capital at risk, explicit owner cash flows, additive public index and deterministic future weeks.
+- `reviewFollowerLedger.ts`: unchanged 64 allocations, copy parameters, entry-time capital checks, copied executions and daily high-water-mark fee events.
+- `reviewEconomics.ts`: common period slices, version-specific return/drawdown and actual risk calculations.
+- `reviewReconciliationReport.ts`: internal report used for every table below, never imported into the public DTO/UI.
+- `reviewSyntheticHistory.ts` and `reviewCalendarClock.ts`: explicit `nazara-review-v8` bootstrap and same-date deterministic runtime review snapshots.
 
-- `src/services/copyTrading/reviewEconomicsConfig.ts`: explicit review assumptions and bootstrap constraints.
-- `reviewMasterLedger.ts`: priced master executions, daily operating capital, owner cash flows and the unitized performance index.
-- `reviewFollowerLedger.ts`: dated allocations, actual synthetic copied executions, execution costs and performance-fee events.
-- `reviewEconomics.ts`: rolling/ALL slices, public metrics, risk calculations and the private-to-public projection.
-- `reviewReconciliationReport.ts`: internal engineering report used for the numbers below; it is not imported into the public UI/DTO.
-- `reviewSyntheticHistory.ts`: explicitly selected review bootstrap, pinned to 2026-09-05 under `nazara-review-v7`.
+**v7 already had owner withdrawals.** It did not blindly retain all profits in the private account: its distinction was a geometrically linked public TWR index and daily surplus withdrawals. v8 changes the public performance definition to a custom cash-flow-adjusted **simple return**, uses a stable weekly operating target, and recalculates actual trades and copied economics. It is not accurate to describe v7 as lacking withdrawal accounting.
 
-The v1–v6 accounting algorithms, existing persisted histories and their continuation are retained. Shared engine/analytics entry points dispatch **only an explicitly version-7 state** to the new accounting. The legacy static-capital configuration remains a compatibility source, not a competing v7 source. There is no silent conversion, rescaling or reset of a production synthetic state.
+Historical v7 code and outcomes remain available through `createCashflowMasterState` and `createLegacyV7ReviewSyntheticState`; v1–v7 persisted histories are not silently converted. The previous explanation and verified v7 numbers remain in the [pre-v8 document at 7f77213](https://github.com/nazardzuba79-tech/-/blob/7f772132ad7b4b4670d302d045f94ba39ff4525b/docs/COPY_CASHFLOW_RECONCILIATION.md). The shared follower implementation only widens explicit version guards; the v7 numerical regression remains exact.
 
-No real account, Wallet ledger, database, matching engine, live copy-execution service, production workflow, main branch or production Render setting is part of this scenario change. No database migration is required. New v7 histories are for isolated review; adopting them elsewhere would require a separately authorized promotion and explicit state-policy decision.
+The implementation is isolated review accounting. It does not edit real balances, Auth, Wallet, exchange matching, real copy execution, subscriber database records or production infrastructure. No database migration is needed. Main/production promotion is not part of this report.
 
-## 2. Master cash-flow-neutral performance
+## 2. One master ledger and additive performance
 
-For calendar day `d`:
+For UTC calendar day `d`:
 
 ```text
-capitalAtRisk[d] = openingAccountEquity[d] + beforeTradingDeposits[d]
-tradingPnl[d]    = sum(masterTrade.netPnl closed on d)
-dailyReturn[d]   = tradingPnl[d] / capitalAtRisk[d]
+capitalAtRisk[d] = min(weeklyOperatingTarget[d], actualOpeningAccountEquity[d])
+tradingPnl[d] = sum(closedMasterTrade.netPnl on d)
+dailyReturn[d] = tradingPnl[d] / capitalAtRisk[d]
+
 closingAccountEquity[d]
   = openingAccountEquity[d] + deposits[d] + tradingPnl[d] - withdrawals[d]
 
-performanceIndex[0] = 100
-performanceIndex[d] = performanceIndex[d - 1] × (1 + dailyReturn[d])
-periodROI = (product(1 + dailyReturn[d] within the period) - 1) × 100
+publicIndex[0] = 100
+publicIndex[d] = 100 + 100 × sum(dailyReturn[1..d])
+periodROI = 100 × sum(dailyReturn within selected period)
+cumulativeMoneyPnl[d] = sum(closedMasterTrade.netPnl through d)
 ```
 
-Owner withdrawals are not losses; deposits are not trading profits. All available operating account capital, including cash not assigned to an individual position, stays in the daily denominator. This is not a return-on-selected-margin denominator that hides idle cash.
+This is **cash-flow-adjusted simple return**, not TWR, CAGR, compounded wealth growth or a geometric investment return. Public index levels are not money. Dividing end index by start index would be the wrong v8 period formula; selected index subtraction or summing the daily returns is correct. A 3727% simple return over changing operating capital does not mean the final private account is 38.27 times its initial value.
 
-The conceptual reference for neutralizing external cash flows and geometrically linking subperiod returns is the [GIPS Standards Handbook for Firms, discussion of Provision 2.A.24](https://www.gipsstandards.org/standards/gips-standards-for-firms/gips-standards-handbook-for-firms/). This synthetic implementation does **not** claim GIPS compliance or verified performance.
+Methodology distinction: the [GIPS Handbook for Firms](https://www.gipsstandards.org/standards/gips-standards-for-firms/gips-standards-handbook-for-firms/) describes geometric linking for time-weighted returns. This owner-defined additive review measure is different and must not be represented as a comparable GIPS/TWR investment return.
 
-`equityHistory` in the v7 public response is a **unitized TWR performance index**, not an account balance. Legacy-named public `dailyResults.startEquity/endEquity` are projected to corresponding index levels. Private master account/cash-flow ledgers remain outside that response. Money PnL charts use the accumulated master trading-PnL ledger, not the index or net withdrawals.
+Withdrawals are not trading losses and deposits are not profit. The v8 denominator is the explicit whole operating target, bounded by actual available account equity after losses. It is not selected position margin. Idle profit cash awaiting weekly withdrawal is separately recorded in the account and does not increase the operating target midweek. This is a custom strategy-capital performance convention, not a claim of GIPS compliance.
 
-### Nested, consecutive factors
+### Consecutive slices, not independent target datasets
 
-All windows use the same dates, trades and daily returns. Closed-trade/fee windows include dates strictly after the cutoff through the current simulation date; the performance-index slice also includes its opening cutoff observation.
+Windows use dates strictly after their cutoff through the simulation day. ALL never rolls away inception. The opening cutoff index observation is retained for the chart.
 
-| Consecutive segment | Included calendar dates | Required factor | Segment return |
-| --- | --- | ---: | ---: |
-| Before the latest 90D | 2025-08-22–2026-06-07 | 38.27 / 9.41 = 4.0669500531 | +306.69500531% |
-| Days 31–90 | 2026-06-08–2026-08-06 | 9.41 / 3.71 = 2.5363881402 | +153.63881402% |
-| Days 8–30 | 2026-08-07–2026-08-29 | 3.71 / 2.12 = 1.75 | +75.0% |
-| Latest 7D | 2026-08-30–2026-09-05 | 2.12 | +112.0% |
+| Consecutive slice at baseline | Dates | Contribution to simple ROI |
+| --- | --- | ---: |
+| Before latest 90D | 2025-08-22–2026-06-07 | +2886 percentage points |
+| Prior 60 days of 90D | 2026-06-08–2026-08-06 | +570 percentage points |
+| First 16 days of 30D | 2026-08-07–2026-08-22 | +44 percentage points |
+| Previous nonoverlapping 7D | 2026-08-23–2026-08-29 | +115 percentage points |
+| Latest 7D | 2026-08-30–2026-09-05 | +112 percentage points |
 
-Multiplication reconstructs the 2.12x, 3.71x, 9.41x and 38.27x requested factors. They are not added and are not separately drawn chart paths. The actual emitted ALL factor is `38.27000000090499`; four-decimal money quantization produces only sub-display-precision differences from the bootstrap constraints.
+Thus `115 + 112 + 44 = 271`, `570 + 271 = 841`, and `2886 + 841 = 3727`. These are additive percentage-point relationships, not the old v7 factor divisions. The actual ALL result is 3726.999996277622%; four-decimal money rounding produces only sub-display precision differences. Baseline trading PnL is exactly 4,711,027.0000 USDT.
 
-### Internal operating-capital solution — not public account data
+Weekly regimes and bounded daily opportunity weights are fitted before trades are emitted. Positive opportunities have date-seeded ceilings between 19.8% and 21.8%, avoiding identically tall upper bars. These are generation constraints, not chart clipping. Fixed genuine loss days and zero-return leave are retained. Four-decimal rounding remainders are spread across eligible planned sessions and trades; no final-day/final-trade residual creates an ending spike. Prices are solved and remeasured to agree with emitted gross PnL, fees, funding and net.
 
-The operating account is solved from the generated daily returns and an explicit withdrawal policy, **not** from `4,711,027 / 37.27`.
+## 3. Private weekly capital and withdrawals
 
-First run the cash-flow rule with an operating base of one unit:
+Strategy operating weeks are **Sunday–Saturday**. The target is stable inside each week. Realized cash above it waits in the account and is not automatically used for larger positions. Losses can reduce actual available capital below target; there is no automatic deposit or invisible replenishment.
+
+On an eligible Saturday, after trading:
 
 ```text
-normalizedAccount[0] = 1
-normalizedPnl[d] = normalizedAccount[d - 1] × dailyReturn[d]
-normalizedAccount[d] = min(1, normalizedAccount[d - 1] + normalizedPnl[d])
-operatingBase = 4,711,027 / sum(normalizedPnl[d])
+retainedProfit = min(
+  max(0, accountBeforeWithdrawal - operatingTarget),
+  max(0, actualWeekTradingPnl) × 0.02,
+  operatingTarget × seededGrowthRate
+)
+nextOperatingTarget = operatingTarget + retainedProfit
+withdrawal = max(0, accountBeforeWithdrawal - nextOperatingTarget)
 ```
 
-Losses lower the account until subsequent profits recover them; they do not trigger automatic top-ups. After an active trading session, any account value above the solved operating base is withdrawn. The bootstrap contains one inception deposit, no later deposits and 321 explicit after-trading withdrawal events. Holiday days have no owner cash flows.
+The seeded growth rate is 0.10%–0.45% of target; actual growth may be smaller or zero. Holiday dates do not create owner cash flows. A negative week's recovery cannot be manufactured by a top-up.
 
-| Private engineering field | Computed USDT |
+The initial deposit is solved by simulating the complete unit-capital weekly retention/withdrawal path first: `initialCapital = 4,711,027 / sum(unitPathTradingPnl)`. It is **not** simply `4,711,027 / 37.27`, an arbitrary displayed capital, or a rescale of previously emitted financial history.
+
+| Private engineering value | Baseline USDT |
 | --- | ---: |
-| Initial deposit / solved operating base | 1,265,627.9282 |
-| Minimum daily capital at risk | 1,254,508.1149 |
-| Maximum daily capital at risk | 1,265,627.9282 |
-| Final operating account | 1,265,627.9282 |
-| Total owner deposits | 1,265,627.9282 |
-| Total trading PnL | 4,711,027.0000 |
-| Total owner withdrawals | 4,711,027.0000 |
+| Initial deposit / operating target | 119,881.2699 |
+| Minimum actual daily capital at risk | 99,598.1123 |
+| Maximum baseline daily capital at risk | 134,464.1310 |
+| Final / next-week operating target | 134,909.4762 |
+| Cumulative retained operating profit | 15,028.2063 |
+| Actual ending account equity | 134,909.4762 |
+| Total owner deposits | 119,881.2699 |
+| Total master trading PnL | 4,711,027.0000 |
+| Total owner withdrawals, 47 events | 4,695,998.7937 |
 
-The final identity is `1,265,627.9282 = 1,265,627.9282 + 4,711,027.0000 - 4,711,027.0000`. Ending account balance alone therefore does not measure the strategy's TWR or lifetime trading PnL.
+Exact fixed-point identity: `119,881.2699 + 4,711,027.0000 - 4,695,998.7937 = 134,909.4762`. Maximum observed weekly target growth is **0.4381201378%**, below 1%. Target growth is not ROI; owner withdrawals are not follower performance-fee earnings.
 
-Master monetary execution fields use 0.0001-USDT precision. Quantization differences are distributed over eligible planned sessions/trades in minimal monetary units; no final-day or final-trade financial balancing spike is introduced. Execution prices are solved and remeasured so `gross - fees - funding = net` at the stored precision; net PnL is not changed independently of the emitted prices and quantities.
+## 4. Baseline economics from final code
 
-## 3. Computed bootstrap economics
+Money is USDT at four-decimal ledger precision; turnover is reported to two decimals. Entry notional is counted once for turnover. The master and all copied totals come from the same actual emitted trade records.
 
-Amounts are USDT. Trading-volume fields count **entry notional once** (`entryPrice × quantity`); fees may depend on both entry and exit. Tables retain four decimals for money reconciliation and two decimals for reported turnover. Display rounding is not an additional data source.
+| Period | ROI | Master net PnL | Trades, wins/losses | Active/calendar days | Win rate | Average trade PnL | Average holding, minutes |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 7D | +112.0% | 150,599.8267 | 9, 8/1 | 7/7 | 88.888889% | 16,733.3141 | 672.8889 |
+| 30D | +271.0% | 363,361.9314 | 34, 32/2 | 29/30 | 94.117647% | 10,687.1156 | 829.5588 |
+| 90D | +841.0% | 1,111,408.9452 | 111, 108/3 | 87/90 | 97.297297% | 10,012.6932 | 697.1802 |
+| ALL | +3727.0% | 4,711,027.0000 | 471, 458/13 | 343/380 | 97.239915% | 10,002.1805 | 624.4628 |
 
-| Period | Included dates | ROI | Master net trading PnL | Master trades | Active / calendar days | Trade win rate |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| 7D | 2026-08-30–2026-09-05 | +112.0% | 1,021,705.3073 | 62 | 7 / 7 | 93.5484% |
-| 30D | 2026-08-07–2026-09-05 | +271.0% | 1,740,067.6364 | 240 | 30 / 30 | 96.6667% |
-| 90D | 2026-06-08–2026-09-05 | +841.0% | 2,929,207.2977 | 750 | 90 / 90 | 97.2% |
-| ALL | 2025-08-22–2026-09-05 | +3727.0% | 4,711,027.0000 | 3,250 | 358 / 380 | 97.2% |
+The exact lifetime win rate is `458 / 471 × 100 = 97.2399150743%`; it rounds to 97.2% at one decimal. It does not pin each short-window win rate. Average frequency is `471 / 380 × 7 = 8.6763157895` trades per calendar week. Holding times span 176–1,375 minutes. A high winning-trade frequency is not a guarantee of small losing trades or low risk.
 
-The prior 290 days contribute 1,781,819.7023 USDT before the latest 90-day window. ALL contains 3,159 winning and 91 losing trades; the latest 90D contains 729 winning and 21 losing trades. Short-window win rates are their actual counts, not a fixed 97.2% label. A winning-trade percentage is not a winning-day percentage.
+Previous nonoverlapping 7D: **+114.9999999851%**, master net 154,064.5004; 9 wins, no losses; average trade 17,118.2778; average holding 629 minutes. Master volume is 3,073,055.95 and copied volume 137,074,947.36. Follower gross is 6,840,626.1803, fees 612,883.5085, net 6,227,742.6718. Fees are below 10% of that window's gross because the lifetime HWM includes earlier losses.
 
-| Period | Master trading volume | Copied trading volume | Average deployed capital, internal | Master volume / average deployed capital |
+| Period | Master turnover | Copied turnover | Average capital at risk, private | Master turnover / average capital |
 | --- | ---: | ---: | ---: | ---: |
-| 7D | 172,352,589.36 | 890,237,391.79 | 1,264,955.2453 | 136.2519x |
-| 30D | 674,817,243.25 | 3,099,919,461.32 | 1,265,262.4864 | 533.3417x |
-| 90D | 2,059,152,031.30 | 7,569,862,660.35 | 1,265,292.0817 | 1,627.4124x |
-| ALL | 9,108,030,452.90 | 13,726,339,164.44 | 1,265,122.6575 | 7,199.3260x |
+| 7D | 4,091,952.77 | 199,587,910.73 | 134,464.1310 | 30.4316x |
+| 30D | 13,713,285.73 | 601,349,509.38 | 133,859.7833 | 102.4452x |
+| 90D | 44,781,907.33 | 1,588,886,080.40 | 131,594.0325 | 340.3035x |
+| ALL | 181,445,602.44 | 2,844,869,348.22 | 125,983.1550 | 1440.2370x |
 
-Average deployed capital is the arithmetic mean of the selected calendar-day capital-at-risk entries, including inactive days. These turnover ratios are period totals, not daily ratios or leverage. None of the trading-volume columns is the 7.2m follower AUM.
+Average capital includes zero-trade calendar days. Period turnover/capital is not leverage, average daily turnover, allocated AUM or PnL.
 
-| Period | Gross follower PnL after execution costs | Nazara performance-fee earnings | Net follower PnL |
+| Period | Follower gross after trading/copy costs | Nazara performance-fee earnings | Follower net after performance fees |
 | --- | ---: | ---: | ---: |
-| 7D | 5,152,138.7089 | 515,213.8719 | 4,636,924.8370 |
-| 30D | 7,996,660.0613 | 799,666.0129 | 7,196,994.0484 |
-| 90D | 11,285,520.2298 | 1,127,658.1787 | 10,157,862.0511 |
-| ALL | 12,004,433.9777 | 1,200,443.4346 | 10,803,990.5431 |
+| 7D | 7,288,080.8446 | 728,808.0850 | 6,559,272.7596 |
+| 30D | 16,398,764.2733 | 1,639,876.4333 | 14,758,887.8400 |
+| 90D | 39,918,975.2766 | 3,991,897.5446 | 35,927,077.7320 |
+| ALL | 76,251,447.0380 | 7,625,144.7450 | 68,626,302.2930 |
 
-The bootstrap contains **78,687 copied trades**, **7,053 performance-fee events** and **64 allocation events**. Current allocated AUM is 7,200,000.0000; aggregate follower equity is `7,200,000.0000 + 10,803,990.5431 = 18,003,990.5431`. Profits retained in follower equity do not become additional allocated AUM automatically.
+There are **11,709 copied trades, 7,966 fee events and 64 allocation events**. Follower equity is `7,200,000 + 68,626,302.2930 = 75,826,302.2930`. Allocated AUM remains **7,200,000**, not this larger equity value.
 
-## 4. Priced positions, turnover and cost assumptions
+The much larger follower profit than v7 is a consequence of the new simple-return trade history, relatively small master operating capital and unchanged late-joining follower allocations. It was not calibrated to a desired follower-profit number. It remains a highly aggressive synthetic scenario, not verified wealth creation.
 
-Master positions are generated from reference prices for BTC, ETH, SOL, XRP and BNB; these are deterministic synthetic executions, not sampled market fills or a real-market backtest. Each trade stores direction, entry/exit prices, quantity, leverage, opening/closing timestamps, holding duration, gross PnL, trading fees, funding and net PnL.
+## 5. Priced executions, copied exposure and fees
 
-- Leverage is 2x–8x. Counts by leverage are 2x: 472; 3x: 465; 4x: 459; 5x: 497; 6x: 466; 7x: 423; 8x: 468. No 50x/100x workaround is used.
-- Intended initial margin is 18%–72% of daily capital at risk. Actual rounded notional/margin is remeasured from emitted prices and quantity.
-- Positions are sequential and close on the same UTC day. This prevents overlapping positions from reusing unclosed profit or the same available margin. The follower module rejects overlapping positions rather than pretending to support portfolio margin.
-- Bootstrap holding periods are 24–274 minutes, averaging 91.6612 minutes. Actual master entry notionals range approximately from 456,444.01 to 7,282,230.76 USDT.
-- Master trading costs are 2 bps on each entry/exit leg: `(entryPrice + exitPrice) × quantity × 0.0002`. Funding is `entryNotional × 0.00005 × holdingMinutes / 480`; this is an explicit synthetic eight-hour funding assumption, not a live rate.
-- ALL master gross price PnL is 8,440,459.1385, less trading fees of 3,643,180.4168 and funding of 86,251.7217, giving net trading PnL of 4,711,027.0000.
+Master reference assets remain BTC, ETH, SOL, XRP and BNB. Prices are deterministic synthetic references, not claimed real historical fills. Each position includes direction, price, quantity, leverage, open/close times, holding duration, gross price PnL, fees, funding and net. Positions are sequential and open/close within one UTC day; replay rejects overlap.
 
-High turnover and short holding times are visible consequences of this aggressive scenario. They are not evidence that equivalent real executions would be available at these prices, size, liquidity or funding costs.
-
-### Copied-position sizing and execution
+- Leverage: 2x–8x. Counts: 2x=41, 3x=63, 4x=62, 5x=75, 6x=80, 7x=78, 8x=72.
+- Position margin is at most approximately 72% of actual capital at risk; required notional also reflects the planned price move. Entry notionals span about 111,169.36–720,452.54.
+- Master round-trip fees: `(entryPrice + exitPrice) × quantity × 0.0002` (2 bps per leg).
+- Master funding: `entryNotional × 0.00005 × holdingMinutes / 480`; fixed review assumption, not a live funding quote.
+- Master gross 4,795,727.8818 less fees 72,607.2839 and funding 12,093.5979 equals net **4,711,027.0000**.
 
 At each eligible master entry:
 
 ```text
-followerAccountEquity = currentAllocation + cumulativeCopiedGrossPnl - crystallizedFees
-availableCopyCapital = min(currentAllocation, followerAccountEquity)
-copyScale = availableCopyCapital / masterDay.capitalAtRisk × follower.copyRatio
+followerAccountEquity = allocatedCapital + priorClosedCopiedGrossPnl - alreadyCrystallizedFees
+availableCopyCapital = min(allocatedCapital, followerAccountEquity)
+copyScale = availableCopyCapital / masterDay.capitalAtRisk × copyRatio
 copiedQuantity = masterQuantity × copyScale
 copiedEntryNotional = masterEntryPrice × copiedQuantity
 ```
 
-Profits do not automatically compound allocated exposure; losses reduce the capital available to fund the next position. Prior closed intraday results and prior crystallized fees are included. Copied margin (`copiedEntryNotional / masterLeverage`) must not exceed available follower equity. Nonpositive equity fails closed rather than silently skipping the return calculation or manufacturing a recovery from an insolvent account.
+No pre-join position is copied, even if it closes after joining. Closed intraday results are included before the next entry; unclosed profit is never spent. Profits do not grow allocation automatically. Losses reduce available exposure; nonpositive equity and margin exceeding available funds fail closed, not silently skip a bad day.
 
-Copy ratios vary deterministically from 0.89–1.00. Liquid-market execution assumptions vary by follower: adverse slippage 0.15–0.75 bps and latency 40–350 ms. Latency contributes one additional basis point per second, charged proportionally rather than as a percent of profit:
+Copy ratios remain 0.89–1.00, adverse slippage 0.15–0.75 bps, latency 40–350 ms. These are explicit liquid-market assumptions, not guarantees of fills at multimillion sizes:
 
 ```text
-roundTripNotional = copiedQuantity × (masterEntryPrice + masterExitPrice)
+roundTripNotional = copiedQuantity × (entryPrice + exitPrice)
 executionCost = round4(roundTripNotional × (slippageBps + latencyMs / 1000) / 10000)
 copiedGrossBeforeCosts = round4(masterGrossPnl × copyScale)
 copiedTradingFees = round4(masterTradingFees × copyScale)
@@ -152,31 +161,21 @@ copiedFunding = round4(masterFunding × copyScale)
 copiedGrossPnl = copiedGrossBeforeCosts - copiedTradingFees - copiedFunding - executionCost
 ```
 
-The latency/slippage ranges are documented liquidity assumptions, not a guarantee of real fills or a calibration to a follower-profit target. The initial wider additional-cost assumptions were rejected during independent testing because they exhausted certain follower accounts under high turnover. The implemented model both states the revised assumptions and enforces available-equity risk limits; it does not conceal insolvency with a clamped ROI.
+ALL copied gross before costs is 77,961,497.5933, less trading fees 1,138,939.4838, funding 201,862.7943 and execution drag 369,248.2772, leaving gross after costs of **76,251,447.0380**. All 64 copies retain positive account equity and independently checked available margin under the final larger losses.
 
-ALL copied execution drag is 1,780,685.1347, copied trading fees are 5,490,322.8218 and copied funding is 136,939.1869 USDT. These costs arise from the actual sized copied positions; no aggregate follower-profit target or AUM-based earnings shortcut is applied.
-
-## 5. Daily high-water-mark performance fees
-
-Nazara's review performance-fee rate is **10%**, not 20%, not 10% of AUM and not an annual management charge. Other marketplace traders do not inherit this rate.
-
-Crystallization policy: `DAILY_GROSS_PNL_HIGH_WATER_MARK`. After all closed trades for each UTC day, use lifetime cumulative copied PnL **after execution/trading/funding costs but before performance fees**:
+After all closes for a UTC day, the 10% fee uses lifetime copied gross profit **after trading/copy costs but before performance fees**:
 
 ```text
-eligibleProfit = max(0, cumulativeGrossPnl - priorCrystallizedGrossPnlHWM)
+eligibleProfit = max(0, cumulativeGrossPnl - priorCrystallizedLifetimeGrossPnlHWM)
 feeAmount = round4(eligibleProfit × 0.10)
 newHWM = max(priorHWM, cumulativeGrossPnl)
-netFollowerPnl = cumulativeGrossPnl - sum(feeAmount)
-currentFollowerEquity = currentAllocatedCapital + netFollowerPnl
+netFollowerPnl = cumulativeGrossPnl - sum(feeEvents.feeAmount)
+currentFollowerEquity = allocatedCapital + netFollowerPnl
 ```
 
-Each fee event records a deterministic ID, follower, date, eligible profit, rate, fee amount and HWM before/after. Losses, recovery to an old maximum, and new contributions do not produce a new eligible profit or reset the mark. A day with a winning trade can still have no fee if other trades leave the day below the old HWM.
+Losses, recovery to an old peak and contributions do not create eligible profit or reset the HWM. Daily fee IDs and before/after HWM values are recorded. A selected window sums its actual crystallization events; it is not blindly 10% of that window's gross. Rounding thousands of individual events can differ slightly from rounding one aggregate multiplication. Fees are neither 10% of AUM nor an annual fee.
 
-The loss-recovery/new-high concept is informed by [ESMA's performance-fee guidance, Annex IV definitions and Guideline 4](https://www.esma.europa.eu/sites/default/files/library/esma_34-39-968_final_report_guidelines_on_performance_fees.pdf). The chosen gross-PnL ledger and daily review crystallization are scenario assumptions, **not** a claim of UCITS/AIF compliance, regulatory approval or applicability to a real VOLTEX product.
-
-The exact recovery fixture has gross daily PnL `+100, -60, +40, +20, +15`: fees are `10, 0, 0, 0, 1.5`, not a second charge on recovered profit. Fees in 7D/30D/90D/ALL are sums of events crystallized inside that window. They are not blindly 10% of that window's gross PnL because the lifetime HWM crosses window boundaries. Each event is rounded at four decimals; summing thousands of rounded events can differ slightly from rounding one aggregate multiplication.
-
-Follower ROI respects the actual join date and uses net daily trading profit after crystallized fees. Allocation cash flows occur at UTC day start; the denominator is that day's allocation plus prior net accumulated trading profit. With the authored unchanged allocations this telescopes to lifetime net follower PnL divided by starting allocation. No follower is assigned the master's pre-join ROI.
+Follower net ROI remains cash-flow-neutral account performance from its actual join date. With the unchanged allocation, linked net daily account returns telescope to `netPnl / startingAllocation × 100`. That follower accounting is independent of the master's custom public simple index; no master pre-join return or index level sizes a copy.
 
 ## 6. Explicit cohort and AUM ledger
 
@@ -264,70 +263,135 @@ The inception snapshot has two active founders and 12,000 USDT AUM. The latest s
 
 Current allocations equal starting allocations in this bootstrap; no invisible increases are fabricated. The ledger supports explicit JOIN/INCREASE/DECREASE/STOP events with old allocation, delta and new allocation. Replay validates the arithmetic and dates. Events must occur at **UTC day start**, with at most one event per follower per day; unsupported intraday changes are rejected because they would require additional valuation checkpoints. AUM history and active counts are rebuilt from those events only. Follower profits and performance fees are not deposits.
 
-## 7. Holidays, concentration and chart interpretation
+## 7. Risk, leave and distribution
 
-The year-end break is **2025-12-18–2026-01-05 inclusive: 19 days**. The selected Easter break is **2026-04-10–2026-04-12 inclusive: 3 days**. Both are synthetic trader inactivity, not exchange or crypto-market closure.
-
-The three-day Easter assumption is anchored to Orthodox Pascha on 2026-04-12, as listed in the [Orthodox Church in America calendar](https://www.oca.org/saints/lives/2026/04/12/27-holy-pascha-the-resurrection-of-our-lord). It does not assert the trader's religion or actual holiday behavior.
-
-On all 22 dates there are zero master/copy trades, zero trading PnL, zero generated wins/losses and no owner deposits/withdrawals. Daily returns are zero and therefore contribute a factor of exactly one. Cumulative trading PnL and the performance index remain flat. Bootstrap totals are 358 active days, 22 zero-trade days and 25 net negative days. Calendar observations are retained rather than removing leave to improve risk statistics.
-
-The requested latest-7D +112% factor, together with the selected stable operating-capital policy, necessarily requires a strong latest-week contribution in this model. It cannot simultaneously be represented as an evenly distributed lifetime dollar-profit line while retaining these constraints:
-
-- Latest seven days: **1,021,705.3073 USDT, 21.68752816% of ALL PnL**.
-- Largest day: **265,258.5317 USDT on 2026-09-03, 5.63058823% of ALL**.
-- Final day: **130,480.4558 USDT, 2.76968177% of ALL**, not the largest day.
-
-This is a consequence of the approved nested factors and the actual chosen capital/return path, not a final-day residual or frontend smoothing. It must not be described as flat or uniformly distributed profit. Signed daily variation, quieter regimes and genuine leave remain visible. The ROI/TWR path compounds daily percentage returns; the money-PnL path accumulates money earned on an account that regularly withdraws profits. Their shapes are different for a valid accounting reason.
-
-## 8. Risk calculations and limitations
-
-Risk uses cash-flow-neutral **calendar-day** returns, including the 22 zero-return days. Risk-free/target return is zero. Standard deviation uses sample variance (`n - 1`); annualization uses 365 days. Sortino downside deviation is the square root of the mean squared negative returns across all calendar observations. Drawdown is peak-to-trough decline of the selected TWR index, not of the owner's post-withdrawal account balance. Profit Factor is positive net master-trade PnL divided by absolute negative net master-trade PnL.
-
-| Period | Sharpe | Sortino | Annualized volatility | Max drawdown | Profit Factor |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 7D | 30.1650 | 1,567.6744 | 139.6216% | 0.3721% | 65.2067 |
-| 30D | 16.8050 | 775.6136 | 99.5831% | 0.4942% | 54.4903 |
-| 90D | 14.5997 | 444.9868 | 64.3172% | 0.6433% | 34.4047 |
-| ALL | 9.9049 | 133.6292 | 36.1133% | 0.8786% | 12.9999 |
-
-These very high ratios are reported as calculated, not capped to look conventional. Tiny modeled downside alongside very high constrained returns can make Sortino especially large; this is an important limitation, not evidence of low real investment risk. Undefined ratios are nullable in the authoritative `economics.periods` projection and must be shown as unavailable rather than invented or capped. The older numeric DTO compatibility fields are not authoritative substitutes for those nullables.
-
-The scenario does not model a live order book, venue liquidity, partial fills, liquidation engines, variable real funding rates, taxes, real subscribers or actual copy execution. It is a deterministic accounting/presentation test environment. Passing mathematical reconciliation does not validate the realism, attainability or safety of its requested investment returns.
-
-## 9. Continuation and validation evidence
-
-The 2026-09-05 baseline and inception are pinned. Later simulation dates append new complete UTC-day ledgers using serialized RNG state; they do **not** shift inception, recalibrate old days to the target ROIs, or keep the four headline targets fixed forever. Future genuine generated losses may reduce cumulative PnL or performance. ALL retains the complete history; 7D/30D/90D move their cutoffs over that same history.
-
-The 64 cohorts remain fixed during advancement. New followers or capital changes require explicit allocation-ledger events; no automatic monthly cohort growth or forced return to 7.2m is applied. Existing trade/fee IDs and records are retained during replay; an attempted historical rewrite is rejected. The fixture supports complete-day advancement, not live intraday account processing.
-
-Executed focused command:
+Risk calculations use every selected **calendar-day** cash-flow-adjusted return, including zeros, with a zero target/risk-free rate:
 
 ```text
-node node_modules/jest/bin/jest.js --runInBand --runTestsByPath src/services/copyTrading/__tests__/ReviewFollowerLedger.test.ts
+mean = sum(dailyReturn) / n
+sampleDeviation = sqrt(sum((dailyReturn - mean)^2) / (n - 1))
+downsideDeviation = sqrt(sum(min(dailyReturn, 0)^2) / n)
+Sharpe = mean / sampleDeviation × sqrt(365)
+Sortino = mean / downsideDeviation × sqrt(365)
+annualizedVolatility = sampleDeviation × sqrt(365) × 100
+ProfitFactor = sum(positive master trade netPnL) / abs(sum(negative master trade netPnL))
 ```
 
-**Result: 17/17 tests passed, one suite, 33.7 seconds.** Coverage includes independent daily HWM recovery; no pre-join execution; copy costs and actual notional; funding credits; loss-limited entry sizing; contribution/withdrawal AUM reconstruction; policy boundary; rejection of invalid/intraday/overlapping/insolvent scenarios; immutable replay; all 64 follower profits, fees, equity, ROI and margin; every historical AUM snapshot; and actual **+90-day** append preserving all old copied-trade, fee and AUM prefixes and the same 64 cohorts.
+For v8 maximum drawdown, the selected window's additive index is rebased to 100, then relative peak-to-trough decline is measured. Historical ALL gains do not dilute a rolling window's opening level. It is neither private-account drawdown after owner withdrawals nor a cap on individual daily losses. Calmar uses **linear** simple-return annualization, not an exponent.
 
-The report generator was also executed against the completed model to obtain every bootstrap table above.
+| Period | Sharpe | Sortino | Annualized volatility | Additive-index max drawdown | Profit Factor |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 7D | 28.11619110 | 95.14730912 | 207.70950013% | 6.09276569% | 14.17647063 |
+| 30D | 17.32009402 | 38.55028128 | 190.36655698% | 14.69234185% | 9.61094911 |
+| 90D | 23.07117212 | 47.38961906 | 147.83480445% | 5.63914406% | 15.48868890 |
+| ALL | 22.00115648 | 46.59932087 | 162.71333637% | 7.32621639% | 14.62293684 |
 
-### Integrated validation, 2026-09-05
+These ratios are unusually high and **uncapped**. The previous +115% week has no loss, so Sortino and Profit Factor are null; Sharpe is 110.41717360 and drawdown is zero. Undefined ratios must be shown as unavailable, not replaced with an attractive finite constant.
 
-- Backend TypeScript (`node node_modules/typescript/bin/tsc --noEmit`) passed. Frontend TypeScript passed independently and in both build workflows.
-- Full Copy Trading services plus the six relevant frontend suites: **16 suites / 117 tests passed**. After the final UTC/price-format regression test was added, all six affected frontend/legacy presentation suites passed again (**37 tests**); **118 distinct tests** are covered across these runs. No existing assertion was weakened. A legacy floating-point regression was fixed by preserving its original monetary-equity arithmetic, while v7 uses daily trading PnL.
-- Time advancement tests execute +1, +7, +30, +90 and +400 days. Independent reconciliation additionally checks rolling 7/30/90-day counts, increasing ALL history, preserved master/copy/fee records, complete AUM history and no bootstrap recalibration.
-- Final local production frontend build passed, 5,640 modules; isolated review build passed, 5,604 modules. Existing large-chunk advisory remains; no build threshold/check was disabled.
-- Browser-tested the real built `/copy-trading` on `http://127.0.0.1:4178`: all four headline periods, actual cumulative PnL versus TWR, holiday zero-day SVG titles, separate master/copied turnover, gross/net follower PnL and earned fees, 64 expanded follower rows, real join dates, AUM/count history and the priced-trade table. Trade times in v7 are explicitly UTC, matching period boundaries; small-price executions retain meaningful precision.
-- Profile and trade-table document widths checked at **1920, 1440, 1366, 1024, 768, 430, 390 and 375 px**: no page-level horizontal overflow. Narrow trade/daily-history areas retain their existing internal scrolling. Desktop/mobile screenshots inspected; no console errors/warnings were recorded. No layout/typography redesign; the pre-existing approved light eligibility outline is preserved.
+The 13 actual negative days have **8.5%–30% operating-capital losses**, not cosmetic red bars. Two explicit losing weeks, October 12–18 and February 8–14, each sum to -15%; their daily simple returns are `+19.5%, -18%, 0, -18.5%, +20%, -18%, 0`. Other loss dates are September 11 (-23.5%), November 19 (-28%), March 18 (-25.5%), May 5 (-30%), July 15 (-26%), August 20 (-23%) and September 1 (-8.5%). High win frequency therefore coexists with **severe tail risk**. An ALL additive-index drawdown of 7.33% must not be mistaken for a maximum account/position loss of 7.33%.
 
-The existing frontend-only Render review serves a build-time synthetic snapshot, not a running accounting backend or a durable subscriber database. The engine and later review builds append elapsed simulation days deterministically; a deployed snapshot itself does not autonomously generate trades between builds. Real-time production execution, persistence and customer operations are deliberately outside this task. Staging delivery is verified separately against the pushed commit and live review manifest; this document does not claim a production deployment.
+The selected trader's leave remains December 18–January 5 (19 dates) and April 10–12 (3 dates). It is synthetic personal leave, not a claim that crypto markets close. There are no master or copy executions, trading PnL or owner flows on these 22 dates. Additional quiet sessions give **37 zero-trade days total**, with 343 active days and 13 negative days. Leave and quiet observations remain in risk statistics.
 
-### Daily Return histogram follow-up, 2026-09-05
+- Largest positive daily return: **21.77772686%**, below 22%; most positive sessions are lower.
+- Largest money day: **29,013.3241**, only **0.61585986%** of ALL PnL.
+- Final day: **26,523.9372**, not the largest day.
+- Latest seven days: **150,599.8267**, **3.19675151%** of ALL PnL.
 
-The former USDT Daily PnL histogram is now **Дневная доходность / Daily Return**. Each original calendar day is plotted at `dailyReturn * 100`, using the same canonical daily return as TWR, Sharpe, Sortino and drawdown. In v7 this is net trading PnL divided by actual private day-start capital at risk; after-trading owner withdrawals and follower cash flows are excluded. Public `startEquity` is a normalized TWR index, not money, and must never be used as the denominator of dollar PnL. Legacy histories also retain their canonical `dailyReturn`.
+No final residual produces these values. The exact daily-return histogram uses the ledger's signed percentage return; the money curve sums actual dollar PnL. ROI and PnL can differ in shape because the operating target changes modestly and losses reduce available capital. Neither chart changes the underlying ledger.
 
-- The y axis is linear in percent about a visible zero baseline; positive/negative bars remain green/red. No normalization, smoothing, clipping, logarithms, aggregation or history redistribution. Axis text too close to zero is omitted solely to prevent overlapping labels; its grid line, axis range and all bar geometry remain unchanged.
-- `ROI за период` geometrically links every daily factor; `Средняя доходность / день` is the arithmetic mean over all visible calendar days, including zero-return leave days. Dollar PnL appears only as secondary tooltip information.
-- Bootstrap 7D/30D/90D/ALL readouts are +112%/+271%/+841%/+3727%; daily arithmetic means are 11.538857%/4.584910%/2.572636%/0.979994%. ALL retains 380 bars, including 25 negative and 22 zero-return dates.
-- The underlying synthetic JSON is byte-identical to the previous version (SHA-256 `f639078f9a8dda82a37c311eb0d9fd1d01bbffd78bfb234c04b4d63f008c6b03`). The approved +112% recent-7D target still implies a strong recent cluster; the percentage conversion does not conceal it or establish organic/real-world performance. No profit, historical return or financial metric was adjusted.
-- Follow-up validation: frontend/backend TypeScript passed; 4 relevant suites / 35 tests passed, including independent trade-PnL/private-capital reconstruction for all periods, +90-day preservation, money-independent linear geometry, holidays and legacy compatibility. Production and review builds passed with the existing chunk-size advisory. Browser period/readout checks and 8 responsive widths passed with no runtime errors or page-level overflow.
+The model omits live liquidity/partial fills, real liquidation engines, variable venue funding, taxes and actual subscriber execution. Long histories of high returns with rare large losses still yield extreme ratios; this is an explicit limitation, not verified safety.
+
+The v8 public Risk Level is therefore **High**, not the inherited Moderate label: it flags a canonical loss of at least 15% or ALL annualized volatility above 100%. This is a transparent review warning, not a calibrated risk-rating service. Legacy methodologies and other traders retain their existing classification. The duplicate Average Holding entry is removed from the v8 Trading Profile block; the value remains in Performance.
+
+## 8. Runtime UTC progression and recomputed future reports
+
+The bootstrap targets apply to **September 5**, not forever. On page load the review runtime creates or advances a deterministic snapshot through the current UTC calendar date; the same date yields identical JSON. The engine operates in complete-day synthetic scenarios, not a live intraday clock: a snapshot for September 6 represents that authored day through 23:59:59.999Z even if loaded earlier.
+
+The runtime cache regenerates deterministically after a restart and is not a durable customer database. Forward dates append new days; date rollback recreates a prior deterministic review snapshot without mutating persisted customer history. The baseline constructor and inception stay pinned. No rebuild is required merely to move the runtime review date; this replaces the old build-time-only v7 snapshot behavior.
+
+All old master trades, cash flows, daily/index observations, copied trades, fee IDs, allocation events and AUM-history prefixes survive +7/+30/+90. The 64 followers and current allocation AUM remain unchanged unless explicit new allocation events are supplied. New turnover and fees are actual appended executions/events, not stale baseline totals.
+
+### Today: September 6, not the pinned baseline
+
+Actual runtime-date example: 7D **+103.84583379%**, 30D **+275.74648152%**, 90D **+842.50666772%**, ALL **+3740.36057821%**. ALL contains 472 trades (459 wins, 13 losses), master PnL **4,729,051.6911**, gross follower PnL **77,155,048.0237**, fees **7,715,504.8437**, net **69,439,543.1800**. Master turnover is 181,756,244.36 and copied turnover 2,860,476,848.68. The extra day has 64 copied trades; total copied records are 11,773 and fee records 8,030.
+
+### Forward period reconciliation
+
+All advances below start at the September 5 baseline. ROI is rounded to six decimals here; generated values remain full precision.
+
+| Advance / end date | Window | ROI | Master PnL | Trades, wins/losses | Master turnover | Copied turnover |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| +7 / 2026-09-12 | 7D | +72.000000% | 97,134.8229 | 8, 8/0 | 3,506,307.60 | 176,166,488.25 |
+| +7 | 30D | +315.416766% | 423,671.7530 | 36, 34/2 | 14,937,821.35 | 688,405,281.36 |
+| +7 | 90D | +836.370151% | 1,108,132.8358 | 109, 106/3 | 44,201,308.77 | 1,657,406,715.88 |
+| +7 | ALL | +3798.999996% | 4,808,161.8229 | 479, 466/13 | 184,951,910.03 | 3,021,035,836.47 |
+| +30 / 2026-10-05 | 7D | +103.131400% | 140,301.8733 | 9, 9/0 | 3,452,289.17 | 172,006,476.12 |
+| +30 | 30D | +358.566171% | 486,380.5234 | 44, 43/1 | 17,179,355.97 | 858,551,577.25 |
+| +30 | 90D | +877.296176% | 1,173,551.6933 | 117, 113/4 | 46,596,711.24 | 2,013,850,625.38 |
+| +30 | ALL | +4085.566167% | 5,197,407.5234 | 515, 501/14 | 198,624,958.40 | 3,703,420,925.47 |
+| +90 / 2026-12-04 | 7D | +77.241935% | 107,814.8205 | 11, 11/0 | 4,643,825.70 | 225,610,656.70 |
+| +90 | 30D | +283.147370% | 392,367.1727 | 37, 37/0 | 15,633,390.25 | 764,188,181.57 |
+| +90 | 90D | +858.568166% | 1,175,520.9338 | 123, 121/2 | 50,073,383.97 | 2,477,876,968.09 |
+| +90 | ALL | +4585.568162% | 5,886,547.9338 | 594, 579/15 | 231,518,986.41 | 5,322,746,316.32 |
+
+| Advance | Window | Follower gross | Performance fees | Follower net |
+| --- | --- | ---: | ---: | ---: |
+| +7 | 7D | 4,858,223.4773 | 485,822.3499 | 4,372,401.1274 |
+| +7 | 30D | 19,839,888.2518 | 1,983,988.8308 | 17,855,899.4210 |
+| +7 | 90D | 42,162,038.1718 | 4,216,203.8346 | 37,945,834.3372 |
+| +7 | ALL | 81,109,670.5153 | 8,110,967.0949 | 72,998,703.4204 |
+| +30 | 7D | 6,969,017.9130 | 696,901.7929 | 6,272,116.1201 |
+| +30 | 30D | 24,197,071.3118 | 2,419,707.1395 | 21,777,364.1723 |
+| +30 | 90D | 52,175,893.6445 | 5,217,589.3829 | 46,958,304.2616 |
+| +30 | ALL | 100,448,518.3498 | 10,044,851.8845 | 90,403,666.4653 |
+| +90 | 7D | 5,207,398.2371 | 520,739.8264 | 4,686,658.4107 |
+| +90 | 30D | 19,096,694.8610 | 1,909,669.4965 | 17,187,025.3645 |
+| +90 | 90D | 57,885,916.7120 | 5,788,591.6978 | 52,097,325.0142 |
+| +90 | ALL | 134,137,363.7500 | 13,413,736.4428 | 120,723,627.3072 |
+
+The first complete forward week, September 6–12, earns **+72% simple return**, with eight actual trades. Its Sortino and Profit Factor are null because it contains no loss, not because a value is hidden. Future regimes are date-seeded and irregular, include possible negative weeks, and are not recalibrated to preserve baseline headlines. The first 90 forward days happen to contain two actual losses; this does not guarantee losses will remain so rare indefinitely.
+
+| Advance | Calendar days | Copied records | Fee records | Next operating target | Retained profit to date | Owner withdrawals to date | Actual ending account |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| +7 | 387 | 12,221 | 8,414 | 135,494.1704 | 15,612.9005 | 4,792,548.9224 | 135,494.1704 |
+| +30 | 410 | 14,525 | 9,822 | 136,266.8230 | 16,385.5531 | 5,159,076.4778 | 158,212.3155 |
+| +90 | 470 | 19,581 | 13,598 | 139,641.7793 | 19,760.5094 | 5,770,139.7764 | 236,289.4273 |
+
+The larger ending cash on non-Saturdays awaits normal settlement and is not new operating allocation. At +90, it includes 96,647.6480 above the target. Maximum weekly target growth across all tested snapshots remains 0.4381201378%.
+
+| Advance | ALL Sharpe | ALL Sortino | ALL volatility | ALL max drawdown | ALL Profit Factor | ALL average PnL | ALL average holding, min |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| +7 | 22.19733602 | 47.06800641 | 161.41739571% | 7.32621639% | 14.90382285 | 10,037.9161 | 628.4927 |
+| +30 | 22.79392140 | 48.95483457 | 159.56668025% | 7.32621639% | 15.59954122 | 10,092.0534 | 621.1476 |
+| +90 | 23.43982406 | 51.11194622 | 151.92659778% | 7.32621639% | 17.09640087 | 9,910.0134 | 624.9949 |
+
+## 9. Executed checks and remaining integrated validation
+
+After the final 8.5%–30% loss refinement, executed:
+
+```text
+node node_modules/jest/bin/jest.js --runInBand --runTestsByPath src/services/copyTrading/__tests__/ReviewFollowerLedgerV8.test.ts src/services/copyTrading/__tests__/ReviewFollowerLedger.test.ts
+```
+
+**25/25 passed, two suites, 21.622 seconds**: eight v8 tests and all 17 unchanged v7 regression tests. Coverage includes:
+
+- Same 64 allocation rows, join dates, ratios, slippage and latency as v7; exact unchanged v7 net 10,803,990.5431 and fees 1,200,443.4346.
+- Independent replay of every v8 copied quantity, entry equity/margin, gross PnL, costs, funding, daily HWM, fee and positive account equity.
+- No pre-join copying; no public-index dependency; exact fixed-point gross minus fees equals net and allocation plus net equals equity.
+- Actual +7/+30/+90 master/copy/fee/cash-flow/AUM prefixes unchanged; new turnover and net PnL match appended records; cohorts never regenerate.
+- Serialized split advancement (+3 then +4) equals +7; replay does not create more events.
+- Internal report agrees with actual period trade/copy/fee sums, counts, holding times, previous-week ROI and weekly capital journal.
+- Legacy fixtures still reject invalid/intraday/ambiguous allocations, overlapping positions, missing capital, insolvency and historical rewrites; loss/recovery HWM behavior is unchanged.
+
+The report generator was executed against final code for baseline, current September 6 and +7/+30/+90; every numeric table above comes from those outputs. Monetary rows use fixed-point reconciliation, while returns/risk retain ordinary floating-point precision.
+
+### Final integrated local verification, 2026-09-06
+
+- Backend `tsc --noEmit` and frontend `tsc -b`: PASS. Production frontend build: 5,640 modules, PASS. Isolated review build: 5,604 modules, PASS. Existing >500 kB bundle advisory remains; no check disabled.
+- Final complete relevant Jest run: **19 suites, 158 tests, all PASS**, 307.879 seconds. Pattern: `(copyTrading/__tests__|synthetic.*(test)|dailyReturnChart.*test|reviewPolicy.*test)`. Includes baseline, priced trades, copy replay, cash flows, v8 risk, every period, +7/+30/+90, v7/v8 +400, legacy histories, calendar restart/rollback and UI adapters. Two pre-existing tests imported the already removed money-chart helper; only their chart assertions/imports were migrated to the percentage helper, preserving ledger/count/rounding assertions.
+- Actual built localhost `/copy-trading`, port 4178: ALL tested at **1920, 1440, 1366, 1280, 1024, 768, 430, 390, 375**. Document scroll width equals client width at all nine. Desktop/mobile screenshots inspected: strong periods throughout inception, visible loss bars and zero baseline, no final hockey-stick, no fourth empty hero metric. Existing internal horizontal chart/table scrolling on narrow screens remains.
+- Calendar-date browser results on September 6: 472 trades, ALL +3740.4%, 4,729,051.69 USDT; 7/30/90/381 daily bars, matching canonical readouts. ROI/PnL toggle and underlying date/value tooltips verified. Trade tab displays the newest 20 closes (September 6 through August 22). Removed public turnover, AUM milestones/explanation, Winning/Losing/Trading Days rows confirmed absent. Current followers64, AUM7.2m and derived High risk label remain. No recorded JavaScript errors or warnings.
+- Actual runtime HTTP checks: same-day repeated JSON identical; GET200, HEAD200 with empty body, `Cache-Control: no-store`; POST and account API requests403. UTC advancement is exercised through the injectable server clock tests, not by waiting months or faking browser financial state.
+- Staged/working diff checks pass. No main, production accounting, real copy execution, production configuration/env/domain or other-page source changes. The approved eligibility border remains unchanged.
+
+The existing `voltex-review` auto-deploy is the only promotion target. This local verification entry is **not** a deployment claim; confirm the final pushed SHA as Render live and in the public review manifest, then browser-check the actual staging route before delivery. No production deployment is requested or implied.

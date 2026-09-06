@@ -57,7 +57,28 @@ export function CopyTradingPage() {
   }, []);
 
   useEffect(() => {
-    api.getSyntheticCopyTrading().then(setSynthetic).catch(() => {});
+    let disposed = false;
+    let loading = false;
+    let loadedDay = '';
+    async function refresh() {
+      if (loading) return;
+      loading = true;
+      try {
+        const next = await api.getSyntheticCopyTrading();
+        if (!disposed) {
+          loadedDay = next.simulation.simulatedAt.slice(0, 10);
+          setSynthetic(next);
+        }
+      } catch { /* Keep unavailable/last known state; never invent returns. */ }
+      finally { loading = false; }
+    }
+    void refresh();
+    // Only the isolated review has the deterministic runtime calendar route.
+    // Production polling, permissions and account APIs are unchanged.
+    const timer = import.meta.env.MODE === 'review' ? window.setInterval(() => {
+      if (loadedDay !== new Date().toISOString().slice(0, 10)) void refresh();
+    }, 60_000) : undefined;
+    return () => { disposed = true; if (timer !== undefined) window.clearInterval(timer); };
   }, []);
 
   const liveNazara = useMemo(() => syntheticNazaraTrader(synthetic), [synthetic]);

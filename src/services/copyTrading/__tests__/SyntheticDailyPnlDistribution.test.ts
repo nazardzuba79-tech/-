@@ -1,4 +1,4 @@
-import { dailyPnlChart } from '../../../../frontend/src/lib/dailyPnlChart';
+import { dailyReturnChart } from '../../../../frontend/src/lib/dailyReturnChart';
 import { selectSyntheticPeriod } from '../../../../frontend/src/lib/syntheticCopyTrading';
 import { addUtcDays, calculateAnalytics } from '../analytics';
 import { advanceState, createInitialState, toResponse } from '../SyntheticCopyTradingEngine';
@@ -157,7 +157,12 @@ describe('synthetic daily PnL distribution', () => {
       expect(sumScaled(expectedTrades.map(trade => trade.netPnl)))
         .toBe(scaled(selected.equity.at(-1)!.equity) - scaled(selected.equity[0].equity));
       expect(selected.pnl).toBeCloseTo(tradeTotal, 2);
-      expect(dailyPnlChart(selected.daily).total).toBeCloseTo(tradeTotal, 2);
+      const chart = dailyReturnChart(selected.daily);
+      // The chart now plots canonical daily percentages; currency PnL stays
+      // intact as tooltip metadata and still reconciles to the trade ledger.
+      expect(sum(chart.bars.map(bar => bar.realizedPnl!))).toBeCloseTo(tradeTotal, 2);
+      expect(chart.bars.map(bar => bar.returnPct)).toEqual(selected.daily.map(day => day.dailyReturn * 100));
+      expect(chart.roi).toBeCloseTo((selected.daily.reduce((factor, day) => factor * (1 + day.dailyReturn), 1) - 1) * 100, 10);
       expect(selected.roi).toBeCloseTo(tradeTotal / selected.equity[0].equity * 100, 5);
       expect(selected.averagePnl).toBeCloseTo(tradeTotal / expectedTrades.length, 5);
       const wins = expectedTrades.filter(trade => trade.netPnl >= 0);

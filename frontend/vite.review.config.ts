@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { toResponse } from '../src/services/copyTrading/SyntheticCopyTradingEngine';
 import { createReviewSyntheticState, REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';
+import { createReviewCalendarClock } from '../src/services/copyTrading/reviewCalendarClock';
 
 // Loaded ONLY for the isolated review build/preview, never by frontend Docker.
 export default defineConfig({
@@ -24,6 +25,9 @@ export default defineConfig({
       this.emitFile({ type: 'asset', fileName: 'review-synthetic.json', source: JSON.stringify(toResponse(synthetic)) });
     },
     configurePreviewServer(server) {
+      // Existing review GET route now follows calendar time at runtime. The
+      // emitted JSON remains a build artifact/fallback, never the live clock.
+      const calendar = createReviewCalendarClock();
       server.middlewares.use((req, res, next) => {
         res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss://ws.kraken.com https://api.kraken.com; form-action 'none'; frame-ancestors 'none'; base-uri 'self'");
         res.setHeader('Cache-Control', 'no-store');
@@ -32,6 +36,18 @@ export default defineConfig({
           res.statusCode = 403;
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify({ error: 'Isolated visual review: account APIs and all writes are disabled.' }));
+          return;
+        }
+        if (req.url?.split('?')[0] === '/review-synthetic.json') {
+          try {
+            const snapshot = calendar.snapshot();
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(req.method === 'HEAD' ? undefined : snapshot);
+          } catch {
+            res.statusCode = 503;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: 'Review strategy history is temporarily unavailable.' }));
+          }
           return;
         }
         if ((req.headers.accept ?? '').includes('text/html') && !req.url?.includes('.')) req.url = '/review.html';

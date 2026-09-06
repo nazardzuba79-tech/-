@@ -1,6 +1,6 @@
 import { nazarTrader, type ChartData, type Period, type Trade, type Trader } from '../pages/copy-trading-bolt/traders';
 
-/** Public v7 economics: deliberately excludes the master's private capital and cash flows. */
+/** Public review economics: excludes the master's private capital and cash flows. */
 export interface SyntheticPeriodEconomics {
   roi: number; masterPnl: number; masterTradingVolume: number; copiedTradingVolume: number;
   grossFollowersPnl: number; performanceFeeEarnings: number; netFollowersPnl: number;
@@ -9,11 +9,12 @@ export interface SyntheticPeriodEconomics {
   maximumDrawdown: number; annualizedVolatility: number;
 }
 
+export type SyntheticReturnMethodology = 'DAILY_TWR' | 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
 export interface SyntheticReviewEconomics {
-  methodology: 'DAILY_TWR';
+  methodology: SyntheticReturnMethodology;
   performanceFeeRate: number;
   policy: {
-    methodology: 'DAILY_TWR'; performanceFeeRate: number; feeCrystallization: string;
+    methodology: SyntheticReturnMethodology; performanceFeeRate: number; feeCrystallization: string;
     copyMinimumPolicyEffectiveDate: string; currentCopyMinimum: number;
     holidays: { start: string; end: string; reason: string }[];
   };
@@ -83,8 +84,13 @@ export function syntheticNazaraTrader(data?: SyntheticCopyTradingResponse | null
     roi30: economics?.periods['30D'].roi ?? analytics.roi30,
     roi90: economics?.periods['90D'].roi ?? analytics.roi90,
     roiAll: economics?.periods.ALL.roi ?? analytics.roiAll,
-    winRate: analytics.winRate,
+    winRate: economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? analytics.allTime.winRate : analytics.winRate,
     drawdown: economics?.periods.ALL.maximumDrawdown ?? analytics.maximumDrawdown,
+    // Review-only tail-risk warning; a high win count is not low-risk trading.
+    // Preserve the existing classification for every legacy methodology.
+    risk: economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+      && (data.dailyResults.some(day => day.dailyReturn <= -.15) || economics.periods.ALL.annualizedVolatility > 100)
+      ? 'High' : nazarTrader.risk,
     copiers: data.followers.filter(follower => follower.active).length,
     aum: data.followers.filter(follower => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0),
     volume: economics?.periods.ALL.masterTradingVolume ?? analytics.tradingVolume,
@@ -161,6 +167,7 @@ export function syntheticAumMilestones(history: SyntheticCopyTradingResponse['au
 
 export interface SyntheticPeriodAnalytics {
   period: Period;
+  methodology?: SyntheticReturnMethodology;
   roi: number;
   pnl: number;
   winRate: number;
@@ -222,7 +229,7 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   // Preserve legacy arithmetic exactly: those ledgers store monetary equity.
   const openingEquity = equity[0]?.equity ?? 0;
   const closingEquity = equity[equity.length - 1]?.equity ?? openingEquity;
-  const pnl = data.economics?.methodology === 'DAILY_TWR'
+  const pnl = data.economics
     ? daily.reduce((sum, day) => sum + day.realizedPnl, 0)
     : closingEquity - openingEquity;
   const wins = trades.filter((trade) => trade.result === 'WIN');
@@ -230,7 +237,7 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   const grossProfit = wins.reduce((sum, trade) => sum + trade.netPnl, 0);
   const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + trade.netPnl, 0));
   const economics = data.economics?.periods[period];
-  const returns = data.economics?.methodology === 'DAILY_TWR'
+  const returns = data.economics
     ? daily.map(day => day.dailyReturn)
     : equity.slice(1).map((point, index) => point.equity / equity[index].equity - 1);
   const mean = returns.length ? returns.reduce((sum, value) => sum + value, 0) / returns.length : 0;
@@ -252,7 +259,11 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   ];
   return {
     period,
-    roi: (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100,
+    methodology: data.economics?.methodology,
+    // v8 is an explicitly simple operating-capital return, NOT geometric TWR.
+    roi: data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+      ? returns.reduce((total, value) => total + value, 0) * 100
+      : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100,
     pnl,
     winRate: trades.length ? wins.length / trades.length * 100 : 0,
     maximumDrawdown: economics?.maximumDrawdown ?? maxDrawdown(equity),
@@ -282,6 +293,11 @@ export function syntheticPerformancePoints(data: SyntheticPeriodAnalytics, mode:
   if (mode === 'PnL') return data.cumulativePnl.map(point => ({ date: point.date, value: point.pnl }));
   const base = data.equity[0]?.equity;
   if (base === undefined || base <= 0) return [];
+  if (data.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN') {
+    // Index = 100 + cumulative return percentage points. Subtract the period
+    // opening index; dividing would silently reintroduce compounded sizing.
+    return data.equity.map(point => ({ date: point.date, value: point.equity - base }));
+  }
   return data.equity.map(point => ({ date: point.date, value: (point.equity / base - 1) * 100 }));
 }
 
@@ -328,7 +344,8 @@ export function syntheticChartData(data: SyntheticCopyTradingResponse, period: P
   const cutoff = endDate - periodDays[period] * 86_400_000;
   const selected = period === 'ALL' ? all : all.filter((point) => Date.parse(`${point.date}T00:00:00Z`) >= cutoff);
   const base = selected[0].equity;
-  const trader = selected.map((point) => (point.equity / base - 1) * 100);
+  const trader = selected.map((point) => data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+    ? point.equity - base : (point.equity / base - 1) * 100);
   const allValues = trader;
   const rawMin = Math.min(...allValues);
   const rawMax = Math.max(...allValues);

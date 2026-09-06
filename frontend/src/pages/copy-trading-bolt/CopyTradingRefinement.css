@@ -177,6 +177,12 @@
 .copytrading-bolt-root.profile-view .follower-history-milestones small { font-size: 10px; font-weight: 400; color: var(--profile-muted); }
 .copytrading-bolt-root.profile-view .follower-list-note { color: var(--profile-muted); margin: 20px 0 10px; font-size: 11px; line-height: 1.6; }
 .copytrading-bolt-root.profile-view .app :focus-visible { outline: 2px solid #a67924; outline-offset: 3px; }
+/* v8 removes Trading Days: do not leave a fourth empty metric cell. */
+.copytrading-bolt-root.profile-view .trader-hero-metrics-simple { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 700px) {
+  .copytrading-bolt-root.profile-view .trader-hero-metrics-simple { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .copytrading-bolt-root.profile-view .trader-hero-metrics-simple > div:last-child { grid-column: 1 / -1; }
+}
 @media (max-width: 1180px) {
   .copytrading-bolt-root.profile-view .trader-profile-hero { grid-template-columns: 1fr 1.5fr; }
   .copytrading-bolt-root.profile-view .follower-history-charts { grid-template-columns: 1fr; }

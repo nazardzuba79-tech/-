@@ -1,4 +1,4 @@
-import { createReviewSyntheticState } from '../reviewSyntheticHistory';
+import { createLegacyV7ReviewSyntheticState as createReviewSyntheticState } from '../reviewSyntheticHistory';
 import { advanceState, createInitialState, toResponse } from '../SyntheticCopyTradingEngine';
 import { calculateAnalytics } from '../analytics';
 import { calculateReviewPeriod, requireCashflowState, REVIEW_PERIODS, reviewRisk, summarizeCashflowPeriods } from '../reviewEconomics';

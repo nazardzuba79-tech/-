@@ -376,6 +376,7 @@ function profileChart(values: number[], labels: string[], mode: ProfileChartMode
   });
   return {
     line,
+    points: points.map(([x, y], index) => ({ x, y, date: labels[index], value: values[index] })),
     area: `${line} L${points[points.length - 1]?.[0] ?? 0} ${bottom} L0 ${bottom} Z`,
     endY: points[points.length - 1]?.[1] ?? bottom,
     axis,
@@ -394,6 +395,7 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
   periodData?: SyntheticPeriodAnalytics;
 }) {
   const displayMode = periodData ? mode : 'ROI';
+  const simpleReturn = periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
   const displayedRoi = periodData?.roi ?? getRoiForPeriod(trader, period);
   const chart = useMemo(() => {
     if (periodData?.equity.length) {
@@ -422,7 +424,7 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}>{formatPercent(displayedRoi)}</strong></div>
         <div><span>{periodData ? 'Накопленный PnL · USDT' : 'PnL · история недоступна'}</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}>{periodData ? signedUsd(periodData.pnl) : '—'}</strong></div>
       </div>
-      {periodData && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
+      {periodData && !simpleReturn && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
         <span>Оборот мастера · {period} <strong>{numberLabel(periodData.economics?.masterTradingVolume ?? periodData.trades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0))} USDT</strong></span>
         <span>Оборот копирования · {period} <strong>{periodData.economics ? `${numberLabel(periodData.economics.copiedTradingVolume)} USDT` : '—'}</strong></span>
       </div>}
@@ -434,11 +436,12 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
           <path className="profile-chart-area" d={chart.area} />
           <path className="profile-chart-line" d={chart.line} />
           <circle className="profile-chart-point" cx="900" cy={chart.endY} r="4" />
+          {simpleReturn && chart.points.map((point, index) => <rect key={point.date} x={Math.max(0, point.x - 450 / Math.max(1, chart.points.length - 1))} y="0" width={900 / Math.max(1, chart.points.length - 1)} height="270" fill="transparent"><title>{point.date}: {displayMode === 'ROI' ? `${numberLabel(point.value, 4)}%` : signedUsd(point.value)}</title></rect>)}
         </svg>
         <div className={`profile-chart-x${period === 'ALL' ? ' profile-chart-x-inception' : ''}`}>{chart.labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
       </div> : <div className="profile-empty">История стратегии недоступна. График появится после загрузки данных.</div>}
       <p className="profile-trust"><ShieldCheck size={14} />{periodData
-        ? periodData.economics ? 'Единая синтетическая история · ROI — ежедневный TWR. Вывод средств не является торговым убытком и не меняет PnL.' : 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
+        ? simpleReturn ? 'ROI — сумма дневных доходностей на рабочий капитал, без реинвестирования всей прибыли. Ввод и вывод средств не являются торговой прибылью или убытком.' : periodData.economics ? 'Единая синтетическая история · ROI — ежедневный TWR. Вывод средств не является торговым убытком и не меняет PnL.' : 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
         : trader.id === nazarTrader.id ? 'Статистика недоступна без единой истории стратегии.' : 'Демонстрационная модель: ROI и риск рассчитаны из одной кривой капитала. Это не подтверждённая история реальных сделок.'}</p>
     </section>
   );
@@ -446,7 +449,7 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
 
 function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
   const days = data?.daily ?? [];
-  const plot = dailyReturnChart(days);
+  const plot = dailyReturnChart(days, data?.methodology);
   const percent = (value: number) => `${value > 0 ? '+' : ''}${numberLabel(value)}%`;
   return (
     <section className="profile-panel daily-return-panel">
@@ -466,17 +469,17 @@ function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
         </div>
       ) : <div className="profile-empty">Дневная история недоступна для этого трейдера.</div>}
       <div className="daily-legend"><span><i className="gain" /> Прибыльный день</span><span><i className="loss" /> Убыточный день</span></div>
-      {days.length > 0 && <p className="daily-note">Синтетическая история · один столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. ROI — произведение дневных факторов; средняя доходность — арифметическая, включая дни без сделок. Все дни сохранены; на узком экране график прокручивается.</p>}
+      {days.length > 0 && <p className="daily-note">Один столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. {data?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? 'ROI — сумма дневных доходностей, без геометрического реинвестирования;' : 'ROI — произведение дневных факторов;'} средняя доходность — арифметическая, включая дни без сделок. Все дни сохранены; на узком экране график прокручивается.</p>}
     </section>
   );
 }
 
-function MetricsPanel({ metrics, period }: { metrics: ProfileMetrics; period: Period }) {
+function MetricsPanel({ metrics, period, compact = false }: { metrics: ProfileMetrics; period: Period; compact?: boolean }) {
   const all = period === 'ALL';
   const rows: [string, string, string?][] = [
     [all ? 'All-Time ROI' : 'ROI', formatPercent(metrics.roi), roiClass(metrics.roi)],
     [all ? 'All-Time PnL' : 'Trader PnL', signedUsd(metrics.pnl), roiClass(metrics.pnl)],
-    ['Win Rate', unsignedPercent(metrics.winRate)],
+    ['Win Rate', compact ? `${numberLabel(metrics.winRate, 1)}%` : unsignedPercent(metrics.winRate)],
     ['Max Drawdown', unsignedPercent(metrics.maximumDrawdown)],
     ['Average P/L', signedUsd(metrics.averagePnl), roiClass(metrics.averagePnl)],
     ['Profit Factor', numberLabel(metrics.profitFactor)],
@@ -493,18 +496,19 @@ function MetricsPanel({ metrics, period }: { metrics: ProfileMetrics; period: Pe
   return (
     <section className="profile-panel profile-metrics-panel">
       <div className="profile-panel-heading"><div><span>{period === 'ALL' ? 'ALL · SINCE INCEPTION' : `${period} · ROLLING WINDOW`}</span><h2>Performance</h2></div><BarChart3 size={20} /></div>
-      <div className="profile-metrics-grid">{rows.map(([label, value, className]) => <div key={label}><span>{label}</span><strong className={className}>{value}</strong></div>)}</div>
+      <div className="profile-metrics-grid">{rows.filter(([label]) => !compact || !['Winning Trades', 'Losing Trades', 'Total Trading Days', 'Trading Days', 'Weekly Trades'].includes(label)).map(([label, value, className]) => <div key={label}><span>{label}</span><strong className={className}>{value}</strong></div>)}</div>
     </section>
   );
 }
 
 function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: SyntheticPeriodAnalytics }) {
   const fallback = useMemo(() => generateTrades(trader), [trader]);
-  const visibleTrades = periodData?.trades.slice(0, 100);
+  const simpleReturn = periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
+  const visibleTrades = periodData?.trades.slice(0, simpleReturn ? 20 : 100);
   const cashflowHistory = periodData?.economics !== undefined;
   return (
     <section className="profile-panel profile-trades-panel">
-      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>История сделок</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
+      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
       <div className="table-scroll">
         <table>
           <thead><tr>{['Pair', 'Side', 'Entry', 'Exit', 'Size', 'PnL', 'ROI', cashflowHistory ? 'Open Time · UTC' : 'Open Time', cashflowHistory ? 'Close Time · UTC' : 'Close Time', 'Holding', 'Status'].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
@@ -536,7 +540,7 @@ function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { 
   const style: Record<Trader['category'], string> = { trend: 'Trend', swing: 'Swing', quant: 'Quant', arbitrage: 'Market Neutral', futures: 'Futures', 'long-term': 'Long Term', 'multi-asset': 'Intraday / Swing' };
   const rows = [
     ['Trading Style', style[trader.category]],
-    ['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)],
+    ...(periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? [] : [['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)]]),
     ['Risk Level', RISK_LABEL_RU[trader.risk]],
     ['Main Markets', mainMarkets],
     ['Trades / Week', numberLabel(metrics.averageTradesPerWeek, 1)],
@@ -611,7 +615,7 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
         <div><span>Комиссия за результат</span><strong>{unsignedPercent((synthetic?.economics?.performanceFeeRate ?? NaN) * 100)}</strong></div>
       </div>}
       {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход Nazara рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
-      {period === 'ALL' && synthetic && <FollowerHistory history={synthetic.aumHistory} />}
+      {period === 'ALL' && synthetic && synthetic.economics?.methodology !== 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' && <FollowerHistory history={synthetic.aumHistory} />}
       {followers.length > 0 && <p className="follower-list-note">Активные подписчики · индивидуальный PnL и ROI с даты начала копирования</p>}
       {followers.length > 0 && <div className="follower-list">{(showAll ? followers : followers.slice(0, 8)).map((follower) => {
         const pnl = follower.netPnl ?? follower.realizedPnl + follower.unrealizedPnl;
@@ -628,6 +632,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const [period, setPeriod] = useState<Period>('90D');
   const [chartMode, setChartMode] = useState<ProfileChartMode>('ROI');
   const liveSynthetic = trader.id === nazarTrader.id ? synthetic : null;
+  const simpleReturn = liveSynthetic?.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
   const demoAll = trader.id === nazarTrader.id ? null : selectDemoPerformance(trader, 'ALL');
@@ -644,9 +649,9 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
           <div className="profile-avatar-wrap"><Avatar trader={trader} large />{trader.id === nazarTrader.id && trader.verified && <span className="profile-verified"><Check size={11} /></span>}</div>
           <div><div className="profile-title-row"><h1>{trader.name}</h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
         </div>
-        <div className="trader-hero-metrics">
+        <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
           <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
-          <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>
+          {!simpleReturn && <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>}
           <div><span>AUM</span><strong>{formatAccountSize(heroAum)} USDT</strong></div>
           <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
         </div>
@@ -662,7 +667,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
 
       {activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
-          <aside><MetricsPanel metrics={metrics} period={period} /><TradingProfilePanel trader={trader} metrics={metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} /></aside>
+          <aside><MetricsPanel metrics={metrics} period={period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} /></aside>
           <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /></div>
         </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} period={period} />

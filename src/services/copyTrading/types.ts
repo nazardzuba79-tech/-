@@ -65,7 +65,7 @@ export interface SyntheticFollower {
 
 export interface SyntheticCopyState {
   // Earlier versions retain persisted inception history and outcome policies.
-  version: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  version: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
   seed: number;
   rngState: number;
   simulatedAt: string;
