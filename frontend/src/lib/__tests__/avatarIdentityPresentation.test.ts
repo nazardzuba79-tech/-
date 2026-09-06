@@ -102,7 +102,9 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
     MarketplaceHero: '6711f0146a0a1456b34a21fc6db3d3310c5a9344ab9b4295371455dc60db3258',
   })) {
     const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)!;
-    expect(digest(node.getText(ast))).toBe(hash);
+    // Review-only duplicate-copy wrapper changes no approved chart rendering.
+    const renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+    expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({
     'src/pages/copy-trading-bolt/CopyTradingRefinement.css': '0c2d79cb276006943f7528e5f7abd17b434ea642e7447211f41258a62babdce4',

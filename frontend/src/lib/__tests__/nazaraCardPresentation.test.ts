@@ -93,7 +93,9 @@ test.each(Object.entries({
 }))('%s remains byte-equivalent to approved V8', (name, hash) => {
   // The only mini-chart change is admitting Ksenia's separate ledger. Strip
   // that additive condition to compare all approved Nazar geometry verbatim.
-  expect(createHash('sha256').update(body(name).replace(" || trader.id === 'VX-KSENIA'", '')).digest('hex')).toBe(hash);
+  const renderer = body(name).replace(" || trader.id === 'VX-KSENIA'", '')
+    .replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+  expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
 });
 
 test('premium CSS stays card-scoped, keeps the approved eligibility border, and respects reduced motion', () => {

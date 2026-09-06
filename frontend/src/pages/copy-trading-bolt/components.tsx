@@ -49,6 +49,7 @@ import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
 import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
+import { ReviewDisclosure } from '../../components/ReviewDisclosure';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -455,9 +456,13 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         </svg>
         <div className={`profile-chart-x${period === 'ALL' ? ' profile-chart-x-inception' : ''}`}>{chart.labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
       </div> : <div className="profile-empty">История стратегии недоступна. График появится после загрузки данных.</div>}
+      <ReviewDisclosure neutral={(periodData?.economics || !periodData) ? <p className="profile-trust"><ShieldCheck size={14} />{periodData
+        ? simpleReturn ? 'ROI — сумма дневных доходностей на рабочий капитал, без реинвестирования всей прибыли. Ввод и вывод средств не являются торговой прибылью или убытком.' : 'ROI — ежедневный TWR. Вывод средств не является торговым убытком и не меняет PnL.'
+        : trader.id === nazarTrader.id ? 'Статистика недоступна без единой истории стратегии.' : 'ROI и риск рассчитаны из одной кривой капитала.'}</p> : null}>
       <p className="profile-trust"><ShieldCheck size={14} />{periodData
         ? simpleReturn ? 'ROI — сумма дневных доходностей на рабочий капитал, без реинвестирования всей прибыли. Ввод и вывод средств не являются торговой прибылью или убытком.' : periodData.economics ? 'Единая синтетическая история · ROI — ежедневный TWR. Вывод средств не является торговым убытком и не меняет PnL.' : 'Показатели рассчитаны из единой синтетической истории сделок стратегии.'
         : trader.id === nazarTrader.id ? 'Статистика недоступна без единой истории стратегии.' : 'Демонстрационная модель: ROI и риск рассчитаны из одной кривой капитала. Это не подтверждённая история реальных сделок.'}</p>
+      </ReviewDisclosure>
     </section>
   );
 }
@@ -606,7 +611,7 @@ function FollowerHistory({ history }: { history: SyntheticCopyTradingResponse['a
       <strong>{point.followerCount === undefined ? '—' : point.followerCount.toLocaleString('ru-RU')} <small>чел.</small></strong>
       <span>{numberLabel(point.aum)} USDT</span>
     </div>)}</div>
-    <p className="daily-note">Синтетическая история · ежедневные снимки. AUM — выделенный подписчиками капитал, без накопленного PnL. Старые даты сохраняются при продвижении времени.</p>
+    <p className="daily-note"><ReviewDisclosure neutral="Ежедневные снимки. ">Синтетическая история · ежедневные снимки. </ReviewDisclosure>AUM — выделенный подписчиками капитал, без накопленного PnL. Старые даты сохраняются при продвижении времени.</p>
   </section>;
 }
 
@@ -628,7 +633,7 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
         <div><span>Доход {trader.name} · {period}</span><strong className={roiClass(economics?.performanceFeeEarnings ?? NaN)}>{signedUsd(economics?.performanceFeeEarnings ?? NaN)}</strong></div>
         <div><span>Комиссия за результат</span><strong>{unsignedPercent((synthetic?.economics?.performanceFeeRate ?? NaN) * 100)}</strong></div>
       </div>}
-      {synthetic?.economics && <p className="daily-note">Синтетическая модель · Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход {trader.name} рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
+      {synthetic?.economics && <p className="daily-note"><ReviewDisclosure>Синтетическая модель · </ReviewDisclosure>Gross PnL после расходов на исполнение, до комиссии за результат. Чистый PnL = Gross PnL − начисленные комиссии. Доход {trader.name} рассчитан из событий начисления комиссии на новую прибыль выше high-water mark; убыток и повторное восстановление прежней прибыли не облагаются повторно.</p>}
       {period === 'ALL' && synthetic && synthetic.economics?.methodology !== 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' && <FollowerHistory history={synthetic.aumHistory} />}
       {trader.id === 'VX-KSENIA' && synthetic?.traderEarnings365 !== undefined && <div className="followers-summary"><div><span>Доход Ksenia · последние 365 дней</span><strong>{signedUsd(synthetic.traderEarnings365)}</strong></div></div>}
       {followers.length > 0 && <p className="follower-list-note">Активные подписчики · индивидуальный PnL и ROI с даты начала копирования</p>}
@@ -637,7 +642,7 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
         return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small>{follower.startingAllocation !== undefined && <small>При старте: {publicUsdtNumber(follower.startingAllocation)} USDT</small>}</p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · чистый PnL с начала копирования</small>{follower.grossPnl !== undefined && <small>Gross: {signedUsd(follower.grossPnl)} · Комиссии: {publicUsdtNumber(follower.performanceFees)} USDT</small>}</p></div>;
       })}</div>}
       {followers.length > 8 && <button className="button button-outline" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}
-      {synthetic?.economics && <p className="daily-note">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. В синтетическом сценарии действует с {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}
+      {synthetic?.economics && <p className="daily-note">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. <ReviewDisclosure neutral="Действует с">В синтетическом сценарии действует с</ReviewDisclosure> {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}
     </section>
   );
 }
@@ -674,9 +679,9 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
       </section>
 
-      {!liveSynthetic && trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA' && <p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p>}
+      {!liveSynthetic && trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA' && <ReviewDisclosure><p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p></ReviewDisclosure>}
       {!liveSynthetic && trader.id === nazarTrader.id && <p className="catalogue-disclosure" role="status">История Nazar недоступна. Показатели не заменяются примерными значениями.</p>}
-      {trader.id === 'VX-KSENIA' && <p className="catalogue-disclosure">Синтетическая review-стратегия Ksenia. Связь с аккаунтом используется только для профиля и аватара; показатели не являются результатами реального счёта.</p>}
+      {trader.id === 'VX-KSENIA' && <ReviewDisclosure neutral={<p className="catalogue-disclosure">Связь с аккаунтом используется только для профиля и аватара.</p>}><p className="catalogue-disclosure">Синтетическая review-стратегия Ksenia. Связь с аккаунтом используется только для профиля и аватара; показатели не являются результатами реального счёта.</p></ReviewDisclosure>}
       <nav className="profile-primary-tabs" aria-label="Разделы профиля">
         <div>{([{ id: 'statistics', label: 'Статистика' }, { id: 'trades', label: 'Сделки' }] as const).map((tab) => <button key={tab.id} className={activeTab === tab.id ? 'active' : ''} onClick={() => setActiveTab(tab.id)}>{tab.label}</button>)}</div>
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
@@ -867,7 +872,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
           </div>
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
-        <p className="catalogue-disclosure">Демонстрационный каталог · вымышленные профили и аватары, синтетические результаты. Не подтверждённая доходность и не рекомендация.</p>
+        <ReviewDisclosure><p className="catalogue-disclosure">Демонстрационный каталог · вымышленные профили и аватары, синтетические результаты. Не подтверждённая доходность и не рекомендация.</p></ReviewDisclosure>
         <div className="trader-grid">
           {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}
         </div>

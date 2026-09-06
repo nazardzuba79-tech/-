@@ -26,6 +26,7 @@ const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
+  ReviewDisclosure: ({ children }: { children: unknown }) => children,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
