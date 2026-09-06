@@ -1,6 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { execFileSync } from 'child_process';
 import { resolve } from 'path';
 import { createKseniaReviewState, advanceKseniaReview, kseniaReviewResponse } from '../services/copyTrading/kseniaReview';
@@ -15,6 +15,13 @@ export function assertReviewDatabase(env: NodeJS.ProcessEnv) {
     || url.pathname !== '/voltex_review_db' || !['postgres:', 'postgresql:'].includes(url.protocol)) {
     throw new Error('Review backend refuses any database except the authorized isolated Render database');
   }
+}
+// A JSON string inside JSONB preserves JavaScript numeric tokens exactly through
+// Prisma's JSON transport. A nested JSON object may round IEEE-754 tail digits.
+// Legacy object rows remain readable without regenerating published history.
+export function encodeReviewState(state: CashflowReviewState): string { return JSON.stringify(state); }
+export function decodeReviewState(value: unknown): CashflowReviewState {
+  return (typeof value === 'string' ? JSON.parse(value) : value) as CashflowReviewState;
 }
 export async function startReviewBackend() {
   assertReviewDatabase(process.env);
@@ -32,8 +39,9 @@ export async function startReviewBackend() {
   }
   const scenarioId = 'ksenia-review-v1';
   const stored = await db.copyReviewScenario.findUnique({ where: { id: scenarioId } });
-  let state = stored ? stored.state as unknown as CashflowReviewState : createKseniaReviewState();
-  if (!stored) await db.copyReviewScenario.create({ data: { id: scenarioId, state: state as unknown as Prisma.InputJsonValue } });
+  let state = stored ? decodeReviewState(stored.state) : createKseniaReviewState();
+  if (!stored) await db.copyReviewScenario.create({ data: { id: scenarioId, state: encodeReviewState(state) } });
+  else if (typeof stored.state !== 'string') await db.copyReviewScenario.update({ where: { id: scenarioId }, data: { state: encodeReviewState(state) } });
   let advancing: Promise<void> | null = null;
   async function calendar() {
     if (advancing) return advancing;
@@ -45,7 +53,7 @@ export async function startReviewBackend() {
       // before publication and persisted deterministic prefixes survive restart.
       let next = state;
       for (let days = missing; days > 0; days -= 365) next = advanceKseniaReview(next, Math.min(days, 365));
-      await db.copyReviewScenario.update({ where: { id: scenarioId }, data: { state: next as unknown as Prisma.InputJsonValue } });
+      await db.copyReviewScenario.update({ where: { id: scenarioId }, data: { state: encodeReviewState(next) } });
       state = next;
     })().finally(() => { advancing = null; });
     return advancing;

@@ -1,5 +1,6 @@
 import { resolveStrategyOwner, KSENIA_EXTERNAL_OWNER_ID } from '../strategyOwner';
-import { assertReviewDatabase } from '../../../review/server';
+import { assertReviewDatabase, encodeReviewState, decodeReviewState } from '../../../review/server';
+import { createKseniaReviewState, advanceKseniaReview } from '../kseniaReview';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -22,6 +23,20 @@ test('Nazar resolves configured owner independently of current viewer', async ()
   const db: any = { copyStrategyOwner: { findUnique: jest.fn().mockResolvedValue({ publicName: 'Nazar', premium: true, ownerUserId: 'test-owner' }) }, user: { findUnique: jest.fn().mockResolvedValue({ avatarUrl: null, kycStatus: 'APPROVED' }) } };
   expect(await resolveStrategyOwner(db, 'VX-001')).toMatchObject({ displayName: 'Nazar', verified: true });
   expect(db.user.findUnique.mock.calls[0][0].where).toEqual({ id: 'test-owner' });
+});
+test('database representation preserves exact numeric tokens and append-only restart prefixes', () => {
+  const state = createKseniaReviewState();
+  const wire = encodeReviewState(state);
+  expect(typeof wire).toBe('string');
+  // JSONB receives a string rather than interpreting every nested number.
+  const restored = decodeReviewState(JSON.parse(JSON.stringify(wire)));
+  expect(restored).toEqual(state);
+  expect(decodeReviewState(state)).toBe(state); // migrate legacy objects, never regenerate
+  const next = advanceKseniaReview(restored, 7);
+  expect(advanceKseniaReview(decodeReviewState(encodeReviewState(next)), 7))
+    .toEqual(advanceKseniaReview(state, 14));
+  const source = readFileSync(resolve(__dirname, '../../../review/server.ts'), 'utf8');
+  expect(source.match(/state: encodeReviewState\(/g)).toHaveLength(3);
 });
 test('isolated entry point fails closed for production/unknown database URLs', () => {
   expect(() => assertReviewDatabase({ VOLTEX_ISOLATED_REVIEW: 'true', DATABASE_URL: 'postgresql://test:test@dpg-daei409t0dsc73aat5jg-a/voltex_review_db' })).not.toThrow();

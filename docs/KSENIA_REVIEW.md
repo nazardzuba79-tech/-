@@ -107,4 +107,40 @@ copy execution; this task preserves it and does not claim otherwise. No staging
 balance/eligibility bypass is introduced to simulate an executable Copy button.
 The deployed environment remains explicitly synthetic and disables account actions.
 
-Deployment and live verification are pending until recorded in AI_HANDOFF.
+## Isolated staging delivery — 2026-09-06
+
+Frontend `https://voltex-review.onrender.com/copy-trading` and dedicated backend
+`https://exchange-api-review.onrender.com` deployed review commit `afe627a3fb1ea93a41b7234cb470eefebf9a0334`.
+Backend service `srv-daeiv4f40ujc73fe6dn0`, Node22/free/Oregon, starts only
+`node dist/review/server.js`, health check `/health`. Existing frontend service
+`srv-dadf50id0e5s73dplnpg` forwards only allowlisted GETs using its review-only
+backend origin. Neither production service was modified.
+
+Authorized private DB: `voltex-review-db`, ID `dpg-daei409t0dsc73aat5jg-a`;
+credentials omitted. All25 migrations applied successfully in this initially
+empty isolated database. Health checks execute SELECT1 and confirm isolated-review.
+Free database expires **2026-10-06**; no billing upgrade was made. Initial backend
+startup correctly refused missing DATABASE_URL; after its private Dashboard setup,
+deployment succeeded. No production database read or copied customer account/media.
+
+Live nine-width browser QA passed all requested widths, four period bar counts,
+latest20, search/Favorites/profile, no horizontal overflow/page errors; All Traders,
+sorting and empty Following were additionally checked in the owner browser.
+Ksenia has no Verified badge. Six-field public identity has no email/owner UUID/
+private metadata. Backend and frontend-proxied payloads match exactly. All12,043
+numeric response fields match local canonical math within floating transport tails
+(largest difference7.28e-12); monetary values match at canonical four-decimal precision.
+Live365D earnings are exactly1,275,547. Current live Nazar hash matches the original
+September6 hash above; existing profile graph and avatars remain unchanged.
+
+Live QA identified Prisma JSONB transport rounding sub-machine tail digits in
+nested numbers. The follow-up stores the state as an encoded JSON string within
+the existing JSONB column, preserving exact JS numeric tokens across DB restarts.
+Existing published object state is migrated losslessly from its stored representation,
+never regenerated/refitted. No financial target changed. A restart/append test covers
+this encoding. Public Ksenia response hash before this storage-only follow-up:
+`ae1998b7cd06366eb2fb5e3d7c1df3a8b542ffe96d8e50c05a33e91fbea30ef4`.
+Verify it again after the follow-up reaches live. Final relevant suite run before
+that fix:35/35; affected suites after fix:12/12, including new persistence test.
+Existing dependency audit reports8 vulnerabilities (4moderate/3high/1critical);
+not introduced by this feature, and no blanket breaking dependency upgrade applied.
