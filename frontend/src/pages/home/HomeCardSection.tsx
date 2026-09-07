@@ -38,7 +38,7 @@ export function HomeCardSection() {
           className="pointer-events-none absolute left-[50%] top-[66%] h-[160px] w-[440px] -translate-x-1/2 rotate-[-6deg] rounded-[100%] bg-[radial-gradient(50%_60%_at_50%_0%,rgba(224,169,63,0.20),transparent_72%)] blur-[2px]"
         />
 
-        <div className="relative grid grid-cols-1 items-center gap-8 p-7 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)] lg:gap-6 lg:p-9">
+        <div className="relative grid grid-cols-1 items-center gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)] lg:gap-7 lg:py-9 lg:pl-3 lg:pr-6">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-gold-500/35 bg-gold-500/[0.08] px-3 py-[5px] text-[10px] font-medium uppercase tracking-[0.13em] text-gold-400">
               <StarIcon size={10} fill="#f0c45a" />
@@ -68,20 +68,22 @@ export function HomeCardSection() {
 
           {/* The same owner-approved wrist artwork as the Crypto Card hero. */}
           <div className="relative flex items-center justify-center py-4">
-            <WatchCardVisual />
+            <div className="vx-home-card-artwork">
+              <WatchCardVisual />
+            </div>
           </div>
 
-          <ul className="space-y-4">
+          <ul className="space-y-5">
             {BENEFITS.map(({ key, titleKey, textKey }) => (
               <li key={key} className="flex gap-3">
                 <span
-                  className="mt-[1px] flex h-[34px] w-[34px] shrink-0 items-center justify-center"
+                  className="mt-[1px] flex h-[42px] w-[42px] shrink-0 items-center justify-center"
                 >
                   <CardBenefitIcon kind={key} />
                 </span>
-                <div className="leading-snug">
-                  <div className="text-[13px] font-semibold text-white">{t(titleKey)}</div>
-                  <p className="mt-[3px] text-[11.5px] text-home-muted">{t(textKey)}</p>
+                <div className="min-w-0 leading-snug">
+                  <div className="text-[15px] font-semibold text-white">{t(titleKey)}</div>
+                  <p className="mt-1 text-[13px] leading-[1.5] text-[#a7b0bd]">{t(textKey)}</p>
                 </div>
               </li>
             ))}

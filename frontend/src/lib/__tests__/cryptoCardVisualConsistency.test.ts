@@ -111,8 +111,16 @@ test('both hero headings render the exact approved slogan and share the same ass
   expect(src).not.toMatch(/fetch\(|useEffect|useAuth|useBalance|axios/);
 });
 
-test('wrist change preserves all other Homepage copy, benefits, CTAs and surrounding layout', () => {
+test('approved wrist and local layout polish preserve every other Homepage copy, benefit and CTA', () => {
   const restored = read('src/pages/home/HomeCardSection.tsx').replace(/\r\n/g, '\n')
+    .replace('gap-8 p-5 sm:p-7', 'gap-8 p-7')
+    .replace('lg:gap-7 lg:py-9 lg:pl-3 lg:pr-6', 'lg:gap-6 lg:p-9')
+    .replace('<div className="vx-home-card-artwork">\n              <WatchCardVisual />\n            </div>', '<WatchCardVisual />')
+    .replace('className="space-y-5"', 'className="space-y-4"')
+    .replace('h-[42px] w-[42px]', 'h-[34px] w-[34px]')
+    .replace('className="min-w-0 leading-snug"', 'className="leading-snug"')
+    .replace('text-[15px] font-semibold text-white', 'text-[13px] font-semibold text-white')
+    .replace('mt-1 text-[13px] leading-[1.5] text-[#a7b0bd]', 'mt-[3px] text-[11.5px] text-home-muted')
     .replace("import { CARD_HERO_SLOGAN, WatchCardVisual } from '../crypto-card-final/components/WatchCardVisual';", "import { HomeCryptoCard } from './HomeCryptoCard';")
     .replace('{CARD_HERO_SLOGAN}', "{t('home.card.titleTop')}\n              <span className=\"block\">{t('home.card.titleBottom')}</span>")
     .replace('lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)]', 'lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]')
@@ -120,4 +128,27 @@ test('wrist change preserves all other Homepage copy, benefits, CTAs and surroun
     .replace('<WatchCardVisual />', '<HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />');
   expect(createHash('sha256').update(restored).digest('hex'))
     .toBe('df56857a1aa2d406fd6bd3ae5ec8d0ca468e7e58c9dba3551e8696311b8431db');
+});
+
+test('rounding is Homepage-only and leaves the shared Card artwork component byte-exact', () => {
+  expect(createHash('sha256').update(read('src/pages/crypto-card-final/components/WatchCardVisual.tsx').replace(/\r\n/g, '\n')).digest('hex'))
+    .toBe('6fd39c8a9b071c3d66727fcd209fe5bfd5e9893329379102de71dd1d50b380d3');
+  const css = read('src/pages/home/home.css').replace(/\r\n/g, '\n');
+  const local = css.match(/\/\* Homepage Card promo only\.[\s\S]*?(?=\/\* --- ambient hero lighting ---)/)![0];
+  expect(local).toContain('.vx-home .vx-home-card-artwork');
+  expect(local).toContain('border-radius: clamp(24px, 2.8vw, 42px)');
+  expect(local).not.toMatch(/filter:|mask-image:|transform:|url\(/);
+  expect(createHash('sha256').update(css.replace(local, '')).digest('hex'))
+    .toBe('f2e53a7bd3f0d3e61d5f71d9d12d45ac3bde9149930747d1019b102b70a4f23b');
+});
+
+test.each(['world', 'apple', 'ai', 'atm', 'privacy'])('%s uses one consistent decorative icon frame without added visible text', kind => {
+  const { CardBenefitIcon } = evaluate('src/pages/home/CardBenefitIcon.tsx');
+  const html = renderToStaticMarkup(React.createElement(CardBenefitIcon, { kind }));
+  expect(html).toContain('aria-hidden="true" class="vx-home-card-benefit-icon"');
+  if (kind === 'apple') expect(html).toContain('/cards/crypto-card-final/apple-pay-mark.svg');
+  else expect(html).toContain('<svg');
+  if (['world', 'atm', 'privacy'].includes(kind)) expect(html).toContain('stroke-width="1.65"');
+  // The official OpenAI SVG keeps its non-visible <title> within aria-hidden.
+  expect(html.replace(/<title>.*?<\/title>/g, '').replace(/<[^>]+>/g, '')).toBe('');
 });

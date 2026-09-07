@@ -58,9 +58,9 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
-  "frontend/src/pages/home/home.css": "f2e53a7bd3f0d3e61d5f71d9d12d45ac3bde9149930747d1019b102b70a4f23b",
+  "frontend/src/pages/home/home.css": "20c1eb34d37a17542d12e346391dfa73dd6dc053ee6c02c1d8ef31bc23e8d0aa",
   // Owner-reference wrist/slogan mount; exact reverse-diff test preserves other copy/layout.
-  "frontend/src/pages/home/HomeCardSection.tsx": "c4c0f96e4e162de790c63cba4a64e41e97edc19b73ce731879af6847aff9330e",
+  "frontend/src/pages/home/HomeCardSection.tsx": "b4fada7c6b7edb782ef94f4d0d9ca9a8864e8ab934a98302a3aab506bd785efb",
   "frontend/src/pages/home/HomeCryptoCard.tsx": "221491b3828c82825beacf0373564047fd88733eaad39d5b5ed61154bacf6da3",
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
