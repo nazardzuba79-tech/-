@@ -9,7 +9,6 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
 import { TopGainersTicker } from './TopGainersTicker';
-import { WalletBalanceControl } from './WalletBalanceControl';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -209,11 +208,6 @@ export function Nav({
       </div>
 
       <div className="header-actions nav-desktop-right">
-        {/* Sits before the deposit CTA, as in the Trade archive's
-            .top-actions row. Renders nothing when signed out or before the
-            balance arrives, so the header never shows a placeholder
-            figure. */}
-        <WalletBalanceControl />
         <button onClick={() => setShowDeposit(true)} className="deposit-button top-nav-fund-btn">
           <span>{t('wallet.deposit')}</span>
           <ArrowUpRight size={14} />

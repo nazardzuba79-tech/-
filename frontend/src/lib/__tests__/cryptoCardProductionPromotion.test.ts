@@ -127,6 +127,17 @@ test('all fifteen approved assets are byte-exact and no superseded source compos
 test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
+    if (file === 'frontend/src/components/Nav.tsx') {
+      // Owner-approved top-nav cleanup: reverse exactly the removed mount/import.
+      // Everything else (menus, deposit action, auth and layout) stays byte-exact.
+      expect(text).not.toContain('WalletBalanceControl');
+      const importAnchor = "import { TopGainersTicker } from './TopGainersTicker';\n";
+      const actionsAnchor = '      <div className="header-actions nav-desktop-right">\n';
+      expect(text.split(importAnchor)).toHaveLength(2);
+      expect(text.split(actionsAnchor)).toHaveLength(2);
+      text = text.replace(importAnchor, importAnchor + "import { WalletBalanceControl } from './WalletBalanceControl';\n")
+        .replace(actionsAnchor, actionsAnchor + '        {/* Sits before the deposit CTA, as in the Trade archive\'s\n            .top-actions row. Renders nothing when signed out or before the\n            balance arrives, so the header never shows a placeholder\n            figure. */}\n        <WalletBalanceControl />\n');
+    }
     if (file === 'frontend/src/App.tsx') {
       expect(text).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
       const importAnchor = "import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';\n";
