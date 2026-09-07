@@ -62,20 +62,12 @@
    in-app header keeps exactly the styling it has today. */
 .vx-home .top-nav-pill-btn { white-space: nowrap; }
 
-/* Homepage Card promo only. The original photo/shared Card page stay untouched. */
+/* Homepage Card promo only. The shared SVG fades the original photograph's
+   outer edges; no photo-tile frame or image-wide blur/opacity is applied here. */
 .vx-home .vx-home-card-artwork {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  border-radius: clamp(24px, 2.8vw, 42px);
-}
-.vx-home .vx-home-card-artwork::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  box-shadow: inset 0 0 22px 3px #07090d;
-  pointer-events: none;
+  overflow: visible;
 }
 .vx-home .vx-home-card-benefit-icon {
   display: flex;

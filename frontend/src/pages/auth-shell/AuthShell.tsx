@@ -4,6 +4,7 @@ import { CreditCardIcon, LayersIcon, PercentIcon, WalletCardsIcon } from 'lucide
 import { Logo } from '../../components/Logo';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { HomeCryptoCard } from '../home/HomeCryptoCard';
+import { RegistrationCardVisual } from './RegistrationCardVisual';
 import { useLanguage, type Key } from '../../lib/i18n';
 import './auth-shell.css';
 
@@ -39,10 +40,11 @@ export type AuthShellProps = {
   /** The header link's label and destination (the other auth page). */
   switchLabel: string;
   switchTo: string;
+  cardVisual?: 'single' | 'registration';
   children: ReactNode;
 };
 
-export function AuthShell({ switchPrompt, switchLabel, switchTo, children }: AuthShellProps) {
+export function AuthShell({ switchPrompt, switchLabel, switchTo, children, cardVisual = 'single' }: AuthShellProps) {
   const { t } = useLanguage();
 
   return (
@@ -80,13 +82,13 @@ export function AuthShell({ switchPrompt, switchLabel, switchTo, children }: Aut
             ))}
           </div>
 
-          <div className="vx-auth-card">
+          <div className={cardVisual === 'registration' ? 'vx-auth-card vx-auth-card-registration' : 'vx-auth-card'}>
             {/* The approved card artwork, reused as-is — same component and
                 same render the homepage uses. Nothing here recolours,
                 masks or redraws it, and no card number is invented: the
                 art carries its own face. */}
             <div className="vx-auth-card-art">
-              <HomeCryptoCard width={228} />
+              {cardVisual === 'registration' ? <RegistrationCardVisual /> : <HomeCryptoCard width={228} />}
             </div>
             <div className="vx-auth-card-copy">
               <span className="vx-auth-card-kicker">

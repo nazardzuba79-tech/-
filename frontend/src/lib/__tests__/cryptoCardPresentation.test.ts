@@ -54,8 +54,8 @@ test('the landing preserves the approved archive section order inside the existi
 });
 
 test('final approved marketing copy and monthly Black Signature limit are explicit HTML, not an old placeholder', () => {
-  expect(component('WatchCardVisual')).toContain("CARD_HERO_SLOGAN = 'Трать крипту по всему миру'");
-  expect(component('Hero')).toContain('{CARD_HERO_SLOGAN}');
+  expect(cardCopyRu.heroTitle).toBe('Трать крипту по всему миру');
+  expect(component('Hero')).toContain('{c.heroTitle}');
   expect(component('Hero')).toContain('{c.heroLead}');
   expect([cardCopyRu.benefitCashback, cardCopyRu.benefitFees, cardCopyRu.benefitLimit])
     .toEqual(['До 20% кешбека.', 'Без комиссий.', '$1 млн в месяц.']);

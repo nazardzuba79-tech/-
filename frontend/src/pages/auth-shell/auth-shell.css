@@ -198,6 +198,10 @@
   max-width: 700px;
 }
 .vx-auth-card-art { transform: rotate(-5deg); }
+/* Registration alone restores the approved two-card/phone composition.
+   Login keeps its existing single-card markup and all original rules. */
+.vx-auth-card-registration { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; }
+.vx-auth-card-registration .vx-auth-card-art { transform: none; min-width: 0; }
 .vx-auth-card-kicker {
   display: inline-flex;
   align-items: center;
@@ -550,6 +554,7 @@
 @media (max-width: 1200px) {
   .vx-auth-card { grid-template-columns: 1fr; gap: 20px; }
   .vx-auth-card-art { margin-left: 4px; }
+  .vx-auth-card-registration .vx-auth-card-art { margin-left: 0; }
 }
 
 @media (max-width: 1100px) {

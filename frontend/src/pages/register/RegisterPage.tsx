@@ -15,6 +15,7 @@ export function RegisterPage() {
 
   return (
     <AuthShell
+      cardVisual="registration"
       switchPrompt={t('register.haveAccount')}
       switchLabel={t('auth.login')}
       switchTo={`/login${window.location.search}`}

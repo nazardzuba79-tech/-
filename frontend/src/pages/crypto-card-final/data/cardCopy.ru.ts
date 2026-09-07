@@ -4,7 +4,7 @@ export const cardCopyRu = {
   navCards: 'Карты', navFees: 'Тарифы', navFaq: 'Вопросы', navSections: 'Разделы Crypto Card',
   navOpen: 'Открыть разделы карты', navClose: 'Закрыть разделы карты',
   getCard: 'Получить карту', learnMore: 'Узнать больше',
-  heroTitle: 'Криптовалюта, которой можно платить каждый день',
+  heroTitle: 'Трать крипту по всему миру',
   heroLead: 'Используйте поддерживаемые криптоактивы и фиат для повседневных платежей с VOLTEX Crypto Card.',
   heroAlt: 'VOLTEX Black Signature, Titanium и приложение',
   benefitCashback: 'До 20% кешбека.', benefitCashbackNote: 'На повседневные покупки и выбранные категории.',

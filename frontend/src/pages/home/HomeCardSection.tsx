@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { StarIcon } from 'lucide-react';
 import { CardBenefitIcon, type CardBenefit } from './CardBenefitIcon';
-import { CARD_HERO_SLOGAN, WatchCardVisual } from '../crypto-card-final/components/WatchCardVisual';
+import { WatchCardVisual } from '../crypto-card-final/components/WatchCardVisual';
+import { useCardCopy } from '../crypto-card-final/useCardCopy';
 import { Key, useLanguage } from '../../lib/i18n';
 
 const BENEFITS: { key: CardBenefit; titleKey: Key; textKey: Key }[] = [
@@ -14,6 +15,7 @@ const BENEFITS: { key: CardBenefit; titleKey: Key; textKey: Key }[] = [
 
 export function HomeCardSection() {
   const { t } = useLanguage();
+  const { c } = useCardCopy();
   return (
     <section id="card" className="mx-auto w-full max-w-[1460px] px-6">
       <div className="relative overflow-hidden rounded-[10px] border border-white/6 bg-[#07090d]">
@@ -45,7 +47,7 @@ export function HomeCardSection() {
               {t('home.card.name')}
             </span>
             <h2 className="mt-5 text-[30px] font-bold leading-[1.1] tracking-[-0.02em] text-white lg:text-[34px]">
-              {CARD_HERO_SLOGAN}
+              {c.heroTitle}
             </h2>
             <p className="mt-4 max-w-[320px] text-[13px] leading-relaxed text-home-muted">
               {t('home.card.text')}
