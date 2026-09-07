@@ -4,6 +4,7 @@ import { createReviewSyntheticState } from '../canonical/reviewSyntheticHistory'
 import { createKseniaReviewState, kseniaReviewResponse } from '../canonical/kseniaReview';
 import { toResponse } from '../canonical/SyntheticCopyTradingEngine';
 import { resolveStrategyOwner, KSENIA_EXTERNAL_OWNER_ID } from '../strategyOwner';
+import { nazarPresentationResponse, NAZAR_PRESENTATION_REVISION } from '../nazarPresentation';
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const now = () => new Date('2026-09-06T12:00:00Z');
@@ -24,12 +25,15 @@ function database() {
   return { db: { copyPerformanceScenario: delegate } as any, rows, delegate };
 }
 
-test('published September6 payloads are byte-identical to canonical staging, including exact fee earnings', async () => {
+test('September6 storage stays byte-identical; only Nazar read response uses the explicit synthetic presentation revision', async () => {
   const { db, rows, delegate } = database();
   const service = new CopyPerformanceService(db, now);
   const nazar = await service.get('nazar');
   const ksenia = await service.get('ksenia');
-  expect(hash(nazar)).toBe('2fc5e762cfd2f489ba05a98dc483cd826990bc30d4121dfc9260a892ec436bb2');
+  const persistedNazar = decodePerformanceState(rows.get(PERFORMANCE_SCENARIOS.nazar.id).stateText);
+  expect(hash(toResponse(persistedNazar))).toBe('2fc5e762cfd2f489ba05a98dc483cd826990bc30d4121dfc9260a892ec436bb2');
+  expect(nazar).toEqual(nazarPresentationResponse(persistedNazar));
+  expect(nazar).toMatchObject({ provenance: 'MODELED', presentationRevision: NAZAR_PRESENTATION_REVISION });
   expect(hash(ksenia)).toBe('ae1998b7cd06366eb2fb5e3d7c1df3a8b542ffe96d8e50c05a33e91fbea30ef4');
   expect((ksenia as any).traderEarnings365).toBe(1_275_547);
   expect(nazar.trader.name).toBe('Nazar');

@@ -11,12 +11,10 @@ import {
   CircleHelp,
   Crown,
   LineChart,
-  Lock,
   Search,
   ShieldCheck,
   Star,
   Users,
-  WalletCards,
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -50,7 +48,10 @@ import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
+import { ModeledDataLabel } from '../../components/ModeledDataLabel';
+import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
+import { CopyDepositDialog } from './CopyDepositDialog';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -128,50 +129,25 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
   return <div className={className} style={visual.category === 'initials' ? { background: visual.background, color: visual.accent } : undefined}>{trader.initials}</div>;
 }
 
-function EligibilityGate({ compact = false }: { compact?: boolean }) {
-  const { eligible } = useCopyEligibility();
-  if (eligible) return null;
-  return (
-    <div className={`eligibility ${compact ? 'eligibility-compact' : ''}`}>
-      <div className="eligibility-icon"><ShieldCheck size={17} /></div>
-      <div>
-        <strong>{compact ? 'Депозит от $20 000 для копирования' : 'Разблокируйте копитрейдинг'}</strong>
-        {!compact && <p>Копитрейдинг доступен профессиональным участникам рынка с депозитом от $20 000.</p>}
-      </div>
-      {!compact && <button className="button button-outline">Увеличить депозит <ChevronRight size={15} /></button>}
-    </div>
-  );
-}
-
-/** Always rendered, never hidden. Below the $20,000 deposit it is present
- * but disabled and says why; at or above it, it actually starts and stops
- * copying — the Following tab reads the same list. */
+/** Explain the unchanged deposit requirement only after an explicit Copy
+ * click. Eligible accounts continue through the existing Following action. */
 function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boolean }) {
   const { eligible } = useCopyEligibility();
   const { following, toggleFollowing } = useFollowing();
+  const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
 
   if (trader.id === nazarTrader.id && !Number.isFinite(trader.performanceFee) && !isFollowing) {
     return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
-  if (!eligible) {
-    return (
-      <button
-        className={`button button-copy ${compact ? 'button-small' : ''}`}
-        disabled
-        title="Копитрейдинг доступен профессиональным участникам рынка с депозитом от $20 000"
-      >
-        <Lock size={14} /> Депозит от $20 000
-      </button>
-    );
-  }
-
   return (
+    <>
     <button
       className={`button button-copy ${isFollowing ? 'button-copy-active' : ''} ${compact ? 'button-small' : ''}`}
       onClick={(event) => {
         event.stopPropagation();
+        if (!eligible) { setShowDepositRequirement(true); return; }
         toggleFollowing(trader.id);
         toast.success(
           isFollowing ? `Копирование ${trader.name} остановлено` : `Вы копируете ${trader.name}`,
@@ -181,6 +157,8 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
     >
       {isFollowing ? <><Check size={14} /> Копируется</> : 'Копировать трейдера'}
     </button>
+    {showDepositRequirement && <CopyDepositDialog onClose={() => setShowDepositRequirement(false)} />}
+    </>
   );
 }
 
@@ -282,6 +260,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <div className="card-roi-copy">
           <span>ROI <small>{period}</small></span>
           <strong className={roiClass(periodRoi)}>{formatPercent(periodRoi)}</strong>
+          <ModeledDataLabel modeled={isModeledTraderData(trader, synthetic)} />
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
@@ -675,9 +654,9 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
           <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
           {!simpleReturn && <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>}
           <div><span>AUM</span><strong>{publicUsdtNumber(heroAum)} USDT</strong></div>
-          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
+          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong><ModeledDataLabel modeled={isModeledTraderData(trader, liveSynthetic)} /></div>
         </div>
-        <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /><small>Минимальный депозит: <b>20 000 USDT</b></small></div></div>
+        <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
 
       {!liveSynthetic && trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA' && <ReviewDisclosure><p className="catalogue-disclosure">Демопрофиль · вымышленный участник и аватар. Кривая ROI и риск смоделированы; остальные показатели — примеры каталога, не результаты реального счёта.</p></ReviewDisclosure>}
@@ -714,7 +693,7 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
         <h1>Copy Trading VIP</h1>
         <p>Профессиональные стратегии, прозрачная статистика и единая система контроля рисков.</p>
         <div className="hero-stats">
-          {stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
+          {stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} /></div>)}
         </div>
       </div>
       <button className="hero-guide" onClick={() => onOpen(trader)}>
@@ -771,7 +750,6 @@ function MarketplaceBottom() {
 }
 
 export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, kseniaSynthetic }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null }) {
-  const { depositUsd, eligible } = useCopyEligibility();
   const { favorites } = useFavorites();
   const { following } = useFollowing();
   const [tab, setTab] = useState<MarketTab>('leaderboard');
@@ -797,7 +775,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
   }, [tab, favorites, following, dynamicRoster]);
 
   const visibleTraders = useMemo(() => {
-    let result = searchTraders(tabRoster, query).map(item => ({ ...item, drawdown: item.id === nazara.id
+    let result = searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown: item.id === nazara.id
       ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
       : item.id === ksenia?.id && kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : selectDemoPerformance(item, period).maximumDrawdown }));
     result = sortTraders(result, sortBy, period);
@@ -863,8 +841,6 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
         <p className="ranking-copy">Трейдеры с оптимальным соотношением прибыли и риска.</p>
       </section>
 
-      <div className="access-strip"><EligibilityGate /><div className="deposit-status"><WalletCards size={17} /><div><span>Ваш депозит</span><strong>${depositUsd.toLocaleString()}.00</strong></div><span className="status-pill">{eligible ? 'Есть доступ' : 'Нет доступа'}</span></div></div>
-
       <section className="marketplace-section">
         <div className="section-title">
           <div>
@@ -882,7 +858,7 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
             {tab === 'favorites' && favorites.size === 0 && !query ? (
               <><Star size={22} /><strong>Избранное пусто</strong><span>Нажмите на звёздочку в карточке трейдера, чтобы сохранить его здесь.</span></>
             ) : tab === 'following' && following.size === 0 && !query ? (
-              <><Users size={22} /><strong>Вы пока никого не копируете</strong><span>{eligible ? 'Откройте профиль трейдера и нажмите «Копировать трейдера».' : 'Копирование доступно клиентам с депозитом от $20 000.'}</span></>
+              <><Users size={22} /><strong>Вы пока никого не копируете</strong><span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span></>
             ) : (
               <><Search size={22} /><strong>Трейдеры не найдены</strong><span>Измените параметры поиска или фильтры.</span></>
             )}

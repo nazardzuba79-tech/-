@@ -10,6 +10,9 @@ import { nazarTrader, marketplaceTraders, getRoiForPeriod, getCopierProfit, roiC
 import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerformance';
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
+import { ModeledDataLabel } from '../../../test-utils/modeledDataLabel';
+import { isModeledTraderData } from '../modeledCopyData';
+import { restoreCopyButtonDepositUx } from '../../../test-utils/copyDepositUx';
 
 const frontend = resolve(__dirname, '../../..');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
@@ -33,6 +36,7 @@ const dependencies = {
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
   followerProfitForPeriod: () => null, Avatar: empty, FavoriteButton: empty,
   MiniPerformanceChart: empty, Users: empty, Check: empty, ChevronRight: empty, VerifiedBadge,
+  ModeledDataLabel, isModeledTraderData,
   VipBadge: () => React.createElement('span', { className: 'vip-badge' }, 'VIP'),
   CopyButton: () => React.createElement('button', { className: 'copy-child' }, 'Copy'),
 };
@@ -60,6 +64,8 @@ describe('Nazara marketplace presentation only', () => {
     expect(html).toContain(formatAccountSize(trader.aum));
     expect(html).not.toMatch(/Коэффициент Шарпа|Прибыль подписчиков|Чистая прибыль/);
     expect(html).toContain('Professional Strategy');
+    expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
+    expect(html).toContain('Модельные данные');
     expect(JSON.stringify(response)).toBe(before);
   });
 
@@ -100,6 +106,23 @@ describe('Nazara marketplace presentation only', () => {
     const missing = render('ALL', trader, null);
     expect(missing).toContain('<strong>—</strong>');
     expect(missing).not.toContain('97,2%');
+    expect(missing).not.toContain('modeled-data-label');
+  });
+
+  test('actual card label distinguishes fixture objects and matched real responses without changing financial markup', () => {
+    const fixture = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
+    const before = JSON.stringify(fixture);
+    const modeled = render('90D', fixture);
+    const sameFieldsWithoutFixtureProvenance = render('90D', { ...fixture });
+    const label = '<small class="modeled-data-label">Модельные данные</small>';
+    expect(modeled.split(label)).toHaveLength(2);
+    expect(sameFieldsWithoutFixtureProvenance).not.toContain('modeled-data-label');
+    expect(modeled.replace(label, '')).toBe(sameFieldsWithoutFixtureProvenance);
+    const realResponse = { ...response, provenance: 'REAL_EXECUTION' };
+    const real = render('90D', trader, realResponse);
+    expect(real).not.toContain('modeled-data-label');
+    expect(render('90D').replace(label, '')).toBe(real);
+    expect(JSON.stringify(fixture)).toBe(before);
   });
 });
 
@@ -115,7 +138,8 @@ test.each(Object.entries({
 }))('%s remains byte-equivalent to approved V8', (name, hash) => {
   // The only mini-chart change is admitting Ksenia's separate ledger. Strip
   // that additive condition to compare all approved Nazar geometry verbatim.
-  const renderer = body(name).replace(" || trader.id === 'VX-KSENIA'", '')
+  const original = name === 'CopyButton' ? restoreCopyButtonDepositUx(body(name)) : body(name);
+  const renderer = original.replace(" || trader.id === 'VX-KSENIA'", '')
     .replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
   expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
 });

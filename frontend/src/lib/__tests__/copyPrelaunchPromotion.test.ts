@@ -4,6 +4,8 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import { kseniaTrader } from '../kseniaCopyTrading';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
+import { isModeledResponse, isModeledTraderData } from '../modeledCopyData';
+import { marketplaceTraders } from '../../pages/copy-trading-bolt/traders';
 import { createKseniaReviewState, kseniaReviewResponse } from '../../../../src/services/copyTrading/canonical/kseniaReview';
 
 const frontend = resolve(__dirname, '../../..');
@@ -21,51 +23,60 @@ function evaluate(path: string, overrides: Record<string, unknown> = {}) {
   new Function('exports', 'require', code)(output, load);
   return output;
 }
-const notice = evaluate('src/components/CopyTradingNotice.tsx', {
+const label = evaluate('src/components/ModeledDataLabel.tsx', {
   '../lib/i18n': { useLanguage: () => ({ lang: language }) },
 });
-const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx', { './CopyTradingNotice': notice });
+const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx');
 
-test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('one contextual Copy notice replaces only redundant product labels in %s', lang => {
+test.each([
+  ['ru', 'Модельные данные'], ['en', 'Modeled data'], ['zh', '模拟数据'],
+  ['es', 'Datos modelados'], ['hi', 'मॉडल किए गए डेटा'], ['ja', 'モデルデータ'], ['ko', '모델 데이터'],
+])('source-aware label is local to its figures and neutral product copy survives in %s', (lang, text) => {
   language = lang;
   const repeated = React.createElement(ReviewDisclosure, { neutral: React.createElement('p', null, 'Neutral product information') },
     React.createElement('p', null, 'Demonstration catalogue'));
   const redundant = React.createElement(ReviewDisclosure, null, 'Repeated modeled-results explanation');
-  const html = renderToStaticMarkup(React.createElement(notice.CopyTradingNoticeScope, null,
-    React.createElement('main', null, repeated, redundant, React.createElement('button', null, 'Copy'))));
-  expect(Object.keys(notice.COPY_TRADING_NOTICE_COPY).sort()).toEqual(['en', 'es', 'hi', 'ja', 'ko', 'ru', 'zh']);
-  expect(typeof notice.COPY_TRADING_NOTICE_COPY[lang]).toBe('string');
-  expect(notice.COPY_TRADING_NOTICE_COPY[lang].trim().length).toBeGreaterThan(20);
-  expect((html.match(/class="copy-trading-notice"/g) ?? [])).toHaveLength(1);
-  expect((html.match(/data-copy-trading-notice/g) ?? [])).toHaveLength(1);
-  expect(html).toContain(notice.COPY_TRADING_NOTICE_COPY[lang]);
-  expect(html).not.toMatch(/voltex-prelaunch|DEMO \/ PRE-LAUNCH|--prelaunch-notice-height/);
+  const modeled = isModeledResponse({ simulation: { seed: 1, simulatedAt: '2026-09-06T12:00:00Z', mode: 'REAL_TIME' } });
+  const html = renderToStaticMarkup(React.createElement('main', null,
+    React.createElement(label.ModeledDataLabel, { modeled }), repeated, redundant, React.createElement('button', null, 'Copy')));
+  expect(Object.keys(label.MODELED_DATA_LABEL).sort()).toEqual(['en', 'es', 'hi', 'ja', 'ko', 'ru', 'zh']);
+  expect(label.MODELED_DATA_LABEL[lang]).toBe(text);
+  expect(html).toContain(`<small class="modeled-data-label">${text}</small>`);
+  expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
+  expect(html).not.toMatch(/copy-trading-notice|data-copy-trading-notice|voltex-prelaunch|DEMO \/ PRE-LAUNCH|--prelaunch-notice-height/);
   expect(html).toContain('Neutral product information');
   expect(html).not.toContain('Demonstration catalogue');
   expect(html).not.toContain('Repeated modeled-results explanation');
   expect(html).toContain('<button>Copy</button>');
-  // A standalone profile must still fail open if its contextual notice scope
-  // is absent; duplicate suppression never silently removes all disclosure.
-  expect(renderToStaticMarkup(repeated)).toContain('Demonstration catalogue');
-  expect(renderToStaticMarkup(redundant)).toBe('Repeated modeled-results explanation');
+  // No context or wrapper is needed: only neutral information remains.
+  expect(renderToStaticMarkup(repeated)).toBe('<p>Neutral product information</p>');
+  expect(renderToStaticMarkup(redundant)).toBe('');
+  const fixture = marketplaceTraders.find(trader => trader.id !== 'VX-001' && trader.id !== 'VX-KSENIA')!;
+  expect(renderToStaticMarkup(React.createElement(label.ModeledDataLabel, {
+    modeled: isModeledTraderData(fixture),
+  }))).toBe(`<small class="modeled-data-label">${text}</small>`);
+  for (const value of [undefined, false, isModeledResponse(null), isModeledResponse({ provenance: 'LIVE' }),
+    isModeledTraderData(fixture, { trader: { id: fixture.id }, provenance: 'REAL_EXECUTION' })]) {
+    expect(renderToStaticMarkup(React.createElement(label.ModeledDataLabel, { modeled: value }))).toBe('');
+  }
 });
 
-test('notice is Copy-only, non-sticky, cannot be dismissed, and does not gate auth or routes', () => {
+test('no global/contextual banner remains; tiny labels cannot gate routes, eligibility or auth', () => {
   const app = source('src/App.tsx');
   expect(app).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice|voltex-prelaunch/);
   expect(existsSync(resolve(frontend, 'src/components/PrelaunchNotice.tsx'))).toBe(false);
   expect(existsSync(resolve(frontend, 'src/components/prelaunchNotice.css'))).toBe(false);
+  expect(existsSync(resolve(frontend, 'src/components/CopyTradingNotice.tsx'))).toBe(false);
+  expect(existsSync(resolve(frontend, 'src/components/copyTradingNotice.css'))).toBe(false);
   const page = source('src/pages/CopyTradingPage.tsx');
-  expect((page.match(/<CopyTradingNoticeScope>/g) ?? [])).toHaveLength(1);
-  expect((page.match(/<\/CopyTradingNoticeScope>/g) ?? [])).toHaveLength(1);
-  expect(page.indexOf('<CopyTradingNoticeScope>')).toBeLessThan(page.indexOf('<CopyEligibilityProvider'));
-  expect(page.indexOf('</CopyTradingNoticeScope>')).toBeGreaterThan(page.indexOf('</CopyEligibilityProvider>'));
-  expect(page.indexOf('<CopyTradingNoticeScope>')).toBeLessThan(page.indexOf('<Marketplace '));
-  expect(page.indexOf('</CopyTradingNoticeScope>')).toBeGreaterThan(page.indexOf('<Profile '));
-  expect(source('src/components/CopyTradingNotice.tsx')).not.toMatch(/localStorage|sessionStorage|isAdmin|pathname|setTimeout|onClick|ResizeObserver/);
-  const css = source('src/components/copyTradingNotice.css');
+  expect(page).not.toMatch(/CopyTradingNoticeScope|PrelaunchApplication/);
+  expect(source('src/components/ModeledDataLabel.tsx')).not.toMatch(/localStorage|sessionStorage|isAdmin|pathname|setTimeout|onClick|ResizeObserver/);
+  expect(source('src/components/ReviewDisclosure.tsx')).not.toMatch(/createContext|useContext|CopyTradingNotice/);
+  const css = source('src/components/modeledDataLabel.css');
   expect(css).not.toMatch(/display:\s*none|opacity:\s*0|visibility:\s*hidden|position:\s*(?:fixed|sticky)|prelaunch-notice-height|global-header|nav-mobile-menu/);
   expect(css).toContain('.copytrading-bolt-root');
+  expect(css).toContain('font-size: 10px');
+  expect(css).not.toMatch(/padding:|border:|background:|(?:^|[;{]\s*)height:/);
 });
 
 test.each([0, -1, 19_999.99, 20_000, 20_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {
@@ -106,6 +117,7 @@ test('owner media never falls back to a viewer or an unrelated administrator', (
 
 test('Ksenia identity projection uses only the owner photo and factual KYC state', () => {
   const data = kseniaReviewResponse(createKseniaReviewState());
+  const before = JSON.stringify(data);
   const withoutIdentity = kseniaTrader(data);
   expect(withoutIdentity.name).toBe('Ksenia');
   expect(withoutIdentity.verified).toBe(false);
@@ -122,4 +134,7 @@ test('Ksenia identity projection uses only the owner photo and factual KYC state
   expect(withIdentity.ownerAvatarUrl).toBe('data:image/png;base64,AAAA');
   expect(withIdentity.roiAll).toBe(withoutIdentity.roiAll);
   expect(withIdentity.aum).toBe(withoutIdentity.aum);
+  expect(isModeledTraderData(withIdentity, data)).toBe(true);
+  expect(isModeledTraderData(withIdentity, { ...data, provenance: 'LIVE_API' })).toBe(false);
+  expect(JSON.stringify(data)).toBe(before);
 });

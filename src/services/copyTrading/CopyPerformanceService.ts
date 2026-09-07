@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { advanceState, toResponse } from './canonical/SyntheticCopyTradingEngine';
+import { advanceState } from './canonical/SyntheticCopyTradingEngine';
 import { createReviewSyntheticState } from './canonical/reviewSyntheticHistory';
 import { advanceKseniaReview, kseniaReviewResponse } from './canonical/kseniaReview';
 import { KSENIA_REVIEW } from './canonical/kseniaReview';
@@ -8,6 +8,7 @@ import { dayDiff, utcDay } from './canonical/analytics';
 import type { CashflowReviewState } from './canonical/reviewEconomicsTypes';
 import type { SyntheticCopyResponse } from './canonical/types';
 import { loadPublishedKseniaState } from './approvedPerformanceSeeds';
+import { nazarPresentationResponse } from './nazarPresentation';
 
 export const PERFORMANCE_SCENARIOS = {
   nazar: { id: 'nazar-performance-v8', traderId: 'VX-001', baseline: '2026-09-05' },
@@ -73,7 +74,7 @@ export class CopyPerformanceService {
       return this.get(strategy); // Recheck UTC day if it changed while pending.
     }
     const task = this.current(strategy, today).then(state => {
-      const response = strategy === 'nazar' ? toResponse(state) : kseniaReviewResponse(state);
+      const response = strategy === 'nazar' ? nazarPresentationResponse(state) : kseniaReviewResponse(state);
       this.cached.set(strategy, { date: utcDay(new Date(state.simulatedAt)), response });
       return response;
     }).finally(() => this.pending.delete(strategy));

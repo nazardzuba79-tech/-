@@ -103,7 +103,14 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
   })) {
     const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name)!;
     // Review-only duplicate-copy wrapper changes no approved chart rendering.
-    const renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+    let renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
+    if (name === 'MarketplaceHero') {
+      // Only the source label is new; original aggregate calculations, values
+      // and card/hero geometry remain covered by the unchanged fingerprint.
+      const label = "<ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} />";
+      expect(renderer.split(label)).toHaveLength(2);
+      renderer = renderer.replace(label, '');
+    }
     expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({

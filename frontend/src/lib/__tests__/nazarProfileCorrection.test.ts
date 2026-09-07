@@ -9,6 +9,8 @@ import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
 import { dailyReturnChart } from '../dailyReturnChart';
 import { nazarTrader, formatPercent, formatAccountSize, roiClass, PERIODS } from '../../pages/copy-trading-bolt/traders';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
+import { ModeledDataLabel } from '../../../test-utils/modeledDataLabel';
+import { isModeledTraderData } from '../modeledCopyData';
 
 const frontend = resolve(__dirname, '../../..');
 const requireFrontend = createRequire(resolve(frontend, 'package.json'));
@@ -16,7 +18,7 @@ const React = requireFrontend('react');
 const { renderToStaticMarkup } = requireFrontend('react-dom/server');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
 const parsed = ts.createSourceFile('components.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = ['numberLabel', 'signedUsd', 'unsignedPercent', 'durationLabel', 'MetricsPanel', 'DailyReturnChart', 'FollowersPanel', 'Profile'];
+const names = ['numberLabel', 'signedUsd', 'unsignedPercent', 'durationLabel', 'fallbackMetrics', 'MetricsPanel', 'DailyReturnChart', 'FollowersPanel', 'Profile'];
 const declarations = names.map(name => {
   const node = parsed.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === name);
   if (!node) throw new Error(`Missing real component ${name}`);
@@ -27,7 +29,8 @@ const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
-  ReviewDisclosure: ({ children }: { children: unknown }) => children,
+  ReviewDisclosure: ({ neutral = null }: { neutral?: unknown }) => neutral,
+  ModeledDataLabel, isModeledTraderData,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
@@ -42,8 +45,8 @@ const compiled = ts.transpileModule(`${declarations.join('\n')}\nexports.Profile
 const exportsObject: Record<string, any> = {};
 new Function('require', 'exports', ...Object.keys(deps), compiled)(requireFrontend, exportsObject, ...Object.values(deps));
 const baseline = toResponse(createReviewSyntheticState(new Date('2026-09-05T12:00:00Z')));
-const render = (trader = syntheticNazaraTrader(baseline)) => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
-  trader, synthetic: baseline, onBack: empty,
+const render = (trader = syntheticNazaraTrader(baseline), synthetic: typeof baseline | null = baseline) => renderToStaticMarkup(React.createElement(exportsObject.Profile, {
+  trader, synthetic, onBack: empty,
 }));
 const plain = (value: string) => value.replace(/\u00a0|\u202f/g, ' ');
 
@@ -66,6 +69,19 @@ test.each(PERIODS)('%s keeps lifetime statistics separate from the selected char
   expect(html).not.toMatch(/Nazara/);
   expect(html).toContain('7 200 000 USDT');
   expect(html).not.toMatch(/\d[\d ]{3,},\d{2} USDT/);
+  expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
+  expect(html).toMatch(/<span>Max Drawdown<\/span><strong>5,79%<\/strong><small class="modeled-data-label">Модельные данные<\/small>/);
+});
+
+test('profile source label is absent for a real response while all monetary/chart markup remains identical', () => {
+  selectedPeriod = 'ALL';
+  const realResponse = { ...baseline, provenance: 'LIVE_API' };
+  const before = JSON.stringify(realResponse);
+  const real = render(syntheticNazaraTrader(baseline), realResponse);
+  expect(real).not.toContain('modeled-data-label');
+  expect(render().replace('<small class="modeled-data-label">Модельные данные</small>', '')).toBe(real);
+  expect(JSON.stringify(realResponse)).toBe(before);
+  expect(render(syntheticNazaraTrader(baseline), null)).not.toContain('modeled-data-label');
 });
 
 test.each([true, false, undefined])('actual profile shows identityVerified=%s only inline with its heading', identityVerified => {

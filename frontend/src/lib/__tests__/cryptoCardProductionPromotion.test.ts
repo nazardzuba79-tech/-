@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
+import { restoreCopyDepositUx } from '../../../test-utils/copyDepositUx';
 
 const repository = resolve(__dirname, '../../../..');
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
@@ -47,9 +48,9 @@ const approvedCardSources: Record<string, string> = {
 // copyVerifiedBadge and the existing canonical/renderer fingerprints verify
 // those boundaries separately. The later authorized Spot task may change
 // TradePage independently; Card's authenticated route is asserted below instead
-// of freezing an unrelated product page. The later contextual Copy notice
-// removes only the global wrapper and adds a Copy-local wrapper; the exact
-// source reversal below retains the original App/Copy-page fingerprints.
+// of freezing an unrelated product page. The later source-aware Copy labels
+// replace the removed global/contextual wrappers. Exact source reversals below
+// permit only those inline additions; no financial calculation/hash is relaxed.
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
@@ -122,7 +123,7 @@ test('all fifteen approved assets are byte-exact and no superseded source compos
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
 
-test('Copy stays at its approved badge revision; only the agreed notice wrappers change around identical product/auth source', () => {
+test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
     if (file === 'frontend/src/App.tsx') {
@@ -137,16 +138,25 @@ test('Copy stays at its approved badge revision; only the agreed notice wrappers
         .replace('    <BrowserRouter>\n', '    <BrowserRouter>\n      <PrelaunchApplication>\n')
         .replace('      </Routes>\n', '      </Routes>\n      </PrelaunchApplication>\n');
     }
-    if (file === 'frontend/src/pages/CopyTradingPage.tsx') {
-      const importLine = "import { CopyTradingNoticeScope } from '../components/CopyTradingNotice';\n";
-      expect(text.split(importLine)).toHaveLength(2);
-      expect(text.match(/^[ \t]*<CopyTradingNoticeScope>\n/gm)).toHaveLength(1);
-      expect(text.match(/^[ \t]*<\/CopyTradingNoticeScope>\n/gm)).toHaveLength(1);
-      // Remove only the added import and wrapper lines, not anything inside
-      // them: canonical reads, identity wiring and eligibility stay exact.
-      text = text.replace(importLine, '')
-        .replace(/^[ \t]*<CopyTradingNoticeScope>\n/m, '')
-        .replace(/^[ \t]*<\/CopyTradingNoticeScope>\n/m, '');
+    if (file === 'frontend/src/pages/copy-trading-bolt/components.tsx') {
+      text = restoreCopyDepositUx(text);
+      // All original bytes, including ROI/drawdown calculations, data adapters,
+      // charts and eligible copy actions, must match after reversing this exact
+      // UX allowlist and the source labels. Existing hashes are not advanced.
+      const additions = [
+        "import { ModeledDataLabel } from '../../components/ModeledDataLabel';\n",
+        "import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';\n",
+        '          <ModeledDataLabel modeled={isModeledTraderData(trader, synthetic)} />\n',
+        '<ModeledDataLabel modeled={isModeledTraderData(trader, liveSynthetic)} />',
+        "<ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} />",
+      ];
+      for (const added of additions) {
+        expect({ added, occurrences: text.split(added).length - 1 }).toEqual({ added, occurrences: 1 });
+        text = text.replace(added, '');
+      }
+      const projection = 'searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown:';
+      expect(text.split(projection)).toHaveLength(2);
+      text = text.replace(projection, 'searchTraders(tabRoster, query).map(item => ({ ...item, drawdown:');
     }
     expect({ file, sha256: digest(text) }).toEqual({ file, sha256: expected });
   }

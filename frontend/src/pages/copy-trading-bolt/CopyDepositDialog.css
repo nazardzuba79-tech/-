@@ -1,0 +1,11 @@
+.copy-deposit-dialog { position: fixed; inset: 0; box-sizing: border-box; width: min(440px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 28px; overflow-y: auto; color: #f1f3f5; border: 1px solid #414650; border-radius: 16px; background: #191c22; box-shadow: 0 24px 80px #0008; }
+.copy-deposit-dialog::backdrop { background: #05070bb3; }
+.copy-deposit-dialog h2 { margin: 0; font: 600 20px/1.45 'Inter', sans-serif; letter-spacing: -.02em; }
+.copy-deposit-dialog-actions { display: flex; gap: 10px; margin-top: 24px; }
+.copy-deposit-dialog-actions a, .copy-deposit-dialog-actions button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 10px 16px; border: 1px solid #414650; border-radius: 8px; font: 600 13px/1.4 'Inter', sans-serif; text-decoration: none; cursor: pointer; }
+.copy-deposit-dialog-actions a { flex: 1; color: #18140b; border-color: #f7a600; background: #f7a600; }
+.copy-deposit-dialog-actions button { color: #d8dce3; background: transparent; }
+.copy-deposit-dialog-actions a:hover { background: #ffba32; }
+.copy-deposit-dialog-actions button:hover { background: #292e37; }
+.copy-deposit-dialog-actions :focus-visible { outline: 2px solid #f7a600; outline-offset: 3px; }
+@media (max-width: 430px) { .copy-deposit-dialog { padding: 22px; } .copy-deposit-dialog h2 { font-size: 18px; } .copy-deposit-dialog-actions { flex-direction: column; } }
