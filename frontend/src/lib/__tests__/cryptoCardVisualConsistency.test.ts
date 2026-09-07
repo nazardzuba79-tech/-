@@ -137,8 +137,9 @@ test('approved wrist and local layout polish preserve every other Homepage copy,
     .replace('lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)]', 'lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]')
     .replace('The same owner-approved wrist artwork as the Crypto Card hero.', 'The only animated card presentation on the homepage.')
     .replace('<WatchCardVisual />', '<HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />');
+  // Preserve concurrent production 41979fb: Russian all-ATM copy and language selection.
   expect(createHash('sha256').update(restored).digest('hex'))
-    .toBe('df56857a1aa2d406fd6bd3ae5ec8d0ca468e7e58c9dba3551e8696311b8431db');
+    .toBe('15a7af89cc43f8b921282754c21e9482cef08627e737fc8e5c0fa86a9ac524ad');
 });
 
 test('Homepage framing reveals original right/bottom fingers without changing the product-page artwork', () => {

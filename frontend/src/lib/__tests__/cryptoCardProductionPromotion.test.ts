@@ -34,7 +34,8 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/ServiceChip.tsx": "85a7c7c55734cced6406ff4e61c42ab6c78b5402f7e9618a5f9fe1f8095884ee",
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
-  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "80bbd1ab73caff03106407fe60275b0a6711ae40bdd615fdb1ade12fc5db1676",
+  // Preserve concurrent production f183f77: Russia and all-ATM wording only.
+  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "cf71d6cfe568e479a574084575a3f7c29a65db006fe22f1ab318f2ce8e34cd52",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
   // Preserve owner copy cleanup already on starting main bd41a81.
   "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "a6acb0f2e9fe5b36b485e1e637fb17ec34d1975729691ba2515f824c591bea62",
@@ -59,8 +60,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
   "frontend/src/pages/home/home.css": "ac7dc7590edc32493816c7abb1b9de908a4c123213d45c2633e30e7b86459154",
-  // Owner-reference wrist/slogan mount; exact reverse-diff test preserves other copy/layout.
-  "frontend/src/pages/home/HomeCardSection.tsx": "d9050256e7864fa3ee76a5e6634a2c08fd8a465ab29c4c85395b93b3c4c33df6",
+  // Owner-reference wrist/slogan mount plus concurrent production 41979fb ATM wording.
+  "frontend/src/pages/home/HomeCardSection.tsx": "0a0d3a39815049ec05c48d8f7a1ec091bf6534fb31039ac8c2fc892b85dcae92",
   "frontend/src/pages/home/HomeCryptoCard.tsx": "221491b3828c82825beacf0373564047fd88733eaad39d5b5ed61154bacf6da3",
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
