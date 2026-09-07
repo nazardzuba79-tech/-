@@ -115,7 +115,7 @@ test('all literal presentation image URLs point to present production assets wit
     for (const match of source.matchAll(/['"](\/cards\/crypto-card-final\/[^'"\s]+\.(?:jpg|png|webp))['"]/g)) paths.add(match[1]);
   }
   expect(paths.size).toBeGreaterThanOrEqual(8);
-  expect(paths.has('/cards/crypto-card-final/voltex-watch-wrist-final.png')).toBe(true);
+  expect(paths.has('/cards/crypto-card-final/voltex-watch-wrist-ruby.png')).toBe(true);
   expect(paths.has('/cards/crypto-card-final/voltex-smartwatch-scene.png')).toBe(false);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-hero.webp')).toBe(false);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-register.webp')).toBe(false);
@@ -157,7 +157,7 @@ test('product links target actual sections, including both visible application C
 test('hero uses the reference wrist scene, other surfaces retain the exact physical master', () => {
   const scene = component('CinematicCardScene');
   expect(scene).toContain('<WatchCardVisual />');
-  expect(component('WatchCardVisual')).toContain('voltex-watch-wrist-final.png');
+  expect(component('WatchCardVisual')).toContain('voltex-watch-wrist-ruby.png');
   expect(component('WatchCardVisual')).toContain('preserveAspectRatio="xMidYMid meet"');
   expect(scene).not.toMatch(/<mask|clipPath|preserveAspectRatio="none"|voltex-cards-phone/);
   expect(elements(parse(component('Hero')), 'CinematicCardScene')).toHaveLength(1);

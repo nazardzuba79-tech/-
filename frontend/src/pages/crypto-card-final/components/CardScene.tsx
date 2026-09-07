@@ -5,32 +5,32 @@ import { CARD_MASTER } from './VoltexCard';
 const SCENES = {
   pos: {
     src: '/cards/crypto-card-final/beb1109b-fa4d-4739-804c-6e1cb6d5d170.jpg',
-    transform: 'matrix(1 -0.055 0.018 1 520 347)', width: 170, height: 88,
-    hand: 'M 510 361 C 527 358 548 359 553 372 C 559 386 547 394 521 403 L 510 405 Z',
+    transform: 'translate(517 313) rotate(-3.15)', width: 196,
+    hand: 'M 508 355 C 525 356 542 361 550 369 C 558 378 554 389 545 394 L 524 402 L 516 431 L 505 434 Z',
   },
   atm: {
     src: '/cards/crypto-card-final/e02dd952-015e-4a66-851e-4561ff0cc446.jpg',
-    transform: 'translate(617 452) rotate(-7)', width: 126, height: 79,
-    hand: 'M 710 478 C 717 466 731 469 745 479 L 759 507 L 736 532 C 724 525 716 521 708 510 C 704 499 707 488 710 478 Z',
+    transform: 'translate(542 400) rotate(-6)', width: 208,
+    hand: 'M 708 497 C 709 488 716 478 723 476 C 729 469 741 466 751 470 C 766 471 779 478 793 481 L 824 483 L 824 554 L 715 554 Z',
   },
 };
 
-/** One source coordinate system keeps the card attached to the hand when
- * object-cover crops change. Original scene/master pixels are never repainted. */
+// This viewport removes only the transparent studio margin around the complete
+// approved master. Both scenes use the same face ratio and rigid rotation.
+const CARD_FACE = { width: 1369, height: 834 };
+
+/** One source coordinate system keeps the master attached to the real grip as
+ * responsive crops change. A small hand mask restores only foreground fingers. */
 export function CardScene({ kind }: { kind: keyof typeof SCENES }) {
   const { c } = useCardCopy();
   const scene = SCENES[kind];
   const mask = `card-hand-${useId().replace(/:/g, '')}`;
-  // The supplied ATM photo has no physical card. Do not attach a floating one
-  // to the contactless reader or intersect the user's hand.
-  if (kind === 'atm') return <img src={scene.src} alt={c.atmAlt} loading="lazy" decoding="async"
-    className="vc-absolute vc-inset-0 vc-h-full vc-w-full vc-object-cover" />;
-  return <svg viewBox="0 0 1200 896" preserveAspectRatio="xMidYMid slice" role="img" aria-label={kind === 'pos' ? c.paymentAlt : c.atmAlt} className="vc-absolute vc-inset-0 vc-h-full vc-w-full">
+  return <svg viewBox="0 0 1200 896" preserveAspectRatio="xMidYMid slice" role="img" aria-label={kind === 'pos' ? c.paymentAlt : c.atmAlt} data-payment-scene={kind} className="vc-absolute vc-inset-0 vc-h-full vc-w-full">
     <image href={scene.src} width="1200" height="896" />
     <defs><mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="896"><rect width="1200" height="896" fill="white" /><path d={scene.hand} fill="black" /></mask></defs>
     <g mask={`url(#${mask})`} data-card-slot={`black-signature-${kind}`}>
       <g transform={scene.transform}>
-        <svg width={scene.width} height={scene.height} viewBox="106 78 1369 834" preserveAspectRatio="none" overflow="hidden">
+        <svg width={scene.width} height={scene.width * CARD_FACE.height / CARD_FACE.width} viewBox="106 78 1369 834" preserveAspectRatio="xMidYMid meet" overflow="hidden">
           <image href={CARD_MASTER.black} width="1580" height="996" />
         </svg>
       </g>

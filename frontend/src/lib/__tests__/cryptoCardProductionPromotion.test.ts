@@ -18,7 +18,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/AtmSection.tsx": "e0341badbe91a3e3098b845a05f3be5ac017c461ad487963d9b112fbd31e64b9",
   "frontend/src/pages/crypto-card-final/components/BrandMarks.tsx": "42c92d5892b537de7dd079a0ce857fd73362954e0b3e2d16bc2239b6f9849478",
   "frontend/src/pages/crypto-card-final/components/CardChoiceSection.tsx": "d467f522ae3fe6ae03a7b6ff0558622f1cf009dc8eb86171c37508181a8542bd",
-  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "e3761e1b054b1a3c29045b1f5abd1246858af91bdc7ac06b80f0bbe2c9e82ed4",
+  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "60dbcac82bb8868bbd8f53359641aa703bb5f95b51554544520ec440363ffe04",
   "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "5b5d53b1bc200cac4bddc4633eaccf1e823f9d92feb3a18a4e5ff35e1ab06a97",
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
@@ -36,7 +36,8 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "dd11eea2a4394197f583899d6b3a7ca89f3f05e6958b1515e5c824a01a5ee3ab",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
-  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "834ceec514e787f87c3ad08d1a75e6fa3372469f48fcea1274877fd800bbfda2",
+  // Preserve owner copy cleanup already on starting main bd41a81.
+  "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "b5ab878474c52fd5fce8df6c2ed4124137ed57a335378872585795581d9ed786",
   "frontend/src/pages/crypto-card-final/data/currencies.ts": "bdaa4ad2d7dfb2343c6c9d8bfb0f3ec717c9dc929febba27f93d1948b12ceba7",
   "frontend/src/pages/crypto-card-final/data/faq.ts": "02fdb896f64036d3e5e41a95955b6c175fb15d70e1a8b6bf502011cf56842b91",
   "frontend/src/pages/crypto-card-final/data/products.ts": "f60770553a97b8fc0784247d0380919327fa998661e62cffe88681d92bf45c29",
@@ -74,7 +75,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/TerminalPreview.tsx": "278010a479c9102267599c93e9f4b712a313088bb6b115786ee3ee0a4b2c3ceb",
   "frontend/src/pages/home/useHomeMarket.ts": "28d77b6950b9a944cf80d12f9ede522f598a32471fc62309b69e64518a58880e",
   "frontend/src/pages/CopyTradingPage.tsx": "023cc003fb8301e49e235e0b8dbdaa841f6b7e551831fbc270d70f5955d063ce",
-  "frontend/src/pages/copy-trading-bolt/components.tsx": "3bd4b8adc37db1b0938e1deb03b3bc9e3ab218076e2b2861a3c27aab03c74d90",
+  // Preserve owner Copy cleanup already on starting main bd41a81.
+  "frontend/src/pages/copy-trading-bolt/components.tsx": "d29f19854ac8e791a8f2d24a9dd5e37769bdb32b4ef665d179b1b64361348b18",
   "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "4b8a2e6359d5d03dbe33a91094b75f75b703ec5ee22b74467c22ff7eae9b363c",
   "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "7b287821fe20bdd9eba8ec86ae0b392ae373b75c11cd48309031f4bbc80daf33",
   // Owner-requested marketplace card polish; profile/chart CSS is separately frozen.
@@ -93,6 +95,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
 };
 const approvedAssets: Record<string, string> = {
+  "voltex-watch-wrist-ruby.png": "e4814c093ff27b9ad8d2f0a5a44ba7ea6fab5b1c67ddd539bbc373bac4a1b22e",
   "voltex-watch-wrist-final.png": "ac18b001ae9bb5f370efae95953c7d6deda508679882b4220b7b687e41b39013",
   "apple-pay-mark.svg": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
   "voltex-smartwatch-scene.png": "da2478a366d97498fb698cdb5b3f2f3663c7d4691e9accbd42553eb9fd14427e",
@@ -125,7 +128,7 @@ test('all approved masters and the two new presentation assets are byte-exact an
   for (const [file, expected] of Object.entries(approvedAssets)) {
     expect({ file, sha256: digest(readFileSync(resolve(directory, file))) }).toEqual({ file, sha256: expected });
   }
-  expect(Object.keys(approvedAssets)).toHaveLength(18);
+  expect(Object.keys(approvedAssets)).toHaveLength(19);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-hero-source.png'))).toBe(false);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });

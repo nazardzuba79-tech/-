@@ -1,7 +1,7 @@
 export const CARD_HERO_SLOGAN = 'Трать крипту по всему миру';
-export const WATCH_CARD_IMAGE = '/cards/crypto-card-final/voltex-watch-wrist-final.png';
+export const WATCH_CARD_IMAGE = '/cards/crypto-card-final/voltex-watch-wrist-ruby.png';
 
-/** The owner's wrist composition, with neutral CHF and no baked-in headline.
+/** The owner's wrist composition, with ruby CHF and no baked-in headline.
  * Trim only the unused surrounding background. Uniform SVG scaling preserves
  * the complete watch/card and all ten round badges at every viewport size. */
 export function WatchCardVisual() {

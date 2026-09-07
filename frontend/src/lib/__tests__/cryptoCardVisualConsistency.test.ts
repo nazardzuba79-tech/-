@@ -41,10 +41,29 @@ test('hero uses the reference wrist artwork without distorting its watch or circ
   expect(html).toContain('width="1448" height="1086"');
   const png = readFileSync(resolve(frontend, `public${watch.WATCH_CARD_IMAGE}`));
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1448, 1086]);
-  expect(createHash('sha256').update(png).digest('hex')).toBe('ac18b001ae9bb5f370efae95953c7d6deda508679882b4220b7b687e41b39013');
+  expect(createHash('sha256').update(png).digest('hex')).toBe('e4814c093ff27b9ad8d2f0a5a44ba7ea6fab5b1c67ddd539bbc373bac4a1b22e');
   expect(read('src/pages/crypto-card-final/crypto-card.css')).not.toContain('aspect-ratio: 800 / 1150');
   expect(renderToStaticMarkup(React.createElement(cinematic.CinematicCardScene, { kind: 'final', label: 'VOLTEX Card' })))
     .toContain(master.CARD_MASTER.black);
+});
+
+test.each(['pos', 'atm'])('%s presents the unchanged Black Signature master with a natural finger mask and no stretching', kind => {
+  const { CardScene } = evaluate('src/pages/crypto-card-final/components/CardScene.tsx', {
+    './VoltexCard': master,
+    '../useCardCopy': { useCardCopy: () => ({ c: { paymentAlt: 'POS', atmAlt: 'ATM' } }) },
+  });
+  const html = renderToStaticMarkup(React.createElement(CardScene, { kind }));
+  expect(html).toContain(`data-payment-scene="${kind}"`);
+  expect(html).toContain(`data-card-slot="black-signature-${kind}"`);
+  expect(html.match(new RegExp(master.CARD_MASTER.black, 'g'))).toHaveLength(1);
+  expect(html).toContain('maskUnits="userSpaceOnUse"');
+  expect(html).toContain('viewBox="106 78 1369 834" preserveAspectRatio="xMidYMid meet"');
+  const size = html.match(/<svg width="([\d.]+)" height="([\d.]+)" viewBox="106 78 1369 834"/);
+  expect(size).not.toBeNull();
+  expect(Number(size![1]) / Number(size![2])).toBeCloseTo(1369 / 834, 10);
+  expect(html).not.toMatch(/preserveAspectRatio="none"|matrix\(|skew|voltex-card-dark/);
+  // The source frame and the card share the same responsive coordinate system.
+  expect(html).toContain('viewBox="0 0 1200 896" preserveAspectRatio="xMidYMid slice"');
 });
 
 test('all active frontend modules are free of the superseded card art and phone backgrounds', () => {
