@@ -193,6 +193,9 @@ test('dialog cleanup does not focus a trigger removed by route navigation', () =
 test('normal Copy surfaces have no permanent deposit requirement; only the click dialog contains it', () => {
   expect(source).not.toMatch(/function EligibilityGate|<EligibilityGate|className="access-strip"|className="deposit-status"/);
   expect(source).not.toMatch(/Минимальный депозит:|Депозит от \$20 000|Разблокируйте копитрейдинг|Копирование доступно клиентам с депозитом/);
+  expect(source).not.toMatch(/Текущий минимум для новых подписчиков|currentCopyMinimum|copyMinimumPolicyEffectiveDate/);
+  expect(body('FollowersPanel').match(/className="daily-note"/g)).toHaveLength(1);
+  expect(body('FollowersPanel')).toContain('Gross PnL после расходов на исполнение, до комиссии за результат.');
   expect(body('Profile')).toContain('<div><CopyButton trader={trader} /></div></div>');
   expect(body('TraderCard')).toContain('<CopyButton trader={trader} compact />');
   expect(body('Marketplace')).toContain('<span>Откройте профиль трейдера и нажмите «Копировать трейдера».</span>');
