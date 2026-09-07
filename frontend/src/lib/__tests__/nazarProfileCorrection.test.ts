@@ -28,7 +28,6 @@ const empty = () => null;
 // Actual profile/readout/follower/histogram markup, with only unrelated children
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
-  ReviewDisclosure: ({ neutral = null }: { neutral?: unknown }) => neutral,
   isModeledTraderData,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
