@@ -18,6 +18,7 @@ import {
 } from '../config/futuresConfig';
 import { projectFuturesExposure } from './exposureRisk';
 import { FuturesBookTransaction } from './FuturesBookTransaction';
+import { estimateFuturesMarketExecution } from './FuturesMarketExecution';
 
 type TxClient = Prisma.TransactionClient;
 type MarginType = 'ISOLATED' | 'CROSS';
@@ -65,12 +66,6 @@ export class FuturesPositionService {
 
     const result = await FuturesBookTransaction.run(this.prisma, this.engine, async (tx: TxClient) => {
       const session = await FuturesBookTransaction.load(tx, params.symbol);
-      // Estimate from the authoritative staged book, not a stale process cache.
-      const book = session.staged.getBook(params.symbol);
-      const estimatePrice =
-        params.type === 'LIMIT' ? params.price! : (params.side === 'BUY' ? book.bestAsk() : book.bestBid())?.price;
-      if (!estimatePrice) throw new Error('No liquidity available for this market order');
-      const estimatedNotional = params.quantity.times(estimatePrice);
 
       // Serialize exposure reads and order creation for this exact risk
       // bucket across requests and application instances. Without this,
@@ -88,6 +83,14 @@ export class FuturesPositionService {
         where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
       });
       const impliedDirection: PositionSide = params.side === 'BUY' ? 'LONG' : 'SHORT';
+      // MARKET must be fully executable before tier checks, order creation or
+      // margin writes. Keep exact per-level legs: a VWAP would understate an
+      // expensive flip remainder when the earlier fills close the old position.
+      const market = params.type === 'MARKET' ? await estimateFuturesMarketExecution(tx, session, params) : null;
+      const executionLegs = market
+        ? market.legs.map(leg => ({ side: params.side, remainingQuantity: leg.quantity, price: leg.price, leverage: params.leverage }))
+        : [{ side: params.side, remainingQuantity: params.quantity, price: params.price!, leverage: params.leverage }];
+      const estimatedNotional = market ? market.notional : params.quantity.times(params.price!);
 
       if (params.reduceOnly) {
         const opposingSize =
@@ -116,7 +119,7 @@ export class FuturesPositionService {
                 leverage: existingPosition.leverage,
               }
             : null,
-          activeOrders: activeOrders.map((order) => {
+          activeOrders: [...activeOrders.map((order) => {
             if (!order.price) {
               throw new Error('Cannot determine exposure for an active futures market order');
             }
@@ -126,13 +129,8 @@ export class FuturesPositionService {
               price: new BigNumber(order.price.toString()),
               leverage: order.leverage,
             };
-          }),
-          candidate: {
-            side: params.side,
-            remainingQuantity: params.quantity,
-            price: estimatePrice,
-            leverage: params.leverage,
-          },
+          }), ...executionLegs.slice(1)],
+          candidate: executionLegs[0],
         });
         if (projected.notional.isGreaterThan(0)) {
           const tier = getLeverageTier(projected.notional.toNumber());
@@ -165,7 +163,8 @@ export class FuturesPositionService {
       // Conservative margin lock: full estimated notional at this leverage.
       // reduceOnly orders never need new margin — they can only shrink an
       // existing position, which frees margin rather than consuming it.
-      const lockAmount = params.reduceOnly ? new BigNumber(0) : computeInitialMargin(estimatedNotional, params.leverage);
+      const lockAmount = params.reduceOnly ? new BigNumber(0)
+        : market ? market.reservedMargin : computeInitialMargin(estimatedNotional, params.leverage);
       if (lockAmount.isGreaterThan(0)) {
         const balance = await tx.futuresBalance.findUnique({
           where: { userId_asset: { userId: params.userId, asset: quote } },
@@ -219,10 +218,28 @@ export class FuturesPositionService {
         },
       });
 
-      const { trades, marginConsumed } = await this.matchAndSettle(tx, session, order, {
+      let { trades, marginConsumed } = await this.matchAndSettle(tx, session, order, {
         leverage: params.leverage, marginType: params.marginType, reduceOnly: !!params.reduceOnly,
       }, quote);
       const finalOrder = order;
+      if (market) {
+        if (!finalOrder.remainingQuantity.isZero() || trades.length !== market.legs.length
+          || trades.some((trade, index) => trade.makerOrderId !== market.legs[index].makerOrderId
+            || !trade.quantity.eq(market.legs[index].quantity) || !trade.price.eq(market.legs[index].price))) {
+          throw new Error('Market execution changed after estimation; order aborted');
+        }
+        // Reconcile to persisted (18-decimal) allocation, not a sum of unrounded
+        // intermediate margins. A reduction consumes no new margin; a flip
+        // consumes only the new remainder's margin. LIMIT reconciliation is unchanged.
+        const resultingPosition = await tx.futuresPosition.findFirst({
+          where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
+        });
+        marginConsumed = resultingPosition?.side === impliedDirection
+          ? new BigNumber(resultingPosition.initialMargin.toString()).minus(
+              existingPosition?.side === impliedDirection ? existingPosition.initialMargin.toString() : 0)
+          : new BigNumber(0);
+        if (marginConsumed.isGreaterThan(lockAmount)) throw new Error('Market execution exceeds reserved margin; order aborted');
+      }
 
       await tx.futuresOrder.update({
         where: { id: orderId },

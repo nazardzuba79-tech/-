@@ -7,6 +7,8 @@ import express from 'express';
 import request from 'supertest';
 import { futuresRouter } from '../../api/routes/futures';
 import { LEVERAGE_TIERS, HIGH_LEVERAGE_WARNING_THRESHOLD } from '../../config/futuresConfig';
+import { FuturesBookTransaction } from '../FuturesBookTransaction';
+import { estimateFuturesMarketExecution } from '../FuturesMarketExecution';
 
 jest.mock('../../api/middleware/apiKeyAuth', () => ({
   requireAuthOrApiKey: () => (req: any, _res: any, next: any) => { req.userId = 'taker'; next(); },
@@ -187,6 +189,147 @@ describe('Futures API config -> schema -> actual position service', () => {
 function makeMarkPriceService(price = '60000') {
   return new MarkPriceService({ getTicker: jest.fn().mockResolvedValue({ lastPrice: price }) } as any);
 }
+
+describe('Futures MARKET full-depth collateral and tier preflight', () => {
+  function setup(side: 'BUY' | 'SELL' = 'BUY', marginType: 'ISOLATED' | 'CROSS' = 'ISOLATED', position?: any) {
+    const s = makeFakePrisma({ balances: {
+      'taker:USDT': { available: '1000000', locked: position?.initialMargin ?? '0' },
+      'maker1:USDT': { available: '1000000', locked: '0' },
+      'maker2:USDT': { available: '1000000', locked: '0' },
+    }, positions: position ? [position] : [] });
+    const engine = new MatchingEngine();
+    const service = new FuturesPositionService(s.prisma, engine, makeMarkPriceService());
+    const opposite = side === 'BUY' ? 'SELL' : 'BUY';
+    const maker = (userId: string, quantity: string, price: string, reduceOnly = false) => service.placeOrder({
+      userId, symbol: 'BTC/USDT', side: opposite, type: 'LIMIT', quantity: new BigNumber(quantity),
+      price: new BigNumber(price), leverage: 20, marginType, reduceOnly,
+    });
+    const market = (leverage = 50, quantity = '1', reduceOnly = false) => service.placeOrder({
+      userId: 'taker', symbol: 'BTC/USDT', side, type: 'MARKET', quantity: new BigNumber(quantity), leverage, marginType, reduceOnly,
+    });
+    const snapshot = () => JSON.stringify({ orders: [...s.orders], positions: [...s.positions], balances: [...s.balances], trades: s.trades,
+      book: ['BUY', 'SELL'].map(side => engine.getBook('BTC/USDT').getBook(side as 'BUY' | 'SELL')) });
+    const clearWrites = () => { for (const spy of [s.tx.futuresOrder.create, s.tx.futuresOrder.update, s.tx.futuresBalance.update,
+      s.tx.futuresPosition.create, s.tx.futuresPosition.update, s.tx.trade.create]) spy.mockClear(); };
+    const noWrites = () => { for (const spy of [s.tx.futuresOrder.create, s.tx.futuresOrder.update, s.tx.futuresBalance.update,
+      s.tx.futuresPosition.create, s.tx.futuresPosition.update, s.tx.trade.create]) expect(spy).not.toHaveBeenCalled(); };
+    return { ...s, engine, service, maker, market, snapshot, clearWrites, noWrites };
+  }
+  function position(side = 'LONG', size = '4', leverage = 100) {
+    return { id: 'position', userId: 'taker', symbol: 'BTC/USDT', side, size, entryPrice: '10000', leverage,
+      initialMargin: new BigNumber(size).times(10000).div(leverage).toString(), marginType: 'ISOLATED',
+      status: 'OPEN', realizedPnl: '0', liquidationPrice: '9940' };
+  }
+
+  it.each([['BUY', 'ISOLATED'], ['SELL', 'ISOLATED'], ['BUY', 'CROSS'], ['SELL', 'CROSS']] as const)
+  ('%s/%s fills two levels at 75k notional with fully backed 50x margin', async (side, mode) => {
+    const s = setup(side, mode);
+    await s.maker('maker1', '0.5', '50000'); await s.maker('maker2', '0.5', '100000');
+    const result = await s.market();
+    expect(result.order.status).toBe('FILLED'); expect(result.order.remainingQuantity.toString()).toBe('0');
+    expect(result.trades.map(t => t.price.toString())).toEqual(side === 'BUY' ? ['50000', '100000'] : ['100000', '50000']);
+    expect(result.trades.reduce((n, t) => n.plus(t.price.times(t.quantity)), new BigNumber(0)).toString()).toBe('75000');
+    expect([...s.positions.values()].find(p => p.userId === 'taker')).toMatchObject({ size: '1', leverage: 50, initialMargin: '1500', entryPrice: '75000' });
+    expect(s.balances.get('taker:USDT')).toEqual({ available: '998500', locked: '1500' });
+  });
+  it('estimates without mutating staged/live orders, positions, balances or generating any trades', async () => {
+    const s = setup();
+    const first = await s.maker('maker1', '0.5', '50000'); const second = await s.maker('maker2', '0.5', '100000');
+    const session = await FuturesBookTransaction.load(s.tx as any, 'BTC/USDT');
+    const before = s.snapshot(), stagedBefore = JSON.stringify(session.staged.getBook('BTC/USDT').getBook('SELL'));
+    s.clearWrites();
+    const submit = jest.spyOn(MatchingEngine.prototype, 'submitOrder');
+    try {
+      const plan = await estimateFuturesMarketExecution(s.tx as any, session, { userId: 'taker', side: 'BUY',
+        quantity: new BigNumber(1), leverage: 50, marginType: 'ISOLATED' });
+      expect(plan.executableQuantity.toString()).toBe('1'); expect(plan.notional.toString()).toBe('75000');
+      expect(plan.legs.map(leg => leg.makerOrderId)).toEqual([first.order.id, second.order.id]);
+      expect(plan.reservedMargin.toString()).toBe('1500'); expect(submit).not.toHaveBeenCalled();
+      expect(s.snapshot()).toBe(before); expect(JSON.stringify(session.staged.getBook('BTC/USDT').getBook('SELL'))).toBe(stagedBefore);
+      s.noWrites();
+    } finally { submit.mockRestore(); }
+  });
+  it('rejects a multi-level 75k MARKET at 100x before all writes and book mutations', async () => {
+    const s = setup(); await s.maker('maker1', '0.5', '50000'); await s.maker('maker2', '0.5', '100000');
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market(100)).rejects.toThrow('75000.00 USDT resulting exposure is 50x');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it('preserves same-price FIFO through estimation, execution and the remaining maker quantity', async () => {
+    const s = setup();
+    const first = await s.maker('maker1', '0.5', '50000');
+    const second = await s.maker('maker2', '1', '50000');
+    const result = await s.market();
+    expect(result.trades.map(t => [t.makerOrderId, t.quantity.toString()])).toEqual([
+      [first.order.id, '0.5'], [second.order.id, '0.5'],
+    ]);
+    expect(s.orders.get(second.order.id)).toMatchObject({ status: 'PARTIALLY_FILLED', remainingQuantity: '0.5' });
+    expect(s.engine.getBook('BTC/USDT').getBook('SELL').map(o => [o.id, o.remainingQuantity.toString()]))
+      .toEqual([[second.order.id, '0.5']]);
+  });
+  it.each(['self-match', 'legacy leverage'])('rejects a later %s maker during MARKET preflight before any writes', async condition => {
+    const s = setup();
+    await s.maker('maker1', '0.5', '10000');
+    await s.maker(condition === 'self-match' ? 'taker' : 'maker2', '0.5', '12000');
+    if (condition === 'legacy leverage') {
+      s.positions.set('legacy', { ...position('SHORT', '1', 10), id: 'legacy', userId: 'maker2' });
+      s.balances.set('maker2:USDT', { available: '998700', locked: '1300' });
+    }
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market()).rejects.toThrow(condition === 'self-match' ? 'Futures self-match is not allowed' : 'requires 10x leverage');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it.each(['BUY', 'SELL'] as const)('rejects insufficient total %s liquidity without any partial execution or writes', async side => {
+    const s = setup(side); await s.maker('maker1', '0.5', '50000');
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market()).rejects.toThrow('Insufficient market liquidity for requested quantity');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it('rejects a balance sufficient at best ask but insufficient for the complete execution', async () => {
+    const s = setup(); await s.maker('maker1', '0.5', '50000'); await s.maker('maker2', '0.5', '100000');
+    s.balances.set('taker:USDT', { available: '1000', locked: '0' });
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market()).rejects.toThrow('Insufficient USDT margin balance');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it.each([['15000', true], ['15000.02', false]] as const)('existing 40k + multi-level MARKET uses all legs at the exact 50k boundary (%s)', async (secondPrice, accepted) => {
+    const s = setup('BUY', 'ISOLATED', position());
+    await s.maker('maker1', '0.5', '5000');
+    await s.maker('maker2', '0.5', secondPrice);
+    const before = s.snapshot(); s.clearWrites();
+    if (accepted) {
+      await s.market(100);
+      expect(s.positions.get('position')).toMatchObject({ size: '5', initialMargin: '500', leverage: 100 });
+      expect(s.balances.get('taker:USDT')!.locked).toBe('500');
+    } else {
+      await expect(s.market(100)).rejects.toThrow('50000.01 USDT resulting exposure is 50x');
+      expect(s.snapshot()).toBe(before); s.noWrites();
+    }
+  });
+  it('pending exposure is added to full MARKET notional rather than only the best-price prefix', async () => {
+    const s = setup();
+    await s.service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT',
+      quantity: new BigNumber(1), price: new BigNumber(20000), leverage: 100, marginType: 'ISOLATED' });
+    await s.maker('maker1', '0.5', '25000'); await s.maker('maker2', '0.5', '50000');
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market(100)).rejects.toThrow('57500.00 USDT resulting exposure is 50x');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it('a flip tiers the expensive remainder, not the whole-sweep average', async () => {
+    const s = setup('BUY', 'ISOLATED', position('SHORT', '0.5', 10));
+    await s.maker('maker1', '0.5', '10000'); await s.maker('maker2', '0.5', '120000');
+    const before = s.snapshot(); s.clearWrites();
+    await expect(s.market(100)).rejects.toThrow('60000.00 USDT resulting exposure is 50x');
+    expect(s.snapshot()).toBe(before); s.noWrites();
+  });
+  it('rolls back all persistence and preserves the live book if SQL fails after a multi-level estimate', async () => {
+    const s = setup(); await s.maker('maker1', '0.5', '50000'); await s.maker('maker2', '0.5', '100000');
+    const before = s.snapshot();
+    s.tx.trade.create.mockImplementationOnce(async () => { throw new Error('injected trade failure'); });
+    await expect(s.market()).rejects.toThrow('injected trade failure');
+    expect(s.snapshot()).toBe(before);
+  });
+});
 
 describe('Futures execution-time reduce-only and atomic book publication', () => {
   function setup(side: 'LONG' | 'SHORT' = 'LONG', marginType: 'ISOLATED' | 'CROSS' = 'ISOLATED') {
@@ -761,7 +904,7 @@ describe('FuturesPositionService.placeOrder', () => {
 
     await expect(
       service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: new BigNumber(1), leverage: 10, marginType: 'ISOLATED' })
-    ).rejects.toThrow('No liquidity available for this market order');
+    ).rejects.toThrow('Insufficient market liquidity for requested quantity');
   });
 
   it('records every trade with MarkPriceService so mark price reflects real internal activity', async () => {

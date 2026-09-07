@@ -173,15 +173,14 @@ async function main() {
       assert.equal((await prisma.futuresOrder.findUnique({ where: { id: resting.order.id } })).status, 'CANCELLED');
       await assertClosed(); await assertBookMatchesDatabase(s.engine);
     });
-    await test('reduce-only MARKET taker cancels unfilled quantity and locks no new margin', async () => {
+    await test('reduce-only MARKET taker requires full liquidity before any fill or margin change', async () => {
       const s = await setup();
       await s.place('counter', 'BUY', '0.4');
-      const result = await s.place('owner', 'SELL', '1', true, 100, 10000, 'MARKET');
-      assert.equal(result.order.status, 'CANCELLED');
-      assert.equal(result.order.remainingQuantity.toString(), '0.6');
-      assert.equal(await prisma.trade.count(), 1);
+      const before = await snapshot(), originalBook = bookState(s.engine);
+      await assert.rejects(s.place('owner', 'SELL', '1', true, 100, 10000, 'MARKET'), /Insufficient market liquidity for requested quantity/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
       const balance = await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'owner', asset: 'USDT' } } });
-      assert.equal(balance.locked.toString(), '600'); assert.equal(balance.available.toString(), '1000400');
+      assert.equal(balance.locked.toString(), '1000'); assert.equal(balance.available.toString(), '1000000');
       await assertBookMatchesDatabase(s.engine);
     });
     await test('both counterparties reduce-only: one genuine trade closes both without locking margin', async () => {
@@ -403,6 +402,129 @@ async function main() {
       }));
       assert.deepEqual(await snapshot(), before);
     });
+    for (const side of ['BUY', 'SELL']) for (const mode of ['ISOLATED', 'CROSS']) {
+      await test(`${side}/${mode}: MARKET sweeps 50k/100k levels with exact 75k notional and 1500 collateral`, async () => {
+        const s = await setup('LONG', mode);
+        const opposite = side === 'BUY' ? 'SELL' : 'BUY';
+        await s.place('owner', opposite, '0.5', false, 10, 50000);
+        await s.place('third', opposite, '0.5', false, 10, 100000);
+        const result = await s.place('counter', side, '1', false, 50, undefined, 'MARKET');
+        assert.equal(result.order.status, 'FILLED'); assert.equal(result.order.remainingQuantity.toString(), '0');
+        assert.deepEqual(result.trades.map(t => t.price.toString()), side === 'BUY' ? ['50000', '100000'] : ['100000', '50000']);
+        assert.equal(result.trades.reduce((sum, t) => sum.plus(t.quantity.times(t.price)), bn(0)).toString(), '75000');
+        const position = await prisma.futuresPosition.findFirst({ where: { userId: 'counter', status: 'OPEN' } });
+        const balance = await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'counter', asset: 'USDT' } } });
+        assert.equal(position.size.toString(), '1'); assert.equal(position.entryPrice.toString(), '75000');
+        assert.equal(position.initialMargin.toString(), '1500'); assert.equal(balance.locked.toString(), '1500');
+        assert.equal(balance.available.toString(), '998500');
+        await assertBookMatchesDatabase(s.engine);
+      });
+    }
+    await test('MARKET 75k sweep rejects 100x, while best ask alone would allow it; zero persisted changes', async () => {
+      const s = await setup();
+      await s.place('owner', 'SELL', '0.5', false, 10, 50000);
+      await s.place('third', 'SELL', '0.5', false, 10, 100000);
+      const before = await snapshot(), originalBook = bookState(s.engine);
+      await assert.rejects(s.place('counter', 'BUY', '1', false, 100, undefined, 'MARKET'), /75000.00 USDT resulting exposure is 50x/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+    });
+    await test('MARKET rejects insufficient complete liquidity and insufficient full-depth collateral without writes', async () => {
+      const s = await setup();
+      await s.place('owner', 'SELL', '0.5', false, 10, 50000);
+      let before = await snapshot(), originalBook = bookState(s.engine);
+      await assert.rejects(s.place('counter', 'BUY', '1', false, 50, undefined, 'MARKET'), /Insufficient market liquidity/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+      await s.place('third', 'SELL', '0.5', false, 10, 100000);
+      await prisma.futuresBalance.update({ where: { userId_asset: { userId: 'counter', asset: 'USDT' } }, data: { available: '1000' } });
+      before = await snapshot(); originalBook = bookState(s.engine);
+      await assert.rejects(s.place('counter', 'BUY', '1', false, 50, undefined, 'MARKET'), /Insufficient USDT margin balance/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+    });
+    for (const secondPrice of ['15000', '15000.02']) {
+      await test(`existing 40k plus multi-level MARKET increase checks exact 50k boundary (${secondPrice})`, async () => {
+        const s = await setup('LONG', 'ISOLATED', '4', 100);
+        await s.place('third', 'SELL', '0.5', false, 20, 5000);
+        await s.place('counter', 'SELL', '0.5', false, 20, secondPrice);
+        const before = await snapshot(), originalBook = bookState(s.engine);
+        if (secondPrice === '15000') {
+          await s.place('owner', 'BUY', '1', false, 100, undefined, 'MARKET');
+          const position = await prisma.futuresPosition.findUnique({ where: { id: 'position' } });
+          const balance = await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'owner', asset: 'USDT' } } });
+          assert.equal(position.size.toString(), '5'); assert.equal(position.initialMargin.toString(), '500');
+          assert.equal(balance.locked.toString(), '500');
+        } else {
+          await assert.rejects(s.place('owner', 'BUY', '1', false, 100, undefined, 'MARKET'), /50000.01 USDT resulting exposure is 50x/);
+          assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+        }
+        await assertBookMatchesDatabase(s.engine);
+      });
+    }
+    await test('MARKET flip validates expensive opposite remainder, not blended average price', async () => {
+      const s = await setup('SHORT', 'ISOLATED', '0.5', 10);
+      await s.place('third', 'SELL', '0.5', false, 20, 10000);
+      await s.place('counter', 'SELL', '0.5', false, 20, 120000);
+      const before = await snapshot(), originalBook = bookState(s.engine);
+      await assert.rejects(s.place('owner', 'BUY', '1', false, 100, undefined, 'MARKET'), /60000.00 USDT resulting exposure is 50x/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+      await s.place('owner', 'BUY', '1', false, 50, undefined, 'MARKET');
+      const position = await prisma.futuresPosition.findFirst({ where: { userId: 'owner', status: 'OPEN' } });
+      const balance = await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'owner', asset: 'USDT' } } });
+      assert.equal(position.side, 'LONG'); assert.equal(position.size.toString(), '0.5');
+      assert.equal(position.initialMargin.toString(), '1200'); assert.equal(balance.locked.toString(), '1200');
+    });
+    await test('MARKET estimator shares reduce-only sibling capacity and skips stale makers without phantom liquidity', async () => {
+      const s = await setup();
+      await s.place('owner', 'SELL', '1', true, 100, 50000);
+      const sibling = await s.place('owner', 'SELL', '1', true, 100, 60000);
+      const before = await snapshot(), originalBook = bookState(s.engine);
+      await assert.rejects(s.place('counter', 'BUY', '2', false, 20, undefined, 'MARKET'), /Insufficient market liquidity/);
+      assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+      await s.place('third', 'SELL', '1', false, 20, 100000);
+      const result = await s.place('counter', 'BUY', '2', false, 20, undefined, 'MARKET');
+      assert.deepEqual(result.trades.map(t => t.price.toString()), ['50000', '100000']);
+      assert.equal(result.trades.reduce((sum, t) => sum.plus(t.quantity.times(t.price)), bn(0)).toString(), '150000');
+      assert.equal((await prisma.futuresOrder.findUnique({ where: { id: sibling.order.id } })).status, 'CANCELLED');
+      assert.equal((await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'counter', asset: 'USDT' } } })).locked.toString(), '7500');
+      await assertBookMatchesDatabase(s.engine);
+    });
+    await test('reduce-only MARKET fully closes over two prices with existing leverage and zero new margin', async () => {
+      const s = await setup();
+      await s.place('third', 'BUY', '0.5', false, 20, 10000);
+      await s.place('counter', 'BUY', '0.5', false, 20, 12000);
+      const result = await s.place('owner', 'SELL', '1', true, 100, undefined, 'MARKET');
+      assert.equal(result.trades.length, 2); assert.equal(result.order.status, 'FILLED');
+      assert.equal(await prisma.futuresPosition.count({ where: { userId: 'owner', status: 'OPEN' } }), 0);
+      assert.equal((await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'owner', asset: 'USDT' } } })).locked.toString(), '0');
+      await assertBookMatchesDatabase(s.engine);
+    });
+    await test('MARKET storage rounding across multiple fills never exceeds locked collateral', async () => {
+      const s = await setup();
+      await s.place('owner', 'SELL', '1', false, 10, '0.01');
+      await s.place('third', 'SELL', '1', false, 10, '0.01');
+      await s.place('counter', 'BUY', '2', false, 6, undefined, 'MARKET');
+      const position = await prisma.futuresPosition.findFirst({ where: { userId: 'counter', status: 'OPEN' } });
+      const balance = await prisma.futuresBalance.findUnique({ where: { userId_asset: { userId: 'counter', asset: 'USDT' } } });
+      assert.equal(position.initialMargin.toString(), '0.003333333333333334');
+      assert.equal(balance.locked.toString(), position.initialMargin.toString());
+      assert.equal(bn(balance.available.toString()).plus(balance.locked.toString()).toString(), '1000000');
+    });
+    for (const deferred of [false, true]) {
+      await test(`MARKET sweep SQL ${deferred ? 'COMMIT' : 'order INSERT'} failure preserves original DB/book`, async () => {
+        const s = await setup();
+        await s.place('owner', 'SELL', '0.5', false, 10, 50000);
+        await s.place('third', 'SELL', '0.5', false, 10, 100000);
+        const before = await snapshot(), originalBook = bookState(s.engine);
+        await prisma.$executeRawUnsafe(deferred
+          ? `CREATE CONSTRAINT TRIGGER fail_market_qa AFTER INSERT ON "Trade" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION fail_futures_qa()`
+          : `CREATE TRIGGER fail_market_qa BEFORE INSERT ON "FuturesOrder" FOR EACH ROW EXECUTE FUNCTION fail_futures_qa()`);
+        await assert.rejects(s.place('counter', 'BUY', '1', false, 50, undefined, 'MARKET'));
+        assert.deepEqual(await snapshot(), before); assert.deepEqual(bookState(s.engine), originalBook);
+        assert.equal(s.prints.length, 0);
+        await prisma.$executeRawUnsafe(`DROP TRIGGER fail_market_qa ON "${deferred ? 'Trade' : 'FuturesOrder'}"`);
+        assert.equal((await s.place('counter', 'BUY', '1', false, 50, undefined, 'MARKET')).trades.length, 2);
+        await assertBookMatchesDatabase(s.engine);
+      });
+    }
     console.log(`Futures SQL integration: ${passed} cases PASS`);
   } finally {
     await prisma.$disconnect(); await server.stop(); await db.close();
