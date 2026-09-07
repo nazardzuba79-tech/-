@@ -108,7 +108,7 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
       // Only the source label is new; original aggregate calculations, values
       // and card/hero geometry remain covered by the unchanged fingerprint.
       const label = "<ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} />";
-      expect(renderer.split(label)).toHaveLength(2);
+      expect(renderer.split(label)).toHaveLength(1);
       renderer = renderer.replace(label, '');
     }
     expect(digest(renderer)).toBe(hash);

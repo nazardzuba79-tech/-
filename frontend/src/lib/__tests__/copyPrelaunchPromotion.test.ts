@@ -23,60 +23,20 @@ function evaluate(path: string, overrides: Record<string, unknown> = {}) {
   new Function('exports', 'require', code)(output, load);
   return output;
 }
-const label = evaluate('src/components/ModeledDataLabel.tsx', {
-  '../lib/i18n': { useLanguage: () => ({ lang: language }) },
-});
 const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx');
 
-test.each([
-  ['ru', 'Модельные данные'], ['en', 'Modeled data'], ['zh', '模拟数据'],
-  ['es', 'Datos modelados'], ['hi', 'मॉडल किए गए डेटा'], ['ja', 'モデルデータ'], ['ko', '모델 데이터'],
-])('source-aware label is local to its figures and neutral product copy survives in %s', (lang, text) => {
-  language = lang;
+test('removed disclosure components have no imports, mounts or fallback content', () => {
+  for (const file of ['src/components/ModeledDataLabel.tsx', 'src/components/modeledDataLabel.css', 'test-utils/modeledDataLabel.ts',
+    'src/components/PrelaunchNotice.tsx', 'src/components/prelaunchNotice.css']) {
+    expect(existsSync(resolve(frontend, file))).toBe(false);
+  }
+  expect(source('src/pages/copy-trading-bolt/components.tsx')).not.toContain('ModeledDataLabel');
+  expect(source('src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
   const repeated = React.createElement(ReviewDisclosure, { neutral: React.createElement('p', null, 'Neutral product information') },
     React.createElement('p', null, 'Demonstration catalogue'));
-  const redundant = React.createElement(ReviewDisclosure, null, 'Repeated modeled-results explanation');
-  const modeled = isModeledResponse({ simulation: { seed: 1, simulatedAt: '2026-09-06T12:00:00Z', mode: 'REAL_TIME' } });
-  const html = renderToStaticMarkup(React.createElement('main', null,
-    React.createElement(label.ModeledDataLabel, { modeled }), repeated, redundant, React.createElement('button', null, 'Copy')));
-  expect(Object.keys(label.MODELED_DATA_LABEL).sort()).toEqual(['en', 'es', 'hi', 'ja', 'ko', 'ru', 'zh']);
-  expect(label.MODELED_DATA_LABEL[lang]).toBe(text);
-  expect(html).toContain(`<small class="modeled-data-label">${text}</small>`);
-  expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
-  expect(html).not.toMatch(/copy-trading-notice|data-copy-trading-notice|voltex-prelaunch|DEMO \/ PRE-LAUNCH|--prelaunch-notice-height/);
-  expect(html).toContain('Neutral product information');
-  expect(html).not.toContain('Demonstration catalogue');
-  expect(html).not.toContain('Repeated modeled-results explanation');
-  expect(html).toContain('<button>Copy</button>');
-  // No context or wrapper is needed: only neutral information remains.
-  expect(renderToStaticMarkup(repeated)).toBe('<p>Neutral product information</p>');
-  expect(renderToStaticMarkup(redundant)).toBe('');
-  const fixture = marketplaceTraders.find(trader => trader.id !== 'VX-001' && trader.id !== 'VX-KSENIA')!;
-  expect(renderToStaticMarkup(React.createElement(label.ModeledDataLabel, {
-    modeled: isModeledTraderData(fixture),
-  }))).toBe(`<small class="modeled-data-label">${text}</small>`);
-  for (const value of [undefined, false, isModeledResponse(null), isModeledResponse({ provenance: 'LIVE' }),
-    isModeledTraderData(fixture, { trader: { id: fixture.id }, provenance: 'REAL_EXECUTION' })]) {
-    expect(renderToStaticMarkup(React.createElement(label.ModeledDataLabel, { modeled: value }))).toBe('');
-  }
-});
-
-test('no global/contextual banner remains; tiny labels cannot gate routes, eligibility or auth', () => {
-  const app = source('src/App.tsx');
-  expect(app).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice|voltex-prelaunch/);
-  expect(existsSync(resolve(frontend, 'src/components/PrelaunchNotice.tsx'))).toBe(false);
-  expect(existsSync(resolve(frontend, 'src/components/prelaunchNotice.css'))).toBe(false);
-  expect(existsSync(resolve(frontend, 'src/components/CopyTradingNotice.tsx'))).toBe(false);
-  expect(existsSync(resolve(frontend, 'src/components/copyTradingNotice.css'))).toBe(false);
-  const page = source('src/pages/CopyTradingPage.tsx');
-  expect(page).not.toMatch(/CopyTradingNoticeScope|PrelaunchApplication/);
-  expect(source('src/components/ModeledDataLabel.tsx')).not.toMatch(/localStorage|sessionStorage|isAdmin|pathname|setTimeout|onClick|ResizeObserver/);
-  expect(source('src/components/ReviewDisclosure.tsx')).not.toMatch(/createContext|useContext|CopyTradingNotice/);
-  const css = source('src/components/modeledDataLabel.css');
-  expect(css).not.toMatch(/display:\s*none|opacity:\s*0|visibility:\s*hidden|position:\s*(?:fixed|sticky)|prelaunch-notice-height|global-header|nav-mobile-menu/);
-  expect(css).toContain('.copytrading-bolt-root');
-  expect(css).toContain('font-size: 10px');
-  expect(css).not.toMatch(/padding:|border:|background:|(?:^|[;{]\s*)height:/);
+  expect(renderToStaticMarkup(repeated)).toBe('');
+  expect(renderToStaticMarkup(React.createElement('main', null, repeated, React.createElement('button', null, 'Copy'))))
+    .toBe('<main><button>Copy</button></main>');
 });
 
 test.each([0, -1, 19_999.99, 20_000, 20_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {

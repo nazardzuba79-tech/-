@@ -10,7 +10,6 @@ import { nazarTrader, marketplaceTraders, getRoiForPeriod, getCopierProfit, roiC
 import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerformance';
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
-import { ModeledDataLabel } from '../../../test-utils/modeledDataLabel';
 import { isModeledTraderData } from '../modeledCopyData';
 import { restoreCopyButtonDepositUx } from '../../../test-utils/copyDepositUx';
 
@@ -36,7 +35,7 @@ const dependencies = {
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
   followerProfitForPeriod: () => null, Avatar: empty, FavoriteButton: empty,
   MiniPerformanceChart: empty, Users: empty, Check: empty, ChevronRight: empty, VerifiedBadge,
-  ModeledDataLabel, isModeledTraderData,
+  isModeledTraderData,
   VipBadge: () => React.createElement('span', { className: 'vip-badge' }, 'VIP'),
   CopyButton: () => React.createElement('button', { className: 'copy-child' }, 'Copy'),
 };
@@ -64,8 +63,8 @@ describe('Nazara marketplace presentation only', () => {
     expect(html).toContain(formatAccountSize(trader.aum));
     expect(html).not.toMatch(/Коэффициент Шарпа|Прибыль подписчиков|Чистая прибыль/);
     expect(html).toContain('Professional Strategy');
-    expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
-    expect(html).toContain('Модельные данные');
+    expect(html).not.toContain('modeled-data-label');
+    expect(html).not.toContain('Модельные данные');
     expect(JSON.stringify(response)).toBe(before);
   });
 
@@ -123,7 +122,7 @@ describe('Nazara marketplace presentation only', () => {
     const modeled = render('90D', fixture);
     const sameFieldsWithoutFixtureProvenance = render('90D', { ...fixture });
     const label = '<small class="modeled-data-label">Модельные данные</small>';
-    expect(modeled.split(label)).toHaveLength(2);
+    expect(modeled).not.toContain(label);
     expect(sameFieldsWithoutFixtureProvenance).not.toContain('modeled-data-label');
     expect(modeled.replace(label, '')).toBe(sameFieldsWithoutFixtureProvenance);
     const realResponse = { ...response, provenance: 'REAL_EXECUTION' };

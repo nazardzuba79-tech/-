@@ -48,7 +48,6 @@ import { demoChartData, selectDemoPerformance } from './demoPerformance';
 import { getTraderVisual } from './traderVisuals';
 import { TraderAvatarArt } from './TraderAvatarArt';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
-import { ModeledDataLabel } from '../../components/ModeledDataLabel';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
 import { CopyDepositDialog } from './CopyDepositDialog';
@@ -259,7 +258,6 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
         <div className="card-roi-copy">
           <span>ROI <small>{period}</small></span>
           <strong className={roiClass(periodRoi)}>{formatPercent(periodRoi)}</strong>
-          <ModeledDataLabel modeled={isModeledTraderData(trader, synthetic)} />
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
@@ -652,7 +650,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
           <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
           {!simpleReturn && <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>}
           <div><span>AUM</span><strong>{publicUsdtNumber(heroAum)} USDT</strong></div>
-          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong><ModeledDataLabel modeled={isModeledTraderData(trader, liveSynthetic)} /></div>
+          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
         </div>
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
@@ -691,7 +689,7 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
         <h1>Copy Trading VIP</h1>
         <p>Профессиональные стратегии, прозрачная статистика и единая система контроля рисков.</p>
         <div className="hero-stats">
-          {stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong><ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} /></div>)}
+          {stats.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}
         </div>
       </div>
       <button className="hero-guide" onClick={() => onOpen(trader)}>

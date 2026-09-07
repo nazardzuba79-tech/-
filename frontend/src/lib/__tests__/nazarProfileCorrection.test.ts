@@ -9,7 +9,6 @@ import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
 import { dailyReturnChart } from '../dailyReturnChart';
 import { nazarTrader, formatPercent, formatAccountSize, roiClass, PERIODS } from '../../pages/copy-trading-bolt/traders';
 import { VerifiedBadge } from '../../../test-utils/verifiedBadge';
-import { ModeledDataLabel } from '../../../test-utils/modeledDataLabel';
 import { isModeledTraderData } from '../modeledCopyData';
 
 const frontend = resolve(__dirname, '../../..');
@@ -30,7 +29,7 @@ const empty = () => null;
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
   ReviewDisclosure: ({ neutral = null }: { neutral?: unknown }) => neutral,
-  ModeledDataLabel, isModeledTraderData,
+  isModeledTraderData,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,
@@ -69,8 +68,8 @@ test.each(PERIODS)('%s keeps lifetime statistics separate from the selected char
   expect(html).not.toMatch(/Nazara/);
   expect(html).toContain('7 200 000 USDT');
   expect(html).not.toMatch(/\d[\d ]{3,},\d{2} USDT/);
-  expect((html.match(/class="modeled-data-label"/g) ?? [])).toHaveLength(1);
-  expect(html).toMatch(/<span>Max Drawdown<\/span><strong>5,79%<\/strong><small class="modeled-data-label">Модельные данные<\/small>/);
+  expect(html).not.toContain('modeled-data-label');
+  expect(html).toContain('<span>Max Drawdown</span><strong>5,79%</strong>');
 });
 
 test('profile source label is absent for a real response while all monetary/chart markup remains identical', () => {

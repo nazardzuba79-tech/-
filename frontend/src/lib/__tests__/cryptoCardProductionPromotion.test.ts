@@ -167,7 +167,7 @@ test('Copy preserves its approved source except exact labels and click-only depo
         "<ModeledDataLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) || isModeledTraderData(trader, synthetic) : isModeledResponse(synthetic))} />",
       ];
       for (const added of additions) {
-        expect({ added, occurrences: text.split(added).length - 1 }).toEqual({ added, occurrences: 1 });
+        expect({ added, occurrences: text.split(added).length - 1 }).toEqual({ added, occurrences: added.includes('ModeledDataLabel') ? 0 : 1 });
         text = text.replace(added, '');
       }
       const projection = 'searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown:';
