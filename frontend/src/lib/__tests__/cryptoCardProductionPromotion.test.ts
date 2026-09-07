@@ -10,16 +10,19 @@ const source = (file: string) => readFileSync(resolve(repository, file), 'utf8')
 // Original source 0a9c9022; owner-requested visual consistency updates only
 // HomeCardSection/HomeCryptoCard/VoltexCard/CardScene/CinematicCardScene fingerprints.
 // Business rules, copy, application state, existing masters and unrelated pages remain frozen.
+// Owner-requested /card hero polish advances only its scoped RU copy, hook,
+// hero markup/composition and CSS. Shared/Homepage output is frozen separately
+// by cryptoCardVisualConsistency; no product data or other sections change.
 const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/CardApplication.tsx": "f4e475d2b609d19e8e12194fb13837b6026a9bfe759248e2a16690f60028d4d9",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
-  "frontend/src/pages/crypto-card-final/crypto-card.css": "9ed9552a641fdc63c5593e5ad00bbab6b7a8fc63102105259e401252cfe5c6a1",
-  "frontend/src/pages/crypto-card-final/useCardCopy.ts": "6a1c229a9546f386a65254fa2446b45a32605cdf3480e9c381dde5a60ae33494",
+  "frontend/src/pages/crypto-card-final/crypto-card.css": "0d9ef53cf2c5886590c25c42a0463ed346adb9286bb69faeb18668b5fc8a344b",
+  "frontend/src/pages/crypto-card-final/useCardCopy.ts": "15c6a83116b08528e6bbd471d655017fa91551bb6a47291269911050f612f015",
   "frontend/src/pages/crypto-card-final/components/AtmSection.tsx": "e0341badbe91a3e3098b845a05f3be5ac017c461ad487963d9b112fbd31e64b9",
   "frontend/src/pages/crypto-card-final/components/BrandMarks.tsx": "42c92d5892b537de7dd079a0ce857fd73362954e0b3e2d16bc2239b6f9849478",
   "frontend/src/pages/crypto-card-final/components/CardChoiceSection.tsx": "d467f522ae3fe6ae03a7b6ff0558622f1cf009dc8eb86171c37508181a8542bd",
   "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "969b6529631e9f1447509f40b164093ee8972be353bcb713cef543cca2495455",
-  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "5b5d53b1bc200cac4bddc4633eaccf1e823f9d92feb3a18a4e5ff35e1ab06a97",
+  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "ab3ad04cd59d51f99fa49e07386a137e9bbd344f4973abcff70ca82ae21d4e5c",
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
   "frontend/src/pages/crypto-card-final/components/CurrencySection.tsx": "f7f50a6172e66dfc30b57eef34d130539f57e5bbb4c1694df51245b7dc99fdcc",
@@ -28,14 +31,14 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/FinalCtaFooter.tsx": "64682b2e76f1251aae617614cb434979fbf501036f5765c8eb5826a575b22b12",
   "frontend/src/pages/crypto-card-final/components/GlobalUseSection.tsx": "4c525768116bd5300e2897665d70833625e4b050df2668d76f500888f83a18a6",
   "frontend/src/pages/crypto-card-final/components/Header.tsx": "6e3337f6e583b561937637baa54b0ee8b83134d5759a70e5ea0e3abec66eb2b0",
-  "frontend/src/pages/crypto-card-final/components/Hero.tsx": "55940db873f38e2a14f781445018e5a5576f4c1ae27b33b03f3915c6d8a15ba9",
+  "frontend/src/pages/crypto-card-final/components/Hero.tsx": "d4fc71d9e430239d6270922a689f08d6279e8d3ea9518371c05d21772424d9f6",
   "frontend/src/pages/crypto-card-final/components/HowItWorksSection.tsx": "6fb8bd0b9fc6af6f40487987f485d0201afca1836daa44565918b2bd2963d11f",
   "frontend/src/pages/crypto-card-final/components/PaymentSection.tsx": "c239a84af63ca8de43bbf0dab9f1f95d1e26679e0651b05893b300e66d57405e",
   "frontend/src/pages/crypto-card-final/components/ServiceChip.tsx": "85a7c7c55734cced6406ff4e61c42ab6c78b5402f7e9618a5f9fe1f8095884ee",
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
   "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   // Preserve concurrent production f183f77: Russia and all-ATM wording only.
-  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "cf71d6cfe568e479a574084575a3f7c29a65db006fe22f1ab318f2ce8e34cd52",
+  "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "11023b06c0035609e55d11909aabcd4cdbc7e0887cc3589c6397a55dacbdb721",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
   // Preserve owner copy cleanup already on starting main bd41a81.
   "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "a6acb0f2e9fe5b36b485e1e637fb17ec34d1975729691ba2515f824c591bea62",

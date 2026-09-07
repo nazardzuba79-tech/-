@@ -67,3 +67,9 @@ export const cardCopyRu = {
 } as const;
 
 export type CardCopy = { [K in keyof typeof cardCopyRu]: string };
+
+// /card hero only. The Homepage continues to use the approved shared slogan.
+export const cardHeroCopyRu = {
+  heroTitle: 'Криптоактивы и фиат в одном месте.',
+  heroLead: 'Платите где удобно и когда удобно — полная свобода действий.',
+} as const;

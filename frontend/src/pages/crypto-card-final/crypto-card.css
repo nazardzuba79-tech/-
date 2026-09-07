@@ -53,6 +53,25 @@
 }
 .crypto-card-page .crypto-card-section-nav { position: relative; z-index: 5; }
 .crypto-card-page .crypto-card-art { width: 100%; height: auto; object-fit: contain; }
+/* /card hero only: clean backdrop, with the original hand continuing to the
+   page edge instead of fading into a dark rectangle. No filters over the photo. */
+.crypto-card-page .vc-card-hero { background: #0a0a0b; container-type: inline-size; }
+.crypto-card-page .vc-card-hero-artwork {
+  width: calc(100% + 20px);
+  justify-self: end;
+  margin-right: -20px;
+}
+@media (min-width: 640px) {
+  .crypto-card-page .vc-card-hero-artwork { width: calc(100% + 32px); margin-right: -32px; }
+}
+@media (min-width: 1024px) {
+  .crypto-card-page .vc-card-hero-artwork {
+    --card-hero-bleed: calc(48px + max(0px, (100cqw - 1440px) / 2));
+    width: calc(100% + var(--card-hero-bleed));
+    max-width: 840px;
+    margin-right: calc(-1 * var(--card-hero-bleed));
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .crypto-card-page *, .crypto-card-page *::before, .crypto-card-page *::after {
     animation-duration: .01ms !important; animation-iteration-count: 1 !important;

@@ -11,17 +11,18 @@ const BADGES = [
 
 /** Original photo, uniformly scaled. Only outer opacity and a precisely placed
  * CHF vector face change; the central watch/card and other badges stay sharp. */
-export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' | 'homepage' } = {}) {
+export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' | 'homepage' | 'hero' } = {}) {
   const id = `watch-${useId().replace(/:/g, '')}`;
-  // Homepage retains the source's complete right/bottom edge. The nearly
-  // identical width preserves watch scale; /card keeps its approved framing.
+  // Each surface opts into its own framing. Hero keeps the whole right/top
+  // source edge for page-edge bleed; existing Homepage/default SVGs stay exact.
   const homepage = framing === 'homepage';
-  const width = homepage ? 932 : 928;
-  const height = homepage ? 1006 : 925;
-  return <svg viewBox={`516 80 ${width} ${height}`} preserveAspectRatio="xMidYMid meet"
+  const hero = framing === 'hero';
+  const width = hero ? 1008 : homepage ? 932 : 928;
+  const height = hero ? 1086 : homepage ? 1006 : 925;
+  return <svg viewBox={hero ? '440 0 1008 1086' : `516 80 ${width} ${height}`} preserveAspectRatio="xMidYMid meet"
     role="img" aria-label="VOLTEX Black Signature · RUB / USD / GBP / CHF / EUR · BTC / ETH / USDT / TON / USDC"
     data-card-cinematic="wrist-watch"
-    style={{ display: 'block', width: '100%', height: 'auto', ...(homepage ? { overflow: 'visible' } : {}) }}>
+    style={{ display: 'block', width: '100%', height: 'auto', ...(homepage || hero ? { overflow: 'visible' } : {}) }}>
     <defs>
       <linearGradient id={`${id}-horizontal`}>
         <stop stopColor="black" /><stop offset=".16" stopColor="white" />
@@ -39,19 +40,25 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
         <stop offset=".45" stopColor="#211a12" stopOpacity=".65" />
         <stop offset="1" stopColor="#211a12" />
       </linearGradient>}
-      <mask id={`${id}-vertical-mask`} maskUnits="userSpaceOnUse" x="516" y="80" width={width} height={height}>
-        <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-vertical)`} />
+      <mask id={`${id}-vertical-mask`} maskUnits="userSpaceOnUse" x="516" y={hero ? 0 : 80} width={hero ? 932 : width} height={height}>
+        <rect x="516" y={hero ? 0 : 80} width={hero ? 932 : width} height={height} fill={`url(#${id}-vertical)`} />
       </mask>
-      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x={homepage ? 390 : 516} y={homepage ? 20 : 80} width={homepage ? 1058 : width} height={homepage ? 1066 : height} data-watch-edge-mask="true">
-        <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-horizontal)`} mask={`url(#${id}-vertical-mask)`} />
+      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x={homepage || hero ? 390 : 516} y={hero ? 0 : homepage ? 20 : 80} width={homepage || hero ? 1058 : width} height={homepage ? 1066 : height} data-watch-edge-mask="true">
+        <rect x="516" y={hero ? 0 : 80} width={hero ? 932 : width} height={height} fill={`url(#${id}-horizontal)`} mask={`url(#${id}-vertical-mask)`} />
         {BADGES.map(([cx, cy, r]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={`url(#${id}-badge-opacity)`} />)}
         {/* Protect the original wrist, fingers and nails at full opacity.
             The 88% solid core covers skin; feathering falls on surrounding
             background, not across the hand. No bitmap pixels are changed. */}
         {homepage && <ellipse data-watch-hand-opacity="true" cx="1450" cy="720" rx="360" ry="820" fill={`url(#${id}-badge-opacity)`} />}
+        {/* Hero's two smaller protection islands leave the surrounding dark
+            backdrop free to feather, while original skin/nail pixels stay solid. */}
+        {hero && <>
+          <ellipse data-watch-hero-wrist="true" cx="1450" cy="270" rx="470" ry="440" fill={`url(#${id}-badge-opacity)`} />
+          <ellipse data-watch-hero-fingers="true" cx="1460" cy="940" rx="315" ry="355" fill={`url(#${id}-badge-opacity)`} />
+        </>}
         {/* Reveal a little more of the existing left wrist/sleeve, without
             moving or shrinking the watch or exposing the old photo lettering. */}
-        {homepage && <ellipse data-watch-left-wrist-opacity="true" cx="610" cy="750" rx="180" ry="270" fill={`url(#${id}-badge-opacity)`} />}
+        {(homepage || hero) && <ellipse data-watch-left-wrist-opacity="true" cx="610" cy="750" rx="180" ry="270" fill={`url(#${id}-badge-opacity)`} />}
         {/* Extend only the revealed original backdrop to the owner's outline.
             These feathered islands avoid the baked-in lettering at upper left;
             existing full-opacity hand/watch/badge protection stays unchanged. */}

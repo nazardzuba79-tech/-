@@ -156,7 +156,7 @@ test('product links target actual sections, including both visible application C
 
 test('hero uses the reference wrist scene, other surfaces retain the exact physical master', () => {
   const scene = component('CinematicCardScene');
-  expect(scene).toContain('<WatchCardVisual />');
+  expect(scene).toContain('<WatchCardVisual framing="hero" />');
   expect(component('WatchCardVisual')).toContain('voltex-watch-wrist-original.png');
   expect(component('WatchCardVisual')).toContain('preserveAspectRatio="xMidYMid meet"');
   expect(scene).not.toMatch(/<mask|clipPath|preserveAspectRatio="none"|voltex-cards-phone/);

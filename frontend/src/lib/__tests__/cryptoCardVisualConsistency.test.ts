@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import { createHash } from 'crypto';
 import ts from 'typescript';
 import { cardCopy } from '../../pages/crypto-card-final/data/cardCopy';
+import { cardHeroCopyRu } from '../../pages/crypto-card-final/data/cardCopy.ru';
 
 const frontend = resolve(__dirname, '../../..');
 const read = (path: string) => readFileSync(resolve(frontend, path), 'utf8');
@@ -23,6 +24,58 @@ const home = evaluate('src/pages/home/HomeCryptoCard.tsx', { '../crypto-card-fin
 const watch = evaluate('src/pages/crypto-card-final/components/WatchCardVisual.tsx');
 const cinematic = evaluate('src/pages/crypto-card-final/components/CinematicCardScene.tsx', { './VoltexCard': master, './WatchCardVisual': watch });
 
+test.each(Object.keys(cardCopy) as (keyof typeof cardCopy)[])('%s actual copy hook changes only the Russian product hero', lang => {
+  const { useCardCopy } = evaluate('src/pages/crypto-card-final/useCardCopy.ts', {
+    '../../lib/i18n': { useLanguage: () => ({ lang }) },
+    './data/cardCopy': { cardCopy }, './data/cardCopy.ru': { cardHeroCopyRu },
+  });
+  expect(useCardCopy().c).toBe(cardCopy[lang]); // Homepage/default consumers unchanged.
+  const hero = useCardCopy('hero').c;
+  if (lang !== 'ru') expect(hero).toBe(cardCopy[lang]);
+  else {
+    expect(hero.heroTitle).toBe('Криптоактивы и фиат в одном месте.');
+    expect(hero.heroLead).toBe('Платите где удобно и когда удобно — полная свобода действий.');
+    const changed = Object.keys(hero).filter(key => hero[key] !== cardCopy.ru[key as keyof typeof cardCopy.ru]);
+    expect(changed.sort()).toEqual(['heroLead', 'heroTitle']);
+  }
+  expect(read('src/pages/crypto-card-final/components/Hero.tsx')).toContain("useCardCopy('hero')");
+});
+
+test('hero-only framing leaves the approved Homepage SVG byte-exact', () => {
+  const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual, { framing: 'homepage' }));
+  // Captured from origin/main 78bc5f4 before this isolated /card change.
+  expect(createHash('sha256').update(html).digest('hex'))
+    .toBe('2c7ed7056649604f2ce09dd835e41202620ec2f8dab84058c2780eeb2efe8078');
+  expect(html).not.toContain('data-watch-hero-');
+});
+
+test('product hero feathers only the backdrop and preserves skin/nail landmarks', () => {
+  const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual, { framing: 'hero' }));
+  expect(html).toContain('viewBox="440 0 1008 1086"');
+  expect(440 + 1008).toBe(1448); // Full original right and bottom edge.
+  expect(html.match(/<image /g)).toHaveLength(1);
+  expect(html.match(/<circle[^>]*fill="url\(#[^)]+-badge-opacity\)"/g)).toHaveLength(10);
+  const island = (name: string) => html.match(new RegExp(`<ellipse data-watch-${name}="true" cx="(\\d+)" cy="(\\d+)" rx="(\\d+)" ry="(\\d+)"`))!.slice(1).map(Number);
+  const islands = ['hero-wrist', 'hero-fingers', 'left-wrist-opacity'].map(island);
+  // Actual source-photo landmarks: upper arm, right fingers/nails and left wrist.
+  for (const [x, y] of [[1410, 0], [1410, 90], [1447, 660], [1380, 720], [1420, 830], [1210, 975], [1330, 1030], [1310, 1085], [520, 650], [535, 755], [570, 880]]) {
+    expect(Math.min(...islands.map(([cx, cy, rx, ry]) => Math.hypot((x - cx) / rx, (y - cy) / ry)))).toBeLessThan(.88);
+  }
+  const product = renderToStaticMarkup(React.createElement(watch.WatchCardVisual));
+  const chf = (markup: string) => markup.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0];
+  expect(chf(html)).toBe(chf(product));
+  expect(html).not.toMatch(/filter=|feGaussianBlur|clipPath|transform=|preserveAspectRatio="none"/);
+  const hero = read('src/pages/crypto-card-final/components/Hero.tsx');
+  expect(hero).not.toMatch(/voltex-grid|fine-noise|vc-blur/);
+  expect(hero).toContain('clamp(2.125rem,4.4vw,4rem)');
+  expect(hero).not.toContain('clamp(2.4rem,5.6vw,5.25rem)');
+  const css = read('src/pages/crypto-card-final/crypto-card.css');
+  const scoped = css.match(/\/\* \/card hero only[\s\S]*?(?=@media \(prefers-reduced-motion)/)![0];
+  expect(scoped).toContain('.crypto-card-page .vc-card-hero');
+  expect(scoped).not.toMatch(/filter:|url\(|blur\(|opacity:/);
+  expect(scoped).toContain('--card-hero-bleed');
+});
+
 test.each([228, 320])('Homepage/auth %spx renders the real approved master with automatic height', width => {
   const html = renderToStaticMarkup(React.createElement(home.HomeCryptoCard, { width }));
   expect(html).toContain(master.CARD_MASTER.black);
@@ -40,7 +93,7 @@ test('hero uses the reference wrist artwork without distorting its watch or circ
   expect(html).not.toMatch(/clipPath|transform=|slice|preserveAspectRatio="none"|feGaussianBlur/);
   expect(html).toContain('data-watch-edge-mask="true"');
   expect(html).toContain('data-watch-badge="CHF"');
-  expect(html).toContain('viewBox="516 80 928 925"');
+  expect(html).toContain('viewBox="440 0 1008 1086"');
   expect(html).toContain('width="1448" height="1086"');
   const png = readFileSync(resolve(frontend, `public${watch.WATCH_CARD_IMAGE}`));
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1448, 1086]);
@@ -91,8 +144,9 @@ test('Homepage uses unchanged official payment branding and consistent product-s
     .toBe('66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c');
 });
 
-test.each(Object.keys(cardCopy) as (keyof typeof cardCopy)[])('%s hero headings share the approved localized slogan and asset', lang => {
+test.each(Object.keys(cardCopy) as (keyof typeof cardCopy)[])('%s hero keeps localized artwork and isolates the Russian /card copy from Homepage', lang => {
   const c = cardCopy[lang];
+  const heroCopy = lang === 'ru' ? { ...c, ...cardHeroCopyRu } : c;
   expect(cardCopy.ru.heroTitle).toBe('Трать крипту по всему миру');
   if (lang !== 'ru') expect(c.heroTitle).not.toMatch(/[А-Яа-я]/);
   const section = evaluate('src/pages/home/HomeCardSection.tsx', {
@@ -104,12 +158,12 @@ test.each(Object.keys(cardCopy) as (keyof typeof cardCopy)[])('%s hero headings 
   });
   const hero = evaluate('src/pages/crypto-card-final/components/Hero.tsx', {
     './WatchCardVisual': watch, './CinematicCardScene': cinematic,
-    '../useCardCopy': { useCardCopy: () => ({ c }) },
+    '../useCardCopy': { useCardCopy: (scope?: string) => ({ c: scope === 'hero' ? heroCopy : c }) },
   });
-  for (const Component of [section.HomeCardSection, hero.Hero]) {
+  for (const [Component, copy] of [[section.HomeCardSection, c], [hero.Hero, heroCopy]] as const) {
     const html = renderToStaticMarkup(React.createElement(Component));
     const heading = html.match(/<h[12][^>]*>(.*?)<\/h[12]>/)![1];
-    expect(heading).toBe(c.heroTitle);
+    expect(heading).toBe(copy.heroTitle);
     expect(html.match(/data-card-cinematic="wrist-watch"/g)).toHaveLength(1);
     expect(html).toContain(watch.WATCH_CARD_IMAGE);
     expect(html).not.toMatch(/two-cards-phone|voltex-smartwatch-scene|Тратьте|как фиат|BNB|XRP/);
