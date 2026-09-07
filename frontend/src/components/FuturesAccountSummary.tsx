@@ -74,7 +74,7 @@ export function FuturesAccountSummary({
           <button type="button" onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
             {showBalance ? <EyeIcon /> : <EyeOffIcon />}
           </button>
-          <span className="mono" style={{ fontSize: 11, fontWeight: 700, color: pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>
+          <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>
             {t('futures.unrealizedPnl')} {mask(`${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`)}
           </span>
         </div>
@@ -147,30 +147,30 @@ const styles: Record<string, React.CSSProperties> = {
     margin: '0 10px 10px',
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
-    borderRadius: 10,
+    borderRadius: 6,
     padding: 12,
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
   },
-  headerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 12, fontWeight: 700, color: 'var(--text-primary)' },
+  headerRow: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
+  title: { fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' },
   headerRight: { display: 'flex', alignItems: 'center', gap: 8 },
   eyeBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', display: 'flex' },
   barRow: { display: 'flex', flexDirection: 'column', gap: 4 },
-  barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-tertiary)' },
+  barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-tertiary)' },
   barTrack: { height: 4, borderRadius: 999, background: 'var(--panel)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999 },
-  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
+  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12 },
   actionsRow: { display: 'flex', gap: 8, marginTop: 2 },
   actionBtn: {
     flex: 1,
     background: 'var(--panel)',
     border: '1px solid var(--border)',
-    borderRadius: 8,
+    borderRadius: 6,
     padding: '8px 0',
     color: 'var(--text-secondary)',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
   },
 };

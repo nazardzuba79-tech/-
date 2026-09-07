@@ -181,42 +181,42 @@ export function FuturesOrderForm({
   }
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.sideTabs}>
+    <div className="fo-panel">
+      <div className="fo-sideTabs">
         <button
           type="button"
           onClick={() => setSide('BUY')}
-          style={{ ...styles.sideTab, ...(side === 'BUY' ? styles.sideTabBuy : {}) }}
+          className={`fo-sideTab ${side === 'BUY' ? 'fo-sideTabBuy' : ''}`} aria-pressed={side === 'BUY'}
         >
           {t('futures.buyLong')}
         </button>
         <button
           type="button"
           onClick={() => setSide('SELL')}
-          style={{ ...styles.sideTab, ...(side === 'SELL' ? styles.sideTabSell : {}) }}
+          className={`fo-sideTab ${side === 'SELL' ? 'fo-sideTabSell' : ''}`} aria-pressed={side === 'SELL'}
         >
           {t('futures.sellShort')}
         </button>
       </div>
 
-      <div style={styles.typeTabs}>
+      <div className="fo-typeTabs">
         <button
           type="button"
           onClick={() => setType('LIMIT')}
-          style={{ ...styles.typeTab, ...(type === 'LIMIT' ? styles.typeTabActive : {}) }}
+          className={`fo-typeTab ${type === 'LIMIT' ? 'fo-typeTabActive' : ''}`} aria-pressed={type === 'LIMIT'}
         >
           {t('trade.limitOrder')}
         </button>
         <button
           type="button"
           onClick={() => setType('MARKET')}
-          style={{ ...styles.typeTab, ...(type === 'MARKET' ? styles.typeTabActive : {}) }}
+          className={`fo-typeTab ${type === 'MARKET' ? 'fo-typeTabActive' : ''}`} aria-pressed={type === 'MARKET'}
         >
           {t('trade.marketOrder')}
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <form onSubmit={handleSubmit} className="fo-form">
         <MarginTypeToggle value={marginType} onChange={setMarginType} />
 
         {config && effectiveMaxLeverage !== null && (
@@ -229,7 +229,7 @@ export function FuturesOrderForm({
               warningThreshold={config.highLeverageWarningThreshold}
             />
             {isNewAccount && (
-              <div style={styles.newAccountNotice}>
+              <div className="fo-newAccountNotice">
                 {t('futures.newAccountLimitNotice', {
                   max: config.newAccountMaxLeverage,
                   days: config.newAccountPeriodDays,
@@ -240,44 +240,43 @@ export function FuturesOrderForm({
         )}
 
         {type === 'LIMIT' ? (
-          <label style={styles.label}>
+          <label className="fo-label">
             {t('trade.price')}
-            <div style={styles.priceInputRow}>
+            <div className="fo-priceInputRow">
               <input
-                className="mono"
+                className="mono fo-input"
                 type="number"
                 step="any"
                 required
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                style={{ ...styles.input, flex: 1 }}
                 placeholder="0.00"
               />
               {markPrice !== null && (
-                <button type="button" onClick={() => setPrice(String(markPrice))} style={styles.lastPriceBtn}>
+                <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
                   {t('trade.lastPriceBtn')}
                 </button>
               )}
             </div>
           </label>
         ) : (
-          <label style={styles.label}>
+          <label className="fo-label">
             {t('futures.markPrice')}
-            <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
+            <div className="mono fo-input fo-markPrice">
               {markPrice !== null ? `≈ ${markPrice}` : t('trade.loading')} {quoteAsset}
             </div>
           </label>
         )}
 
-        <label style={styles.label}>
-          <span style={styles.qtyLabelRow}>
+        <label className="fo-label">
+          <span className="fo-qtyLabelRow">
             {t('trade.quantity')}
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
               {t('futures.availableMargin')}: {availableMargin.toFixed(2)} {quoteAsset}
             </span>
           </span>
           <input
-            className="mono"
+            className="mono fo-input"
             type="number"
             step="any"
             required
@@ -286,36 +285,35 @@ export function FuturesOrderForm({
               setQuantity(e.target.value);
               setPercent(0);
             }}
-            style={styles.input}
             placeholder="0.00000"
           />
         </label>
 
         <PercentSlider value={percent} onChange={applyPercent} />
 
-        <label style={styles.reduceOnlyRow}>
+        <label className="fo-reduceOnlyRow">
           <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />
           {t('futures.reduceOnly')}
         </label>
 
-        <div style={styles.infoBox}>
-          <div style={styles.infoRow}>
+        <div className="fo-infoBox">
+          <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.orderValue')}</span>
             <span className="mono">
               {notional.toFixed(2)} {quoteAsset}
             </span>
           </div>
-          <div style={styles.infoRow}>
+          <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
             <span className="mono">
               {requiredMargin.toFixed(2)} {quoteAsset}
             </span>
           </div>
-          <div style={styles.infoRow}>
+          <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
             <span className="mono">0.00 {quoteAsset} (0%)</span>
           </div>
-          <div style={styles.infoRow}>
+          <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
             <span className="mono" style={{ color: liqPreview ? 'var(--sell)' : 'var(--text-tertiary)' }}>
               {liqPreview ? liqPreview.toFixed(2) : '—'}
@@ -323,7 +321,7 @@ export function FuturesOrderForm({
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="fo-error">{error}</div>}
 
         {/* The shared terminal CTA, same as spot — this used to be a
             flat accent fill under a coloured outer glow, which is the one
@@ -342,26 +340,26 @@ export function FuturesOrderForm({
       <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
-        <div style={styles.tiersBox}>
-          <div style={styles.tiersTitle}>{t('futures.leverageTiersTitle')}</div>
-          <table style={styles.tiersTable}>
+        <div className="fo-tiersBox">
+          <div className="fo-tiersTitle">{t('futures.leverageTiersTitle')}</div>
+          <table className="fo-tiersTable">
             <thead>
               <tr>
-                <th style={styles.tiersTh}>{t('futures.tierNotional')}</th>
-                <th style={styles.tiersTh}>{t('futures.tierMaxLeverage')}</th>
-                <th style={styles.tiersTh}>{t('futures.tierMmr')}</th>
+                <th className="fo-tiersTh">{t('futures.tierNotional')}</th>
+                <th className="fo-tiersTh">{t('futures.tierMaxLeverage')}</th>
+                <th className="fo-tiersTh">{t('futures.tierMmr')}</th>
               </tr>
             </thead>
             <tbody>
               {config.leverageTiers.map((tr, i) => (
-                <tr key={i} style={tier === tr ? styles.tiersRowActive : undefined}>
-                  <td style={styles.tiersTd} className="mono">
+                <tr key={i} className={tier === tr ? 'fo-tiersRowActive' : undefined}>
+                  <td className="fo-tiersTd mono">
                     {tr.notionalCap === null ? '∞' : tr.notionalCap.toLocaleString('en-US')}
                   </td>
-                  <td style={styles.tiersTd} className="mono">
+                  <td className="fo-tiersTd mono">
                     {tr.maxLeverage}x
                   </td>
-                  <td style={styles.tiersTd} className="mono">
+                  <td className="fo-tiersTd mono">
                     {(tr.maintenanceMarginRate * 100).toFixed(2)}%
                   </td>
                 </tr>
@@ -373,192 +371,3 @@ export function FuturesOrderForm({
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  // This sits inside the terminal's own .order-form-area, which already
-  // draws the panel surface and seam. The standalone rounded card it used
-  // to draw here put a second border and radius inside that panel and,
-  // with `overflow: hidden`, clipped whatever ran past the column instead
-  // of letting it scroll. A plain full-height column that scrolls its own
-  // overflow is what the spot order form does.
-  panel: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    minHeight: 0,
-    minWidth: 0,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-  },
-  sideTabs: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 4,
-    background: 'var(--panel-alt)',
-    borderRadius: 10,
-    padding: 4,
-    margin: 10,
-  },
-  sideTab: {
-    padding: '10px 0',
-    background: 'transparent',
-    // Reserved rather than `none`, so selecting a side cannot resize the
-    // tab by the active state's border width.
-    border: '1px solid transparent',
-    borderRadius: 8,
-    color: 'var(--text-secondary)',
-    fontWeight: 700,
-    fontSize: 13,
-    // Equal halves of the grid already; this keeps "Продать / Шорт" on one
-    // line inside its half rather than wrapping or being clipped.
-    whiteSpace: 'nowrap',
-    minWidth: 0,
-  },
-  // Same active fills as the spot terminal's Buy/Sell segmented control
-  // (.order-form-tab.active.buy/.sell) so the two terminals' side selectors
-  // are visibly one control, instead of the flat accent block this used.
-  sideTabBuy: {
-    color: '#fff',
-    background: 'linear-gradient(180deg, #16d89a, #12c98d)',
-    border: '1px solid #16d89a',
-  },
-  sideTabSell: {
-    color: '#fff',
-    background: 'linear-gradient(180deg, #ff6262, #ef5350)',
-    border: '1px solid #ff6262',
-  },
-  typeTabs: {
-    display: 'flex',
-    // Left-aligned with a fixed gap: with only two short labels,
-    // space-between pushed Лимит and Рынок to opposite edges and they
-    // stopped reading as one control. `flexWrap: nowrap` plus the minWidth
-    // below is what keeps them from overflowing if a locale is wordier.
-    gap: 18,
-    flexWrap: 'nowrap',
-    padding: '0 14px 10px',
-    borderBottom: '1px solid var(--border)',
-    minWidth: 0,
-  },
-  typeTab: {
-    background: 'transparent',
-    border: 'none',
-    padding: '2px 0',
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--text-tertiary)',
-    whiteSpace: 'nowrap',
-  },
-  typeTabActive: { color: 'var(--accent)' },
-  form: {
-    padding: '14px 14px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    minWidth: 0,
-  },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    fontSize: 11,
-    color: 'var(--text-secondary)',
-    minWidth: 0,
-  },
-  qtyLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
-  input: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
-    // A number input carries an intrinsic default width wider than this
-    // 264px column, and as a flex child its default `min-width: auto`
-    // means it refuses to shrink below that — which is what pushed the
-    // "Посл. цена" action out past the panel edge. Both have to be set.
-    width: '100%',
-    minWidth: 0,
-    boxSizing: 'border-box',
-    fontVariantNumeric: 'tabular-nums',
-  },
-  priceInputRow: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 },
-  lastPriceBtn: {
-    flexShrink: 0,
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--accent)',
-    fontSize: 11,
-    fontWeight: 700,
-    padding: '0 4px',
-    // Two words that must never wrap or be clipped mid-word.
-    whiteSpace: 'nowrap',
-  },
-  reduceOnlyRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-    fontSize: 12,
-    color: 'var(--text-secondary)',
-  },
-  infoBox: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
-    borderRadius: 8,
-    padding: '10px 12px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  infoRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    gap: 10,
-    fontSize: 12,
-    // Order cost, margin and fee update on every keystroke — tabular
-    // figures keep the right-hand column from shifting as they do.
-    fontVariantNumeric: 'tabular-nums',
-  },
-  error: {
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    padding: '6px 10px',
-    borderRadius: 6,
-    fontSize: 11,
-  },
-  newAccountNotice: {
-    fontSize: 10.5,
-    color: 'var(--text-tertiary)',
-    marginTop: -4,
-  },
-  tiersBox: {
-    borderTop: '1px solid var(--border)',
-    padding: '12px 14px 16px',
-  },
-  tiersTitle: {
-    fontSize: 11,
-    fontWeight: 700,
-    color: 'var(--text-tertiary)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.03em',
-    marginBottom: 8,
-  },
-  tiersTable: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    fontSize: 11,
-  },
-  tiersTh: {
-    textAlign: 'right',
-    padding: '4px 0',
-    color: 'var(--text-tertiary)',
-    fontWeight: 600,
-  },
-  tiersTd: {
-    textAlign: 'right',
-    padding: '4px 0',
-    color: 'var(--text-secondary)',
-  },
-  tiersRowActive: {
-    color: 'var(--accent)',
-  },
-};

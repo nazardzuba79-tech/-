@@ -24,7 +24,7 @@ export function LeverageSlider({
   const isHigh = value >= warningThreshold;
 
   return (
-    <div style={styles.wrap}>
+    <div className="leverage-control" style={styles.wrap}>
       <div style={styles.labelRow}>
         <span>{t('futures.leverage')}</span>
         <span className="mono" style={{ ...styles.value, color: isHigh ? 'var(--sell)' : 'var(--accent)' }}>

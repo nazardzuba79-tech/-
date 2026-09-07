@@ -34,7 +34,7 @@ const styles: Record<string, React.CSSProperties> = {
     gridTemplateColumns: '1fr 1fr',
     gap: 6,
     background: 'var(--panel-alt)',
-    borderRadius: 8,
+    borderRadius: 6,
     padding: 3,
   },
   btn: {
@@ -42,7 +42,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     borderRadius: 6,
     padding: '8px 0',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 700,
     color: 'var(--text-secondary)',
   },

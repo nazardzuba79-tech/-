@@ -256,7 +256,7 @@ describe('Spot orders truthful dense presentation', () => {
     expect(rules.every(selector => selector.startsWith('.trade-terminal.spot-terminal'))).toBe(true);
     expect(spot).toContain('.bottom-tab .badge::before { display: none; content: none; }');
     expect(pageSource('TradePage.tsx')).toContain('className="trade-terminal spot-terminal"');
-    expect(pageSource('FuturesPage.tsx')).toContain('className="trade-terminal"');
+    expect(pageSource('FuturesPage.tsx')).toContain('className="trade-terminal futures-terminal"');
     expect(pageSource('FuturesPage.tsx')).not.toContain('spot-terminal');
   });
 });

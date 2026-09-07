@@ -15,6 +15,7 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { rememberTradingMode } from '../lib/tradingMode';
 import './trade-terminal/TradeTerminal.css';
+import './trade-terminal/FuturesTerminal.css';
 
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
@@ -136,7 +137,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="trade-terminal">
+    <div className="trade-terminal futures-terminal">
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market

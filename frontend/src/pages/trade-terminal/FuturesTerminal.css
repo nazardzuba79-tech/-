@@ -1,0 +1,76 @@
+/* Futures-only presentation. Shared Spot styles and all trading math stay unchanged. */
+.trade-terminal.futures-terminal .chart-toolbar { overflow-x: auto; overflow-y: hidden; flex-shrink: 0; scrollbar-width: thin; }
+@media (min-width: 1025px) {
+  .trade-terminal.futures-terminal .main-grid {
+    grid-template-columns: clamp(280px, 15vw, 290px) minmax(0, 1fr) clamp(240px, 13vw, 250px) clamp(300px, 16vw, 310px);
+  }
+}
+.futures-terminal .pairs-search input { height: 34px; font-size: 12px; }
+.futures-terminal .pairs-tab { font-size: 12px; }
+.futures-terminal .pair-row {
+  grid-template-columns: 16px 21px minmax(52px, 1fr) 74px 58px;
+  min-height: 38px; gap: 5px; font-size: 12px;
+}
+.futures-terminal .pair-row .p-base, .futures-terminal .pair-row .p-price,
+.futures-terminal .pair-row .p-change { font-size: 12px; font-variant-numeric: tabular-nums; }
+.futures-terminal .pair-row .p-quote { font-size: 10px; color: #a5b0bc; }
+.futures-terminal .pairs-col-headers { grid-template-columns: minmax(0, 1fr) 74px 58px; gap: 5px; height: 34px; }
+.futures-terminal .pairs-col-headers .pch-sort, .futures-terminal .pairs-col-headers .pch-mode { font-size: 12px; }
+.futures-terminal .orderbook-header { padding-inline: 12px; }
+.futures-terminal .orderbook-header select { font-size: 12px; }
+.futures-terminal .orderbook-col-headers { font-size: 12px; color: #a5b0bc; }
+.trade-terminal.futures-terminal .ob-row { height: 26px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.trade-terminal.futures-terminal .ob-row .cell:last-child { color: #aeb9c4; }
+.futures-terminal .orderbook-spread { font-size: 17px; }
+.futures-terminal .orderbook-spread .usd { font-size: 12px; }
+.futures-terminal .ob-spread-detail { font-size: 11px; color: #a5b0bc; }
+.futures-terminal .fo-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; overflow: auto hidden; }
+.futures-terminal .fo-sideTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 12px 2px; padding: 3px; background: var(--panel-alt); border-radius: 6px; }
+.futures-terminal .fo-sideTab { min-width: 0; padding: 9px 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #aeb9c4; line-height: 18px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.futures-terminal .fo-sideTabBuy { background: #12c98d; border-color: #16d89a; color: #fff; }
+.futures-terminal .fo-sideTabSell { background: #ef5350; border-color: #ff6262; color: #fff; }
+.futures-terminal .fo-typeTabs { display: flex; gap: 22px; min-height: 43px; padding: 0 14px; border-bottom: 1px solid var(--border-color); }
+.futures-terminal .fo-typeTab { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #a5b0bc; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-typeTabActive { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
+.futures-terminal .fo-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; min-width: 0; }
+.futures-terminal .leverage-control > div:first-child { font-size: 12px !important; }
+.futures-terminal .leverage-control > div:first-child .mono { font-size: 14px !important; }
+.futures-terminal .leverage-control > div:nth-of-type(2) { font-size: 11px !important; color: #a5b0bc !important; }
+.futures-terminal .leverage-control button { font-size: 12px !important; }
+.futures-terminal .leverage-control input[type="range"] { appearance: none; height: 16px; margin: 0; padding: 0; background: transparent; }
+.futures-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: #354351; }
+.futures-terminal .leverage-control input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent-yellow); box-shadow: 0 0 0 1px var(--accent-yellow); }
+.futures-terminal .leverage-control input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: #354351; }
+.futures-terminal .leverage-control input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent-yellow); }
+.futures-terminal .leverage-control input[type="range"]:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 4px; border-radius: 4px; }
+.futures-terminal .fo-label { display: flex; flex-direction: column; gap: 7px; color: #afbac5; font-size: 13px; }
+.futures-terminal .fo-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; line-height: 20px; font-variant-numeric: tabular-nums; outline: none; }
+.futures-terminal .fo-input:focus { border-color: var(--accent-yellow); }
+.futures-terminal .fo-priceInputRow { display: flex; gap: 6px; }
+.futures-terminal .fo-priceInputRow .fo-input { flex: 1; }
+.futures-terminal .fo-lastPriceBtn { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 9px; color: var(--accent-yellow); font-size: 12px; cursor: pointer; }
+.futures-terminal .fo-markPrice { color: #aeb9c4; }
+.futures-terminal .fo-qtyLabelRow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
+.futures-terminal .fo-qtyLabelRow > span { font-size: 12px; color: #a5b0bc !important; }
+.futures-terminal .fo-reduceOnlyRow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #afbac5; cursor: pointer; }
+.futures-terminal .fo-reduceOnlyRow input { accent-color: var(--accent-yellow); }
+.futures-terminal .fo-infoBox { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--panel-alt); }
+.futures-terminal .fo-infoRow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
+.futures-terminal .fo-infoRow > :first-child { color: #aeb9c4 !important; }
+.futures-terminal .fo-infoRow .mono { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-error { font-size: 12px; color: var(--sell); overflow-wrap: anywhere; }
+.futures-terminal .fo-newAccountNotice { font-size: 12px; color: #aeb9c4; }
+.futures-terminal .fo-tiersBox { border-top: 1px solid var(--border-color); padding: 12px 14px 16px; }
+.futures-terminal .fo-tiersTitle { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.futures-terminal .fo-tiersTable { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-tiersTh { text-align: right; font-weight: 500; color: #a5b0bc; padding: 6px 0 8px; }
+.futures-terminal .fo-tiersTd { text-align: right; padding: 6px 0; color: #afbac5; }
+.futures-terminal .fo-tiersTh:first-child, .futures-terminal .fo-tiersTd:first-child { text-align: left; }
+.futures-terminal .fo-tiersRowActive .fo-tiersTd { color: var(--accent-yellow); }
+.futures-terminal .fo-panel button:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 2px; }
+.futures-terminal .fo-panel button:hover:not(:disabled) { filter: brightness(1.12); }
+.futures-terminal .fo-panel .mono { font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-form .submit-btn { position: sticky; bottom: 0; z-index: 2; flex-shrink: 0; min-height: 42px; padding-block: 10px; box-shadow: 0 -8px 0 var(--workspace-bg); }
+@media (max-width: 1024px) {
+  .futures-terminal .fo-panel { height: auto; overflow: visible; }
+}
