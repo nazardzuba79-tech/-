@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
-import { ArrowDownIcon, ArrowUpIcon, CircleSlash2Icon, SearchIcon, WalletIcon, WifiOffIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
+import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, CircleSlash2Icon, EllipsisIcon, SearchIcon, WalletIcon, WifiOffIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
@@ -20,12 +22,16 @@ export function AssetLedger({
   unavailable,
   loading,
   onDeposit,
+  onTransfer,
+  onWithdraw,
 }: {
   rows: LedgerRow[];
   hidden: boolean;
   unavailable: boolean;
   loading: boolean;
   onDeposit: () => void;
+  onTransfer: () => void;
+  onWithdraw: () => void;
 }) {
   const { t, lang } = useLanguage();
   const [query, setQuery] = useState('');
@@ -33,6 +39,10 @@ export function AssetLedger({
   const [sortKey, setSortKey] = useState<SortKey>('value');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [menu, setMenu] = useState<{ symbol: string; left: number; top: number } | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLButtonElement | null>(null);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -52,6 +62,50 @@ export function AssetLedger({
     });
   }, [rows, query, hideZero, sortKey, sortDir]);
 
+  useEffect(() => {
+    if (!menu) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const dismiss = () => setMenu(null);
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !menuRef.current?.contains(event.target) && !menuTrigger.current?.contains(event.target)) dismiss();
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); dismiss(); menuTrigger.current?.focus(); }
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', keydown);
+    window.addEventListener('resize', dismiss);
+    window.addEventListener('scroll', dismiss, true);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', keydown);
+      window.removeEventListener('resize', dismiss);
+      window.removeEventListener('scroll', dismiss, true);
+    };
+  }, [menu]);
+
+  useEffect(() => {
+    setMenu(null);
+  }, [query, hideZero, sortKey, sortDir, unavailable, loading]);
+
+  function rowActions(row: LedgerRow) {
+    return <div className="wallet-ledger-row-actions flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[13px] font-medium">
+      {/* Rows include a market-wide catalogue, not a supported-pair list.
+          Open the real terminal without inventing an ASSET/USDT market. */}
+      <Link to="/trade" className="wallet-ledger-trade rounded-wsm py-1 text-gold-deep transition-colors hover:text-ink">{t('wallet.tradeAction')}</Link>
+      <button type="button" onClick={onTransfer} className="wallet-ledger-transfer rounded-wsm py-1 text-ink-3 transition-colors hover:text-ink">{t('wallet.transfer')}</button>
+      <button type="button" aria-label={`${t('wallet.actions')} · ${row.symbol}`} aria-haspopup="menu" aria-expanded={menu?.symbol === row.symbol}
+        className="wallet-ledger-more flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors hover:bg-surface-1 hover:text-ink"
+        onClick={event => {
+          if (menu?.symbol === row.symbol) { setMenu(null); return; }
+          menuTrigger.current = event.currentTarget;
+          const rect = event.currentTarget.getBoundingClientRect();
+          setMenu({ symbol: row.symbol, left: Math.max(12, Math.min(rect.right - 168, window.innerWidth - 180)),
+            top: rect.bottom + 108 > window.innerHeight ? Math.max(12, rect.top - 104) : rect.bottom + 6 });
+        }}><EllipsisIcon className="h-4 w-4" strokeWidth={1.8} /></button>
+    </div>;
+  }
+
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
@@ -64,19 +118,18 @@ export function AssetLedger({
     { key: 'symbol', label: t('wallet.colAsset'), align: 'left' },
     { key: 'total', label: t('wallet.colBalance'), align: 'right' },
     { key: null, label: t('wallet.colAvailable'), align: 'right' },
-    { key: null, label: t('wallet.colInOrders'), align: 'right' },
-    { key: 'price', label: t('wallet.colPrice'), align: 'right' },
     { key: 'change', label: t('wallet.col24h'), align: 'right' },
     { key: 'value', label: t('wallet.colValue'), align: 'right', sep: true },
+    { key: null, label: t('wallet.actions'), align: 'right' },
   ];
 
   const empty = !loading && rows.length === 0;
   const noMatch = !empty && visible.length === 0;
 
   return (
-    <section aria-label={t('wallet.assets')} className="min-w-0">
+    <section ref={sectionRef} aria-label={t('wallet.assets')} className="wallet-asset-ledger min-w-0">
       <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-[14px] font-semibold tracking-[-0.01em] text-ink">
+        <h2 className="text-[16px] font-semibold tracking-normal text-ink">
           {t('wallet.assets')}
           {!unavailable && !empty && <span className="num ml-2 text-[12px] font-medium text-ink-4">{visible.length}</span>}
         </h2>
@@ -93,7 +146,7 @@ export function AssetLedger({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t('wallet.searchAsset')}
               aria-label={t('wallet.searchAsset')}
-              className="h-8 w-full rounded-w border border-hair bg-panel pl-8 pr-3 text-[12.5px] text-ink outline-none transition-colors duration-150 ease-exp placeholder:text-ink-4 hover:border-hair-strong focus:border-gold sm:w-[188px]"
+              className="h-9 w-full rounded-w border border-hair bg-panel pl-8 pr-3 text-[13px] text-ink outline-none transition-colors duration-150 ease-exp placeholder:text-ink-4 hover:border-hair-strong focus:border-gold sm:w-[200px]"
             />
           </div>
 
@@ -101,7 +154,7 @@ export function AssetLedger({
             type="button"
             onClick={() => setHideZero((v) => !v)}
             aria-pressed={hideZero}
-            className={`flex h-8 shrink-0 items-center gap-2 rounded-w border border-hair bg-panel px-2.5 text-[12.5px] font-medium transition-colors duration-150 ease-exp hover:border-hair-strong ${
+            className={`flex h-9 shrink-0 items-center gap-2 rounded-w border border-hair bg-panel px-2.5 text-[13px] font-medium transition-colors duration-150 ease-exp hover:border-hair-strong ${
               hideZero ? 'text-ink' : 'text-ink-3 hover:text-ink-2'
             }`}
           >
@@ -146,16 +199,15 @@ export function AssetLedger({
           <EmptyState icon={CircleSlash2Icon} title={t('wallet.assetNotFound')} description={t('wallet.assetNotFoundBody')} compact />
         ) : (
           <>
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[720px] table-fixed">
+            <div className="wallet-ledger-desktop hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] table-fixed">
                 <colgroup>
-                  <col className="w-[20%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[13%]" />
-                  <col className="w-[10%]" />
                   <col className="w-[17%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[24%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-hair bg-surface-1">
@@ -166,9 +218,9 @@ export function AssetLedger({
                           key={col.label}
                           scope="col"
                           aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                          className={`px-3 py-2.5 text-[10.5px] font-medium uppercase tracking-[0.07em] first:pl-4 sm:first:pl-5 ${
+                          className={`px-3 py-3 text-[12px] font-medium normal-case tracking-normal first:pl-4 sm:first:pl-5 ${
                             col.align === 'right' ? 'text-right' : 'text-left'
-                          } ${col.sep ? 'border-l border-hair-soft' : ''} ${active ? 'text-ink-2' : 'text-ink-4'}`}
+                          } ${col.sep ? 'border-l border-hair-soft' : ''} ${active ? 'text-ink-2' : 'text-ink-3'}`}
                         >
                           {col.key ? (
                             <button
@@ -202,37 +254,35 @@ export function AssetLedger({
                         key={r.symbol}
                         className="group border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2"
                       >
-                        <td className="py-2.5 pl-4 pr-3 sm:pl-5">
+                        <td className="py-3 pl-4 pr-3 sm:pl-5">
                           <div className="flex items-center gap-2.5">
-                            <CryptoIcon symbol={r.symbol} size={26} />
+                            <CryptoIcon symbol={r.symbol} size={30} />
                             <div className="min-w-0">
-                              <p className="text-[13px] font-semibold leading-4 tracking-[-0.005em] text-ink">{r.symbol}</p>
-                              <p className="truncate text-[11.5px] leading-4 text-ink-4">{r.name}</p>
+                              <p className="text-[14px] font-semibold leading-5 tracking-normal text-ink">{r.symbol}</p>
+                              <p className="truncate text-[12px] leading-4 text-ink-4">{r.name}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[12.5px] font-medium text-ink-2">
-                          {hidden ? MASK : formatAmount(r.total, lang, dp)}
+                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-2">
+                          <span className="wallet-ledger-quantity">{hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}</span>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[12.5px] text-ink-3">
-                          {hidden ? MASK : formatAmount(r.available, lang, dp)}
+                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-3">
+                          <span className="wallet-ledger-available">{hidden ? MASK : `${formatAmount(r.available, lang, dp)} ${r.symbol}`}</span>
+                          {r.locked > 0 && <small className="wallet-ledger-locked mt-1 block text-[11.5px] font-normal text-ink-4">{t('wallet.colInOrders')}: {hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</small>}
                         </td>
-                        <td className={`num px-3 py-2.5 text-right text-[12.5px] ${r.locked > 0 ? 'text-ink-2' : 'text-ink-4'}`}>
-                          {hidden ? MASK : formatAmount(r.locked, lang, dp)}
-                        </td>
-                        <td className="num px-3 py-2.5 text-right text-[12.5px] text-ink-2">{formatUsd(r.priceUsd, lang, r.priceUsd !== null && r.priceUsd < 1 ? 4 : 2)}</td>
-                        <td className={`num px-3 py-2.5 text-right text-[12.5px] font-medium ${toneOf(r.changePercent24h)}`}>
+                        <td className={`num px-3 py-3 text-right text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>
                           {formatPercent(r.changePercent24h, lang)}
                         </td>
-                        <td className="border-l border-hair-soft bg-[#fcfcfd] px-3 py-2.5 text-right group-hover:bg-transparent sm:pr-5">
+                        <td className="wallet-ledger-value border-l border-hair-soft bg-[#fcfcfd] px-3 py-3 text-right group-hover:bg-transparent">
                           <span
-                            className={`num text-[13px] font-semibold tracking-[-0.01em] ${
+                            className={`num text-[14px] font-semibold tracking-[-0.01em] ${
                               r.valueUsd && r.valueUsd > 0 ? 'text-ink' : 'text-ink-4'
                             }`}
                           >
                             {hidden ? MASK : formatUsd(r.valueUsd, lang)}
                           </span>
                         </td>
+                        <td className="px-3 py-3 sm:pr-5">{rowActions(r)}</td>
                       </tr>
                     );
                   })}
@@ -240,7 +290,7 @@ export function AssetLedger({
               </table>
             </div>
 
-            <ul className="md:hidden">
+            <ul className="wallet-ledger-mobile md:hidden">
               {visible.map((r) => {
                 const dp = decimalsFor(r.symbol);
                 const open = expanded === r.symbol;
@@ -252,37 +302,36 @@ export function AssetLedger({
                       aria-expanded={open}
                       className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 ease-exp active:bg-panel-2"
                     >
-                      <CryptoIcon symbol={r.symbol} size={28} />
+                      <CryptoIcon symbol={r.symbol} size={30} />
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold leading-4 text-ink">{r.symbol}</p>
-                        <p className="truncate text-[11.5px] leading-4 text-ink-4">{r.name}</p>
+                        <p className="text-[14px] font-semibold leading-5 text-ink">{r.symbol}</p>
+                        <p className="truncate text-[12px] leading-4 text-ink-4">{r.name}</p>
                       </div>
                       <div className="min-w-0 text-right">
-                        <p className={`num truncate text-[13px] font-semibold leading-4 ${r.valueUsd && r.valueUsd > 0 ? 'text-ink' : 'text-ink-4'}`}>
-                          {hidden ? MASK : formatUsd(r.valueUsd, lang)}
-                        </p>
-                        <p className="num truncate text-[11.5px] leading-4 text-ink-3">
+                        <p className="wallet-ledger-mobile-quantity num text-[14px] font-semibold leading-5 text-ink">
                           {hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}
                         </p>
+                        <p className="wallet-ledger-mobile-value num text-[12px] leading-4 text-ink-3">
+                          {hidden ? MASK : `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}`}
+                        </p>
                       </div>
+                      <ChevronDownIcon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-ink-4 transition-transform ${open ? 'rotate-180' : ''}`} />
                     </button>
                     {open && (
-                      <dl className="grid grid-cols-3 gap-3 border-t border-hair-soft bg-surface-1 px-4 py-3">
+                      <div className="wallet-ledger-mobile-detail border-t border-hair-soft bg-surface-1 px-4 py-3">
+                      <dl className="grid grid-cols-2 gap-3">
                         <div>
-                          <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-4">{t('wallet.colAvailable')}</dt>
-                          <dd className="num mt-1 truncate text-[12px] text-ink-2">{hidden ? MASK : formatAmount(r.available, lang, dp)}</dd>
+                          <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.colAvailable')}</dt>
+                          <dd className="num mt-1 text-[14px] font-medium text-ink-2">{hidden ? MASK : `${formatAmount(r.available, lang, dp)} ${r.symbol}`}</dd>
+                          {r.locked > 0 && <dd className="wallet-ledger-locked num mt-1 text-[11.5px] text-ink-4">{t('wallet.colInOrders')}: {hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</dd>}
                         </div>
                         <div>
-                          <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-4">{t('wallet.colInOrders')}</dt>
-                          <dd className={`num mt-1 truncate text-[12px] ${r.locked > 0 ? 'text-ink-2' : 'text-ink-4'}`}>
-                            {hidden ? MASK : formatAmount(r.locked, lang, dp)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="text-[10.5px] uppercase tracking-[0.06em] text-ink-4">{t('wallet.colPrice')}</dt>
-                          <dd className="num mt-1 truncate text-[12px] text-ink-2">{formatUsd(r.priceUsd, lang)}</dd>
+                          <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.col24h')}</dt>
+                          <dd className={`num mt-1 text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>{formatPercent(r.changePercent24h, lang)}</dd>
                         </div>
                       </dl>
+                      <div className="mt-3 border-t border-hair-soft pt-2">{rowActions(r)}</div>
+                      </div>
                     )}
                   </li>
                 );
@@ -291,6 +340,26 @@ export function AssetLedger({
           </>
         )}
       </div>
+      {menu && sectionRef.current && createPortal(
+        <div ref={menuRef} role="menu" aria-label={`${t('wallet.actions')} · ${menu.symbol}`}
+          className="wallet-ledger-action-menu fixed z-50 w-[168px] rounded-w border border-hair bg-panel p-1 shadow-panel"
+          style={{ left: menu.left, top: menu.top }}
+          onKeyDown={event => {
+            if (event.key === 'Tab') { menuTrigger.current?.focus(); setMenu(null); return; }
+            if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+            event.preventDefault();
+            const items = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button')];
+            const index = items.indexOf(document.activeElement as HTMLButtonElement);
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+              : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+            items[next]?.focus();
+          }}>
+          {[[t('wallet.deposit'), onDeposit], [t('wallet.withdraw'), onWithdraw]].map(([label, action]) => (
+            <button key={label as string} type="button" role="menuitem" className="block w-full rounded-wsm px-3 py-2 text-left text-[13px] text-ink-2 hover:bg-surface-1"
+              onClick={() => { setMenu(null); menuTrigger.current?.focus(); (action as () => void)(); }}>{label as string}</button>
+          ))}
+        </div>, sectionRef.current.closest('.vx-wallet') ?? sectionRef.current,
+      )}
     </section>
   );
 }

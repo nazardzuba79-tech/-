@@ -60,8 +60,8 @@ function Sparkline({ points, positive }: { points: number[]; positive: boolean }
 function AccountBalance({ label, value, hidden }: { label: string; value: string; hidden: boolean }) {
   return (
     <div className="min-w-0">
-      <p className="text-[10.5px] font-semibold uppercase tracking-[0.11em] text-ink-3">{label}</p>
-      <p className="num mt-1.5 text-[17px] font-semibold tracking-[-0.015em] text-ink">{hidden ? MASK : value}</p>
+      <p className="text-[13px] font-medium leading-5 text-ink-3">{label}</p>
+      <p className="num mt-1.5 break-words text-[19px] font-semibold leading-6 text-ink sm:text-[20px]">{hidden ? MASK : value}</p>
     </div>
   );
 }
@@ -90,11 +90,11 @@ function Performance({
     <div className="w-full">
       <div className="mb-1.5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10.5px] font-semibold uppercase tracking-[0.11em] text-ink-3">{t('wallet.pnl')}</p>
-          <p className={`num mt-1 text-[15px] font-semibold tracking-[-0.015em] ${toneOf(percent)}`}>
+          <p className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.pnl')}</p>
+          <p className={`num mt-1 text-[20px] font-semibold leading-7 ${toneOf(percent)}`}>
             {hidden ? MASK : available ? formatSignedUsd(pnl, lang) : EM_DASH}
           </p>
-          <p className={`num text-[12px] font-medium ${toneOf(percent)}`}>
+          <p className={`num text-[13px] font-medium leading-5 ${toneOf(percent)}`}>
             {available ? formatPercent(percent, lang) : EM_DASH}
           </p>
         </div>
@@ -103,7 +103,7 @@ function Performance({
         {loading ? null : available && !hidden ? (
           <Sparkline points={selected!.points.map((pt) => pt.equity)} positive={positive} />
         ) : (
-          <div className="flex h-full items-center justify-center text-[11px] text-ink-4">
+          <div className="flex h-full items-center justify-center text-[12px] text-ink-3">
             {/* Honest: this period has no history behind it yet, so no
                 percentage is invented to fill the space. */}
             {hidden ? MASK : t('wallet.notEnoughHistory')}
@@ -114,7 +114,7 @@ function Performance({
           languages never fit beside the figure, and widening this column to
           make them fit would let the return crowd the balance. */}
       <div
-        className="mt-2 flex items-center justify-between gap-0.5"
+        className="mt-2 flex flex-wrap items-center justify-between gap-1"
         role="group"
         aria-label={t('wallet.pnlPeriod')}
       >
@@ -124,10 +124,10 @@ function Performance({
             type="button"
             onClick={() => onPeriodChange(p)}
             aria-pressed={p === period}
-            className={`h-6 rounded-wsm border px-1.5 text-[11px] transition-colors duration-150 ease-exp ${
+            className={`h-7 rounded-wsm border px-1.5 text-[12px] transition-colors duration-150 ease-exp ${
               p === period
                 ? 'border-hair-strong bg-panel-3 font-semibold text-ink'
-                : 'border-transparent font-medium text-ink-4 hover:bg-panel-2 hover:text-ink-3'
+                : 'border-transparent font-medium text-ink-3 hover:bg-panel-2 hover:text-ink-2'
             }`}
           >
             {t(PERIOD_LABEL_KEY[p])}
@@ -185,30 +185,30 @@ export function PortfolioStrip({
     >
       <span className="absolute left-0 top-0 h-[2px] w-14 bg-gold" aria-hidden="true" />
 
-      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-7 lg:p-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-5 xl:flex-row xl:items-end xl:gap-7">
+      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-6 lg:p-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-5 2xl:flex-row 2xl:items-end 2xl:gap-7">
           <div className="min-w-0">
-            <h2 className="text-[10.5px] font-medium uppercase tracking-[0.1em] text-ink-3">{t('wallet.totalBalance')}</h2>
-            <div className="mt-2 flex items-center gap-2.5">
-              <p className="num break-all text-[26px] font-semibold leading-none tracking-[-0.028em] text-ink sm:text-[30px]">
-                {hidden ? MASK : unavailable ? EM_DASH : formatUsd(totalUsd, lang)}
-              </p>
+            <div className="flex items-center gap-2">
+              <h2 className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.totalBalance')}</h2>
               <button
                 type="button"
                 onClick={onToggleHidden}
                 aria-label={hidden ? t('wallet.showBalance') : t('wallet.hideBalance')}
                 aria-pressed={hidden}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-4 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink-2"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink-2"
               >
                 {hidden ? <EyeOffIcon className="h-4 w-4" strokeWidth={1.6} /> : <EyeIcon className="h-4 w-4" strokeWidth={1.6} />}
               </button>
             </div>
-            <p className="num mt-2 text-[12.5px] text-ink-3">
+            <p className="wallet-total-value num mt-2 min-w-0 break-words text-[32px] font-semibold leading-[1.15] text-ink sm:text-[40px]">
+              {hidden ? MASK : unavailable ? EM_DASH : formatUsd(totalUsd, lang)}
+            </p>
+            <p className="num mt-2 break-words text-[14px] leading-5 text-ink-3">
               ≈ {hidden ? MASK : btcEquivalent === null ? EM_DASH : `${formatAmount(btcEquivalent, lang, btcEquivalentDecimals(btcEquivalent))} BTC`}
             </p>
           </div>
 
-          <div className="flex gap-7 border-t border-hair pt-4 sm:gap-9 xl:border-l xl:border-t-0 xl:pb-1 xl:pl-7 xl:pt-0">
+          <div className="flex min-w-0 gap-5 border-t border-hair pt-4 sm:gap-7 2xl:border-l 2xl:border-t-0 2xl:pb-1 2xl:pl-7 2xl:pt-0">
             <AccountBalance label={t('wallet.spot')} value={unavailable ? EM_DASH : formatUsd(spotUsd, lang)} hidden={hidden} />
             <span className="w-px self-stretch bg-hair" aria-hidden="true" />
             <AccountBalance
@@ -219,7 +219,7 @@ export function PortfolioStrip({
           </div>
         </div>
 
-        <div className="hidden w-[236px] shrink-0 border-l border-hair pl-7 lg:block xl:w-[268px]">
+        <div className="hidden w-[236px] shrink-0 border-l border-hair pl-6 lg:block xl:w-[256px]">
           <Performance
             performance={performance}
             period={period}
@@ -229,12 +229,12 @@ export function PortfolioStrip({
           />
         </div>
 
-        <div className="border-t border-hair pt-4 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+        <div className="min-w-0 border-t border-hair pt-4 lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
             <button
               type="button"
               onClick={onDeposit}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-w bg-gold px-3.5 text-[12.5px] font-semibold text-[#26190a] transition-colors duration-150 ease-exp hover:bg-gold-light"
+              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w bg-gold px-2 py-2 text-[13px] font-semibold leading-5 text-[#26190a] transition-colors duration-150 ease-exp hover:bg-gold-light sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
             >
               <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} />
               {t('wallet.deposit')}
@@ -242,7 +242,7 @@ export function PortfolioStrip({
             <button
               type="button"
               onClick={onWithdraw}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-w border border-hair bg-panel px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink"
+              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
             >
               <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
               {t('wallet.withdraw')}
@@ -250,7 +250,7 @@ export function PortfolioStrip({
             <button
               type="button"
               onClick={onTransfer}
-              className="flex h-9 items-center justify-center gap-1.5 rounded-w border border-hair bg-panel px-3.5 text-[12.5px] font-medium text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink"
+              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
             >
               <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
               {t('wallet.transfer')}

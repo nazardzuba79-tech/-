@@ -46,6 +46,11 @@
 :where(.vx-wallet) table {
   border-collapse: collapse;
 }
+/* Supply the missing preflight border style only inside the Wallet workspace
+   and its own dialogs; the existing width/color utilities remain authoritative. */
+:where(.vx-wallet main *, .vx-wallet-modal-root *) {
+  border: 0 solid;
+}
 :where(.vx-wallet) h1,
 :where(.vx-wallet) h2,
 :where(.vx-wallet) h3,
@@ -78,7 +83,37 @@
 .vx-wallet .num {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
-  letter-spacing: -0.01em;
+  letter-spacing: normal;
+}
+
+/* Keep the ledger readable when the enlarged allocation rail would leave
+   less than a full table's width. Tablet uses the same stacked workspace. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .vx-wallet .wallet-holdings-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vx-wallet .wallet-allocation-column {
+    padding-top: 0;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1399px) {
+  .vx-wallet .wallet-ledger-desktop .wallet-ledger-row-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 28px;
+    gap: 0 8px;
+    text-align: right;
+  }
+  .vx-wallet .wallet-ledger-desktop .wallet-ledger-trade,
+  .vx-wallet .wallet-ledger-desktop .wallet-ledger-transfer {
+    grid-column: 1;
+    justify-self: end;
+  }
+  .vx-wallet .wallet-ledger-desktop .wallet-ledger-more {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
 }
 
 .vx-wallet *:focus-visible {
@@ -88,9 +123,15 @@
 
 /* The modal layer is portalled to the body, outside .vx-wallet, so it gets
    the same reset under its own root class. */
-.vx-wallet-modal-root button,
-.vx-wallet-modal-root input,
-.vx-wallet-modal-root select {
+.vx-wallet-modal-root {
+  /* Keep the existing account actions above mobile navigation/support. */
+  z-index: 1100;
+  color: #111318;
+  font-family: 'Inter', var(--font-ui), system-ui, sans-serif;
+}
+:where(.vx-wallet-modal-root) button,
+:where(.vx-wallet-modal-root) input,
+:where(.vx-wallet-modal-root) select {
   font: inherit;
   color: inherit;
   background: none;

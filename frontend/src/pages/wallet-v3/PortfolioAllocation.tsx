@@ -72,8 +72,8 @@ export function PortfolioAllocation({
     return { list, total };
   }, [rows, t]);
 
-  const size = 132;
-  const stroke = 12;
+  const size = 184;
+  const stroke = 16;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const gap = 3;
@@ -82,10 +82,10 @@ export function PortfolioAllocation({
   const showRing = !unavailable && !loading && slices.list.length > 0;
 
   return (
-    <section aria-label={t('wallet.allocation')} className="min-w-0 rounded-wlg border border-hair bg-panel shadow-panel">
-      <div className="flex items-center justify-between border-b border-hair-soft px-4 py-3">
-        <h2 className="text-[13px] font-semibold tracking-[-0.005em] text-ink">{t('wallet.allocation')}</h2>
-        {showRing && <span className="num text-[11px] text-ink-4">{slices.list.length}</span>}
+    <section aria-label={t('wallet.allocation')} className="wallet-allocation min-w-0 rounded-wlg border border-hair bg-panel shadow-panel">
+      <div className="flex items-center justify-between border-b border-hair-soft px-5 py-4">
+        <h2 className="text-[16px] font-semibold tracking-normal text-ink">{t('wallet.allocation')}</h2>
+        {showRing && <span className="num text-[13px] text-ink-4">{slices.list.length}</span>}
       </div>
 
       {!showRing ? (
@@ -97,7 +97,7 @@ export function PortfolioAllocation({
         />
       ) : (
         <>
-          <div className="flex justify-center px-4 pb-1 pt-5">
+          <div className="flex justify-center px-5 pb-2 pt-6">
             <div className="relative" style={{ width: size, height: size }}>
               <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden="true">
                 <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eff1f5" strokeWidth={stroke} />
@@ -123,22 +123,22 @@ export function PortfolioAllocation({
                 })}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center px-3">
-                <span className="text-[9.5px] font-medium uppercase tracking-[0.1em] text-ink-4">{t('wallet.allocationTotal')}</span>
-                <span className="num mt-1 w-full truncate text-center text-[13px] font-semibold tracking-[-0.02em] text-ink">
+                <span className="text-[12px] font-medium text-ink-4">{t('wallet.allocationTotal')}</span>
+                <span className="num mt-2 w-full text-center text-[17px] font-semibold tracking-normal text-ink">
                   {hidden ? MASK : formatUsdCompact(slices.total, lang)}
                 </span>
               </div>
             </div>
           </div>
 
-          <ul className="px-2.5 pb-3 pt-4">
+          <ul className="px-4 pb-4 pt-3">
             {slices.list.map((s) => (
-              <li key={s.symbol} className="flex items-center gap-2 px-1.5 py-[7px]">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
-                <CryptoIcon symbol={s.symbol} size={18} />
-                <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{s.symbol}</span>
-                <span className="num w-[46px] shrink-0 text-right text-[12.5px] font-medium text-ink-2">{s.percent.toFixed(1)}%</span>
-                <span className="num min-w-0 max-w-[86px] shrink-0 truncate text-right text-[12px] text-ink-3">
+              <li key={s.symbol} className="flex items-center gap-2.5 border-b border-hair-soft px-1 py-3 last:border-b-0">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
+                <CryptoIcon symbol={s.symbol} size={24} />
+                <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">{s.symbol}</span>
+                <span className="num w-[51px] shrink-0 text-right text-[14px] font-semibold text-ink-2">{s.percent.toFixed(1)}%</span>
+                <span className="num min-w-0 text-right text-[13px] text-ink-3">
                   {hidden ? MASK : formatUsdCompact(s.value, lang)}
                 </span>
               </li>

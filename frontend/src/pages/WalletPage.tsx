@@ -83,9 +83,9 @@ export function WalletPage() {
     <div className="vx-wallet">
       <Nav active="/wallet" />
 
-      <main className="mx-auto w-full max-w-[1600px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
+      <main className="wallet-workspace mx-auto w-full max-w-[1680px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h1 className="text-[21px] font-semibold tracking-[-0.022em] text-ink">{t('nav.wallet')}</h1>
+          <h1 className="text-[26px] font-semibold tracking-normal text-ink sm:text-[28px]">{t('nav.wallet')}</h1>
         </div>
 
         <PortfolioStrip
@@ -103,16 +103,18 @@ export function WalletPage() {
           onTransfer={() => setModal('transfer')}
         />
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_282px] xl:grid-cols-[minmax(0,1fr)_312px] xl:gap-6">
+        <div className="wallet-holdings-grid mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_350px] xl:grid-cols-[minmax(0,1fr)_390px] xl:gap-6">
           <AssetLedger
             rows={rows}
             hidden={hidden}
             unavailable={unavailable}
             loading={loading || !rankingsLoaded}
             onDeposit={() => setModal('deposit')}
+            onWithdraw={() => setModal('withdraw')}
+            onTransfer={() => setModal('transfer')}
           />
 
-          <div className="min-w-0 lg:pt-[42px]">
+          <div className="wallet-allocation-column min-w-0 lg:pt-[48px]">
             <PortfolioAllocation rows={rows} hidden={hidden} unavailable={unavailable} loading={loading} />
           </div>
         </div>

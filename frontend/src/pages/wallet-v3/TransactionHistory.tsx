@@ -128,19 +128,19 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
 
   return (
     <section aria-label={t('wallet.history')} className="min-w-0">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2.5">
-        <h2 className="text-[14px] font-semibold tracking-[-0.01em] text-ink">{t('wallet.history')}</h2>
-        <div className="flex flex-wrap items-center gap-0.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[16px] font-semibold leading-6 text-ink">{t('wallet.history')}</h2>
+        <div className="flex flex-wrap items-center gap-1">
           {tabs.map((x) => (
             <button
               key={x.id}
               type="button"
               onClick={() => setTab(x.id)}
               aria-pressed={tab === x.id}
-              className={`h-7 rounded-wsm border px-2.5 text-[12px] transition-colors duration-150 ease-exp ${
+              className={`h-8 rounded-wsm border px-2.5 text-[13px] transition-colors duration-150 ease-exp ${
                 tab === x.id
                   ? 'border-hair-strong bg-panel-3 font-semibold text-ink'
-                  : 'border-transparent font-medium text-ink-4 hover:bg-panel-2 hover:text-ink-3'
+                  : 'border-transparent font-medium text-ink-3 hover:bg-panel-2 hover:text-ink-2'
               }`}
             >
               {x.label}
@@ -153,19 +153,19 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
         {failed ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.historyUnavailableBody')} compact />
         ) : rows === null ? (
-          <div className="px-4 py-10 text-center text-[12.5px] text-ink-4">{t('wallet.loading')}</div>
+          <div className="px-4 py-10 text-center text-[14px] leading-6 text-ink-3">{t('wallet.loading')}</div>
         ) : visible.length === 0 ? (
           <EmptyState icon={FileClockIcon} title={t('wallet.noHistory')} description={t('wallet.noHistoryBody')} compact />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[680px]">
               <thead>
-                <tr className="border-b border-hair bg-surface-1 text-[10.5px] font-medium uppercase tracking-[0.07em] text-ink-4">
-                  <th scope="col" className="px-4 py-2.5 text-left sm:pl-5">{t('wallet.txType')}</th>
-                  <th scope="col" className="px-3 py-2.5 text-left">{t('wallet.colAsset')}</th>
-                  <th scope="col" className="px-3 py-2.5 text-right">{t('wallet.txAmount')}</th>
-                  <th scope="col" className="px-3 py-2.5 text-left">{t('trade.status')}</th>
-                  <th scope="col" className="px-4 py-2.5 text-right sm:pr-5">{t('wallet.txDate')}</th>
+                <tr className="border-b border-hair bg-surface-1 text-[12px] font-medium leading-5 text-ink-3">
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-left font-medium sm:pl-5">{t('wallet.txType')}</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-3 text-left font-medium">{t('wallet.colAsset')}</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-3 text-right font-medium">{t('wallet.txAmount')}</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-3 text-left font-medium">{t('trade.status')}</th>
+                  <th scope="col" className="whitespace-nowrap px-4 py-3 text-right font-medium sm:pr-5">{t('wallet.txDate')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -176,30 +176,30 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
                   const dp = decimalsFor(r.asset);
                   return (
                     <tr key={r.id} className="border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2">
-                      <td className="px-4 py-2.5 sm:pl-5">
+                      <td className="whitespace-nowrap px-4 py-3 sm:pl-5">
                         <div className="flex items-center gap-2.5">
-                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-wsm border border-hair bg-panel-2">
-                            <Icon className="h-3 w-3 text-ink-3" strokeWidth={1.8} />
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-wsm border border-hair bg-panel-2">
+                            <Icon className="h-3.5 w-3.5 text-ink-3" strokeWidth={1.8} />
                           </span>
-                          <span className="text-[12.5px] font-medium text-ink">{t(KIND_LABEL[r.kind])}</span>
+                          <span className="text-[14px] font-medium leading-5 text-ink">{t(KIND_LABEL[r.kind])}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5">
+                      <td className="whitespace-nowrap px-3 py-3">
                         <div className="flex items-center gap-2">
                           <CryptoIcon symbol={r.asset} size={18} />
-                          <span className="text-[12.5px] text-ink-2">{r.asset}</span>
+                          <span className="text-[14px] font-medium leading-5 text-ink-2">{r.asset}</span>
                         </div>
                       </td>
-                      <td className={`num px-3 py-2.5 text-right text-[12.5px] font-medium ${r.amount >= 0 ? 'text-pos' : 'text-neg'}`}>
+                      <td className={`num whitespace-nowrap px-3 py-3 text-right text-[14px] font-semibold leading-5 ${r.amount >= 0 ? 'text-pos' : 'text-neg'}`}>
                         {hidden ? MASK : `${r.amount > 0 ? '+' : '-'}${formatAmount(Math.abs(r.amount), lang, dp)}`}
                       </td>
-                      <td className="px-3 py-2.5">
-                        <span className={`inline-flex items-center gap-1.5 rounded-wsm px-1.5 py-0.5 text-[11.5px] font-medium ${s.className}`}>
+                      <td className="whitespace-nowrap px-3 py-3">
+                        <span className={`inline-flex items-center gap-1.5 rounded-wsm px-2 py-1 text-[12px] font-medium leading-4 ${s.className}`}>
                           <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} aria-hidden="true" />
                           {t(s.label)}
                         </span>
                       </td>
-                      <td className="num px-4 py-2.5 text-right text-[12px] text-ink-3 sm:pr-5">
+                      <td className="num whitespace-nowrap px-4 py-3 text-right text-[13px] leading-5 text-ink-3 sm:pr-5">
                         <span className="inline-flex items-center gap-1.5">
                           {new Date(r.at).toLocaleDateString(localeOf(lang), { day: '2-digit', month: '2-digit', year: 'numeric' })}
                           {explorer && (
@@ -210,7 +210,7 @@ export function TransactionHistory({ hidden }: { hidden: boolean }) {
                               aria-label={t('wallet.viewOnExplorer')}
                               className="text-ink-4 transition-colors duration-150 hover:text-ink-2"
                             >
-                              <ExternalLinkIcon className="h-3 w-3" strokeWidth={1.8} />
+                              <ExternalLinkIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
                             </a>
                           )}
                         </span>
