@@ -5,7 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import { CfdMarketDataService, ExternalCfdDataError, CFD_INSTRUMENTS } from '../../services/CfdMarketDataService';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
-import { MIN_LEVERAGE, MAX_LEVERAGE, NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
+import { MIN_LEVERAGE, MAX_LEVERAGE, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
+import { NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS } from '../../config/cfdConfig';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
 
 const CFD_SYMBOLS = CFD_INSTRUMENTS.map((i) => i.symbol) as [string, ...string[]];

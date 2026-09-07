@@ -4,6 +4,8 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as bookMath from '../spotOrderBook';
 import * as futuresMath from '../futuresMath';
+import * as assetReads from '../../components/spotOrderPresentation';
+import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -25,7 +27,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return [hooks[i], (next: any) => { hooks[i] = typeof next === 'function' ? next(hooks[i]) : next; }];
     },
     useRef(initial: any) { const i = index++; return hooks[i] ?? (hooks[i] = { current: initial }); },
-    useMemo(fn: any) { return fn(); }, useCallback(fn: any) { return fn; },
+    useMemo(fn: any) { return fn(); },
+    useCallback(fn: any, deps: any[]) {
+      const i = index++, previous = hooks[i];
+      if (!previous || deps.some((value, n) => !Object.is(value, previous.deps[n]))) hooks[i] = { deps, fn };
+      return hooks[i].fn;
+    },
     useEffect(fn: any, deps: any[]) {
       const i = index++, previous = hooks[i];
       if (!previous || deps.some((value, n) => !Object.is(value, previous.deps[n]))) {
@@ -41,11 +48,13 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError: Error };
-    if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
+    if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, params?: any) => params ? `${key}:${JSON.stringify(params)}` : key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/spotOrderBook') return bookMath;
     if (name === '../lib/formatNumber') return { formatPrice: String };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === './spotOrderPresentation') return assetReads;
+    if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/krakenSocket') return { krakenSocket: overrides.socket };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn(), useSearchParams: () => [overrides.params] };
@@ -56,7 +65,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { [label]: component };
     }
     return req(name);
-  }, output, { setTimeout, clearTimeout, setInterval, clearInterval });
+  }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false) });
   return {
     components,
     render(props: any = {}) {
@@ -146,7 +155,7 @@ test('Futures wires dynamic precision, rejects prior-pair REST and preserves rep
 });
 
 test('only the translated leverage table is collapsed; repeat picks retain exact form price and select Limit', async () => {
-  const config = { minLeverage: 1, maxLeverage: 100, newAccountMaxLeverage: 20, newAccountPeriodDays: 30,
+  const config = { minLeverage: 1, maxLeverage: 100,
     highLeverageWarningThreshold: 20, leverageTiers: [{ notionalCap: 50000, maxLeverage: 100, maintenanceMarginRate: 0.004 }] };
   const form = mount('components/FuturesOrderForm.tsx', { api: { getFuturesConfig: () => Promise.resolve(config) } });
   const props = { symbol: 'DOGE/USDT', onPlaced: jest.fn(), pickedPrice: '0.09432', pickedPriceSequence: 1 };
@@ -167,4 +176,86 @@ test('only the translated leverage table is collapsed; repeat picks retain exact
   tree = form.render({ ...props, pickedPriceSequence: 2 });
   expect(priceInput().props.value).toBe('0.09432');
   expect(nodes(tree).some(n => n.type === form.components.FuturesAccountSummary)).toBe(true);
+});
+
+const tierConfig = { minLeverage: 1, maxLeverage: 100, highLeverageWarningThreshold: 20,
+  leverageTiers: JSON.parse(JSON.stringify(LEVERAGE_TIERS)) };
+const props = { symbol: 'BTC/USDT', onPlaced: jest.fn() };
+
+async function leverageForm() {
+  const confirm = jest.fn((_message: string) => true), placed = jest.fn().mockResolvedValue({});
+  const getMe = jest.fn().mockResolvedValue({ createdAt: new Date().toISOString() });
+  const form = mount('components/FuturesOrderForm.tsx', { confirm, api: {
+    getFuturesConfig: () => Promise.resolve(tierConfig), getMe,
+    getFuturesBalances: () => Promise.resolve([{ asset: 'USDT', available: '1000000', locked: '0' }]),
+    getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }), placeFuturesOrder: placed,
+  } });
+  form.render(props); await tick();
+  const render = () => form.render(props);
+  const part = (tree: any, name: string) => nodes(tree).find(n => n.type === form.components[name]);
+  const change = (tree: any, placeholder: string, value: string) => nodes(tree).find(n => n.type === 'input' && n.props.placeholder === placeholder).props.onChange({ target: { value } });
+  let tree = render(); change(tree, '0.00', '50000'); change(tree, '0.00000', '1'); tree = render();
+  return { form, render, part, change, confirm, placed, getMe, tree };
+}
+
+test.each([1, 5, 10, 20, 50, 100])('real form + slider select %dx and pass it unchanged to the order API', async leverage => {
+  const f = await leverageForm();
+  let slider = f.part(f.tree, 'LeverageSlider');
+  expect(slider.props.min).toBe(1); expect(slider.props.max).toBe(100);
+  const control = mount('components/LeverageSlider.tsx');
+  const range = nodes(control.render(slider.props)).find(n => n.type === 'input' && n.props.type === 'range');
+  expect(range.props).toMatchObject({ min: 1, max: 100, step: 1 });
+  range.props.onChange({ target: { value: String(leverage) } });
+  const tree = f.render(); slider = f.part(tree, 'LeverageSlider');
+  expect(slider.props.value).toBe(leverage);
+  expect(nodes(control.render(slider.props)).some(n => n.type === 'span' && JSON.stringify(n.props.children) === JSON.stringify([leverage, 'x']))).toBe(true);
+  nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
+  expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '50000', quantity: '1', leverage, marginType: 'ISOLATED', reduceOnly: false });
+  expect(f.confirm).toHaveBeenCalledTimes(leverage >= 20 ? 1 : 0);
+  if (leverage >= 20) expect(f.confirm.mock.calls[0][0]).toContain(`"leverage":${leverage}`);
+  expect(f.getMe).not.toHaveBeenCalled();
+  expect(source('components/FuturesOrderForm.tsx')).not.toMatch(/newAccount|accountCreatedAt|accountAgeDays/);
+});
+
+test.each([[50000, 100], [50000.01, 50], [250000, 50], [250000.01, 20], [1000000, 20], [1000000.01, 10], [5000000, 10], [5000000.01, 5]])(
+  'form caps a %d USDT notional at %dx', async (notional, max) => {
+    const f = await leverageForm(); f.part(f.tree, 'LeverageSlider').props.onChange(100);
+    f.change(f.tree, '0.00', String(notional)); f.render();
+    const slider = f.part(f.render(), 'LeverageSlider');
+    expect(slider.props.max).toBe(max); expect(slider.props.value).toBe(max);
+    f.change(f.render(), '0.00', '50000');
+    expect(f.part(f.render(), 'LeverageSlider').props.max).toBe(100);
+  }
+);
+
+test('high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact', async () => {
+  const f = await leverageForm(); f.part(f.tree, 'LeverageSlider').props.onChange(100);
+  f.confirm.mockReturnValue(false);
+  nodes(f.render()).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
+  expect(f.placed).not.toHaveBeenCalled();
+  let tree = f.render();
+  nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.marketOrder').props.onClick();
+  nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
+  f.part(tree, 'MarginTypeToggle').props.onChange('CROSS');
+  nodes(tree).find(n => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });
+  f.confirm.mockReturnValue(true); tree = f.render();
+  nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
+  expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'SELL', type: 'MARKET', price: undefined, quantity: '1', leverage: 100, marginType: 'CROSS', reduceOnly: true });
+});
+
+test('Futures Assets uses only Futures balances; compact Spot keeps its original API', async () => {
+  const futures = jest.fn().mockResolvedValue([{ asset: 'USDT', available: '123', locked: '7' }]);
+  const spot = jest.fn().mockResolvedValue([{ asset: 'USDT', available: '999', locked: '0' }]);
+  const panel = mount('components/AssetsPanel.tsx', { api: { getFuturesBalances: futures, getBalances: spot } });
+  panel.render({ refreshKey: 0, wallet: 'futures' }); await tick();
+  const tree = panel.render({ refreshKey: 0, wallet: 'futures' });
+  expect(JSON.stringify(tree)).toContain('123.000000'); expect(JSON.stringify(tree)).toContain('130.000000');
+  expect(spot).not.toHaveBeenCalled(); expect(futures).toHaveBeenCalledTimes(1);
+  panel.render({ refreshKey: 1, wallet: 'futures' }); await tick();
+  expect(futures).toHaveBeenCalledTimes(2); expect(spot).not.toHaveBeenCalled();
+  const compact = mount('components/AssetsPanel.tsx', { api: { getFuturesBalances: futures, getBalances: spot } });
+  compact.render({ refreshKey: 0, compact: true }); await tick();
+  expect(spot).toHaveBeenCalledTimes(1); expect(futures).toHaveBeenCalledTimes(2);
+  expect(source('pages/FuturesPage.tsx')).toContain('<AssetsPanel wallet="futures"');
+  expect(source('pages/TradePage.tsx')).toContain('<AssetsPanel compact refreshKey={ordersRefreshKey} />');
 });

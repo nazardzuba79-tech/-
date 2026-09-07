@@ -28,12 +28,6 @@ export function getLeverageTier(notionalUsd: number): LeverageTier {
   return LEVERAGE_TIERS.find((t) => notionalUsd <= t.notionalCap) ?? LEVERAGE_TIERS[LEVERAGE_TIERS.length - 1];
 }
 
-// Brand-new accounts are capped well below the tier-1 ceiling regardless
-// of position size — a fresh account 100xing on day one is exactly the
-// failure mode this limit exists to prevent.
-export const NEW_ACCOUNT_MAX_LEVERAGE = 10;
-export const NEW_ACCOUNT_PERIOD_DAYS = 30;
-
 // A leverage choice at or above this multiplier gets an extra confirmation
 // step in the UI before the position can be opened.
 export const HIGH_LEVERAGE_WARNING_THRESHOLD = 20;

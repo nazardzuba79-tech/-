@@ -223,7 +223,7 @@ export function FuturesPage() {
               <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" onCount={setOpenPositionCount} />
             )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
-            {bottomTab === 'assets' && <AssetsPanel refreshKey={positionsRefreshKey} />}
+            {bottomTab === 'assets' && <AssetsPanel wallet="futures" refreshKey={positionsRefreshKey} />}
           </div>
         </div>
       </div>

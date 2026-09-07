@@ -44,38 +44,12 @@ export function FuturesOrderForm({
   const [availableMargin, setAvailableMargin] = useState(0);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
-  const [accountCreatedAt, setAccountCreatedAt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     api.getFuturesConfig().then(setConfig).catch(() => {});
   }, []);
-
-  // Account age gates leverage server-side (FuturesPositionService rejects
-  // > newAccountMaxLeverage for the first newAccountPeriodDays — see
-  // config/futuresConfig.ts) but nothing client-side knew about it, so the
-  // slider let a new account drag past that cap and only find out from a
-  // rejected order. /me is already fetched elsewhere in the app for exactly
-  // this field; nothing else here depends on the rest of the profile.
-  useEffect(() => {
-    api
-      .getMe()
-      .then((me) => setAccountCreatedAt(me.createdAt))
-      .catch(() => {});
-  }, []);
-
-  const accountAgeDays = accountCreatedAt ? (Date.now() - new Date(accountCreatedAt).getTime()) / 86_400_000 : null;
-  const isNewAccount = config !== null && accountAgeDays !== null && accountAgeDays < config.newAccountPeriodDays;
-  const effectiveMaxLeverage = config ? (isNewAccount ? Math.min(config.maxLeverage, config.newAccountMaxLeverage) : config.maxLeverage) : null;
-
-  // Clamp down if the effective cap drops below whatever is currently
-  // selected — e.g. the slider defaulted to 10x before /me answered, and
-  // the account turns out to still be within its first newAccountPeriodDays
-  // with a lower newAccountMaxLeverage.
-  useEffect(() => {
-    if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
-  }, [effectiveMaxLeverage, leverage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +101,11 @@ export function FuturesOrderForm({
   // informational here: nothing about submitting the order depends on
   // this number, it just shows the trader what to expect before they commit.
   const tier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
+  // The API's notional tier, never account age, determines the slider ceiling.
+  const effectiveMaxLeverage = config ? Math.min(config.maxLeverage, tier?.maxLeverage ?? config.maxLeverage) : null;
+  useEffect(() => {
+    if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
+  }, [effectiveMaxLeverage, leverage]);
   const liqPreview =
     tier && effectivePrice > 0 && quantity
       ? previewLiquidationPrice({
@@ -180,6 +159,10 @@ export function FuturesOrderForm({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!config || effectiveMaxLeverage === null || leverage > effectiveMaxLeverage || submitting) return;
+    if (leverage >= config.highLeverageWarningThreshold && !window.confirm(
+      `${t('futures.leverageWarningTitle')}\n\n${t('futures.leverageWarningBody', { leverage })}`
+    )) return;
     submitOrder();
   }
 
@@ -231,14 +214,6 @@ export function FuturesOrderForm({
               max={effectiveMaxLeverage}
               warningThreshold={config.highLeverageWarningThreshold}
             />
-            {isNewAccount && (
-              <div className="fo-newAccountNotice">
-                {t('futures.newAccountLimitNotice', {
-                  max: config.newAccountMaxLeverage,
-                  days: config.newAccountPeriodDays,
-                })}
-              </div>
-            )}
           </>
         )}
 

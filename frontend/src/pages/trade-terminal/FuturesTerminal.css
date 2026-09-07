@@ -59,7 +59,6 @@
 .futures-terminal .fo-infoRow > :first-child { color: #aeb9c4 !important; }
 .futures-terminal .fo-infoRow .mono { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
 .futures-terminal .fo-error { font-size: 12px; color: var(--sell); overflow-wrap: anywhere; }
-.futures-terminal .fo-newAccountNotice { font-size: 12px; color: #aeb9c4; }
 .futures-terminal .fo-tiersBox { border-top: 1px solid var(--border-color); padding: 0 14px; flex-shrink: 0; }
 .futures-terminal .fo-tiersTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 13px; font-size: 13px; font-weight: 600; line-height: 18px; color: #afbac5; cursor: pointer; list-style: none; }
 .futures-terminal .fo-tiersTitle::-webkit-details-marker { display: none; }

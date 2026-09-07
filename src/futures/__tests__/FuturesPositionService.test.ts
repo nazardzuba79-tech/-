@@ -3,6 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { FuturesPositionService } from '../FuturesPositionService';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { MarkPriceService } from '../MarkPriceService';
+import express from 'express';
+import request from 'supertest';
+import { futuresRouter } from '../../api/routes/futures';
+import { LEVERAGE_TIERS, HIGH_LEVERAGE_WARNING_THRESHOLD } from '../../config/futuresConfig';
+
+jest.mock('../../api/middleware/apiKeyAuth', () => ({
+  requireAuthOrApiKey: () => (req: any, _res: any, next: any) => { req.userId = 'taker'; next(); },
+  requireTradePermission: (_req: any, _res: any, next: any) => next(),
+}));
 
 /** Same fake-Prisma-transaction-client pattern as OrderService.test.ts,
  * extended with the futures-specific tables (position/balance/order). */
@@ -80,6 +89,70 @@ function bal(balances: Map<string, { available: string; locked: string }>, userI
   const b = balances.get(`${userId}:${asset}`);
   return { available: new BigNumber(b?.available ?? '0'), locked: new BigNumber(b?.locked ?? '0') };
 }
+
+describe('Futures API config -> schema -> actual position service', () => {
+  function setup() {
+    const engine = new MatchingEngine();
+    const state = makeFakePrisma({ userCreatedAt: new Date(), balances: {
+      'taker:USDT': { available: '10000000', locked: '0' },
+      'maker:USDT': { available: '10000000', locked: '0' },
+    } });
+    const mark = makeMarkPriceService('50000');
+    const service = new FuturesPositionService(state.prisma, engine, mark);
+    const app = express(); app.use(express.json());
+    app.use(futuresRouter(state.prisma, engine, service, mark, { list: () => ['BTC/USDT'], has: (s: string) => s === 'BTC/USDT' } as any));
+    return { app, service, engine, ...state };
+  }
+
+  it('publishes unchanged five risk tiers and warning threshold, without account-age fields', async () => {
+    const { app } = setup();
+    const { body } = await request(app).get('/futures/config').expect(200);
+    expect(body.minLeverage).toBe(1); expect(body.maxLeverage).toBe(100);
+    expect(body).not.toHaveProperty('newAccountMaxLeverage');
+    expect(body).not.toHaveProperty('newAccountPeriodDays');
+    expect(body.highLeverageWarningThreshold).toBe(HIGH_LEVERAGE_WARNING_THRESHOLD);
+    expect(body.leverageTiers).toEqual(JSON.parse(JSON.stringify(LEVERAGE_TIERS)));
+    expect(body.leverageTiers.map((t: any) => [t.notionalCap, t.maxLeverage])).toEqual([
+      [50000, 100], [250000, 50], [1000000, 20], [5000000, 10], [null, 5],
+    ]);
+  });
+
+  it.each(['LIMIT', 'MARKET'] as const)('fills a real matching-engine %s order at 100x for a new account', async (type) => {
+    const { app, service, positions, balances, orders } = setup();
+    await service.placeOrder({ userId: 'maker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(50000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    const { body } = await request(app).post('/futures/orders').send({ symbol: 'BTC/USDT', side: 'BUY', type, price: type === 'LIMIT' ? '50000' : undefined, quantity: '1', leverage: 100, marginType: 'ISOLATED' }).expect(201);
+    expect(body.order.status).toBe('FILLED');
+    expect(body.trades).toHaveLength(1);
+    expect(orders.get(body.order.id).leverage).toBe(100);
+    const position = [...positions.values()].find(p => p.userId === 'taker');
+    expect(position).toMatchObject({ leverage: 100, size: '1', entryPrice: '50000', initialMargin: '500', liquidationPrice: '49700' });
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe('500');
+    expect(bal(balances, 'taker', 'USDT').available.toFixed()).toBe('9999500');
+  });
+
+  it.each([
+    [50000, 100], [50000.01, 50], [250000, 50], [250000.01, 20],
+    [1000000, 20], [1000000.01, 10], [5000000, 10], [5000000.01, 5],
+  ])('accepts the tier maximum and rejects excess at %d USDT / %dx', async (notional, max) => {
+    const { app, engine, balances, orders } = setup();
+    const payload = { symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: String(notional), quantity: '1', leverage: max, marginType: 'CROSS' };
+    const tooHigh = max === 100 ? 101 : 100;
+    const denied = await request(app).post('/futures/orders').send({ ...payload, leverage: tooHigh }).expect(400);
+    if (max < 100) expect(denied.body.error).toContain(`is ${max}x`);
+    expect(orders.size).toBe(0);
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe('0');
+    expect(engine.getBook('BTC/USDT').bestBid()).toBeUndefined();
+    await request(app).post('/futures/orders').send(payload).expect(201);
+    expect([...orders.values()][0].leverage).toBe(max);
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe(new BigNumber(notional).div(max).toFixed());
+  });
+
+  it.each([0, 101, 1.5])('rejects invalid platform leverage %s before any order writes', async leverage => {
+    const { app, orders } = setup();
+    await request(app).post('/futures/orders').send({ symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '50000', quantity: '1', leverage, marginType: 'ISOLATED' }).expect(400);
+    expect(orders.size).toBe(0);
+  });
+});
 
 function makeMarkPriceService(price = '60000') {
   return new MarkPriceService({ getTicker: jest.fn().mockResolvedValue({ lastPrice: price }) } as any);
@@ -235,17 +308,18 @@ describe('FuturesPositionService.placeOrder', () => {
     ).rejects.toThrow(/Max leverage/);
   });
 
-  it('rejects leverage above 10x for a new account (< 30 days old)', async () => {
+  it.each([1, 5, 10, 20, 50, 100])('accepts %ix for a brand-new account at the 50,000 USDT tier boundary', async (leverage) => {
     const engine = new MatchingEngine();
-    const { prisma } = makeFakePrisma({
-      balances: { 'taker:USDT': { available: '10000', locked: '0' } },
+    const { prisma, balances, orders } = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '100000', locked: '0' } },
       userCreatedAt: new Date(), // brand new account
     });
     const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
 
-    await expect(
-      service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(60000), quantity: new BigNumber(0.1), leverage: 20, marginType: 'ISOLATED' })
-    ).rejects.toThrow(/New accounts are limited/);
+    const result = await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(50000), quantity: new BigNumber(1), leverage, marginType: 'ISOLATED' });
+    expect(result.order.status).toBe('OPEN');
+    expect(orders.get(result.order.id).leverage).toBe(leverage);
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe(new BigNumber(50000).div(leverage).toFixed());
   });
 
   it('rejects when available margin balance is insufficient', async () => {

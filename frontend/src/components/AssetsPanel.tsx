@@ -16,7 +16,7 @@ interface Balance {
  * derived from the two figures that are already fetched rather than
  * requested separately, so the three can never disagree.
  */
-export function AssetsPanel({ refreshKey, compact = false }: { refreshKey: number; compact?: boolean }) {
+export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { refreshKey: number; compact?: boolean; wallet?: 'spot' | 'futures' }) {
   const { t } = useLanguage();
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +28,13 @@ export function AssetsPanel({ refreshKey, compact = false }: { refreshKey: numbe
 
   const load = useCallback((fresh = false) => {
     if (compact) return reader.current!.read(fresh);
-    // Keep the shared Futures polling path unchanged.
-    api
-      .getBalances()
+    // Same table/polling cadence; Futures must never read the Spot wallet.
+    const request = wallet === 'futures' ? api.getFuturesBalances : api.getBalances;
+    request()
       .then(rows => { setBalances(rows); setFailed(false); })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false));
-  }, [compact]);
+  }, [compact, wallet]);
 
   useEffect(() => {
     if (compact) reader.current!.resume();

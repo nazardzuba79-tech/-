@@ -2,7 +2,8 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { CfdMarketDataService, CFD_INSTRUMENTS } from '../services/CfdMarketDataService';
 import { computeInitialMargin, computeLiquidationPrice, computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
-import { MIN_LEVERAGE, MAX_LEVERAGE, NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS, getLeverageTier } from '../config/futuresConfig';
+import { MIN_LEVERAGE, MAX_LEVERAGE, getLeverageTier } from '../config/futuresConfig';
+import { NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS } from '../config/cfdConfig';
 
 type TxClient = Prisma.TransactionClient;
 

@@ -34,7 +34,10 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
-    "fc1370e798c0841f91fb691ccc24da5ba0ba07c4ffe85bcce6cc342a608e393e"
+    // Owner-authorized tier-based leverage replaces the age gate; confirmation
+    // uses the retained high-leverage translations. Behavioral coverage below
+    // lives in futuresFinalPolish plus backend FuturesPositionService tests.
+    "889c0c5a3fc5eeb05f709352a814b6eaf28f7d289c484c97e231574a0a04e331"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -52,7 +55,8 @@ test.each([
     "pages/FuturesPage.tsx",
     // Final pass: dynamic book opt-in, symbol-bound read lifecycle and repeat picks.
     // futuresFinalPolish covers exact selection and stale-response rejection.
-    "ffb97c2ae694a92a71326182af2e23d6af5c309184b484c108a2716184b4c921"
+    // Explicit Futures wallet source; other terminal wiring remains unchanged.
+    "b2a5559b1856ff968f4ec5a180c4d157594a5c2f9808d60dd64fa98dc8eedde6"
   ],
   [
     "components/FuturesPairList.tsx",

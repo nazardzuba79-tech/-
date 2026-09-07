@@ -14,8 +14,6 @@ import {
 import {
   MIN_LEVERAGE,
   MAX_LEVERAGE,
-  NEW_ACCOUNT_MAX_LEVERAGE,
-  NEW_ACCOUNT_PERIOD_DAYS,
   getLeverageTier,
 } from '../config/futuresConfig';
 
@@ -83,12 +81,6 @@ export class FuturesPositionService {
     return this.prisma.$transaction(async (tx: TxClient) => {
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
-      const accountAgeDays = (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24);
-      if (accountAgeDays < NEW_ACCOUNT_PERIOD_DAYS && params.leverage > NEW_ACCOUNT_MAX_LEVERAGE) {
-        throw new Error(
-          `New accounts are limited to ${NEW_ACCOUNT_MAX_LEVERAGE}x leverage for the first ${NEW_ACCOUNT_PERIOD_DAYS} days`
-        );
-      }
 
       const existingPosition = await tx.futuresPosition.findFirst({
         where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
