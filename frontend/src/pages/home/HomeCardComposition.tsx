@@ -60,20 +60,19 @@ export function HomeCardComposition() {
         <ellipse cx="482" cy="260" rx="12" ry="4" fill="none" stroke="#c9a75d"/>
         <text x="473" y="293" fill="#ede4cd" fontSize="12" fontWeight="600">Black Signature</text>
         <circle cx="612" cy="298" r="3" fill="#c5a35b"/>
-        <rect x="461" y="330" width="168" height="62" rx="13" fill="#161c25" stroke="#303844"/>
-        <rect x="473" y="345" width="30" height="21" rx="4" fill="#d5d6d5"/>
-        <path d="M479 352h9m-9 5h4" stroke="#6b6f76" strokeWidth="1.5"/>
-        <text x="513" y="359" fill="#dae0e8" fontSize="12" fontWeight="600">Titanium</text>
-      </g>
-      <g fill="#181f2a" stroke="#343d4b">
-        <rect x="461" y="413" width="48" height="46" rx="11"/>
-        <rect x="521" y="413" width="48" height="46" rx="11"/>
-        <rect x="581" y="413" width="48" height="46" rx="11"/>
-      </g>
-      <g stroke="#d1b46f" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M485 425v19m-7-7 7 7 7-7m-17 8v4h20v-4"/>
-        <path d="M535 431h20l-5-5m5 15h-20l5 5"/>
-        <path d="M596 430h18v13h-18zm0 4h18"/>
+        <text x="465" y="342" fill="#c6cbd3" fontSize="12" fontWeight="600">Recent activity</text>
+        {/* Illustrative purchases in product artwork only, never account/API data. */}
+        {[
+          { name: 'Shopping', amount: '−$128.50', date: 'Today', y: 365, icon: 'M473 368h16l-2 10h-12zm3 0v-3a5 5 0 0 1 10 0v3' },
+          { name: 'Netflix', amount: '−$12.99', date: 'Yesterday', y: 407, icon: 'M477 405v15l11-7.5z' },
+          { name: 'Transport', amount: '−$24.00', date: 'Yesterday', y: 449, icon: 'M473 453l3-7h12l3 7v7h-18zm0 0h18m-14 3h1m8 0h1' },
+        ].map(expense => <g key={expense.name} data-phone-expense={expense.name}>
+          <rect x="465" y={expense.y - 8} width="30" height="30" rx="8" fill="#19212c"/>
+          <path d={expense.icon} fill="none" stroke="#c6af78" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <text x="502" y={expense.y + 2} fill="#e0e4ea" fontSize="11.5" fontWeight="500">{expense.name}</text>
+          <text x="626" y={expense.y + 2} fill="#eef0f3" fontSize="11.5" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{expense.amount}</text>
+          <text x="502" y={expense.y + 17} fill="#8d99a8" fontSize="9">{expense.date}</text>
+        </g>)}
       </g>
       <path d="M462 481h166" stroke="#242b35"/>
       <g stroke="#8994a2" fill="none" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">

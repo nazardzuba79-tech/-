@@ -75,6 +75,10 @@ test('Homepage promo contains both exact physical masters plus a phone without i
   expect(html).toContain(master.CARD_MASTER.titanium);
   expect(html.match(/width="1580" height="996" preserveAspectRatio="xMidYMid meet"/g)).toHaveLength(2);
   expect(html).toContain('••••••');
+  expect(html.match(/data-phone-expense=/g)).toHaveLength(3);
+  expect(html).toContain('Recent activity');
+  for (const amount of ['−$128.50', '−$12.99', '−$24.00']) expect(html).toContain(amount);
+  expect(html).not.toContain('x="461" y="413" width="48"');
   expect(html).not.toMatch(/skew|matrix3d|perspective|<foreignObject|<button|<a /);
   const src = read('src/pages/home/HomeCardComposition.tsx');
   expect(src).not.toMatch(/fetch\(|useEffect|useAuth|useBalance|axios/);
