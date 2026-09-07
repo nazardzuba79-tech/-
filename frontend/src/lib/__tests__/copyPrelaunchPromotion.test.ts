@@ -23,20 +23,11 @@ function evaluate(path: string, overrides: Record<string, unknown> = {}) {
   new Function('exports', 'require', code)(output, load);
   return output;
 }
-const { ReviewDisclosure } = evaluate('src/components/ReviewDisclosure.tsx');
-
-test('removed disclosure components have no imports, mounts or fallback content', () => {
-  for (const file of ['src/components/ModeledDataLabel.tsx', 'src/components/modeledDataLabel.css', 'test-utils/modeledDataLabel.ts',
-    'src/components/PrelaunchNotice.tsx', 'src/components/prelaunchNotice.css']) {
-    expect(existsSync(resolve(frontend, file))).toBe(false);
-  }
-  expect(source('src/pages/copy-trading-bolt/components.tsx')).not.toContain('ModeledDataLabel');
+test('production UI has no development disclosure mounts', () => {
+  const marketplace = source('src/pages/copy-trading-bolt/components.tsx');
+  expect(marketplace).not.toContain('ReviewDisclosure');
+  expect(marketplace).not.toContain('catalogue-disclosure');
   expect(source('src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
-  const repeated = React.createElement(ReviewDisclosure, { neutral: React.createElement('p', null, 'Neutral product information') },
-    React.createElement('p', null, 'Demonstration catalogue'));
-  expect(renderToStaticMarkup(repeated)).toBe('');
-  expect(renderToStaticMarkup(React.createElement('main', null, repeated, React.createElement('button', null, 'Copy'))))
-    .toBe('<main><button>Copy</button></main>');
 });
 
 test.each([0, -1, 19_999.99, 20_000, 20_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {
