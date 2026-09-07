@@ -17,6 +17,7 @@ import {
   getLeverageTier,
 } from '../config/futuresConfig';
 import { projectFuturesExposure } from './exposureRisk';
+import { FuturesBookTransaction } from './FuturesBookTransaction';
 
 type TxClient = Prisma.TransactionClient;
 type MarginType = 'ISOLATED' | 'CROSS';
@@ -62,24 +63,22 @@ export class FuturesPositionService {
       throw new Error(`Leverage must be an integer between ${MIN_LEVERAGE} and ${MAX_LEVERAGE}`);
     }
 
-    // Estimate the notional this order could open/increase at, for both
-    // leverage-tier and margin-lock purposes. MARKET orders use the
-    // current best opposing price; a mark-price fallback would let a
-    // manipulated/thin internal book under-collateralize the order.
-    const book = this.engine.getBook(params.symbol);
-    const estimatePrice =
-      params.type === 'LIMIT' ? params.price! : (params.side === 'BUY' ? book.bestAsk() : book.bestBid())?.price;
-    if (!estimatePrice) throw new Error('No liquidity available for this market order');
-    const estimatedNotional = params.quantity.times(estimatePrice);
+    const result = await FuturesBookTransaction.run(this.prisma, this.engine, async (tx: TxClient) => {
+      const session = await FuturesBookTransaction.load(tx, params.symbol);
+      // Estimate from the authoritative staged book, not a stale process cache.
+      const book = session.staged.getBook(params.symbol);
+      const estimatePrice =
+        params.type === 'LIMIT' ? params.price! : (params.side === 'BUY' ? book.bestAsk() : book.bestBid())?.price;
+      if (!estimatePrice) throw new Error('No liquidity available for this market order');
+      const estimatedNotional = params.quantity.times(estimatePrice);
 
-    return this.prisma.$transaction(async (tx: TxClient) => {
       // Serialize exposure reads and order creation for this exact risk
       // bucket across requests and application instances. Without this,
       // simultaneous split orders could both observe the same pre-order
       // snapshot before either OPEN row became visible.
       const riskLockKey = `futures-exposure:${params.userId}:${params.symbol}:${params.marginType}`;
       await tx.$queryRaw(
-        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${riskLockKey}, 0)) AS locked`
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${riskLockKey}, 0))::text AS locked`
       );
 
       const user = await tx.user.findUnique({ where: { id: params.userId } });
@@ -185,6 +184,10 @@ export class FuturesPositionService {
       }
 
       const orderId = uuidv4();
+      // Durable FIFO even for admissions within the same millisecond. Legacy
+      // timestamp ties use the same id tie-break in staging and startup recovery.
+      let createdAt = Date.now();
+      for (const row of session.rows.values()) createdAt = Math.max(createdAt, row.createdAt.getTime() + 1);
       const order: Order = {
         id: orderId,
         userId: params.userId,
@@ -195,7 +198,7 @@ export class FuturesPositionService {
         originalQuantity: params.quantity,
         remainingQuantity: params.quantity,
         status: 'OPEN',
-        createdAt: Date.now(),
+        createdAt,
         updatedAt: Date.now(),
       };
       await tx.futuresOrder.create({
@@ -212,36 +215,14 @@ export class FuturesPositionService {
           reduceOnly: !!params.reduceOnly,
           leverage: params.leverage,
           marginType: params.marginType,
+          createdAt: new Date(createdAt),
         },
       });
 
-      const { trades, order: finalOrder } = this.engine.submitOrder(order);
-
-      let marginConsumed = new BigNumber(0);
-      for (const trade of trades) {
-        await tx.trade.create({
-          data: {
-            id: trade.id,
-            pair: trade.pair,
-            takerOrderId: trade.takerOrderId,
-            makerOrderId: trade.makerOrderId,
-            takerUserId: trade.takerUserId,
-            makerUserId: trade.makerUserId,
-            price: trade.price.toString(),
-            quantity: trade.quantity.toString(),
-            side: trade.side,
-          },
-        }).catch(() => {
-          // Futures trades share the spot Trade table's shape but are
-          // logically distinct; if a unique constraint ever separates
-          // them this is where that split would be persisted. For now
-          // trade ids are UUIDs so collisions are not a real concern.
-        });
-        this.markPriceService.recordFuturesTrade(params.symbol, trade.price);
-
-        const takerConsumed = await this.settleFuturesTrade(tx, trade, params.symbol, quote);
-        if (trade.takerUserId === params.userId) marginConsumed = marginConsumed.plus(takerConsumed);
-      }
+      const { trades, marginConsumed } = await this.matchAndSettle(tx, session, order, {
+        leverage: params.leverage, marginType: params.marginType, reduceOnly: !!params.reduceOnly,
+      }, quote);
+      const finalOrder = order;
 
       await tx.futuresOrder.update({
         where: { id: orderId },
@@ -251,8 +232,8 @@ export class FuturesPositionService {
       // Refund whatever of the conservative lock wasn't actually consumed
       // as margin for an open/increase, and isn't still backing a resting
       // portion of the order.
-      const stillResting = params.type === 'LIMIT' && finalOrder.remainingQuantity.isGreaterThan(0);
-      const restingLock = stillResting
+      const stillResting = params.type === 'LIMIT' && finalOrder.status !== 'CANCELLED' && finalOrder.remainingQuantity.isGreaterThan(0);
+      const restingLock = stillResting && !params.reduceOnly
         ? computeInitialMargin(finalOrder.remainingQuantity.times(params.price!), params.leverage)
         : new BigNumber(0);
       const refund = lockAmount.minus(marginConsumed).minus(restingLock);
@@ -260,17 +241,21 @@ export class FuturesPositionService {
         await this.adjustBalance(tx, params.userId, quote, { available: refund, locked: refund.negated() });
       }
 
-      return { order: finalOrder, trades };
+      return { session, result: { order: finalOrder, trades } };
     });
+    // No uncommitted/rolled-back trade may influence mark prices.
+    for (const trade of result.trades) this.markPriceService.recordFuturesTrade(params.symbol, trade.price);
+    return result;
   }
 
   async cancelOrder(userId: string, orderId: string) {
-    return this.prisma.$transaction(async (tx: TxClient) => {
+    return FuturesBookTransaction.run(this.prisma, this.engine, async (tx: TxClient) => {
       const order = await tx.futuresOrder.findUnique({ where: { id: orderId } });
-      if (!order || order.userId !== userId) return null;
-      if (order.status !== 'OPEN' && order.status !== 'PARTIALLY_FILLED') return null;
+      if (!order || order.userId !== userId) return { result: null };
+      if (order.status !== 'OPEN' && order.status !== 'PARTIALLY_FILLED') return { result: null };
 
-      this.engine.cancelOrder(order.symbol, order.id);
+      const session = await FuturesBookTransaction.load(tx, order.symbol);
+      session.staged.cancelOrder(order.symbol, order.id);
       await tx.futuresOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
 
       if (!order.reduceOnly) {
@@ -283,8 +268,100 @@ export class FuturesPositionService {
         }
       }
 
-      return order;
+      return { session, result: { ...order, status: 'CANCELLED' } };
     });
+  }
+
+  /** Current transactional capacity, re-read between every fill on BOTH sides. */
+  private async reducibleQuantity(tx: TxClient, order: Order, marginType: MarginType) {
+    const position = await tx.futuresPosition.findFirst({
+      where: { userId: order.userId, symbol: order.pair, marginType, status: 'OPEN' },
+    });
+    const direction = order.side === 'BUY' ? 'LONG' : 'SHORT';
+    return position && position.side !== direction
+      ? new BigNumber(position.size.toString()) : new BigNumber(0);
+  }
+
+  private async matchAndSettle(tx: TxClient, session: FuturesBookTransaction, taker: Order,
+    terms: { leverage: number; marginType: MarginType; reduceOnly: boolean }, quote: string) {
+    const book = session.staged.getBook(taker.pair);
+    const trades: Trade[] = [];
+    let marginConsumed = new BigNumber(0);
+    while (taker.remainingQuantity.isGreaterThan(0)) {
+      const takerCap = terms.reduceOnly
+        ? await this.reducibleQuantity(tx, taker, terms.marginType) : taker.remainingQuantity;
+      if (takerCap.isZero()) { taker.status = 'CANCELLED'; break; }
+      const maker = book.getOppositeBook(taker.side)[0];
+      if (!maker) break;
+      if (taker.type === 'LIMIT' && (taker.side === 'BUY'
+        ? taker.price!.isLessThan(maker.price!) : taker.price!.isGreaterThan(maker.price!))) break;
+      const makerTerms = session.rows.get(maker.id)!;
+      const makerCap = makerTerms.reduceOnly
+        ? await this.reducibleQuantity(tx, maker, makerTerms.marginType as MarginType) : maker.remainingQuantity;
+      if (makerCap.isZero()) {
+        await this.cancelReduceOnlyRemainder(tx, session, maker);
+        continue;
+      }
+      // Two legs for the same user could invalidate the second leg's capacity
+      // within one trade. Refuse self-matches atomically, without a trade print.
+      if (maker.userId === taker.userId) throw new Error('Futures self-match is not allowed');
+      const quantity = BigNumber.minimum(taker.remainingQuantity, maker.remainingQuantity, takerCap, makerCap);
+      // Reuse the unchanged matching algorithm for exactly the executable
+      // quantity, in an isolated book. Never generate then truncate a trade.
+      const match = new MatchingEngine();
+      match.loadRestingOrder({ ...maker, originalQuantity: quantity, remainingQuantity: quantity });
+      const { trades: fills } = match.submitOrder({ ...taker, originalQuantity: quantity, remainingQuantity: quantity });
+      const trade = fills[0];
+      if (!trade || fills.length !== 1) throw new Error('Invalid staged Futures match');
+      const consumed = await this.settleFuturesTrade(tx, trade, taker.pair, quote);
+      // A persistence failure aborts the whole transaction and discards staging.
+      await tx.trade.create({ data: {
+        id: trade.id, pair: trade.pair, takerOrderId: trade.takerOrderId, makerOrderId: trade.makerOrderId,
+        takerUserId: trade.takerUserId, makerUserId: trade.makerUserId,
+        price: trade.price.toString(), quantity: trade.quantity.toString(), side: trade.side,
+      } });
+      marginConsumed = marginConsumed.plus(consumed);
+      trades.push(trade);
+      taker.remainingQuantity = taker.remainingQuantity.minus(quantity);
+      maker.remainingQuantity = maker.remainingQuantity.minus(quantity);
+      maker.status = maker.remainingQuantity.isZero() ? 'FILLED' : 'PARTIALLY_FILLED';
+      maker.updatedAt = Date.now();
+      if (maker.remainingQuantity.isZero()) session.staged.cancelOrder(taker.pair, maker.id);
+      await tx.futuresOrder.update({ where: { id: maker.id }, data: {
+        status: maker.status, remainingQuantity: maker.remainingQuantity.toString(),
+      } });
+    }
+    if (taker.status !== 'CANCELLED') {
+      taker.status = taker.remainingQuantity.isZero() ? 'FILLED'
+        : taker.remainingQuantity.isLessThan(taker.originalQuantity) ? 'PARTIALLY_FILLED' : 'OPEN';
+      if (taker.remainingQuantity.isGreaterThan(0)) {
+        const capacity = terms.reduceOnly ? await this.reducibleQuantity(tx, taker, terms.marginType) : taker.remainingQuantity;
+        if (taker.type === 'MARKET' || taker.remainingQuantity.isGreaterThan(capacity)) taker.status = 'CANCELLED';
+        else session.staged.loadRestingOrder(taker);
+      }
+    }
+    taker.updatedAt = Date.now();
+    // Cancel stale reduce-only remainders, including siblings not reached by
+    // this taker. Keep their unfilled quantity for audit; CANCELLED never rests.
+    for (const side of ['BUY', 'SELL'] as const) {
+      for (const order of [...book.getBook(side)]) {
+        const row = session.rows.get(order.id);
+        if (!row?.reduceOnly) continue;
+        const capacity = await this.reducibleQuantity(tx, order, row.marginType as MarginType);
+        if (order.remainingQuantity.isGreaterThan(capacity)) await this.cancelReduceOnlyRemainder(tx, session, order);
+      }
+    }
+    return { trades, marginConsumed };
+  }
+
+  private async cancelReduceOnlyRemainder(tx: TxClient, session: FuturesBookTransaction, order: Order) {
+    order.status = 'CANCELLED';
+    order.updatedAt = Date.now();
+    session.staged.cancelOrder(order.pair, order.id);
+    await tx.futuresOrder.update({ where: { id: order.id }, data: {
+      status: 'CANCELLED', remainingQuantity: order.remainingQuantity.toString(),
+    } });
+    // Reduce-only placement reserved no margin, so cancellation releases none.
   }
 
   /**
@@ -302,8 +379,16 @@ export class FuturesPositionService {
     const sellerOrder = await tx.futuresOrder.findUnique({ where: { id: trade.side === 'BUY' ? trade.makerOrderId : trade.takerOrderId } });
     if (!buyerOrder || !sellerOrder) throw new Error('Order not found while settling futures trade');
 
-    const buyerConsumed = await this.applyFill(tx, buyerId, symbol, quote, 'BUY', trade.quantity, trade.price, buyerOrder.leverage, buyerOrder.marginType as MarginType);
-    const sellerConsumed = await this.applyFill(tx, sellerId, symbol, quote, 'SELL', trade.quantity, trade.price, sellerOrder.leverage, sellerOrder.marginType as MarginType);
+    const buyerConsumed = await this.applyFill(tx, buyerId, symbol, quote, 'BUY', trade.quantity, trade.price, buyerOrder.leverage, buyerOrder.marginType as MarginType, buyerOrder.reduceOnly);
+    const sellerConsumed = await this.applyFill(tx, sellerId, symbol, quote, 'SELL', trade.quantity, trade.price, sellerOrder.leverage, sellerOrder.marginType as MarginType, sellerOrder.reduceOnly);
+
+    const makerOrder = trade.side === 'BUY' ? sellerOrder : buyerOrder;
+    const makerConsumed = trade.side === 'BUY' ? sellerConsumed : buyerConsumed;
+    if (!makerOrder.reduceOnly) {
+      const reserved = computeInitialMargin(trade.quantity.times(trade.price), makerOrder.leverage);
+      const refund = reserved.minus(makerConsumed);
+      if (refund.isGreaterThan(0)) await this.adjustBalance(tx, makerOrder.userId, quote, { available: refund, locked: refund.negated() });
+    }
 
     return trade.takerUserId === buyerId ? buyerConsumed : sellerConsumed;
   }
@@ -319,12 +404,18 @@ export class FuturesPositionService {
     quantity: BigNumber,
     price: BigNumber,
     leverage: number,
-    marginType: MarginType
+    marginType: MarginType,
+    reduceOnly = false
   ): Promise<BigNumber> {
     const fillDirection: PositionSide = fillSide === 'BUY' ? 'LONG' : 'SHORT';
     const existing = await tx.futuresPosition.findFirst({
       where: { userId, symbol, marginType, status: 'OPEN' },
     });
+
+    if (reduceOnly && (!existing || existing.side === fillDirection
+      || quantity.isGreaterThan(new BigNumber(existing.size.toString())))) {
+      throw new Error('reduceOnly fill exceeds the current opposing position');
+    }
 
     if (!existing) {
       await this.openPosition(tx, userId, symbol, quote, fillDirection, quantity, price, leverage, marginType);

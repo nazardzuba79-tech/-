@@ -11,7 +11,7 @@ import { Order } from '../matching-engine/types';
 export async function recoverFuturesOrderBook(prisma: PrismaClient, engine: MatchingEngine): Promise<number> {
   const restingOrders = await prisma.futuresOrder.findMany({
     where: { status: { in: ['OPEN', 'PARTIALLY_FILLED'] } },
-    orderBy: { createdAt: 'asc' },
+    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
   });
 
   for (const row of restingOrders) {

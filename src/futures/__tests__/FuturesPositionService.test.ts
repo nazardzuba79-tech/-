@@ -22,12 +22,14 @@ function makeFakePrisma(opts?: {
   positions?: any[];
 }) {
   const balances = new Map(Object.entries(opts?.balances ?? {}));
-  const orders = new Map<string, any>((opts?.orders ?? []).map((order) => [order.id, { ...order }]));
+  const orders = new Map<string, any>((opts?.orders ?? []).map((order) => [order.id, { createdAt: new Date(), updatedAt: new Date(), ...order }]));
   const positions = new Map<string, any>((opts?.positions ?? []).map((position) => [position.id, { ...position }]));
+  const trades: any[] = [];
+  const faults = { beforeCommit: undefined as (() => Promise<void>) | undefined };
   const userCreatedAt = opts?.userCreatedAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // 1yr-old account by default
 
   const tx = {
-    $queryRaw: jest.fn(async () => [{ locked: null }]),
+    $queryRaw: jest.fn(async (query: any) => query.strings.join('').includes('pg_current_xact_id') ? [{ id: '1' }] : [{ locked: null }]),
     user: {
       findUnique: jest.fn(async () => ({ id: 'u', createdAt: userCreatedAt })),
     },
@@ -47,18 +49,18 @@ function makeFakePrisma(opts?: {
     },
     futuresOrder: {
       create: jest.fn(async ({ data }: any) => {
-        orders.set(data.id, { ...data });
+        orders.set(data.id, { createdAt: new Date(), updatedAt: new Date(), ...data });
       }),
       update: jest.fn(async ({ where: { id }, data }: any) => {
         Object.assign(orders.get(id), data);
       }),
       findUnique: jest.fn(async ({ where: { id } }: any) => (orders.has(id) ? { ...orders.get(id) } : null)),
       findMany: jest.fn(async ({ where }: any) => Array.from(orders.values()).filter((order) =>
-        order.userId === where.userId
+        (where.userId === undefined || order.userId === where.userId)
         && order.symbol === where.symbol
-        && order.marginType === where.marginType
+        && (where.marginType === undefined || order.marginType === where.marginType)
         && where.status.in.includes(order.status)
-        && order.reduceOnly === where.reduceOnly
+        && (where.reduceOnly === undefined || order.reduceOnly === where.reduceOnly)
       ).map((order) => ({ ...order }))),
     },
     futuresPosition: {
@@ -87,12 +89,30 @@ function makeFakePrisma(opts?: {
       }),
     },
     trade: {
-      create: jest.fn(async () => {}),
+      create: jest.fn(async ({ data }: any) => { trades.push({ ...data }); }),
     },
   };
 
-  const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
-  return { prisma, balances, orders, positions, riskLock: tx.$queryRaw, tx };
+  const prisma = { $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
+    const snapshot = [balances, orders, positions].map(map => structuredClone([...map.entries()]));
+    const tradeCount = trades.length;
+    let callbackCompleted = false;
+    try {
+      const result = await fn(tx);
+      callbackCompleted = true;
+      await faults.beforeCommit?.();
+      return result;
+    } catch (error) {
+      [balances, orders, positions].forEach((map, index) => {
+        map.clear();
+        for (const [key, value] of snapshot[index]) map.set(key, value);
+      });
+      trades.length = tradeCount;
+      if (callbackCompleted) prisma.$queryRaw.mockResolvedValueOnce([{ status: 'aborted' }]);
+      throw error;
+    }
+  }) } as any;
+  return { prisma, balances, orders, positions, trades, faults, riskLock: tx.$queryRaw, tx };
 }
 
 function bal(balances: Map<string, { available: string; locked: string }>, userId: string, asset: string) {
@@ -167,6 +187,110 @@ describe('Futures API config -> schema -> actual position service', () => {
 function makeMarkPriceService(price = '60000') {
   return new MarkPriceService({ getTicker: jest.fn().mockResolvedValue({ lastPrice: price }) } as any);
 }
+
+describe('Futures execution-time reduce-only and atomic book publication', () => {
+  function setup(side: 'LONG' | 'SHORT' = 'LONG', marginType: 'ISOLATED' | 'CROSS' = 'ISOLATED') {
+    const state = makeFakePrisma({ balances: {
+      'owner:USDT': { available: '100000', locked: '1000' },
+      'counter:USDT': { available: '100000', locked: '0' },
+    }, positions: [{ id: 'position', userId: 'owner', symbol: 'BTC/USDT', side, size: '1',
+      entryPrice: '10000', initialMargin: '1000', leverage: 10, marginType,
+      liquidationPrice: '9040', status: 'OPEN', realizedPnl: '0' }] });
+    const engine = new MatchingEngine();
+    const mark = makeMarkPriceService('10000');
+    const service = new FuturesPositionService(state.prisma, engine, mark);
+    const closingSide: 'BUY' | 'SELL' = side === 'LONG' ? 'SELL' : 'BUY';
+    const openingSide: 'BUY' | 'SELL' = side === 'LONG' ? 'BUY' : 'SELL';
+    const place = (userId: string, orderSide: 'BUY' | 'SELL', qty: string, reduceOnly = false, leverage = 10) =>
+      service.placeOrder({ userId, symbol: 'BTC/USDT', side: orderSide, type: 'LIMIT',
+        quantity: new BigNumber(qty), price: new BigNumber(10000), leverage, marginType, reduceOnly });
+    return { ...state, engine, mark, service, place, closingSide, openingSide };
+  }
+
+  it.each([['LONG', 'ISOLATED'], ['SHORT', 'ISOLATED'], ['LONG', 'CROSS'], ['SHORT', 'CROSS']] as const)
+  ('%s/%s: two resting reduce-only orders cannot flip; partial maker fills persist exactly', async (side, mode) => {
+    const s = setup(side, mode);
+    const first = await s.place('owner', s.closingSide, '1', true, 100);
+    const second = await s.place('owner', s.closingSide, '1', true, 20);
+    expect(bal(s.balances, 'owner', 'USDT').locked.toFixed()).toBe('1000');
+    const partial = await s.place('counter', s.openingSide, '0.4');
+    expect(partial.trades.map(t => t.quantity.toString())).toEqual(['0.4']);
+    expect(s.orders.get(first.order.id)).toMatchObject({ status: 'PARTIALLY_FILLED', remainingQuantity: '0.6' });
+    expect(s.orders.get(second.order.id)).toMatchObject({ status: 'CANCELLED', remainingQuantity: '1' });
+    const final = await s.place('counter', s.openingSide, '1');
+    expect(final.trades.map(t => t.quantity.toString())).toEqual(['0.6']);
+    expect(final.order.remainingQuantity.toString()).toBe('0.4');
+    expect(s.trades).toHaveLength(2);
+    expect(s.positions.get('position')).toMatchObject({ status: 'CLOSED', size: '0', leverage: 10 });
+    expect([...s.positions.values()].filter(p => p.userId === 'owner' && p.status === 'OPEN')).toHaveLength(0);
+    expect(bal(s.balances, 'owner', 'USDT').locked.toFixed()).toBe('0');
+    expect(bal(s.balances, 'owner', 'USDT').available.toFixed()).toBe('101000');
+    expect(s.engine.getBook('BTC/USDT').getBook(s.closingSide)).toHaveLength(0);
+  });
+
+  it('caps a legacy oversized maker to the CURRENT size and persists no excess trade', async () => {
+    const s = setup();
+    const resting = await s.place('owner', 'SELL', '1', true);
+    Object.assign(s.positions.get('position'), { size: '0.25', initialMargin: '250' });
+    s.balances.set('owner:USDT', { available: '100750', locked: '250' });
+    const result = await s.place('counter', 'BUY', '1');
+    expect(result.trades.map(t => t.quantity.toFixed())).toEqual(['0.25']);
+    expect(s.orders.get(resting.order.id)).toMatchObject({ status: 'CANCELLED', remainingQuantity: '0.75' });
+    expect(s.trades).toHaveLength(1);
+    expect(bal(s.balances, 'owner', 'USDT').locked.toFixed()).toBe('0');
+  });
+
+  it.each(['LONG', 'SHORT'] as const)('%s taker reduce-only never opens or increases and retains no resting margin', async side => {
+    const s = setup(side);
+    await s.place('counter', s.openingSide, '0.4');
+    const result = await s.place('owner', s.closingSide, '1', true, 100);
+    expect(result.order.status).toBe('PARTIALLY_FILLED');
+    expect(result.order.remainingQuantity.toFixed()).toBe('0.6');
+    expect(s.positions.get('position')).toMatchObject({ size: '0.6', initialMargin: '600', leverage: 10 });
+    expect(bal(s.balances, 'owner', 'USDT').locked.toFixed()).toBe('600');
+    expect(bal(s.balances, 'owner', 'USDT').available.toFixed()).toBe('100400');
+  });
+
+  it('does not publish pending book mutations or mark prices before COMMIT; rolls back on COMMIT failure', async () => {
+    const s = setup();
+    const resting = await s.place('counter', 'BUY', '1');
+    const maker = s.engine.getBook('BTC/USDT').bestBid()!;
+    const originalBalances = structuredClone([...s.balances]);
+    const mark = jest.spyOn(s.mark, 'recordFuturesTrade');
+    s.faults.beforeCommit = async () => {
+      expect(s.engine.getBook('BTC/USDT').bestBid()).toBe(maker);
+      expect(maker.remainingQuantity.toString()).toBe('1');
+      expect(mark).not.toHaveBeenCalled();
+      throw new Error('commit rejected');
+    };
+    await expect(s.place('owner', 'SELL', '1', true)).rejects.toThrow('commit rejected');
+    expect([...s.balances]).toEqual(originalBalances);
+    expect(s.orders.size).toBe(1);
+    expect(s.orders.get(resting.order.id)).toMatchObject({ status: 'OPEN', remainingQuantity: '1' });
+    expect(s.positions.get('position')).toMatchObject({ status: 'OPEN', size: '1' });
+    expect(s.trades).toHaveLength(0);
+    s.faults.beforeCommit = undefined;
+    expect((await s.place('owner', 'SELL', '1', true)).trades).toHaveLength(1);
+  });
+
+  it('legacy incompatible maker aborts without changing any live order, balance, position or trade', async () => {
+    const s = setup();
+    const resting = await s.place('owner', 'BUY', '1', false, 10);
+    s.orders.get(resting.order.id).leverage = 50; // pre-release legacy row
+    const maker = s.engine.getBook('BTC/USDT').bestBid()!;
+    const original = structuredClone({ orders: [...s.orders], balances: [...s.balances], positions: [...s.positions] });
+    await expect(s.place('counter', 'SELL', '1')).rejects.toThrow('requires 10x');
+    expect({ orders: [...s.orders], balances: [...s.balances], positions: [...s.positions] }).toEqual(original);
+    expect(s.engine.getBook('BTC/USDT').bestBid()).toBe(maker);
+    expect(maker.remainingQuantity.toFixed()).toBe('1');
+    expect(s.engine.getBook('BTC/USDT').bestAsk()).toBeUndefined();
+    expect(s.trades).toHaveLength(0);
+    // A valid non-crossing next order sees and preserves the original bid.
+    await s.service.placeOrder({ userId: 'counter', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT',
+      quantity: new BigNumber(1), price: new BigNumber(11000), leverage: 10, marginType: 'ISOLATED' });
+    expect(s.engine.getBook('BTC/USDT').bestBid()!.remainingQuantity.toFixed()).toBe('1');
+  });
+});
 
 describe('Futures position leverage consistency', () => {
   function setup(leverage?: number, marginType: 'ISOLATED' | 'CROSS' = 'ISOLATED') {
@@ -256,7 +380,7 @@ describe('Futures position leverage consistency', () => {
     expect(s.tx.futuresBalance.update).not.toHaveBeenCalled();
     expect(s.tx.futuresPosition.update).not.toHaveBeenCalled();
     expect(submit).not.toHaveBeenCalled();
-    expect(s.riskLock).toHaveBeenCalledTimes(1);
+    expect(s.riskLock).toHaveBeenCalledTimes(2); // global book lock plus unchanged risk-bucket lock
   });
 
   it.each(['OPEN', 'PARTIALLY_FILLED'])('rejects leverage incompatible with %s same-direction pending orders before writes', async status => {
@@ -373,7 +497,7 @@ describe('FuturesPositionService.placeOrder', () => {
     expect(orders.size).toBe(2);
     await expect(place('0.01')).rejects.toThrow('resulting exposure is 50x');
     expect(orders.size).toBe(2);
-    expect(riskLock).toHaveBeenCalledTimes(3);
+    expect(riskLock.mock.calls.filter(([query]) => query.strings.join('').includes('pg_advisory_xact_lock'))).toHaveLength(6);
   });
 
   it('counts PARTIALLY_FILLED remaining quantity and its leverage against pending exposure', async () => {
