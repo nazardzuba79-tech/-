@@ -18,13 +18,16 @@ jest.mock('../../api/middleware/apiKeyAuth', () => ({
 function makeFakePrisma(opts?: {
   balances?: Record<string, { available: string; locked: string }>;
   userCreatedAt?: Date;
+  orders?: any[];
+  positions?: any[];
 }) {
   const balances = new Map(Object.entries(opts?.balances ?? {}));
-  const orders = new Map<string, any>();
-  const positions = new Map<string, any>();
+  const orders = new Map<string, any>((opts?.orders ?? []).map((order) => [order.id, { ...order }]));
+  const positions = new Map<string, any>((opts?.positions ?? []).map((position) => [position.id, { ...position }]));
   const userCreatedAt = opts?.userCreatedAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // 1yr-old account by default
 
   const tx = {
+    $queryRaw: jest.fn(async () => [{ locked: null }]),
     user: {
       findUnique: jest.fn(async () => ({ id: 'u', createdAt: userCreatedAt })),
     },
@@ -50,6 +53,13 @@ function makeFakePrisma(opts?: {
         Object.assign(orders.get(id), data);
       }),
       findUnique: jest.fn(async ({ where: { id } }: any) => (orders.has(id) ? { ...orders.get(id) } : null)),
+      findMany: jest.fn(async ({ where }: any) => Array.from(orders.values()).filter((order) =>
+        order.userId === where.userId
+        && order.symbol === where.symbol
+        && order.marginType === where.marginType
+        && where.status.in.includes(order.status)
+        && order.reduceOnly === where.reduceOnly
+      ).map((order) => ({ ...order }))),
     },
     futuresPosition: {
       findFirst: jest.fn(async ({ where }: any) => {
@@ -82,7 +92,7 @@ function makeFakePrisma(opts?: {
   };
 
   const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
-  return { prisma, balances, orders, positions };
+  return { prisma, balances, orders, positions, riskLock: tx.$queryRaw };
 }
 
 function bal(balances: Map<string, { available: string; locked: string }>, userId: string, asset: string) {
@@ -159,6 +169,151 @@ function makeMarkPriceService(price = '60000') {
 }
 
 describe('FuturesPositionService.placeOrder', () => {
+  function existingLong(overrides: Record<string, any> = {}) {
+    return {
+      id: 'existing-long', userId: 'taker', symbol: 'BTC/USDT', side: 'LONG',
+      size: '4', entryPrice: '10000', leverage: 100, marginType: 'ISOLATED',
+      initialMargin: '400', liquidationPrice: '9940', status: 'OPEN', realizedPnl: '0',
+      ...overrides,
+    };
+  }
+
+  function activeOrder(overrides: Record<string, any> = {}) {
+    return {
+      id: uuidv4(), userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT',
+      price: '25000', originalQuantity: '1', remainingQuantity: '1', status: 'OPEN',
+      reduceOnly: false, leverage: 100, marginType: 'ISOLATED',
+      ...overrides,
+    };
+  }
+
+  it('accepts 40,000 USDT at 100x with no position or pending exposure', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, orders } = makeFakePrisma({ balances: { 'taker:USDT': { available: '100000', locked: '0' } } });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
+
+    const result = await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(40000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    expect(result.order.status).toBe('OPEN');
+    expect(orders.get(result.order.id).leverage).toBe(100);
+  });
+
+  it('accepts exactly 50,000 but rejects 50,000.01 resulting same-direction exposure at 100x', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, orders, positions } = makeFakePrisma({
+      balances: {
+        'maker:USDT': { available: '100000', locked: '0' },
+        'taker:USDT': { available: '100000', locked: '400' },
+      },
+      positions: [existingLong()],
+    });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
+
+    await service.placeOrder({ userId: 'maker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    expect(positions.get('existing-long').size).toBe('5');
+    expect(positions.get('existing-long').entryPrice).toBe('10000');
+    expect(orders.size).toBe(2);
+    await expect(
+      service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('0.01'), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' })
+    ).rejects.toThrow('Max leverage for a 50000.01 USDT resulting exposure is 50x');
+    expect(orders.size).toBe(2);
+  });
+
+  it('blocks the split-order bypass once pending same-direction orders exceed 50,000', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, orders, riskLock } = makeFakePrisma({ balances: { 'taker:USDT': { available: '100000', locked: '0' } } });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
+    const place = (price: string) => service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(price), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+
+    await place('25000');
+    await place('25000');
+    expect(orders.size).toBe(2);
+    await expect(place('0.01')).rejects.toThrow('resulting exposure is 50x');
+    expect(orders.size).toBe(2);
+    expect(riskLock).toHaveBeenCalledTimes(3);
+  });
+
+  it('counts PARTIALLY_FILLED remaining quantity and its leverage against pending exposure', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, orders } = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '100000', locked: '250' } },
+      orders: [activeOrder({ status: 'PARTIALLY_FILLED', originalQuantity: '2', remainingQuantity: '1' })],
+    });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
+
+    await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(25000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    expect(orders.size).toBe(2);
+    await expect(
+      service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('0.01'), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' })
+    ).rejects.toThrow('50000.01 USDT resulting exposure');
+  });
+
+  it('enforces 50x through 250,000 and 20x above 250,000 on aggregate pending exposure', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, orders } = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '1000000', locked: '4000' } },
+      orders: [activeOrder({ price: '200000', leverage: 50 })],
+    });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService());
+
+    await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(50000), quantity: new BigNumber(1), leverage: 50, marginType: 'ISOLATED' });
+    expect(orders.size).toBe(2);
+    await expect(
+      service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('0.01'), quantity: new BigNumber(1), leverage: 50, marginType: 'ISOLATED' })
+    ).rejects.toThrow('resulting exposure is 20x');
+
+    const allowedState = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '1000000', locked: '10000' } },
+      orders: [activeOrder({ price: '200000', leverage: 20 })],
+    });
+    const allowedService = new FuturesPositionService(allowedState.prisma, new MatchingEngine(), makeMarkPriceService());
+    await expect(
+      allowedService.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber('50000.01'), quantity: new BigNumber(1), leverage: 20, marginType: 'ISOLATED' })
+    ).resolves.toBeDefined();
+  });
+
+  it('does not tier-reject reduce-only, partial reductions, or closes of an old high-notional position', async () => {
+    const engine = new MatchingEngine();
+    const { prisma, positions, balances } = makeFakePrisma({
+      balances: {
+        'maker1:USDT': { available: '1000000', locked: '0' },
+        'maker2:USDT': { available: '1000000', locked: '0' },
+        'taker:USDT': { available: '99200', locked: '800' },
+      },
+      positions: [existingLong({ size: '8', initialMargin: '800' })],
+    });
+    const service = new FuturesPositionService(prisma, engine, makeMarkPriceService('10000'));
+
+    await service.placeOrder({ userId: 'maker1', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    // A non-reduce-only opposite order that cannot flip is still a pure
+    // partial reduction and must not inherit the old 80k tier rejection.
+    await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(1), leverage: 100, marginType: 'ISOLATED' });
+    expect(positions.get('existing-long').size).toBe('7');
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe('700');
+
+    await service.placeOrder({ userId: 'maker2', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(7), leverage: 20, marginType: 'ISOLATED' });
+    await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(7), leverage: 100, marginType: 'ISOLATED', reduceOnly: true });
+    expect(positions.get('existing-long').status).toBe('CLOSED');
+    expect(bal(balances, 'taker', 'USDT').locked.toFixed()).toBe('0');
+  });
+
+  it('validates only the resulting opposite-side remainder when a position flips', async () => {
+    const acceptedState = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '100000', locked: '400' } },
+      positions: [existingLong()],
+    });
+    const acceptedService = new FuturesPositionService(acceptedState.prisma, new MatchingEngine(), makeMarkPriceService('10000'));
+    await expect(acceptedService.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber(9), leverage: 100, marginType: 'ISOLATED' })).resolves.toBeDefined();
+
+    const rejectedState = makeFakePrisma({
+      balances: { 'taker:USDT': { available: '100000', locked: '400' } },
+      positions: [existingLong()],
+    });
+    const rejectedService = new FuturesPositionService(rejectedState.prisma, new MatchingEngine(), makeMarkPriceService('10000'));
+    await expect(rejectedService.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: new BigNumber(10000), quantity: new BigNumber('9.000001'), leverage: 100, marginType: 'ISOLATED' }))
+      .rejects.toThrow('50000.01 USDT resulting exposure');
+  });
+
   it('opens a new LONG position and locks exactly the initial margin', async () => {
     const engine = new MatchingEngine();
     const { prisma, balances, positions } = makeFakePrisma({

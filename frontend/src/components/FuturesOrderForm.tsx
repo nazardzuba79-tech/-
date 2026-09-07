@@ -6,7 +6,7 @@ import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
-import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
+import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
 
 export function FuturesOrderForm({
   symbol,
@@ -44,6 +44,9 @@ export function FuturesOrderForm({
   const [availableMargin, setAvailableMargin] = useState(0);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
+  const [positions, setPositions] = useState<Awaited<ReturnType<typeof api.getFuturesPositions>>>([]);
+  const [activeOrders, setActiveOrders] = useState<Awaited<ReturnType<typeof api.getMyFuturesOrders>>>([]);
+  const [exposureRefreshKey, setExposureRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -92,6 +95,26 @@ export function FuturesOrderForm({
     };
   }, [symbol]);
 
+  useEffect(() => {
+    let cancelled = false;
+    function load() {
+      Promise.all([
+        api.getFuturesPositions(),
+        api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED'),
+      ]).then(([nextPositions, nextOrders]) => {
+        if (cancelled) return;
+        setPositions(nextPositions);
+        setActiveOrders(nextOrders);
+      }).catch(() => {});
+    }
+    load();
+    const interval = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [symbol, exposureRefreshKey]);
+
   const effectivePrice = type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
@@ -100,20 +123,54 @@ export function FuturesOrderForm({
   // (src/futures/marginMath.ts) to actually set it at fill time. Purely
   // informational here: nothing about submitting the order depends on
   // this number, it just shows the trader what to expect before they commit.
-  const tier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
-  // The API's notional tier, never account age, determines the slider ceiling.
-  const effectiveMaxLeverage = config ? Math.min(config.maxLeverage, tier?.maxLeverage ?? config.maxLeverage) : null;
+  const orderTier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
+  const currentPosition = positions.find(
+    (position) => position.symbol === symbol && position.marginType === marginType
+  );
+  const pendingExposureOrders = activeOrders
+    .filter((order) =>
+      order.symbol === symbol
+      && order.marginType === marginType
+      && !order.reduceOnly
+      && order.price !== null
+    )
+    .map((order) => ({
+      side: order.side,
+      remainingQuantity: Number(order.remainingQuantity),
+      price: Number(order.price),
+    }))
+    .filter((order) => Number.isFinite(order.remainingQuantity) && Number.isFinite(order.price));
+  const projectedExposure = reduceOnly || notional <= 0
+    ? 0
+    : projectFuturesExposureNotional({
+        position: currentPosition
+          ? {
+              side: currentPosition.side,
+              size: Number(currentPosition.size),
+              entryPrice: Number(currentPosition.entryPrice),
+            }
+          : null,
+        activeOrders: pendingExposureOrders,
+        candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
+      });
+  const resultingTier = config && projectedExposure > 0
+    ? getLeverageTier(config.leverageTiers, projectedExposure)
+    : null;
+  // Informational only: the backend recomputes this projection transactionally.
+  const effectiveMaxLeverage = config
+    ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
+    : null;
   useEffect(() => {
     if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
   }, [effectiveMaxLeverage, leverage]);
   const liqPreview =
-    tier && effectivePrice > 0 && quantity
+    orderTier && effectivePrice > 0 && quantity
       ? previewLiquidationPrice({
           entryPrice: effectivePrice,
           side: side === 'BUY' ? 'LONG' : 'SHORT',
           leverage,
           marginType,
-          maintenanceMarginRate: tier.maintenanceMarginRate,
+          maintenanceMarginRate: orderTier.maintenanceMarginRate,
           notional,
           freeBalance: availableMargin,
         })
@@ -146,6 +203,7 @@ export function FuturesOrderForm({
       setPrice('');
       setQuantity('');
       setPercent(0);
+      setExposureRefreshKey((key) => key + 1);
       onPlaced();
       toast.success(t('trade.orderPlaced'));
     } catch (err) {
@@ -330,7 +388,7 @@ export function FuturesOrderForm({
             </thead>
             <tbody>
               {config.leverageTiers.map((tr, i) => (
-                <tr key={i} className={tier === tr ? 'fo-tiersRowActive' : undefined}>
+                <tr key={i} className={resultingTier === tr ? 'fo-tiersRowActive' : undefined}>
                   <td className="fo-tiersTd mono">
                     {tr.notionalCap === null ? '∞' : tr.notionalCap.toLocaleString('en-US')}
                   </td>

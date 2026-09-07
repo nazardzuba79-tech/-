@@ -16,6 +16,7 @@ import {
   MAX_LEVERAGE,
   getLeverageTier,
 } from '../config/futuresConfig';
+import { projectFuturesExposure } from './exposureRisk';
 
 type TxClient = Prisma.TransactionClient;
 type MarginType = 'ISOLATED' | 'CROSS';
@@ -71,14 +72,16 @@ export class FuturesPositionService {
     if (!estimatePrice) throw new Error('No liquidity available for this market order');
     const estimatedNotional = params.quantity.times(estimatePrice);
 
-    const tier = getLeverageTier(estimatedNotional.toNumber());
-    if (params.leverage > tier.maxLeverage) {
-      throw new Error(
-        `Max leverage for a ${estimatedNotional.toFixed(2)} ${quote} position is ${tier.maxLeverage}x`
-      );
-    }
-
     return this.prisma.$transaction(async (tx: TxClient) => {
+      // Serialize exposure reads and order creation for this exact risk
+      // bucket across requests and application instances. Without this,
+      // simultaneous split orders could both observe the same pre-order
+      // snapshot before either OPEN row became visible.
+      const riskLockKey = `futures-exposure:${params.userId}:${params.symbol}:${params.marginType}`;
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${riskLockKey}, 0)) AS locked`
+      );
+
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
 
@@ -94,6 +97,51 @@ export class FuturesPositionService {
             : new BigNumber(0);
         if (params.quantity.isGreaterThan(opposingSize)) {
           throw new Error('reduceOnly order would exceed the current position size');
+        }
+      } else {
+        const activeOrders = await tx.futuresOrder.findMany({
+          where: {
+            userId: params.userId,
+            symbol: params.symbol,
+            marginType: params.marginType,
+            status: { in: ['OPEN', 'PARTIALLY_FILLED'] },
+            reduceOnly: false,
+          },
+        });
+        const projected = projectFuturesExposure({
+          position: existingPosition
+            ? {
+                side: existingPosition.side as PositionSide,
+                size: new BigNumber(existingPosition.size.toString()),
+                entryPrice: new BigNumber(existingPosition.entryPrice.toString()),
+                leverage: existingPosition.leverage,
+              }
+            : null,
+          activeOrders: activeOrders.map((order) => {
+            if (!order.price) {
+              throw new Error('Cannot determine exposure for an active futures market order');
+            }
+            return {
+              side: order.side as OrderSide,
+              remainingQuantity: new BigNumber(order.remainingQuantity.toString()),
+              price: new BigNumber(order.price.toString()),
+              leverage: order.leverage,
+            };
+          }),
+          candidate: {
+            side: params.side,
+            remainingQuantity: params.quantity,
+            price: estimatePrice,
+            leverage: params.leverage,
+          },
+        });
+        if (projected.notional.isGreaterThan(0)) {
+          const tier = getLeverageTier(projected.notional.toNumber());
+          if (projected.maxContributingLeverage > tier.maxLeverage) {
+            throw new Error(
+              `Max leverage for a ${projected.notional.toFixed(2)} ${quote} resulting exposure is ${tier.maxLeverage}x`
+            );
+          }
         }
       }
 

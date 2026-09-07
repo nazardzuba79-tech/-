@@ -34,10 +34,9 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
-    // Owner-authorized tier-based leverage replaces the age gate; confirmation
-    // uses the retained high-leverage translations. Behavioral coverage below
-    // lives in futuresFinalPolish plus backend FuturesPositionService tests.
-    "889c0c5a3fc5eeb05f709352a814b6eaf28f7d289c484c97e231574a0a04e331"
+    // The ceiling now mirrors resulting position + active-order exposure;
+    // backend FuturesPositionService remains authoritative.
+    "7f76f8eb7bd189ece3aa433dbf7497c5d3845955c7be0838a1993cc2cc24ca33"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -68,7 +67,7 @@ test.each([
   ],
   [
     "lib/futuresMath.ts",
-    "ee6e6be6d8a6fd40fc548a20c19e9ddb0a1ff392f8da48c3476d70aadff16b00"
+    "886f8e135f998bf2bd7a0f9379bfe173eddcc1f7d898362c737b97ab5cf2a026"
   ]
 ])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{

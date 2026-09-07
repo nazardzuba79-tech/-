@@ -228,6 +228,53 @@ test.each([[50000, 100], [50000.01, 50], [250000, 50], [250000.01, 20], [1000000
   }
 );
 
+test('frontend projection includes positions and pending increases, but only the remainder of a flip', () => {
+  const candidate = { side: 'BUY' as const, remainingQuantity: 1, price: 0.01 };
+  expect(futuresMath.projectFuturesExposureNotional({
+    position: { side: 'LONG', size: 4, entryPrice: 10000 },
+    activeOrders: [{ side: 'BUY', remainingQuantity: 1, price: 10000 }],
+    candidate,
+  })).toBeCloseTo(50000.01, 8);
+  expect(futuresMath.projectFuturesExposureNotional({
+    position: null,
+    activeOrders: [
+      { side: 'BUY', remainingQuantity: 1, price: 25000 },
+      { side: 'BUY', remainingQuantity: 1, price: 25000 },
+    ],
+    candidate,
+  })).toBeCloseTo(50000.01, 8);
+  expect(futuresMath.projectFuturesExposureNotional({
+    position: { side: 'LONG', size: 4, entryPrice: 10000 },
+    activeOrders: [],
+    candidate: { side: 'SELL', remainingQuantity: 9.000001, price: 10000 },
+  })).toBeCloseTo(50000.01, 8);
+});
+
+test('form leverage ceiling reflects the expected aggregate tier while reductions remain unclamped', async () => {
+  const form = mount('components/FuturesOrderForm.tsx', { api: {
+    getFuturesConfig: () => Promise.resolve(tierConfig),
+    getFuturesBalances: () => Promise.resolve([{ asset: 'USDT', available: '1000000', locked: '400' }]),
+    getFuturesMarkPrice: () => Promise.resolve({ markPrice: '10000' }),
+    getFuturesPositions: () => Promise.resolve([{
+      id: 'position', symbol: 'BTC/USDT', side: 'LONG', size: '4', entryPrice: '10000',
+      leverage: 100, marginType: 'ISOLATED', initialMargin: '400', liquidationPrice: '9940',
+      markPrice: '10000', unrealizedPnl: '0', roe: '0', openedAt: new Date().toISOString(),
+    }]),
+    getMyFuturesOrders: () => Promise.resolve([]),
+  } });
+  const formProps = { symbol: 'BTC/USDT', onPlaced: jest.fn() };
+  form.render(formProps); await tick();
+  let tree = form.render(formProps);
+  nodes(tree).find(n => n.type === 'input' && n.props.placeholder === '0.00').props.onChange({ target: { value: '10000.01' } });
+  nodes(tree).find(n => n.type === 'input' && n.props.placeholder === '0.00000').props.onChange({ target: { value: '1' } });
+  tree = form.render(formProps);
+  expect(nodes(tree).find(n => n.type === form.components.LeverageSlider).props.max).toBe(50);
+
+  nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
+  tree = form.render(formProps);
+  expect(nodes(tree).find(n => n.type === form.components.LeverageSlider).props.max).toBe(100);
+});
+
 test('high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact', async () => {
   const f = await leverageForm(); f.part(f.tree, 'LeverageSlider').props.onChange(100);
   f.confirm.mockReturnValue(false);

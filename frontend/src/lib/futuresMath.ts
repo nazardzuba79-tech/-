@@ -18,6 +18,46 @@ export function getLeverageTier(tiers: LeverageTier[], notionalUsd: number): Lev
   return tiers[tiers.length - 1] ?? null;
 }
 
+export interface FuturesExposurePosition {
+  side: 'LONG' | 'SHORT';
+  size: number;
+  entryPrice: number;
+}
+
+export interface FuturesExposureOrder {
+  side: 'BUY' | 'SELL';
+  remainingQuantity: number;
+  price: number;
+}
+
+/** Informational client mirror of the backend exposure projection. */
+export function projectFuturesExposureNotional(params: {
+  position: FuturesExposurePosition | null;
+  activeOrders: FuturesExposureOrder[];
+  candidate: FuturesExposureOrder;
+}): number {
+  const direction = params.candidate.side === 'BUY' ? 'LONG' : 'SHORT';
+  const legs = [...params.activeOrders, params.candidate].filter(
+    (order) => order.side === params.candidate.side && order.remainingQuantity > 0
+  );
+  if (!params.position) {
+    return legs.reduce((total, order) => total + order.remainingQuantity * order.price, 0);
+  }
+  if (params.position.side === direction) {
+    return params.position.size * params.position.entryPrice
+      + legs.reduce((total, order) => total + order.remainingQuantity * order.price, 0);
+  }
+
+  let quantityToReduce = params.position.size;
+  let remainderNotional = 0;
+  for (const order of [...legs].sort((a, b) => a.price - b.price)) {
+    const reducingQuantity = Math.min(quantityToReduce, order.remainingQuantity);
+    quantityToReduce -= reducingQuantity;
+    remainderNotional += (order.remainingQuantity - reducingQuantity) * order.price;
+  }
+  return remainderNotional;
+}
+
 export function previewLiquidationPrice(params: {
   entryPrice: number;
   side: 'LONG' | 'SHORT';
