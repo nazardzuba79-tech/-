@@ -10,7 +10,7 @@ const SCENES = {
   },
   atm: {
     src: '/cards/crypto-card-final/e02dd952-015e-4a66-851e-4561ff0cc446.jpg',
-    transform: 'translate(542 400) rotate(-6)', width: 208,
+    transform: 'translate(501 379) rotate(-3)', width: 208,
     hand: 'M 708 497 C 709 488 716 478 723 476 C 729 469 741 466 751 470 C 766 471 779 478 793 481 L 824 483 L 824 554 L 715 554 Z',
   },
 };
@@ -28,7 +28,8 @@ export function CardScene({ kind }: { kind: keyof typeof SCENES }) {
   return <svg viewBox="0 0 1200 896" preserveAspectRatio="xMidYMid slice" role="img" aria-label={kind === 'pos' ? c.paymentAlt : c.atmAlt} data-payment-scene={kind} className="vc-absolute vc-inset-0 vc-h-full vc-w-full">
     <image href={scene.src} width="1200" height="896" />
     <defs><mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="896"><rect width="1200" height="896" fill="white" /><path d={scene.hand} fill="black" /></mask></defs>
-    <g mask={`url(#${mask})`} data-card-slot={`black-signature-${kind}`}>
+    {/* ATM grip sits behind the card's lower-right edge; no face/edge masking. */}
+    <g mask={kind === 'pos' ? `url(#${mask})` : undefined} data-card-slot={`black-signature-${kind}`}>
       <g transform={scene.transform}>
         <svg width={scene.width} height={scene.width * CARD_FACE.height / CARD_FACE.width} viewBox="106 78 1369 834" preserveAspectRatio="xMidYMid meet" overflow="hidden">
           <image href={CARD_MASTER.black} width="1580" height="996" />

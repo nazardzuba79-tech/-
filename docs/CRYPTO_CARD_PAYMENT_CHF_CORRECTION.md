@@ -4,6 +4,16 @@ Owner preview only. No push, main modification, Render action or deployment.
 Branch: `codex/card-payment-chf-correction`.
 Starting main: `bd41a81fb87adb9dec812c77d476e983e52e046b` (freshly fetched; preserves owner copy cleanup after a97cb677).
 
+## Latest owner correction — original photo restored
+
+Supersedes the ruby image choice documented below. Following the owner's rejection of AI-edited photo details, the active image is now the exact supplied `ChatGPT Image 7 сент. 2026 г., 12_59_33.png`, copied byte-for-byte as `voltex-watch-wrist-original.png`. SHA256 `e853ff967008a4d1661ca029fbacb8b0a2531bc9fc4657b18922e760fea3f16b` matches the owner file. Original red CHF, Swiss cross, wrist/watch and all ten badges are intact. SVG viewport `516 80 928 925` omits only the old left baked-in slogan; no photo pixels were edited or stretched. Exact live slogan is unchanged. Shared Homepage/Card mount uses this original.
+
+ATM card placement is now `translate(501 379) rotate(-3)` with width 208 and unchanged master ratio. The foreground mask is not applied to the ATM card: all four edges and the Mastercard corner remain visible, with the real fingertip meeting the lower-right edge. POS and physical master PNGs are unchanged from `04cc0fb`.
+
+Validation: TypeScript PASS; 3 Card suites / 26 tests PASS; production build PASS (`index-7a2ydEha.js`, unchanged `index-DGycu1bW.css`). Browser screenshots at 1440 desktop and 390 mobile show the original watch photo and complete ATM card; no page overflow or console errors. Tests lock the original image hash and absence of the ATM face mask. Previous full-suite baseline limitations below still apply; unrelated Copy files remain untouched.
+
+Light-ruby and cherry-red AI variants were rejected and are not referenced by the app. Light variant is retained only in untracked `outputs/voltex-watch-wrist-light-ruby-rejected.png`; cherry variant remains in generated_images. No push/deploy or main/production changes. Owner review only.
+
 ## Narrow visual change
 
 - `CardScene.tsx`: remove the ATM no-card early return; reuse the exact approved `CARD_MASTER.black` as a controlled SVG layer in both POS/ATM photographs. Original background/hand pixels and both physical master files are unchanged. A source-space finger mask keeps only a small natural grip in front of the card. Master face viewport `106 78 1369 834` includes all card edges, with uniform scaling and rigid rotation (no anisotropic sizing/skew). POS positioning exposes the chip above the thumb; ATM card remains clearly in front of the NFC device, not swallowed by it.

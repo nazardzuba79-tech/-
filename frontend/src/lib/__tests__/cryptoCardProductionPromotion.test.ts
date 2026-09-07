@@ -18,7 +18,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/AtmSection.tsx": "e0341badbe91a3e3098b845a05f3be5ac017c461ad487963d9b112fbd31e64b9",
   "frontend/src/pages/crypto-card-final/components/BrandMarks.tsx": "42c92d5892b537de7dd079a0ce857fd73362954e0b3e2d16bc2239b6f9849478",
   "frontend/src/pages/crypto-card-final/components/CardChoiceSection.tsx": "d467f522ae3fe6ae03a7b6ff0558622f1cf009dc8eb86171c37508181a8542bd",
-  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "60dbcac82bb8868bbd8f53359641aa703bb5f95b51554544520ec440363ffe04",
+  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "969b6529631e9f1447509f40b164093ee8972be353bcb713cef543cca2495455",
   "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "5b5d53b1bc200cac4bddc4633eaccf1e823f9d92feb3a18a4e5ff35e1ab06a97",
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
@@ -95,6 +95,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
 };
 const approvedAssets: Record<string, string> = {
+  "voltex-watch-wrist-original.png": "e853ff967008a4d1661ca029fbacb8b0a2531bc9fc4657b18922e760fea3f16b",
   "voltex-watch-wrist-ruby.png": "e4814c093ff27b9ad8d2f0a5a44ba7ea6fab5b1c67ddd539bbc373bac4a1b22e",
   "voltex-watch-wrist-final.png": "ac18b001ae9bb5f370efae95953c7d6deda508679882b4220b7b687e41b39013",
   "apple-pay-mark.svg": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
@@ -128,7 +129,7 @@ test('all approved masters and the two new presentation assets are byte-exact an
   for (const [file, expected] of Object.entries(approvedAssets)) {
     expect({ file, sha256: digest(readFileSync(resolve(directory, file))) }).toEqual({ file, sha256: expected });
   }
-  expect(Object.keys(approvedAssets)).toHaveLength(19);
+  expect(Object.keys(approvedAssets)).toHaveLength(20);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-hero-source.png'))).toBe(false);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });

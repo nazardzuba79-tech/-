@@ -37,17 +37,18 @@ test('hero uses the reference wrist artwork without distorting its watch or circ
   expect(html).toContain(watch.WATCH_CARD_IMAGE);
   expect(html).toContain('preserveAspectRatio="xMidYMid meet"');
   expect(html).not.toMatch(/clipPath|<mask|transform=|slice|preserveAspectRatio="none"/);
-  expect(html).toContain('viewBox="480 80 960 925"');
+  expect(html).toContain('viewBox="516 80 928 925"');
   expect(html).toContain('width="1448" height="1086"');
   const png = readFileSync(resolve(frontend, `public${watch.WATCH_CARD_IMAGE}`));
   expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1448, 1086]);
-  expect(createHash('sha256').update(png).digest('hex')).toBe('e4814c093ff27b9ad8d2f0a5a44ba7ea6fab5b1c67ddd539bbc373bac4a1b22e');
+  // Byte-exact owner original: no regenerated wrist, card or badge pixels.
+  expect(createHash('sha256').update(png).digest('hex')).toBe('e853ff967008a4d1661ca029fbacb8b0a2531bc9fc4657b18922e760fea3f16b');
   expect(read('src/pages/crypto-card-final/crypto-card.css')).not.toContain('aspect-ratio: 800 / 1150');
   expect(renderToStaticMarkup(React.createElement(cinematic.CinematicCardScene, { kind: 'final', label: 'VOLTEX Card' })))
     .toContain(master.CARD_MASTER.black);
 });
 
-test.each(['pos', 'atm'])('%s presents the unchanged Black Signature master with a natural finger mask and no stretching', kind => {
+test.each(['pos', 'atm'])('%s presents the unchanged Black Signature master without stretching or hiding the ATM card face', kind => {
   const { CardScene } = evaluate('src/pages/crypto-card-final/components/CardScene.tsx', {
     './VoltexCard': master,
     '../useCardCopy': { useCardCopy: () => ({ c: { paymentAlt: 'POS', atmAlt: 'ATM' } }) },
@@ -57,6 +58,9 @@ test.each(['pos', 'atm'])('%s presents the unchanged Black Signature master with
   expect(html).toContain(`data-card-slot="black-signature-${kind}"`);
   expect(html.match(new RegExp(master.CARD_MASTER.black, 'g'))).toHaveLength(1);
   expect(html).toContain('maskUnits="userSpaceOnUse"');
+  const cardGroup = html.match(new RegExp(`<g[^>]*data-card-slot="black-signature-${kind}"[^>]*>`))![0];
+  if (kind === 'atm') expect(cardGroup).not.toContain('mask=');
+  else expect(cardGroup).toContain('mask=');
   expect(html).toContain('viewBox="106 78 1369 834" preserveAspectRatio="xMidYMid meet"');
   const size = html.match(/<svg width="([\d.]+)" height="([\d.]+)" viewBox="106 78 1369 834"/);
   expect(size).not.toBeNull();
