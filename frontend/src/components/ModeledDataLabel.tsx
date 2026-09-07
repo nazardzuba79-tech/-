@@ -14,5 +14,5 @@ export const MODELED_DATA_LABEL: Record<Lang, string> = {
 /** Source provenance only; no environment, account or financial side effects. */
 export function ModeledDataLabel({ modeled }: { modeled: boolean }) {
   const { lang } = useLanguage();
-  return modeled ? <small className="modeled-data-label">{MODELED_DATA_LABEL[lang]}</small> : null;
+  return null;
 }
