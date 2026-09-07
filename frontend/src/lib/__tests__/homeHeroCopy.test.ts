@@ -17,13 +17,23 @@ test('all seven languages retain the approved headline, institutional positionin
   expect(rows('home.hero.badge')).toEqual(rows('marketing.eyebrow'));
   expect(rows('home.hero.badgeShort')[0]).toBe('Биржа институционального уровня');
   expect(rows('home.hero.subtitle')[0]).toBe('Ваш доступ к мировым рынкам и свободе.');
-  expect(rows('home.hero.description')[0]).toBe('Торговля, инвестиции и криптокарта VOLTEX — в одной системе.');
+  expect(rows('home.hero.description')[0]).toBe('Торговля, инвестиции, VOLTEX Crypto Card и возможность копировать лучших трейдеров мира — в одной системе.');
   expect(rows('home.hero.description')).toHaveLength(7);
   for (const description of rows('home.hero.description')) expect(description).toContain('VOLTEX');
   expect(rows('home.hero.subtitle').every(Boolean)).toBe(true);
   expect(source).not.toContain('Рынок сложный.');
   expect(source).not.toContain('Интерфейс — нет.');
   expect(source).not.toContain('с реальными рыночными данными и единым кошельком');
+});
+
+test('Crypto Card product naming stays English throughout every supported UI language', () => {
+  expect(rows('nav.card')).toEqual(Array(7).fill('Crypto Card'));
+  expect(rows('home.card.name')).toEqual(Array(7).fill('VOLTEX Crypto Card'));
+  for (const key of ['marketing.heroPerk2', 'home.hero.description', 'home.faq.q6']) {
+    expect(rows(key)).toHaveLength(7);
+    for (const text of rows(key)) expect(text).toContain('Crypto Card');
+  }
+  expect(source).not.toMatch(/крипто[ -]?карт|加密卡|tarjeta cripto|क्रिप्टो कार्ड|暗号資産カード|クリプトカード|크립토 카드/i);
 });
 
 test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline and separate supporting copy without changing CTA targets or terminal previews', lang => {

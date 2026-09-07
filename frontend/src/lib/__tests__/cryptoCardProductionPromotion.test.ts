@@ -192,7 +192,7 @@ test('Card remains an authenticated standalone route, independent of Spot termin
   expect(trade).not.toMatch(/(?:getCardApplication|submitCardApplication)\s*\(/);
 });
 
-test('all 196 existing Card-related shared translations stay exact while Spot may add its own keys', () => {
+test('all 196 Card-related shared translations retain owner-approved English product branding', () => {
   const text = source('frontend/src/lib/i18n.tsx');
   expect(text).not.toMatch(/^\s*'card\./m);
   // Snapshot only the reviewed Card/Home/Auth/support entry points, across all
@@ -201,7 +201,7 @@ test('all 196 existing Card-related shared translations stay exact while Spot ma
   // replacement of a whole-file i18n hash or invalidate these Card guarantees.
   const entries = text.split('\n').filter(line => /^\s*'(?:nav\.card|authShell\.(?:lead|(?:benefit\.)?card\.[^']+)|home\.(?:card\.[^']+|cta\.getCard|faq\.[qa]6)|support\.subject\.CARD)':/.test(line)).map(line => line.trim());
   expect(entries).toHaveLength(196);
-  expect(digest(entries.join('\n'))).toBe('9d42978eef5f862316cdb8ac0510c773fea669f252e9f0be23e36f42dd71284a');
+  expect(digest(entries.join('\n'))).toBe('d691d191b62d83a8306b5c82132bde2f9833885d6bbb35a494bee2afc43876ce');
 });
 
 test('Card API uses normal authenticated backend requests without review or client eligibility branches', () => {
