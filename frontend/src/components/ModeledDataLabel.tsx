@@ -1,4 +1,4 @@
-import { useLanguage, type Lang } from '../lib/i18n';
+import type { Lang } from '../lib/i18n';
 import './modeledDataLabel.css';
 
 export const MODELED_DATA_LABEL: Record<Lang, string> = {
@@ -13,6 +13,5 @@ export const MODELED_DATA_LABEL: Record<Lang, string> = {
 
 /** Source provenance only; no environment, account or financial side effects. */
 export function ModeledDataLabel({ modeled }: { modeled: boolean }) {
-  const { lang } = useLanguage();
   return null;
 }
