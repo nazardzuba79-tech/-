@@ -11,6 +11,7 @@ const { renderToStaticMarkup } = req('react-dom/server');
 const source = readFileSync(resolve(root, 'src/components/ReviewDisclosure.tsx'), 'utf8');
 function render(mode: string, neutral?: unknown) {
   const out: any = {};
+  expect(source).not.toContain('import.meta.env');
   const code = ts.transpileModule(source.replace('import.meta.env.MODE', JSON.stringify(mode)), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -21,54 +22,54 @@ test('review removes the entire duplicate paragraph with no empty DOM or spacing
   expect(render('review')).toBe('');
   expect(render('review', React.createElement('p', null, 'Neutral methodology'))).toBe('<p>Neutral methodology</p>');
 });
-test.each(['production', 'development'])('%s keeps disclosure outside explicitly labelled isolated review', mode => {
-  expect(render(mode)).toBe('<p>synthetic disclosure</p>');
+test.each(['production', 'development'])('%s cannot restore the old fallback disclosure', mode => {
+  expect(render(mode)).toBe('');
+  expect(render(mode, React.createElement('p', null, 'Neutral methodology'))).toBe('<p>Neutral methodology</p>');
 });
 test('all seven homepage translations remain behind the same removed review element', () => {
   const homepage = readFileSync(resolve(root, 'src/pages/home/HomeCopyTrading.tsx'), 'utf8');
   expect(homepage).toMatch(/<ReviewDisclosure><p[^>]*>\{t\('home.copy.disclaimer'\)\}<\/p><\/ReviewDisclosure>/);
   const dictionaries = readFileSync(resolve(root, 'src/lib/i18n.tsx'), 'utf8');
   expect(dictionaries.match(/'home.copy.disclaimer':/g)).toHaveLength(7);
-  expect(homepage.match(/<ReviewModeledLabel \/>/g)).toHaveLength(1);
+  expect(homepage.match(/<ReviewModeledLabel modeled=/g)).toHaveLength(2);
 });
 
 const modeledSource = readFileSync(resolve(root, 'src/components/ReviewModeledLabel.tsx'), 'utf8');
-function renderModeledLabel(mode: string, lang: string) {
+function renderModeledLabel(lang: string, modeled: unknown) {
   const out: any = {};
-  expect(modeledSource.match(/import\.meta\.env\.MODE/g)).toHaveLength(1);
-  const code = ts.transpileModule(modeledSource.replace('import.meta.env.MODE', JSON.stringify(mode)), {
+  expect(modeledSource).not.toContain('import.meta.env.MODE');
+  const code = ts.transpileModule(modeledSource, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   new Function('require', 'exports', code)((id: string) => {
     if (id === '../lib/i18n') return { useLanguage: () => ({ lang }) };
     return req(id);
   }, out);
-  return renderToStaticMarkup(React.createElement(out.ReviewModeledLabel));
+  return renderToStaticMarkup(React.createElement(out.ReviewModeledLabel, { modeled }));
 }
 
 const labels = {
-  ru: 'Смоделированные результаты', en: 'Modeled results', zh: '模拟结果',
-  es: 'Resultados modelados', hi: 'मॉडल किए गए परिणाम', ja: 'モデル化された結果', ko: '모델링된 결과',
+  ru: 'Модельные данные', en: 'Modeled data', zh: '模拟数据',
+  es: 'Datos modelados', hi: 'मॉडल किए गए डेटा', ja: 'モデル化データ', ko: '모델링 데이터',
 };
 test.each(Object.entries(labels))('actual review label renders concise local provenance in %s', (lang, label) => {
-  expect(renderModeledLabel('review', lang)).toBe(`<small class="review-modeled-label">${label}</small>`);
+  expect(renderModeledLabel(lang, true)).toBe(`<small class="review-modeled-label">${label}</small>`);
 });
-test.each(Object.keys(labels))('%s label has no DOM or spacing placeholder in production/development', lang => {
-  expect(renderModeledLabel('production', lang)).toBe('');
-  expect(renderModeledLabel('development', lang)).toBe('');
+test.each(Object.keys(labels))('%s real/missing source has no label or spacing placeholder in any environment', lang => {
+  for (const modeled of [false, undefined, null, 'true', 1]) expect(renderModeledLabel(lang, modeled)).toBe('');
 });
 
-test('local label is inserted exactly once beside each reviewed performance context, not every card or chart', () => {
+test('tiny source-aware labels accompany actual figures, never the whole grid or a chart renderer', () => {
   const components = readFileSync(resolve(root, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
   const parsed = ts.createSourceFile('components.tsx', components, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const functions = parsed.statements.filter(ts.isFunctionDeclaration);
-  expect(components.match(/<ReviewModeledLabel \/>/g)).toHaveLength(3);
-  for (const name of ['MarketplaceHero', 'Marketplace', 'Profile']) {
+  expect(components.match(/<ReviewModeledLabel modeled=/g)).toHaveLength(3);
+  for (const name of ['MarketplaceHero', 'TraderCard', 'Profile']) {
     const declaration = functions.find(fn => fn.name?.text === name);
     expect(declaration).toBeDefined();
-    expect(declaration!.getText(parsed).match(/<ReviewModeledLabel \/>/g)).toHaveLength(1);
+    expect(declaration!.getText(parsed).match(/<ReviewModeledLabel modeled=/g)).toHaveLength(1);
   }
-  for (const name of ['TraderCard', 'MetricsPanel', 'MiniPerformanceChart', 'ProfilePerformanceChart', 'DailyReturnChart']) {
+  for (const name of ['Marketplace', 'MetricsPanel', 'MiniPerformanceChart', 'ProfilePerformanceChart', 'DailyReturnChart']) {
     expect(functions.find(fn => fn.name?.text === name)!.getText(parsed)).not.toContain('ReviewModeledLabel');
   }
   const profile = functions.find(fn => fn.name?.text === 'Profile')!.getText(parsed);
@@ -76,7 +77,10 @@ test('local label is inserted exactly once beside each reviewed performance cont
   // Trades; no math/chart component receives the presentation-only addition.
   const tabsAt = profile.indexOf('<nav className="profile-primary-tabs"');
   expect(tabsAt).toBeGreaterThan(0);
-  expect(profile.indexOf('<ReviewModeledLabel />')).toBeLessThan(tabsAt);
+  expect(profile.indexOf('<ReviewModeledLabel modeled=')).toBeLessThan(tabsAt);
+  expect(profile).toContain('modeled={isModeledTraderData(trader, liveSynthetic)}');
+  expect(components).toContain('modeled={isModeledTraderData(trader, synthetic)}');
+  expect(components).toContain('map(item => preserveModeledSource(item, { ...item, drawdown:');
 });
 
 test('review shell has neither top notice nor a reserved-height offset; local label styles remain Copy-scoped', () => {
@@ -97,6 +101,24 @@ test('review shell has neither top notice nor a reserved-height offset; local la
 // Exact normalized-byte fingerprints from the owner-requested 0a9c902 review
 // baseline. Removing presentation banners must not open account APIs or change
 // production entry points, deployment/build workflows, or isolated review policy.
+function restoreReviewPresentationHook(source: string) {
+  // The separately approved synthetic-session replay opts in only at the
+  // Nazar build/runtime snapshot. Preserve the original config hash after
+  // reversing these exact additions; no proxy, CSP or write guard is masked.
+  const replacements: [string, string][] = [
+    ["import { REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';", "import { createReviewSyntheticState, REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';"],
+    ["import { createNazarPresentationState, NAZAR_PRESENTATION_REVISION } from '../src/services/copyTrading/nazarPresentation';\n", ''],
+    ['const synthetic = createNazarPresentationState(new Date());', 'const synthetic = createReviewSyntheticState(new Date());'],
+    ['version: synthetic.version, presentationRevision: NAZAR_PRESENTATION_REVISION,', 'version: synthetic.version,'],
+    ['const calendar = createReviewCalendarClock(undefined, createNazarPresentationState);', 'const calendar = createReviewCalendarClock();'],
+  ];
+  for (const [from, to] of replacements) {
+    expect(source.split(from)).toHaveLength(2);
+    source = source.replace(from, to);
+  }
+  return source;
+}
+
 test.each(Object.entries({
   'src/lib/reviewPolicy.ts': 'c8da1f077c0048d574fefde081c71839ae186380f01500b0a754c59db11cc341',
   'src/lib/api.ts': 'e0a6aab944a153263655312931ea869066ab92c024db687d1d4ba7f7bcc47932',
@@ -106,14 +128,18 @@ test.each(Object.entries({
   'src/App.tsx': 'd35577d9e261e2fad189d1f65e32891a9afbddc35745966eb0286e0db89825c1',
   'src/main.tsx': '4d197f3765e5d8a5e315d35b73ed13799cd21279c477e0b9d422868fcfa3b525',
 }))('%s remains exactly isolated from the banner removal', (file, hash) => {
-  expect(createHash('sha256').update(readFileSync(resolve(root, file), 'utf8').replace(/\r\n/g, '\n')).digest('hex')).toBe(hash);
+  let contents = readFileSync(resolve(root, file), 'utf8').replace(/\r\n/g, '\n');
+  if (file === 'vite.review.config.ts') contents = restoreReviewPresentationHook(contents);
+  expect(createHash('sha256').update(contents).digest('hex')).toBe(hash);
 });
 
 test('homepage cards, data, charts and layout preserve the exact starting implementation', () => {
   let homepage = readFileSync(resolve(root, 'src/pages/home/HomeCopyTrading.tsx'), 'utf8').replace(/\r\n/g, '\n');
   for (const addition of [
     "import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';\n",
-    '          <ReviewModeledLabel />\n',
+    "import { isModeledAggregate, isModeledTraderData } from '../../lib/modeledCopyData';\n",
+    '          <ReviewModeledLabel modeled={isModeledTraderData(trader)} />\n',
+    '                <ReviewModeledLabel modeled={isModeledAggregate(HOME_COPY_TRADERS)} />\n',
   ]) {
     expect(homepage.split('\n').filter(line => line + '\n' === addition)).toHaveLength(1);
     homepage = homepage.replace('\n' + addition, '\n');

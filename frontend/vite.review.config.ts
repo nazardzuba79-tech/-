@@ -2,8 +2,9 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { toResponse } from '../src/services/copyTrading/SyntheticCopyTradingEngine';
-import { createReviewSyntheticState, REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';
+import { REVIEW_SYNTHETIC_STATE_ID } from '../src/services/copyTrading/reviewSyntheticHistory';
 import { createReviewCalendarClock } from '../src/services/copyTrading/reviewCalendarClock';
+import { createNazarPresentationState, NAZAR_PRESENTATION_REVISION } from '../src/services/copyTrading/nazarPresentation';
 import { createKseniaReviewState, advanceKseniaReview, kseniaReviewResponse } from '../src/services/copyTrading/kseniaReview';
 import { KrakenMarketDataService } from '../src/services/KrakenMarketDataService';
 import { SpotPeriodReferenceService, parseSpotReferencePairs } from '../src/services/marketData/SpotPeriodReferenceService';
@@ -15,11 +16,11 @@ export default defineConfig({
   plugins: [react(), {
     name: 'isolated-voltex-review',
     generateBundle() {
-      const synthetic = createReviewSyntheticState(new Date());
+      const synthetic = createNazarPresentationState(new Date());
       this.emitFile({ type: 'asset', fileName: 'review-build.json', source: JSON.stringify({
         kind: 'isolated-visual-review', commit: process.env.RENDER_GIT_COMMIT ?? 'local',
         productionApi: false, builtAt: new Date().toISOString(),
-        synthetic: { stateId: REVIEW_SYNTHETIC_STATE_ID, version: synthetic.version,
+        synthetic: { stateId: REVIEW_SYNTHETIC_STATE_ID, version: synthetic.version, presentationRevision: NAZAR_PRESENTATION_REVISION,
           inception: synthetic.initialEquityDate, simulatedAt: synthetic.simulatedAt },
       }) });
       // Explicitly versioned presentation reset on this revision, then append
@@ -30,7 +31,7 @@ export default defineConfig({
     configurePreviewServer(server) {
       // Existing review GET route now follows calendar time at runtime. The
       // emitted JSON remains a build artifact/fallback, never the live clock.
-      const calendar = createReviewCalendarClock();
+      const calendar = createReviewCalendarClock(undefined, createNazarPresentationState);
       let localKsenia: ReturnType<typeof createKseniaReviewState> | undefined;
       // Local preview calls the same real read-only history service directly;
       // Render uses the existing isolated backend proxy below, never this path.

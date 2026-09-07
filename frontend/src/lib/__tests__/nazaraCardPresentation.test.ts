@@ -9,6 +9,8 @@ import { selectSyntheticPeriod, syntheticNazaraTrader } from '../syntheticCopyTr
 import { nazarTrader, marketplaceTraders, getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU } from '../../pages/copy-trading-bolt/traders';
 import { selectDemoPerformance } from '../../pages/copy-trading-bolt/demoPerformance';
 import { getTraderVisual } from '../../pages/copy-trading-bolt/traderVisuals';
+import { isModeledTraderData, preserveModeledSource } from '../modeledCopyData';
+import { restoreCopyButtonDepositUx } from '../../../test-utils/copyDepositUx';
 
 const frontend = resolve(__dirname, '../../..');
 const source = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/components.tsx'), 'utf8');
@@ -26,7 +28,14 @@ const frontendRequire = createRequire(resolve(frontend, 'package.json'));
 const React = frontendRequire('react');
 const { renderToStaticMarkup } = frontendRequire('react-dom/server');
 const empty = () => null;
+const labelModule: Record<string, any> = {};
+const labelCode = ts.transpileModule(readFileSync(resolve(frontend, 'src/components/ReviewModeledLabel.tsx'), 'utf8'), {
+  compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2021, module: ts.ModuleKind.CommonJS },
+}).outputText;
+new Function('require', 'exports', labelCode)((id: string) => id === '../lib/i18n'
+  ? { useLanguage: () => ({ lang: 'ru' }) } : frontendRequire(id), labelModule);
 const dependencies = {
+  isModeledTraderData, ReviewModeledLabel: labelModule.ReviewModeledLabel,
   useFollowing: () => ({ following: new Set<string>() }),
   getTraderVisual, nazarTrader, selectSyntheticPeriod, selectDemoPerformance,
   getRoiForPeriod, getCopierProfit, roiClass, formatPercent, formatAccountSize, PERIOD_LABEL_RU,
@@ -79,6 +88,16 @@ describe('Nazara marketplace presentation only', () => {
     expect(missing).toContain('<strong>—</strong>');
     expect(missing).not.toContain('97,2%');
   });
+
+  test('actual card labels only its actual data source, including the existing sorted projection', () => {
+    expect(render('ALL')).toContain('Модельные данные');
+    expect(render('ALL', trader, { ...response, provenance: 'LIVE' } as typeof response)).not.toContain('Модельные данные');
+    const fixture = marketplaceTraders[0];
+    const projected = preserveModeledSource(fixture, { ...fixture });
+    expect(render('90D', projected)).toContain('Модельные данные');
+    expect(render('90D', { ...fixture })).not.toContain('Модельные данные');
+    expect(render('ALL', trader, null)).not.toContain('Модельные данные');
+  });
 });
 
 // Exact function fingerprints from the approved a484789 V8 starting state.
@@ -93,7 +112,8 @@ test.each(Object.entries({
 }))('%s remains byte-equivalent to approved V8', (name, hash) => {
   // The only mini-chart change is admitting Ksenia's separate ledger. Strip
   // that additive condition to compare all approved Nazar geometry verbatim.
-  const renderer = body(name).replace(" || trader.id === 'VX-KSENIA'", '')
+  const original = name === 'CopyButton' ? restoreCopyButtonDepositUx(body(name)) : body(name);
+  const renderer = original.replace(" || trader.id === 'VX-KSENIA'", '')
     .replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
   expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
 });

@@ -106,9 +106,9 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
     let renderer = node.getText(ast).replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
     // Keep the approved hero fingerprint after removing only its single new
     // review-provenance line. Financial/chart renderers have no such additions.
-    const labelLine = '        <ReviewModeledLabel />\n';
-    expect(renderer.split('\n').filter(line => line + '\n' === labelLine)).toHaveLength(name === 'MarketplaceHero' ? 1 : 0);
-    if (name === 'MarketplaceHero') renderer = renderer.replace('\n' + labelLine, '\n');
+    const localLabel = "<ReviewModeledLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) : isModeledTraderData(trader, synthetic))} />";
+    expect(renderer.split(localLabel)).toHaveLength(name === 'MarketplaceHero' ? 2 : 1);
+    if (name === 'MarketplaceHero') renderer = renderer.replace(localLabel, '');
     expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({

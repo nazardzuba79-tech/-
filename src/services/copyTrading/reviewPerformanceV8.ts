@@ -417,3 +417,50 @@ export function advanceSimpleReturnMasterState(original: CashflowReviewState, da
   if (days > 0) state.mode = 'FAST_FORWARD';
   return state;
 }
+
+// BEGIN OPT-IN NAZAR PRESENTATION REPLAY
+/** Owner-authorized synthetic scenario revision, never a stored-state migration.
+ * Move complete session plans, not rendered bars: execution outcome counts and
+ * all nested simple-return budgets are retained before prices/cash flows are
+ * emitted again by the unchanged canonical v8 allocator and execution model.
+ * The original constructor above remains the exact persistence bootstrap. */
+export function createDistributedNazarMasterState(): CashflowReviewState {
+  const plans = baselinePlans();
+  const moves = [
+    ['2026-07-13', '2026-06-16'],
+    ['2026-07-14', '2026-06-29'],
+    ['2026-07-15', '2026-07-08'],
+    ['2026-07-17', '2026-07-24'],
+    ['2026-07-18', '2026-08-04'],
+  ] as const;
+  for (const [from, to] of moves) {
+    const left = plans.findIndex(plan => plan.date === from);
+    const right = plans.findIndex(plan => plan.date === to);
+    // Both dates must remain in the SAME 90D-minus-30D ROI budget, and a
+    // holiday/zero session must never become a synthetic trading session.
+    if (left < 290 || left >= 350 || right < 290 || right >= 350
+        || plans[left].return >= 0 || plans[right].return <= 0) {
+      throw new Error('Invalid distributed Nazar session plan');
+    }
+    const source = plans[left], destination = plans[right];
+    plans[left] = { ...destination, date: from };
+    plans[right] = { ...source, date: to };
+  }
+  const unitPnl = unitCapitalPath(plans);
+  const initialCapital = money(C.masterPnl / unitPnl.reduce((sum, value) => sum + value, 0));
+  const budgets = roundedAllocation(unitPnl.map(pnl => pnl * initialCapital), C.masterPnl);
+  // Reuse the canonical schema/policy initialization. This fresh object has no
+  // relation to a persisted row, a real account, or an existing follower ledger.
+  const legacy = createSimpleReturnMasterState();
+  const state: CashflowReviewState = {
+    ...legacy, rngState: C.seed, simulatedAt: `${C.inception}T23:59:59.999Z`,
+    trades: [], dailyResults: [], equityHistory: [{ date: C.inception, equity: 100 }],
+    cashflow: { ...legacy.cashflow,
+      masterCashFlows: [{ id: 'MCF-INITIAL', date: C.inception, timing: 'BEFORE_TRADING', type: 'DEPOSIT', amount: initialCapital }],
+      masterDays: [],
+    },
+  };
+  plans.forEach((plan, i) => appendDay(state, { ...plan, pnl: budgets[i] }, initialCapital));
+  return state;
+}
+// END OPT-IN NAZAR PRESENTATION REPLAY

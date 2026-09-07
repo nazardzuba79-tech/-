@@ -7,6 +7,7 @@ import { toResponse } from '../../../../src/services/copyTrading/SyntheticCopyTr
 import { selectSyntheticPeriod, syntheticNazaraTrader, formatSyntheticHistoryDate } from '../syntheticCopyTrading';
 import { publicSignedUsdt, publicUsdtNumber } from '../copyTradingMoney';
 import { dailyReturnChart } from '../dailyReturnChart';
+import { isModeledTraderData } from '../modeledCopyData';
 import { nazarTrader, formatPercent, formatAccountSize, roiClass, PERIODS } from '../../pages/copy-trading-bolt/traders';
 
 const frontend = resolve(__dirname, '../../..');
@@ -27,8 +28,9 @@ const empty = () => null;
 // stubbed. The period state is selected explicitly; data uses the real adapter.
 const deps = {
   ReviewDisclosure: ({ children }: { children: unknown }) => children,
-  // Production-mode profile verification: the review-only label renders null.
+  // This suite isolates finance markup; actual local labels have separate SSR coverage.
   ReviewModeledLabel: empty,
+  isModeledTraderData,
   useMemo: (fn: () => unknown) => fn(),
   useState: (initial: unknown) => [initial === '90D' ? selectedPeriod : initial, empty],
   selectSyntheticPeriod, nazarTrader, formatPercent, roiClass, formatAccountSize, PERIODS,

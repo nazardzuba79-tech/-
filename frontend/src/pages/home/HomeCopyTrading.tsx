@@ -12,6 +12,7 @@ import {
 import { HOME_COPY_TRADERS } from './homeContent';
 import { ReviewDisclosure } from '../../components/ReviewDisclosure';
 import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';
+import { isModeledAggregate, isModeledTraderData } from '../../lib/modeledCopyData';
 
 const AVATAR_TONES: Record<string, string> = {
   blue: 'from-[#375b8d] to-[#17253a] text-[#d8e8ff]',
@@ -89,6 +90,7 @@ function TraderSpotlight({ trader }: { trader: Trader }) {
           <strong className="mt-1 block whitespace-nowrap text-[28px] font-semibold leading-none tracking-[-0.035em] text-up">
             {formatPercent(trader.roiAll)}
           </strong>
+          <ReviewModeledLabel modeled={isModeledTraderData(trader)} />
         </div>
         <PerformanceLine trader={trader} />
       </div>
@@ -144,6 +146,7 @@ export function HomeCopyTrading() {
               <div className="lg:text-right">
                 <strong className="block text-[27px] font-semibold tracking-[-0.035em] text-white sm:text-[31px]">{t('home.copy.scale')}</strong>
                 <span className="mt-1 block text-[10px] uppercase tracking-[0.12em] text-white/40">{t('home.copy.scaleCaption')}</span>
+                <ReviewModeledLabel modeled={isModeledAggregate(HOME_COPY_TRADERS)} />
               </div>
               <Link to="/copy-trading" className="vx-home-cta inline-flex min-h-10 items-center gap-2 rounded-[6px] bg-gold-500 px-5 py-2.5 text-[13px] font-semibold text-ink-950">
                 {t('home.copy.cta')}
@@ -156,7 +159,6 @@ export function HomeCopyTrading() {
             {HOME_COPY_TRADERS.map((trader) => <TraderSpotlight key={trader.id} trader={trader} />)}
           </div>
 
-          <ReviewModeledLabel />
           <ReviewDisclosure><p className="mt-4 text-[10.5px] leading-relaxed text-white/35">{t('home.copy.disclaimer')}</p></ReviewDisclosure>
         </div>
       </div>

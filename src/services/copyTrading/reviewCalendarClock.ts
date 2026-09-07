@@ -7,7 +7,7 @@ import { createReviewSyntheticState } from './reviewSyntheticHistory';
  * cached per date; a process restart recreates exactly the same deterministic
  * history. No account writes, external market calls, or build-time-only clock.
  */
-export function createReviewCalendarClock(now: () => Date = () => new Date()) {
+export function createReviewCalendarClock(now: () => Date = () => new Date(), initialize: (date: Date) => ReturnType<typeof createReviewSyntheticState> = createReviewSyntheticState) {
   let state: ReturnType<typeof createReviewSyntheticState> | undefined;
   let date = '';
   let json = '';
@@ -18,7 +18,7 @@ export function createReviewCalendarClock(now: () => Date = () => new Date()) {
       if (!state || today < date) {
         // Clock rollback is deterministic as well; no persisted ledger is
         // rewritten. This cache is never an authoritative customer account.
-        state = createReviewSyntheticState(new Date(`${today}T12:00:00Z`));
+        state = initialize(new Date(`${today}T12:00:00Z`));
       } else {
         let remaining = dayDiff(date, today);
         while (remaining > 0) {

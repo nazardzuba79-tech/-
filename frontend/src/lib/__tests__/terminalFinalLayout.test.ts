@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { restoreCopyDepositUx } from '../../../test-utils/copyDepositUx';
 
 const root = path.resolve(__dirname, '../..');
 const read = (file: string) => fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n');
@@ -50,20 +51,30 @@ test.each(Object.entries({
 }))('%s is preserved exactly', (file, expected) => {
   let source = read(file);
   if (file === 'pages/copy-trading-bolt/components.tsx') {
+    source = restoreCopyDepositUx(source);
     // Preserve the original whole-file fingerprint after stripping only the
-    // four exact reviewed label additions; never normalize other markup/math.
+    // exact source-aware label additions; never normalize other markup/math.
     const additions = [
       "import { ReviewModeledLabel } from '../../components/ReviewModeledLabel';\n",
-      '      <ReviewModeledLabel />\n',
-      '        <ReviewModeledLabel />\n',
-      '            <ReviewModeledLabel />\n',
+      "import { isModeledAggregate, isModeledTraderData, preserveModeledSource } from '../../lib/modeledCopyData';\n",
+      '          <ReviewModeledLabel modeled={isModeledTraderData(trader, synthetic)} />\n',
     ];
-    expect(source.match(/<ReviewModeledLabel \/>/g)).toHaveLength(3);
+    expect(source.match(/<ReviewModeledLabel modeled=/g)).toHaveLength(3);
     for (const addition of additions) {
       const exactLines = source.split('\n').filter(line => line + '\n' === addition);
       expect(exactLines).toHaveLength(1);
       source = source.replace('\n' + addition, '\n');
     }
+    for (const addition of [
+      '<ReviewModeledLabel modeled={isModeledTraderData(trader, liveSynthetic)} />',
+      "<ReviewModeledLabel modeled={value !== '—' && (label === 'Total Followers' ? isModeledAggregate(marketplaceTraders) : isModeledTraderData(trader, synthetic))} />",
+    ]) {
+      expect(source.split(addition)).toHaveLength(2);
+      source = source.replace(addition, '');
+    }
+    const projection = 'map(item => preserveModeledSource(item, { ...item, drawdown:';
+    expect(source.split(projection)).toHaveLength(2);
+    source = source.replace(projection, 'map(item => ({ ...item, drawdown:');
     expect(source).not.toContain('ReviewModeledLabel');
   }
   expect(createHash('sha256').update(source).digest('hex')).toBe(expected);

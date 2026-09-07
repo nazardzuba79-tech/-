@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
-/** Isolated review labels modeled results beside Copy Trading metrics.
- * Remove duplicate prose there only; preserve disclosure in normal builds. */
-export function ReviewDisclosure({ children, neutral = null }: { children: ReactNode; neutral?: ReactNode }) {
-  return import.meta.env.MODE === 'review' ? neutral : children;
+/** Source-aware local labels carry provenance. Preserve only neutral product
+ * information; no build mode can restore the former disclosure paragraphs. */
+export function ReviewDisclosure({ neutral = null }: { children: ReactNode; neutral?: ReactNode }) {
+  return neutral;
 }
