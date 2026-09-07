@@ -129,7 +129,6 @@ test.each(Object.entries({
   // that additive condition to compare all approved Nazar geometry verbatim.
   const original = name === 'CopyButton' ? restoreCopyButtonDepositUx(body(name)) : body(name);
   const renderer = original.replace(" || trader.id === 'VX-KSENIA'", '')
-    .replace(/<ReviewDisclosure neutral=[\s\S]*?\n      (<p className="profile-trust">[\s\S]*?<\/p>)\n      <\/ReviewDisclosure>/, '$1');
   expect(createHash('sha256').update(renderer).digest('hex')).toBe(hash);
 });
 
