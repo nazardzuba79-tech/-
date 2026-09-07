@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { StarIcon } from 'lucide-react';
 import { CardBenefitIcon, type CardBenefit } from './CardBenefitIcon';
-import { HomeCryptoCard } from './HomeCryptoCard';
+import { HomeCardComposition } from './HomeCardComposition';
 import { Key, useLanguage } from '../../lib/i18n';
 
 const BENEFITS: { key: CardBenefit; titleKey: Key; textKey: Key }[] = [
@@ -67,9 +67,9 @@ export function HomeCardSection() {
             </div>
           </div>
 
-          {/* The only animated card presentation on the homepage. */}
+          {/* Both approved cards and the phone share one contained hero composition. */}
           <div className="relative flex items-center justify-center py-4">
-            <HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />
+            <HomeCardComposition />
           </div>
 
           <ul className="space-y-4">
