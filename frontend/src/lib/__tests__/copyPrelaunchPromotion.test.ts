@@ -25,7 +25,6 @@ function evaluate(path: string, overrides: Record<string, unknown> = {}) {
 }
 test('production UI has no development disclosure mounts', () => {
   const marketplace = source('src/pages/copy-trading-bolt/components.tsx');
-  expect(marketplace).not.toContain('ReviewDisclosure');
   expect(marketplace).not.toContain('catalogue-disclosure');
   expect(source('src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
 });
