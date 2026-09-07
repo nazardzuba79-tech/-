@@ -37,7 +37,7 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
       <mask id={`${id}-vertical-mask`} maskUnits="userSpaceOnUse" x="516" y="80" width={width} height={height}>
         <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-vertical)`} />
       </mask>
-      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x={homepage ? 430 : 516} y="80" width={homepage ? 1018 : width} height={height} data-watch-edge-mask="true">
+      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x={homepage ? 390 : 516} y={homepage ? 20 : 80} width={homepage ? 1058 : width} height={homepage ? 1066 : height} data-watch-edge-mask="true">
         <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-horizontal)`} mask={`url(#${id}-vertical-mask)`} />
         {BADGES.map(([cx, cy, r]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={`url(#${id}-badge-opacity)`} />)}
         {/* Protect the original wrist, fingers and nails at full opacity.
@@ -47,6 +47,11 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
         {/* Reveal a little more of the existing left wrist/sleeve, without
             moving or shrinking the watch or exposing the old photo lettering. */}
         {homepage && <ellipse data-watch-left-wrist-opacity="true" cx="610" cy="750" rx="180" ry="270" fill={`url(#${id}-badge-opacity)`} />}
+        {/* Extend only the revealed original backdrop to the owner's outline.
+            These feathered islands avoid the baked-in lettering at upper left;
+            existing full-opacity hand/watch/badge protection stays unchanged. */}
+        {homepage && <ellipse data-watch-top-background="true" cx="930" cy="200" rx="415" ry="180" fill={`url(#${id}-badge-opacity)`} />}
+        {homepage && <ellipse data-watch-left-background="true" cx="650" cy="790" rx="260" ry="290" fill={`url(#${id}-badge-opacity)`} />}
       </mask>
       <radialGradient id={`${id}-chf-face`} cx=".32" cy=".22" r=".9">
         <stop stopColor="#353239" /><stop offset=".5" stopColor="#1B1D22" /><stop offset="1" stopColor="#111318" />

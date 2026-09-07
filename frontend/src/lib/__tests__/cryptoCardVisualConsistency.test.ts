@@ -153,7 +153,7 @@ test('Homepage framing reveals original right/bottom fingers without changing th
   expect(viewport[1] + viewport[3]).toBe(1086);
   expect(928 / viewport[2]).toBeGreaterThan(.995); // <0.5% watch scale change.
   expect(html).toMatch(/<mask[^>]*x="516" y="80" width="932" height="1006"/);
-  expect(html).toMatch(/<mask[^>]*x="430" y="80" width="1018" height="1006"/);
+  expect(html).toMatch(/<mask[^>]*x="390" y="20" width="1058" height="1066"/);
   expect(html.match(/<circle[^>]*fill="url\(#[^)]+-badge-opacity\)"/g)).toHaveLength(10);
   const protection = html.match(/<ellipse data-watch-hand-opacity="true" cx="(\d+)" cy="(\d+)" rx="(\d+)" ry="(\d+)"/)!
     .slice(1).map(Number);
@@ -177,6 +177,28 @@ test('Homepage framing reveals original right/bottom fingers without changing th
   expect(html).not.toMatch(/clipPath|transform=|filter=|slice|preserveAspectRatio="none"/);
   expect(html.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0])
     .toBe(product.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0]);
+});
+
+test('Homepage reveals existing upper/left backdrop while keeping old photo lettering hidden', () => {
+  const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual, { framing: 'homepage' }));
+  const islands = ['top', 'left'].map(side => html.match(new RegExp(`<ellipse data-watch-${side}-background="true" cx="(\\d+)" cy="(\\d+)" rx="(\\d+)" ry="(\\d+)"`))!.slice(1).map(Number));
+  expect(islands).toEqual([[930, 200, 415, 180], [650, 790, 260, 290]]);
+  const radius = (x: number, y: number, [cx, cy, rx, ry]: number[]) => Math.hypot((x - cx) / rx, (y - cy) / ry);
+  // Marked backdrop: above the USD/crypto orbit and beside the sleeve.
+  for (const [x, y] of [[820, 65], [1010, 65], [445, 790], [450, 875]]) {
+    expect(Math.min(...islands.map(island => radius(x, y, island)))).toBeLessThan(.88);
+  }
+  // Conservative bounding rectangles around the original external logo/slogan.
+  for (const [x1, y1, x2, y2] of [[60, 270, 405, 320], [60, 390, 515, 532]]) {
+    for (const [cx, cy, rx, ry] of islands) {
+      const x = Math.max(x1, Math.min(cx, x2));
+      const y = Math.max(y1, Math.min(cy, y2));
+      expect(radius(x, y, [cx, cy, rx, ry])).toBeGreaterThan(1);
+    }
+  }
+  const product = renderToStaticMarkup(React.createElement(watch.WatchCardVisual));
+  expect(product).not.toMatch(/data-watch-(top|left)-background/);
+  expect(html.match(/<image /g)).toHaveLength(1);
 });
 
 test('edge opacity replaces the photo frame without changing any other Homepage CSS', () => {
