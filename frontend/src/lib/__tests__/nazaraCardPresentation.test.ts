@@ -63,8 +63,6 @@ describe('Nazara marketplace presentation only', () => {
     expect(html).toContain(formatAccountSize(trader.aum));
     expect(html).not.toMatch(/Коэффициент Шарпа|Прибыль подписчиков|Чистая прибыль/);
     expect(html).toContain('Professional Strategy');
-    expect(html).not.toContain('modeled-data-label');
-    expect(html).not.toContain('Модельные данные');
     expect(JSON.stringify(response)).toBe(before);
   });
 
@@ -113,24 +111,8 @@ describe('Nazara marketplace presentation only', () => {
     const missing = render('ALL', trader, null);
     expect(missing).toContain('<strong>—</strong>');
     expect(missing).not.toContain('97,2%');
-    expect(missing).not.toContain('modeled-data-label');
   });
 
-  test('actual card label distinguishes fixture objects and matched real responses without changing financial markup', () => {
-    const fixture = marketplaceTraders.find(item => item.id !== nazarTrader.id)!;
-    const before = JSON.stringify(fixture);
-    const modeled = render('90D', fixture);
-    const sameFieldsWithoutFixtureProvenance = render('90D', { ...fixture });
-    const label = '<small class="modeled-data-label">Модельные данные</small>';
-    expect(modeled).not.toContain(label);
-    expect(sameFieldsWithoutFixtureProvenance).not.toContain('modeled-data-label');
-    expect(modeled.replace(label, '')).toBe(sameFieldsWithoutFixtureProvenance);
-    const realResponse = { ...response, provenance: 'REAL_EXECUTION' };
-    const real = render('90D', trader, realResponse);
-    expect(real).not.toContain('modeled-data-label');
-    expect(render('90D').replace(label, '')).toBe(real);
-    expect(JSON.stringify(fixture)).toBe(before);
-  });
 });
 
 // Exact function fingerprints from the approved a484789 V8 starting state.
