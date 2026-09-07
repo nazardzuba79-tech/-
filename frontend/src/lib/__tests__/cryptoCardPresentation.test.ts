@@ -114,13 +114,10 @@ test('all literal presentation image URLs point to present production assets wit
     const source = component(name.slice(0, -4));
     for (const match of source.matchAll(/['"](\/cards\/crypto-card-final\/[^'"\s]+\.(?:jpg|png|webp))['"]/g)) paths.add(match[1]);
   }
-  // Cinematic scene names share a literal directory constant.
-  for (const match of component('CinematicCardScene').matchAll(/source: '(voltex-cards-phone-[^']+\.webp)'/g)) {
-    paths.add(`/cards/crypto-card-final/${match[1]}`);
-  }
   expect(paths.size).toBeGreaterThanOrEqual(8);
-  expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-hero.webp')).toBe(true);
-  expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-register.webp')).toBe(true);
+  expect(paths.has('/cards/crypto-card-final/voltex-smartwatch-scene.png')).toBe(true);
+  expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-hero.webp')).toBe(false);
+  expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-register.webp')).toBe(false);
   for (const asset of paths) {
     const file = resolve(frontend, `public${asset}`);
     expect(existsSync(file)).toBe(true);
@@ -156,15 +153,17 @@ test('product links target actual sections, including both visible application C
   expect(elements(parse(component('FinalCtaFooter')), 'CardApplication')).toHaveLength(1);
 });
 
-test('all card renders use the same masters, including phone-only cinematic compositions', () => {
+test('hero uses a complete proportionate master inside the smartwatch, other surfaces reuse the master', () => {
   const scene = component('CinematicCardScene');
-  expect(scene).toContain('voltex-titanium-final.png');
-  expect(scene).toContain('voltex-black-signature-final.png');
-  expect(scene).toContain('clipPath={`url(#phone-');
-  expect(scene).toContain('mask={`url(#phone-face-');
+  expect(scene).toContain('CARD_MASTER.black');
+  expect(scene).toContain('voltex-smartwatch-scene.png');
+  expect(scene).toContain('height={486 * 996 / 1580}');
+  expect(scene).toContain('preserveAspectRatio="xMidYMid meet"');
+  expect(scene).not.toMatch(/<mask|clipPath|preserveAspectRatio="none"|voltex-cards-phone/);
   expect(elements(parse(component('Hero')), 'CinematicCardScene')).toHaveLength(1);
   expect(elements(parse(component('FinalCtaFooter')), 'CinematicCardScene')).toHaveLength(1);
-  expect(component('CardScene')).toContain('/cards/crypto-card-final/voltex-black-signature-final.png');
+  expect(scene).toContain("if (kind === 'final') return <VoltexCard");
+  expect(component('CardScene')).toContain('CARD_MASTER.black');
   expect(component('CurrencySection')).toContain('VoltexCard');
 });
 

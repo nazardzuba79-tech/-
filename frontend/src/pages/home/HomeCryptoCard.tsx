@@ -13,9 +13,7 @@
  * card section passes `animated`; the small panel beside Markets stays
  * deliberately still so the page has a single restrained reflection.
  */
-import { useLanguage } from '../../lib/i18n';
-
-export const VOLTEX_CARD_ARTWORK = '/cards/voltex-card-dark.png';
+import { VoltexCard } from '../crypto-card-final/components/VoltexCard';
 
 export function HomeCryptoCard({
   width,
@@ -35,8 +33,6 @@ export function HomeCryptoCard({
   glow?: boolean;
   className?: string;
 }) {
-  const { t } = useLanguage();
-  const alt = t('home.card.name');
   return (
     <div className={`group relative ${className}`} style={{ width }}>
       {/* Warm ambient glow, behind the card and outside its box. */}
@@ -57,14 +53,10 @@ export function HomeCryptoCard({
       >
         {/* The approved artwork, untouched. It is already a 3D render at
             its own angle, so nothing here rotates or skews it. */}
-        <img
-          src={VOLTEX_CARD_ARTWORK}
-          alt={alt}
-          width={width}
-          loading="lazy"
-          decoding="async"
+        <VoltexCard
+          tone="black"
+          compact
           className="block w-full select-none drop-shadow-[0_22px_44px_rgba(0,0,0,0.7)]"
-          draggable={false}
         />
 
         {/* Reflection overlay. Clipped to the card's own box and masked to

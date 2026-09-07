@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { useCardCopy } from '../useCardCopy';
+import { CARD_MASTER } from './VoltexCard';
 
 const SCENES = {
   pos: {
@@ -20,13 +21,17 @@ export function CardScene({ kind }: { kind: keyof typeof SCENES }) {
   const { c } = useCardCopy();
   const scene = SCENES[kind];
   const mask = `card-hand-${useId().replace(/:/g, '')}`;
+  // The supplied ATM photo has no physical card. Do not attach a floating one
+  // to the contactless reader or intersect the user's hand.
+  if (kind === 'atm') return <img src={scene.src} alt={c.atmAlt} loading="lazy" decoding="async"
+    className="vc-absolute vc-inset-0 vc-h-full vc-w-full vc-object-cover" />;
   return <svg viewBox="0 0 1200 896" preserveAspectRatio="xMidYMid slice" role="img" aria-label={kind === 'pos' ? c.paymentAlt : c.atmAlt} className="vc-absolute vc-inset-0 vc-h-full vc-w-full">
     <image href={scene.src} width="1200" height="896" />
     <defs><mask id={mask} maskUnits="userSpaceOnUse" x="0" y="0" width="1200" height="896"><rect width="1200" height="896" fill="white" /><path d={scene.hand} fill="black" /></mask></defs>
     <g mask={`url(#${mask})`} data-card-slot={`black-signature-${kind}`}>
       <g transform={scene.transform}>
         <svg width={scene.width} height={scene.height} viewBox="106 78 1369 834" preserveAspectRatio="none" overflow="hidden">
-          <image href="/cards/crypto-card-final/voltex-black-signature-final.png" width="1580" height="996" />
+          <image href={CARD_MASTER.black} width="1580" height="996" />
         </svg>
       </g>
     </g>

@@ -7,17 +7,19 @@ const repository = resolve(__dirname, '../../../..');
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const source = (file: string) => readFileSync(resolve(repository, file), 'utf8').replace(/\r\n/g, '\n');
 
-// Reviewed source 0a9c9022b8cf0cac757328606eaf9c7b52fa3a86, not a redesign.
+// Original source 0a9c9022; owner-requested visual consistency updates only
+// HomeCardSection/HomeCryptoCard/VoltexCard/CardScene/CinematicCardScene fingerprints.
+// Business rules, copy, application state, existing masters and unrelated pages remain frozen.
 const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/CardApplication.tsx": "f4e475d2b609d19e8e12194fb13837b6026a9bfe759248e2a16690f60028d4d9",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
-  "frontend/src/pages/crypto-card-final/crypto-card.css": "9ed9552a641fdc63c5593e5ad00bbab6b7a8fc63102105259e401252cfe5c6a1",
+  "frontend/src/pages/crypto-card-final/crypto-card.css": "f4a26262ab6ef4f83f7882de82aa7ff784bd47f265c7e19c73bb92839bf0b07b",
   "frontend/src/pages/crypto-card-final/useCardCopy.ts": "6a1c229a9546f386a65254fa2446b45a32605cdf3480e9c381dde5a60ae33494",
   "frontend/src/pages/crypto-card-final/components/AtmSection.tsx": "e0341badbe91a3e3098b845a05f3be5ac017c461ad487963d9b112fbd31e64b9",
   "frontend/src/pages/crypto-card-final/components/BrandMarks.tsx": "42c92d5892b537de7dd079a0ce857fd73362954e0b3e2d16bc2239b6f9849478",
   "frontend/src/pages/crypto-card-final/components/CardChoiceSection.tsx": "d467f522ae3fe6ae03a7b6ff0558622f1cf009dc8eb86171c37508181a8542bd",
-  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "0c91018e5c60cdb5ea257c0e848eb47114b7b798def214ee6f29025bfd5cb42a",
-  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "8767a816aac2fcc488be7c1326a173281f9ff7ad15f9947add38f6e39f008df1",
+  "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "e3761e1b054b1a3c29045b1f5abd1246858af91bdc7ac06b80f0bbe2c9e82ed4",
+  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "ac85ddec137d2d3ced7348a5db51d4da2c3c436cc24dc52b5d699dcb0024cf53",
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
   "frontend/src/pages/crypto-card-final/components/CurrencySection.tsx": "f7f50a6172e66dfc30b57eef34d130539f57e5bbb4c1694df51245b7dc99fdcc",
@@ -31,7 +33,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/PaymentSection.tsx": "c239a84af63ca8de43bbf0dab9f1f95d1e26679e0651b05893b300e66d57405e",
   "frontend/src/pages/crypto-card-final/components/ServiceChip.tsx": "85a7c7c55734cced6406ff4e61c42ab6c78b5402f7e9618a5f9fe1f8095884ee",
   "frontend/src/pages/crypto-card-final/components/SubscriptionsSection.tsx": "7c04ff3acdd5711ab31e971b6fc2736551a3c17a4dd09da06ee32828175a670b",
-  "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "377d1fd5a5a0c2b024bf62b3bbadd72059e71f2e3b5c98ae4f559d59d162c2c4",
+  "frontend/src/pages/crypto-card-final/components/VoltexCard.tsx": "9ad5f670186e370e1a5d0bf2c0ff21650017a59387d5e746e89361933367b19f",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ru.ts": "dd11eea2a4394197f583899d6b3a7ca89f3f05e6958b1515e5c824a01a5ee3ab",
   "frontend/src/pages/crypto-card-final/data/cardCopy.ts": "10a568929e79f3819824c60b90edc7ca864d9897a2c64fe59c8e09570ee6a4fc",
   "frontend/src/pages/crypto-card-final/data/cardCopyTranslations.ts": "834ceec514e787f87c3ad08d1a75e6fa3372469f48fcea1274877fd800bbfda2",
@@ -56,8 +58,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
   "frontend/src/pages/home/home.css": "f2e53a7bd3f0d3e61d5f71d9d12d45ac3bde9149930747d1019b102b70a4f23b",
-  "frontend/src/pages/home/HomeCardSection.tsx": "6c59eaba4532371e58ae531c2fdc800a96c3756cc9910d4ff7405995fbadbaeb",
-  "frontend/src/pages/home/HomeCryptoCard.tsx": "ce5a19d0d45c56cd38485e72790e96cb6c2093e0666a176aae2c45c161984535",
+  "frontend/src/pages/home/HomeCardSection.tsx": "df56857a1aa2d406fd6bd3ae5ec8d0ca468e7e58c9dba3551e8696311b8431db",
+  "frontend/src/pages/home/HomeCryptoCard.tsx": "221491b3828c82825beacf0373564047fd88733eaad39d5b5ed61154bacf6da3",
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
   "frontend/src/pages/home/HomeHeader.tsx": "9f52f98f8f38750ed5d380c95eb4b9a270124e26549cbb427d3d6ecde08e0ed3",
@@ -90,6 +92,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
 };
 const approvedAssets: Record<string, string> = {
+  "apple-pay-mark.svg": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
+  "voltex-smartwatch-scene.png": "da2478a366d97498fb698cdb5b3f2f3663c7d4691e9accbd42553eb9fd14427e",
   "5165f22b-08e6-4b9b-83eb-d4b778cc9aad.jpg": "d67bb871ba92b31d5da246599d8521933b29e1d7b5aa78a8e2e9fcd98c1e5d45",
   "a71588d4-cbfc-4255-88c2-66a8977c28fe.jpg": "dcee9a1931938098794285596629337731ce7b1aee44bb0e09ac123c2a457c6c",
   "beb1109b-fa4d-4739-804c-6e1cb6d5d170.jpg": "d284af848b57b39e253c8690221ea2bccd2098c270efcebb7fc65f61f881c5f1",
@@ -113,13 +117,13 @@ test('selective Card promotion preserves the exact approved page, composition, c
   }
 });
 
-test('all fifteen approved assets are byte-exact and no superseded source compositions are published', () => {
+test('all approved masters and the two new presentation assets are byte-exact and no superseded source compositions are published', () => {
   const directory = resolve(repository, 'frontend/public/cards/crypto-card-final');
   expect(readdirSync(directory).sort()).toEqual(Object.keys(approvedAssets).sort());
   for (const [file, expected] of Object.entries(approvedAssets)) {
     expect({ file, sha256: digest(readFileSync(resolve(directory, file))) }).toEqual({ file, sha256: expected });
   }
-  expect(Object.keys(approvedAssets)).toHaveLength(15);
+  expect(Object.keys(approvedAssets)).toHaveLength(17);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-hero-source.png'))).toBe(false);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
