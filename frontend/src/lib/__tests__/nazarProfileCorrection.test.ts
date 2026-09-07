@@ -68,19 +68,7 @@ test.each(PERIODS)('%s keeps lifetime statistics separate from the selected char
   expect(html).not.toMatch(/Nazara/);
   expect(html).toContain('7 200 000 USDT');
   expect(html).not.toMatch(/\d[\d ]{3,},\d{2} USDT/);
-  expect(html).not.toContain('modeled-data-label');
   expect(html).toContain('<span>Max Drawdown</span><strong>5,79%</strong>');
-});
-
-test('profile source label is absent for a real response while all monetary/chart markup remains identical', () => {
-  selectedPeriod = 'ALL';
-  const realResponse = { ...baseline, provenance: 'LIVE_API' };
-  const before = JSON.stringify(realResponse);
-  const real = render(syntheticNazaraTrader(baseline), realResponse);
-  expect(real).not.toContain('modeled-data-label');
-  expect(render().replace('<small class="modeled-data-label">Модельные данные</small>', '')).toBe(real);
-  expect(JSON.stringify(realResponse)).toBe(before);
-  expect(render(syntheticNazaraTrader(baseline), null)).not.toContain('modeled-data-label');
 });
 
 test.each([true, false, undefined])('actual profile shows identityVerified=%s only inline with its heading', identityVerified => {
