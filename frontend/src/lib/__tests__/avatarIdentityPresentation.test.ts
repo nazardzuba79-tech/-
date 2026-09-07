@@ -114,8 +114,8 @@ test('approved yellow chart, histogram, statistics, trades and hero stay source-
     expect(digest(renderer)).toBe(hash);
   }
   for (const [file, hash] of Object.entries({
-    // Explicitly approved inline blue identity badge; chart styling is unchanged.
-    'src/pages/copy-trading-bolt/CopyTradingRefinement.css': 'f391f43bc96c58b2356b3e7590d931a232dc5af366eaab3677a7618462ae267b',
+    // Owner-requested marketplace polish; profile/chart rules remain frozen below.
+    'src/pages/copy-trading-bolt/CopyTradingRefinement.css': '4a23c8b6f80086e232b747846fb32b92741eebd3261ad1cc5764f7869626f869',
     'src/pages/copy-trading-bolt/traders.ts': '90e35a2b9d37ee079b94ebf37bcc10cdf211028f134d30ca59d53c304ad31aba',
     'src/pages/copy-trading-bolt/demoPerformance.ts': '1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead',
   })) {

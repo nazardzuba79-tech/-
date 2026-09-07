@@ -98,6 +98,14 @@ describe('Nazara marketplace presentation only', () => {
     expect(render('90D', { ...ordinary, verified: true, identityVerified: undefined })).not.toContain('copy-verified-badge');
   });
 
+  test('Nazar VIP and the real verified badge share the name row, without a second status line', () => {
+    const html = render('90D', { ...trader, identityVerified: true });
+    expect(html).toMatch(/class="nazara-name trader-display-name"><h3>Nazar<\/h3><svg[\s\S]*?<\/svg><span class="vip-badge">VIP<\/span><\/div>/);
+    expect(html).not.toContain('nazara-status');
+    expect((html.match(/class="vip-badge"/g) ?? [])).toHaveLength(1);
+    expect(render('90D', { ...trader, vip: false })).not.toContain('vip-badge');
+  });
+
   test('ordinary card content is preserved; absent Nazara metrics do not become fake constants', () => {
     const ordinary = render('90D', marketplaceTraders.find(item => item.id !== nazarTrader.id)!);
     expect(ordinary).toContain('Коэффициент Шарпа');
@@ -153,4 +161,20 @@ test('premium CSS stays card-scoped, keeps the approved eligibility border, and 
   expect(css).toContain('.access-strip > .eligibility { border-color: #e4e7ec; }');
   expect(css).toContain('.trader-card:hover { transform: none; }');
   expect(refinement.match(/\.copytrading-bolt-root(?! \.copy-marketplace)/g)).toBeNull();
+});
+
+test('copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles', () => {
+  const css = readFileSync(resolve(frontend, 'src/pages/copy-trading-bolt/CopyTradingRefinement.css'), 'utf8');
+  expect(css).toMatch(/\.trader-card-nazara \.button-copy:not\(:disabled\):not\(\.button-copy-active\)\s*\{[^}]*color: #241900;[^}]*background: linear-gradient/);
+  expect(css).toMatch(/\.button-copy:focus-visible[\s\S]*?outline: 2px solid #f6ca6a/);
+  expect(css).toContain('.button-copy-active:not(:disabled)');
+  expect(css).toContain('.button-copy:disabled');
+  const polish = css.split('/* Owner-requested card polish only;')[1].split('@media (hover: hover)')[0];
+  expect(polish).not.toMatch(/profile-view|mini-performance-chart|mini-chart|opacity:|pointer-events:/);
+  expect(polish).toContain('width: min(1440px, calc(100vw - 64px))');
+  expect(polish).toContain('@media (max-width: 600px)');
+  expect(polish).toContain('font-size: 11px; line-height: 1.5; text-transform: none; color: #bbc1cb');
+  // Exact profile styling from production 9635e53: not an updated visual target.
+  const normalized = css.replace(/\r\n/g, '\n');
+  expect(createHash('sha256').update(normalized.slice(normalized.indexOf('.copytrading-bolt-root.profile-view {'))).digest('hex')).toBe('0a00205098d3db61e20e7e729e78d79bd6c66e3ba9e09eeae60553b4b7f78f38');
 });

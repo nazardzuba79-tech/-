@@ -74,7 +74,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/components.tsx": "0a7c8d48876e168daa955c391320aaf7e2d7d650a28fe3eee36787e194a28692",
   "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "4b8a2e6359d5d03dbe33a91094b75f75b703ec5ee22b74467c22ff7eae9b363c",
   "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "7b287821fe20bdd9eba8ec86ae0b392ae373b75c11cd48309031f4bbc80daf33",
-  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "f391f43bc96c58b2356b3e7590d931a232dc5af366eaab3677a7618462ae267b",
+  // Owner-requested marketplace card polish; profile/chart CSS is separately frozen.
+  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "4a23c8b6f80086e232b747846fb32b92741eebd3261ad1cc5764f7869626f869",
   "frontend/src/pages/copy-trading-bolt/demoPerformance.ts": "1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead",
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
@@ -139,6 +140,10 @@ test('Copy preserves its approved source except exact labels and click-only depo
         .replace('      </Routes>\n', '      </Routes>\n      </PrelaunchApplication>\n');
     }
     if (file === 'frontend/src/pages/copy-trading-bolt/components.tsx') {
+      // Reverse only the requested VIP move; retain all data/rendering guards.
+      const inlineVip = '<div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} />{trader.vip && <VipBadge />}</div>';
+      expect(text.split(inlineVip)).toHaveLength(2);
+      text = text.replace(inlineVip, '<div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div>\n              <div className="nazara-status">{trader.vip && <VipBadge />}</div>');
       text = restoreCopyDepositUx(text);
       // All original bytes, including ROI/drawdown calculations, data adapters,
       // charts and eligible copy actions, must match after reversing this exact

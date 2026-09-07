@@ -242,8 +242,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           <div className="avatar-wrap"><Avatar trader={trader} /></div>
           <div className="trader-name-row">
             {isNazara ? <div className="nazara-identity-copy">
-              <div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div>
-              <div className="nazara-status">{trader.vip && <VipBadge />}</div>
+              <div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} />{trader.vip && <VipBadge />}</div>
             </div> : <>
               <div><div className="trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
               {trader.vip && <VipBadge />}

@@ -78,18 +78,7 @@
   font-size: 19px;
 }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-name { display: flex; align-items: center; gap: 7px; min-width: 0; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara h3 { font-size: 20px; font-weight: 750; letter-spacing: -.025em; line-height: 1.25; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-status { display: flex; margin-top: 7px; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .vip-badge {
-  padding: 3px 6px;
-  border-color: #8b7a5b;
-  border-radius: 4px;
-  color: #e0cba6;
-  background: #d5bd8820;
-  font-size: 9px;
-  letter-spacing: .09em;
-}
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .vip-badge svg { width: 11px; height: 11px; }
+.copytrading-bolt-root .copy-marketplace .trader-card-nazara h3 { font-size: 18px; font-weight: 750; letter-spacing: -.025em; line-height: 1.25; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .nazara-strategy { margin: 9px 0 0; color: #b7b8be; font-size: 11px; line-height: 1.5; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-return {
   grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr);
@@ -106,9 +95,38 @@
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-meta { padding-bottom: 16px; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-meta b { font-size: 13px; color: #d7dbe0; font-variant-numeric: tabular-nums; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .card-cta-area { gap: 8px; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .button-copy { color: #dfcba6; border-color: #8b7957; }
+.copytrading-bolt-root .copy-marketplace .trader-card-nazara .button-copy:not(:disabled):not(.button-copy-active) { color: #241900; border-color: #efb947; background: linear-gradient(180deg, #f6c454, #eab23b); box-shadow: inset 0 1px #fff1c466, 0 3px 10px #0000001a; }
 .copytrading-bolt-root .copy-marketplace .trader-card-nazara .button-copy:disabled { color: #b6a587; border-color: #75684f; background: #d5bd8809; }
-.copytrading-bolt-root .copy-marketplace .trader-card-nazara .button-copy:hover:not(:disabled) { color: #f0dfbf; background: #d5bd881a; }
+.copytrading-bolt-root .copy-marketplace .trader-card-nazara .button-copy:hover:not(:disabled):not(.button-copy-active) { color: #241900; border-color: #ffda80; background: linear-gradient(180deg, #ffda80, #f6bf47); }
+
+/* Owner-requested card polish only; no hero/profile/chart or data changes. */
+.copytrading-bolt-root .copy-marketplace .trader-card { padding: 22px; }
+.copytrading-bolt-root .copy-marketplace .trader-name-row h3 { font-size: 16px; }
+.copytrading-bolt-root .copy-marketplace .trader-card-nazara h3 { font-size: 18px; }
+.copytrading-bolt-root .copy-marketplace .trader-name-row p { font-size: 12px; color: #bbc1cb; }
+.copytrading-bolt-root .copy-marketplace .trader-card:not(.trader-card-nazara) .card-topline { min-height: 78px; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-stats { gap: 18px; padding: 20px 0; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-stats > div + div { padding-left: 18px; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-stats span,
+.copytrading-bolt-root .copy-marketplace .trader-card .card-meta span { font-family: 'Manrope', sans-serif; font-size: 11px; line-height: 1.5; text-transform: none; color: #bbc1cb; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-stats small { font-size: 10px; color: #aeb6c3; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-stats strong { font-size: 16px; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-meta { gap: 18px; padding-bottom: 18px; }
+.copytrading-bolt-root .copy-marketplace .trader-card .card-meta b { font-size: 14px; }
+.copytrading-bolt-root .copy-marketplace .card-view-button { font-size: 12px; min-height: 32px; }
+.copytrading-bolt-root .copy-marketplace .button-copy { min-height: 42px; font-size: 13px; font-weight: 700; }
+.copytrading-bolt-root .copy-marketplace .button-copy:focus-visible,
+.copytrading-bolt-root .copy-marketplace .card-view-button:focus-visible { outline: 2px solid #f6ca6a; outline-offset: 3px; }
+.copytrading-bolt-root .copy-marketplace .button-copy-active:not(:disabled) { color: #80dca9; border-color: #4d9c72; background: #234236; }
+.copytrading-bolt-root .copy-marketplace .button-copy-active:hover:not(:disabled) { color: #a0efc2; background: #2b5140; }
+@media (min-width: 1321px) {
+  .copytrading-bolt-root .copy-marketplace .market-controls,
+  .copytrading-bolt-root .copy-marketplace .marketplace-section { width: min(1440px, calc(100vw - 64px)); margin-inline: calc((100% - min(1440px, 100vw - 64px)) / 2); }
+  .copytrading-bolt-root .copy-marketplace .trader-grid { gap: 20px; }
+}
+@media (max-width: 600px) {
+  .copytrading-bolt-root .copy-marketplace .trader-card { padding: 20px; }
+}
 @media (hover: hover) and (pointer: fine) {
   .copytrading-bolt-root .copy-marketplace .trader-card:hover { transform: translateY(-2px); }
   .copytrading-bolt-root .copy-marketplace .trader-card:not(.trader-card-vip):hover { border-color: #656b75; background: linear-gradient(155deg, #2d323b, #252931 75%); }
