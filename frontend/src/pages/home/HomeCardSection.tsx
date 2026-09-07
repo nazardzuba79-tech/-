@@ -14,7 +14,7 @@ const BENEFITS: { key: CardBenefit; titleKey: Key; textKey: Key }[] = [
 ];
 
 export function HomeCardSection() {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
   const { c } = useCardCopy();
   return (
     <section id="card" className="mx-auto w-full max-w-[1460px] px-6">
@@ -85,7 +85,9 @@ export function HomeCardSection() {
                 </span>
                 <div className="min-w-0 leading-snug">
                   <div className="text-[15px] font-semibold text-white">{t(titleKey)}</div>
-                  <p className="mt-1 text-[13px] leading-[1.5] text-[#a7b0bd]">{t(textKey)}</p>
+                  <p className="mt-1 text-[13px] leading-[1.5] text-[#a7b0bd]">
+                    {key === 'atm' && lang === 'ru' ? 'Снятие наличных во всех банкоматах.' : t(textKey)}
+                  </p>
                 </div>
               </li>
             ))}
