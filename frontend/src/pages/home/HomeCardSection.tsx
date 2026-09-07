@@ -71,7 +71,7 @@ export function HomeCardSection() {
           {/* The same owner-approved wrist artwork as the Crypto Card hero. */}
           <div className="relative flex items-center justify-center py-4">
             <div className="vx-home-card-artwork">
-              <WatchCardVisual />
+              <WatchCardVisual framing="homepage" />
             </div>
           </div>
 

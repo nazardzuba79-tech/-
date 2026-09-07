@@ -137,6 +137,11 @@ test('all approved masters and the two new presentation assets are byte-exact an
 test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
+    if (file === 'frontend/src/pages/home/HomeCardSection.tsx') {
+      // Only the Homepage framing opt-in changes; all layout/copy stays exact.
+      expect(text.split('<WatchCardVisual framing="homepage" />')).toHaveLength(2);
+      text = text.replace('<WatchCardVisual framing="homepage" />', '<WatchCardVisual />');
+    }
     if (file === 'frontend/src/components/Nav.tsx') {
       // Owner-approved top-nav cleanup: reverse exactly the removed mount/import.
       // Everything else (menus, deposit action, auth and layout) stays byte-exact.

@@ -121,6 +121,7 @@ test.each(Object.keys(cardCopy) as (keyof typeof cardCopy)[])('%s hero headings 
 
 test('approved wrist and local layout polish preserve every other Homepage copy, benefit and CTA', () => {
   const restored = read('src/pages/home/HomeCardSection.tsx').replace(/\r\n/g, '\n')
+    .replace('<WatchCardVisual framing="homepage" />', '<WatchCardVisual />')
     .replace("import { useCardCopy } from '../crypto-card-final/useCardCopy';\n", '')
     .replace('  const { c } = useCardCopy();\n', '')
     .replace('gap-8 p-5 sm:p-7', 'gap-8 p-7')
@@ -138,6 +139,34 @@ test('approved wrist and local layout polish preserve every other Homepage copy,
     .replace('<WatchCardVisual />', '<HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />');
   expect(createHash('sha256').update(restored).digest('hex'))
     .toBe('df56857a1aa2d406fd6bd3ae5ec8d0ca468e7e58c9dba3551e8696311b8431db');
+});
+
+test('Homepage framing reveals original right/bottom fingers without changing the product-page artwork', () => {
+  const product = renderToStaticMarkup(React.createElement(watch.WatchCardVisual));
+  // Exact rendered /card SVG from starting branch 73fa20f, including CHF.
+  expect(createHash('sha256').update(product).digest('hex'))
+    .toBe('9f71e78afe79853b6d126bc573e3021c54b23e49ee9977a288523299359465eb');
+  const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual, { framing: 'homepage' }));
+  const viewport = html.match(/viewBox="([\d ]+)"/)![1].split(' ').map(Number);
+  expect(viewport).toEqual([516, 80, 932, 1006]);
+  expect(viewport[0] + viewport[2]).toBe(1448);
+  expect(viewport[1] + viewport[3]).toBe(1086);
+  expect(928 / viewport[2]).toBeGreaterThan(.995); // <0.5% watch scale change.
+  expect(html.match(/<mask[^>]*width="932" height="1006"/g)).toHaveLength(2);
+  expect(html.match(/<circle[^>]*fill="url\(#[^)]+-badge-opacity\)"/g)).toHaveLength(10);
+  const protection = html.match(/<ellipse data-watch-hand-opacity="true" cx="(\d+)" cy="(\d+)" rx="(\d+)" ry="(\d+)"/)!
+    .slice(1).map(Number);
+  const [cx, cy, rx, ry] = protection;
+  // Source-photo landmarks: upper wrist, right fingers, each visible nail,
+  // lower finger and watch/card. All fall in the full-opacity (not fade) core.
+  for (const [x, y] of [[1410, 90], [1447, 660], [1380, 720], [1420, 830], [1210, 975], [1330, 1030], [1310, 1085], [1170, 530]]) {
+    expect(Math.hypot((x - cx) / rx, (y - cy) / ry)).toBeLessThan(.88);
+  }
+  expect(html).toContain('offset=".88" stop-color="white"');
+  expect(html).toContain('offset="1" stop-color="white" stop-opacity="0"');
+  expect(html).not.toMatch(/clipPath|transform=|filter=|slice|preserveAspectRatio="none"/);
+  expect(html.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0])
+    .toBe(product.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0]);
 });
 
 test('edge opacity replaces the photo frame without changing any other Homepage CSS', () => {
