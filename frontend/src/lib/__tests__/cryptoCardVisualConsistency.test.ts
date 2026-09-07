@@ -152,7 +152,8 @@ test('Homepage framing reveals original right/bottom fingers without changing th
   expect(viewport[0] + viewport[2]).toBe(1448);
   expect(viewport[1] + viewport[3]).toBe(1086);
   expect(928 / viewport[2]).toBeGreaterThan(.995); // <0.5% watch scale change.
-  expect(html.match(/<mask[^>]*width="932" height="1006"/g)).toHaveLength(2);
+  expect(html).toMatch(/<mask[^>]*x="516" y="80" width="932" height="1006"/);
+  expect(html).toMatch(/<mask[^>]*x="430" y="80" width="1018" height="1006"/);
   expect(html.match(/<circle[^>]*fill="url\(#[^)]+-badge-opacity\)"/g)).toHaveLength(10);
   const protection = html.match(/<ellipse data-watch-hand-opacity="true" cx="(\d+)" cy="(\d+)" rx="(\d+)" ry="(\d+)"/)!
     .slice(1).map(Number);
@@ -164,6 +165,15 @@ test('Homepage framing reveals original right/bottom fingers without changing th
   }
   expect(html).toContain('offset=".88" stop-color="white"');
   expect(html).toContain('offset="1" stop-color="white" stop-opacity="0"');
+  expect(html).toContain('overflow:visible');
+  const leftWrist = html.match(/<ellipse data-watch-left-wrist-opacity="true" cx="(\d+)" cy="(\d+)" rx="(\d+)" ry="(\d+)"/)!
+    .slice(1).map(Number);
+  const [lx, ly, lrx, lry] = leftWrist;
+  for (const [x, y] of [[520, 650], [535, 755], [570, 880]]) {
+    expect(Math.hypot((x - lx) / lrx, (y - ly) / lry)).toBeLessThan(.88);
+  }
+  // Upper-left baked-in slogan stays outside the new opacity island.
+  expect(Math.hypot((510 - lx) / lrx, (522 - ly) / lry)).toBeGreaterThan(1);
   expect(html).not.toMatch(/clipPath|transform=|filter=|slice|preserveAspectRatio="none"/);
   expect(html.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0])
     .toBe(product.match(/<g data-watch-badge="CHF"[\s\S]*?<\/g>/)![0]);

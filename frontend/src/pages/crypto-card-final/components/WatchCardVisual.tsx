@@ -21,7 +21,7 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
   return <svg viewBox={`516 80 ${width} ${height}`} preserveAspectRatio="xMidYMid meet"
     role="img" aria-label="VOLTEX Black Signature · RUB / USD / GBP / CHF / EUR · BTC / ETH / USDT / TON / USDC"
     data-card-cinematic="wrist-watch"
-    style={{ display: 'block', width: '100%', height: 'auto' }}>
+    style={{ display: 'block', width: '100%', height: 'auto', ...(homepage ? { overflow: 'visible' } : {}) }}>
     <defs>
       <linearGradient id={`${id}-horizontal`}>
         <stop stopColor="black" /><stop offset=".16" stopColor="white" />
@@ -37,13 +37,16 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
       <mask id={`${id}-vertical-mask`} maskUnits="userSpaceOnUse" x="516" y="80" width={width} height={height}>
         <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-vertical)`} />
       </mask>
-      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x="516" y="80" width={width} height={height} data-watch-edge-mask="true">
+      <mask id={`${id}-edges`} maskUnits="userSpaceOnUse" x={homepage ? 430 : 516} y="80" width={homepage ? 1018 : width} height={height} data-watch-edge-mask="true">
         <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-horizontal)`} mask={`url(#${id}-vertical-mask)`} />
         {BADGES.map(([cx, cy, r]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={r} fill={`url(#${id}-badge-opacity)`} />)}
         {/* Protect the original wrist, fingers and nails at full opacity.
             The 88% solid core covers skin; feathering falls on surrounding
             background, not across the hand. No bitmap pixels are changed. */}
         {homepage && <ellipse data-watch-hand-opacity="true" cx="1450" cy="720" rx="360" ry="820" fill={`url(#${id}-badge-opacity)`} />}
+        {/* Reveal a little more of the existing left wrist/sleeve, without
+            moving or shrinking the watch or exposing the old photo lettering. */}
+        {homepage && <ellipse data-watch-left-wrist-opacity="true" cx="610" cy="750" rx="180" ry="270" fill={`url(#${id}-badge-opacity)`} />}
       </mask>
       <radialGradient id={`${id}-chf-face`} cx=".32" cy=".22" r=".9">
         <stop stopColor="#353239" /><stop offset=".5" stopColor="#1B1D22" /><stop offset="1" stopColor="#111318" />
