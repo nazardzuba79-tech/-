@@ -92,7 +92,7 @@ function makeFakePrisma(opts?: {
   };
 
   const prisma = { $transaction: jest.fn(async (fn: any) => fn(tx)) } as any;
-  return { prisma, balances, orders, positions, riskLock: tx.$queryRaw };
+  return { prisma, balances, orders, positions, riskLock: tx.$queryRaw, tx };
 }
 
 function bal(balances: Map<string, { available: string; locked: string }>, userId: string, asset: string) {
@@ -167,6 +167,149 @@ describe('Futures API config -> schema -> actual position service', () => {
 function makeMarkPriceService(price = '60000') {
   return new MarkPriceService({ getTicker: jest.fn().mockResolvedValue({ lastPrice: price }) } as any);
 }
+
+describe('Futures position leverage consistency', () => {
+  function setup(leverage?: number, marginType: 'ISOLATED' | 'CROSS' = 'ISOLATED') {
+    const initialMargin = leverage ? new BigNumber(20000).div(leverage).toFixed() : '0';
+    const state = makeFakePrisma({
+      balances: {
+        'taker:USDT': { available: '100000', locked: initialMargin },
+        'maker:USDT': { available: '100000', locked: '0' },
+      },
+      positions: leverage ? [{
+        id: 'long', userId: 'taker', symbol: 'BTC/USDT', side: 'LONG',
+        size: '2', entryPrice: '10000', leverage, marginType, initialMargin,
+        liquidationPrice: leverage === 100 ? '9940' : '9040',
+        status: 'OPEN', realizedPnl: '0',
+      }] : [],
+    });
+    const engine = new MatchingEngine();
+    const service = new FuturesPositionService(state.prisma, engine, makeMarkPriceService('10000'));
+    const place = (userId: string, side: 'BUY' | 'SELL', quantity: string, orderLeverage: number, reduceOnly = false) =>
+      service.placeOrder({ userId, symbol: 'BTC/USDT', side, quantity: new BigNumber(quantity),
+        price: new BigNumber(10000), type: 'LIMIT', leverage: orderLeverage, marginType, reduceOnly });
+    return { ...state, engine, service, place };
+  }
+
+  it.each([
+    [10, 100, false, '1000', '9040'], [100, 10, false, '100', '9940'],
+    [10, 100, true, '1000', '9040'], [100, 10, true, '100', '9940'],
+  ] as const)('partial reduction %dx with %dx order (reduceOnly=%s) retains position state', async (existing, incoming, reduceOnly, margin, liquidation) => {
+    const s = setup(existing);
+    await s.place('maker', 'BUY', '1', 20);
+    const result = await s.place('taker', 'SELL', '1', incoming, reduceOnly);
+    expect(result.order.status).toBe('FILLED');
+    expect(s.positions.get('long')).toMatchObject({
+      status: 'OPEN', side: 'LONG', size: '1', entryPrice: '10000',
+      leverage: existing, initialMargin: margin, liquidationPrice: liquidation,
+    });
+    expect(bal(s.balances, 'taker', 'USDT').locked.toFixed()).toBe(margin);
+    expect(bal(s.balances, 'taker', 'USDT').available.toFixed()).toBe(new BigNumber(100000).plus(margin).toFixed());
+  });
+
+  it.each([false, true])('full close with a different order leverage succeeds (reduceOnly=%s)', async reduceOnly => {
+    const s = setup(10);
+    await s.place('maker', 'BUY', '2', 20);
+    expect((await s.place('taker', 'SELL', '2', 100, reduceOnly)).order.status).toBe('FILLED');
+    expect(s.positions.get('long')).toMatchObject({ status: 'CLOSED', size: '0', leverage: 10 });
+    expect(bal(s.balances, 'taker', 'USDT').locked.toFixed()).toBe('0');
+    expect(bal(s.balances, 'taker', 'USDT').available.toFixed()).toBe('102000');
+  });
+
+  it.each([[10, 100], [100, 10]])('CROSS reduction retains %dx in the liquidation calculation despite a %dx order', async (existing, incoming) => {
+    const s = setup(existing, 'CROSS');
+    const calculation = jest.spyOn(s.service as any, 'computeLiqPrice');
+    await s.place('maker', 'BUY', '1', 20);
+    await s.place('taker', 'SELL', '1', incoming, true);
+    const callIndex = calculation.mock.calls.findIndex(args => args[1] === 'taker');
+    expect(callIndex).toBeGreaterThanOrEqual(0);
+    expect(calculation.mock.calls[callIndex][5]).toBe(existing);
+    const actualLiquidation = await calculation.mock.results[callIndex].value;
+    expect(s.positions.get('long')).toMatchObject({ leverage: existing, size: '1',
+      initialMargin: new BigNumber(10000).div(existing).toFixed(),
+      liquidationPrice: actualLiquidation.toString() });
+  });
+
+  it('defensively refuses a legacy incompatible fill without rewriting position leverage or margin', async () => {
+    const s = setup(20);
+    await expect((s.service as any).applyFill(s.tx, 'taker', 'BTC/USDT', 'USDT', 'BUY',
+      new BigNumber(1), new BigNumber(10000), 50, 'ISOLATED')).rejects.toThrow('requires 20x leverage');
+    expect(s.tx.futuresPosition.update).not.toHaveBeenCalled();
+    expect(s.tx.futuresBalance.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts an existing 20x position plus a 20x increase with consistent margin and liquidation', async () => {
+    const s = setup(20);
+    await s.place('maker', 'SELL', '1', 20);
+    await s.place('taker', 'BUY', '1', 20);
+    expect(s.positions.get('long')).toMatchObject({
+      size: '3', leverage: 20, initialMargin: '1500', liquidationPrice: '9540',
+    });
+    expect(bal(s.balances, 'taker', 'USDT').locked.toFixed()).toBe('1500');
+  });
+
+  it('rejects a 50x increase to 20x before any order/margin write or matching', async () => {
+    const s = setup(20);
+    const submit = jest.spyOn(s.engine, 'submitOrder');
+    await expect(s.place('taker', 'BUY', '1', 50)).rejects.toThrow('requires 20x leverage');
+    expect(s.tx.futuresOrder.create).not.toHaveBeenCalled();
+    expect(s.tx.futuresBalance.update).not.toHaveBeenCalled();
+    expect(s.tx.futuresPosition.update).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+    expect(s.riskLock).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['OPEN', 'PARTIALLY_FILLED'])('rejects leverage incompatible with %s same-direction pending orders before writes', async status => {
+    const s = setup();
+    const first = await s.place('taker', 'BUY', '1', 20);
+    if (status === 'PARTIALLY_FILLED') {
+      // The maker has genuinely filled half, leaving a pending remainder.
+      await s.place('maker', 'SELL', '0.5', 20);
+      Object.assign(s.orders.get(first.order.id), { status, remainingQuantity: '0.5' });
+      // Test pending checks even after the position has subsequently closed.
+      s.positions.clear();
+    }
+    s.tx.futuresOrder.create.mockClear();
+    s.tx.futuresBalance.update.mockClear();
+    const submit = jest.spyOn(s.engine, 'submitOrder');
+    await expect(s.place('taker', 'BUY', '1', 50)).rejects.toThrow('Pending BUY orders require 20x');
+    expect(s.tx.futuresOrder.create).not.toHaveBeenCalled();
+    expect(s.tx.futuresBalance.update).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('allows matching pending orders at one leverage to fill into a consistent position', async () => {
+    const s = setup();
+    await s.place('taker', 'BUY', '1', 20);
+    await s.place('taker', 'BUY', '1', 20);
+    await s.place('maker', 'SELL', '2', 50);
+    const p = [...s.positions.values()].find(p => p.userId === 'taker');
+    expect(p).toMatchObject({ side: 'LONG', size: '2', leverage: 20, initialMargin: '1000', liquidationPrice: '9540' });
+  });
+
+  it('keeps pending opposite-side orders compatible even when they initially only reduce', async () => {
+    const s = setup(10);
+    await s.place('taker', 'SELL', '1', 20);
+    await expect(s.place('taker', 'SELL', '2', 50)).rejects.toThrow('Pending SELL orders require 20x');
+    await s.place('taker', 'SELL', '2', 20);
+    await s.place('maker', 'BUY', '3', 20);
+    expect(s.positions.get('long')).toMatchObject({ status: 'CLOSED', leverage: 10 });
+    const short = [...s.positions.values()].find(p => p.userId === 'taker' && p.status === 'OPEN');
+    expect(short).toMatchObject({ side: 'SHORT', size: '1', leverage: 20, initialMargin: '500', liquidationPrice: '10460' });
+  });
+
+  it('flips LONG 10x to a new SHORT 50x with matching leverage, margin and liquidation', async () => {
+    const s = setup(10);
+    await s.place('maker', 'BUY', '3', 20);
+    await s.place('taker', 'SELL', '3', 50);
+    expect(s.positions.get('long')).toMatchObject({ status: 'CLOSED', size: '0', leverage: 10 });
+    const short = [...s.positions.values()].find(p => p.userId === 'taker' && p.status === 'OPEN');
+    expect(short).toMatchObject({ side: 'SHORT', size: '1', entryPrice: '10000', leverage: 50,
+      initialMargin: '200', liquidationPrice: '10160' });
+    expect(bal(s.balances, 'taker', 'USDT').locked.toFixed()).toBe('200');
+    expect(bal(s.balances, 'taker', 'USDT').available.toFixed()).toBe('101800');
+  });
+});
 
 describe('FuturesPositionService.placeOrder', () => {
   function existingLong(overrides: Record<string, any> = {}) {

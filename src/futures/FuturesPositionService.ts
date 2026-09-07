@@ -143,6 +143,24 @@ export class FuturesPositionService {
             );
           }
         }
+
+        // There is no full-position re-margin operation: every increase
+        // must use the leverage already backing this position. Validate
+        // under the same risk lock, before reserving margin or writing orders.
+        if (existingPosition?.side === impliedDirection && existingPosition.leverage !== params.leverage) {
+          throw new Error(`Increasing this position requires ${existingPosition.leverage}x leverage`);
+        }
+        // A non-reduce-only resting order can become an increase after
+        // other fills close/flip the position. Do not net it away merely
+        // because it currently appears to reduce the opposite position.
+        const incompatibleOrder = activeOrders.find((order) =>
+          order.side === params.side
+          && new BigNumber(order.remainingQuantity.toString()).isGreaterThan(0)
+          && order.leverage !== params.leverage
+        );
+        if (incompatibleOrder) {
+          throw new Error(`Pending ${params.side} orders require ${incompatibleOrder.leverage}x leverage; cancel them before changing leverage`);
+        }
       }
 
       // Conservative margin lock: full estimated notional at this leverage.
@@ -318,12 +336,17 @@ export class FuturesPositionService {
     const existingMargin = new BigNumber(existing.initialMargin.toString());
 
     if (existing.side === fillDirection) {
+      // Defensive invariant for resting orders as well as incoming orders.
+      // Never reinterpret a fill's reserved margin at another leverage.
+      if (leverage !== existing.leverage) {
+        throw new Error(`Increasing this position requires ${existing.leverage}x leverage`);
+      }
       // Increase: average the entry price, add proportional margin.
       const newSize = existingSize.plus(quantity);
       const newEntry = existingSize.times(existingEntry).plus(quantity.times(price)).dividedBy(newSize);
       const addedMargin = computeInitialMargin(quantity.times(price), leverage);
       const newMargin = existingMargin.plus(addedMargin);
-      await this.saveOpenPosition(tx, userId, quote, existing.id, existing.side as PositionSide, newSize, newEntry, leverage, marginType, newMargin);
+      await this.saveOpenPosition(tx, userId, quote, existing, newSize, newEntry, marginType, newMargin);
       return addedMargin;
     }
 
@@ -333,7 +356,7 @@ export class FuturesPositionService {
       const releasedMargin = existingMargin.times(quantity).dividedBy(existingSize);
       const newSize = existingSize.minus(quantity);
       const newMargin = existingMargin.minus(releasedMargin);
-      await this.saveOpenPosition(tx, userId, quote, existing.id, existing.side as PositionSide, newSize, existingEntry, leverage, marginType, newMargin);
+      await this.saveOpenPosition(tx, userId, quote, existing, newSize, existingEntry, marginType, newMargin);
       await this.adjustBalance(tx, userId, quote, {
         available: releasedMargin.plus(realizedPnl),
         locked: releasedMargin.negated(),
@@ -419,18 +442,18 @@ export class FuturesPositionService {
     tx: TxClient,
     userId: string,
     quote: string,
-    positionId: string,
-    side: PositionSide,
+    existing: { id: string; side: string; leverage: number },
     size: BigNumber,
     entryPrice: BigNumber,
-    leverage: number,
     marginType: MarginType,
     initialMargin: BigNumber
   ) {
     const notional = size.times(entryPrice);
-    const liquidationPrice = await this.computeLiqPrice(tx, userId, quote, side, entryPrice, leverage, notional, marginType);
+    // Existing positions own their leverage; an order cannot supply a
+    // different value to the remaining position's liquidation calculation.
+    const liquidationPrice = await this.computeLiqPrice(tx, userId, quote, existing.side as PositionSide, entryPrice, existing.leverage, notional, marginType);
     await tx.futuresPosition.update({
-      where: { id: positionId },
+      where: { id: existing.id },
       data: {
         size: size.toString(),
         entryPrice: entryPrice.toString(),
