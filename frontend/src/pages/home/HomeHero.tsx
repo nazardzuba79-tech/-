@@ -68,16 +68,16 @@ export function HomeHero({ market }: { market: HomeMarket }) {
 
           <h1 className="mt-5 text-[32px] font-bold leading-[1.07] tracking-[-0.022em] text-[#f2f5f9] sm:text-[38px] lg:text-[42px] xl:text-[46px] 2xl:text-[50px]">
             {t('home.hero.titleTop')}
-            <span className="block text-gold-500">{t('home.hero.titleBottom')}</span>
           </h1>
 
-          <p className="mt-4 max-w-[420px] text-[13.5px] leading-relaxed text-home-muted xl:text-[14.5px]">
+          <p className="mt-4 max-w-[420px] text-[18px] leading-relaxed text-white/85 sm:text-[20px]">
             {t('home.hero.subtitle')}
           </p>
+          <p className="mt-3 max-w-[420px] text-[13.5px] leading-relaxed text-home-muted xl:text-[14.5px]">
+            {t('home.hero.description')}
+          </p>
 
-          {/* Both CTAs lead into the product itself. The Crypto Card has its
-              own dedicated section further down the page; advertising it up
-              here only competed with the terminal the hero is built around. */}
+          {/* Existing CTAs and terminal presentation stay unchanged. */}
           <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
               to="/trade"
