@@ -32,7 +32,7 @@ describe('Spot chart axis precision uses real candle magnitudes', () => {
     expect(spotChartPriceFormat([candle(NaN), candle(Infinity), candle(0), candle(-1)])).toBeNull();
   });
   test('actual integration is opt-in Spot only and covers all price-series modes without touching other axes', () => {
-    const source = fs.readFileSync(path.resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8');
+    const source = fs.readFileSync(path.resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8').replace(/\r\n/g, '\n');
     const start = source.indexOf('        if (spotDrawingTools) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
     expect(start).toBeGreaterThan(-1);
     const block = source.slice(start, source.indexOf('        seriesRef.current.setData(', start));

@@ -1,5 +1,6 @@
 import { useLanguage } from '../lib/i18n';
 import { SkeletonRow } from './Skeleton';
+import { formatCfdPrice } from '../lib/cfdPresentation';
 import { PriceCell } from './PriceCell';
 import { parseChangePercent } from '../lib/priceChange';
 
@@ -48,14 +49,14 @@ export function CfdInstrumentList({
   const { t } = useLanguage();
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.columns}>
+    <div className="cfd-instruments">
+      <div className="cfd-columns">
         <span>{t('trade.cfdInstrument')}</span>
-        <span style={{ textAlign: 'right' }}>{t('markets.price')}</span>
-        <span style={{ textAlign: 'right' }}>{t('markets.change24h')}</span>
+        <span className="cfd-align-right">{t('markets.price')}</span>
+        <span className="cfd-align-right">{t('markets.change24h')}</span>
       </div>
 
-      <div style={styles.list}>
+      <div className="cfd-list">
         {tickers.map((tk) => {
           const change = parseChangePercent(tk.changePercent24h, tk.symbol);
           const positive = change >= 0;
@@ -63,20 +64,20 @@ export function CfdInstrumentList({
             <button
               key={tk.symbol}
               onClick={() => onChange(tk.symbol)}
-              className="row-hover"
-              style={{ ...styles.option, ...(tk.symbol === symbol ? styles.optionActive : {}) }}
+              className={`cfd-option${tk.symbol === symbol ? ' active' : ''}`}
+              aria-pressed={tk.symbol === symbol}
             >
-              <span style={styles.optionLeft}>
-                <span style={{ fontSize: 16 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
-                <span style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <span className="mono" style={styles.optionSymbol}>
+              <span className="cfd-optionLeft">
+                <span className="cfd-icon">{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'}</span>
+                <span className="cfd-optionTitle">
+                  <span className="mono cfd-optionSymbol">
                     {tk.symbol}
                   </span>
-                  <span style={styles.optionName}>{tk.name}</span>
+                  <span className="cfd-optionName">{tk.name}</span>
                 </span>
               </span>
-              <PriceCell value={parseFloat(tk.price)} className="mono" style={{ textAlign: 'right', fontSize: 12 }} />
-              <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={{ textAlign: 'right', fontSize: 12 }}>
+              <PriceCell value={parseFloat(tk.price)} className="mono cfd-price" format={(value) => formatCfdPrice(value, tk.symbol)} />
+              <span className={`mono cfd-change ${positive ? 'text-buy' : 'text-sell'}`} >
                 {positive ? '+' : ''}
                 {change.toFixed(2)}%
               </span>
@@ -84,10 +85,10 @@ export function CfdInstrumentList({
           );
         })}
 
-        {tickers.length === 0 && !configured && !loadError && <p style={styles.hint}>{t('trade.cfdUnavailable')}</p>}
+        {tickers.length === 0 && !configured && !loadError && <p className="cfd-hint">{t('trade.cfdUnavailable')}</p>}
         {tickers.length === 0 && configured && !loadError && Array.from({ length: 7 }).map((_, i) => <SkeletonRow key={i} columns={[3, 1, 1]} />)}
         {tickers.length === 0 && loadError && (
-          <button onClick={onRetry} style={styles.retryButton}>
+          <button onClick={onRetry} className="cfd-retryButton">
             {t('trade.loadPairsError')}
           </button>
         )}
@@ -95,42 +96,3 @@ export function CfdInstrumentList({
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: { display: 'flex', flexDirection: 'column', minHeight: 0, background: 'var(--panel)' },
-  columns: {
-    display: 'grid',
-    gridTemplateColumns: '1.6fr 1fr 1fr',
-    padding: '8px 12px',
-    fontSize: 10,
-    color: 'var(--text-tertiary)',
-    borderBottom: '1px solid var(--border)',
-    flexShrink: 0,
-  },
-  list: { overflowY: 'auto', flex: 1, minHeight: 0 },
-  option: {
-    display: 'grid',
-    gridTemplateColumns: '1.6fr 1fr 1fr',
-    alignItems: 'center',
-    width: '100%',
-    textAlign: 'left',
-    background: 'transparent',
-    border: 'none',
-    padding: '8px 12px',
-    color: 'var(--text-primary)',
-  },
-  optionLeft: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 },
-  optionSymbol: { fontSize: 12, fontWeight: 700 },
-  optionName: { fontSize: 10, color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  optionActive: { background: 'var(--panel-alt)' },
-  hint: { padding: 14, color: 'var(--text-secondary)', fontSize: 12, lineHeight: 1.5 },
-  retryButton: {
-    width: '100%',
-    padding: 14,
-    background: 'transparent',
-    border: 'none',
-    color: 'var(--accent)',
-    fontSize: 12,
-    cursor: 'pointer',
-  },
-};

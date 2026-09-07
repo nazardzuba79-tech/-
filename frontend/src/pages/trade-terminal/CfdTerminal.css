@@ -1,0 +1,113 @@
+/* CFD-only presentation. Shared terminal, Spot/Futures and financial math stay unchanged. */
+.trade-terminal.cfd-terminal {
+  --panel: var(--workspace-bg); --panel-alt: #101923; --border: var(--panel-border);
+  --text-tertiary: #91a0af; --accent: var(--accent-yellow); --on-accent: #101820;
+  --buy: #12c98d; --sell: #ef5350;
+}
+.cfd-terminal .cfd-ticker-bar { display: flex; align-items: center; gap: 30px; min-height: 68px; padding: 12px 20px; background: var(--toolbar-bg); border-bottom: 1px solid var(--layer-border); flex-shrink: 0; }
+.cfd-terminal .cfd-selected-instrument { display: grid; grid-template-columns: auto auto; align-items: center; gap: 4px 9px; }
+.cfd-terminal .cfd-symbol { font-size: 19px; font-weight: 700; letter-spacing: -.3px; }
+.cfd-terminal .cfd-product-badge { justify-self: start; padding: 2px 5px; font-size: 10px; color: var(--accent); border: 1px solid #51451e; border-radius: 3px; }
+.cfd-terminal .cfd-instrument-name { grid-column: 1 / -1; font-size: 11px; color: #a5b0bc; }
+.cfd-terminal .cfd-ticker-metric { display: flex; flex-direction: column; gap: 4px; }
+.cfd-terminal .cfd-ticker-metric > :first-child { font-size: 11px; color: #a5b0bc; }
+.cfd-terminal .cfd-ticker-price { font-size: 19px; font-weight: 600; min-width: 11ch; }
+.cfd-terminal .cfd-ticker-change { min-width: 8ch; font-size: 13px; }
+.cfd-terminal .mono { font-variant-numeric: tabular-nums; }
+.cfd-terminal .cfd-workspace { display: grid; grid-template-columns: clamp(280px, 15vw, 290px) minmax(0, 1fr) clamp(310px, 17vw, 320px); gap: 1px; background: var(--layer-border); flex: 1; min-height: 0; }
+.cfd-terminal .cfd-instruments-area, .cfd-terminal .cfd-chart-area, .cfd-terminal .cfd-form-area { background: var(--workspace-bg); min-width: 0; min-height: 0; }
+.cfd-terminal .cfd-instruments-area, .cfd-terminal .cfd-chart-area { display: flex; flex-direction: column; overflow: hidden; }
+.cfd-terminal .cfd-form-area { overflow-y: auto; }
+.cfd-terminal .cfd-instruments { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+.cfd-terminal .cfd-columns, .cfd-terminal .cfd-option { display: grid; grid-template-columns: minmax(0, 1fr) 76px 60px; gap: 6px; align-items: center; padding: 12px; }
+.cfd-terminal .cfd-columns { min-height: 40px; font-size: 10px; color: #a5b0bc; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cfd-terminal .cfd-align-right, .cfd-terminal .cfd-price, .cfd-terminal .cfd-change { text-align: right; }
+.cfd-terminal .cfd-list { overflow-y: auto; min-height: 0; }
+.cfd-terminal .cfd-option { width: 100%; min-height: 55px; border: 0; border-left: 2px solid transparent; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
+.cfd-terminal .cfd-option:hover { background: #1d2936; }
+.cfd-terminal .cfd-option.active { background: #202d3b; border-left-color: var(--accent); }
+.cfd-terminal .cfd-optionLeft { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.cfd-terminal .cfd-icon { font-size: 15px; }
+.cfd-terminal .cfd-optionTitle { display: flex; flex-direction: column; min-width: 0; gap: 4px; }
+.cfd-terminal .cfd-optionSymbol, .cfd-terminal .cfd-price, .cfd-terminal .cfd-change { font-size: 11px; }
+.cfd-terminal .cfd-optionSymbol { font-weight: 700; }
+.cfd-terminal .cfd-optionName { font-size: 10px; color: #a5b0bc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfd-terminal .cfd-hint, .cfd-terminal .cfd-retryButton { padding: 16px 12px; line-height: 1.6; font-size: 12px; }
+.cfd-terminal .cfd-hint { color: #a5b0bc; }
+.cfd-terminal .cfd-retryButton { width: 100%; background: transparent; border: 0; color: var(--accent); cursor: pointer; }
+.cfd-terminal .cfd-chart { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; background: var(--chart-bg); }
+.cfd-terminal .cfd-chart-canvas { flex: 1; min-width: 0; min-height: 240px; position: relative; }
+.cfd-terminal .cfd-chart-canvas > div, .cfd-terminal .cfd-chart-canvas iframe { max-width: 100%; }
+.cfd-terminal .cfd-disclaimer { flex-shrink: 0; padding: 8px 14px; border-top: 1px solid var(--border); font-size: 10px; line-height: 1.5; color: #a5b0bc; }
+.cfd-terminal .cfd-order-panel { min-width: 0; }
+.cfd-terminal .cfd-sideTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 12px 2px; padding: 3px; background: var(--panel-alt); border-radius: 6px; }
+.cfd-terminal .cfd-sideTab { padding: 9px 2px; border: 1px solid transparent; border-radius: 4px; color: #aeb9c4; background: transparent; font-size: 13px; font-weight: 700; cursor: pointer; }
+.cfd-terminal .cfd-sideTab.buy.active, .cfd-terminal .cfd-submit.buy { background: var(--buy); color: #fff; }
+.cfd-terminal .cfd-sideTab.sell.active, .cfd-terminal .cfd-submit.sell { background: var(--sell); color: #fff; }
+.cfd-terminal .cfd-product-terms { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; border-bottom: 1px solid var(--border); color: #aeb9c4; font-size: 12px; }
+.cfd-terminal .cfd-product-terms > :first-child { color: var(--accent); font-weight: 600; }
+.cfd-terminal .cfd-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; min-width: 0; }
+.cfd-terminal .leverage-control { padding-block: 2px; }
+.cfd-terminal .leverage-control input[type="range"] { appearance: none; height: 16px; margin: 2px 0; padding: 0; background: transparent; }
+.cfd-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: #354351; }
+.cfd-terminal .leverage-control input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cfd-terminal .leverage-control input[style*="var(--sell)"]::-webkit-slider-thumb { background: var(--sell); box-shadow: 0 0 0 1px var(--sell); }
+.cfd-terminal .leverage-control input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: #354351; }
+.cfd-terminal .leverage-control input[type="range"]::-moz-range-thumb { border: 0; border-radius: 50%; background: var(--accent); }
+.cfd-terminal .leverage-control input[style*="var(--sell)"]::-moz-range-thumb { background: var(--sell); }
+.cfd-terminal .leverage-control button { min-height: 28px; }
+.cfd-terminal .cfd-label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: #afbac5; }
+.cfd-terminal .cfd-input { width: 100%; min-width: 0; padding: 8px 12px; background: var(--panel-alt); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-size: 14px; line-height: 20px; outline: none; }
+.cfd-terminal .cfd-input:focus { border-color: var(--accent); }
+.cfd-terminal .cfd-referencePrice { color: #aeb9c4; }
+.cfd-terminal .cfd-qtyLabelRow { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; }
+.cfd-terminal .cfd-available { font-size: 11px; color: #a5b0bc; font-weight: 400; }
+.cfd-terminal .cfd-percentRow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cfd-terminal .cfd-percentBtn { padding: 7px 0; color: #aeb9c4; border: 1px solid var(--border); border-radius: 4px; background: var(--panel-alt); font-size: 11px; cursor: pointer; }
+.cfd-terminal .cfd-percentBtn.active { color: var(--accent); border-color: #776124; }
+.cfd-terminal .cfd-infoBox { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel-alt); }
+.cfd-terminal .cfd-infoRow { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; }
+.cfd-terminal .cfd-infoRow .mono { white-space: nowrap; }
+.cfd-terminal .cfd-muted { color: #aeb9c4; }
+.cfd-terminal .cfd-submit { position: sticky; bottom: 0; z-index: 1; flex-shrink: 0; box-shadow: 0 -8px 0 var(--workspace-bg); border: 0; border-radius: 6px; min-height: 44px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.cfd-terminal button:disabled { opacity: .5; cursor: not-allowed; }
+.cfd-terminal button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cfd-terminal .cfd-bottom-panel { flex: 0 0 172px; min-height: 0; border-top: 1px solid var(--layer-border); background: var(--workspace-bg); overflow: hidden; }
+.cfd-terminal .cfd-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.cfd-terminal .cfd-tabs { display: flex; gap: 24px; padding: 0 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.cfd-terminal .cfd-tab { padding: 13px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; font-size: 12px; font-weight: 600; color: #a5b0bc; cursor: pointer; }
+.cfd-terminal .cfd-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.cfd-terminal .cfd-position-content { flex: 1; min-height: 0; overflow: auto; }
+.cfd-terminal .cfd-empty { padding: 36px 16px; text-align: center; color: #a5b0bc; font-size: 12px; }
+.cfd-terminal .cfd-error { margin: 10px; padding: 8px; color: var(--sell); background: var(--sell-dim); font-size: 12px; overflow-wrap: anywhere; border-radius: 4px; }
+.cfd-terminal .cfd-tableWrap { overflow: auto; }
+.cfd-terminal .cfd-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 12px; }
+.cfd-terminal .cfd-th { padding: 10px 16px; font-size: 10px; font-weight: 500; color: #a5b0bc; text-align: left; }
+.cfd-terminal .cfd-td { padding: 10px 16px; border-top: 1px solid var(--border); }
+.cfd-terminal .cfd-closeBtn { padding: 5px 10px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 11px; cursor: pointer; }
+@media (max-height: 760px) and (min-width: 1025px) {
+  .cfd-terminal .cfd-bottom-panel { flex-basis: 160px; }
+  .cfd-terminal .cfd-workspace { min-height: 280px; }
+}
+@media (max-width: 1024px) {
+  .trade-terminal.cfd-terminal { height: auto; min-height: 100vh; overflow: visible; }
+  .cfd-terminal .cfd-workspace { flex: none; grid-template-columns: minmax(0, 1fr) 310px; }
+  .cfd-terminal .cfd-instruments-area { grid-column: 1 / -1; max-height: 210px; }
+  .cfd-terminal .cfd-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cfd-terminal .cfd-columns { display: none; }
+  .cfd-terminal .cfd-chart-area { min-height: 480px; }
+  .cfd-terminal .cfd-form-area { overflow: visible; }
+  .cfd-terminal .cfd-submit { position: static; box-shadow: none; }
+  .cfd-terminal .cfd-bottom-panel { flex: none; min-height: 200px; max-height: 350px; }
+}
+@media (max-width: 767px) {
+  .cfd-terminal .cfd-ticker-bar { flex-wrap: wrap; gap: 14px 24px; padding: 12px 16px; }
+  .cfd-terminal .cfd-selected-instrument { width: 100%; grid-template-columns: auto 1fr; }
+  .cfd-terminal .cfd-workspace { grid-template-columns: minmax(0, 1fr); }
+  .cfd-terminal .cfd-instruments-area { max-height: 178px; }
+  .cfd-terminal .cfd-list { display: block; }
+  .cfd-terminal .cfd-chart-area { min-height: 410px; }
+  .cfd-terminal .cfd-disclaimer { padding: 8px 12px; }
+  .cfd-terminal .cfd-form-area { border-top: 1px solid var(--layer-border); }
+  .cfd-terminal .cfd-bottom-panel { min-height: 220px; }
+}

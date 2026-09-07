@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
+import { formatCfdPrice } from '../lib/cfdPresentation';
 import { LeverageSlider } from './LeverageSlider';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 import type { CfdTickerRow } from './CfdInstrumentList';
@@ -99,17 +100,18 @@ export function CfdOrderForm({
   }
 
   return (
-    <div style={styles.panel}>
-      <div style={styles.sideTabs}>
-        <button type="button" onClick={() => setSide('BUY')} style={{ ...styles.sideTab, ...(side === 'BUY' ? styles.sideTabBuy : {}) }}>
+    <div className="cfd-order-panel">
+      <div className="cfd-sideTabs">
+        <button type="button" onClick={() => setSide('BUY')} className={`cfd-sideTab${side === 'BUY' ? ' buy active' : ''}`} aria-pressed={side === 'BUY'}>
           {t('futures.buyLong')}
         </button>
-        <button type="button" onClick={() => setSide('SELL')} style={{ ...styles.sideTab, ...(side === 'SELL' ? styles.sideTabSell : {}) }}>
+        <button type="button" onClick={() => setSide('SELL')} className={`cfd-sideTab${side === 'SELL' ? ' sell active' : ''}`} aria-pressed={side === 'SELL'}>
           {t('futures.sellShort')}
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} style={styles.form}>
+      <div className="cfd-product-terms"><span>{t('trade.market')}</span><span>{t('futures.isolated')}</span></div>
+      <form onSubmit={handleSubmit} className="cfd-form">
         {config && (
           <LeverageSlider
             value={leverage}
@@ -120,22 +122,21 @@ export function CfdOrderForm({
           />
         )}
 
-        <label style={styles.label}>
+        <label className="cfd-label">
           {t('trade.cfdMarketPrice')}
-          <div style={{ ...styles.input, color: 'var(--text-tertiary)' }} className="mono">
-            {ticker ? `≈ ${ticker.price}` : configured ? t('trade.loading') : t('trade.cfdUnavailable')}
+          <div className="mono cfd-input cfd-referencePrice">
+            {ticker ? `≈ ${formatCfdPrice(ticker.price, symbol)}` : configured ? t('trade.loading') : t('trade.cfdUnavailable')}
           </div>
         </label>
 
-        <label style={styles.label}>
-          <span style={styles.qtyLabelRow}>
+        <label className="cfd-label">
+          <span className="cfd-qtyLabelRow">
             {t('trade.quantity')}
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
+            <span className="cfd-available">
               {t('futures.availableMargin')}: {availableMargin.toFixed(2)} USDT
             </span>
           </span>
           <input
-            className="mono"
             type="number"
             step="any"
             required
@@ -144,51 +145,47 @@ export function CfdOrderForm({
               setQuantity(e.target.value);
               setPercent(0);
             }}
-            style={styles.input}
+            className="mono cfd-input"
             placeholder="0.00"
           />
         </label>
 
-        <div style={styles.percentRow}>
+        <div className="cfd-percentRow">
           {PERCENT_STOPS.map((pct) => (
             <button
               key={pct}
               type="button"
               onClick={() => applyPercent(pct)}
-              style={{ ...styles.percentBtn, ...(percent === pct ? styles.percentBtnActive : {}) }}
+              className={`cfd-percentBtn${percent === pct ? ' active' : ''}`} aria-pressed={percent === pct}
             >
               {pct}%
             </button>
           ))}
         </div>
 
-        <div style={styles.infoBox}>
-          <div style={styles.infoRow}>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.orderValue')}</span>
+        <div className="cfd-infoBox">
+          <div className="cfd-infoRow">
+            <span className="cfd-muted">{t('futures.orderValue')}</span>
             <span className="mono">{notional.toFixed(2)} USDT</span>
           </div>
-          <div style={styles.infoRow}>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
+          <div className="cfd-infoRow">
+            <span className="cfd-muted">{t('futures.margin')}</span>
             <span className="mono">{requiredMargin.toFixed(2)} USDT</span>
           </div>
-          <div style={styles.infoRow}>
-            <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
-            <span className="mono" style={{ color: liqPreview ? 'var(--sell)' : 'var(--text-tertiary)' }}>
-              {liqPreview ? liqPreview.toFixed(2) : '—'}
+          <div className="cfd-infoRow">
+            <span className="cfd-muted">{t('futures.estLiqPrice')}</span>
+            <span className={`mono ${liqPreview ? 'text-sell' : 'cfd-muted'}`}>
+              {liqPreview ? formatCfdPrice(liqPreview, symbol) : '—'}
             </span>
           </div>
         </div>
 
-        {error && <div style={styles.error}>{error}</div>}
+        {error && <div className="cfd-error" role="alert">{error}</div>}
 
         <button
           type="submit"
           disabled={submitting || !ticker}
-          style={{
-            ...styles.submit,
-            background: side === 'BUY' ? 'var(--buy)' : 'var(--sell)',
-            boxShadow: side === 'BUY' ? '0 4px 16px rgba(0,214,143,0.3)' : '0 4px 16px rgba(255,77,106,0.3)',
-          }}
+          className={`cfd-submit ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
         </button>
@@ -196,30 +193,3 @@ export function CfdOrderForm({
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' },
-  sideTabs: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: 4,
-    background: 'var(--panel-alt)',
-    borderRadius: 10,
-    padding: 4,
-    margin: 10,
-  },
-  sideTab: { padding: '10px 0', background: 'transparent', border: 'none', borderRadius: 8, color: 'var(--text-secondary)', fontWeight: 700, fontSize: 13 },
-  sideTabBuy: { color: 'var(--on-accent)', background: 'var(--buy)' },
-  sideTabSell: { color: 'var(--on-accent)', background: 'var(--sell)' },
-  form: { padding: '14px 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 },
-  label: { display: 'flex', flexDirection: 'column', gap: 8, fontSize: 11, color: 'var(--text-secondary)' },
-  qtyLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11 },
-  input: { background: 'var(--panel-alt)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text-primary)', fontSize: 13 },
-  percentRow: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 },
-  percentBtn: { background: 'var(--panel-alt)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 0', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600 },
-  percentBtnActive: { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' },
-  infoBox: { background: 'var(--panel-alt)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 },
-  infoRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12 },
-  error: { background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 11 },
-  submit: { border: 'none', borderRadius: 10, padding: '14px 0', color: 'var(--on-accent)', fontWeight: 800, fontSize: 14, letterSpacing: '0.01em' },
-};

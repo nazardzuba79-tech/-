@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useLanguage } from '../lib/i18n';
-import { parseChangePercent } from '../lib/priceChange';
-import type { CfdTickerRow } from './CfdInstrumentList';
 
 // TradingView's own symbol for each instrument — real forex/commodity data
 // providers (OANDA/FX), not something we proxy or pay for.
@@ -44,7 +42,7 @@ function loadTradingViewScript(): Promise<void> {
  * against TradingView's CDN — it never touches our backend or our Twelve
  * Data key at all, so it can't affect the ticker/order-form budget either.
  */
-export function CfdChart({ symbol, ticker }: { symbol: string; ticker: CfdTickerRow | undefined }) {
+export function CfdChart({ symbol }: { symbol: string }) {
   const { t, lang } = useLanguage();
   const containerId = useRef(`tv-cfd-${Math.random().toString(36).slice(2)}`).current;
   const widgetRef = useRef<any>(null);
@@ -81,41 +79,11 @@ export function CfdChart({ symbol, ticker }: { symbol: string; ticker: CfdTicker
     };
   }, [symbol, lang, containerId]);
 
-  const change = ticker ? parseChangePercent(ticker.changePercent24h, ticker.symbol) : 0;
-  const positive = change >= 0;
-
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.topBar}>
-        <span className="mono" style={styles.symbol}>
-          {ticker?.symbol ?? symbol}
-        </span>
-        {ticker && (
-          <>
-            <span className="mono" style={styles.price}>
-              {ticker.price}
-            </span>
-            <span className={`mono ${positive ? 'text-buy' : 'text-sell'}`} style={styles.change}>
-              {positive ? '+' : ''}
-              {change.toFixed(2)}%
-            </span>
-          </>
-        )}
-      </div>
+    <div className="cfd-chart">
+      <div className="cfd-chart-canvas" id={containerId} />
 
-      <div style={styles.chartArea} id={containerId} />
-
-      <p style={styles.disclaimer}>{t('trade.cfdPriceDisclaimer')}</p>
+      <p className="cfd-disclaimer">{t('trade.cfdPriceDisclaimer')}</p>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  wrapper: { flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--panel)', overflow: 'hidden', minHeight: 300 },
-  topBar: { display: 'flex', alignItems: 'baseline', gap: 10, padding: '10px 12px', borderBottom: '1px solid var(--border)', flexShrink: 0, flexWrap: 'wrap' },
-  symbol: { fontSize: 13, fontWeight: 800, letterSpacing: '0.03em' },
-  price: { fontSize: 18, fontWeight: 800 },
-  change: { fontSize: 13, fontWeight: 700 },
-  chartArea: { flex: 1, position: 'relative', minWidth: 0, minHeight: 300 },
-  disclaimer: { fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'center', margin: 0, padding: '6px 12px', borderTop: '1px solid var(--border)' },
-};

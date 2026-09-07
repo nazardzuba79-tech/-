@@ -14,6 +14,9 @@ import { AssetsPanel } from '../components/AssetsPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
+import { CfdTickerBar } from '../components/CfdTickerBar';
+import { resolveCfdSymbol } from '../lib/cfdPresentation';
+import './trade-terminal/CfdTerminal.css';
 import { CfdChart } from '../components/CfdChart';
 import { CfdOrderForm } from '../components/CfdOrderForm';
 import { CfdPositionsPanel } from '../components/CfdPositionsPanel';
@@ -105,10 +108,10 @@ export function TradePage() {
   // leave the previously selected instrument active.
   useEffect(() => {
     const requested = searchParams.get('symbol')?.toUpperCase();
-    if (!requested || cfdTickers.length === 0) return;
-    if (cfdTickers.some((tk) => tk.symbol === requested)) setCfdSymbol(requested);
-  }, [searchParams, cfdTickers]);
-  const cfdTicker = cfdTickers.find((t) => t.symbol === cfdSymbol);
+    setCfdSymbol(requested || 'XAUUSD');
+  }, [searchParams]);
+  const selectedCfdSymbol = resolveCfdSymbol(cfdSymbol, cfdTickers);
+  const cfdTicker = cfdTickers.find((t) => t.symbol === selectedCfdSymbol);
 
   // The visible order book mirrors Kraken's real depth for a live, populated
   // look — actual order matching always happens on our own internal book
@@ -212,38 +215,27 @@ export function TradePage() {
     window.addEventListener('pointercancel', stop);
   }
 
-  // Spot renders the ported terminal; CFD keeps the page's previous layout,
-  // because the supplied design covers a spot terminal only and its
-  // instrument list, chart and position table have no slot in that grid.
+  // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
-      <div className="page-mesh trading-page" style={styles.page}>
+      <div className="trade-terminal cfd-terminal">
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
-
-        <div className="trading-content" style={styles.content}>
-          <main className="trading-grid" style={styles.grid}>
-            <div className="trading-col trading-col-pairlist" style={styles.pairListColumn}>
-              <CfdInstrumentList
-                symbol={cfdSymbol}
-                onChange={setCfdSymbol}
-                tickers={cfdTickers}
-                configured={cfdConfigured}
-                loadError={cfdLoadError}
-                onRetry={reloadCfd}
-              />
-            </div>
-
-            <div className="trading-col trading-col-chart" style={styles.chartColumn}>
-              <CfdChart symbol={cfdSymbol} ticker={cfdTicker} />
-            </div>
-
-            <div className="trading-col trading-col-form" style={styles.formColumn}>
-              <CfdOrderForm symbol={cfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
-            </div>
+        <div className="terminal">
+          <CfdTickerBar symbol={selectedCfdSymbol} ticker={cfdTicker} />
+          <main className="cfd-workspace">
+            <aside className="cfd-instruments-area" aria-label={t('trade.cfdInstrument')}>
+              <CfdInstrumentList symbol={selectedCfdSymbol} onChange={setCfdSymbol}
+                tickers={cfdTickers} configured={cfdConfigured} loadError={cfdLoadError} onRetry={reloadCfd} />
+            </aside>
+            <section className="cfd-chart-area" aria-label={selectedCfdSymbol}>
+              <CfdChart symbol={selectedCfdSymbol} />
+            </section>
+            <section className="cfd-form-area" aria-label={t('trade.market')}>
+              <CfdOrderForm symbol={selectedCfdSymbol} ticker={cfdTicker} configured={cfdConfigured} onPlaced={handleOrderPlaced} />
+            </section>
           </main>
-
-          <div className="trading-orders-row" style={styles.ordersRow}>
+          <div className="cfd-bottom-panel">
             <CfdPositionsPanel refreshKey={ordersRefreshKey} />
           </div>
         </div>
@@ -348,86 +340,3 @@ export function TradePage() {
     </div>
   );
 }
-
-// v0-designed palette (see the "VOLTEX" v0 export the owner supplied),
-// scoped to just this page the same way FuturesPage/MarketsPage re-theme
-// themselves — every existing var(--panel)/var(--border)/var(--text-*)
-// rule below (and in the shared Nav rendered above) picks this up
-// automatically. Cyan accent replaces the site's default amber.
-const TRADE_V0_VARS = {
-  ['--bg' as any]: '#080b12',
-  ['--panel' as any]: '#121925',
-  ['--panel-alt' as any]: '#0e131d',
-  ['--panel-alt-hover' as any]: '#172131',
-  ['--border' as any]: '#1c2735',
-  ['--text-primary' as any]: '#f5f7fa',
-  ['--text-secondary' as any]: '#8b96a8',
-  ['--text-tertiary' as any]: '#6b7789',
-  ['--buy' as any]: '#19d98b',
-  ['--buy-dim' as any]: 'rgba(25,217,139,0.14)',
-  ['--sell' as any]: '#ff4d67',
-  ['--sell-dim' as any]: 'rgba(255,77,103,0.14)',
-  ['--accent' as any]: '#18c8ff',
-  ['--accent-hover' as any]: '#3fd4ff',
-  ['--accent-dim' as any]: 'rgba(24,200,255,0.14)',
-  ['--on-accent' as any]: '#04121b',
-} as React.CSSProperties;
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    height: '100vh',
-    background: 'var(--bg)',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    ...TRADE_V0_VARS,
-  },
-  content: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: '12px 16px 16px',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  grid: {
-    flex: 1,
-    display: 'flex',
-    gap: 12,
-    minHeight: 0,
-  },
-  pairListColumn: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    display: 'flex',
-    flexDirection: 'column',
-    flex: '0 0 250px',
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-  chartColumn: {
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    display: 'flex',
-    flex: '1 1 auto',
-    minWidth: 0,
-    overflow: 'hidden',
-  },
-  formColumn: {
-    flex: '0 0 300px',
-    overflowY: 'auto',
-  },
-  ordersRow: {
-    flex: '0 0 260px',
-    display: 'flex',
-    flexDirection: 'column',
-    background: 'var(--panel)',
-    border: '1px solid var(--border)',
-    borderRadius: 12,
-    minHeight: 0,
-    overflow: 'hidden',
-  },
-};

@@ -46,24 +46,25 @@ export function CfdPositionsPanel({ refreshKey }: { refreshKey: number }) {
   }
 
   return (
-    <div style={styles.wrap}>
-      <div style={styles.tabs}>
-        <button onClick={() => setTab('open')} style={{ ...styles.tab, ...(tab === 'open' ? styles.tabActive : {}) }}>
+    <div className="cfd-wrap">
+      <div className="cfd-tabs" role="tablist" aria-label={t('futures.positions')}>
+        <button onClick={() => setTab('open')} className={`cfd-tab${tab === 'open' ? ' active' : ''}`} role="tab" aria-selected={tab === 'open'} id="cfd-tab-open" aria-controls="cfd-positions-content">
           {t('futures.positions')}
         </button>
-        <button onClick={() => setTab('history')} style={{ ...styles.tab, ...(tab === 'history' ? styles.tabActive : {}) }}>
+        <button onClick={() => setTab('history')} className={`cfd-tab${tab === 'history' ? ' active' : ''}`} role="tab" aria-selected={tab === 'history'} id="cfd-tab-history" aria-controls="cfd-positions-content">
           {t('futures.positionHistory')}
         </button>
       </div>
 
-      {error && <div style={styles.error}>{error}</div>}
+      {error && <div className="cfd-error" role="alert">{error}</div>}
 
+      <div className="cfd-position-content" id="cfd-positions-content" role="tabpanel" aria-labelledby={`cfd-tab-${tab}`}>
       {tab === 'open' ? (
         positions.length === 0 ? (
-          <div style={styles.empty}>{t('futures.noPositions')}</div>
+          <div className="cfd-empty">{t('futures.noPositions')}</div>
         ) : (
-          <div style={styles.tableWrap}>
-            <table style={styles.table}>
+          <div className="cfd-tableWrap">
+            <table className="cfd-table">
               <thead>
                 <tr>
                   <Th>{t('trade.cfdInstrument')}</Th>
@@ -99,7 +100,7 @@ export function CfdPositionsPanel({ refreshKey }: { refreshKey: number }) {
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{pnl !== null ? pnl.toFixed(2) : '—'}</Td>
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</Td>
                       <Td>
-                        <button onClick={() => handleClose(p.id)} disabled={closingId === p.id} style={styles.closeBtn}>
+                        <button onClick={() => handleClose(p.id)} disabled={closingId === p.id} className="cfd-closeBtn">
                           {closingId === p.id ? t('futures.closing') : t('futures.close')}
                         </button>
                       </Td>
@@ -111,10 +112,10 @@ export function CfdPositionsPanel({ refreshKey }: { refreshKey: number }) {
           </div>
         )
       ) : history.length === 0 ? (
-        <div style={styles.empty}>{t('futures.noPositionHistory')}</div>
+        <div className="cfd-empty">{t('futures.noPositionHistory')}</div>
       ) : (
-        <div style={styles.tableWrap}>
-          <table style={styles.table}>
+        <div className="cfd-tableWrap">
+          <table className="cfd-table">
             <thead>
               <tr>
                 <Th>{t('trade.cfdInstrument')}</Th>
@@ -148,31 +149,18 @@ export function CfdPositionsPanel({ refreshKey }: { refreshKey: number }) {
           </table>
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 function Th({ children }: { children?: React.ReactNode }) {
-  return <th style={styles.th}>{children}</th>;
+  return <th className="cfd-th">{children}</th>;
 }
 function Td({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
-    <td className={className} style={{ ...styles.td, ...style }}>
+    <td className={`cfd-td ${className ?? ''}`} style={style}>
       {children}
     </td>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  wrap: { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 },
-  tabs: { display: 'flex', gap: 4, padding: '0 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 },
-  tab: { background: 'transparent', border: 'none', padding: '12px 6px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' },
-  tabActive: { color: 'var(--text-primary)', boxShadow: 'inset 0 -2px 0 var(--accent)' },
-  empty: { padding: 24, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 },
-  error: { margin: 10, background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 11 },
-  tableWrap: { flex: 1, overflow: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  th: { textAlign: 'left', padding: '8px 14px', color: 'var(--text-tertiary)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.03em' },
-  td: { padding: '8px 14px', color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
-  closeBtn: { background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)' },
-};
