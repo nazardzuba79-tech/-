@@ -622,7 +622,6 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
         return <div key={follower.id}><span className="follower-initial">{follower.displayName.slice(0, 1)}</span><p><strong>{follower.displayName}</strong><small>С {formatSyntheticHistoryDate(follower.copyStartDate)} · {follower.copiedTrades} сделок</small></p><p><strong>{formatAccountSize(follower.allocatedCapital)}</strong><small>Выделенный капитал</small>{follower.startingAllocation !== undefined && <small>При старте: {publicUsdtNumber(follower.startingAllocation)} USDT</small>}</p><p><strong className={roiClass(pnl)}>{signedUsd(pnl)}</strong><small>{formatPercent(follower.roi)} · чистый PnL с начала копирования</small>{follower.grossPnl !== undefined && <small>Gross: {signedUsd(follower.grossPnl)} · Комиссии: {publicUsdtNumber(follower.performanceFees)} USDT</small>}</p></div>;
       })}</div>}
       {followers.length > 8 && <button className="button button-outline" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}
-      {synthetic?.economics && <p className="daily-note">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. <ReviewDisclosure neutral="Действует с">В синтетическом сценарии действует с</ReviewDisclosure> {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}
     </section>
   );
 }

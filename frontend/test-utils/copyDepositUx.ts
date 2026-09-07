@@ -49,6 +49,8 @@ const oldGate = `function EligibilityGate({ compact = false }: { compact?: boole
 
 export function restoreCopyDepositUx(source: string): string {
   let result = restoreCopyButtonDepositUx(source);
+  // Restore only the removed follower-policy footer at its exact local anchor.
+  result = once(result, "      {followers.length > 8 && <button className=\"button button-outline\" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}\n", "      {followers.length > 8 && <button className=\"button button-outline\" onClick={() => setShowAll(value => !value)}>{showAll ? 'Свернуть список' : `Показать всех подписчиков (${followers.length})`}</button>}\n      {synthetic?.economics && <p className=\"daily-note\">Текущий минимум для новых подписчиков: {numberLabel(synthetic.economics.policy.currentCopyMinimum, 0)} USDT. <ReviewDisclosure neutral=\"Действует с\">В синтетическом сценарии действует с</ReviewDisclosure> {formatSyntheticHistoryDate(synthetic.economics.policy.copyMinimumPolicyEffectiveDate)}; более ранние подписчики сохраняют исторические условия.</p>}\n");
   result = once(result, '  LineChart,\n', '  LineChart,\n  Lock,\n');
   result = once(result, '  Users,\n', '  Users,\n  WalletCards,\n');
   result = once(result, "import { CopyDepositDialog } from './CopyDepositDialog';\n", '');
