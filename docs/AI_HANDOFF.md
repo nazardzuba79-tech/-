@@ -1030,3 +1030,10 @@ withdrawal was placed.
 - Preserved exact source PNG and default product-page rendered SVG; no layout/CSS/copy/CTA, data, business/backend/DB or unrelated Claude/Codex functionality changes. Added scoped tests in `cryptoCardVisualConsistency.test.ts`.
 - TypeScript PASS; four Card/Home suites 46/46 PASS; production build PASS (existing chunk-size advisory only), assets `index-BDUPvXD6.js` and unchanged `index-DIK_bKNI.css`; diff check PASS. Browser widths 1920/1440/1366/1280/1024/768/430/390: no horizontal page overflow. Inspected 1440/1024/390 screenshots, no text overlap or console errors. Existing local market-summary read limitations untouched.
 - Local preview updated in the existing tab; no production deployment, main modification or Render action. Feature-branch commit/push only. Await owner review; untracked outputs retained.
+
+## 2026-09-07 - Codex Homepage CHF backdrop seam
+
+- Continued fetched branch codex/home-card-layout-polish at 52c3abd708f26612725bfbf3e1474154ea2ac629. Implementation bf5ff69 corrects only the owner's marked left-edge dimple beside CHF.
+- Homepage-only opacity ellipse (580,470), radii (64,190), reveals the original backdrop without exposing baked-in lettering. A soft warm SVG gradient underlay follows one continuous left contour underneath the photo. ViewBox, layout, source PNG bytes, female hand/nails, watch/card, ten badges and CHF overlay remain unchanged; default product-page SVG remains byte-exact.
+- TypeScript PASS; four Card/Home suites 47/47 PASS; production build PASS (existing chunk advisory), index-DehcH7vN.js and unchanged index-DIK_bKNI.css. Desktop 1440 and mobile 390 screenshots inspected: smooth contour, no horizontal overflow or console errors. No backend/data/logic changes.
+- Updated existing local preview at http://127.0.0.1:4186/?qa=original-hand-left#card. Feature branch only, no deploy or main/production changes. Untracked outputs retained; await owner review.
