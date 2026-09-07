@@ -201,6 +201,19 @@ test('Homepage reveals existing upper/left backdrop while keeping old photo lett
   expect(html.match(/<image /g)).toHaveLength(1);
 });
 
+test('Homepage CHF backdrop joins the left contour without exposing old lettering or painting over the photo', () => {
+  const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual, { framing: 'homepage' }));
+  const [cx, cy, rx, ry] = html.match(/<ellipse data-watch-chf-background="true" cx="(\d+)" cy="(\d+)" rx="(\d+)" ry="(\d+)"/)!.slice(1).map(Number);
+  expect(cx - rx).toBe(516); // Source slogan ends at x=515.
+  expect(Math.hypot((535 - cx) / rx, (510 - cy) / ry)).toBeLessThan(.88);
+  expect(html).toContain('gradientUnits="userSpaceOnUse" x1="473" y1="465" x2="539" y2="483"');
+  expect(html).toContain('d="M594 150 C555 245 540 304 518 374 C485 474 447 588 418 690 L660 690 L700 150Z"');
+  expect(html.indexOf('<path data-watch-left-contour')).toBeLessThan(html.indexOf('<image '));
+  expect(html.match(/<image /g)).toHaveLength(1);
+  const product = renderToStaticMarkup(React.createElement(watch.WatchCardVisual));
+  expect(product).not.toMatch(/data-watch-chf-background|left-contour/);
+});
+
 test('edge opacity replaces the photo frame without changing any other Homepage CSS', () => {
   const html = renderToStaticMarkup(React.createElement(watch.WatchCardVisual));
   expect(html).not.toMatch(/border-radius|filter=|feGaussianBlur/);

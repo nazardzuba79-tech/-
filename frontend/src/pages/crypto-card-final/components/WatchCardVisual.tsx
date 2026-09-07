@@ -34,6 +34,11 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
       <radialGradient id={`${id}-badge-opacity`}>
         <stop offset=".88" stopColor="white" /><stop offset="1" stopColor="white" stopOpacity="0" />
       </radialGradient>
+      {homepage && <linearGradient id={`${id}-left-contour`} gradientUnits="userSpaceOnUse" x1="473" y1="465" x2="539" y2="483">
+        <stop stopColor="#211a12" stopOpacity="0" />
+        <stop offset=".45" stopColor="#211a12" stopOpacity=".65" />
+        <stop offset="1" stopColor="#211a12" />
+      </linearGradient>}
       <mask id={`${id}-vertical-mask`} maskUnits="userSpaceOnUse" x="516" y="80" width={width} height={height}>
         <rect x="516" y="80" width={width} height={height} fill={`url(#${id}-vertical)`} />
       </mask>
@@ -52,6 +57,9 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
             existing full-opacity hand/watch/badge protection stays unchanged. */}
         {homepage && <ellipse data-watch-top-background="true" cx="930" cy="200" rx="415" ry="180" fill={`url(#${id}-badge-opacity)`} />}
         {homepage && <ellipse data-watch-left-background="true" cx="650" cy="790" rx="260" ry="290" fill={`url(#${id}-badge-opacity)`} />}
+        {/* Join the original backdrop beside CHF to the upper/lower reveal.
+            x=516 keeps every baked-in letter outside the feathered island. */}
+        {homepage && <ellipse data-watch-chf-background="true" cx="580" cy="470" rx="64" ry="190" fill={`url(#${id}-badge-opacity)`} />}
       </mask>
       <radialGradient id={`${id}-chf-face`} cx=".32" cy=".22" r=".9">
         <stop stopColor="#353239" /><stop offset=".5" stopColor="#1B1D22" /><stop offset="1" stopColor="#111318" />
@@ -65,6 +73,9 @@ export function WatchCardVisual({ framing = 'product' }: { framing?: 'product' |
         <stop stopColor="#c7a587" /><stop offset=".42" stopColor="#6F2634" /><stop offset="1" stopColor="#8b4851" />
       </linearGradient>
     </defs>
+    {/* One continuous, softly feathered backdrop edge underneath the photo,
+        not a patch on the badge or hand. The original photo stays untouched. */}
+    {homepage && <path data-watch-left-contour="true" d="M594 150 C555 245 540 304 518 374 C485 474 447 588 418 690 L660 690 L700 150Z" fill={`url(#${id}-left-contour)`} />}
     <g mask={`url(#${id}-edges)`}>
       <image href={WATCH_CARD_IMAGE} width="1448" height="1086" preserveAspectRatio="xMidYMid meet" />
       {/* Covers the original CHF face/rim only, never another currency. */}
