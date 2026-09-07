@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 
-/** Provenance is shown by source-aware labels beside the actual figures.
- * Keep only the existing neutral product/methodology information here. */
-export function ReviewDisclosure({ neutral = null }: { children: ReactNode; neutral?: ReactNode }) {
-  return neutral;
+/**
+ * Review/development disclosure copy is intentionally not rendered in the
+ * customer-facing product UI. Source-aware labels beside modeled figures are
+ * handled separately by ModeledDataLabel.
+ */
+export function ReviewDisclosure(_: { children: ReactNode; neutral?: ReactNode }) {
+  return null;
 }
