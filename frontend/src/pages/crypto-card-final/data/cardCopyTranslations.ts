@@ -61,7 +61,7 @@ const en: CardCopy = {
   appSubmit: 'Get your card', appSubmitting: 'Submitting application…', appSubmitted: 'Card application submitted',
   appSubmittedAt: 'Application date', appRequestId: 'Application number', appProduct: 'Your card',
   appLoadError: 'Unable to check eligibility.', appSubmitError: 'Unable to submit your application. Please try again.',
-  appRetry: 'Try again', appReview: 'Account checks and application submissions are disabled in this review environment.',
+  appRetry: 'Try again', appReview: 'Account checks and application submissions are temporarily unavailable.',
   appUnavailable: 'Unable to confirm the financial requirements. Refresh your data.', appRefresh: 'Refresh data',
 };
 
@@ -123,7 +123,7 @@ const zh: CardCopy = {
   appSubmit: '申请卡片', appSubmitting: '正在提交申请…', appSubmitted: '卡片申请已提交',
   appSubmittedAt: '申请日期', appRequestId: '申请编号', appProduct: '您的卡片',
   appLoadError: '无法检查申请资格。', appSubmitError: '无法提交申请，请重试。',
-  appRetry: '重试', appReview: '此预览环境不支持账户检查或提交申请。',
+  appRetry: '重试', appReview: '账户检查和申请提交暂时不可用。',
   appUnavailable: '无法确认财务条件，请刷新数据。', appRefresh: '刷新数据',
 };
 
@@ -188,7 +188,7 @@ const es: CardCopy = {
   appSubmit: 'Obtener tarjeta', appSubmitting: 'Enviando solicitud…', appSubmitted: 'Solicitud de tarjeta enviada',
   appSubmittedAt: 'Fecha de solicitud', appRequestId: 'Número de solicitud', appProduct: 'Tu tarjeta',
   appLoadError: 'No se han podido comprobar los requisitos.', appSubmitError: 'No se ha podido enviar la solicitud. Inténtalo de nuevo.',
-  appRetry: 'Reintentar', appReview: 'La comprobación de cuentas y el envío de solicitudes están deshabilitados en este entorno de revisión.',
+  appRetry: 'Reintentar', appReview: 'La verificación de la cuenta y el envío de solicitudes no están disponibles temporalmente.',
   appUnavailable: 'No se han podido confirmar los requisitos financieros. Actualiza los datos.', appRefresh: 'Actualizar datos',
 };
 
@@ -251,7 +251,7 @@ const hi: CardCopy = {
   appSubmit: 'कार्ड पाएँ', appSubmitting: 'आवेदन भेजा जा रहा है…', appSubmitted: 'कार्ड का आवेदन भेज दिया गया',
   appSubmittedAt: 'आवेदन की तारीख', appRequestId: 'आवेदन संख्या', appProduct: 'आपका कार्ड',
   appLoadError: 'पात्रता जाँची नहीं जा सकी।', appSubmitError: 'आवेदन भेजा नहीं जा सका। फिर कोशिश करें।',
-  appRetry: 'फिर कोशिश करें', appReview: 'इस समीक्षा परिवेश में खाते की जाँच और आवेदन भेजना बंद है।',
+  appRetry: 'फिर कोशिश करें', appReview: 'खाता जाँच और आवेदन भेजना अस्थायी रूप से उपलब्ध नहीं है।',
   appUnavailable: 'वित्तीय शर्तों की पुष्टि नहीं हो सकी। डेटा रीफ़्रेश करें।', appRefresh: 'डेटा रीफ़्रेश करें',
 };
 
@@ -314,7 +314,7 @@ const ja: CardCopy = {
   appSubmit: 'カードを申し込む', appSubmitting: '申請を送信しています…', appSubmitted: 'カードの申請を受け付けました',
   appSubmittedAt: '申請日', appRequestId: '申請番号', appProduct: 'お申し込みのカード',
   appLoadError: '利用条件を確認できませんでした。', appSubmitError: '申請を送信できませんでした。もう一度お試しください。',
-  appRetry: '再試行', appReview: 'この確認用環境では、アカウント確認と申請の送信は無効になっています。',
+  appRetry: '再試行', appReview: 'アカウント確認と申請の送信は一時的に利用できません。',
   appUnavailable: '資金・取引条件を確認できませんでした。データを更新してください。', appRefresh: 'データを更新',
 };
 
@@ -377,7 +377,7 @@ const ko: CardCopy = {
   appSubmit: '카드 신청하기', appSubmitting: '신청서를 보내는 중…', appSubmitted: '카드 신청이 접수되었습니다',
   appSubmittedAt: '신청일', appRequestId: '신청 번호', appProduct: '신청한 카드',
   appLoadError: '이용 조건을 확인하지 못했습니다.', appSubmitError: '신청서를 보내지 못했습니다. 다시 시도해 주세요.',
-  appRetry: '다시 시도', appReview: '이 검토 환경에서는 계정 확인과 신청서 제출이 비활성화되어 있습니다.',
+  appRetry: '다시 시도', appReview: '계정 확인 및 신청서 제출을 일시적으로 이용할 수 없습니다.',
   appUnavailable: '금융 조건을 확인하지 못했습니다. 데이터를 새로고침해 주세요.', appRefresh: '데이터 새로고침',
 };
 
