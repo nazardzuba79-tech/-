@@ -13,6 +13,7 @@ export function FuturesOrderForm({
   onPlaced,
   onOpenTransfer,
   pickedPrice,
+  pickedPriceSequence,
 }: {
   symbol: string;
   onPlaced: () => void;
@@ -20,6 +21,8 @@ export function FuturesOrderForm({
   /** A level clicked in the order book — fills the price field, the same
    *  affordance the spot terminal's form has. */
   pickedPrice?: string | null;
+  /** Repeated clicks on the same level must refill an edited Limit field too. */
+  pickedPriceSequence?: number;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -32,7 +35,7 @@ export function FuturesOrderForm({
       setPrice(pickedPrice);
       setType('LIMIT');
     }
-  }, [pickedPrice]);
+  }, [pickedPrice, pickedPriceSequence]);
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
   const [leverage, setLeverage] = useState(10);
@@ -340,8 +343,8 @@ export function FuturesOrderForm({
       <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
-        <div className="fo-tiersBox">
-          <div className="fo-tiersTitle">{t('futures.leverageTiersTitle')}</div>
+        <details className="fo-tiersBox">
+          <summary className="fo-tiersTitle">{t('futures.leverageTiersTitle')}</summary>
           <table className="fo-tiersTable">
             <thead>
               <tr>
@@ -366,7 +369,7 @@ export function FuturesOrderForm({
               ))}
             </tbody>
           </table>
-        </div>
+        </details>
       )}
     </div>
   );

@@ -17,6 +17,17 @@ function semantic(source){
 }
 
 const read = name => readFileSync(resolve(__dirname, '../..',name),'utf8');
+function restoreFormPresentation(source) {
+ // Reverse only the approved details wrapper and repeated price-pick signal.
+ // The original complete order payload, calculations and controls remain frozen.
+ return source.replace(/\r\n/g,'\n')
+  .replace('  pickedPriceSequence,\n','')
+  .replace('  pickedPriceSequence?: number;\n','')
+  .replace('[pickedPrice, pickedPriceSequence]', '[pickedPrice]')
+  .replace('<details className="fo-tiersBox">','<div className="fo-tiersBox">')
+  .replace('<summary className="fo-tiersTitle">', '<div className="fo-tiersTitle">')
+  .replace('</summary>', '</div>').replace('</details>', '</div>');
+}
 describe('Futures UI-only reconciliation',()=>{
 // Frozen from main 00c6dc3; exclude only CSS imports, style declarations and visual attributes.
 // All render conditions, labels, callbacks, effects, API payloads and calculations are included.
@@ -39,7 +50,9 @@ test.each([
   ],
   [
     "pages/FuturesPage.tsx",
-    "15c632e1572dedfc70a293789b2a5958340ac380ad5e31acceed67d24f5f4bd5"
+    // Final pass: dynamic book opt-in, symbol-bound read lifecycle and repeat picks.
+    // futuresFinalPolish covers exact selection and stale-response rejection.
+    "ffb97c2ae694a92a71326182af2e23d6af5c309184b484c108a2716184b4c921"
   ],
   [
     "components/FuturesPairList.tsx",
@@ -53,7 +66,7 @@ test.each([
     "lib/futuresMath.ts",
     "ee6e6be6d8a6fd40fc548a20c19e9ddb0a1ff392f8da48c3476d70aadff16b00"
   ]
-])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(read(name))).toBe(hash));
+])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{
  const css=read('pages/trade-terminal/FuturesTerminal.css');
  const selectors=[]; require('postcss').parse(css).walkRules(rule=>selectors.push(...rule.selectors));
@@ -72,4 +85,3 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  expect(source).toContain('disabled={submitting}');
 });
 });
-

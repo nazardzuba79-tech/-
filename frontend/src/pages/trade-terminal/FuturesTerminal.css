@@ -60,8 +60,14 @@
 .futures-terminal .fo-infoRow .mono { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
 .futures-terminal .fo-error { font-size: 12px; color: var(--sell); overflow-wrap: anywhere; }
 .futures-terminal .fo-newAccountNotice { font-size: 12px; color: #aeb9c4; }
-.futures-terminal .fo-tiersBox { border-top: 1px solid var(--border-color); padding: 12px 14px 16px; }
-.futures-terminal .fo-tiersTitle { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.futures-terminal .fo-tiersBox { border-top: 1px solid var(--border-color); padding: 0 14px; flex-shrink: 0; }
+.futures-terminal .fo-tiersTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 13px; font-size: 13px; font-weight: 600; line-height: 18px; color: #afbac5; cursor: pointer; list-style: none; }
+.futures-terminal .fo-tiersTitle::-webkit-details-marker { display: none; }
+.futures-terminal .fo-tiersTitle::after { content: ''; width: 6px; height: 6px; flex: 0 0 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); margin-right: 2px; }
+.futures-terminal .fo-tiersBox[open] { padding-bottom: 14px; }
+.futures-terminal .fo-tiersBox[open] .fo-tiersTitle::after { transform: rotate(225deg); }
+.futures-terminal .fo-tiersTitle:hover { color: var(--text-primary); }
+.futures-terminal .fo-tiersTitle:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: -2px; border-radius: 4px; }
 .futures-terminal .fo-tiersTable { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 .futures-terminal .fo-tiersTh { text-align: right; font-weight: 500; color: #a5b0bc; padding: 6px 0 8px; }
 .futures-terminal .fo-tiersTd { text-align: right; padding: 6px 0; color: #afbac5; }

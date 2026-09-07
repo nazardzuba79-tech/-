@@ -60,8 +60,8 @@ export function FuturesPage() {
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
-  const [book, setBook] = useState<{ bids: any[]; asks: any[] }>({ bids: [], asks: [] });
-  const [pickedPrice, setPickedPrice] = useState<string | null>(null);
+  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
+  const [pickedPrice, setPickedPrice] = useState<{ value: string; seq: number } | null>(null);
   const [openPositionCount, setOpenPositionCount] = useState(0);
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
@@ -96,34 +96,37 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
-  const refreshBook = useCallback(() => {
-    api
-      .getExternalOrderBook(symbol)
-      .then((res) => setBook({ bids: res.bids, asks: res.asks }))
-      .catch(() => {});
-  }, [symbol]);
-
   useEffect(() => {
+    let cancelled = false;
     let gotWsData = false;
     let restInterval: number | null = null;
+    function refreshBook() {
+      api.getExternalOrderBook(symbol)
+        .then((res) => {
+          if (!cancelled && !gotWsData) setBook({ symbol, bids: res.bids, asks: res.asks });
+        })
+        .catch(() => {});
+    }
     const unsubscribe = krakenSocket.subscribeBook(symbol, (snapshot) => {
+      if (cancelled) return;
       gotWsData = true;
       if (restInterval !== null) {
         clearInterval(restInterval);
         restInterval = null;
       }
-      setBook(snapshot);
+      setBook({ symbol, ...snapshot });
     });
     refreshBook();
     const fallbackTimer = window.setTimeout(() => {
       if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
     }, WS_FALLBACK_TIMEOUT_MS);
     return () => {
+      cancelled = true;
       unsubscribe();
       clearTimeout(fallbackTimer);
       if (restInterval !== null) clearInterval(restInterval);
     };
-  }, [symbol, refreshBook]);
+  }, [symbol]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
@@ -177,12 +180,15 @@ export function FuturesPage() {
 
           <div className="orderbook-area">
             <OrderBookPanel
-              bids={book.bids}
-              asks={book.asks}
+              key={symbol}
+              bids={book.symbol === symbol ? book.bids : []}
+              asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
+              // Reuse Spot's proven display precision without changing Spot or the feed.
+              spotPrecision
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
-                setPickedPrice(value);
+                setPickedPrice({ value, seq: pickedSeq.current });
               }}
             />
           </div>
@@ -192,7 +198,8 @@ export function FuturesPage() {
               symbol={symbol}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={() => setShowTransfer(true)}
-              pickedPrice={pickedPrice}
+              pickedPrice={pickedPrice?.value}
+              pickedPriceSequence={pickedPrice?.seq}
             />
           </div>
         </div>
