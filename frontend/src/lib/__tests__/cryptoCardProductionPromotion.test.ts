@@ -13,13 +13,13 @@ const source = (file: string) => readFileSync(resolve(repository, file), 'utf8')
 const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/CardApplication.tsx": "f4e475d2b609d19e8e12194fb13837b6026a9bfe759248e2a16690f60028d4d9",
   "frontend/src/pages/crypto-card-final/cardApplicationState.ts": "526e909eb7b161ee41bffdf474e1412082ce991d20a6b43e9cb54c8ed1913042",
-  "frontend/src/pages/crypto-card-final/crypto-card.css": "f4a26262ab6ef4f83f7882de82aa7ff784bd47f265c7e19c73bb92839bf0b07b",
+  "frontend/src/pages/crypto-card-final/crypto-card.css": "9ed9552a641fdc63c5593e5ad00bbab6b7a8fc63102105259e401252cfe5c6a1",
   "frontend/src/pages/crypto-card-final/useCardCopy.ts": "6a1c229a9546f386a65254fa2446b45a32605cdf3480e9c381dde5a60ae33494",
   "frontend/src/pages/crypto-card-final/components/AtmSection.tsx": "e0341badbe91a3e3098b845a05f3be5ac017c461ad487963d9b112fbd31e64b9",
   "frontend/src/pages/crypto-card-final/components/BrandMarks.tsx": "42c92d5892b537de7dd079a0ce857fd73362954e0b3e2d16bc2239b6f9849478",
   "frontend/src/pages/crypto-card-final/components/CardChoiceSection.tsx": "d467f522ae3fe6ae03a7b6ff0558622f1cf009dc8eb86171c37508181a8542bd",
   "frontend/src/pages/crypto-card-final/components/CardScene.tsx": "e3761e1b054b1a3c29045b1f5abd1246858af91bdc7ac06b80f0bbe2c9e82ed4",
-  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "ac85ddec137d2d3ced7348a5db51d4da2c3c436cc24dc52b5d699dcb0024cf53",
+  "frontend/src/pages/crypto-card-final/components/CinematicCardScene.tsx": "5b5d53b1bc200cac4bddc4633eaccf1e823f9d92feb3a18a4e5ff35e1ab06a97",
   "frontend/src/pages/crypto-card-final/components/ControlSecuritySection.tsx": "08973402bfa700cccf851a4406fd3d42da81843fb7189fd1b3319c4ca0245203",
   "frontend/src/pages/crypto-card-final/components/CurrencyMarks.tsx": "da410cf0811f2671e394a997546fc27889f3f5ae0cce7cc2e9101114debc0e38",
   "frontend/src/pages/crypto-card-final/components/CurrencySection.tsx": "f7f50a6172e66dfc30b57eef34d130539f57e5bbb4c1694df51245b7dc99fdcc",
@@ -28,7 +28,7 @@ const approvedCardSources: Record<string, string> = {
   "frontend/src/pages/crypto-card-final/components/FinalCtaFooter.tsx": "64682b2e76f1251aae617614cb434979fbf501036f5765c8eb5826a575b22b12",
   "frontend/src/pages/crypto-card-final/components/GlobalUseSection.tsx": "4c525768116bd5300e2897665d70833625e4b050df2668d76f500888f83a18a6",
   "frontend/src/pages/crypto-card-final/components/Header.tsx": "6e3337f6e583b561937637baa54b0ee8b83134d5759a70e5ea0e3abec66eb2b0",
-  "frontend/src/pages/crypto-card-final/components/Hero.tsx": "2e80c8ed7fa688499e645ca947337ed657017e87fb9d467f94fe2ecf7d9678f8",
+  "frontend/src/pages/crypto-card-final/components/Hero.tsx": "78c43cbe08b867607557f19cf3cf1279027dac40b2d45cffc9f172a80b68b2a9",
   "frontend/src/pages/crypto-card-final/components/HowItWorksSection.tsx": "6fb8bd0b9fc6af6f40487987f485d0201afca1836daa44565918b2bd2963d11f",
   "frontend/src/pages/crypto-card-final/components/PaymentSection.tsx": "c239a84af63ca8de43bbf0dab9f1f95d1e26679e0651b05893b300e66d57405e",
   "frontend/src/pages/crypto-card-final/components/ServiceChip.tsx": "85a7c7c55734cced6406ff4e61c42ab6c78b5402f7e9618a5f9fe1f8095884ee",
@@ -58,8 +58,8 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
   "frontend/src/pages/home/home.css": "f2e53a7bd3f0d3e61d5f71d9d12d45ac3bde9149930747d1019b102b70a4f23b",
-  // Homepage-only two-card/phone mount; exact reverse-diff test preserves surrounding copy/layout.
-  "frontend/src/pages/home/HomeCardSection.tsx": "e86c36e37a09e455aebf74f45e5c9cfd436e395c13894490e472dac8efb5d726",
+  // Owner-reference wrist/slogan mount; exact reverse-diff test preserves other copy/layout.
+  "frontend/src/pages/home/HomeCardSection.tsx": "c4c0f96e4e162de790c63cba4a64e41e97edc19b73ce731879af6847aff9330e",
   "frontend/src/pages/home/HomeCryptoCard.tsx": "221491b3828c82825beacf0373564047fd88733eaad39d5b5ed61154bacf6da3",
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
@@ -93,6 +93,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
 };
 const approvedAssets: Record<string, string> = {
+  "voltex-watch-wrist-final.png": "ac18b001ae9bb5f370efae95953c7d6deda508679882b4220b7b687e41b39013",
   "apple-pay-mark.svg": "66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c",
   "voltex-smartwatch-scene.png": "da2478a366d97498fb698cdb5b3f2f3663c7d4691e9accbd42553eb9fd14427e",
   "5165f22b-08e6-4b9b-83eb-d4b778cc9aad.jpg": "d67bb871ba92b31d5da246599d8521933b29e1d7b5aa78a8e2e9fcd98c1e5d45",
@@ -124,7 +125,7 @@ test('all approved masters and the two new presentation assets are byte-exact an
   for (const [file, expected] of Object.entries(approvedAssets)) {
     expect({ file, sha256: digest(readFileSync(resolve(directory, file))) }).toEqual({ file, sha256: expected });
   }
-  expect(Object.keys(approvedAssets)).toHaveLength(17);
+  expect(Object.keys(approvedAssets)).toHaveLength(18);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-hero-source.png'))).toBe(false);
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });

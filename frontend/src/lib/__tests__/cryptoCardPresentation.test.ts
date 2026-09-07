@@ -54,8 +54,8 @@ test('the landing preserves the approved archive section order inside the existi
 });
 
 test('final approved marketing copy and monthly Black Signature limit are explicit HTML, not an old placeholder', () => {
-  expect(cardCopyRu.heroTitle).toBe('Криптовалюта, которой можно платить каждый день');
-  expect(component('Hero')).toContain('{c.heroTitle}');
+  expect(component('WatchCardVisual')).toContain("CARD_HERO_SLOGAN = 'Трать крипту по всему миру'");
+  expect(component('Hero')).toContain('{CARD_HERO_SLOGAN}');
   expect(component('Hero')).toContain('{c.heroLead}');
   expect([cardCopyRu.benefitCashback, cardCopyRu.benefitFees, cardCopyRu.benefitLimit])
     .toEqual(['До 20% кешбека.', 'Без комиссий.', '$1 млн в месяц.']);
@@ -115,7 +115,8 @@ test('all literal presentation image URLs point to present production assets wit
     for (const match of source.matchAll(/['"](\/cards\/crypto-card-final\/[^'"\s]+\.(?:jpg|png|webp))['"]/g)) paths.add(match[1]);
   }
   expect(paths.size).toBeGreaterThanOrEqual(8);
-  expect(paths.has('/cards/crypto-card-final/voltex-smartwatch-scene.png')).toBe(true);
+  expect(paths.has('/cards/crypto-card-final/voltex-watch-wrist-final.png')).toBe(true);
+  expect(paths.has('/cards/crypto-card-final/voltex-smartwatch-scene.png')).toBe(false);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-hero.webp')).toBe(false);
   expect(paths.has('/cards/crypto-card-final/voltex-cards-phone-register.webp')).toBe(false);
   for (const asset of paths) {
@@ -153,12 +154,11 @@ test('product links target actual sections, including both visible application C
   expect(elements(parse(component('FinalCtaFooter')), 'CardApplication')).toHaveLength(1);
 });
 
-test('hero uses a complete proportionate master inside the smartwatch, other surfaces reuse the master', () => {
+test('hero uses the reference wrist scene, other surfaces retain the exact physical master', () => {
   const scene = component('CinematicCardScene');
-  expect(scene).toContain('CARD_MASTER.black');
-  expect(scene).toContain('voltex-smartwatch-scene.png');
-  expect(scene).toContain('height={486 * 996 / 1580}');
-  expect(scene).toContain('preserveAspectRatio="xMidYMid meet"');
+  expect(scene).toContain('<WatchCardVisual />');
+  expect(component('WatchCardVisual')).toContain('voltex-watch-wrist-final.png');
+  expect(component('WatchCardVisual')).toContain('preserveAspectRatio="xMidYMid meet"');
   expect(scene).not.toMatch(/<mask|clipPath|preserveAspectRatio="none"|voltex-cards-phone/);
   expect(elements(parse(component('Hero')), 'CinematicCardScene')).toHaveLength(1);
   expect(elements(parse(component('FinalCtaFooter')), 'CinematicCardScene')).toHaveLength(1);

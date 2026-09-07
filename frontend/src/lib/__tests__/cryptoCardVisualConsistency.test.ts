@@ -19,8 +19,8 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
 }
 const master = evaluate('src/pages/crypto-card-final/components/VoltexCard.tsx');
 const home = evaluate('src/pages/home/HomeCryptoCard.tsx', { '../crypto-card-final/components/VoltexCard': master });
-const cinematic = evaluate('src/pages/crypto-card-final/components/CinematicCardScene.tsx', { './VoltexCard': master });
-const composition = evaluate('src/pages/home/HomeCardComposition.tsx', { '../crypto-card-final/components/VoltexCard': master });
+const watch = evaluate('src/pages/crypto-card-final/components/WatchCardVisual.tsx');
+const cinematic = evaluate('src/pages/crypto-card-final/components/CinematicCardScene.tsx', { './VoltexCard': master, './WatchCardVisual': watch });
 
 test.each([228, 320])('Homepage/auth %spx renders the real approved master with automatic height', width => {
   const html = renderToStaticMarkup(React.createElement(home.HomeCryptoCard, { width }));
@@ -31,18 +31,18 @@ test.each([228, 320])('Homepage/auth %spx renders the real approved master with 
   expect(read('src/pages/auth-shell/AuthShell.tsx')).toContain('<HomeCryptoCard width={228}');
 });
 
-test('smartwatch contains the entire unwarped physical master inside measured screen bounds', () => {
+test('hero uses the reference wrist artwork without distorting its watch or circular badges', () => {
   const html = renderToStaticMarkup(React.createElement(cinematic.CinematicCardScene, { kind: 'hero', label: 'VOLTEX Card' }));
-  expect(html).toContain('data-card-cinematic="smartwatch"');
-  expect(html).toContain(master.CARD_MASTER.black);
+  expect(html).toContain('data-card-cinematic="wrist-watch"');
+  expect(html).toContain(watch.WATCH_CARD_IMAGE);
   expect(html).toContain('preserveAspectRatio="xMidYMid meet"');
-  expect(html).not.toMatch(/clipPath|<mask|transform=/);
-  const [x, y, width, height] = [384, 462, 486, 486 * 996 / 1580];
-  expect(x).toBeGreaterThan(367);
-  expect(x + width).toBeLessThan(879);
-  expect(y).toBeGreaterThan(325);
-  expect(y + height).toBeLessThan(912);
-  expect(width / height).toBeCloseTo(1580 / 996, 12);
+  expect(html).not.toMatch(/clipPath|<mask|transform=|slice|preserveAspectRatio="none"/);
+  expect(html).toContain('viewBox="480 80 960 925"');
+  expect(html).toContain('width="1448" height="1086"');
+  const png = readFileSync(resolve(frontend, `public${watch.WATCH_CARD_IMAGE}`));
+  expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1448, 1086]);
+  expect(createHash('sha256').update(png).digest('hex')).toBe('ac18b001ae9bb5f370efae95953c7d6deda508679882b4220b7b687e41b39013');
+  expect(read('src/pages/crypto-card-final/crypto-card.css')).not.toContain('aspect-ratio: 800 / 1150');
   expect(renderToStaticMarkup(React.createElement(cinematic.CinematicCardScene, { kind: 'final', label: 'VOLTEX Card' })))
     .toContain(master.CARD_MASTER.black);
 });
@@ -65,35 +65,36 @@ test('Homepage uses unchanged official payment branding and consistent product-s
     .toBe('66baf110b86c1f1ae01a0e28985970d3827465e6aba6be54d5142a6d1eaa803c');
 });
 
-test('Homepage promo contains both exact physical masters plus a phone without invented balances', () => {
-  const html = renderToStaticMarkup(React.createElement(composition.HomeCardComposition));
-  expect(html).toContain('data-home-card-composition="two-cards-phone"');
-  expect(html.match(/data-product="smartphone"/g)).toHaveLength(1);
-  expect(html.match(/data-product="black-signature"/g)).toHaveLength(1);
-  expect(html.match(/data-product="titanium"/g)).toHaveLength(1);
-  expect(html).toContain(master.CARD_MASTER.black);
-  expect(html).toContain(master.CARD_MASTER.titanium);
-  expect(html.match(/width="1580" height="996" preserveAspectRatio="xMidYMid meet"/g)).toHaveLength(2);
-  expect(html).toContain('••••••');
-  expect(html.match(/data-phone-expense=/g)).toHaveLength(3);
-  expect(html).toContain('Recent activity');
-  for (const amount of ['−$128.50', '−$12.99', '−$24.00']) expect(html).toContain(amount);
-  expect(html).not.toContain('x="461" y="413" width="48"');
-  expect(html).not.toMatch(/skew|matrix3d|perspective|<foreignObject|<button|<a /);
-  const src = read('src/pages/home/HomeCardComposition.tsx');
+test('both hero headings render the exact approved slogan and share the same asset', () => {
+  expect(watch.CARD_HERO_SLOGAN).toBe('Трать крипту по всему миру');
+  const section = evaluate('src/pages/home/HomeCardSection.tsx', {
+    '../crypto-card-final/components/WatchCardVisual': watch,
+    './CardBenefitIcon': { CardBenefitIcon: () => null },
+    '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => key }) },
+    'react-router-dom': { Link: ({ children }: any) => React.createElement('a', null, children) },
+  });
+  const hero = evaluate('src/pages/crypto-card-final/components/Hero.tsx', {
+    './WatchCardVisual': watch, './CinematicCardScene': cinematic,
+    '../useCardCopy': { useCardCopy: () => ({ c: { benefitCashback: 'cashback', benefitFees: 'fees', benefitLimit: 'limit' } }) },
+  });
+  for (const Component of [section.HomeCardSection, hero.Hero]) {
+    const html = renderToStaticMarkup(React.createElement(Component));
+    expect(html.match(/Трать крипту по всему миру/g)).toHaveLength(1);
+    expect(html.match(/data-card-cinematic="wrist-watch"/g)).toHaveLength(1);
+    expect(html).toContain(watch.WATCH_CARD_IMAGE);
+    expect(html).not.toMatch(/two-cards-phone|voltex-smartwatch-scene|Тратьте|как фиат|BNB|XRP/);
+  }
+  const src = read('src/pages/crypto-card-final/components/WatchCardVisual.tsx');
   expect(src).not.toMatch(/fetch\(|useEffect|useAuth|useBalance|axios/);
-  // Physical perimeter extents after uniform scale; the full cards remain in
-  // separate slots, before the tiny rigid rotations (whose safety margin >20px).
-  expect(44.5 + (82 + 820) * .2651).toBeLessThan(322.2 + 44 * .245 - 20);
-  expect(5.55 + (111 + 1358) * .2651).toBeLessThan(435 - 20);
-  expect(21.5 + (55 + 1470) * .245).toBeLessThan(435 - 20);
 });
 
-test('two-card change preserves all Homepage copy, benefits, CTAs and surrounding layout', () => {
+test('wrist change preserves all other Homepage copy, benefits, CTAs and surrounding layout', () => {
   const restored = read('src/pages/home/HomeCardSection.tsx').replace(/\r\n/g, '\n')
-    .replace("import { HomeCardComposition } from './HomeCardComposition';", "import { HomeCryptoCard } from './HomeCryptoCard';")
-    .replace('Both approved cards and the phone share one contained hero composition.', 'The only animated card presentation on the homepage.')
-    .replace('<HomeCardComposition />', '<HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />');
+    .replace("import { CARD_HERO_SLOGAN, WatchCardVisual } from '../crypto-card-final/components/WatchCardVisual';", "import { HomeCryptoCard } from './HomeCryptoCard';")
+    .replace('{CARD_HERO_SLOGAN}', "{t('home.card.titleTop')}\n              <span className=\"block\">{t('home.card.titleBottom')}</span>")
+    .replace('lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)]', 'lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)]')
+    .replace('The same owner-approved wrist artwork as the Crypto Card hero.', 'The only animated card presentation on the homepage.')
+    .replace('<WatchCardVisual />', '<HomeCryptoCard width={320} animated sweepDelay={3.5} hover className="max-w-full" />');
   expect(createHash('sha256').update(restored).digest('hex'))
     .toBe('df56857a1aa2d406fd6bd3ae5ec8d0ca468e7e58c9dba3551e8696311b8431db');
 });

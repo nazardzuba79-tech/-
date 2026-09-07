@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { StarIcon } from 'lucide-react';
 import { CardBenefitIcon, type CardBenefit } from './CardBenefitIcon';
-import { HomeCardComposition } from './HomeCardComposition';
+import { CARD_HERO_SLOGAN, WatchCardVisual } from '../crypto-card-final/components/WatchCardVisual';
 import { Key, useLanguage } from '../../lib/i18n';
 
 const BENEFITS: { key: CardBenefit; titleKey: Key; textKey: Key }[] = [
@@ -38,15 +38,14 @@ export function HomeCardSection() {
           className="pointer-events-none absolute left-[50%] top-[66%] h-[160px] w-[440px] -translate-x-1/2 rotate-[-6deg] rounded-[100%] bg-[radial-gradient(50%_60%_at_50%_0%,rgba(224,169,63,0.20),transparent_72%)] blur-[2px]"
         />
 
-        <div className="relative grid grid-cols-1 items-center gap-8 p-7 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)_minmax(0,300px)] lg:gap-6 lg:p-9">
+        <div className="relative grid grid-cols-1 items-center gap-8 p-7 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.35fr)_minmax(0,0.75fr)] lg:gap-6 lg:p-9">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-gold-500/35 bg-gold-500/[0.08] px-3 py-[5px] text-[10px] font-medium uppercase tracking-[0.13em] text-gold-400">
               <StarIcon size={10} fill="#f0c45a" />
               {t('home.card.name')}
             </span>
             <h2 className="mt-5 text-[30px] font-bold leading-[1.1] tracking-[-0.02em] text-white lg:text-[34px]">
-              {t('home.card.titleTop')}
-              <span className="block">{t('home.card.titleBottom')}</span>
+              {CARD_HERO_SLOGAN}
             </h2>
             <p className="mt-4 max-w-[320px] text-[13px] leading-relaxed text-home-muted">
               {t('home.card.text')}
@@ -67,9 +66,9 @@ export function HomeCardSection() {
             </div>
           </div>
 
-          {/* Both approved cards and the phone share one contained hero composition. */}
+          {/* The same owner-approved wrist artwork as the Crypto Card hero. */}
           <div className="relative flex items-center justify-center py-4">
-            <HomeCardComposition />
+            <WatchCardVisual />
           </div>
 
           <ul className="space-y-4">
