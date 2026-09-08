@@ -52,7 +52,7 @@ function copyFixture(depositUsd: number, alreadyFollowing = false, trader = ordi
   return { render, button, dialog, toggle, toast, following, DepositDialog };
 }
 
-test.each([0, -1, 19_999, 19_999.99, NaN, Infinity, -Infinity])('deposit %s opens requirement only on click without starting Following', deposit => {
+test.each([0, -1, 9_999, 9_999.99, NaN, Infinity, -Infinity])('deposit %s opens requirement only on click without starting Following', deposit => {
   const fixture = copyFixture(deposit);
   expect(fixture.button().props.disabled).not.toBe(true);
   expect(fixture.button().props.children).toBe('Копировать трейдера');
@@ -69,7 +69,7 @@ test.each([0, -1, 19_999, 19_999.99, NaN, Infinity, -Infinity])('deposit %s open
   expect(fixture.toggle).not.toHaveBeenCalled();
 });
 
-test.each([20_000, 20_000.01, 200_000])('deposit %s preserves existing eligible start and stop actions', deposit => {
+test.each([10_000, 10_000.01, 200_000])('deposit %s preserves existing eligible start and stop actions', deposit => {
   const fixture = copyFixture(deposit);
   const stopPropagation = jest.fn();
   fixture.button().props.onClick({ stopPropagation });
@@ -96,7 +96,7 @@ test('insufficient funds do not alter an already-followed local entry', () => {
 });
 
 test('unavailable Nazar conditions retain the separate disabled-data safety guard', () => {
-  for (const deposit of [0, 20_000]) {
+  for (const deposit of [0, 10_000]) {
     const fixture = copyFixture(deposit, false, { ...nazarTrader, performanceFee: NaN });
     expect(fixture.button().props.disabled).toBe(true);
     expect(fixture.button().props.title).toBe('Условия стратегии недоступны');
@@ -132,7 +132,7 @@ test('native dialog has exactly the approved message and a same-origin existing 
   const [heading, actions] = fixture.node.props.children;
   expect(fixture.node.type).toBe('dialog');
   expect(fixture.node.props['aria-labelledby']).toBe(heading.props.id);
-  expect(heading.props.children).toBe('Копировать этого трейдера можно при депозите от $20 000.');
+  expect(heading.props.children).toBe('Копировать этого трейдера можно при депозите от $10 000.');
   expect(fixture.target).toBe(fixture.documentFixture.body);
   expect(actions.props.children).toHaveLength(2);
   const [link, close] = actions.props.children;
@@ -202,6 +202,51 @@ test('normal Copy surfaces have no permanent deposit requirement; only the click
   expect(css).not.toMatch(/\.global-header|\.trader-card|\.profile-chart|\.daily-plot|\.eligibility/);
   const dialog = read('src/pages/copy-trading-bolt/CopyDepositDialog.tsx');
   expect(dialog).not.toMatch(/\b(?:api|fetch|localStorage|sessionStorage|balance|ledger)\b|toggleFollowing|setToken/);
+});
+
+/**
+ * The figure and the gate must never disagree.
+ *
+ * They already could: COPY_ELIGIBILITY_THRESHOLD_USD decides who may copy,
+ * while the dialog heading and the marketing copy each spelled the number
+ * out by hand. Change the constant alone and the app quietly tells members
+ * the wrong price of entry — which is exactly the kind of claim that must
+ * not be able to drift. This reads the constant and checks every dollar
+ * figure shown to a member against it.
+ */
+test('every dollar figure quoted to a member matches the one eligibility constant', () => {
+  const threshold = eligibility.COPY_ELIGIBILITY_THRESHOLD_USD as number;
+  expect(typeof threshold).toBe('number');
+
+  // The two ways this app writes a thousands separator.
+  const spaced = threshold.toLocaleString('ru-RU').replace(/\u00a0/g, ' ');
+  const comma = threshold.toLocaleString('en-US');
+
+  // Collect every "$<figure>" a member can read on the Copy Trading path.
+  const i18nLines = read('src/lib/i18n.tsx').split('\n').filter(line =>
+    line.includes("'marketing.feature.copyTrading.text':") || line.includes("'marketing.faq.a5':"));
+  // Seven languages x two keys. Asserted so a new language cannot be added
+  // without this guard seeing it.
+  expect(i18nLines).toHaveLength(14);
+
+  const surfaces = [read('src/pages/copy-trading-bolt/CopyDepositDialog.tsx'), ...i18nLines];
+  const quoted = surfaces.flatMap(text => [...text.matchAll(/\$\s?([\d][\d.,\u00a0 ]*\d)/g)].map(m => m[1]));
+  expect(quoted.length).toBeGreaterThan(0);
+  for (const figure of quoted) {
+    expect([spaced, comma]).toContain(figure.replace(/\u00a0/g, ' '));
+  }
+
+  // The dialog specifically — the message the owner asked about.
+  expect(read('src/pages/copy-trading-bolt/CopyDepositDialog.tsx'))
+    .toContain(`Копировать этого трейдера можно при депозите от $${spaced}.`);
+
+  // Japanese and Korean spell the figure in 万 / 만 rather than digits, so
+  // the sweep above cannot see them. They are pinned here instead, and
+  // must be re-translated by hand whenever the constant moves.
+  expect(threshold).toBe(10_000);
+  const cjk = i18nLines.filter(line => /ドル|달러/.test(line));
+  expect(cjk).toHaveLength(4);
+  for (const line of cjk) expect(line).toMatch(/1万ドル|1만 달러/);
 });
 
 test('normalization only reverses exact approved UX edits, never hides copy-action or financial drift', () => {

@@ -27,7 +27,7 @@ export function CopyDepositDialog({ onClose }: { onClose: () => void }) {
     <dialog ref={dialogRef} className="copy-deposit-dialog" aria-labelledby={titleId}
       onClick={event => event.stopPropagation()}
       onCancel={event => { event.preventDefault(); onClose(); }}>
-      <h2 id={titleId}>Копировать этого трейдера можно при депозите от $20 000.</h2>
+      <h2 id={titleId}>Копировать этого трейдера можно при депозите от $10 000.</h2>
       <div className="copy-deposit-dialog-actions">
         <Link to="/wallet?action=deposit" onClick={onClose}>Пополнить депозит</Link>
         <button type="button" onClick={onClose}>Закрыть</button>

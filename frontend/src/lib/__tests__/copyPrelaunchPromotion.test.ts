@@ -29,11 +29,15 @@ test('production UI has no development disclosure mounts', () => {
   expect(source('src/App.tsx')).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
 });
 
-test.each([0, -1, 19_999.99, 20_000, 20_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {
-  const { CopyEligibilityProvider } = evaluate('src/pages/copy-trading-bolt/CopyEligibilityContext.tsx');
+test.each([0, -1, 9_999.99, 10_000, 10_000.01, 100_000, NaN, Infinity])('copy eligibility comes solely from the finite deposit threshold: %s', amount => {
+  const { CopyEligibilityProvider, COPY_ELIGIBILITY_THRESHOLD_USD } = evaluate('src/pages/copy-trading-bolt/CopyEligibilityContext.tsx');
+  // Read from the module rather than restating the figure: the point of
+  // this test is the RULE (finite and at or above the gate), not the
+  // number, and a second copy of the number is a second thing to forget.
+  expect(COPY_ELIGIBILITY_THRESHOLD_USD).toBe(10_000);
   for (const isAdmin of [false, true]) {
     const node = CopyEligibilityProvider({ depositUsd: amount, isAdmin, children: null });
-    expect(node.props.value.eligible).toBe(Number.isFinite(amount) && amount >= 20_000);
+    expect(node.props.value.eligible).toBe(Number.isFinite(amount) && amount >= COPY_ELIGIBILITY_THRESHOLD_USD);
     expect(node.props.value.depositUsd).toBe(amount);
   }
 });

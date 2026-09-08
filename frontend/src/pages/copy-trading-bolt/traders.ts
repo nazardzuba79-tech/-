@@ -3,7 +3,7 @@
 // typed into a component. That is what makes it replaceable later: swap
 // this module's constants for an API response and the views are unchanged.
 //
-// Eligibility is deliberately NOT in this file: the $20,000 gate is
+// Eligibility is deliberately NOT in this file: the deposit gate is
 // computed from the account's real deposit, see CopyEligibilityContext.tsx.
 
 export type RiskLevel = 'Low' | 'Moderate' | 'High' | 'Very High';

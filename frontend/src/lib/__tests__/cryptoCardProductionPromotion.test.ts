@@ -79,10 +79,23 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
   "frontend/src/pages/home/TerminalPreview.tsx": "278010a479c9102267599c93e9f4b712a313088bb6b115786ee3ee0a4b2c3ceb",
   "frontend/src/pages/home/useHomeMarket.ts": "28d77b6950b9a944cf80d12f9ede522f598a32471fc62309b69e64518a58880e",
-  "frontend/src/pages/CopyTradingPage.tsx": "023cc003fb8301e49e235e0b8dbdaa841f6b7e551831fbc270d70f5955d063ce",
+  // Re-taken for the owner-requested copy-trading deposit gate change
+  // ($20,000 -> $10,000). COMMENT ONLY, +1/-1: the doc comment quoted the
+  // old figure, and a comment that states the wrong threshold is the
+  // drift this change exists to remove. Not one executable byte differs
+  // — the deposit read, the portfolio-history call and the $0 fallback
+  // for an account with no snapshot are all unchanged.
+  "frontend/src/pages/CopyTradingPage.tsx": "3377f4c29a8736da28e2508f491d302aefe146953e888b18ef8d9c2bbd8592e5",
   // Preserve owner Copy cleanup already on starting main bd41a81.
   "frontend/src/pages/copy-trading-bolt/components.tsx": "d29f19854ac8e791a8f2d24a9dd5e37769bdb32b4ef665d179b1b64361348b18",
-  "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "4b8a2e6359d5d03dbe33a91094b75f75b703ec5ee22b74467c22ff7eae9b363c",
+  // Re-taken for the owner-requested deposit gate change: the constant is
+  // $20,000 -> $10,000, plus the doc comment around it. This file IS the
+  // gate, so its fingerprint moving is the intended record of that
+  // decision. The eligibility RULE is unchanged and still asserted
+  // behaviourally (finite AND >= the constant) in copyPrelaunchPromotion,
+  // and copyDepositUx now checks every figure shown to a member against
+  // this same constant so the two cannot drift apart again.
+  "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "1bfbc017c8009081addcc710f72dcc49a86347e05ccc5e04b857c9465db15240",
   "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "7b287821fe20bdd9eba8ec86ae0b392ae373b75c11cd48309031f4bbc80daf33",
   // Owner-requested marketplace card polish; profile/chart CSS is separately frozen.
   "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "4a23c8b6f80086e232b747846fb32b92741eebd3261ad1cc5764f7869626f869",
@@ -90,7 +103,10 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
   "frontend/src/pages/copy-trading-bolt/TraderAvatarArt.tsx": "6fa00d21147656ac4ec0a56ee908bb1f1a05f777cbaf2044a7866c2bd11f51d7",
-  "frontend/src/pages/copy-trading-bolt/traders.ts": "ab4d3408ef96696f88570fc75d31d227e705a0f84733bb173b9071bf7c5ed469",
+  // Re-taken with the same gate change. COMMENT ONLY, +1/-1: the header
+  // comment quoted the old figure while pointing at CopyEligibilityContext
+  // as the real source. No trader, fee, ROI or any other datum changed.
+  "frontend/src/pages/copy-trading-bolt/traders.ts": "ead790a21be93063afd4b1fa701d35da70a8489be3e64e1eda33276da23baf47",
   "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "c87ac8d078d4d9038a33b18ddded787630a93834a7444042cc7899723ae4e74a",
   "frontend/src/pages/copy-trading-bolt/useCopyLists.ts": "322cc598e49f4d64a3d058d0d8f232ddce43e5ce3e604bfd88de7cd9cac10480",
   "frontend/src/lib/syntheticCopyTrading.ts": "f7f9664a0630d3eda53a2ca6ba61c1a20613fb2991d57ae0a5ecc53ed27ca4ea",

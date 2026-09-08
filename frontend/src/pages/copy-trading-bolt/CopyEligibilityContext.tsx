@@ -7,9 +7,13 @@ import { createContext, useContext } from 'react';
 // one snapshot per UTC day, computed client-side from live balances — see
 // portfolio.ts's doc comment) and provides it here. Everywhere the archive
 // read the two module-level constants, the ported components now call
-// useCopyEligibility() instead — same $20,000 threshold, same gating
+// useCopyEligibility() instead — same threshold, same gating
 // behavior, just backed by a real number instead of a fixture.
-export const COPY_ELIGIBILITY_THRESHOLD_USD = 20_000;
+/** The Copy Trading deposit gate, in USD. This is the ONE definition —
+ *  every message that quotes a figure to the user is checked against it in
+ *  copyDepositUx.test.ts, so the number and the copy cannot drift apart.
+ *  Lowered from $20,000 to $10,000 on the owner's instruction. */
+export const COPY_ELIGIBILITY_THRESHOLD_USD = 10_000;
 
 export type CopyEligibility = {
   depositUsd: number;

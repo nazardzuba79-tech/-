@@ -43,7 +43,7 @@ export function CopyTradingPage() {
     return () => { disposed = true; window.clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
 
-  // The archive hardcoded a USER_DEPOSIT constant to gate the $20,000
+  // The archive hardcoded a USER_DEPOSIT constant to gate the deposit
   // threshold; this account's real deposit is the most recent portfolio
   // value the Wallet page has persisted (spot + futures, priced live —
   // see portfolio.ts). A brand-new account that has never opened Wallet
