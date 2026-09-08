@@ -8,6 +8,83 @@ import type { CfdTickerRow } from '../components/CfdInstrumentList';
 // this is paced against).
 const POLL_MS = 60_000;
 
+/**
+ * A number that arrived over the wire, as the string the UI formats.
+ *
+ * `null` means "not a number" — NOT zero. `formatCfdPrice` already renders
+ * a dash for a value it cannot format, and `parseChangePercentOrNull`
+ * already distinguishes unknown from flat; this only stops a value that is
+ * not number-shaped at all from reaching them.
+ *
+ * A real `0` passes through unchanged: zero is a fact, and the server is
+ * entitled to report it.
+ */
+function numericString(value: unknown): string | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : null;
+  if (typeof value !== 'string') return null;
+  return value.trim() !== '' && Number.isFinite(Number(value)) ? value : null;
+}
+
+/**
+ * Validate the wire payload before it reaches React state.
+ *
+ * The response shape is a contract, not a guarantee: a proxy error page, a
+ * truncated body or a changed upstream can all produce a 200 whose
+ * `tickers` is not an array. That used to flow straight into state, and
+ * `resolveCfdSymbol` read `.length` off it on the next render — which
+ * took the whole Trade page down through the error boundary.
+ *
+ * Returns `null` for a payload that cannot be trusted, so the caller can
+ * keep the last good data instead of replacing it with nonsense.
+ *
+ * A row is admissible only if it carries a usable symbol AND a usable
+ * price:
+ *
+ *   - `symbol` is the identity everything keys on — the React key, the
+ *     icon lookup, the selection match in `resolveCfdSymbol`. A row
+ *     without one is not an instrument.
+ *   - `price` gates the order form. A listed row is clickable and drives
+ *     `CfdOrderForm`, whose submit button is enabled by the row's mere
+ *     existence; a row you can click into an order form against a price
+ *     that is not a number is worse than an absent row. The instrument
+ *     list has an honest empty/error state for that case.
+ *
+ * `name` falls back to the symbol — a label, not a market value.
+ * `changePercent24h` is passed through when present and omitted when it is
+ * not number-shaped, which the `CfdTickerRow` contract already defines as
+ * "unknown", rendered as a dash rather than as 0.00%.
+ */
+function parseTickerPayload(value: unknown): CfdTickerRow[] | null {
+  if (!Array.isArray(value)) return null;
+
+  const rows: CfdTickerRow[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object') continue;
+    const raw = entry as Record<string, unknown>;
+
+    const symbol = typeof raw.symbol === 'string' ? raw.symbol.trim() : '';
+    if (symbol === '') continue;
+
+    const price = numericString(raw.price);
+    if (price === null) continue;
+
+    const change = numericString(raw.changePercent24h);
+    rows.push({
+      symbol,
+      name: typeof raw.name === 'string' && raw.name.trim() !== '' ? raw.name : symbol,
+      price,
+      ...(change === null ? {} : { changePercent24h: change }),
+    });
+  }
+
+  // A genuinely empty list is valid — the provider may legitimately have
+  // nothing to report, and the UI has a state for that. But an array that
+  // arrived carrying entries of which NONE parsed is a broken payload, not
+  // an empty instrument list, and saying "no instruments" would be a claim
+  // this response does not support.
+  return value.length > 0 && rows.length === 0 ? null : rows;
+}
+
 /** Shared poll so the instrument list and the price panel don't each open
  * their own interval against the same endpoint. */
 export function useCfdTickers() {
@@ -20,8 +97,19 @@ export function useCfdTickers() {
     api
       .getCfdTickers()
       .then((res) => {
-        setConfigured(res.configured);
-        setTickers(res.tickers);
+        const rows = res && typeof res === 'object' ? parseTickerPayload(res.tickers) : null;
+        if (rows === null) {
+          // Same outcome as a rejected request, because it is the same
+          // situation: we did not get the data. The last good rows stay on
+          // screen; `configured` keeps its last known value rather than
+          // asserting "CFD is unavailable" on the strength of a payload we
+          // could not read. With nothing good to keep, the instrument
+          // list's existing error state and retry button show.
+          setLoadError(true);
+          return;
+        }
+        if (typeof res.configured === 'boolean') setConfigured(res.configured);
+        setTickers(rows);
       })
       .catch(() => setLoadError(true));
   }

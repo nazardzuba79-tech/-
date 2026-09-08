@@ -116,6 +116,106 @@ test('real ticker hook keeps 60s polling and exposes retry without replacing its
   hook.render().reload(); await tick(); expect(hook.render()).toMatchObject({ configured: false, loadError: false, tickers: [] });
   jest.advanceTimersByTime(60000); expect(getCfdTickers).toHaveBeenCalledTimes(3);
 });
+/**
+ * Malformed CFD payloads.
+ *
+ * A 200 whose `tickers` is not an array used to flow straight into state,
+ * and `resolveCfdSymbol` read `.length` off it on the next render — which
+ * took the whole Trade page down through the error boundary. These assert
+ * the two halves of the fix: the page survives, and it never invents data
+ * to survive with.
+ */
+const feedFor = async (payload: any) => {
+  const getCfdTickers = jest.fn().mockResolvedValue(payload);
+  const hook = mount('lib/useCfdTickers.ts', { api: { getCfdTickers } });
+  hook.render(); await tick();
+  return hook.render();
+};
+
+test.each([
+  ['tickers missing entirely', {}],
+  ['tickers null', { configured: true, tickers: null }],
+  ['tickers an object', { configured: true, tickers: { XAUUSD: '2400' } }],
+  ['tickers a string', { configured: true, tickers: 'XAUUSD' }],
+  ['whole body null', null],
+  ['whole body a string', 'service unavailable'],
+  ['rows present but none usable', { configured: true, tickers: [null, 42, {}, { name: 'Gold' }] }],
+])('malformed response (%s) surfaces the error state instead of crashing', async (_label, payload) => {
+  const state = await feedFor(payload);
+  // Always an array, so resolveCfdSymbol and the list can never throw.
+  expect(Array.isArray(state.tickers)).toBe(true);
+  expect(state.tickers).toEqual([]);
+  expect(state.loadError).toBe(true);
+  // Not an assertion that CFD is unconfigured — that would be a claim this
+  // response does not support.
+  expect(state.configured).toBe(true);
+  // And the value the crash came from is safe to read.
+  expect(() => presentation.resolveCfdSymbol('XAUUSD', state.tickers)).not.toThrow();
+  expect(presentation.resolveCfdSymbol('XAUUSD', state.tickers)).toBe('XAUUSD');
+});
+
+test('a malformed refresh keeps the last good instrument rows on screen', async () => {
+  const getCfdTickers = jest.fn()
+    .mockResolvedValueOnce({ configured: true, tickers: rows })
+    .mockResolvedValue({ configured: true, tickers: undefined });
+  const hook = mount('lib/useCfdTickers.ts', { api: { getCfdTickers } });
+  hook.render(); await tick();
+  expect(hook.render().tickers.map((t: any) => t.symbol)).toEqual(rows.map(r => r.symbol));
+
+  hook.render().reload(); await tick();
+  const state = hook.render();
+  // Last good data preserved, not blanked and not replaced with nonsense.
+  expect(state.tickers.map((t: any) => t.symbol)).toEqual(rows.map(r => r.symbol));
+  expect(state.tickers[0].price).toBe('2400.125');
+  expect(state.loadError).toBe(true);
+});
+
+test('a well-formed empty list is truth, not an error', async () => {
+  const state = await feedFor({ configured: false, tickers: [] });
+  expect(state.tickers).toEqual([]);
+  expect(state.loadError).toBe(false);
+  expect(state.configured).toBe(false);
+});
+
+test('unusable rows are dropped without fabricating a price for them', async () => {
+  const state = await feedFor({
+    configured: true,
+    tickers: [
+      { symbol: 'XAUUSD', name: 'Gold', price: '2400.125', changePercent24h: '0.23' },
+      { symbol: '', name: 'No symbol', price: '1.1' },
+      { symbol: 'EURUSD', name: 'Euro', price: null },
+      { symbol: 'GBPUSD', name: 'Pound', price: 'not-a-number' },
+      null,
+    ],
+  });
+  expect(state.tickers).toHaveLength(1);
+  expect(state.tickers[0]).toEqual({ symbol: 'XAUUSD', name: 'Gold', price: '2400.125', changePercent24h: '0.23' });
+  // The dropped rows are absent, not present with a manufactured 0.
+  expect(JSON.stringify(state.tickers)).not.toContain('"price":"0"');
+  expect(state.loadError).toBe(false);
+});
+
+test('a real zero and a numeric price survive; an unknown 24h change stays absent', async () => {
+  const state = await feedFor({
+    configured: true,
+    tickers: [
+      { symbol: 'XAUUSD', name: 'Gold', price: '0', changePercent24h: '0' },
+      { symbol: 'EURUSD', name: 'Euro', price: 1.12345, changePercent24h: null },
+    ],
+  });
+  // Zero is a fact the server is entitled to report.
+  expect(state.tickers[0]).toEqual({ symbol: 'XAUUSD', name: 'Gold', price: '0', changePercent24h: '0' });
+  // Unknown change is ABSENT — the contract that makes it render as a dash
+  // rather than as 0.00%.
+  expect(state.tickers[1]).toEqual({ symbol: 'EURUSD', name: 'Euro', price: '1.12345' });
+  expect('changePercent24h' in state.tickers[1]).toBe(false);
+});
+
+test('a row without a name falls back to its symbol rather than an empty label', async () => {
+  const state = await feedFor({ configured: true, tickers: [{ symbol: 'USDJPY', price: '155.25' }] });
+  expect(state.tickers[0]).toEqual({ symbol: 'USDJPY', name: 'USDJPY', price: '155.25' });
+});
+
 test('MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact open payload', async () => {
   const config = { minLeverage: 1, maxLeverage: 100, highLeverageWarningThreshold: 20, leverageTiers: [{ notionalCap: 50000, maxLeverage: 100, maintenanceMarginRate: .004 }] };
   const openCfdPosition = jest.fn().mockResolvedValue({}), getFuturesBalances = jest.fn().mockResolvedValue([{ asset: 'USDT', available: '100' }]);
