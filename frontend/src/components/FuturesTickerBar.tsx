@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
-import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
+import { formatPrice, formatCompact } from '../lib/formatNumber';
 
 /**
  * The futures instrument row, on the same `.ticker-bar` / `.stat` system the
@@ -11,8 +11,9 @@ import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
  *
  * Order runs price -> market -> derivatives:
  *
- *   Last, Mark, Index, 24h change, High, Low, Volume (base), Volume (quote),
- *   Open interest, Funding rate, Next funding.
+ *   Last with Mark underneath, 24h change, High, Low, Turnover (quote),
+ *   Open interest (base), Funding rate / Next funding.
+ *   Index remains in the data flow, but is not a separate visible metric.
  *
  * Funding sits at the end deliberately. It is important, but it is a
  * once-per-8h settlement, and putting it immediately after mark price
@@ -34,10 +35,8 @@ import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
  * Still deliberately absent: long/short ratio and liquidation volume.
  * Nothing in this exchange's data model records either.
  *
- * `prio-2`/`prio-3` mark which stats may collapse on narrower desktops —
- * last, mark, index, 24h change and funding always stay. See the
- * .ticker-bar rules in TradeTerminal.css; nothing here ever scrolls
- * sideways.
+ * Futures-only styles reflow these blocks on narrow screens without
+ * hiding metrics or changing the shared Spot ticker styles.
  */
 export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; onSelectSymbol?: () => void }) {
   const { t } = useLanguage();
@@ -129,7 +128,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
   const dir = positive ? 'up' : 'down';
 
   return (
-    <div className="ticker-bar">
+    <div className="ticker-bar futures-ticker-bar">
       <div
         className="pair-selector"
         role={onSelectSymbol ? 'button' : undefined}
@@ -146,59 +145,48 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
         <span className="pair-arrow">▼</span>
       </div>
 
-      <div className="ticker-item">
-        <span className="label">{t('trade.lastPrice')}</span>
-        <span className={`value price ${dir}`}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
+      <div className="ticker-item futures-primary-price">
+        <span className={`value price ${dir}`} aria-label={t('trade.lastPrice')}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
+        <span className="futures-secondary-price">
+          <span className="label">{t('futures.markPrice')}: </span>
+          <span className="value">{markPrice !== null ? formatPrice(markPrice) : '—'}</span>
+        </span>
       </div>
       <div className="ticker-item">
-        <span className="label">{t('futures.markPrice')}</span>
-        <span className="value">{markPrice !== null ? formatPrice(markPrice) : '—'}</span>
-      </div>
-      <div className="ticker-item">
-        <span className="label">{t('futures.indexPrice')}</span>
-        <span className="value">{indexPrice !== null ? formatPrice(indexPrice) : '—'}</span>
-      </div>
-      <div className="ticker-item">
-        <span className="label">{t('trade.change24h')}</span>
+        <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
           {stats ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
         </span>
       </div>
-      <div className="ticker-item prio-3">
-        <span className="label">{t('trade.high24h')}</span>
+      <div className="ticker-item">
+        <span className="label">{t('futures.headerHigh24h')}</span>
         <span className="value">{stats ? formatPrice(stats.high24h) : '—'}</span>
       </div>
-      <div className="ticker-item prio-3">
-        <span className="label">{t('trade.low24h')}</span>
+      <div className="ticker-item">
+        <span className="label">{t('futures.headerLow24h')}</span>
         <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
       </div>
-      <div className="ticker-item prio-3">
-        <span className="label">{`${t('trade.volume24h')} (${baseAsset})`}</span>
-        <span className="value">{stats ? formatAmount(stats.volume24h) : '—'}</span>
-      </div>
-      <div className="ticker-item prio-2">
-        <span className="label">{`${t('trade.volume24h')} (${quoteAsset})`}</span>
+      <div className="ticker-item">
+        <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
         <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
       </div>
-      <div className="ticker-item prio-2">
-        <span className="label">{t('futures.openInterest')}</span>
-        <span className="value">
-          {openInterest === null
-            ? '—'
-            : openInterest.value !== null
-              ? formatCompact(openInterest.value)
-              : `${formatAmount(openInterest.size)} ${baseAsset}`}
-        </span>
-      </div>
       <div className="ticker-item">
-        <span className="label">{t('futures.fundingRate')}</span>
-        <span className={`value ${fundingRate !== null && fundingRate < 0 ? 'down' : 'up'}`}>
-          {fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
+        <span className="label">{`${t('futures.openInterest')} (${baseAsset})`}</span>
+        <span className="value">
+          {openInterest === null || !Number.isFinite(openInterest.size)
+            ? '—'
+            : openInterest.size.toLocaleString('en-US', { maximumSignificantDigits: 12 })}
         </span>
       </div>
-      <div className="ticker-item prio-2">
-        <span className="label">{t('futures.nextFunding')}</span>
-        <NextFundingCountdown intervalHours={fundingIntervalHours} />
+      <div className="ticker-item futures-funding">
+        <span className="label">{t('futures.headerFunding')}</span>
+        <span className="futures-funding-values">
+          <span className={`value ${fundingRate !== null && fundingRate < 0 ? 'down' : 'up'}`}>
+            {fundingRate !== null ? `${(fundingRate * 100).toFixed(4)}%` : '—'}
+          </span>
+          <span className="label"> / </span>
+          <NextFundingCountdown intervalHours={fundingIntervalHours} />
+        </span>
       </div>
     </div>
   );
