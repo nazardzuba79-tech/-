@@ -234,24 +234,60 @@ describe('AnalyticsDataService', () => {
 
   it('never fabricates the metrics this system has no source for', async () => {
     const snapshot = await makeService().service.getSnapshot();
+    // Phase 2 implemented six of the modules that used to live here; what
+    // remains is what still has no legitimate free source. Each is a
+    // designed slot the UI renders as "no source connected".
     for (const key of [
       'liquidations',
       'liquidationHeatmap',
-      'longShortRatio',
-      'marketWideOpenInterest',
+      'impliedVolatility',
+      'futuresTermStructure',
       'etfFlows',
       'exchangeFlows',
       'whaleActivity',
-      'volatility',
-      'futuresBasis',
-      'correlations',
-      'sectorRotation',
     ] as const) {
       const section = snapshot.unsupported[key];
       expect(section.available).toBe(false);
       expect(section).toMatchObject({ reason: 'unsupported_metric' });
       // No value-carrying keys at all — nothing a UI could plot as zero.
       expect(Object.keys(section).sort()).toEqual(['available', 'detail', 'reason']);
+    }
+  });
+
+  it('moves a module OUT of the unsupported map once it has a real source', async () => {
+    // The two lists must never both claim a module: a section that exists
+    // in `sections` and is also declared unsupported would let the UI show
+    // a figure and a "no source" notice for the same metric.
+    const snapshot = await makeService().service.getSnapshot();
+    for (const key of [
+      'externalOpenInterest',
+      'externalFunding',
+      'perpetualBasis',
+      'longShortPositioning',
+      'realizedVolatility',
+      'cryptoCorrelations',
+      'sectorRotation',
+    ] as const) {
+      expect(snapshot.sections).toHaveProperty(key);
+      expect(snapshot.unsupported).not.toHaveProperty(key);
+    }
+    // And the retired names are gone rather than lingering as duplicates.
+    for (const stale of ['marketWideOpenInterest', 'longShortRatio', 'volatility', 'futuresBasis', 'correlations']) {
+      expect(snapshot.unsupported).not.toHaveProperty(stale);
+    }
+  });
+
+  it('reports a value-free unavailable section when no external venue is wired', async () => {
+    // makeService() constructs the Phase-1 shape: no external adapters.
+    // That must read as "not configured", never as an empty aggregate and
+    // never as zero open interest.
+    const snapshot = await makeService().service.getSnapshot();
+    for (const key of ['externalOpenInterest', 'externalFunding', 'perpetualBasis', 'longShortPositioning'] as const) {
+      const section = snapshot.sections[key];
+      expect(section.available).toBe(false);
+      expect(section).toMatchObject({ reason: 'provider_not_configured' });
+      expect(section).not.toHaveProperty('value');
+      expect(section).not.toHaveProperty('venues');
     }
   });
 

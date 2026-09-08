@@ -586,6 +586,99 @@ actually is rather than being dropped. The split is **structural**:
 `getSnapshot()` has no reference to the health registry at all, so it is
 not a field filter a later edit could quietly widen.
 
+## 10a. Analytics Phase 2: the source matrix
+
+Every Analytics metric, what it is, where it comes from and what it is
+NOT. A metric may only appear on the page if it has a row here.
+
+| Metric | Definition | Provider / venue | Endpoint family | TTL | Stale budget | Derived? |
+|---|---|---|---|---|---|---|
+| VOLTEX open interest | This exchange's own open positions, base units | VOLTEX | `FuturesPosition` aggregate | per request | — | no |
+| VOLTEX funding | This exchange's last SETTLED interval | VOLTEX | `FundingRateRecord` | per request | — | no |
+| VOLTEX mark / index | What the futures engine prices PnL and liquidation off | VOLTEX | `MarkPriceService` | per request | — | no |
+| Tracked-venue open interest | Sum over the venues that answered — **not market-wide** | Binance, OKX | `GET /fapi/v1/openInterest`, `GET /api/v5/public/open-interest` | 15 s | 120 s | no (USD notional priced at each venue's own mark) |
+| External funding | Each venue's current perpetual funding rate | Binance, OKX | `GET /fapi/v1/premiumIndex`, `GET /api/v5/public/funding-rate` | 30 s / 60 s | 300 s / 600 s | no |
+| Long/short positioning | Three distinct Binance measures, never merged | Binance only | `GET /futures/data/{global,top}LongShort{Account,Position}Ratio`, `period=5m` | 60 s | 600 s | no |
+| Perpetual premium (basis) | `(mark − index) / index × 100`, per venue, against that venue's own index | Binance, OKX | `premiumIndex`; `mark-price` + `market/index-tickers` | 30 s / 15 s | 300 s / 120 s | **yes** — formula above |
+| Realized volatility | `stddev(ln(cₜ/cₜ₋₁)) × √(24×365) × 100`, windows 24h / 7d / 30d | Derived from Kraken OHLC | gateway `getCandles('1h', 720)` | inherits the candle cache | inherits | **yes** |
+| Crypto correlations | Pearson correlation of hourly log returns, 720h lookback | Derived from Kraken OHLC | gateway `getCandles('1h', 720)` | inherits | inherits | **yes** |
+| Sector rotation | 24h return per CoinGecko category, cap-weighted where every contributor reports a cap, else equal | Derived from CoinGecko catalogue | `CoinGeckoService.getRankingsWithMeta()` | 20 min (catalogue) | 24 h | **yes** |
+
+### Limitations that travel with these numbers
+
+- **Tracked venues are not the market.** Binance plus OKX is a large share
+  of perpetual open interest and is not a market-wide aggregate. No free
+  provider supplies a genuine one, so none is claimed — the payload names
+  its contributors and the UI label is built from that list.
+- **Positioning is Binance's, and its three measures are different
+  things.** Global account ratio counts ALL accounts; top-account ratio
+  counts the top accounts; top-position ratio is size-weighted over those
+  accounts' position value. They are never averaged into one figure and
+  never described as a market-wide crypto long/short ratio.
+- **Realized is not implied.** Everything above is computed from prices
+  that already happened. Implied volatility needs an options surface and
+  stays unavailable.
+- **Basis is not a term structure.** These are perpetuals. A curve needs
+  dated contracts across expiries.
+- **Correlation is crypto-only.** Equities, gold and oil are not
+  integrated, so the module is labelled Crypto Correlation.
+- **Minimum observations are enforced, not smoothed.** A volatility window
+  with too few real returns reports `null` and its sample count; a
+  correlation pair below the overlap minimum is omitted. Neither is
+  extrapolated and neither becomes 0.
+- **Sector weighting is stated per sector.** A constituent with no reported
+  24h return is EXCLUDED from both the figure and the count rather than
+  folded in as 0%.
+
+### Partial-venue behaviour
+
+Binance up and OKX down produces a value built from Binance alone, with
+`venues` naming Binance alone — the label the UI prints is derived from
+that list, so it cannot keep saying "Binance + OKX" over a figure OKX had
+no part in. Both down is `available: false`, not an empty aggregate.
+Verified in a real browser at 1440 (see `outputs/analytics-phase2/`).
+
+### Production verification required
+
+The sandbox's egress proxy answers **403 to CONNECT** for
+`fapi.binance.com`, `www.okx.com`, `api.kraken.com` and
+`api.coingecko.com`, so **no live provider call was made and no live
+verification is claimed.** All coverage is deterministic mocked tests plus
+fixture-backed browser QA. These endpoint families must be exercised once
+from Render, where the egress and the region are different:
+
+1. `GET https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT`
+2. `GET https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT`
+3. `GET https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=BTCUSDT&period=5m&limit=1`
+4. `GET https://fapi.binance.com/futures/data/topLongShortAccountRatio?...`
+5. `GET https://fapi.binance.com/futures/data/topLongShortPositionRatio?...`
+6. `GET https://www.okx.com/api/v5/public/open-interest?instType=SWAP&instId=BTC-USDT-SWAP`
+7. `GET https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP`
+8. `GET https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=BTC-USDT-SWAP`
+9. `GET https://www.okx.com/api/v5/market/index-tickers?instId=BTC-USDT`
+
+What to confirm: the response field names used by the adapters, that no
+region block applies from Render's egress, and the real rate-limit headers
+(the TTLs above were chosen conservatively and may be relaxed once the
+published limits are confirmed against actual traffic). `GET
+/analytics/diagnostics` (admin) reports each venue's circuit state and is
+the fastest way to see whether a venue is answering in production.
+
+### Providers deliberately NOT integrated
+
+No paid provider is used, required, or recommended, and none is needed for
+anything on the page. Recorded here only so the gaps are legible:
+
+| Module | Why it is unavailable |
+|---|---|
+| Recent liquidations | Binance's public liquidation REST endpoint (`/fapi/v1/allForceOrders`) is retired and no longer accepts requests; its remaining public feed is the `!forceOrder@arr` WebSocket stream, and this backend has no server-side socket infrastructure to consume it (§9). No verified free REST source. |
+| Liquidation heatmap | Needs an aggregated position/liquidation-map dataset. Observed events are not a heatmap and are never extrapolated into one. |
+| Implied volatility | Needs an options surface. |
+| Futures term structure | Needs dated futures quotes across expiries. |
+| ETF flows | Needs a creation/redemption dataset. Scraping a web page is not an API and is not done. |
+| Exchange inflow / outflow | Needs on-chain address attribution. Trading volume is NOT a proxy and is never used as one. |
+| Whale activity | Needs labelled on-chain addresses. Large exchange trades are a different concept and are not substituted for it. |
+
 ## 11. Analytics: deliberately unsupported
 
 Returned in the snapshot's `unsupported` map as

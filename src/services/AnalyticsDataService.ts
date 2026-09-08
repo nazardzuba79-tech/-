@@ -7,6 +7,21 @@ import { msUntilNextFundingBoundary } from '../futures/FundingRateService';
 import { MarketDataGateway } from './marketData/MarketDataGateway';
 import { providerHealthRegistry, type ProviderHealthSnapshot } from './marketData/ProviderHealth';
 import { available, unavailable, type Availability, type Unavailable } from './marketData/types';
+import type { CoinGeckoService } from './CoinGeckoService';
+import {
+  ExternalDerivativesService,
+  TRACKED_ASSETS,
+  type BasisComparison,
+  type FundingComparison,
+  type PositioningValue,
+} from './marketData/derivatives/ExternalDerivativesService';
+import type { TrackedVenueOpenInterest, VenueAttribution } from './marketData/derivatives/types';
+import type {
+  CorrelationsValue,
+  DerivedAnalyticsService,
+  RealizedVolatilityValue,
+  SectorRotationValue,
+} from './analytics/DerivedAnalyticsService';
 
 /**
  * The data behind /analytics.
@@ -100,34 +115,67 @@ export interface DerivativesValue {
  */
 const UNSUPPORTED: Record<string, string> = {
   liquidations:
-    'No cross-venue liquidation feed is configured. This venue records its own liquidations only.',
+    "Binance's public liquidation REST endpoint is retired and its remaining feed is WebSocket-only, which this backend has no server-side socket to consume. No REST liquidation source is currently reachable, so no liquidation events are collected.",
   liquidationHeatmap:
-    'A liquidation heatmap needs cross-venue liquidation observations; no provider supplies them.',
-  marketWideOpenInterest:
-    "Cross-venue open interest requires a derivatives aggregator; only this venue's own open interest is available.",
-  longShortRatio:
-    'Long/short ratio requires per-venue account positioning data that no configured provider exposes.',
+    'A heatmap needs an aggregated position/liquidation-map provider. Observed liquidation events are not a heatmap and are never extrapolated into one.',
+  impliedVolatility:
+    'Implied volatility needs an options surface; no configured provider supplies one. Realized volatility is published separately and is a different measure.',
+  futuresTermStructure:
+    'A term structure needs dated futures quotes across expiries. Only perpetual premium is available, and it is published as basis rather than relabelled as a curve.',
   etfFlows: 'ETF creation/redemption flows require a dedicated data vendor; none is configured.',
-  exchangeFlows: 'Exchange inflow/outflow requires on-chain attribution data; no provider is configured.',
-  whaleActivity: 'Whale tracking requires labelled on-chain address data; no provider is configured.',
-  volatility: 'Realized/implied volatility needs a historical series this system does not yet retain.',
-  futuresBasis: 'Basis and term structure need dated futures quotes; this venue lists perpetuals only.',
-  correlations: 'Cross-market correlation needs equity and commodity series from a vendor; none is configured.',
-  sectorRotation: 'Sector performance needs a sector-classified index series; no provider is configured.',
+  exchangeFlows: 'Exchange inflow/outflow requires on-chain attribution data; no provider is configured. Trading volume is not a proxy for it.',
+  whaleActivity:
+    'Whale tracking requires labelled on-chain address data; no provider is configured. Large exchange trades are a different thing and are not substituted for it.',
 };
 
 export type UnsupportedModule = keyof typeof UNSUPPORTED;
 
+const NO_EXTERNAL = 'No external derivatives venue is wired in this environment.';
+const NO_DERIVED = 'Derived analytics are not wired in this environment.';
+
+/**
+ * A section assembled from more than one venue.
+ *
+ * `Availability<T>` carries one `source`, which is all a single-provider
+ * read needs. A cross-venue figure needs more: which venues contributed,
+ * each with its own contract, fetch time and staleness. `venues` is that
+ * list, and it contains ONLY venues that actually produced data — so a
+ * label derived from it can never claim a contributor that was down.
+ */
+export type MultiVenueSection<T> = Availability<T> & { venues?: VenueAttribution[] };
+
+/**
+ * The asset the external and derived modules are reporting on.
+ *
+ * Distinct from `contracts` (what VOLTEX lists) because the two sets are
+ * not the same: an asset VOLTEX lists may not be tracked externally, and
+ * the external adapters cover a fixed short list. The UI shows the
+ * external modules only for assets in `trackedAssets`.
+ */
 export interface AnalyticsSnapshot {
   generatedAt: number;
   /** Contracts this exchange actually lists. The UI's asset selector is
    *  built from this, never from a hardcoded list — an asset VOLTEX does
    *  not carry must not be offered as a choice. */
   contracts: string[];
+  /** Base assets the external/derived modules cover. */
+  trackedAssets: string[];
+  /** Which asset the per-asset sections below describe. */
+  selectedAsset: string | null;
   sections: {
     marketOverview: Availability<MarketOverviewValue>;
     sentiment: Availability<SentimentValue>;
+    /** VOLTEX's own book. Never mixed with the external sections. */
     derivatives: Availability<DerivativesValue>;
+    // ── External venues (reference data about somebody else) ────────
+    externalOpenInterest: MultiVenueSection<TrackedVenueOpenInterest>;
+    externalFunding: MultiVenueSection<FundingComparison>;
+    perpetualBasis: MultiVenueSection<BasisComparison>;
+    longShortPositioning: Availability<PositioningValue>;
+    // ── Derived from series this system already holds ───────────────
+    realizedVolatility: Availability<RealizedVolatilityValue>;
+    cryptoCorrelations: Availability<CorrelationsValue>;
+    sectorRotation: Availability<SectorRotationValue>;
   };
   /** Designed-but-unsourced modules, each value-free. */
   unsupported: Record<string, Unavailable>;
@@ -143,21 +191,56 @@ export class AnalyticsDataService {
     private readonly prisma: PrismaClient,
     private readonly gateway: MarketDataGateway,
     private readonly markPriceService: MarkPriceService,
-    private readonly marketRegistry: FuturesMarketRegistry
+    private readonly marketRegistry: FuturesMarketRegistry,
+    /** External venues. Optional so an environment without them degrades
+     *  to Phase-1 behaviour rather than failing to construct. */
+    private readonly externalDerivatives: ExternalDerivativesService | null = null,
+    /** Statistics derived from series the gateway already caches. */
+    private readonly derived: DerivedAnalyticsService | null = null,
+    /** Only for the sector catalogue read, which needs CoinGecko's
+     *  category metadata — the gateway's canonical catalogue does not
+     *  carry it. Reuses that service's existing cache; no new sweep. */
+    private readonly coinGecko: CoinGeckoService | null = null
   ) {}
 
   /**
    * One snapshot. Sections are gathered independently, so one provider
    * being down degrades exactly one section rather than failing the page.
+   *
+   * `asset` selects which asset the per-asset sections describe. It is
+   * validated against the tracked list rather than passed through, so a
+   * client cannot steer these adapters at an arbitrary symbol.
    */
-  async getSnapshot(): Promise<AnalyticsSnapshot> {
+  async getSnapshot(asset?: string): Promise<AnalyticsSnapshot> {
     const contracts = this.marketRegistry.list();
-    const [marketOverview, sentiment, derivatives] = await Promise.all([
+    const trackedAssets = [...TRACKED_ASSETS];
+    const requested = asset?.toUpperCase();
+    const selectedAsset = requested && trackedAssets.includes(requested as never) ? requested : trackedAssets[0] ?? null;
+
+    const [
+      marketOverview,
+      sentiment,
+      derivatives,
+      externalOpenInterest,
+      externalFunding,
+      perpetualBasis,
+      longShortPositioning,
+      realizedVolatility,
+      cryptoCorrelations,
+      sectorRotation,
+    ] = await Promise.all([
       // Straight through the gateway: same cache, same circuit, same
       // freshness metadata every other market surface reads.
       this.gateway.getMarketOverview(),
       this.gateway.getSentiment(),
       this.derivatives(contracts),
+      this.externalOpenInterest(selectedAsset),
+      this.externalFunding(selectedAsset),
+      this.perpetualBasis(selectedAsset),
+      this.positioning(selectedAsset),
+      this.volatility(selectedAsset),
+      this.correlations(),
+      this.sectors(),
     ]);
 
     const unsupported: Record<string, Unavailable> = {};
@@ -165,7 +248,104 @@ export class AnalyticsDataService {
       unsupported[key] = unavailable('unsupported_metric', UNSUPPORTED[key]);
     }
 
-    return { generatedAt: Date.now(), contracts, sections: { marketOverview, sentiment, derivatives }, unsupported };
+    return {
+      generatedAt: Date.now(),
+      contracts,
+      trackedAssets,
+      selectedAsset,
+      sections: {
+        marketOverview,
+        sentiment,
+        derivatives,
+        externalOpenInterest,
+        externalFunding,
+        perpetualBasis,
+        longShortPositioning,
+        realizedVolatility,
+        cryptoCorrelations,
+        sectorRotation,
+      },
+      unsupported,
+    };
+  }
+
+  // ── External venues ────────────────────────────────────────────────
+  //
+  // Each returns `provider_not_configured` when no adapter is wired, and
+  // `provider_unavailable` when the adapters are wired but no venue
+  // answered. The two are different operational facts and the reason
+  // string says which.
+
+  private async externalOpenInterest(asset: string | null): Promise<MultiVenueSection<TrackedVenueOpenInterest>> {
+    if (!this.externalDerivatives || asset === null) return unavailable('provider_not_configured', NO_EXTERNAL);
+    try {
+      const section = await this.externalDerivatives.getTrackedOpenInterest(asset);
+      // The attribution list is built from the venues actually present in
+      // the value, so it cannot outlive a contribution.
+      return section.available ? { ...section, venues: ExternalDerivativesService.attributionOf(section.value.venues) } : section;
+    } catch {
+      return unavailable('provider_unavailable', 'Tracked-venue open interest could not be read.');
+    }
+  }
+
+  private async externalFunding(asset: string | null): Promise<MultiVenueSection<FundingComparison>> {
+    if (!this.externalDerivatives || asset === null) return unavailable('provider_not_configured', NO_EXTERNAL);
+    try {
+      const section = await this.externalDerivatives.getFundingComparison(asset);
+      return section.available ? { ...section, venues: ExternalDerivativesService.attributionOf(section.value.venues) } : section;
+    } catch {
+      return unavailable('provider_unavailable', 'External funding could not be read.');
+    }
+  }
+
+  private async perpetualBasis(asset: string | null): Promise<MultiVenueSection<BasisComparison>> {
+    if (!this.externalDerivatives || asset === null) return unavailable('provider_not_configured', NO_EXTERNAL);
+    try {
+      const section = await this.externalDerivatives.getBasisComparison(asset);
+      return section.available ? { ...section, venues: ExternalDerivativesService.attributionOf(section.value.venues) } : section;
+    } catch {
+      return unavailable('provider_unavailable', 'Perpetual premium could not be read.');
+    }
+  }
+
+  private async positioning(asset: string | null): Promise<Availability<PositioningValue>> {
+    if (!this.externalDerivatives || asset === null) return unavailable('provider_not_configured', NO_EXTERNAL);
+    try {
+      return await this.externalDerivatives.getPositioning(asset);
+    } catch {
+      return unavailable('provider_unavailable', 'Positioning statistics could not be read.');
+    }
+  }
+
+  // ── Derived from existing series ───────────────────────────────────
+
+  private async volatility(asset: string | null): Promise<Availability<RealizedVolatilityValue>> {
+    if (!this.derived || asset === null) return unavailable('provider_not_configured', NO_DERIVED);
+    try {
+      return await this.derived.getRealizedVolatility(`${asset}/USDT`);
+    } catch {
+      return unavailable('no_data', 'Realized volatility could not be computed.');
+    }
+  }
+
+  private async correlations(): Promise<Availability<CorrelationsValue>> {
+    if (!this.derived) return unavailable('provider_not_configured', NO_DERIVED);
+    try {
+      return await this.derived.getCorrelations(TRACKED_ASSETS.map((a) => `${a}/USDT`));
+    } catch {
+      return unavailable('no_data', 'Correlations could not be computed.');
+    }
+  }
+
+  private async sectors(): Promise<Availability<SectorRotationValue>> {
+    if (!this.derived || !this.coinGecko) return unavailable('provider_not_configured', NO_DERIVED);
+    try {
+      // The catalogue read the Markets page already makes — cached, and
+      // carrying its own fetch time and staleness.
+      return await this.derived.getSectorRotation(await this.coinGecko.getRankingsWithMeta());
+    } catch {
+      return unavailable('provider_unavailable', 'The asset catalogue could not be read.');
+    }
   }
 
   /** Provider circuit state, cooldowns and rate-limit counters. Says

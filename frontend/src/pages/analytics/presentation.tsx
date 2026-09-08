@@ -227,3 +227,100 @@ export function UnavailableModule({ titleKey, detail }: { titleKey: Key; detail?
     </div>
   );
 }
+
+/**
+ * The venue label for a multi-venue figure.
+ *
+ * Built from the venues that ACTUALLY contributed, never written by hand.
+ * That is the whole point: when OKX is down, this returns "Binance", so
+ * the page cannot keep claiming "Binance + OKX" over a figure OKX had no
+ * part in. §26 of the brief is explicit about it and this is where it is
+ * enforced for the UI.
+ */
+export function venuesLabel(venues: { venue: string }[] | undefined): string | null {
+  if (!venues || venues.length === 0) return null;
+  return venues.map((v) => sourceLabel(v.venue)).join(' + ');
+}
+
+/** A compact table row of one venue's figure, so every number on a
+ *  multi-venue module carries the venue that produced it. */
+export function VenueRow({
+  venue,
+  contract,
+  value,
+  tone,
+  stale,
+}: {
+  venue: string;
+  contract?: string;
+  value: string | null;
+  tone?: 'positive' | 'negative';
+  stale?: boolean;
+}) {
+  return (
+    <div className={`vx-venue-row${stale ? ' is-stale' : ''}`}>
+      <span className="vx-venue-name">
+        {sourceLabel(venue)}
+        {contract ? <small className="vx-venue-contract">{contract}</small> : null}
+      </span>
+      <span className={`vx-venue-value${value === null ? ' is-unavailable' : tone ? ` is-${tone}` : ''}`}>
+        {value ?? DASH}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A long/short split as a labelled bar plus its two proportions.
+ *
+ * Renders NOTHING when the proportions are missing — no half-and-half bar,
+ * which would read as a balanced market rather than as absent data.
+ */
+export function LongShortBar({
+  label,
+  long,
+  short,
+  longLabel,
+  shortLabel,
+}: {
+  label: string;
+  long: number | null;
+  short: number | null;
+  longLabel: string;
+  shortLabel: string;
+}) {
+  const usable = typeof long === 'number' && Number.isFinite(long) && typeof short === 'number' && Number.isFinite(short) && long + short > 0;
+  return (
+    <div className="vx-ls">
+      <div className="vx-ls-head">
+        <span className="vx-ls-label">{label}</span>
+        <span className="vx-ls-figures">
+          {usable ? (
+            <>
+              <b className="is-positive">{(long * 100).toFixed(1)}%</b>
+              <i>/</i>
+              <b className="is-negative">{(short * 100).toFixed(1)}%</b>
+            </>
+          ) : (
+            <b className="is-unavailable">{DASH}</b>
+          )}
+        </span>
+      </div>
+      {usable ? (
+        <div className="vx-ls-bar" role="img" aria-label={`${longLabel} ${(long * 100).toFixed(1)}% · ${shortLabel} ${(short * 100).toFixed(1)}%`}>
+          <span className="vx-ls-long" style={{ width: `${(long / (long + short)) * 100}%` }} />
+          <span className="vx-ls-short" style={{ width: `${(short / (long + short)) * 100}%` }} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** A correlation cell, coloured by strength and signed. `null` is never
+ *  reachable here — an unusable pair is omitted upstream rather than
+ *  rendered as 0, which would claim "uncorrelated". */
+export function correlationTone(r: number): 'positive' | 'negative' | 'neutral' {
+  if (r >= 0.3) return 'positive';
+  if (r <= -0.3) return 'negative';
+  return 'neutral';
+}

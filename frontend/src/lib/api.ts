@@ -96,15 +96,156 @@ export interface AnalyticsDerivatives {
   contracts: AnalyticsContract[];
 }
 
+/** An external derivatives venue. Never VOLTEX. */
+export type DerivativesVenue = 'binance' | 'okx';
+
+/** Which venues actually produced a multi-venue figure. The UI's source
+ *  label is derived from THIS, so it can never keep naming a venue that
+ *  was down when the number was assembled. */
+export interface VenueAttribution {
+  venue: DerivativesVenue;
+  contract: string;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+export type MultiVenueSection<T> = GatewaySection<T> & { venues?: VenueAttribution[] };
+
+export interface VenueOpenInterest {
+  venue: DerivativesVenue;
+  contract: string;
+  baseAsset: string;
+  openInterestBase: number | null;
+  openInterestUsd: number | null;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+/** Tracked venues, NOT the whole market — see the venue list. */
+export interface AnalyticsTrackedOpenInterest {
+  baseAsset: string;
+  totalOpenInterestUsd: number | null;
+  venues: VenueOpenInterest[];
+}
+
+export interface VenueFunding {
+  venue: DerivativesVenue;
+  contract: string;
+  /** A fraction. A real 0 is flat funding; `null` is unreported. */
+  fundingRate: number | null;
+  nextFundingTime: number | null;
+  intervalHours: number | null;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+export interface AnalyticsFundingComparison {
+  baseAsset: string;
+  venues: VenueFunding[];
+}
+
+export interface VenueBasis {
+  venue: DerivativesVenue;
+  contract: string;
+  markPrice: number | null;
+  indexPrice: number | null;
+  /** (mark - index) / index, as a percentage. */
+  basisPercent: number | null;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+export interface AnalyticsBasisComparison {
+  baseAsset: string;
+  venues: VenueBasis[];
+}
+
+/** Three DIFFERENT measures. Never merged into one ratio. */
+export type LongShortRatioKind = 'global_account' | 'top_account' | 'top_position';
+
+export interface LongShortRatio {
+  venue: DerivativesVenue;
+  contract: string;
+  kind: LongShortRatioKind;
+  longAccount: number | null;
+  shortAccount: number | null;
+  longShortRatio: number | null;
+  period: string;
+  observedAt: number | null;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+export interface AnalyticsPositioning {
+  baseAsset: string;
+  ratios: LongShortRatio[];
+}
+
+export interface AnalyticsVolatilityWindow {
+  window: '24h' | '7d' | '30d';
+  /** Annualized realized volatility in percent; null when the window had
+   *  too few real observations. Never 0 as a stand-in. */
+  annualizedPercent: number | null;
+  samples: number;
+}
+
+export interface AnalyticsRealizedVolatility {
+  baseAsset: string;
+  pair: string;
+  interval: string;
+  method: 'log_return_stddev_annualized';
+  windows: AnalyticsVolatilityWindow[];
+}
+
+export interface AnalyticsCorrelationPair {
+  a: string;
+  b: string;
+  correlation: number;
+  samples: number;
+}
+
+export interface AnalyticsCorrelations {
+  assets: string[];
+  interval: string;
+  lookbackHours: number;
+  pairs: AnalyticsCorrelationPair[];
+  method: 'pearson_log_returns';
+}
+
+export interface AnalyticsSectorPerformance {
+  category: string;
+  changePercent24h: number;
+  /** Constituents that actually reported a return. */
+  constituents: number;
+  weighting: 'market_cap' | 'equal';
+}
+
+export interface AnalyticsSectorRotation {
+  window: '24h';
+  sectors: AnalyticsSectorPerformance[];
+  universe: number;
+}
+
 export interface AnalyticsSnapshot {
   generatedAt: number;
   /** Contracts VOLTEX actually lists — the asset selector is built from
    *  this, never from a hardcoded list. */
   contracts: string[];
+  /** Base assets the external/derived modules cover. */
+  trackedAssets: string[];
+  selectedAsset: string | null;
   sections: {
     marketOverview: GatewaySection<AnalyticsMarketOverview>;
     sentiment: GatewaySection<AnalyticsSentiment>;
+    /** VOLTEX's own book. Never mixed with the external sections below. */
     derivatives: GatewaySection<AnalyticsDerivatives>;
+    externalOpenInterest: MultiVenueSection<AnalyticsTrackedOpenInterest>;
+    externalFunding: MultiVenueSection<AnalyticsFundingComparison>;
+    perpetualBasis: MultiVenueSection<AnalyticsBasisComparison>;
+    longShortPositioning: GatewaySection<AnalyticsPositioning>;
+    realizedVolatility: GatewaySection<AnalyticsRealizedVolatility>;
+    cryptoCorrelations: GatewaySection<AnalyticsCorrelations>;
+    sectorRotation: GatewaySection<AnalyticsSectorRotation>;
   };
   /** Designed modules with no legitimate source yet. Each carries a
    *  reason and NO value-carrying fields. */
@@ -630,7 +771,8 @@ export const api = {
    *  user: it carries ordinary exchange market information and no
    *  operational detail. Provider circuit state lives behind
    *  /analytics/diagnostics and /market/status, both admin-only. */
-  getAnalyticsOverview: () => request<AnalyticsSnapshot>('/analytics/overview'),
+  getAnalyticsOverview: (asset?: string) =>
+    request<AnalyticsSnapshot>(`/analytics/overview${asset ? `?asset=${encodeURIComponent(asset)}` : ''}`),
 
   /** Canonical asset catalogue. `tradable` narrows it to assets with a
    *  real executable VOLTEX pair — the catalogue is reference metadata and

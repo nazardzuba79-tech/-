@@ -41,13 +41,22 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', 'ddcb98515f2385dfac897cbed817f9293f5c163c60b0bc015ed2f3d13ca79374'],
+  ['frontend/src/lib/api.ts', '8f86e162c5d785db22530ca30c53ce717ad42713df31c898e9fe744a54fd1b88'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
   // including the index-price and internal open-interest reads this suite
   // protects, is byte-unchanged, and src/api/routes/futures.ts below is
+  // still at its original fingerprint.
+  //
+  // Re-taken again for Analytics Phase 2 (+143/-1). The single deleted
+  // line is getAnalyticsOverview gaining an optional `asset` parameter;
+  // everything else is ADDITIVE external-derivatives and derived-metric
+  // types for the Analytics page. `markPrice`/`indexPrice` appear in the
+  // new VenueBasis shape, which describes an EXTERNAL venue's contract —
+  // the futures index-price and internal open-interest methods this suite
+  // protects are byte-unchanged, and src/api/routes/futures.ts below is
   // still at its original fingerprint.
   //
   // Re-taken again for Crypto Catalogue 500+ (+38/-2). The change is

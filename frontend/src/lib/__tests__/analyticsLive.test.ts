@@ -274,15 +274,39 @@ describe('Analytics — real data rendering', () => {
 
   it('renders pending modules as compact rows driven by the server', () => {
     const html = renderWorkspace(READY);
-    expect(html).toContain('analytics.marketWideOpenInterest');
-    expect(html).toContain('analytics.longShortRatio');
+    // Phase 2 implemented six of the old pending modules. What is left is
+    // what still has no legitimate free source.
+    expect(html).toContain('analytics.liquidations');
+    expect(html).toContain('analytics.etfFlows');
+    expect(html).toContain('analytics.whaleActivity');
     expect(html).toContain('analytics.noSource');
     // A module the server stops reporting as unsupported disappears from
     // the pending grid instead of claiming to have no source.
-    const partial = snapshot({ unsupported: { longShortRatio: { available: false, reason: 'unsupported_metric' } } });
+    const partial = snapshot({ unsupported: { etfFlows: { available: false, reason: 'unsupported_metric' } } });
     const html2 = renderWorkspace({ snapshot: partial, status: 'ready', loaded: true });
-    expect(html2).toContain('analytics.longShortRatio');
-    expect(html2).not.toContain('analytics.marketWideOpenInterest');
+    expect(html2).toContain('analytics.etfFlows');
+    expect(html2).not.toContain('analytics.liquidations');
+  });
+
+  it('renders the Phase 2 bands and never a fabricated heatmap', () => {
+    const html = renderWorkspace(READY);
+    // The three new bands exist and are labelled.
+    for (const key of ['analytics.externalDerivatives', 'analytics.marketRisk', 'analytics.marketStructure']) {
+      expect(html).toContain(key);
+    }
+    // The liquidity map stays a slot, not a chart built from something else.
+    expect(html).toContain('analytics.liquidityMapPending');
+    expect(html).not.toMatch(/heatmap-cell|liquidation-wall|cluster/i);
+  });
+
+  it('shows an honest empty state — never a zero — when no external venue is wired', () => {
+    // READY carries no external sections, which is exactly the shape a
+    // Phase-1 backend answers with.
+    const html = renderWorkspace(READY);
+    expect(html).toContain('analytics.noExternalVenue');
+    // The external modules render no figure at all rather than $0.00 or 0%.
+    const external = html.slice(html.indexOf('analytics.trackedVenueOi'), html.indexOf('analytics.marketStructure'));
+    expect(external).not.toMatch(/\$0\.00|0\.0000%|\b0%/);
   });
 
   it('never renders NaN, undefined or null as a value', () => {

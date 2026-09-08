@@ -58,6 +58,10 @@ import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
 import { MarketDataGateway } from './services/marketData/MarketDataGateway';
+import { BinanceDerivativesService } from './services/marketData/derivatives/BinanceDerivativesService';
+import { OkxDerivativesService } from './services/marketData/derivatives/OkxDerivativesService';
+import { ExternalDerivativesService } from './services/marketData/derivatives/ExternalDerivativesService';
+import { DerivedAnalyticsService } from './services/analytics/DerivedAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
 
 const app = express();
@@ -117,17 +121,38 @@ const demoTradingService = new DemoTradingService(prisma, demoEngine);
 // and liquidation stay with the futures services and are unchanged.
 const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService);
 
+// External derivatives reference data (Binance + OKX public futures
+// endpoints). Public, unauthenticated, no key and no environment variable
+// — see each adapter's doc comment for the exact endpoint families. Each
+// venue gets its OWN circuit, registered under a name distinct from the
+// arbitrage circuits, so one venue rate-limiting cannot blind the other.
+//
+// Nothing produced here may enter mark price, index price, margin,
+// leverage, liquidation, funding settlement, PnL or matching. It is
+// reference data about other venues and it reaches exactly one consumer:
+// the read-only Analytics snapshot below.
+const binanceDerivativesService = new BinanceDerivativesService(process.env.BINANCE_FUTURES_API_BASE_URL);
+const okxDerivativesService = new OkxDerivativesService(process.env.OKX_API_BASE_URL);
+const externalDerivativesService = new ExternalDerivativesService(binanceDerivativesService, okxDerivativesService);
+
+// Realized volatility, correlations and sector performance, computed from
+// series the gateway already caches. No new provider and no new sweep.
+const derivedAnalyticsService = new DerivedAnalyticsService(marketDataGateway);
+
 // Read-only analytics aggregation. Market-wide figures and sentiment come
 // through the gateway above — the same cached reads /markets already
 // makes, so opening Analytics costs no extra upstream requests — and this
 // venue's own funding, open interest and mark/index prices come from the
-// futures services. Nothing new is fetched for it, and it constructs no
-// provider client of its own.
+// futures services. The external sections are clearly labelled by venue
+// and are never mixed with VOLTEX's own book.
 const analyticsDataService = new AnalyticsDataService(
   prisma,
   marketDataGateway,
   markPriceService,
-  futuresMarketRegistry
+  futuresMarketRegistry,
+  externalDerivativesService,
+  derivedAnalyticsService,
+  coinGeckoService
 );
 
 // Deployed behind Caddy (see api.ts's docker-compose comment) — without this,

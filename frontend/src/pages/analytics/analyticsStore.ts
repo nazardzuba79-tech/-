@@ -56,6 +56,19 @@ class AnalyticsStore {
   private listeners = new Map<symbol, Listener>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private inFlight: Promise<void> | null = null;
+  /**
+   * Which asset the per-asset sections should describe.
+   *
+   * Phase 2 added sections that are ABOUT one asset — external open
+   * interest, funding, basis, positioning, volatility — so the request
+   * carries the selection. It stays one request for the whole page: the
+   * asset is a parameter of the single snapshot, not a second endpoint.
+   *
+   * The server validates it against its own tracked list and echoes back
+   * `selectedAsset`, so the UI labels each module with the asset the data
+   * is actually for rather than with the one it asked for.
+   */
+  private asset: string | null = null;
 
   getState(): AnalyticsState {
     return this.state;
@@ -82,11 +95,25 @@ class AnalyticsStore {
     };
   }
 
+  /**
+   * Point the per-asset sections at a different asset.
+   *
+   * A no-op when nothing changed, so re-rendering the selector cannot
+   * cause a request. Otherwise it refetches immediately rather than
+   * waiting out the 30s interval — a click must feel like a click.
+   */
+  setAsset(asset: string | null): void {
+    const next = asset ? asset.toUpperCase() : null;
+    if (next === this.asset) return;
+    this.asset = next;
+    void this.refresh();
+  }
+
   /** Fetch once, shared. Concurrent callers join the in-flight promise. */
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
     this.inFlight = api
-      .getAnalyticsOverview()
+      .getAnalyticsOverview(this.asset ?? undefined)
       .then((snapshot) => {
         this.emit({ status: 'ready', snapshot, loaded: true, receivedAt: Date.now() });
       })
@@ -119,6 +146,10 @@ class AnalyticsStore {
     this.listeners.clear();
     this.state = EMPTY;
     this.inFlight = null;
+    this.asset = null;
+  }
+  get _asset(): string | null {
+    return this.asset;
   }
   get _timerCount(): number {
     return this.timer === null ? 0 : 1;
@@ -131,8 +162,15 @@ class AnalyticsStore {
 export const analyticsStore = new AnalyticsStore();
 
 /** Subscribe the calling component to the shared Analytics dataset. */
-export function useAnalyticsSnapshot(): AnalyticsState & { refresh: () => void } {
+export function useAnalyticsSnapshot(): AnalyticsState & {
+  refresh: () => void;
+  setAsset: (asset: string | null) => void;
+} {
   const [state, setState] = useState<AnalyticsState>(() => analyticsStore.getState());
   useEffect(() => analyticsStore.subscribe(setState), []);
-  return { ...state, refresh: () => void analyticsStore.refresh() };
+  return {
+    ...state,
+    refresh: () => void analyticsStore.refresh(),
+    setAsset: (asset) => analyticsStore.setAsset(asset),
+  };
 }

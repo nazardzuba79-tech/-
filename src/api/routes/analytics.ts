@@ -40,9 +40,13 @@ import { requireAdmin } from '../middleware/admin';
 export function analyticsRouter(prisma: PrismaClient, analyticsService: AnalyticsDataService): Router {
   const router = Router();
 
-  router.get('/analytics/overview', requireAuth(prisma), async (_req: AuthedRequest, res) => {
+  router.get('/analytics/overview', requireAuth(prisma), async (req: AuthedRequest, res) => {
     try {
-      res.json(await analyticsService.getSnapshot());
+      // Bounded before it reaches a provider adapter, and validated
+      // against the tracked list inside the service — a client cannot
+      // steer Binance/OKX requests at an arbitrary symbol from here.
+      const asset = typeof req.query.asset === 'string' ? req.query.asset.slice(0, 12) : undefined;
+      res.json(await analyticsService.getSnapshot(asset));
     } catch (err) {
       // A snapshot builds each section independently, so reaching here
       // means something structural failed rather than one provider being

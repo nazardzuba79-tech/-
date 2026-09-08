@@ -382,7 +382,9 @@
 
 .vx-analytics .vx-pending-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  /* Wider than it was: Phase 2 left fewer, longer-named modules here, and
+     a module whose name reads "Ликвид…" tells the reader nothing. */
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
   gap: 8px;
 }
 
@@ -405,14 +407,19 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* The NAME is the point of this row, so it takes the space and the
+     "no source" state gives way — the reverse truncated the name. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .vx-analytics .vx-pending-state {
   font-size: 10.5px;
   color: var(--text-tertiary);
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -478,4 +485,175 @@
   .vx-analytics .vx-metric-value {
     font-size: 15px;
   }
+}
+
+/* ── Phase 2: external derivatives, market risk, market structure ──
+   Every selector stays scoped to .vx-analytics, like the rest of this
+   file. Nothing here touches a shared surface class. */
+
+.vx-analytics .vx-band-heading {
+  margin: 30px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.vx-analytics .vx-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.vx-analytics .vx-module-empty {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-tertiary);
+}
+
+/* ── One row per venue ───────────────────────────────────────────── */
+
+.vx-analytics .vx-venue-table {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.vx-analytics .vx-venue-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.vx-analytics .vx-venue-row:first-child { border-top: 0; }
+.vx-analytics .vx-venue-row.is-stale { opacity: .72; }
+
+.vx-analytics .vx-venue-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vx-analytics .vx-venue-contract {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+.vx-analytics .vx-venue-value {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.vx-analytics .vx-venue-value.is-positive { color: var(--buy); }
+.vx-analytics .vx-venue-value.is-negative { color: var(--sell); }
+.vx-analytics .vx-venue-value.is-unavailable { color: var(--text-tertiary); }
+
+/* ── Long / short split ──────────────────────────────────────────── */
+
+.vx-analytics .vx-ls { padding: 4px 0 2px; }
+
+.vx-analytics .vx-ls-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+
+.vx-analytics .vx-ls-label {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.vx-analytics .vx-ls-figures {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.vx-analytics .vx-ls-figures .is-positive { color: var(--buy); }
+.vx-analytics .vx-ls-figures .is-negative { color: var(--sell); }
+.vx-analytics .vx-ls-figures .is-unavailable { color: var(--text-tertiary); font-weight: 400; }
+.vx-analytics .vx-ls-figures i { color: var(--text-tertiary); font-style: normal; }
+
+.vx-analytics .vx-ls-bar {
+  display: flex;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--panel-alt);
+}
+.vx-analytics .vx-ls-long { background: var(--buy); }
+.vx-analytics .vx-ls-short { background: var(--sell); }
+
+/* ── Correlations ────────────────────────────────────────────────── */
+
+.vx-analytics .vx-corr,
+.vx-analytics .vx-sectors {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.vx-analytics .vx-corr-row,
+.vx-analytics .vx-sector-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+.vx-analytics .vx-corr-row:first-child,
+.vx-analytics .vx-sector-row:first-child { border-top: 0; }
+
+.vx-analytics .vx-corr-pair,
+.vx-analytics .vx-sector-name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.vx-analytics .vx-corr-value,
+.vx-analytics .vx-sector-value {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.vx-analytics .vx-corr-value.is-positive,
+.vx-analytics .vx-sector-value.is-positive { color: var(--buy); }
+.vx-analytics .vx-corr-value.is-negative,
+.vx-analytics .vx-sector-value.is-negative { color: var(--sell); }
+.vx-analytics .vx-corr-value.is-neutral { color: var(--text-secondary); }
+
+.vx-analytics .vx-corr-samples,
+.vx-analytics .vx-sector-meta {
+  font-size: 10.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@media (max-width: 1023px) {
+  .vx-analytics .vx-grid-2 { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 640px) {
+  .vx-analytics .vx-corr-row,
+  .vx-analytics .vx-sector-row {
+    grid-template-columns: 1fr auto;
+    row-gap: 2px;
+  }
+  .vx-analytics .vx-corr-samples,
+  .vx-analytics .vx-sector-meta { grid-column: 1 / -1; }
+  .vx-analytics .vx-venue-row { flex-wrap: wrap; }
 }
