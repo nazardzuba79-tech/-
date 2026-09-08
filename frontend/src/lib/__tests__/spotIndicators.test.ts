@@ -96,8 +96,13 @@ test('legacy shared MACD is unchanged unless explicitly opted in by the Spot cha
   expect(legacy.histogram[0].value).toBeCloseTo(0.939524096, 10);
   const chart = readFileSync(resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8');
   const futures = readFileSync(resolve(__dirname, '../../pages/FuturesPage.tsx'), 'utf8');
-  expect(chart).toContain('spotTools = false');
-  expect(chart).toContain('const spotDrawingTools = terminal && spotTools');
-  expect(chart).toContain('computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotDrawingTools })');
-  expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" />');
+  expect(chart).toContain('drawingTools = false');
+  expect(chart).toContain('const drawingToolsOn = terminal && drawingTools');
+  // The warm-up rides on the SPOT TERMINAL, not on "has a drawing rail".
+  // Futures now opts into the same rail, and this gate is what stops that
+  // from quietly changing its MACD too.
+  expect(chart).toContain("const spotChartRefinements = terminal && market === 'spot'");
+  expect(chart).toContain('computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotChartRefinements })');
+  expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />');
+  expect(futures).not.toContain('market="spot"');
 });

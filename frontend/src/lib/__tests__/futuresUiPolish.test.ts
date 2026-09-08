@@ -55,7 +55,14 @@ test.each([
     // Final pass: dynamic book opt-in, symbol-bound read lifecycle and repeat picks.
     // futuresFinalPolish covers exact selection and stale-response rejection.
     // Explicit Futures wallet source; other terminal wiring remains unchanged.
-    "b2a5559b1856ff968f4ec5a180c4d157594a5c2f9808d60dd64fa98dc8eedde6"
+    // Re-taken for the shared drawing rail. ONE LINE differs: the PriceChart
+    // element gained `drawingTools market="futures"`, opting this page into
+    // the SAME rail Spot already used. No other byte changed — the contract
+    // list, mark/index/funding/OI reads, order form, positions and every
+    // layout class are untouched, and the spot-only MACD warm-up and price
+    // axis were explicitly decoupled so enabling the rail does not alter
+    // this page's indicators.
+    "4965ab4db97bdd71e60b2da977f8e7cf0a7fde854fe3fcdd6dec77f792309643"
   ],
   [
     "components/FuturesPairList.tsx",

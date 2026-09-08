@@ -280,7 +280,7 @@ export function TradePage() {
           </div>
 
           <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" spotTools />
+            <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" />
           </div>
 
           <div className="orderbook-area">

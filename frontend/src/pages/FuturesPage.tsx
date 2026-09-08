@@ -175,7 +175,7 @@ export function FuturesPage() {
                 index/mark price service (see FuturesTickerBar); only the
                 chart's history is the shared reference feed, and it is
                 never presented as anything else. */}
-            <PriceChart pair={symbol} chrome="terminal" />
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
           <div className="orderbook-area">

@@ -395,7 +395,12 @@ test.each([
   // cadence, the cancellation flag and the effect cleanup. No sizing,
   // margin, leverage, liquidation or balance code exists in this file.
   ['components/CfdPositionsPanel.tsx', '030e42f22e80bb38e01c855dd8f694eb5e7e246a6ccfdec3bbb0b708763a9afb'],
-  ['pages/TradePage.tsx', 'c7397a4659e93fb98d1e50e956a2795b63726d6ae7768e81787fbe4adf86aac0'],
+  // Re-taken for the shared drawing rail. ONE LINE differs: `spotTools`
+  // became `drawingTools market="spot"` when the prop was generalized so
+  // Futures could opt into the same implementation. Spot's rail, tools and
+  // behaviour are unchanged — this is a rename plus an explicit market
+  // namespace for saved drawings.
+  ['pages/TradePage.tsx', '2958fa337c7b644f64da45140ad1ac50ac99684eae4457eb6b2a29340371594b'],
 ])('%s preserves original financial callbacks/hooks or complete Spot JSX from bfaf522', (file, expected) => {
   const sf = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const fn = sf.statements.find(n => ts.isFunctionDeclaration(n) && n.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword)) as ts.FunctionDeclaration;

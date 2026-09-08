@@ -18,9 +18,23 @@ import {
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { computeSMA, computeBollingerBands, computeRSI, computeMACD, Candle } from '../lib/indicators';
-import { drawingFlyoutPosition, drawingMeasurement, drawingRetracements, formatDrawingPrice, trackDrawingGesture } from '../lib/chartDrawings';
+import {
+  ERASER_HIT_RADIUS,
+  distanceToSegment,
+  drawingFlyoutPosition,
+  drawingMeasurement,
+  drawingRetracements,
+  drawingStorageKey,
+  formatDrawingPrice,
+  magnetSnap,
+  parseStoredDrawings,
+  serializeDrawings,
+  trackDrawingGesture,
+  type DrawingMarket,
+  type StoredDrawing,
+} from '../lib/chartDrawings';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
-import './SpotDrawingTools.css';
+import './DrawingTools.css';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -61,7 +75,22 @@ const INTERVAL_SECONDS: Record<Interval, number> = {
   '1w': 604800,
 };
 
-type Tool = 'cursor' | 'trendline' | 'ray' | 'horizontal' | 'vertical' | 'rectangle' | 'fib' | 'brush' | 'ruler' | 'text';
+type Tool =
+  | 'cursor'
+  | 'trendline'
+  /** Same two anchors as a trend line, drawn through them and continuing
+   *  past both — a distinct tool, not a restyled one. */
+  | 'extended'
+  | 'ray'
+  | 'horizontal'
+  | 'vertical'
+  | 'rectangle'
+  | 'fib'
+  | 'brush'
+  | 'ruler'
+  | 'text'
+  /** Click a drawing to remove that one. Distinct from "delete all". */
+  | 'erase';
 
 interface Point {
   time: number;
@@ -107,9 +136,24 @@ interface BrushStroke {
   id: number;
   points: Point[];
 }
+/** Drawn through both anchors and continuing past them, both ways. */
+interface ExtLine {
+  id: number;
+  a: Point;
+  b: Point;
+}
+interface HorizontalLevel {
+  id: number;
+  price: number;
+}
 
 // Standard retracement levels — the same set every charting tool ships.
 const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+
+/** Tools whose gesture happens on the SVG overlay rather than through the
+ *  chart's own click subscription. Declared once so the pointer-events
+ *  gate and the transparent hit rect can never disagree. */
+const OVERLAY_POINTER_TOOLS: Tool[] = ['trendline', 'extended', 'ruler', 'rectangle', 'fib', 'brush', 'erase'];
 
 let nextDrawingId = 1;
 
@@ -139,10 +183,36 @@ let nextDrawingId = 1;
  * the original inline-styled toolbar — those rules are scoped to the trade
  * terminal, so a Futures chart rendering them would come out unstyled.
  */
-export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pair: string; chrome?: 'default' | 'terminal'; spotTools?: boolean }) {
+export function PriceChart({
+  pair,
+  chrome = 'default',
+  drawingTools = false,
+  market = 'spot',
+}: {
+  pair: string;
+  chrome?: 'default' | 'terminal';
+  drawingTools?: boolean;
+  /** Which product this chart belongs to. Only used to namespace saved
+   *  drawings — spot BTC levels are not futures BTC levels. */
+  market?: DrawingMarket;
+}) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
-  const spotDrawingTools = terminal && spotTools;
+  const drawingToolsOn = terminal && drawingTools;
+  /**
+   * Two spot-terminal refinements that arrived alongside the original
+   * Spot-only rail but are NOT part of it: the candle-magnitude price
+   * axis and the MACD warm-up.
+   *
+   * They used to ride on the same flag purely because "has the rail" and
+   * "is the spot terminal" were the same thing. Generalizing the rail to
+   * Futures separated those, and letting them travel with it would have
+   * silently changed the Futures axis precision and its MACD warm-up —
+   * indicator and axis behaviour nobody asked this task to touch. Gated
+   * on the terminal itself instead, so both pages keep exactly what they
+   * had.
+   */
+  const spotChartRefinements = terminal && market === 'spot';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The candlestick series stays the single coordinate-conversion
@@ -181,6 +251,25 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   const [rectangles, setRectangles] = useState<RectShape[]>([]);
   const [fibs, setFibs] = useState<FibShape[]>([]);
   const [brushStrokes, setBrushStrokes] = useState<BrushStroke[]>([]);
+  const [extendeds, setExtendeds] = useState<ExtLine[]>([]);
+  /** Horizontal levels, as data. The native price lines are derived from
+   *  this, never the other way round. */
+  const [horizontals, setHorizontals] = useState<HorizontalLevel[]>([]);
+  /**
+   * Magnet: snap each new anchor to the nearest OHLC level of the nearest
+   * loaded candle. Real snapping against the candle array this chart
+   * already holds — see `magnetSnap`.
+   */
+  const [magnet, setMagnet] = useState(false);
+  /**
+   * Lock: drawings stay visible and the chart stays fully navigable, but
+   * nothing can add, erase or clear them. It guards exactly the mutating
+   * actions this overlay has.
+   */
+  const [locked, setLocked] = useState(false);
+  /** Flipped once the chart and series exist, so effects that create chart
+   *  objects from state do not race the chart's own construction. */
+  const [chartReady, setChartReady] = useState(false);
   const [pendingBrush, setPendingBrush] = useState<Point[] | null>(null);
   const [pendingPoint, setPendingPoint] = useState<Point | null>(null);
   // Drawings stay in state while hidden — this only controls whether the
@@ -192,7 +281,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   // behaviours of this overlay; nothing here simulates anything.
   const [stayInDrawMode, setStayInDrawMode] = useState(true);
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
-  const [spotDialog, setSpotDialog] = useState<{ kind: 'text'; at: Point } | { kind: 'clear' } | null>(null);
+  const [drawDialog, setDrawDialog] = useState<{ kind: 'text'; at: Point } | { kind: 'clear' } | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
   // screen coordinates from the stored (time, price) points.
   const [, forceRedraw] = useState(0);
@@ -216,6 +305,10 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   // at bind time — a ref keeps them seeing the current setting.
   const stayInDrawModeRef = useRef(stayInDrawMode);
   stayInDrawModeRef.current = stayInDrawMode;
+  const magnetRef = useRef(magnet);
+  magnetRef.current = magnet;
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
   const textPromptRef = useRef('');
   textPromptRef.current = `${t('draw.text')}:`;
   const confirmClearRef = useRef('');
@@ -383,26 +476,27 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
       const price = seriesRef.current.coordinateToPrice(param.point.y);
       const time = param.time ?? chart.timeScale().coordinateToTime(param.point.x);
       if (price === null || time === null) return null;
-      return { time: time as unknown as number, price };
+      const raw = { time: time as unknown as number, price };
+      if (!magnetRef.current) return raw;
+      const snapped = magnetSnap(raw, candlesRef.current);
+      return { time: snapped.time, price: snapped.price };
     }
 
     function handleClick(param: MouseEventParams<Time>) {
-      if (spotDrawingTools && hiddenRef.current) return;
+      if (drawingToolsOn && hiddenRef.current) return;
+      // Locked: drawings stay visible and the chart stays fully
+      // navigable — only adding and removing them is refused.
+      if (drawingToolsOn && lockedRef.current) return;
       const activeTool = toolRef.current;
       if (activeTool !== 'horizontal' && activeTool !== 'text' && activeTool !== 'ray' && activeTool !== 'vertical') return;
       const p = pointFromEvent(param);
       if (!p) return;
 
       if (activeTool === 'horizontal') {
-        const line = seriesRef.current!.createPriceLine({
-          price: p.price,
-          color: '#f7a600',
-          lineWidth: 1,
-          lineStyle: 2,
-          axisLabelVisible: true,
-          title: spotDrawingTools ? formatDrawingPrice(p.price) : p.price.toFixed(2),
-        });
-        priceLinesRef.current.push(line);
+        // Held in React state rather than only as a native price line, so
+        // it can be serialized like every other drawing. The effect below
+        // is what actually creates/destroys the chart objects from it.
+        setHorizontals((prev) => [...prev, { id: nextDrawingId++, price: p.price }]);
         if (!stayInDrawModeRef.current) setTool('cursor');
         return;
       }
@@ -422,9 +516,9 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
       if (activeTool === 'text') {
         // Embedded review browsers do not support native prompt(). Store the
         // actual chart anchor until the user submits the Spot text editor.
-        if (spotDrawingTools) {
+        if (drawingToolsOn) {
           cancelGestureRef.current?.();
-          setSpotDialog({ kind: 'text', at: p });
+          setDrawDialog({ kind: 'text', at: p });
           return;
         }
         // Prompt label read from a ref: this handler is bound once, so a
@@ -438,6 +532,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
     }
 
     chart.subscribeClick(handleClick);
+    setChartReady(true);
 
     const resizeObserver = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
@@ -464,17 +559,17 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   // Spot gestures cannot survive a tool, instrument or timeframe change,
   // Clear, Escape, focus loss or an unmount and then commit stale anchors.
   useEffect(() => {
-    if (!spotDrawingTools) return;
-    setSpotDialog(null);
+    if (!drawingToolsOn) return;
+    setDrawDialog(null);
     return () => cancelGestureRef.current?.();
-  }, [spotDrawingTools, tool, pair, interval]);
+  }, [drawingToolsOn, tool, pair, interval]);
 
   useEffect(() => {
-    if (!spotDrawingTools) return;
+    if (!drawingToolsOn) return;
     for (const line of priceLinesRef.current) {
       line.applyOptions({ lineVisible: !drawingsHidden, axisLabelVisible: !drawingsHidden });
     }
-  }, [spotDrawingTools, drawingsHidden]);
+  }, [drawingToolsOn, drawingsHidden]);
 
   // Esc abandons whatever is in progress and drops back to the cursor —
   // the same escape hatch every charting package gives you, and the reason
@@ -513,14 +608,13 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
     setBrushStrokes([]);
     setPendingPoint(null);
     setPendingBrush(null);
-    for (const line of priceLinesRef.current) {
-      seriesRef.current?.removePriceLine(line);
-    }
-    priceLinesRef.current = [];
+    setExtendeds([]);
+    setHorizontals([]);
   }, [pair]);
 
   const clearDrawings = useCallback(() => {
-    if (spotDrawingTools) cancelGestureRef.current?.();
+    if (drawingToolsOn && lockedRef.current) return;
+    if (drawingToolsOn) cancelGestureRef.current?.();
     setTrendLines([]);
     setRulers([]);
     setLabels([]);
@@ -529,24 +623,148 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
     setRectangles([]);
     setFibs([]);
     setBrushStrokes([]);
+    setExtendeds([]);
+    setHorizontals([]);
     setPendingPoint(null);
     setPendingBrush(null);
-    for (const line of priceLinesRef.current) {
-      seriesRef.current?.removePriceLine(line);
-    }
-    priceLinesRef.current = [];
-  }, [spotDrawingTools]);
+  }, [drawingToolsOn]);
 
   const clearAll = useCallback(() => {
     // Only local drawing objects are cleared, never conditional orders.
-    // Preserve the existing Futures confirmation; Spot uses an in-app modal.
-    if (spotDrawingTools) {
+    // Locked drawings cannot be cleared, which is the whole point of the
+    // lock — the confirmation is not even offered.
+    if (drawingToolsOn && locked) return;
+    if (drawingToolsOn) {
       cancelGestureRef.current?.();
-      setSpotDialog({ kind: 'clear' });
+      setDrawDialog({ kind: 'clear' });
       return;
     }
     if (window.confirm(confirmClearRef.current)) clearDrawings();
-  }, [spotDrawingTools, clearDrawings]);
+  }, [drawingToolsOn, clearDrawings, locked]);
+
+  /**
+   * Native price lines, derived from `horizontals`.
+   *
+   * One effect owns their whole lifecycle: it removes every line it
+   * previously created and recreates them from state. That keeps the
+   * chart objects and the serializable data from drifting apart, which is
+   * what made horizontals unsaveable before.
+   */
+  useEffect(() => {
+    const series = seriesRef.current;
+    if (!series) return;
+    for (const line of priceLinesRef.current) series.removePriceLine(line);
+    priceLinesRef.current = [];
+    if (drawingsHidden) return;
+    for (const level of horizontals) {
+      priceLinesRef.current.push(
+        series.createPriceLine({
+          price: level.price,
+          color: '#f7a600',
+          lineWidth: 1,
+          lineStyle: 2,
+          axisLabelVisible: true,
+          title: drawingToolsOn ? formatDrawingPrice(level.price) : level.price.toFixed(2),
+        })
+      );
+    }
+  }, [horizontals, drawingsHidden, drawingToolsOn, chartReady]);
+
+  // ── Persistence ────────────────────────────────────────────────────
+  //
+  // Saved per market AND per symbol, so BTC drawings can never appear on
+  // ETH. NOT per timeframe: every point below is a real (time, price)
+  // pair, so the same drawing is the same drawing on 15m and on 1d, and
+  // keying by timeframe would hide a trader's own levels on a zoom change.
+
+  const storageKey = drawingToolsOn ? drawingStorageKey(market, pair) : null;
+  /**
+   * The key the CURRENT drawing state belongs to.
+   *
+   * Deliberately state, not a ref. On a symbol switch the load effect
+   * queues ten state updates and then marks the key; a ref would be set
+   * synchronously, so the save effect could run in that same commit with
+   * the NEW key and the OLD symbol's drawings still in state — writing
+   * BTC's levels into ETH's slot. Keeping it in state means the marker
+   * lands in the same batch as the drawings it describes, so the save
+   * effect never sees one without the other.
+   */
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+
+  /** Everything currently on the chart, in the serializable form. */
+  const collectDrawings = useCallback((): StoredDrawing[] => {
+    const out: StoredDrawing[] = [];
+    for (const l of trendLines) out.push({ kind: 'trendline', points: [l.a, l.b] });
+    for (const l of extendeds) out.push({ kind: 'extended', points: [l.a, l.b] });
+    for (const r of rays) out.push({ kind: 'ray', points: [r.a] });
+    for (const h of horizontals) out.push({ kind: 'horizontal', points: [{ time: 0, price: h.price }] });
+    for (const v of verticals) out.push({ kind: 'vertical', points: [{ time: v.time, price: 0 }] });
+    for (const r of rectangles) out.push({ kind: 'rectangle', points: [r.a, r.b] });
+    for (const f of fibs) out.push({ kind: 'fib', points: [f.a, f.b] });
+    for (const b of brushStrokes) out.push({ kind: 'brush', points: b.points });
+    for (const r of rulers) out.push({ kind: 'ruler', points: [r.a, r.b] });
+    for (const l of labels) out.push({ kind: 'text', points: [l.at], text: l.text });
+    return out;
+  }, [trendLines, extendeds, rays, horizontals, verticals, rectangles, fibs, brushStrokes, rulers, labels]);
+
+  /** Load whatever was saved for this market+symbol, replacing the lot. */
+  useEffect(() => {
+    if (!storageKey) return;
+    setLoadedKey(null);
+    let stored;
+    try {
+      stored = parseStoredDrawings(window.localStorage.getItem(storageKey));
+    } catch {
+      // A browser with storage disabled is a working chart without
+      // persistence, not a broken one.
+      stored = parseStoredDrawings(null);
+    }
+
+    const next = {
+      trend: [] as TrendLine[], ext: [] as ExtLine[], ray: [] as RayLine[],
+      horiz: [] as HorizontalLevel[], vert: [] as VerticalLine[], rect: [] as RectShape[],
+      fib: [] as FibShape[], brush: [] as BrushStroke[], ruler: [] as Ruler[], text: [] as TextLabel[],
+    };
+    for (const d of stored.drawings) {
+      const id = nextDrawingId++;
+      switch (d.kind) {
+        case 'trendline': next.trend.push({ id, a: d.points[0], b: d.points[1] }); break;
+        case 'extended': next.ext.push({ id, a: d.points[0], b: d.points[1] }); break;
+        case 'ray': next.ray.push({ id, a: d.points[0] }); break;
+        case 'horizontal': next.horiz.push({ id, price: d.points[0].price }); break;
+        case 'vertical': next.vert.push({ id, time: d.points[0].time }); break;
+        case 'rectangle': next.rect.push({ id, a: d.points[0], b: d.points[1] }); break;
+        case 'fib': next.fib.push({ id, a: d.points[0], b: d.points[1] }); break;
+        case 'brush': next.brush.push({ id, points: d.points }); break;
+        case 'ruler': next.ruler.push({ id, a: d.points[0], b: d.points[1] }); break;
+        case 'text': next.text.push({ id, at: d.points[0], text: d.text ?? '' }); break;
+      }
+    }
+    setTrendLines(next.trend);
+    setExtendeds(next.ext);
+    setRays(next.ray);
+    setHorizontals(next.horiz);
+    setVerticals(next.vert);
+    setRectangles(next.rect);
+    setFibs(next.fib);
+    setBrushStrokes(next.brush);
+    setRulers(next.ruler);
+    setLabels(next.text);
+    setDrawingsHidden(stored.hidden);
+    setLocked(stored.locked);
+    setLoadedKey(storageKey);
+  }, [storageKey]);
+
+  /** Save on every change, once this key's load has completed. */
+  useEffect(() => {
+    if (!storageKey || loadedKey !== storageKey) return;
+    try {
+      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: drawingsHidden, locked }));
+    } catch {
+      // Quota or a privacy mode that refuses writes. The chart keeps
+      // working; only persistence is lost, and silently is correct here.
+    }
+  }, [storageKey, loadedKey, collectDrawings, drawingsHidden, locked]);
 
   const fitContent = useCallback(() => {
     chartRef.current?.timeScale().fitContent();
@@ -564,7 +782,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
         const res = await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
-        if (spotDrawingTools) {
+        if (spotChartRefinements) {
           const priceFormat = spotChartPriceFormat(res.candles);
           // All series sharing the price axis need the same formatter, even
           // when candles are hidden by Line/Area or an indicator toggle.
@@ -603,7 +821,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
 
         rsiSeriesRef.current?.setData(computeRSI(res.candles) as any);
 
-        const macd = computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotDrawingTools });
+        const macd = computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotChartRefinements });
         macdLineRef.current?.setData(macd.macd as any);
         macdSignalRef.current?.setData(macd.signal as any);
         macdHistRef.current?.setData(macd.histogram as any);
@@ -636,7 +854,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [pair, interval, spotDrawingTools]);
+  }, [pair, interval, drawingToolsOn, spotChartRefinements]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at.
@@ -783,6 +1001,20 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
     return chartRef.current?.timeScale().timeToCoordinate(time as unknown as Time) ?? null;
   }
 
+  /**
+   * Snap to a real OHLC level when the magnet is on.
+   *
+   * Applied at the two places a raw chart point is produced, so every tool
+   * inherits it without knowing about it. With the magnet off, or with no
+   * candles loaded, the point passes through untouched — the magnet never
+   * invents a level it cannot find.
+   */
+  function applyMagnet(p: Point): Point {
+    if (!drawingToolsOn || !magnetRef.current) return p;
+    const snapped = magnetSnap(p, candlesRef.current);
+    return { time: snapped.time, price: snapped.price };
+  }
+
   function pointFromClientXY(clientX: number, clientY: number): Point | null {
     const container = containerRef.current;
     const chart = chartRef.current;
@@ -792,8 +1024,95 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
     const price = series.coordinateToPrice(clientY - rect.top);
     const time = chart.timeScale().coordinateToTime(clientX - rect.left);
     if (price === null || time === null) return null;
-    return { time: time as unknown as number, price };
+    return applyMagnet({ time: time as unknown as number, price });
   }
+
+  /**
+   * Remove the one drawing under the pointer.
+   *
+   * Hit-tested in screen space against the very coordinates the overlay
+   * draws from, so what the trader sees is what gets erased. Returns true
+   * when something was removed, so the caller can tell a hit from a miss
+   * instead of silently doing nothing.
+   */
+  const eraseAt = useCallback(
+    (clientX: number, clientY: number): boolean => {
+      const container = containerRef.current;
+      if (!container || lockedRef.current || hiddenRef.current) return false;
+      const rect = container.getBoundingClientRect();
+      const at = { x: clientX - rect.left, y: clientY - rect.top };
+      const near = (p: Point | null, q: Point | null) => {
+        const a = p && toScreen(p);
+        const b = q && toScreen(q);
+        if (!a || !b) return false;
+        return distanceToSegment(at, a, b) <= ERASER_HIT_RADIUS;
+      };
+
+      for (const l of trendLines) if (near(l.a, l.b)) { setTrendLines((p) => p.filter((x) => x.id !== l.id)); return true; }
+      for (const l of extendeds) if (near(l.a, l.b)) { setExtendeds((p) => p.filter((x) => x.id !== l.id)); return true; }
+      for (const r of rulers) if (near(r.a, r.b)) { setRulers((p) => p.filter((x) => x.id !== r.id)); return true; }
+      for (const f of fibs) if (near(f.a, f.b)) { setFibs((p) => p.filter((x) => x.id !== f.id)); return true; }
+
+      // A rectangle is its four edges, so clicking inside it does not
+      // delete it — same as clicking inside any other outline shape.
+      for (const r of rectangles) {
+        const a = toScreen(r.a);
+        const b = toScreen(r.b);
+        if (!a || !b) continue;
+        const corners = [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }];
+        if (corners.some((c, i) => distanceToSegment(at, c, corners[(i + 1) % 4]) <= ERASER_HIT_RADIUS)) {
+          setRectangles((p) => p.filter((x) => x.id !== r.id));
+          return true;
+        }
+      }
+
+      for (const stroke of brushStrokes) {
+        for (let i = 1; i < stroke.points.length; i++) {
+          if (near(stroke.points[i - 1], stroke.points[i])) {
+            setBrushStrokes((p) => p.filter((x) => x.id !== stroke.id));
+            return true;
+          }
+        }
+      }
+
+      // A ray runs from its anchor to the right edge.
+      for (const r of rays) {
+        const a = toScreen(r.a);
+        if (a && distanceToSegment(at, a, { x: container.clientWidth, y: a.y }) <= ERASER_HIT_RADIUS) {
+          setRays((p) => p.filter((x) => x.id !== r.id));
+          return true;
+        }
+      }
+
+      for (const v of verticals) {
+        const x = timeToX(v.time);
+        if (x !== null && Math.abs(at.x - x) <= ERASER_HIT_RADIUS) {
+          setVerticals((p) => p.filter((y) => y.id !== v.id));
+          return true;
+        }
+      }
+
+      for (const level of horizontals) {
+        const y = seriesRef.current?.priceToCoordinate(level.price);
+        if (y != null && Math.abs(at.y - y) <= ERASER_HIT_RADIUS) {
+          setHorizontals((p) => p.filter((x) => x.id !== level.id));
+          return true;
+        }
+      }
+
+      for (const label of labels) {
+        const p = toScreen(label.at);
+        // A text label is a box anchored at its point, not a line.
+        if (p && at.x >= p.x - 4 && at.x <= p.x + 120 && at.y >= p.y - 16 && at.y <= p.y + 8) {
+          setLabels((prev) => prev.filter((x) => x.id !== label.id));
+          return true;
+        }
+      }
+      return false;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trendLines, extendeds, rulers, fibs, rectangles, brushStrokes, rays, verticals, horizontals, labels]
+  );
 
   // Trend line / ruler / rectangle / fib: a genuine press-drag-release
   // gesture (like TradingView's own tools) instead of two separate clicks —
@@ -802,13 +1121,19 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   // keeps tracking even if the cursor leaves the chart area mid-gesture.
   const handleOverlayMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (spotDrawingTools) {
+      if (drawingToolsOn) {
         if (e.button !== 0) return;
+        if (lockedRef.current || hiddenRef.current) return;
+        if (toolRef.current === 'erase') {
+          e.preventDefault();
+          eraseAt(e.clientX, e.clientY);
+          return;
+        }
         e.preventDefault();
         cancelGestureRef.current?.();
       }
       const bind = (move: (event: MouseEvent) => void, finish: (event: MouseEvent) => void) => {
-        if (spotDrawingTools) {
+        if (drawingToolsOn) {
           cancelGestureRef.current = trackDrawingGesture(window, {
             move, finish,
             cancel: () => { setPendingBrush(null); setPendingPoint(null); setCursorPoint(null); },
@@ -843,7 +1168,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
         return;
       }
 
-      if (tool !== 'trendline' && tool !== 'ruler' && tool !== 'rectangle' && tool !== 'fib') return;
+      if (tool !== 'trendline' && tool !== 'extended' && tool !== 'ruler' && tool !== 'rectangle' && tool !== 'fib') return;
       const startPoint = pointFromClientXY(e.clientX, e.clientY);
       if (!startPoint) return;
       const start: Point = startPoint;
@@ -869,6 +1194,8 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
         const activeTool = toolRef.current;
         if (activeTool === 'trendline') {
           setTrendLines((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
+        } else if (activeTool === 'extended') {
+          setExtendeds((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
         } else if (activeTool === 'ruler') {
           setRulers((prev) => [...prev, { id: nextDrawingId++, a: start, b: end }]);
         } else if (activeTool === 'rectangle') {
@@ -880,7 +1207,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
       }
       bind(handleMove, handleUp);
     },
-    [tool, finishDrawing, spotDrawingTools]
+    [tool, finishDrawing, drawingToolsOn, eraseAt]
   );
 
   const intervalButtons = INTERVALS.map((i) => (
@@ -939,7 +1266,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
   ));
 
   return (
-    <div className={spotDrawingTools ? 'spot-drawing-tools' : undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
+    <div className={drawingToolsOn ? 'drawing-tools' : undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
         <div className="chart-toolbar">
           <div className="chart-tabs">{intervalButtons}</div>
@@ -961,14 +1288,23 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
           tool={tool}
-          onSelect={(next) => { if (spotDrawingTools) setDrawingsHidden(false); setTool(next); }}
+          onSelect={(next) => { if (drawingToolsOn) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
-          spotTools={spotDrawingTools}
+          drawingTools={drawingToolsOn}
           drawingsHidden={drawingsHidden}
+          magnet={magnet}
+          onToggleMagnet={() => setMagnet((v) => !v)}
+          locked={locked}
+          onToggleLock={() => {
+            // Leaving a half-drawn shape behind a lock would be a shape
+            // the trader can neither finish nor remove.
+            cancelGestureRef.current?.();
+            setLocked((v) => !v);
+          }}
           onToggleHidden={() => {
-            if (spotDrawingTools) { cancelGestureRef.current?.(); setTool('cursor'); }
+            if (drawingToolsOn) { cancelGestureRef.current?.(); setTool('cursor'); }
             setDrawingsHidden((v) => !v);
           }}
           stayInDrawMode={stayInDrawMode}
@@ -988,9 +1324,9 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
               // toggling back restores exactly what was there. While hidden
               // the overlay also stops taking pointer events, otherwise an
               // invisible layer would swallow clicks meant for the chart.
-              display: drawingsHidden && !spotDrawingTools ? 'none' : undefined,
+              display: drawingsHidden && !drawingToolsOn ? 'none' : undefined,
               pointerEvents:
-                !drawingsHidden && ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool)
+                !drawingsHidden && OVERLAY_POINTER_TOOLS.includes(tool)
                   ? 'auto'
                   : 'none',
             }}
@@ -1000,16 +1336,41 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
                 empty viewport — without this transparent (not "none") rect
                 covering the whole area, drags over blank chart space would
                 fall straight through to the canvas underneath. */}
-            {!drawingsHidden && ['trendline', 'ruler', 'rectangle', 'fib', 'brush'].includes(tool) && (
+            {!drawingsHidden && OVERLAY_POINTER_TOOLS.includes(tool) && (
               <rect x={0} y={0} width="100%" height="100%" fill="transparent" />
             )}
 
-            <g data-chart-drawings={spotDrawingTools ? 'shapes' : undefined} display={spotDrawingTools && drawingsHidden ? 'none' : undefined}>
+            <g data-chart-drawings={drawingToolsOn ? 'shapes' : undefined} display={drawingToolsOn && drawingsHidden ? 'none' : undefined}>
             {trendLines.map((l) => {
               const a = toScreen(l.a);
               const b = toScreen(l.b);
               if (!a || !b) return null;
               return <line key={l.id} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f7a600" strokeWidth={1.5} />;
+            })}
+
+            {/* Extended: the same two anchors, projected out to both edges
+                of the plot. Recomputed from (time, price) on every redraw
+                like everything else, so it follows pan and zoom. */}
+            {extendeds.map((l) => {
+              const a = toScreen(l.a);
+              const b = toScreen(l.b);
+              if (!a || !b) return null;
+              const width = containerRef.current?.clientWidth ?? 0;
+              if (a.x === b.x) {
+                return <line key={l.id} x1={a.x} y1={0} x2={a.x} y2="100%" stroke="#f7a600" strokeWidth={1.5} />;
+              }
+              const slope = (b.y - a.y) / (b.x - a.x);
+              return (
+                <line
+                  key={l.id}
+                  x1={0}
+                  y1={a.y + slope * (0 - a.x)}
+                  x2={width}
+                  y2={a.y + slope * (width - a.x)}
+                  stroke="#f7a600"
+                  strokeWidth={1.5}
+                />
+              );
             })}
 
             {rays.map((r) => {
@@ -1050,17 +1411,17 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
               if (!a || !b) return null;
               const x1 = Math.min(a.x, b.x);
               const x2 = Math.max(a.x, b.x);
-              const labelsInside = spotDrawingTools && x2 + 125 > (containerRef.current?.clientWidth ?? Infinity);
+              const labelsInside = drawingToolsOn && x2 + 125 > (containerRef.current?.clientWidth ?? Infinity);
               return (
                 <g key={f.id}>
-                  {(spotDrawingTools ? drawingRetracements(f.a.price, f.b.price) : FIB_LEVELS.map((level) => ({ level, price: f.a.price + (f.b.price - f.a.price) * level }))).map(({ level, price }) => {
+                  {(drawingToolsOn ? drawingRetracements(f.a.price, f.b.price) : FIB_LEVELS.map((level) => ({ level, price: f.a.price + (f.b.price - f.a.price) * level }))).map(({ level, price }) => {
                     const y = priceToY(price);
                     if (y === null) return null;
                     return (
                       <g key={level}>
                         <line x1={x1} y1={y} x2={x2} y2={y} stroke="#c084fc" strokeWidth={1} strokeDasharray="3 3" />
                         <text x={labelsInside ? x2 - 4 : x2 + 4} textAnchor={labelsInside ? 'end' : undefined} y={y + 3} fontSize={10} fontWeight={600} fill="#c084fc">
-                          {level.toFixed(3)} ({spotDrawingTools ? formatDrawingPrice(price, lang) : price.toFixed(2)})
+                          {level.toFixed(3)} ({drawingToolsOn ? formatDrawingPrice(price, lang) : price.toFixed(2)})
                         </text>
                       </g>
                     );
@@ -1088,13 +1449,13 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
               if (!a || !b) return null;
               const priceDiff = r.b.price - r.a.price;
               const measured = drawingMeasurement(r.a, r.b, INTERVAL_SECONDS[interval], candlesRef.current.map((c) => c.time));
-              const pct = spotDrawingTools ? measured.pct : (priceDiff / r.a.price) * 100;
-              const bars = spotDrawingTools ? measured.bars : Math.round(Math.abs(r.b.time - r.a.time) / INTERVAL_SECONDS[interval]);
+              const pct = drawingToolsOn ? measured.pct : (priceDiff / r.a.price) * 100;
+              const bars = drawingToolsOn ? measured.bars : Math.round(Math.abs(r.b.time - r.a.time) / INTERVAL_SECONDS[interval]);
               const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
               return (
                 <g key={r.id}>
                   <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="4 3" />
-                  <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} spotTools={spotDrawingTools} locale={lang} />
+                  <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} drawingTools={drawingToolsOn} locale={lang} />
                 </g>
               );
             })}
@@ -1108,13 +1469,13 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
                 if (tool === 'ruler') {
                   const priceDiff = cursorPoint.price - pendingPoint.price;
                   const measured = drawingMeasurement(pendingPoint, cursorPoint, INTERVAL_SECONDS[interval], candlesRef.current.map((c) => c.time));
-                  const pct = spotDrawingTools ? measured.pct : (priceDiff / pendingPoint.price) * 100;
-                  const bars = spotDrawingTools ? measured.bars : Math.round(Math.abs(cursorPoint.time - pendingPoint.time) / INTERVAL_SECONDS[interval]);
+                  const pct = drawingToolsOn ? measured.pct : (priceDiff / pendingPoint.price) * 100;
+                  const bars = drawingToolsOn ? measured.bars : Math.round(Math.abs(cursorPoint.time - pendingPoint.time) / INTERVAL_SECONDS[interval]);
                   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
                   return (
                     <g>
                       <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#5b8def" strokeWidth={1.5} strokeDasharray="3 3" />
-                      <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} spotTools={spotDrawingTools} locale={lang} />
+                      <RulerLabel x={mid.x} y={mid.y} pct={pct} priceDiff={priceDiff} bars={bars} drawingTools={drawingToolsOn} locale={lang} />
                     </g>
                   );
                 }
@@ -1180,11 +1541,11 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
             })}
           </svg>
 
-          {(!spotDrawingTools || !drawingsHidden) && labels.map((l) => {
+          {(!drawingToolsOn || !drawingsHidden) && labels.map((l) => {
             const p = toScreen(l.at);
             if (!p) return null;
             return (
-              <div key={l.id} style={{ ...styles.textLabel, left: p.x, top: p.y, ...(spotDrawingTools ? { zIndex: 4 } : {}) }}>
+              <div key={l.id} style={{ ...styles.textLabel, left: p.x, top: p.y, ...(drawingToolsOn ? { zIndex: 4 } : {}) }}>
                 {l.text}
               </div>
             );
@@ -1206,17 +1567,17 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
           )}
         </div>
       </div>
-      {spotDrawingTools && spotDialog && createPortal(<SpotDrawingDialog
-        kind={spotDialog.kind} t={t}
-        onCancel={() => setSpotDialog(null)}
+      {drawingToolsOn && drawDialog && createPortal(<DrawingDialog
+        kind={drawDialog.kind} t={t}
+        onCancel={() => setDrawDialog(null)}
         onConfirm={text => {
-          if (spotDialog.kind === 'text') {
+          if (drawDialog.kind === 'text') {
             const value = text.trim();
             if (!value) return;
-            setLabels(previous => [...previous, { id: nextDrawingId++, at: spotDialog.at, text: value }]);
+            setLabels(previous => [...previous, { id: nextDrawingId++, at: drawDialog.at, text: value }]);
             finishDrawing();
           } else clearDrawings();
-          setSpotDialog(null);
+          setDrawDialog(null);
         }}
       />, document.body)}
     </div>
@@ -1224,7 +1585,7 @@ export function PriceChart({ pair, chrome = 'default', spotTools = false }: { pa
 }
 
 /** Modal content is React text, not HTML; no prompt/confirm or network action. */
-function SpotDrawingDialog({ kind, t, onConfirm, onCancel }: {
+function DrawingDialog({ kind, t, onConfirm, onCancel }: {
   kind: 'text' | 'clear'; t: (key: any) => string;
   onConfirm: (text: string) => void; onCancel: () => void;
 }) {
@@ -1238,10 +1599,10 @@ function SpotDrawingDialog({ kind, t, onConfirm, onCancel }: {
     dialogRef.current?.querySelector<HTMLElement>(textMode ? 'input' : '[data-drawing-cancel]')?.focus();
     return () => { if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
   }, [textMode]);
-  return <div className="spot-chart-dialog-backdrop" onMouseDown={event => {
+  return <div className="chart-draw-dialog-backdrop" onMouseDown={event => {
     if (event.target === event.currentTarget) onCancel();
   }}>
-    <form ref={dialogRef} className="spot-chart-dialog" role="dialog" aria-modal="true"
+    <form ref={dialogRef} className="chart-draw-dialog" role="dialog" aria-modal="true"
       aria-labelledby={`${id}-title`} aria-describedby={textMode ? undefined : `${id}-description`}
       onSubmit={event => { event.preventDefault(); if (!textMode || draft.trim()) onConfirm(draft.trim()); }}
       onKeyDown={event => {
@@ -1253,12 +1614,12 @@ function SpotDrawingDialog({ kind, t, onConfirm, onCancel }: {
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }}>
       <h2 id={`${id}-title`}>{t(textMode ? 'draw.text' : 'draw.deleteAll')}</h2>
-      {textMode ? <label className="spot-chart-dialog-label" htmlFor={`${id}-text`}>
+      {textMode ? <label className="chart-draw-dialog-label" htmlFor={`${id}-text`}>
         <span>{t('draw.text')}</span>
         <input id={`${id}-text`} type="text" value={draft} maxLength={280} autoComplete="off"
           onChange={event => setDraft(event.target.value)} />
       </label> : <p id={`${id}-description`}>{t('draw.deleteAllConfirm')}</p>}
-      <div className="spot-chart-dialog-actions">
+      <div className="chart-draw-dialog-actions">
         <button type="button" data-drawing-cancel onClick={onCancel}>{t('trade.cancel')}</button>
         <button type="submit" className={textMode ? 'primary' : 'danger'} disabled={textMode && !draft.trim()}>{t(textMode ? 'draw.addText' : 'draw.deleteAll')}</button>
       </div>
@@ -1275,13 +1636,13 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   );
 }
 
-function RulerLabel({ x, y, pct, priceDiff, bars, spotTools = false, locale = 'en' }: { x: number; y: number; pct: number | null; priceDiff: number; bars: number; spotTools?: boolean; locale?: string }) {
+function RulerLabel({ x, y, pct, priceDiff, bars, drawingTools = false, locale = 'en' }: { x: number; y: number; pct: number | null; priceDiff: number; bars: number; drawingTools?: boolean; locale?: string }) {
   const positive = (pct ?? 0) >= 0;
   const sign = positive ? '+' : '';
   const pctText = pct === null ? '—' : `${sign}${pct.toFixed(2)}%`;
   const diffMagnitude = Math.abs(priceDiff);
-  const diffText = `${priceDiff >= 0 ? '+' : ''}${spotTools ? formatDrawingPrice(priceDiff, locale) : priceDiff.toFixed(diffMagnitude !== 0 && diffMagnitude < 1 ? 6 : 2)}`;
-  const barWord = spotTools ? ({ ru: 'бар.', en: 'bars', zh: '根', es: 'velas', hi: 'बार', ja: '本', ko: '봉' }[locale] ?? 'bars') : `бар${bars === 1 ? '' : 'ів'}`;
+  const diffText = `${priceDiff >= 0 ? '+' : ''}${drawingTools ? formatDrawingPrice(priceDiff, locale) : priceDiff.toFixed(diffMagnitude !== 0 && diffMagnitude < 1 ? 6 : 2)}`;
+  const barWord = drawingTools ? ({ ru: 'бар.', en: 'bars', zh: '根', es: 'velas', hi: 'बार', ja: '本', ko: '봉' }[locale] ?? 'bars') : `бар${bars === 1 ? '' : 'ів'}`;
   const detailText = `${diffText} · ${bars} ${barWord}`;
   const width = Math.max(pctText.length, detailText.length) * 6.6 + 14;
   return (
@@ -1303,12 +1664,22 @@ function RulerLabel({ x, y, pct, priceDiff, bars, spotTools = false, locale = 'e
  * measure/zoom, then the drawing-session toggles, and destructive actions
  * last behind a separator.
  *
- * Only tools this chart actually implements are exposed. That is why there
- * is no magnet and no lock button — this overlay has no snapping and no
- * per-object selection, so either one would be a control that does
- * nothing. Fibonacci, shapes, brush, text and measure each have exactly one
+ * Only tools this chart actually implements are exposed — there is no icon
+ * here for a feature that does nothing. Magnet and lock are now real:
+ * magnet snaps each new anchor to a genuine OHLC level of the nearest
+ * loaded candle, and lock refuses every mutating action this overlay has
+ * (adding, erasing, clearing) while leaving drawings visible and the chart
+ * fully navigable. The eraser removes the one drawing under the pointer,
+ * hit-tested against the coordinates the overlay actually draws from.
+ *
+ * Fibonacci, shapes, brush, text and measure each have exactly one
  * implemented tool, so they stay direct buttons rather than one-item menus;
- * trend lines are the one family with four, so they get the flyout.
+ * the line family has five, so it gets the flyout.
+ *
+ * Not implemented, and therefore not shown: parallel channel (needs a
+ * third anchor and a two-stage gesture) and a separate price-range tool
+ * (the ruler already reports price delta, percent and bar count over the
+ * same drag).
  *
  * The trend group behaves like the reference terminals': the main button
  * activates whichever tool of the group you used last, and the small
@@ -1321,22 +1692,30 @@ function DrawToolbar({
   onClear,
   onFit,
   terminal,
-  spotTools = false,
+  drawingTools = false,
   drawingsHidden,
   onToggleHidden,
   stayInDrawMode,
   onToggleStay,
+  magnet = false,
+  onToggleMagnet,
+  locked = false,
+  onToggleLock,
 }: {
   tool: Tool;
   onSelect: (t: Tool) => void;
   onClear: () => void;
   onFit: () => void;
   terminal?: boolean;
-  spotTools?: boolean;
+  drawingTools?: boolean;
   drawingsHidden: boolean;
   onToggleHidden: () => void;
   stayInDrawMode: boolean;
   onToggleStay: () => void;
+  magnet?: boolean;
+  onToggleMagnet?: () => void;
+  locked?: boolean;
+  onToggleLock?: () => void;
 }) {
   const { t } = useLanguage();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
@@ -1355,12 +1734,12 @@ function DrawToolbar({
   const menuId = useId();
 
   useEffect(() => {
-    if (!spotTools || !openGroup) return;
+    if (!drawingTools || !openGroup) return;
     flyoutRef.current?.querySelector<HTMLButtonElement>('[aria-checked="true"], button')?.focus();
     const close = () => setOpenGroup(null);
     window.addEventListener('resize', close);
     return () => window.removeEventListener('resize', close);
-  }, [spotTools, openGroup]);
+  }, [drawingTools, openGroup]);
 
   // A flyout that outlives a click elsewhere would sit over the chart and
   // eat the next drawing gesture.
@@ -1375,7 +1754,7 @@ function DrawToolbar({
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         setOpenGroup(null);
-        if (spotTools) groupRef.current?.querySelector<HTMLButtonElement>('.tool-group-chevron')?.focus();
+        if (drawingTools) groupRef.current?.querySelector<HTMLButtonElement>('.tool-group-chevron')?.focus();
       }
     }
     document.addEventListener('mousedown', onDocDown);
@@ -1384,10 +1763,11 @@ function DrawToolbar({
       document.removeEventListener('mousedown', onDocDown);
       document.removeEventListener('keydown', onKey);
     };
-  }, [openGroup, spotTools]);
+  }, [openGroup, drawingTools]);
 
   const TREND_TOOLS: { id: Tool; icon: JSX.Element; label: string }[] = [
     { id: 'trendline', icon: <TrendLineIcon />, label: t('draw.trendline') },
+    { id: 'extended', icon: <ExtendedIcon />, label: t('draw.extended') },
     { id: 'ray', icon: <RayIcon />, label: t('draw.ray') },
     { id: 'horizontal', icon: <HorizontalIcon />, label: t('draw.horizontal') },
     { id: 'vertical', icon: <VerticalIcon />, label: t('draw.vertical') },
@@ -1438,13 +1818,13 @@ function DrawToolbar({
     onClick: () => void,
     active: boolean
   ) => (
-    <button key={id} type="button" data-drawing-tool={spotTools ? id : undefined} title={title} aria-label={title} aria-pressed={active} onClick={onClick} className={`tool-btn ${active ? 'active' : ''}`}>
+    <button key={id} type="button" data-drawing-tool={drawingTools ? id : undefined} title={title} aria-label={title} aria-pressed={active} onClick={onClick} className={`tool-btn ${active ? 'active' : ''}`}>
       {icon}
     </button>
   );
 
   return (
-    <div className={`draw-toolbar${spotTools ? ' spot-drawing-rail' : ''}`} role={spotTools ? 'toolbar' : undefined} aria-label={spotTools ? t('draw.shapes') : undefined} onScroll={spotTools ? () => setOpenGroup(null) : undefined}>
+    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined} onScroll={drawingTools ? () => setOpenGroup(null) : undefined}>
       {btn('cursor', t('draw.cursor'), <CursorIcon />, () => onSelect('cursor'), tool === 'cursor')}
 
       <div className="tool-divider" />
@@ -1454,7 +1834,7 @@ function DrawToolbar({
       <div className={`tool-group ${openGroup === 'trend' ? 'open' : ''}`} ref={groupRef}>
         <button
           type="button"
-          data-drawing-tool={spotTools ? trendCurrent.id : undefined}
+          data-drawing-tool={drawingTools ? trendCurrent.id : undefined}
           title={trendCurrent.label}
           aria-label={trendCurrent.label}
           aria-pressed={trendActive}
@@ -1469,11 +1849,11 @@ function DrawToolbar({
           aria-label={t('draw.trend')}
           aria-haspopup="menu"
           aria-expanded={openGroup === 'trend'}
-          aria-controls={spotTools ? menuId : undefined}
+          aria-controls={drawingTools ? menuId : undefined}
           title={t('draw.trend')}
           onClick={(e) => {
             const wrap = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
-            setFlyoutPos(spotTools ? drawingFlyoutPosition(wrap, { width: window.innerWidth, height: window.innerHeight }, window.innerWidth <= 767) : { top: wrap.top - 4, left: wrap.right + 6 });
+            setFlyoutPos(drawingTools ? drawingFlyoutPosition(wrap, { width: window.innerWidth, height: window.innerHeight }, window.innerWidth <= 767) : { top: wrap.top - 4, left: wrap.right + 6 });
             setOpenGroup((g) => (g === 'trend' ? null : 'trend'));
           }}
         >
@@ -1483,12 +1863,12 @@ function DrawToolbar({
         </button>
         {openGroup === 'trend' && flyoutPos && createPortal(
           <div
-            className={`tool-flyout${spotTools ? ' spot-drawing-flyout' : ''}`}
-            id={spotTools ? menuId : undefined}
+            className={`tool-flyout${drawingTools ? ' drawing-flyout' : ''}`}
+            id={drawingTools ? menuId : undefined}
             role="menu"
             ref={flyoutRef}
             style={{ top: flyoutPos.top, left: flyoutPos.left }}
-            onKeyDown={spotTools ? (event) => {
+            onKeyDown={drawingTools ? (event) => {
               const items = Array.from(flyoutRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? []);
               const index = items.indexOf(document.activeElement as HTMLButtonElement);
               const next = event.key === 'ArrowDown' ? (index + 1) % items.length
@@ -1502,9 +1882,9 @@ function DrawToolbar({
               <button
                 key={x.id}
                 type="button"
-                data-drawing-tool={spotTools ? x.id : undefined}
-                role={spotTools ? 'menuitemradio' : 'menuitem'}
-                aria-checked={spotTools ? tool === x.id : undefined}
+                data-drawing-tool={drawingTools ? x.id : undefined}
+                role={drawingTools ? 'menuitemradio' : 'menuitem'}
+                aria-checked={drawingTools ? tool === x.id : undefined}
                 className={`tool-flyout-item ${tool === x.id ? 'active' : ''}`}
                 onClick={() => {
                   setLastTrend(x.id);
@@ -1529,10 +1909,17 @@ function DrawToolbar({
       <div className="tool-divider" />
 
       {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
-      {btn('fit', t('draw.zoom'), spotTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
+      {btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
+      {/* Magnet and lock only exist where the overlay implements them. */}
+      {drawingTools && onToggleMagnet
+        ? btn('magnet', t('draw.magnet'), <MagnetIcon />, onToggleMagnet, magnet)
+        : null}
+      {drawingTools && onToggleLock
+        ? btn('lock', locked ? t('draw.unlock') : t('draw.lock'), locked ? <LockedIcon /> : <UnlockedIcon />, onToggleLock, locked)
+        : null}
       {btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
       {btn(
         'hide',
@@ -1544,6 +1931,11 @@ function DrawToolbar({
 
       <div className="tool-divider" />
 
+      {/* Removes ONE drawing — the one under the pointer. Distinct from
+          the delete-all below it, which is why both exist. */}
+      {drawingTools
+        ? btn('erase', t('draw.erase'), <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
+        : null}
       {btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
     </div>
   );
@@ -1679,6 +2071,63 @@ function EyeOffIcon() {
     </svg>
   );
 }
+/* Original monochrome icons, drawn on the same 24x24 grid and stroke
+   weight as the rest of the rail. No emoji, no third-party asset. */
+
+/** A line through two anchors, continuing past both. */
+function ExtendedIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <line x1="3" y1="19" x2="21" y2="5" />
+      <circle cx="9" cy="14.7" r="1.6" />
+      <circle cx="15" cy="9.3" r="1.6" />
+    </svg>
+  );
+}
+
+/** A horseshoe magnet: two legs and the arch between them. */
+function MagnetIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M6 5v8a6 6 0 0 0 12 0V5" />
+      <line x1="3" y1="5" x2="9" y2="5" />
+      <line x1="15" y1="5" x2="21" y2="5" />
+      <line x1="6" y1="10" x2="9" y2="10" />
+      <line x1="15" y1="10" x2="18" y2="10" />
+    </svg>
+  );
+}
+
+function LockedIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+/** The same body with the shackle swung open. */
+function UnlockedIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 7.5-2" />
+    </svg>
+  );
+}
+
+/** An eraser tip over a single stroke — one drawing, not all of them. */
+function EraseOneIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M7 15l5-5 4.5 4.5-3.5 3.5H10z" />
+      <line x1="14" y1="6" x2="19" y2="11" />
+      <line x1="4" y1="21" x2="12" y2="21" />
+    </svg>
+  );
+}
+
 function EraserIcon() {
   return (
     <svg {...ICON_PROPS}>
