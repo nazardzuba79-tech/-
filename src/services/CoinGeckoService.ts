@@ -18,7 +18,7 @@
  * in production, same caveat the deposit verifiers carry.
  */
 
-import { ProviderCache } from './marketData/ProviderCache';
+import { ProviderCache, type CachedValue } from './marketData/ProviderCache';
 import {
   HttpProviderClient,
   ProviderHealth,
@@ -60,6 +60,27 @@ export interface CoinRanking {
   // Hourly closes over the last 7 days (CoinGecko's own sparkline_in_7d),
   // ~168 points — real history, not synthesized.
   sparkline: number[];
+  /** Circulating supply, when CoinGecko reports one. Free: it rides along
+   *  in the same `/coins/markets` rows already being fetched, so it costs
+   *  no extra call. `null` when absent — never 0. */
+  circulatingSupply: number | null;
+  /**
+   * The same market figures WITHOUT the legacy zero-coercion above.
+   *
+   * `price` and `volume24h` default a missing value to `0`, which several
+   * shipped consumers rely on and which is why they are left alone. But a
+   * catalogue must not present "CoinGecko did not report a price" as a
+   * price of zero dollars, so the asset registry reads these instead:
+   * every field is `null` when the provider omitted it, and a genuine
+   * zero still arrives as `0`.
+   */
+  market: {
+    priceUsd: number | null;
+    changePercent24h: number | null;
+    marketCapUsd: number | null;
+    volume24hUsd: number | null;
+    circulatingSupply: number | null;
+  };
   /** Other CoinGecko ids that reported this same ticker and lost the
    *  higher-rank tie-break below. Previously these were dropped silently,
    *  which made a ticker collision invisible; the registry needs to be
@@ -74,7 +95,32 @@ export interface CoinRanking {
 // comfortably inside the free Demo plan's 10,000-call cap even under
 // sustained traffic (worst case ~6 * 24 * 31 ≈ 4,464/month, versus 10,000
 // available).
-const RANKINGS_TTL_MS = 60 * 60_000;
+// The catalogue is two different kinds of data arriving from two different
+// endpoint families, and giving them one TTL meant the slower half dictated
+// the faster one.
+//
+//   MARKET SNAPSHOT — price, 24h change, market cap, 24h volume, sparkline.
+//     Moves constantly. Cached 20 minutes: fresh enough for a catalogue
+//     (a market cap or a rank does not move meaningfully faster) and cheap
+//     enough to fit the budget below. Tradable rows are not priced off
+//     this — the terminals use the live Kraken path, see §14 of
+//     docs/MARKET_DATA_ARCHITECTURE.md.
+//
+//   CATEGORY TAGS — which coins are DeFi, L1, meme, …
+//     Effectively static, and by far the more expensive half: SEVEN calls
+//     per refresh against the market walk's two. Cached 6 hours.
+//
+// Budget, under CONTINUOUS traffic (ProviderCache is lazy, so an idle
+// exchange spends nothing): 3 calls / 20 min = 6,480/month, plus 7 calls /
+// 6 h = 840/month. ~7,300 against the free Demo plan's 10,000 — real
+// headroom, 50% more assets than before, and 3x fresher prices than the
+// single hourly cache this replaces.
+//
+// This is the honest limit of the free tier: a materially shorter TTL, or a
+// materially larger catalogue, needs a paid plan. Nothing here works around
+// that — see docs/MARKET_DATA_ARCHITECTURE.md §12.
+const CATALOGUE_MARKET_TTL_MS = 20 * 60_000;
+const CATALOGUE_CATEGORY_TTL_MS = 6 * 60 * 60_000;
 // Market-wide totals (see getGlobalMarket) are a single, cheap call and are
 // the headline figure on the Markets page, so they refresh far more often
 // than the hourly rankings above — 5 minutes still costs at most ~9,000
@@ -88,7 +134,19 @@ const GLOBAL_TTL_MS = 5 * 60_000;
 // so the category filter chips — and any Kraken pair whose base sits
 // outside the top ~250 — have real rank/category data instead of nothing.
 const CG_MAX_PER_PAGE = 250;
-const TOP_N = 500;
+// 750, not 500.
+//
+// The product target is "500+ assets in the catalogue", and 500 was exactly
+// the wrong number to fetch for it: ticker collisions and the occasional
+// malformed row mean a 500-coin walk yields slightly UNDER 500 canonical
+// assets. 750 clears the target with real headroom, exercises a third page
+// so the pagination path is not a two-page special case, and leaves room to
+// grow without another architectural change.
+//
+// CoinGecko caps per_page at 250, so this is ceil(750/250) = 3 requests.
+// Three. Not 750 — the call count is a function of page size, never of
+// asset count, which is the whole reason the catalogue can scale.
+const TOP_N = 750;
 
 // CoinGecko's own category slugs for the four groupings the UI filters by.
 const CATEGORY_SLUGS: Record<CoinCategory, string> = {
@@ -162,6 +220,7 @@ interface CoinGeckoMarketRow {
   price_change_percentage_30d_in_currency?: number | null;
   total_volume: number | null;
   market_cap: number | null;
+  circulating_supply?: number | null;
   sparkline_in_7d?: { price: number[] };
 }
 
@@ -204,8 +263,26 @@ export class CoinGeckoService {
   // (ranks, categories, market-wide totals), never something a trade is
   // priced off, and the alternative to an hour-old market cap is a dash
   // where a number should be.
+  /** The paged /coins/markets walk: identity AND the market snapshot. */
+  private readonly marketsCache = new ProviderCache<CoinGeckoMarketRow[]>({
+    ttlMs: CATALOGUE_MARKET_TTL_MS,
+    maxStaleMs: 24 * 60 * 60_000,
+    maxEntries: 2,
+    onStaleServe: (key, ageMs) => console.warn(`[marketData] coingecko serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
+  });
+  /** Category membership, per slug. Separately cached because it is the
+   *  expensive half and the one that never changes. */
+  private readonly categoriesCache = new ProviderCache<Map<string, CoinCategory[]>>({
+    ttlMs: CATALOGUE_CATEGORY_TTL_MS,
+    maxStaleMs: 24 * 60 * 60_000,
+    maxEntries: 2,
+    onStaleServe: (key, ageMs) => console.warn(`[marketData] coingecko serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
+  });
+  /** The merged result. TTL matches the faster input so a refreshed market
+   *  snapshot is actually served; the merge itself is cheap and does no
+   *  I/O of its own. */
   private readonly rankingsCache = new ProviderCache<CoinRanking[]>({
-    ttlMs: RANKINGS_TTL_MS,
+    ttlMs: CATALOGUE_MARKET_TTL_MS,
     maxStaleMs: 24 * 60 * 60_000,
     maxEntries: 2,
     onStaleServe: (key, ageMs) => console.warn(`[marketData] coingecko serving stale ${key} (${Math.round(ageMs / 60_000)}m old)`),
@@ -255,36 +332,96 @@ export class CoinGeckoService {
    * far less confusing than a flickering dash. Only a genuinely first-ever
    * call (nothing cached yet) still throws. */
   async getRankings(): Promise<CoinRanking[]> {
-    const cached = await this.rankingsCache.fetch('top500', () => this.fetchRankings());
-    return cached.value;
+    return (await this.getRankingsWithMeta()).value;
   }
 
-  private async fetchRankings(): Promise<CoinRanking[]> {
-    let markets: CoinGeckoMarketRow[] = [];
-    {
-      markets = [];
-      const pageCount = Math.ceil(TOP_N / CG_MAX_PER_PAGE);
-      // Sequential, not Promise.all — same reasoning as the per-category
-      // calls below: CoinGecko's free/anonymous tier is prone to
-      // rate-limiting a burst of concurrent requests more readily than the
-      // same requests spaced out. Only page 1 failing is fatal (no data at
-      // all to serve); a later page failing just means fewer of the
-      // longer-tail ranks make it in this cycle rather than losing
-      // everything — same "partial is better than none" tolerance as the
-      // per-category loop below.
-      for (let page = 1; page <= pageCount; page++) {
-        let rows: CoinGeckoMarketRow[];
-        try {
-          rows = (await this.request(
-            `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${CG_MAX_PER_PAGE}&page=${page}&sparkline=true&price_change_percentage=7d,30d`
-          )) as CoinGeckoMarketRow[];
-        } catch (err) {
-          if (page === 1) throw err;
-          break;
+  /** Same data, keeping the `fetchedAt`/`stale` the cache already computed.
+   *  The asset registry uses this so the catalogue can report its own
+   *  freshness instead of stamping the read time. */
+  async getRankingsWithMeta(): Promise<CachedValue<CoinRanking[]>> {
+    return this.rankingsCache.fetch('top500', () => this.fetchRankings());
+  }
+
+  /**
+   * The paged /coins/markets walk — identity AND the market snapshot in one
+   * response. TOP_N coins at CG_MAX_PER_PAGE per page, so the call count is
+   * ceil(TOP_N / 250) regardless of how many assets come back: 500 assets
+   * cost TWO requests, not 500.
+   *
+   * Sequential, not Promise.all: CoinGecko's free tier rate-limits a burst
+   * of concurrent requests more readily than the same requests spaced out.
+   * Only page 1 failing is fatal (no data at all to serve); a later page
+   * failing means fewer long-tail ranks this cycle rather than losing
+   * everything.
+   */
+  private async fetchMarketRows(): Promise<CoinGeckoMarketRow[]> {
+    const rowsOut: CoinGeckoMarketRow[] = [];
+    const pageCount = Math.ceil(TOP_N / CG_MAX_PER_PAGE);
+    for (let page = 1; page <= pageCount; page++) {
+      let rows: CoinGeckoMarketRow[];
+      try {
+        rows = (await this.request(
+          `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${CG_MAX_PER_PAGE}&page=${page}&sparkline=true&price_change_percentage=7d,30d`
+        )) as CoinGeckoMarketRow[];
+      } catch (err) {
+        if (page === 1) throw err;
+        break;
+      }
+      rowsOut.push(...rows);
+    }
+    return rowsOut;
+  }
+
+  /**
+   * Category membership, keyed by uppercase ticker.
+   *
+   * One call per category — SEVEN, against the market walk's two, which is
+   * why this has its own much slower cache (see CATALOGUE_CATEGORY_TTL_MS).
+   * Which coins are "DeFi" or "Layer 1" is effectively static; their prices
+   * are not, and tying the two to one TTL meant paying for the expensive
+   * half every time the cheap half went stale.
+   *
+   * One failing category endpoint costs that one tag, never the catalogue.
+   */
+  private async fetchCategoryMap(): Promise<Map<string, CoinCategory[]>> {
+    const bySymbol = new Map<string, CoinCategory[]>();
+    for (const [key, slug] of Object.entries(CATEGORY_SLUGS) as [CoinCategory, string][]) {
+      try {
+        const coins = (await this.request(
+          `/coins/markets?vs_currency=usd&category=${slug}&order=market_cap_desc&per_page=250&page=1&sparkline=false`
+        )) as CoinGeckoMarketRow[];
+        for (const c of coins) {
+          const symbol = c.symbol?.toUpperCase();
+          if (!symbol) continue;
+          const held = bySymbol.get(symbol) ?? [];
+          held.push(key);
+          bySymbol.set(symbol, held);
         }
-        markets.push(...rows);
+      } catch {
+        // One category endpoint failing shouldn't blank out the whole
+        // ranking list — that coin just won't get a category tag this cycle.
       }
     }
+    return bySymbol;
+  }
+
+  /**
+   * Merge the two cached halves into the public `CoinRanking[]`.
+   *
+   * Does no I/O of its own: both inputs come from their own ProviderCache,
+   * so a 15-minute market refresh does not re-pay for the 6-hour category
+   * walk, and concurrent callers collapse onto each cache independently.
+   */
+  private async fetchRankings(): Promise<CoinRanking[]> {
+    const [markets, categoryMap] = await Promise.all([
+      this.marketsCache.fetch('top500', () => this.fetchMarketRows()).then((c) => c.value),
+      // Categories are a nice-to-have: a failure here costs tags, not the
+      // catalogue. The market walk's failure is the one that propagates.
+      this.categoriesCache
+        .fetch('categories', () => this.fetchCategoryMap())
+        .then((c) => c.value)
+        .catch(() => new Map<string, CoinCategory[]>()),
+    ]);
 
     const bySymbol = new Map<string, CoinRanking>();
     for (const m of markets) {
@@ -299,7 +436,7 @@ export class CoinGeckoService {
       const seen = bySymbol.get(symbol);
       if (seen) {
         // Unchanged behaviour: the first (highest-ranked) row still wins.
-        // The loser is now recorded instead of vanishing, so the asset
+        // The loser is recorded rather than vanishing, so the asset
         // registry can represent the collision honestly.
         if (id !== seen.id && !seen.collidingIds.includes(id)) seen.collidingIds.push(id);
         continue;
@@ -310,7 +447,7 @@ export class CoinGeckoService {
         rank: m.market_cap_rank ?? TOP_N + 1,
         name: m.name,
         image: m.image,
-        categories: [],
+        categories: [...(categoryMap.get(symbol) ?? [])],
         price: m.current_price ?? 0,
         changePercent24h: m.price_change_percentage_24h ?? null,
         changePercent7d: m.price_change_percentage_7d_in_currency ?? null,
@@ -318,26 +455,16 @@ export class CoinGeckoService {
         volume24h: m.total_volume ?? 0,
         marketCap: m.market_cap ?? null,
         sparkline: m.sparkline_in_7d?.price ?? [],
+        circulatingSupply: typeof m.circulating_supply === 'number' ? m.circulating_supply : null,
+        market: {
+          priceUsd: typeof m.current_price === 'number' ? m.current_price : null,
+          changePercent24h: typeof m.price_change_percentage_24h === 'number' ? m.price_change_percentage_24h : null,
+          marketCapUsd: typeof m.market_cap === 'number' ? m.market_cap : null,
+          volume24hUsd: typeof m.total_volume === 'number' ? m.total_volume : null,
+          circulatingSupply: typeof m.circulating_supply === 'number' ? m.circulating_supply : null,
+        },
         collidingIds: [],
       });
-    }
-
-    // One call per category, matching returned coins against the top-N set
-    // built above — real API-sourced category membership, not a hardcoded
-    // per-coin list that would silently go stale as coins launch/delist.
-    for (const [key, slug] of Object.entries(CATEGORY_SLUGS) as [CoinCategory, string][]) {
-      try {
-        const coins = (await this.request(
-          `/coins/markets?vs_currency=usd&category=${slug}&order=market_cap_desc&per_page=250&page=1&sparkline=false`
-        )) as CoinGeckoMarketRow[];
-        for (const c of coins) {
-          const entry = bySymbol.get(c.symbol.toUpperCase());
-          if (entry) entry.categories.push(key);
-        }
-      } catch {
-        // One category endpoint failing shouldn't blank out the whole
-        // ranking list — that coin just won't get a category tag this cycle.
-      }
     }
 
     // Merge in the local fallback (see LOCAL_CATEGORY_FALLBACK above) so

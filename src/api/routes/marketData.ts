@@ -4,6 +4,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import type { PrismaClient } from '@prisma/client';
 import type { Availability } from '../../services/marketData/types';
+import type { AssetSortKey } from '../../services/marketData/AssetRegistry';
 
 /**
  * The gateway's own HTTP surface.
@@ -59,43 +60,42 @@ export function marketDataRouter(prisma: PrismaClient, gateway: MarketDataGatewa
   });
 
   /**
-   * The canonical asset catalogue.
+   * The canonical asset catalogue: search, sort, filter and paginate.
    *
-   * `?tradable=true` narrows it to assets with at least one executable
-   * VOLTEX pair. The distinction is the point of the endpoint: the
-   * catalogue is ~500 assets of reference metadata, the tradable set is
+   *   ?search=btc        symbol OR name, case-insensitive
+   *   ?tradable=true     only assets with a real executable VOLTEX pair
+   *   ?sort=marketCap    rank | marketCap | volume24h | price | change24h
+   *                      | symbol | name          (default: rank)
+   *   ?dir=asc|desc      default desc, which for `rank` means best-first
+   *   ?limit= &offset=   clamped; default 100, max 1000 (1000 so the
+   *                      Markets page can load the whole catalogue once
+   *                      and then filter it client-side)
+   *
+   * The tradable distinction is the point of the endpoint. The catalogue
+   * is ~500 assets of market-wide reference metadata; the tradable set is
    * whatever the venue actually lists, and one is never evidence for the
-   * other. `limit`/`offset` exist so a 500-row table pages instead of
-   * shipping the whole catalogue to render 50 visible rows.
+   * other. The response reports `matched` (rows passing the filter) AND
+   * `catalogueTotal` separately so a filtered view can say what it is a
+   * subset of.
+   *
+   * Filtering and sorting run over the already-cached join, so paging
+   * through the whole catalogue or typing in a search box costs ZERO
+   * upstream provider requests.
    */
   router.get('/market/assets', async (req, res) => {
     try {
-      const result = await gateway.getAssetCatalogue();
-      if (!result.available) return res.json(result);
-
-      const tradableOnly = req.query.tradable === 'true';
-      // Clamped, not trusted: `limit` is client-supplied and this is a
-      // public endpoint.
-      const limit = clampInt(req.query.limit, 100, 1, 500);
-      const offset = clampInt(req.query.offset, 0, 0, 100_000);
-
-      const all = tradableOnly ? result.value.assets.filter((a) => a.tradable) : result.value.assets;
-      res.json({
-        available: true,
-        source: result.source,
-        fetchedAt: result.fetchedAt,
-        stale: result.stale,
-        value: {
-          assets: all.slice(offset, offset + limit),
-          total: all.length,
-          catalogueTotal: result.value.total,
-          tradableCount: result.value.tradableCount,
-          collisions: result.value.collisions,
-          metadataComplete: result.value.metadataComplete,
-          limit,
-          offset,
-        },
+      const result = await gateway.queryAssets({
+        search: typeof req.query.search === 'string' ? req.query.search.slice(0, 64) : undefined,
+        tradableOnly: req.query.tradable === 'true',
+        sort: parseSort(req.query.sort),
+        direction: req.query.dir === 'asc' ? 'asc' : 'desc',
+        // Clamped, not trusted: both are client-supplied on a public
+        // endpoint. The registry clamps again, so neither layer relies on
+        // the other having done it.
+        limit: clampInt(req.query.limit, 100, 1, 1000),
+        offset: clampInt(req.query.offset, 0, 0, 100_000),
       });
+      res.json(result);
     } catch (err) {
       console.error('[marketData] asset catalogue failed', err);
       res.status(500).json({ error: 'Internal server error' });
@@ -160,6 +160,14 @@ export function marketDataRouter(prisma: PrismaClient, gateway: MarketDataGatewa
   });
 
   return router;
+}
+
+/** Only the sort keys the registry implements. Anything else falls back to
+ *  the default rather than being passed through to a lookup that would
+ *  silently do nothing. */
+function parseSort(raw: unknown): AssetSortKey | undefined {
+  const allowed: AssetSortKey[] = ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'symbol', 'name'];
+  return typeof raw === 'string' && (allowed as string[]).includes(raw) ? (raw as AssetSortKey) : undefined;
 }
 
 /** Parse a client-supplied integer into a bounded range, falling back to a

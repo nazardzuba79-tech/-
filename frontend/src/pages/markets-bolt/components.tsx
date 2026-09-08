@@ -1,23 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Search,
-  SlidersHorizontal,
-  Star,
-  X,
-} from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useMarketData, useMarketTickers } from '../../lib/useMarketData';
 import { Nav } from '../../components/Nav';
 import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { CfdMarketsSection } from '../../components/CfdMarketsSection';
+import { CatalogueTable } from './CatalogueTable';
 import { parseChangePercent } from '../../lib/priceChange';
-import { CATEGORIES, type CoinCategory } from '../../lib/pairList';
+import { type CoinCategory } from '../../lib/pairList';
 import { useFavorites } from '../../lib/useFavorites';
 import {
   type Ticker,
@@ -25,7 +17,6 @@ import {
   CORE_FUTURES_SYMBOLS,
   formatPrice,
   formatCompactUsd,
-  deriveQuoteList,
   computeBreadth,
   fearGreedLabelRu,
   computeVolumeSummary,
@@ -33,9 +24,7 @@ import {
   topMovers,
   topLosers,
   mostPopular,
-  sparklineFor,
   baseOf,
-  quoteOf,
 } from './markets';
 import './MarketsBolt.css';
 
@@ -50,7 +39,6 @@ type GlobalMarket = {
 };
 type FearGreedReading = { value: number; classification: string; updatedAt: number };
 
-type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume' | 'marketCap' | 'symbol';
 // The three instrument types this exchange actually trades. "Options" used
 // to sit in this slot as a permanent coming-soon panel; CFD replaces it
 // because CFD is a real, live product here (CfdMarketDataService and the
@@ -59,7 +47,6 @@ type SortKey = 'price' | 'change' | 'high' | 'low' | 'volume' | 'marketCap' | 's
 type MarketKind = 'Spot' | 'Futures' | 'CFD';
 type CategoryTab = 'Cryptocurrency' | 'Favorites' | 'TradFi';
 
-const PER_PAGE = 10;
 const SECTOR_CARD_CATEGORIES: CoinCategory[] = ['LAYER_1', 'DEFI', 'AI', 'RWA'];
 
 const CATEGORY_LABEL_RU: Record<CoinCategory, string> = {
@@ -71,20 +58,6 @@ const CATEGORY_LABEL_RU: Record<CoinCategory, string> = {
   GAMING: 'Гейминг',
   RWA: 'RWA',
 };
-
-function Sparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min || 1;
-  const step = points.length > 1 ? 94 / (points.length - 1) : 0;
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${index * step} ${28 - ((point - min) / range) * 23}`).join(' ');
-  return (
-    <svg className={`sparkline ${positive ? 'sparkline-positive' : 'sparkline-negative'}`} viewBox="0 0 94 30" preserveAspectRatio="none" aria-hidden="true">
-      <path className="sparkline-fill" d={`${path} L 94 30 L 0 30 Z`} />
-      <path className="sparkline-line" d={path} />
-    </svg>
-  );
-}
 
 /** Semicircular Fear & Greed dial: a grey track, a red-to-green progress
  * arc filled to the reading, and a marker where it lands — the shape every
@@ -158,8 +131,6 @@ export function MarketsBoltPage() {
 
   const [activeCategory, setActiveCategory] = useState<CategoryTab>('Cryptocurrency');
   const [activeKind, setActiveKind] = useState<MarketKind>('Spot');
-  const [activeQuote, setActiveQuote] = useState('All');
-  const [activeSector, setActiveSector] = useState<'All' | 'Favorites' | CoinCategory>('All');
   const [search, setSearch] = useState('');
   // Shared store — see lib/useFavorites; the terminals and the homepage
   // table read the same set, live.
@@ -180,10 +151,6 @@ export function MarketsBoltPage() {
       cancelled = true;
     };
   }, []);
-  const [sortKey, setSortKey] = useState<SortKey>('volume');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [page, setPage] = useState(1);
-  const [compact, setCompact] = useState(false);
 
   // Prices and the market-wide overview both come from the shared
   // market-data store: one poll and one request for the whole tab,
@@ -235,8 +202,6 @@ export function MarketsBoltPage() {
   }, []);
 
 
-  useEffect(() => setPage(1), [activeCategory, activeKind, activeQuote, activeSector, search]);
-
   function goToTrade(pair: string) {
     if (activeKind === 'Futures' && futuresSymbols.includes(pair)) {
       navigate(`/futures?pair=${encodeURIComponent(pair)}`);
@@ -245,79 +210,16 @@ export function MarketsBoltPage() {
     }
   }
 
-  const quotes = useMemo(() => deriveQuoteList(tickers), [tickers]);
-
   const kindTickers = useMemo(() => {
     if (activeKind === 'CFD') return [];
     if (activeKind === 'Futures') return tickers.filter((tk) => futuresSymbols.includes(tk.pair));
     return tickers;
   }, [tickers, activeKind, futuresSymbols]);
 
-  const filteredMarkets = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const result = kindTickers.filter((tk) => {
-      const base = baseOf(tk.pair);
-      const name = rankByBase?.get(base)?.name ?? '';
-      const matchesSearch = !query || `${tk.pair} ${name}`.toLowerCase().includes(query);
-      const matchesQuote = activeQuote === 'All' || quoteOf(tk.pair) === activeQuote;
-      const matchesSector =
-        activeSector === 'All' ||
-        (activeSector === 'Favorites' ? favorites.has(tk.pair) : rankByBase?.get(base)?.categories.includes(activeSector) ?? false);
-      const matchesCategory = activeCategory !== 'Favorites' || favorites.has(tk.pair);
-      return matchesSearch && matchesQuote && matchesSector && matchesCategory;
-    });
-    return result.sort((a, b) => {
-      const dir = sortDirection === 'asc' ? 1 : -1;
-      switch (sortKey) {
-        case 'price':
-          return (parseFloat(a.lastPrice) - parseFloat(b.lastPrice)) * dir;
-        case 'change':
-          return (parseChangePercent(a.changePercent24h, a.pair) - parseChangePercent(b.changePercent24h, b.pair)) * dir;
-        case 'high':
-          return (parseFloat(a.high24h) - parseFloat(b.high24h)) * dir;
-        case 'low':
-          return (parseFloat(a.low24h) - parseFloat(b.low24h)) * dir;
-        case 'marketCap': {
-          // Real CoinGecko market cap for the pair's base asset. A base
-          // that isn't in the ranked set has no cap to sort on, so it
-          // sinks to the end either way rather than being treated as 0
-          // and jumping to the top of an ascending sort.
-          const capA = rankByBase?.get(baseOf(a.pair))?.marketCap;
-          const capB = rankByBase?.get(baseOf(b.pair))?.marketCap;
-          if (capA == null && capB == null) return 0;
-          if (capA == null) return 1;
-          if (capB == null) return -1;
-          return (capA - capB) * dir;
-        }
-        case 'symbol':
-          return a.pair.localeCompare(b.pair) * dir;
-        default:
-          return (parseFloat(a.quoteVolume24h || '0') - parseFloat(b.quoteVolume24h || '0')) * dir;
-      }
-    });
-  }, [kindTickers, search, activeQuote, activeSector, activeCategory, favorites, rankByBase, sortKey, sortDirection]);
-
-  const pageCount = Math.max(1, Math.ceil(filteredMarkets.length / PER_PAGE));
-  const currentPage = Math.min(page, pageCount);
-  const visibleMarkets = filteredMarkets.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
-
-  function handleSort(key: SortKey) {
-    if (sortKey === key) setSortDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setSortKey(key);
-      setSortDirection('desc');
-    }
-  }
-
-  function resetFilters() {
-    setSearch('');
-    setActiveQuote('All');
-    setActiveSector('All');
-  }
-
-  function jumpToSort(key: SortKey, dir: 'asc' | 'desc') {
-    setSortKey(key);
-    setSortDirection(dir);
+  /** The highlight columns' "view all" links used to drive the removed
+   *  pair table's sort state. The catalogue table owns its own sorting,
+   *  so they now simply bring it into view. */
+  function scrollToCatalogue() {
     document.getElementById('markets-table-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -327,7 +229,6 @@ export function MarketsBoltPage() {
     () => (rankByBase ? computeSectorSummaries(rankByBase, SECTOR_CARD_CATEGORIES) : []),
     [rankByBase]
   );
-  const hasActiveFilters = search !== '' || activeQuote !== 'All' || activeSector !== 'All';
 
   return (
     <div className="markets-bolt-root">
@@ -526,132 +427,28 @@ export function MarketsBoltPage() {
           ) : (
             <>
               <div className="highlights-grid">
-                <HighlightColumn title="Лидеры роста" tickers={topMovers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'desc')} />
-                <HighlightColumn title="Лидеры падения" tickers={topLosers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('change', 'asc')} />
-                <HighlightColumn title="Популярное" tickers={mostPopular(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={() => jumpToSort('volume', 'desc')} />
+                <HighlightColumn title="Лидеры роста" tickers={topMovers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={scrollToCatalogue} />
+                <HighlightColumn title="Лидеры падения" tickers={topLosers(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={scrollToCatalogue} />
+                <HighlightColumn title="Популярное" tickers={mostPopular(kindTickers, 4)} rankByBase={rankByBase} onTrade={goToTrade} onViewAll={scrollToCatalogue} />
               </div>
 
-              <div className="filter-bar">
-                <div className="filter-group">
-                  <span className="filter-label">Валюта</span>
-                  <button className={activeQuote === 'All' ? 'filter-active' : ''} onClick={() => setActiveQuote('All')}>Все</button>
-                  {quotes.map((quote) => (
-                    <button key={quote} className={activeQuote === quote ? 'filter-active' : ''} onClick={() => setActiveQuote(quote)}>{quote}</button>
-                  ))}
-                </div>
-                <div className="filter-group sector-filter">
-                  <span className="filter-label">Сектор</span>
-                  <button className={activeSector === 'All' ? 'filter-active' : ''} onClick={() => setActiveSector('All')}>Все</button>
-                  <button className={activeSector === 'Favorites' ? 'filter-active' : ''} onClick={() => setActiveSector('Favorites')}>
-                    <Star size={12} fill="currentColor" /> Избранное
-                  </button>
-                  {CATEGORIES.map((category) => (
-                    <button key={category} className={activeSector === category ? 'filter-active' : ''} onClick={() => setActiveSector(category)}>
-                      {CATEGORY_LABEL_RU[category]}
-                    </button>
-                  ))}
-                </div>
-                {hasActiveFilters && (
-                  <button className="filter-more" onClick={resetFilters}><SlidersHorizontal size={15} /> Сбросить</button>
-                )}
-              </div>
+              {/* The primary table is the CATALOGUE, not the pair list.
+                  ~750 assets of market-wide reference data, of which only
+                  the VOLTEX-tradable ones carry a Trade action — see
+                  CatalogueTable, which is where that rule is enforced.
 
-              <div id="markets-table-anchor" className="table-caption">
-                <div>
-                  <h3>Все рынки <span>{filteredMarkets.length}</span></h3>
-                  <p>Данные приведены в справочных целях и обновляются в реальном времени.</p>
-                </div>
-                <div className="table-caption-actions">
-                  {/* Market cap has no column of its own — the column set
-                      is deliberately fixed — so it sorts from here. The
-                      other modes are the same state the column headers
-                      drive, so the two controls always agree. */}
-                  <label className="table-sort">
-                    <span>Сортировка</span>
-                    <select
-                      value={`${sortKey}_${sortDirection}`}
-                      onChange={(e) => {
-                        const [key, dir] = e.target.value.split('_') as [SortKey, 'asc' | 'desc'];
-                        setSortKey(key);
-                        setSortDirection(dir);
-                      }}
-                    >
-                      <option value="volume_desc">Объём 24ч ↓</option>
-                      <option value="volume_asc">Объём 24ч ↑</option>
-                      <option value="change_desc">Изменение 24ч ↓</option>
-                      <option value="change_asc">Изменение 24ч ↑</option>
-                      <option value="price_desc">Цена ↓</option>
-                      <option value="price_asc">Цена ↑</option>
-                      <option value="marketCap_desc">Капитализация ↓</option>
-                      <option value="marketCap_asc">Капитализация ↑</option>
-                      <option value="symbol_asc">Символ A–Z</option>
-                    </select>
-                  </label>
-                  <button className="density-button" onClick={() => setCompact((c) => !c)}>{compact ? 'Обычный вид' : 'Компактный вид'}</button>
-                </div>
-              </div>
-
-              <div className={`markets-table-wrap ${compact ? 'markets-table-compact' : ''}`}>
-                <table className="markets-table">
-                  <thead>
-                    <tr>
-                      <th><button onClick={() => handleSort('symbol')} className="sort-button">Пара <SortIcon active={sortKey === 'symbol'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('price')} className="sort-button">Цена <SortIcon active={sortKey === 'price'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('change')} className="sort-button">24ч изм. <SortIcon active={sortKey === 'change'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('high')} className="sort-button">24ч макс. <SortIcon active={sortKey === 'high'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('low')} className="sort-button">24ч мин. <SortIcon active={sortKey === 'low'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('volume')} className="sort-button">Объём 24ч <SortIcon active={sortKey === 'volume'} direction={sortDirection} /></button></th>
-                      <th><button onClick={() => handleSort('marketCap')} className="sort-button">Кап-ция <SortIcon active={sortKey === 'marketCap'} direction={sortDirection} /></button></th>
-                      <th>График</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tickers.length === 0 && !error ? (
-                      <tr><td className="table-state" colSpan={9}><div className="loading-spinner" /> Загрузка рынков</td></tr>
-                    ) : visibleMarkets.length === 0 ? (
-                      <tr><td className="table-state" colSpan={9}><Search size={20} /><strong>Ничего не найдено</strong><span>Попробуйте изменить поиск или фильтры.</span></td></tr>
-                    ) : (
-                      visibleMarkets.map((tk) => (
-                        <MarketRow
-                          key={tk.pair}
-                          ticker={tk}
-                          ranking={rankByBase?.get(baseOf(tk.pair)) ?? null}
-                          favorite={favorites.has(tk.pair)}
-                          onFavorite={toggleFavorite}
-                          onTrade={goToTrade}
-                        />
-                      ))
-                    )}
-                  </tbody>
-                </table>
-                <div className="mobile-market-list">
-                  {visibleMarkets.map((tk) => (
-                    <MobileMarketRow
-                      key={`mobile-${tk.pair}`}
-                      ticker={tk}
-                      ranking={rankByBase?.get(baseOf(tk.pair)) ?? null}
-                      favorite={favorites.has(tk.pair)}
-                      onFavorite={toggleFavorite}
-                      onTrade={goToTrade}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div className="pagination">
-                <span className="pagination-info">
-                  Показано {filteredMarkets.length ? (currentPage - 1) * PER_PAGE + 1 : 0}–{Math.min(currentPage * PER_PAGE, filteredMarkets.length)} из {filteredMarkets.length}
-                </span>
-                <div className="page-controls">
-                  <button onClick={() => setPage((c) => Math.max(1, c - 1))} disabled={currentPage === 1} aria-label="Предыдущая страница"><ArrowLeft size={15} /></button>
-                  {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i + 1).map((n) => (
-                    <button key={n} className={currentPage === n ? 'page-active' : ''} onClick={() => setPage(n)}>{n}</button>
-                  ))}
-                  {pageCount > 5 && <span>...</span>}
-                  <button onClick={() => setPage((c) => Math.min(pageCount, c + 1))} disabled={currentPage === pageCount} aria-label="Следующая страница"><ArrowRight size={15} /></button>
-                </div>
-              </div>
+                  Under the Futures tab it is scoped to assets carrying a
+                  listed futures contract: a real subset of the tradable
+                  set, not an invented category. */}
+              <div id="markets-table-anchor" />
+              <CatalogueTable
+                search={search}
+                favorites={favorites}
+                onToggleFavorite={toggleFavorite}
+                onTrade={goToTrade}
+                restrictToPairs={activeKind === 'Futures' ? futuresSymbols : undefined}
+                defaultFilter={activeCategory === 'Favorites' ? 'favorites' : 'all'}
+              />
             </>
           )}
         </section>
@@ -660,11 +457,6 @@ export function MarketsBoltPage() {
       </main>
     </div>
   );
-}
-
-function SortIcon({ active, direction }: { active: boolean; direction: 'asc' | 'desc' }) {
-  if (!active) return <ArrowUp size={12} className="sort-muted" />;
-  return direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />;
 }
 
 function HighlightColumn({
@@ -703,81 +495,5 @@ function HighlightColumn({
       })}
       {tickers.length === 0 && <p className="highlight-empty">Нет данных</p>}
     </article>
-  );
-}
-
-function MarketRow({
-  ticker,
-  ranking,
-  favorite,
-  onFavorite,
-  onTrade,
-}: {
-  ticker: Ticker;
-  ranking: CoinRanking | null;
-  favorite: boolean;
-  onFavorite: (pair: string) => void;
-  onTrade: (pair: string) => void;
-}) {
-  const change = parseChangePercent(ticker.changePercent24h, ticker.pair);
-  const points = sparklineFor(ranking, parseFloat(ticker.lastPrice));
-  return (
-    <tr>
-      <td>
-        <div className="table-pair">
-          <button className={`star-button ${favorite ? 'starred' : ''}`} onClick={() => onFavorite(ticker.pair)} aria-label={`${favorite ? 'Убрать из' : 'Добавить в'} избранное ${ticker.pair}`}>
-            <Star size={13} fill={favorite ? 'currentColor' : 'none'} />
-          </button>
-          <CryptoIcon symbol={baseOf(ticker.pair)} size={24} />
-          <span><strong>{baseOf(ticker.pair)}<small>/ {quoteOf(ticker.pair)}</small></strong><em>{ranking?.name ?? baseOf(ticker.pair)}</em></span>
-        </div>
-      </td>
-      <td className="numeric strong-number">{formatPrice(parseFloat(ticker.lastPrice))}</td>
-      <td className={`numeric ${change >= 0 ? 'positive' : 'negative'}`}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</td>
-      <td className="numeric">{formatPrice(parseFloat(ticker.high24h))}</td>
-      <td className="numeric">{formatPrice(parseFloat(ticker.low24h))}</td>
-      <td className="numeric">{formatPrice(parseFloat(ticker.quoteVolume24h))} <small className="volume-quote">{quoteOf(ticker.pair)}</small></td>
-      <td className="numeric">{ranking?.marketCap != null ? formatCompactUsd(ranking.marketCap) : '—'}</td>
-      <td><Sparkline points={points} positive={change >= 0} /></td>
-      <td><button className="trade-button" onClick={() => onTrade(ticker.pair)}>Торговать</button></td>
-    </tr>
-  );
-}
-
-function MobileMarketRow({
-  ticker,
-  ranking,
-  favorite,
-  onFavorite,
-  onTrade,
-}: {
-  ticker: Ticker;
-  ranking: CoinRanking | null;
-  favorite: boolean;
-  onFavorite: (pair: string) => void;
-  onTrade: (pair: string) => void;
-}) {
-  const change = parseChangePercent(ticker.changePercent24h, ticker.pair);
-  const points = sparklineFor(ranking, parseFloat(ticker.lastPrice));
-  return (
-    <div className="mobile-market-row">
-      <div className="mobile-market-main">
-        <button className={`star-button ${favorite ? 'starred' : ''}`} onClick={() => onFavorite(ticker.pair)} aria-label="Избранное"><Star size={14} fill={favorite ? 'currentColor' : 'none'} /></button>
-        <CryptoIcon symbol={baseOf(ticker.pair)} size={26} />
-        <span><strong>{ticker.pair}</strong><small>{ranking?.name ?? baseOf(ticker.pair)}</small></span>
-        <span className="mobile-price">
-          <strong>{formatPrice(parseFloat(ticker.lastPrice))}</strong>
-          <small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change.toFixed(2)}%</small>
-        </span>
-        <button className="trade-button" onClick={() => onTrade(ticker.pair)}>Торг.</button>
-      </div>
-      <div className="mobile-market-details">
-        <span>Макс. <b>{formatPrice(parseFloat(ticker.high24h))}</b></span>
-        <span>Мин. <b>{formatPrice(parseFloat(ticker.low24h))}</b></span>
-        <span>Объём <b>{formatPrice(parseFloat(ticker.quoteVolume24h))}</b></span>
-        <span>Кап. <b>{ranking?.marketCap != null ? formatCompactUsd(ranking.marketCap) : '—'}</b></span>
-        <Sparkline points={points} positive={change >= 0} />
-      </div>
-    </div>
   );
 }

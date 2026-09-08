@@ -51,6 +51,42 @@ export interface AssetProviderMappings {
   kraken?: string;
 }
 
+/**
+ * Market-wide reference figures for a catalogue asset.
+ *
+ * Every field is nullable and NOTHING here is coerced: a provider that did
+ * not report a market cap yields `null`, which renders as a dash. A
+ * genuine zero arrives as `0`. This is the whole reason the registry reads
+ * `CoinRanking.market` rather than the legacy zero-defaulted fields beside
+ * it.
+ *
+ * These are MARKET-WIDE figures (CoinGecko), not VOLTEX execution prices.
+ * A tradable asset's terminal price comes from the Kraken reference path
+ * the trading surfaces already use — see §14 of
+ * docs/MARKET_DATA_ARCHITECTURE.md. The two are never mixed.
+ */
+export interface AssetMarketSnapshot {
+  priceUsd: number | null;
+  changePercent24h: number | null;
+  marketCapUsd: number | null;
+  volume24hUsd: number | null;
+  circulatingSupply: number | null;
+}
+
+/*
+ * Deliberately ABSENT from the catalogue: the 7-day sparkline.
+ *
+ * CoinGecko does supply it in the same rows, so it is free to FETCH — but
+ * it is ~168 floats per asset, and at catalogue scale that is roughly a
+ * megabyte held in the server cache and shipped to every browser that
+ * opens Markets, to draw 750 charts nobody has scrolled to. The brief's
+ * own rule applies: use a bulk sparkline only if it is cheap, otherwise
+ * omit it. At 750 rows it is not cheap.
+ *
+ * The existing /market/external/rankings endpoint still carries sparklines
+ * for the small curated summary lists that actually render them.
+ */
+
 export interface CanonicalAsset {
   /** Namespaced, globally unique, stable. Never a bare ticker. */
   id: string;
@@ -75,6 +111,11 @@ export interface CanonicalAsset {
   ambiguous: boolean;
   /** Ids of the other coins that reported this ticker. */
   collidingIds: string[];
+  /** Market-wide reference figures. `null` for an asset the catalogue does
+   *  not cover — a venue-only listing has a tradable market but no
+   *  market-wide metadata, and inventing figures for it is exactly what
+   *  this must not do. */
+  market: AssetMarketSnapshot | null;
 }
 
 export interface AssetCatalogue {
@@ -89,6 +130,62 @@ export interface AssetCatalogue {
    *  the venue's own pair list alone — fewer assets, no logos, no ranks,
    *  but real and honestly labelled rather than empty. */
   metadataComplete: boolean;
+}
+
+/**
+ * Quote-asset preference when an asset has more than one VOLTEX pair.
+ *
+ * The catalogue's "Trade" action needs ONE destination, and picking it must
+ * be deterministic rather than an assumption: several assets list against
+ * both USDT and USD here, and blindly appending "/USDT" would produce a
+ * link to a market that may not exist. This ordering mirrors
+ * `frontend/src/lib/pairList.ts`'s QUOTE_PRIORITY, which is what the spot
+ * terminal's own pair list already sorts by.
+ *
+ * A pair whose quote is not in this list is still selectable — it simply
+ * sorts after the known ones, alphabetically. Nothing is ever fabricated:
+ * the choice is only ever made among pairs the venue actually lists.
+ */
+export const QUOTE_PRIORITY = ['USDT', 'USD', 'USDC', 'EUR', 'BTC', 'ETH'];
+
+/** The pair a "Trade" action should open for this asset, or `null` when the
+ *  asset has no executable VOLTEX market at all. */
+export function defaultTradingPair(tradingPairs: string[]): string | null {
+  if (tradingPairs.length === 0) return null;
+  return [...tradingPairs].sort((a, b) => {
+    const qa = QUOTE_PRIORITY.indexOf(a.split('/')[1] ?? '');
+    const qb = QUOTE_PRIORITY.indexOf(b.split('/')[1] ?? '');
+    const ra = qa === -1 ? QUOTE_PRIORITY.length : qa;
+    const rb = qb === -1 ? QUOTE_PRIORITY.length : qb;
+    if (ra !== rb) return ra - rb;
+    return a.localeCompare(b);
+  })[0];
+}
+
+/** Fields the catalogue can be ordered by. */
+export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'symbol' | 'name';
+
+export interface AssetQuery {
+  search?: string;
+  tradableOnly?: boolean;
+  sort?: AssetSortKey;
+  direction?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
+export interface AssetQueryResult {
+  assets: CanonicalAsset[];
+  /** Rows matching the filter, before pagination. */
+  matched: number;
+  /** The whole catalogue, regardless of filter — so a UI can say
+   *  "12 of 517" rather than pretending the catalogue is 12 assets. */
+  catalogueTotal: number;
+  tradableCount: number;
+  collisions: string[];
+  metadataComplete: boolean;
+  limit: number;
+  offset: number;
 }
 
 /**
@@ -136,6 +233,59 @@ export class AssetRegistry {
       source: cached.value.metadataComplete ? 'coingecko' : 'kraken',
       fetchedAt: cached.fetchedAt,
       stale: cached.stale,
+    };
+  }
+
+  /**
+   * Search, sort and paginate the catalogue.
+   *
+   * Runs over the ALREADY-CACHED join — it issues no provider request of
+   * its own, so paging through 500 assets or typing in the search box
+   * costs nothing upstream. `matched` and `catalogueTotal` are both
+   * reported so a filtered view can state what it is a subset of.
+   *
+   * Sorting puts missing values last in BOTH directions. A coin with no
+   * market cap is not the smallest market cap; treating `null` as 0 would
+   * float unranked assets to the top of an ascending sort, which is the
+   * same fake-zero mistake in a different costume.
+   */
+  async query(options: AssetQuery = {}): Promise<Envelope<AssetQueryResult>> {
+    const envelope = await this.getCatalogue();
+    const { assets, total, tradableCount, collisions, metadataComplete } = envelope.value;
+
+    // Ceiling raised to 1000 so the Markets page can pull the WHOLE
+    // catalogue in one request and then search/sort/page it client-side
+    // with no further round trips (see the frontend catalogue store). The
+    // default stays 100 for every other caller.
+    const limit = clamp(options.limit ?? 100, 1, 1000);
+    const offset = Math.max(0, options.offset ?? 0);
+    const direction = options.direction === 'asc' ? 1 : -1;
+    const sort = options.sort ?? 'rank';
+
+    const needle = options.search?.trim().toLowerCase() ?? '';
+    let matched = assets;
+    if (options.tradableOnly) matched = matched.filter((a) => a.tradable);
+    if (needle) {
+      // Symbol AND name, so both "BTC" and "Bitcoin" find Bitcoin.
+      matched = matched.filter(
+        (a) => a.symbol.toLowerCase().includes(needle) || a.name.toLowerCase().includes(needle)
+      );
+    }
+
+    const sorted = [...matched].sort((a, b) => compareAssets(a, b, sort, direction));
+
+    return {
+      ...envelope,
+      value: {
+        assets: sorted.slice(offset, offset + limit),
+        matched: sorted.length,
+        catalogueTotal: total,
+        tradableCount,
+        collisions,
+        metadataComplete,
+        limit,
+        offset,
+      },
     };
   }
 
@@ -214,6 +364,15 @@ export class AssetRegistry {
         symbol: coin.symbol,
         name: coin.name,
         logoUrl: coin.image || null,
+        market: {
+          // Read from the honest nullable half of CoinRanking, never the
+          // legacy zero-coerced fields.
+          priceUsd: coin.market.priceUsd,
+          changePercent24h: coin.market.changePercent24h,
+          marketCapUsd: coin.market.marketCapUsd,
+          volume24hUsd: coin.market.volume24hUsd,
+          circulatingSupply: coin.market.circulatingSupply,
+        },
         providers: {
           coingecko: coin.id,
           // Only claim a Kraken mapping when the venue actually lists it.
@@ -250,6 +409,9 @@ export class AssetRegistry {
         rank: null,
         ambiguous: false,
         collidingIds: [],
+        // Tradable here, but the catalogue has no market-wide figures for
+        // it. Null, not zeros.
+        market: null,
       });
       claimedSymbols.set(baseAsset, (claimedSymbols.get(baseAsset) ?? 0) + 1);
     }
@@ -279,5 +441,43 @@ export class AssetRegistry {
       collisions: collisions.sort(),
       metadataComplete: rankingsResult.ok,
     };
+  }
+}
+
+function clamp(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.trunc(value)));
+}
+
+/** Nulls sort last in both directions — see `query`'s doc comment. */
+function nullsLast(a: number | null | undefined, b: number | null | undefined, direction: number): number {
+  const av = a ?? null;
+  const bv = b ?? null;
+  if (av === null && bv === null) return 0;
+  if (av === null) return 1;
+  if (bv === null) return -1;
+  return (av - bv) * direction;
+}
+
+function compareAssets(a: CanonicalAsset, b: CanonicalAsset, sort: AssetSortKey, direction: number): number {
+  switch (sort) {
+    case 'marketCap':
+      return nullsLast(a.market?.marketCapUsd, b.market?.marketCapUsd, direction) || a.symbol.localeCompare(b.symbol);
+    case 'volume24h':
+      return nullsLast(a.market?.volume24hUsd, b.market?.volume24hUsd, direction) || a.symbol.localeCompare(b.symbol);
+    case 'price':
+      return nullsLast(a.market?.priceUsd, b.market?.priceUsd, direction) || a.symbol.localeCompare(b.symbol);
+    case 'change24h':
+      return nullsLast(a.market?.changePercent24h, b.market?.changePercent24h, direction) || a.symbol.localeCompare(b.symbol);
+    case 'symbol':
+      return a.symbol.localeCompare(b.symbol) * direction;
+    case 'name':
+      return a.name.localeCompare(b.name) * direction;
+    case 'rank':
+    default:
+      // Rank ascends naturally (rank 1 is the biggest), so the default
+      // 'desc' direction still has to mean "best first". Inverted here so
+      // the API's default produces the ordering a market table expects.
+      return nullsLast(a.rank, b.rank, -direction) || a.symbol.localeCompare(b.symbol);
   }
 }

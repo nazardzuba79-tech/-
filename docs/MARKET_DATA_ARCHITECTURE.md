@@ -136,12 +136,21 @@ when a refresh fails.
 | Kraken order book | 2 s | 10 s | Most latency-sensitive REST path; the WS feed is the primary one anyway. |
 | Kraken candles | 5 s | 10 min | Only the newest bucket can change — see §7. |
 | Kraken recent trades | 2 s | 30 s | Tape data, same profile as the book. |
-| CoinGecko rankings | 60 min | 24 h | Costs 9 calls per refresh against a 10k/month budget; descriptive metadata, never a price. |
+| CoinGecko catalogue markets | 20 min | 24 h | 3 calls (3 × 250 coins). The moving half of the catalogue — price, cap, volume, 24h change. |
+| CoinGecko category tags | 6 h | 24 h | 7 calls. Sector membership changes on the order of months; on the same TTL as the market walk it would have tripled the monthly bill for data that never moved. |
 | CoinGecko `/global` | 5 min | 6 h | Headline market figures; a slightly old market cap beats a dash. |
 | Fear & Greed | 15 min | 24 h | Republished once a day — a stale reading is usually still the current one. |
 | Twelve Data CFD quotes | 60 s | 120 s | Paced to the 8-credit/minute budget. Trading-adjacent (the CFD order form prices against it), so the stale budget is short: one failed poll may be covered, a sustained outage may not. |
 | Arbitrage opportunities | 10 s | 30 s | A spread past its budget is history, not an opportunity. |
-| Asset catalogue (registry join) | 10 min | 6 h | A listing barely changes, and the join is the expensive part at 500 assets. |
+| Asset catalogue (registry join) | 10 min | 6 h | A listing barely changes, and the join is the expensive part at 750 assets. |
+
+**The CoinGecko budget, explicitly.** 3 market calls every 20 minutes is
+6,480 a month; 7 category calls every 6 hours is 840. ~7,300 against the
+free Demo plan's 10,000 — with headroom for restarts, which reset an
+in-process cache. That headroom is the reason the two halves are on
+different clocks: putting the category walk on the market TTL would cost
+~22,700 a month and blow the plan. If the catalogue ceiling is raised
+again, this arithmetic is what has to be redone first.
 
 Cache sizes: 4 entries for singleton caches (pairs, tickers), 120 for the
 per-symbol ones (order books, candle series, trades). Candle series are
@@ -232,23 +241,83 @@ tells the caller it was a guess.
 
 > ### The catalogue is not the tradable set
 >
-> `catalogue` is ~500 assets of market-wide reference metadata. Displaying
+> `catalogue` is 500+ assets of market-wide reference metadata. Displaying
 > one costs nothing and commits VOLTEX to nothing.
 >
 > `tradingPairs` is the executable set, and it comes from ONE place:
 > Kraken's real tradable pair list, the same list the spot terminal and the
 > matching engine already work from.
 >
-> **Growing the catalogue to 500 assets must never grow the executable
+> **Growing the catalogue to 500+ assets must never grow the executable
 > market set by a single pair.** An asset with `tradable: false` has no
 > route to an order form, and nothing in the registry can invent one.
-> `AssetRegistry.test.ts` asserts both directions.
+> `AssetRegistry.test.ts` and `CatalogueScale.test.ts` assert both
+> directions, and `cryptoCatalogue.test.ts` asserts it again in the UI —
+> including that the Spot and Futures pair-list modules are byte-identical.
 
 If CoinGecko is unavailable the catalogue is built from the venue's pair
 list alone: fewer assets, no logos, no ranks, `metadataComplete: false`,
 `source: 'kraken'`. Degraded and labelled, never empty. If **Kraken** is
 unavailable the failure propagates — a catalogue with no tradable set is
 worse than none.
+
+### Querying the catalogue
+
+`AssetRegistry.query()` is the one entry point for search, sort, filter and
+pagination, and it runs **entirely over the cached join** — no query
+reaches a provider. `MarketDataGateway.queryAssets()` wraps it with the
+same capability and availability handling as every other read, and
+`GET /market/assets` exposes it behind an allow-list (`sort` must be one of
+the seven known keys, `search` is bounded to 64 characters, `limit` is
+clamped to 1000 and `offset` to 100,000).
+
+Two rules in there are worth stating, because getting them wrong is how
+this kind of table lies:
+
+- **Nulls sort last in BOTH directions.** An asset with no reported market
+  cap is not an asset with a market cap of zero. Sorting it as 0 would
+  float every unpriced coin to the top of an ascending sort, which reads as
+  a claim about them.
+- **Rank inverts.** Rank 1 is the biggest asset, so the default `desc`
+  direction has to mean "best first". Handled once, in `compareAssets`.
+
+`AssetMarketSnapshot` deliberately carries **no sparkline**. 500+ assets ×
+a 7-day series is roughly a megabyte on every catalogue load, to draw a
+thumbnail nobody sorts by. Charts belong on the pages that ask for one
+symbol at a time.
+
+### Which pair a Trade action opens
+
+`defaultTradingPair()` picks from the asset's REAL `tradingPairs` under a
+fixed quote priority — `USDT, USD, USDC, EUR, BTC, ETH`, then
+lexicographic — and returns `null` when the list is empty. It never
+assembles a pair from a ticker. `${symbol}/USDT` is one string
+concatenation away from linking a user to a market that does not exist;
+this function is the reason that never happens, and it is mirrored
+verbatim in `frontend/src/lib/catalogueStore.ts` so the two cannot drift.
+
+The client applies the same gate before rendering an action at all: a
+non-tradable asset gets a "data only" label, **not** a disabled Trade
+button — a greyed-out control implies a market that might open later.
+
+### The Markets page: one request for the whole catalogue
+
+`frontend/src/lib/catalogueStore.ts` loads the full catalogue **once per
+tab** (refcounted, in-flight-coalesced, one timer at 10 minutes — the
+server's market half is cached for 20, so polling faster cannot return
+anything fresher). Search, sort, filter and paging are then pure functions
+over data already in memory: `filterAndSortAssets` mirrors the server's
+semantics exactly, including the nulls-last rule.
+
+That is what makes the search instant and free. A keystroke costs zero
+requests, a sort click costs zero requests, and turning a page costs zero
+requests — measured in a real browser, not asserted in principle. Only 50
+rows are mounted at a time; 500+ rows are never in the DOM at once.
+
+Favourites are keyed by **pair**, not by ticker, because that is the key
+the spot pair list, the futures pair list and the homepage table already
+share. A catalogue row therefore stars its default market, and an asset
+with no market shows no star — there would be nothing to store.
 
 ### Icon pipeline
 
@@ -271,7 +340,10 @@ symbols they are about to render, unknown ones are collected across every
 component in the same 50 ms window and flushed as ONE request, and a
 catalogue miss is remembered so it costs one request ever rather than one
 per scroll. **A 500-row table costs one metadata request.** Proven in
-`marketDataStore.test.ts`.
+`marketDataStore.test.ts`. The catalogue table needs even less: the logo
+travels with the asset in the catalogue payload itself, so its rows make no
+metadata lookup at all — only the letter fallback, for an asset the
+provider gave no logo.
 
 ## 4. Request deduplication
 
@@ -630,7 +702,12 @@ caches already covered much of it) but **concurrency and repeat
 navigation**:
 
 - **Concurrent visitors on a cold cache**: previously *N* visitors ×
-  (rankings walk = 9 CoinGecko calls) = 9N; now 9 total regardless of *N*.
+  (rankings walk = 9 CoinGecko calls) = 9N; now 10 total regardless of *N*
+  (3 market pages + 7 category endpoints), and after the first 20 minutes
+  only the 3 market pages recur — the 7 category calls are on a 6-hour
+  clock. 100 concurrent catalogue consumers produce those same 10 calls;
+  100 concurrent searches produce none, because search never leaves the
+  browser.
   The same collapse applies to `/global`, Fear & Greed, order books,
   candles and trades — everything except the ticker walk, which already
   deduplicated.
@@ -657,6 +734,20 @@ tests assert.
   routes still return their original shapes, unchanged on purpose —
   shipped surfaces depend on them. They should be retired as consumers
   finish migrating, not changed underneath them.
+- **The catalogue ceiling is 750, and it is a budget decision.** Three
+  CoinGecko pages of 250. A ticker collision or a malformed row means the
+  walk yields slightly under 750 canonical assets, which is why the ceiling
+  is not 500 for a "500+" requirement. Raising it means a fourth page and a
+  fourth of the monthly call budget — redo the arithmetic in §3 first.
+- **The Markets table ships the whole catalogue to the browser.** ~750 rows
+  of JSON on one request, then everything is client-side. That is the right
+  trade at this size — instant search, zero per-keystroke load — but it
+  does not scale indefinitely. Past a few thousand assets the query belongs
+  back on the server (`AssetRegistry.query` already implements it and
+  `/market/assets` already exposes it; only `catalogueStore` would change).
+- **No sparkline in the catalogue payload.** Deliberate — see §3b. A
+  future sparkline column needs its own endpoint and its own budget, not a
+  field on this one.
 - **`market_overview` and `sentiment` report their read time, not their
   fetch time.** `CoinGeckoService` and `FearGreedService` own those caches
   internally and do not expose a fetch timestamp, so the gateway stamps

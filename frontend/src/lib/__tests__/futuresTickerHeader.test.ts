@@ -41,7 +41,7 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '9dfe51336834918e2f67f230aaa563a109b653ea1b1d16459c4c04e18d50e623'],
+  ['frontend/src/lib/api.ts', 'ddcb98515f2385dfac897cbed817f9293f5c163c60b0bc015ed2f3d13ca79374'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
@@ -49,6 +49,16 @@ test.each([
   // including the index-price and internal open-interest reads this suite
   // protects, is byte-unchanged, and src/api/routes/futures.ts below is
   // still at its original fingerprint.
+  //
+  // Re-taken again for Crypto Catalogue 500+ (+38/-2). The change is
+  // confined to the catalogue types and getAssetCatalogue's query
+  // parameters: AssetMarketSnapshot added, CanonicalAsset given `market`,
+  // and AssetCatalogueResponse's `total` renamed to `matched` (it always
+  // meant "rows passing the filter", and the catalogue view needs that
+  // distinct from catalogueTotal). No futures, index-price, open-interest
+  // or spot method is touched — the reads this suite protects are still
+  // byte-identical, and src/api/routes/futures.ts below is still at its
+  // original fingerprint.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });

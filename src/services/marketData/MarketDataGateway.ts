@@ -1,4 +1,11 @@
-import { AssetRegistry, type AssetCatalogue, type CanonicalAsset } from './AssetRegistry';
+import {
+  AssetRegistry,
+  defaultTradingPair,
+  type AssetCatalogue,
+  type AssetQuery,
+  type AssetQueryResult,
+  type CanonicalAsset,
+} from './AssetRegistry';
 import { providerHealthRegistry, ProviderUnavailableError, type ProviderHealthSnapshot } from './ProviderHealth';
 import {
   CapabilityUnsupportedError,
@@ -161,6 +168,29 @@ export class MarketDataGateway {
   async getAssetCatalogue(): Promise<Availability<AssetCatalogue>> {
     this.requireCapability('asset_catalogue');
     return this.guard('coingecko', () => this.registry.getCatalogue());
+  }
+
+  /**
+   * Search / sort / paginate the catalogue.
+   *
+   * Served entirely from the cached join, so a 500-asset table paging and
+   * filtering costs zero upstream requests. See AssetRegistry.query.
+   */
+  async queryAssets(options: AssetQuery = {}): Promise<Availability<AssetQueryResult>> {
+    this.requireCapability('asset_catalogue');
+    return this.guard('coingecko', () => this.registry.query(options));
+  }
+
+  /**
+   * The pair a catalogue "Trade" action should open, or `null` when the
+   * asset has no executable VOLTEX market.
+   *
+   * Deliberately derived from the asset's REAL `tradingPairs` under a
+   * documented quote priority, never by appending "/USDT" to a ticker —
+   * that would link to a market that may not exist.
+   */
+  tradingPairFor(asset: Pick<CanonicalAsset, 'tradingPairs'>): string | null {
+    return defaultTradingPair(asset.tradingPairs);
   }
 
   async resolveAsset(symbol: string): Promise<CanonicalAsset | null> {

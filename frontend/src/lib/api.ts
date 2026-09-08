@@ -111,23 +111,47 @@ export interface AnalyticsSnapshot {
   unsupported: Record<string, { available: false; reason: string; detail?: string }>;
 }
 
+/** Market-WIDE reference figures (CoinGecko). Every field is nullable and
+ *  nothing is coerced: `null` means the provider did not report it and
+ *  renders as a dash, while a genuine `0` arrives as `0`.
+ *
+ *  These are NOT VOLTEX execution prices — a tradable asset's terminal
+ *  price comes from the Kraken reference path the trading surfaces use.
+ *  The two are never mixed. */
+export interface AssetMarketSnapshot {
+  priceUsd: number | null;
+  changePercent24h: number | null;
+  marketCapUsd: number | null;
+  volume24hUsd: number | null;
+  circulatingSupply: number | null;
+}
+
 export interface CanonicalAsset {
   id: string;
   symbol: string;
   name: string;
   logoUrl: string | null;
   providers: { coingecko?: string; kraken?: string };
+  /** The REAL executable VOLTEX pairs for this asset. Empty means the
+   *  asset is catalogue-only — there is no market to route a trade to. */
   tradingPairs: string[];
   tradable: boolean;
   metadataSource: string;
   rank: number | null;
   ambiguous: boolean;
   collidingIds: string[];
+  /** `null` for a venue-only listing the catalogue does not cover. */
+  market: AssetMarketSnapshot | null;
 }
+
+export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'symbol' | 'name';
 
 export type AssetCatalogueResponse = GatewaySection<{
   assets: CanonicalAsset[];
-  total: number;
+  /** Rows passing the filter, before pagination. */
+  matched: number;
+  /** The whole catalogue regardless of filter, so a filtered view can say
+   *  "12 of 517" instead of implying the catalogue shrank. */
   catalogueTotal: number;
   tradableCount: number;
   collisions: string[];
@@ -611,9 +635,21 @@ export const api = {
   /** Canonical asset catalogue. `tradable` narrows it to assets with a
    *  real executable VOLTEX pair — the catalogue is reference metadata and
    *  is deliberately much larger than the tradable set. */
-  getAssetCatalogue: (params: { tradable?: boolean; limit?: number; offset?: number } = {}) => {
+  getAssetCatalogue: (
+    params: {
+      tradable?: boolean;
+      search?: string;
+      sort?: AssetSortKey;
+      dir?: 'asc' | 'desc';
+      limit?: number;
+      offset?: number;
+    } = {}
+  ) => {
     const query = new URLSearchParams();
     if (params.tradable) query.set('tradable', 'true');
+    if (params.search) query.set('search', params.search);
+    if (params.sort) query.set('sort', params.sort);
+    if (params.dir) query.set('dir', params.dir);
     if (params.limit !== undefined) query.set('limit', String(params.limit));
     if (params.offset !== undefined) query.set('offset', String(params.offset));
     const suffix = query.toString() ? `?${query}` : '';

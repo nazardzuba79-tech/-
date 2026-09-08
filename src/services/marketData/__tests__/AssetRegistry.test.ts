@@ -33,6 +33,16 @@ describe('AssetRegistry', () => {
       volume24h: 0,
       marketCap: null,
       sparkline: [],
+      circulatingSupply: null,
+      // The honest nullable half of CoinRanking — the registry reads these
+      // rather than the legacy zero-coerced fields beside them.
+      market: {
+        priceUsd: null,
+        changePercent24h: null,
+        marketCapUsd: null,
+        volume24hUsd: null,
+        circulatingSupply: null,
+      },
       collidingIds: [],
       ...over,
     };

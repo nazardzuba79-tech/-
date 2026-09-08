@@ -1,0 +1,525 @@
+/* Crypto catalogue table — every rule scoped to .vx-catalogue.
+ *
+ * Built on the tokens .markets-bolt-root declares, NOT the global
+ * :root ones. Markets deliberately re-points its palette to a light
+ * surface (see MarketsBolt.css), so the app-wide --panel / --text-primary
+ * / --buy names would paint a dark-theme table onto a white page. This
+ * table lives only inside that root, so it uses that root's names:
+ * --bg-surface, --text-title, --positive, and so on. Nothing here touches
+ * the global Nav or any shared surface class.
+ *
+ * The layout problem this solves: 750 assets, eight columns, and a 390px
+ * phone. Rather than squeezing every desktop column into a phone or
+ * letting the page overflow horizontally, columns drop by priority —
+ * Asset, Price and 24h% survive everywhere, Market Cap and Volume go
+ * first, Name goes second (it is already shown under the symbol on
+ * narrow screens).
+ */
+
+.vx-catalogue {
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: 12px;
+  padding: 16px 18px 14px;
+  margin-top: 18px;
+}
+
+/* ── Head ─────────────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.vx-catalogue .vx-cat-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vx-catalogue .vx-cat-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.vx-catalogue .vx-cat-head p {
+  margin: 5px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 64ch;
+}
+
+/* ── Filters ──────────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vx-catalogue .vx-cat-filters button {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.vx-catalogue .vx-cat-filters button:hover {
+  color: var(--text-title);
+  border-color: var(--text-muted);
+}
+.vx-catalogue .vx-cat-filters button.is-active {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.vx-catalogue .vx-cat-filters button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.vx-catalogue .vx-cat-badge-count {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  opacity: 0.75;
+}
+
+/* ── Source line ──────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-source {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.vx-catalogue .vx-cat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--positive);
+  flex-shrink: 0;
+}
+
+/* Stale is amber, not red: the value is real, it is just not current. */
+.vx-catalogue .vx-cat-source.is-stale {
+  color: var(--accent);
+}
+.vx-catalogue .vx-cat-source.is-stale .vx-cat-dot {
+  background: var(--accent);
+}
+
+.vx-catalogue .vx-cat-partial {
+  color: var(--accent);
+}
+
+/* ── Table ────────────────────────────────────────────────────────── */
+
+/* The table scrolls inside its own container rather than letting the page
+   overflow horizontally. */
+.vx-catalogue .vx-cat-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vx-catalogue .vx-cat-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.vx-catalogue .vx-cat-table th {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.vx-catalogue .vx-cat-table th button {
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.vx-catalogue .vx-cat-table th button:hover {
+  color: var(--text-title);
+}
+.vx-catalogue .vx-cat-table th button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.vx-catalogue .vx-cat-sort-muted {
+  opacity: 0.3;
+}
+
+.vx-catalogue .vx-cat-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.vx-catalogue .vx-cat-table tbody tr {
+  transition: background 0.12s ease;
+}
+.vx-catalogue .vx-cat-table tbody tr:hover {
+  background: var(--bg-surface-2);
+}
+
+/* Figures are tabular so columns of numbers line up — the single biggest
+   contributor to a table reading as professional. */
+.vx-catalogue .vx-cat-num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.vx-catalogue td.vx-cat-num {
+  color: var(--text-title);
+}
+.vx-catalogue .vx-cat-num.is-up {
+  color: var(--positive);
+}
+.vx-catalogue .vx-cat-num.is-down {
+  color: var(--negative);
+}
+
+.vx-catalogue .vx-cat-rank {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  width: 48px;
+}
+
+/* ── Asset cell ───────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-asset {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.vx-catalogue .vx-cat-symbol {
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.vx-catalogue .vx-cat-ambiguous {
+  color: var(--accent);
+  text-decoration: none;
+  cursor: help;
+  margin-left: 2px;
+}
+
+/* The name rides under/next to the symbol on narrow screens, where its own
+   column is hidden. */
+.vx-catalogue .vx-cat-name-inline {
+  display: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Star ─────────────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-star {
+  width: 34px;
+}
+.vx-catalogue .vx-cat-star button {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: inline-flex;
+  transition: color 0.12s ease;
+}
+.vx-catalogue .vx-cat-star button:hover {
+  color: var(--accent);
+}
+.vx-catalogue .vx-cat-star button.is-starred {
+  color: var(--accent);
+}
+.vx-catalogue .vx-cat-star button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 4px;
+}
+
+/* ── Trade action / data-only ─────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-action {
+  text-align: right;
+  width: 110px;
+}
+
+.vx-catalogue .vx-cat-trade {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.vx-catalogue .vx-cat-trade:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+.vx-catalogue .vx-cat-trade:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Deliberately not a disabled button: a greyed "Trade" would imply a
+   market exists here. It says what the row IS instead. */
+.vx-catalogue .vx-cat-dataonly {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── States ───────────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 34px 20px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.vx-catalogue .vx-cat-state strong,
+.vx-cat-state strong {
+  color: var(--text-title);
+  font-size: 13.5px;
+}
+
+.vx-cat-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  border-radius: 12px;
+  margin-top: 18px;
+}
+.vx-cat-state.is-error strong {
+  color: var(--negative);
+}
+
+.vx-cat-retry {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  padding: 7px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--text-title);
+}
+.vx-cat-retry:hover {
+  border-color: var(--accent);
+}
+
+.vx-cat-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: vx-cat-spin 0.8s linear infinite;
+}
+
+@keyframes vx-cat-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-cat-spinner {
+    animation: none;
+  }
+}
+
+/* ── Pagination ───────────────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+}
+
+.vx-catalogue .vx-cat-showing {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.vx-catalogue .vx-cat-subset {
+  opacity: 0.7;
+}
+
+.vx-catalogue .vx-cat-pages {
+  display: flex;
+  gap: 4px;
+}
+
+.vx-catalogue .vx-cat-pages button {
+  font: inherit;
+  font-size: 12px;
+  min-width: 30px;
+  height: 30px;
+  cursor: pointer;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface-2);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.vx-catalogue .vx-cat-pages button:hover:not(:disabled) {
+  color: var(--text-title);
+  border-color: var(--text-muted);
+}
+.vx-catalogue .vx-cat-pages button.is-active {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.vx-catalogue .vx-cat-pages button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.vx-catalogue .vx-cat-pages button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Responsive: drop columns by priority ─────────────────────────── */
+
+@media (max-width: 1023px) {
+  .vx-catalogue .vx-cat-hide-lg {
+    display: none;
+  }
+  /* Name moves under the symbol rather than disappearing entirely. */
+  .vx-catalogue .vx-cat-name-inline {
+    display: inline-block;
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 767px) {
+  .vx-catalogue {
+    padding: 14px 12px 12px;
+  }
+  .vx-catalogue .vx-cat-hide-md {
+    display: none;
+  }
+  .vx-catalogue .vx-cat-table {
+    font-size: 12.5px;
+  }
+  .vx-catalogue .vx-cat-table th,
+  .vx-catalogue .vx-cat-table td {
+    padding: 8px 7px;
+  }
+  .vx-catalogue .vx-cat-rank {
+    width: 34px;
+  }
+  .vx-catalogue .vx-cat-action {
+    width: auto;
+  }
+}
+
+@media (max-width: 430px) {
+  /* The name goes at phone width. Stacked under the symbol it truncated
+     to "Bi…", which identifies nothing, and side by side it pushed the
+     24h change and the Trade action off the visible edge. The ticker is
+     the identity here; the full name is one breakpoint up. */
+  .vx-catalogue .vx-cat-name-inline {
+    display: none;
+  }
+  .vx-catalogue .vx-cat-asset {
+    gap: 7px;
+  }
+  .vx-catalogue .vx-cat-table th,
+  .vx-catalogue .vx-cat-table td {
+    padding: 7px 5px;
+  }
+  /* Tightened until the Trade action lands inside a 390px viewport rather
+     than one horizontal scroll away — it is the only thing on the row a
+     user can act on. */
+  .vx-catalogue .vx-cat-table .vx-cat-num {
+    font-size: 11.5px;
+  }
+  .vx-catalogue .vx-cat-trade {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .vx-catalogue .vx-cat-dataonly {
+    font-size: 10.5px;
+  }
+  .vx-catalogue .vx-cat-head h3 {
+    font-size: 14px;
+  }
+  /* The star column is the least important thing on a phone. */
+  .vx-catalogue .vx-cat-star {
+    width: 28px;
+  }
+}

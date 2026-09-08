@@ -66,18 +66,32 @@ function gatewayStub(over: Record<string, unknown> = {}) {
       overview: { available: false, reason: 'provider_unavailable', detail: 'coingecko down' },
       sentiment: { available: true, source: 'alternative.me', fetchedAt: 1, stale: false, value: { value: 61, classification: 'Greed', updatedAt: 1 } },
     }),
-    getAssetCatalogue: jest.fn().mockResolvedValue({
-      available: true,
-      source: 'coingecko',
-      fetchedAt: 1,
-      stale: false,
-      value: {
-        assets: [asset(), asset({ id: 'cg:monero', symbol: 'XMR', name: 'Monero', tradable: false, tradingPairs: [], rank: 30 })],
-        total: 2,
-        tradableCount: 1,
-        collisions: [],
-        metadataComplete: true,
-      },
+    // The route now calls queryAssets, which does the filtering/sorting/
+    // paging inside the registry over the cached join. The stub mirrors
+    // that: it applies the tradable filter so the route's own behaviour
+    // stays observable.
+    queryAssets: jest.fn(async (options: any = {}) => {
+      const all = [
+        asset(),
+        asset({ id: 'cg:monero', symbol: 'XMR', name: 'Monero', tradable: false, tradingPairs: [], rank: 30 }),
+      ];
+      const matched = options.tradableOnly ? all.filter((a) => a.tradable) : all;
+      return {
+        available: true,
+        source: 'coingecko',
+        fetchedAt: 1,
+        stale: false,
+        value: {
+          assets: matched.slice(options.offset ?? 0, (options.offset ?? 0) + (options.limit ?? 100)),
+          matched: matched.length,
+          catalogueTotal: all.length,
+          tradableCount: all.filter((a) => a.tradable).length,
+          collisions: [],
+          metadataComplete: true,
+          limit: options.limit ?? 100,
+          offset: options.offset ?? 0,
+        },
+      };
     }),
     iconMetadata: jest.fn().mockResolvedValue({ BTC: { id: 'cg:bitcoin', name: 'Bitcoin', logoUrl: 'btc.png' } }),
     getTradableMarkets: jest.fn().mockResolvedValue({ available: true, source: 'kraken', fetchedAt: 1, stale: false, value: [] }),
@@ -130,6 +144,7 @@ describe('market data gateway routes', () => {
     expect(res.status).toBe(200);
     expect(res.body.value.catalogueTotal).toBe(2);
     expect(res.body.value.tradableCount).toBe(1);
+    expect(res.body.value.matched).toBe(2);
     // Every asset carries a namespaced canonical id, not a bare ticker.
     expect(res.body.value.assets.every((a: any) => a.id.includes(':'))).toBe(true);
   });
@@ -139,15 +154,44 @@ describe('market data gateway routes', () => {
 
     expect(res.body.value.assets).toHaveLength(1);
     expect(res.body.value.assets[0].symbol).toBe('BTC');
+    expect(res.body.value.matched).toBe(1);
     // The catalogue total is still reported, so a UI can say "1 of 2
     // tradable" rather than pretending the catalogue is one asset.
     expect(res.body.value.catalogueTotal).toBe(2);
   });
 
-  it('clamps a hostile limit instead of trusting it', async () => {
-    const res = await request(buildApp(prismaFor(null), gatewayStub())).get('/api/v1/market/assets?limit=999999&offset=-5');
+  it('passes search, sort and direction through to the registry', async () => {
+    const gateway = gatewayStub();
+    await request(buildApp(prismaFor(null), gateway)).get(
+      '/api/v1/market/assets?search=bit&sort=marketCap&dir=asc&limit=25&offset=50'
+    );
 
-    expect(res.body.value.limit).toBeLessThanOrEqual(500);
+    expect(gateway.queryAssets).toHaveBeenCalledWith(
+      expect.objectContaining({ search: 'bit', sort: 'marketCap', direction: 'asc', limit: 25, offset: 50 })
+    );
+  });
+
+  it('ignores an unknown sort key rather than passing it through', async () => {
+    const gateway = gatewayStub();
+    await request(buildApp(prismaFor(null), gateway)).get('/api/v1/market/assets?sort=DROP%20TABLE');
+    expect(gateway.queryAssets.mock.calls[0][0].sort).toBeUndefined();
+  });
+
+  it('bounds an oversized search string', async () => {
+    const gateway = gatewayStub();
+    await request(buildApp(prismaFor(null), gateway)).get(`/api/v1/market/assets?search=${'a'.repeat(500)}`);
+    expect(gateway.queryAssets.mock.calls[0][0].search.length).toBeLessThanOrEqual(64);
+  });
+
+  it('clamps a hostile limit instead of trusting it', async () => {
+    const gateway = gatewayStub();
+    const res = await request(buildApp(prismaFor(null), gateway)).get('/api/v1/market/assets?limit=999999&offset=-5');
+
+    // Clamped to the 1000 ceiling — which exists so the Markets page can
+    // load the whole catalogue once — not to whatever the client asked for.
+    expect(gateway.queryAssets.mock.calls[0][0].limit).toBe(1000);
+    expect(gateway.queryAssets.mock.calls[0][0].offset).toBe(0);
+    expect(res.body.value.limit).toBeLessThanOrEqual(1000);
     expect(res.body.value.offset).toBeGreaterThanOrEqual(0);
   });
 
