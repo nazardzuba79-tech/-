@@ -245,6 +245,124 @@ test('order error and unavailable-price submission state remain visible', async 
   expect(nodes(form.render(props)).find(n => n.props?.role === 'alert').props.children).toBe('New account leverage restriction');
   expect(nodes(form.render({ ...props, ticker: undefined })).find(n => n.props?.type === 'submit').props.disabled).toBe(true);
 });
+/**
+ * Malformed CFD positions payloads.
+ *
+ * A 200 whose body is not an array used to go straight into state, and the
+ * next render called `.map` on it — `positions.map is not a function` took
+ * the CFD terminal down through the error boundary. These assert the two
+ * halves of the fix: the panel survives, and it never turns a failed load
+ * into the claim that the account holds no positions.
+ */
+const openPosition = {
+  id: 'cfd-1', symbol: 'EURUSD', side: 'LONG', leverage: 10, size: '1', entryPrice: '1.1',
+  markPrice: '1.2', liquidationPrice: '1', unrealizedPnl: '.1', roe: '1', realizedPnl: '0',
+  status: 'OPEN', initialMargin: '10', openedAt: '2026-09-01T00:00:00.000Z', closedAt: null,
+};
+
+async function panelFor(positions: any, history: any = []) {
+  const getCfdPositions = jest.fn().mockResolvedValue(positions);
+  const getCfdPositionHistory = jest.fn().mockResolvedValue(history);
+  const panel = mount('components/CfdPositionsPanel.tsx', { api: { getCfdPositions, getCfdPositionHistory } });
+  panel.render({ refreshKey: 0 }); await tick();
+  return { panel, tree: () => panel.render({ refreshKey: 0 }), getCfdPositions };
+}
+
+/** The rendered open-positions rows, by id. Throws exactly the way the
+ *  page would if the payload reached render unvalidated. */
+const renderedIds = (tree: any) => nodes(tree).filter(n => n.type === 'tr' && n.key).map(n => n.key);
+
+test.each([
+  ['not an array (object)', {}],
+  ['not an array (string)', 'service unavailable'],
+  ['missing entirely', undefined],
+  ['null', null],
+  ['array holding null', [null]],
+  ['array holding a primitive', [42]],
+  ['row missing its id', [{ ...openPosition, id: undefined }]],
+  ['row with an empty id', [{ ...openPosition, id: '   ' }]],
+  ['row with an unrecognised side', [{ ...openPosition, side: 'FLAT' }]],
+  ['row with a non-numeric leverage', [{ ...openPosition, leverage: 'ten' }]],
+  ['row missing its entry price', [{ ...openPosition, entryPrice: undefined }]],
+])('malformed positions payload (%s) never crashes and never reads as an empty account', async (_label, payload) => {
+  const { tree } = await panelFor(payload);
+  expect(() => tree()).not.toThrow();
+  // The honest failure state, NOT "no positions".
+  expect(text(tree())).toContain('futures.loadPositionsError');
+  expect(text(tree())).not.toContain('futures.noPositions');
+  // Nothing was invented to fill the table.
+  expect(renderedIds(tree())).toHaveLength(0);
+  expect(text(tree())).not.toMatch(/0\.00/);
+});
+
+test('a malformed refresh keeps the last good positions on screen', async () => {
+  const getCfdPositions = jest.fn()
+    .mockResolvedValueOnce([openPosition])
+    .mockResolvedValue({ error: 'gateway' });
+  const panel = mount('components/CfdPositionsPanel.tsx', { api: { getCfdPositions, getCfdPositionHistory: async () => [] } });
+  panel.render({ refreshKey: 0 }); await tick();
+  expect(renderedIds(panel.render({ refreshKey: 0 }))).toEqual(['cfd-1']);
+
+  // Next poll comes back unreadable.
+  jest.advanceTimersByTime(4000); await tick();
+  const tree = panel.render({ refreshKey: 0 });
+  // Last good position still shown — not blanked, not replaced by "none".
+  expect(renderedIds(tree)).toEqual(['cfd-1']);
+  expect(text(tree)).toContain('futures.loadPositionsError');
+  expect(text(tree)).not.toContain('futures.noPositions');
+});
+
+test('a legitimate empty list is still a legitimate empty list', async () => {
+  const { tree } = await panelFor([]);
+  expect(text(tree())).toContain('futures.noPositions');
+  expect(text(tree())).not.toContain('futures.loadPositionsError');
+  expect(renderedIds(tree())).toHaveLength(0);
+});
+
+test('a valid payload renders unchanged, real zeros included', async () => {
+  const zeroed = { ...openPosition, id: 'cfd-zero', unrealizedPnl: '0', roe: '0', markPrice: '0' };
+  const { tree } = await panelFor([openPosition, zeroed]);
+  expect(renderedIds(tree())).toEqual(['cfd-1', 'cfd-zero']);
+  expect(text(tree())).not.toContain('futures.loadPositionsError');
+  // Zero PnL is a fact about the position and stays a zero, not a dash.
+  const cells = nodes(tree()).filter(n => n.props?.className?.includes('mono')).map(n => text(n));
+  expect(cells).toContain('0.00');
+  expect(cells).toContain('0.00%');
+});
+
+test('absent optional figures render as a dash, never as NaN or zero', async () => {
+  const { tree } = await panelFor([{ ...openPosition, markPrice: undefined, unrealizedPnl: undefined, roe: 'n/a' }]);
+  expect(renderedIds(tree())).toEqual(['cfd-1']);
+  expect(text(tree())).toContain('—');
+  expect(text(tree())).not.toContain('NaN');
+});
+
+test.each([
+  ['not an array', { rows: [] }],
+  ['array holding null', [null]],
+  ['row with an unparseable realized PnL', [{ ...openPosition, realizedPnl: 'oops' }]],
+  ['row missing its status', [{ ...openPosition, status: '' }]],
+])('malformed history payload (%s) is caught by the same contract', async (_label, payload) => {
+  const { panel } = await panelFor([], payload);
+  nodes(panel.render({ refreshKey: 0 })).find((n: any) => n.props?.id === 'cfd-tab-history').props.onClick();
+  panel.render({ refreshKey: 0 }); await tick();
+  const tree = panel.render({ refreshKey: 0 });
+  expect(() => panel.render({ refreshKey: 0 })).not.toThrow();
+  expect(text(tree)).toContain('futures.loadPositionsError');
+  expect(text(tree)).not.toContain('futures.noPositionHistory');
+});
+
+test('a valid history payload still renders, with a real zero realized PnL', async () => {
+  const closed = { ...openPosition, id: 'cfd-closed', realizedPnl: '0', status: 'CLOSED' };
+  const { panel } = await panelFor([], [closed]);
+  nodes(panel.render({ refreshKey: 0 })).find((n: any) => n.props?.id === 'cfd-tab-history').props.onClick();
+  panel.render({ refreshKey: 0 }); await tick();
+  const tree = panel.render({ refreshKey: 0 });
+  expect(renderedIds(tree)).toEqual(['cfd-closed']);
+  expect(text(tree)).toContain('0.00');
+  expect(text(tree)).not.toContain('futures.loadPositionsError');
+});
+
 test('positions/history preserve polling, close API, closing state, error and liquidation status', async () => {
   let finish: any;
   const closeCfdPosition = jest.fn().mockImplementation(() => new Promise(resolve => { finish = resolve; }));
@@ -267,7 +385,16 @@ test('positions/history preserve polling, close API, closing state, error and li
 });
 test.each([
   ['components/CfdOrderForm.tsx', '7ea457d76586624fac990ed610747461b3817fd4295a7cbe1a0bbb4a1f759b46'],
-  ['components/CfdPositionsPanel.tsx', 'adb8a3d3e11a7ca16b8f47a06853b014e947e9a3cc0f4e7b7790fb8b85c33102'],
+  // Re-taken for the malformed-positions-payload fix. Exactly two
+  // statements differ, both in the READ path: the added `loadFailed`
+  // state, and the load effect's two .then handlers now validating the
+  // payload before it reaches render state. Verified by diffing the
+  // printed statement list against the previous commit: `handleClose`
+  // is byte-identical — the close API call, the closing state, the
+  // error path and the refresh bump are untouched — as are the 4s poll
+  // cadence, the cancellation flag and the effect cleanup. No sizing,
+  // margin, leverage, liquidation or balance code exists in this file.
+  ['components/CfdPositionsPanel.tsx', '030e42f22e80bb38e01c855dd8f694eb5e7e246a6ccfdec3bbb0b708763a9afb'],
   ['pages/TradePage.tsx', 'c7397a4659e93fb98d1e50e956a2795b63726d6ae7768e81787fbe4adf86aac0'],
 ])('%s preserves original financial callbacks/hooks or complete Spot JSX from bfaf522', (file, expected) => {
   const sf = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
