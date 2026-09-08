@@ -60,6 +60,57 @@ export interface MarketSnapshotResponse {
   sentiment: GatewaySection<{ value: number; classification: string; updatedAt: number }>;
 }
 
+// ── Analytics ──────────────────────────────────────────────────────
+
+export interface AnalyticsMarketOverview {
+  totalMarketCapUsd: number;
+  totalVolume24hUsd: number;
+  btcDominancePercent: number | null;
+  ethDominancePercent: number | null;
+  marketCapChangePercent24h: number | null;
+}
+
+export interface AnalyticsSentiment {
+  value: number;
+  classification: string;
+  updatedAt: number;
+}
+
+/** One VOLTEX contract. Every field is independently nullable — a missing
+ *  figure is `null` and renders as a dash, never as 0. */
+export interface AnalyticsContract {
+  symbol: string;
+  markPrice: string | null;
+  indexPrice: string | null;
+  openInterestBase: string | null;
+  openInterestUsd: string | null;
+  fundingRate: string | null;
+  fundingAppliedAt: number | null;
+}
+
+export interface AnalyticsDerivatives {
+  /** Always 'venue'. This is VOLTEX's own book, never market-wide. */
+  scope: 'venue';
+  intervalHours: number;
+  nextSettlementAt: number;
+  contracts: AnalyticsContract[];
+}
+
+export interface AnalyticsSnapshot {
+  generatedAt: number;
+  /** Contracts VOLTEX actually lists — the asset selector is built from
+   *  this, never from a hardcoded list. */
+  contracts: string[];
+  sections: {
+    marketOverview: GatewaySection<AnalyticsMarketOverview>;
+    sentiment: GatewaySection<AnalyticsSentiment>;
+    derivatives: GatewaySection<AnalyticsDerivatives>;
+  };
+  /** Designed modules with no legitimate source yet. Each carries a
+   *  reason and NO value-carrying fields. */
+  unsupported: Record<string, { available: false; reason: string; detail?: string }>;
+}
+
 export interface CanonicalAsset {
   id: string;
   symbol: string;
@@ -550,6 +601,12 @@ export const api = {
   // lib/marketDataStore, which shares ONE poll and ONE in-flight request
   // across every consumer in the tab.
   getMarketSnapshot: () => request<MarketSnapshotResponse>('/market/snapshot'),
+
+  /** The Analytics page's single dataset. Available to any signed-in
+   *  user: it carries ordinary exchange market information and no
+   *  operational detail. Provider circuit state lives behind
+   *  /analytics/diagnostics and /market/status, both admin-only. */
+  getAnalyticsOverview: () => request<AnalyticsSnapshot>('/analytics/overview'),
 
   /** Canonical asset catalogue. `tradable` narrows it to assets with a
    *  real executable VOLTEX pair — the catalogue is reference metadata and

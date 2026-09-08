@@ -59,8 +59,8 @@ const approvedCardSources: Record<string, string> = {
 // replace the removed global/contextual wrappers. Exact source reversals below
 // permit only those inline additions; no financial calculation/hash is relaxed.
 const preservedMainSources: Record<string, string> = {
-  "frontend/src/App.tsx": "749a43215c32af860a398205c3fb08c1ac1a9cba095dd7a26049384c6d4e2efd",
-  "frontend/src/components/Nav.tsx": "68cddc0c6c344af0b10de091a2e750abec29f2ea2a1ba53f0bfd977c16de31c4",
+  "frontend/src/App.tsx": "6c95993336f9807959af249b1f61e4ba504f5f82c5db0a7ef7972a53531ff371",
+  "frontend/src/components/Nav.tsx": "06402eaa54ff5f3d055351a75f24c4defbbe3c680827e0f3fbc1d014f09f4316",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
   "frontend/src/pages/home/home.css": "ac7dc7590edc32493816c7abb1b9de908a4c123213d45c2633e30e7b86459154",
   // Owner-reference wrist/slogan mount plus concurrent production 41979fb ATM wording.
@@ -68,7 +68,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/HomeCryptoCard.tsx": "221491b3828c82825beacf0373564047fd88733eaad39d5b5ed61154bacf6da3",
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
-  "frontend/src/pages/home/HomeHeader.tsx": "9f52f98f8f38750ed5d380c95eb4b9a270124e26549cbb427d3d6ecde08e0ed3",
+  "frontend/src/pages/home/HomeHeader.tsx": "a2fc2a02f60dd7e3ae19fd27d8d6caf225bbdd37eaeb2a182572592303a619f7",
   // Owner-approved hero copy hierarchy; CTA/preview behavior covered by homeHeroCopy.
   "frontend/src/pages/home/HomeHero.tsx": "a2f346b9feb47998b3f741a1e84c44be94fbee42553875dd02c39912e58879e0",
   "frontend/src/pages/home/HomeMarketOverview.tsx": "e4e78ef28478c4e498cdec0cf72c39f05ada80c31dbd3ac66461b746d4af414e",

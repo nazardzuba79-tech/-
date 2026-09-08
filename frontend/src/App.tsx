@@ -136,10 +136,11 @@ export function App() {
             </RequireAuth>
           }
         />
-        {/* Admin-only for now, but a normal page rather than part of the
-            /admin shell. RequireAuth handles the signed-out case; the page
-            itself runs the same useAdminGate check /admin does, so an
-            ordinary user landing here directly is redirected to "/". */}
+        {/* A normal exchange feature, available to any signed-in user —
+            RequireAuth is the whole client-side boundary, and the server
+            re-checks auth on every request. Operational provider health is
+            NOT here: it lives behind /analytics/diagnostics and
+            /market/status, both still admin-gated. */}
         <Route
           path="/analytics"
           element={

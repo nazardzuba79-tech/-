@@ -105,18 +105,6 @@ const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, ma
 const demoEngine = new MatchingEngine();
 const demoTradingService = new DemoTradingService(prisma, demoEngine);
 
-// Read-only analytics aggregation over data this exchange already holds
-// (see AnalyticsDataService): market-wide figures from CoinGecko, the
-// published Fear & Greed index, and this venue's own funding, open
-// interest and mark/index prices. Nothing new is fetched for it.
-const analyticsDataService = new AnalyticsDataService(
-  prisma,
-  coinGeckoService,
-  fearGreedService,
-  markPriceService,
-  futuresMarketRegistry
-);
-
 // The unified reference-market façade. It orchestrates the provider
 // services constructed above rather than replacing them — same Kraken
 // service, same CoinGecko service, same caches, same circuits — and adds
@@ -128,6 +116,19 @@ const analyticsDataService = new AnalyticsDataService(
 // state: mark price, funding settlement, open interest, positions, margin
 // and liquidation stay with the futures services and are unchanged.
 const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService);
+
+// Read-only analytics aggregation. Market-wide figures and sentiment come
+// through the gateway above — the same cached reads /markets already
+// makes, so opening Analytics costs no extra upstream requests — and this
+// venue's own funding, open interest and mark/index prices come from the
+// futures services. Nothing new is fetched for it, and it constructs no
+// provider client of its own.
+const analyticsDataService = new AnalyticsDataService(
+  prisma,
+  marketDataGateway,
+  markPriceService,
+  futuresMarketRegistry
+);
 
 // Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
 // req.ip is always the proxy's own address, which would both defeat the

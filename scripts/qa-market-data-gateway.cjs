@@ -196,6 +196,7 @@ function record(pathname) {
 }
 
 let degraded = false;
+let stale = false;
 
 function api(pathname, query) {
   if (pathname === '/api/v1/market/snapshot') return degraded ? DEGRADED : SNAPSHOT;
@@ -315,8 +316,56 @@ function api(pathname, query) {
   if (pathname === '/api/v1/trades/me') return [];
   if (pathname === '/api/v1/portfolio/summary') return { totalUsd: '25000', assets: [] };
   if (pathname === '/api/v1/products') return [];
+  // The support widget is mounted globally; without this it 404s on every
+  // page and adds console noise unrelated to whatever is being QA'd.
+  if (pathname === '/api/v1/support/conversations/mine') return { conversation: null, messages: [] };
   if (pathname === '/api/v1/referral/me') return { code: 'QA', referredCount: 0 };
   if (pathname === '/api/v1/card/application') return { status: 'NONE', product: null };
+  // ── Analytics ─────────────────────────────────────────────────────
+  //
+  // Shaped exactly like AnalyticsDataService's output. Deliberately mixed:
+  // BTC/USDT has a REAL zero open interest (must render as 0), ETH/USDT
+  // has never settled funding (must render as a dash), and `?degraded=true`
+  // makes the market-wide sections unavailable so the QA pass can confirm
+  // they render dashes rather than zeros.
+  if (pathname === '/api/v1/analytics/overview') {
+    const derivativeContracts = [
+      { symbol: 'BTC/USDT', markPrice: '104235.42', indexPrice: '104198.10', openInterestBase: '0', openInterestUsd: '0', fundingRate: '0.00004', fundingAppliedAt: now - 3_600_000 },
+      { symbol: 'ETH/USDT', markPrice: '3892.15', indexPrice: '3890.44', openInterestBase: '128.5412', openInterestUsd: '500172.87', fundingRate: null, fundingAppliedAt: null },
+      { symbol: 'SOL/USDT', markPrice: '214.83', indexPrice: '214.61', openInterestBase: '4210.5', openInterestUsd: '904542.71', fundingRate: '-0.000112', fundingAppliedAt: now - 7_200_000 },
+      { symbol: 'XRP/USDT', markPrice: '2.4312', indexPrice: '2.4298', openInterestBase: '182450', openInterestUsd: '443473.44', fundingRate: '0.0000087', fundingAppliedAt: now - 1_800_000 },
+      { symbol: 'DOGE/USDT', markPrice: null, indexPrice: null, openInterestBase: '0', openInterestUsd: null, fundingRate: null, fundingAppliedAt: null },
+    ];
+    const unsupported = {};
+    for (const key of ['liquidations','liquidationHeatmap','marketWideOpenInterest','longShortRatio','etfFlows','exchangeFlows','whaleActivity','volatility','futuresBasis','correlations','sectorRotation']) {
+      unsupported[key] = { available: false, reason: 'unsupported_metric', detail: 'No source connected.' };
+    }
+    return {
+      generatedAt: now,
+      contracts: FUTURES_SYMBOLS,
+      sections: {
+        marketOverview: degraded
+          ? { available: false, reason: 'provider_unavailable', detail: 'CoinGecko is unavailable.' }
+          : { ...SNAPSHOT.overview, stale },
+        sentiment: degraded
+          ? { available: false, reason: 'provider_unavailable', detail: 'Fear & Greed is unavailable.' }
+          : { ...SNAPSHOT.sentiment, stale },
+        derivatives: {
+          available: true,
+          source: 'voltex',
+          fetchedAt: now,
+          stale: false,
+          value: { scope: 'venue', intervalHours: 8, nextSettlementAt: now + 4_120_000, contracts: derivativeContracts },
+        },
+      },
+      unsupported,
+    };
+  }
+  if (pathname === '/api/v1/analytics/diagnostics') {
+    // The harness serves this unauthenticated, but the REAL route is
+    // requireAuth + requireAdmin — asserted in the route test suite.
+    return { providers: [{ provider: 'kraken', state: 'CLOSED', healthy: true, consecutiveFailures: 0, lastSuccessAt: now, lastFailureAt: null, cooldownUntil: null, rateLimitHits: 0 }] };
+  }
   if (pathname === '/api/v1/arbitrage/opportunities') {
     return {
       source: 'multi',
@@ -355,8 +404,9 @@ const server = http.createServer((req, res) => {
   if (url.pathname === '/__qa/reset') {
     hits.clear();
     degraded = url.searchParams.get('degraded') === 'true';
+    stale = url.searchParams.get('stale') === 'true';
     res.writeHead(200, { 'content-type': 'application/json' });
-    return res.end(JSON.stringify({ ok: true, degraded }));
+    return res.end(JSON.stringify({ ok: true, degraded, stale }));
   }
 
   const filePath = path.join(DIST, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname));

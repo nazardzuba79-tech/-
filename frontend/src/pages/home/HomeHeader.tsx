@@ -16,9 +16,10 @@ import { WalletBalanceControl } from '../../components/WalletBalanceControl';
  *  - signed in  -> the real wallet balance control, Пополнить, language,
  *                  profile — the same controls the in-app header carries
  *
- * Аналитика is intentionally absent: it is admin-gated (see useAdminGate),
- * and a public landing page is not the place to advertise a restricted
- * area. Админка likewise never appears here; it is reached from the app.
+ * Аналитика is intentionally absent. It is no longer admin-gated — any
+ * signed-in user can open it — but this list is the approved landing-page
+ * header and is not changed here; Analytics is reached from the in-app Nav,
+ * which does carry it. Админка likewise never appears here.
  */
 const LINKS: { to: string; labelKey: Key }[] = [
   { to: '/markets', labelKey: 'nav.markets' },

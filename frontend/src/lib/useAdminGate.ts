@@ -9,10 +9,14 @@ export type AdminGate =
   | { status: 'ok'; me: Me };
 
 /**
- * The single admin gate the client side has. Extracted from AdminLayout so
- * that a privileged page living outside /admin (the Analytics page) is
- * guarded by exactly the same check rather than by a second, subtly
- * different copy of it.
+ * The single admin gate the client side has.
+ *
+ * It was extracted from AdminLayout so the Analytics page could share the
+ * same check; Analytics is now an ordinary signed-in feature and no longer
+ * uses it, because what actually needed gating was the operational
+ * provider-health data, not the page. That data moved behind
+ * /analytics/diagnostics and /market/status, both server-side admin
+ * routes. /admin remains this hook's caller.
  *
  * This is a UX convenience only — it decides what to render, nothing more.
  * Every privileged request is independently re-checked for role ADMIN on
@@ -21,7 +25,7 @@ export type AdminGate =
  * a user id: the backend is the only place an identity is ever compared.
  *
  * Callers render their own denied state so each keeps whatever redirect its
- * area already used; both current callers use <Navigate to="/" replace />.
+ * area already used; the current caller uses <Navigate to="/" replace />.
  */
 export function useAdminGate(): AdminGate {
   const [gate, setGate] = useState<AdminGate>({ status: 'loading', me: null });

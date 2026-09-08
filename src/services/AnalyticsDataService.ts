@@ -1,288 +1,263 @@
 import { PrismaClient } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { CoinGeckoService } from './CoinGeckoService';
-import { FearGreedService } from './FearGreedService';
 import { MarkPriceService } from '../futures/MarkPriceService';
 import { FuturesMarketRegistry } from '../futures/FuturesMarketRegistry';
 import { FUNDING_INTERVAL_HOURS } from '../config/futuresConfig';
 import { msUntilNextFundingBoundary } from '../futures/FundingRateService';
-import { providerHealthRegistry } from './marketData/ProviderHealth';
+import { MarketDataGateway } from './marketData/MarketDataGateway';
+import { providerHealthRegistry, type ProviderHealthSnapshot } from './marketData/ProviderHealth';
+import { available, unavailable, type Availability, type Unavailable } from './marketData/types';
 
 /**
- * The data foundation under /analytics — NOT the analytics UI.
+ * The data behind /analytics.
  *
- * Every section this returns is either genuinely backed by a source this
- * exchange already has, or explicitly marked unavailable with a reason. The
- * point of the shape is that a future UI cannot accidentally render a
- * fabricated number: there is no field that carries a "0" standing in for
- * "we don't know". A section is either `available: true` with real values,
- * or `available: false` with a machine-readable reason and nothing else.
+ * Two rules shape every line of this file.
  *
- * What is real here, and where it comes from:
+ * **1. It orchestrates; it does not fetch.** Market-wide figures and
+ * sentiment come from `MarketDataGateway`, which owns the providers, the
+ * caches, the circuits and the freshness metadata. Analytics adds no
+ * CoinGecko client, no Fear & Greed client and no polling of its own — a
+ * user opening this page costs the same upstream requests as one already
+ * on the Markets page, because it is literally the same cached read.
  *
- *   marketOverview — CoinGecko /global: total market cap, total 24h volume,
- *     BTC and ETH dominance, 24h market-cap change. The same call the
- *     Markets page headline already uses.
- *   sentiment      — alternative.me's published Fear & Greed Index.
- *   funding        — this exchange's OWN settled FundingRateRecord rows,
- *     plus the next settlement boundary derived from the real configured
- *     interval. Not a third-party funding feed.
- *   openInterest   — this exchange's OWN open positions, aggregated. An
- *     exchange is the only authoritative source for its own open interest;
- *     it is deliberately labelled as venue-scoped rather than market-wide.
- *   markPrices     — the real mark/index prices the futures engine prices
- *     PnL and liquidation off.
+ * **2. A number is either real or absent.** Every section is
+ * `Availability<T>`: `available: true` with a value, a `source` and a
+ * `fetchedAt`, or `available: false` with a reason and *no value-carrying
+ * fields at all*. There is no `?? 0` in this file. A provider outage
+ * cannot reach a chart as a zero because there is no zero to reach it
+ * with — and a genuine zero (an untraded contract's open interest) stays
+ * a genuine zero.
  *
- * What is deliberately NOT here, because no source in this system supports
- * it: liquidations and liquidation heatmaps, long/short ratio, market-wide
- * (cross-venue) open interest or funding, ETF flows, exchange
- * inflow/outflow, and whale activity. Each is reported as an explicitly
- * unsupported section with a reason, so the gap is visible in the API
- * instead of being quietly filled with a plausible number.
+ * ── The boundary that matters most ──────────────────────────────────
+ *
+ * `derivatives` is **VOLTEX's own book**, and it says so in the payload:
+ * `scope: 'venue'`, `source: 'voltex'`. Open interest is this exchange's
+ * open positions. Funding is this exchange's settled `FundingRateRecord`.
+ * Mark price is what the futures engine prices PnL and liquidation off.
+ *
+ * None of it is market-wide, and none of it may ever be presented as
+ * Binance's, Bybit's or OKX's. The inverse holds too: no external venue's
+ * derivatives metric may stand in for these. `UNSUPPORTED` below is where
+ * cross-venue metrics live, and they live there precisely because no
+ * legitimate source for them is configured.
+ *
+ * ── Access ──────────────────────────────────────────────────────────
+ *
+ * `getSnapshot()` is ordinary exchange market information: safe for any
+ * signed-in user, and it deliberately carries no operational detail.
+ * Provider circuit state, cooldowns and rate-limit counters live in
+ * `getDiagnostics()`, which the route gates to admins.
  */
 
-export type UnavailableReason =
-  | 'provider_unavailable'
-  | 'provider_not_configured'
-  | 'unsupported_metric'
-  | 'no_data';
-
-interface Unavailable {
-  available: false;
-  reason: UnavailableReason;
-  /** Short, non-sensitive explanation — safe to show an operator. */
-  detail?: string;
-}
-
-type Section<T> = ({ available: true } & T) | Unavailable;
-
-export interface MarketOverviewSection {
+export interface MarketOverviewValue {
   totalMarketCapUsd: number;
   totalVolume24hUsd: number;
   btcDominancePercent: number | null;
   ethDominancePercent: number | null;
   marketCapChangePercent24h: number | null;
-  source: 'coingecko';
 }
 
-export interface SentimentSection {
+export interface SentimentValue {
   value: number;
   classification: string;
   updatedAt: number;
-  source: 'alternative.me';
 }
 
-export interface FundingSection {
+/**
+ * One listed contract. Every field is independently nullable: a contract
+ * that has never settled funding has `fundingRate: null`, which the UI
+ * renders as a dash. It does NOT have `fundingRate: 0`, which would read
+ * as "funding is flat" — a different and false claim.
+ */
+export interface DerivativeContract {
+  symbol: string;
+  markPrice: string | null;
+  indexPrice: string | null;
+  /** This venue's open positions, in base units. A real 0 is a real 0. */
+  openInterestBase: string | null;
+  /** Null when there is no mark price to value the position in USD. */
+  openInterestUsd: string | null;
+  fundingRate: string | null;
+  fundingAppliedAt: number | null;
+}
+
+export interface DerivativesValue {
+  /** Never market-wide. This exchange's own book, and labelled as such. */
+  scope: 'venue';
   intervalHours: number;
   nextSettlementAt: number;
-  /** Latest settled rate per listed contract. A contract that has never
-   *  settled is simply absent — never a zero. */
-  latest: { symbol: string; rate: string; markPrice: string; indexPrice: string; appliedAt: number }[];
-  source: 'voltex_futures';
+  contracts: DerivativeContract[];
 }
 
-export interface OpenInterestSection {
-  /** Explicitly this venue's own book, not a market-wide figure. */
-  scope: 'venue';
-  contracts: { symbol: string; openInterestBase: string; openInterestUsd: string | null }[];
-  source: 'voltex_futures';
-}
-
-export interface MarkPriceSection {
-  contracts: { symbol: string; markPrice: string; indexPrice: string }[];
-  source: 'voltex_futures';
-}
-
-export interface AnalyticsSnapshot {
-  generatedAt: number;
-  sections: {
-    marketOverview: Section<MarketOverviewSection>;
-    sentiment: Section<SentimentSection>;
-    funding: Section<FundingSection>;
-    openInterest: Section<OpenInterestSection>;
-    markPrices: Section<MarkPriceSection>;
-    liquidations: Unavailable;
-    longShortRatio: Unavailable;
-    marketWideOpenInterest: Unavailable;
-    etfFlows: Unavailable;
-    exchangeFlows: Unavailable;
-    whaleActivity: Unavailable;
-  };
-  /** Operational state of the upstream providers. Admin-only, like the rest
-   *  of this payload — it says whether a section is missing because a
-   *  provider is down rather than because the metric doesn't exist. */
-  providers: { provider: string; state: string; healthy: boolean; lastSuccessAt: number | null; rateLimitHits: number }[];
-}
-
-/** Metrics with no legitimate source in this system. Stated once, here, so
- *  the reason a section is empty is code rather than a comment. */
+/**
+ * Analytics modules with no legitimate source in this system.
+ *
+ * Each is a designed, laid-out slot in the UI that renders a compact
+ * "no source connected" state. None of them can render a number, because
+ * the payload gives them nothing to render — that is the whole point of
+ * listing them here rather than omitting them: the gap is visible in the
+ * API instead of being quietly filled with something plausible.
+ */
 const UNSUPPORTED: Record<string, string> = {
-  liquidations: 'No liquidation feed is available: this venue records its own liquidations only, and no cross-venue provider is configured.',
-  longShortRatio: 'Long/short ratio requires per-venue account positioning data that no configured provider exposes.',
-  marketWideOpenInterest: 'Cross-venue open interest requires a derivatives aggregator; only this venue\'s own open interest is available.',
+  liquidations:
+    'No cross-venue liquidation feed is configured. This venue records its own liquidations only.',
+  liquidationHeatmap:
+    'A liquidation heatmap needs cross-venue liquidation observations; no provider supplies them.',
+  marketWideOpenInterest:
+    "Cross-venue open interest requires a derivatives aggregator; only this venue's own open interest is available.",
+  longShortRatio:
+    'Long/short ratio requires per-venue account positioning data that no configured provider exposes.',
   etfFlows: 'ETF creation/redemption flows require a dedicated data vendor; none is configured.',
   exchangeFlows: 'Exchange inflow/outflow requires on-chain attribution data; no provider is configured.',
   whaleActivity: 'Whale tracking requires labelled on-chain address data; no provider is configured.',
+  volatility: 'Realized/implied volatility needs a historical series this system does not yet retain.',
+  futuresBasis: 'Basis and term structure need dated futures quotes; this venue lists perpetuals only.',
+  correlations: 'Cross-market correlation needs equity and commodity series from a vendor; none is configured.',
+  sectorRotation: 'Sector performance needs a sector-classified index series; no provider is configured.',
 };
 
-function unsupported(key: keyof typeof UNSUPPORTED): Unavailable {
-  return { available: false, reason: 'unsupported_metric', detail: UNSUPPORTED[key] };
+export type UnsupportedModule = keyof typeof UNSUPPORTED;
+
+export interface AnalyticsSnapshot {
+  generatedAt: number;
+  /** Contracts this exchange actually lists. The UI's asset selector is
+   *  built from this, never from a hardcoded list — an asset VOLTEX does
+   *  not carry must not be offered as a choice. */
+  contracts: string[];
+  sections: {
+    marketOverview: Availability<MarketOverviewValue>;
+    sentiment: Availability<SentimentValue>;
+    derivatives: Availability<DerivativesValue>;
+  };
+  /** Designed-but-unsourced modules, each value-free. */
+  unsupported: Record<string, Unavailable>;
+}
+
+/** Operational detail. Admin-only — see the route. */
+export interface AnalyticsDiagnostics {
+  providers: ProviderHealthSnapshot[];
 }
 
 export class AnalyticsDataService {
   constructor(
     private readonly prisma: PrismaClient,
-    private readonly coinGecko: CoinGeckoService,
-    private readonly fearGreed: FearGreedService,
+    private readonly gateway: MarketDataGateway,
     private readonly markPriceService: MarkPriceService,
     private readonly marketRegistry: FuturesMarketRegistry
   ) {}
 
   /**
-   * One snapshot of everything currently supported. Sections are gathered
-   * independently — one provider being down degrades exactly one section
-   * rather than failing the whole payload.
+   * One snapshot. Sections are gathered independently, so one provider
+   * being down degrades exactly one section rather than failing the page.
    */
   async getSnapshot(): Promise<AnalyticsSnapshot> {
-    const symbols = this.marketRegistry.list();
-    const [marketOverview, sentiment, funding, openInterest, markPrices] = await Promise.all([
-      this.marketOverview(),
-      this.sentiment(),
-      this.funding(symbols),
-      this.openInterest(symbols),
-      this.markPrices(symbols),
+    const contracts = this.marketRegistry.list();
+    const [marketOverview, sentiment, derivatives] = await Promise.all([
+      // Straight through the gateway: same cache, same circuit, same
+      // freshness metadata every other market surface reads.
+      this.gateway.getMarketOverview(),
+      this.gateway.getSentiment(),
+      this.derivatives(contracts),
+    ]);
+
+    const unsupported: Record<string, Unavailable> = {};
+    for (const key of Object.keys(UNSUPPORTED)) {
+      unsupported[key] = unavailable('unsupported_metric', UNSUPPORTED[key]);
+    }
+
+    return { generatedAt: Date.now(), contracts, sections: { marketOverview, sentiment, derivatives }, unsupported };
+  }
+
+  /** Provider circuit state, cooldowns and rate-limit counters. Says
+   *  whether a section is missing because a provider is down rather than
+   *  because the metric does not exist. Never part of the user payload. */
+  getDiagnostics(): AnalyticsDiagnostics {
+    return { providers: providerHealthRegistry.snapshot() };
+  }
+
+  /**
+   * This venue's own derivatives state, per listed contract.
+   *
+   * Deliberately not routed through the gateway: the gateway serves
+   * REFERENCE market data about the outside world, and these are VOLTEX
+   * financial values read from the futures services and this exchange's
+   * own tables. Keeping them on separate paths is what stops an external
+   * venue's number ever standing in for one of ours.
+   */
+  private async derivatives(symbols: string[]): Promise<Availability<DerivativesValue>> {
+    if (symbols.length === 0) {
+      return unavailable('no_data', 'No perpetual contracts are listed.');
+    }
+    try {
+      const contracts = await Promise.all(symbols.map((symbol) => this.contract(symbol)));
+      // Every field of every contract being null means there is genuinely
+      // nothing to show — an empty table would be indistinguishable from a
+      // working one with no rows.
+      const anyData = contracts.some(
+        (c) => c.markPrice !== null || c.openInterestBase !== null || c.fundingRate !== null
+      );
+      if (!anyData) {
+        return unavailable('no_data', 'No mark price, open interest or settled funding is available yet.');
+      }
+      return available({
+        value: { scope: 'venue', intervalHours: FUNDING_INTERVAL_HOURS, nextSettlementAt: Date.now() + msUntilNextFundingBoundary(), contracts },
+        source: 'voltex',
+        fetchedAt: Date.now(),
+        stale: false,
+      });
+    } catch {
+      return unavailable('no_data', 'Contract data could not be read.');
+    }
+  }
+
+  private async contract(symbol: string): Promise<DerivativeContract> {
+    // Each read is independent and each failure is local: a missing mark
+    // price must not erase a real open-interest figure, and vice versa.
+    const [markPrice, indexPrice, openInterest, funding] = await Promise.all([
+      this.markPriceService.getMarkPrice(symbol).catch(() => null),
+      this.markPriceService.getIndexPrice(symbol).catch(() => null),
+      this.openInterestFor(symbol),
+      this.fundingFor(symbol),
     ]);
 
     return {
-      generatedAt: Date.now(),
-      sections: {
-        marketOverview,
-        sentiment,
-        funding,
-        openInterest,
-        markPrices,
-        liquidations: unsupported('liquidations'),
-        longShortRatio: unsupported('longShortRatio'),
-        marketWideOpenInterest: unsupported('marketWideOpenInterest'),
-        etfFlows: unsupported('etfFlows'),
-        exchangeFlows: unsupported('exchangeFlows'),
-        whaleActivity: unsupported('whaleActivity'),
-      },
-      providers: providerHealthRegistry.snapshot().map((p) => ({
-        provider: p.provider,
-        state: p.state,
-        healthy: p.healthy,
-        lastSuccessAt: p.lastSuccessAt,
-        rateLimitHits: p.rateLimitHits,
-      })),
+      symbol,
+      markPrice: markPrice ? markPrice.toString() : null,
+      indexPrice: indexPrice ? indexPrice.toString() : null,
+      openInterestBase: openInterest ? openInterest.toString() : null,
+      // Null, never a stand-in, when there is no mark price to value it.
+      openInterestUsd: openInterest && markPrice ? openInterest.times(markPrice).toString() : null,
+      fundingRate: funding ? funding.rate : null,
+      fundingAppliedAt: funding ? funding.appliedAt : null,
     };
   }
 
-  private async marketOverview(): Promise<Section<MarketOverviewSection>> {
+  /** This venue's open positions. Returns a real BigNumber zero for a
+   *  listed-but-untraded contract, and `null` only when the read itself
+   *  failed — the two must not collapse into the same answer. */
+  private async openInterestFor(symbol: string): Promise<BigNumber | null> {
     try {
-      const global = await this.coinGecko.getGlobalMarket();
-      return {
-        available: true,
-        totalMarketCapUsd: global.totalMarketCapUsd,
-        totalVolume24hUsd: global.totalVolume24hUsd,
-        btcDominancePercent: global.btcDominancePercent,
-        ethDominancePercent: global.ethDominancePercent,
-        marketCapChangePercent24h: global.marketCapChangePercent24h,
-        source: 'coingecko',
-      };
+      const aggregate = await this.prisma.futuresPosition.aggregate({
+        where: { symbol, status: 'OPEN' },
+        _sum: { size: true },
+      });
+      return new BigNumber(aggregate._sum.size?.toString() ?? '0');
     } catch {
-      // Deliberately no numbers at all rather than nulls that a chart might
-      // plot as zero.
-      return { available: false, reason: 'provider_unavailable', detail: 'CoinGecko global market data is unavailable.' };
+      return null;
     }
   }
 
-  private async sentiment(): Promise<Section<SentimentSection>> {
+  /** The most recent SETTLED interval. A contract that has never settled
+   *  contributes nothing rather than a zero rate. */
+  private async fundingFor(symbol: string): Promise<{ rate: string; appliedAt: number } | null> {
     try {
-      const reading = await this.fearGreed.getIndex();
-      return { available: true, ...reading, source: 'alternative.me' };
+      const record = await this.prisma.fundingRateRecord.findFirst({
+        where: { symbol },
+        orderBy: { appliedAt: 'desc' },
+      });
+      return record ? { rate: record.rate.toString(), appliedAt: record.appliedAt.getTime() } : null;
     } catch {
-      return { available: false, reason: 'provider_unavailable', detail: 'The Fear & Greed index is unavailable.' };
+      return null;
     }
-  }
-
-  private async funding(symbols: string[]): Promise<Section<FundingSection>> {
-    if (symbols.length === 0) return { available: false, reason: 'no_data', detail: 'No perpetual contracts are listed.' };
-    try {
-      // One row per symbol: the most recent settled interval. A symbol that
-      // has never settled contributes nothing rather than a zero rate.
-      const latest = await Promise.all(
-        symbols.map(async (symbol) => {
-          const record = await this.prisma.fundingRateRecord.findFirst({ where: { symbol }, orderBy: { appliedAt: 'desc' } });
-          return record
-            ? {
-                symbol,
-                rate: record.rate.toString(),
-                markPrice: record.markPrice.toString(),
-                indexPrice: record.indexPrice.toString(),
-                appliedAt: record.appliedAt.getTime(),
-              }
-            : null;
-        })
-      );
-      const settled = latest.filter((r): r is NonNullable<typeof r> => r !== null);
-      if (settled.length === 0) {
-        return { available: false, reason: 'no_data', detail: 'No funding interval has settled yet.' };
-      }
-      return {
-        available: true,
-        intervalHours: FUNDING_INTERVAL_HOURS,
-        nextSettlementAt: Date.now() + msUntilNextFundingBoundary(),
-        latest: settled,
-        source: 'voltex_futures',
-      };
-    } catch {
-      return { available: false, reason: 'no_data', detail: 'Funding history could not be read.' };
-    }
-  }
-
-  private async openInterest(symbols: string[]): Promise<Section<OpenInterestSection>> {
-    if (symbols.length === 0) return { available: false, reason: 'no_data', detail: 'No perpetual contracts are listed.' };
-    try {
-      const contracts = await Promise.all(
-        symbols.map(async (symbol) => {
-          const aggregate = await this.prisma.futuresPosition.aggregate({
-            where: { symbol, status: 'OPEN' },
-            _sum: { size: true },
-          });
-          const size = new BigNumber(aggregate._sum.size?.toString() ?? '0');
-          const markPrice = await this.markPriceService.getMarkPrice(symbol);
-          return {
-            symbol,
-            openInterestBase: size.toString(),
-            // null, never a stand-in, when there is no mark price to value it.
-            openInterestUsd: markPrice ? size.times(markPrice).toString() : null,
-          };
-        })
-      );
-      return { available: true, scope: 'venue', contracts, source: 'voltex_futures' };
-    } catch {
-      return { available: false, reason: 'no_data', detail: 'Open interest could not be computed.' };
-    }
-  }
-
-  private async markPrices(symbols: string[]): Promise<Section<MarkPriceSection>> {
-    if (symbols.length === 0) return { available: false, reason: 'no_data', detail: 'No perpetual contracts are listed.' };
-    const contracts: MarkPriceSection['contracts'] = [];
-    for (const symbol of symbols) {
-      const [markPrice, indexPrice] = await Promise.all([
-        this.markPriceService.getMarkPrice(symbol),
-        this.markPriceService.getIndexPrice(symbol),
-      ]);
-      // A contract whose index price is unavailable is omitted — the
-      // alternative would be publishing a mark price of zero.
-      if (markPrice && indexPrice) {
-        contracts.push({ symbol, markPrice: markPrice.toString(), indexPrice: indexPrice.toString() });
-      }
-    }
-    if (contracts.length === 0) {
-      return { available: false, reason: 'provider_unavailable', detail: 'No index price is currently available.' };
-    }
-    return { available: true, contracts, source: 'voltex_futures' };
   }
 }

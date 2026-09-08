@@ -66,7 +66,7 @@ export function Nav({
     { to: '/markets', label: t('nav.markets') },
     { to: '/trade', label: t('nav.trade') },
     { to: '/futures', label: t('nav.futures') },
-    { to: '/analytics', label: t('nav.analytics'), adminOnly: true },
+    { to: '/analytics', label: t('nav.analytics') },
     { to: '/wallet', label: t('nav.wallet') },
     { to: '/copy-trading', label: t('nav.copyTrading') },
     { to: '/arbitrage', label: t('nav.arbitrage') },

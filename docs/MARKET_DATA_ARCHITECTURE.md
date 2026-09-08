@@ -387,8 +387,10 @@ and `rateLimitHits`.
 - One log line per transition — enough to see a provider go down and come
   back in Render's logs, quiet enough to survive a bad hour.
 
-Health is exposed only through the admin-gated analytics route. It is
-operational detail, not public data.
+Health is exposed only through the admin-gated `GET /market/status` and
+`GET /analytics/diagnostics`. It is operational detail, not public data,
+and the user-facing `/analytics/overview` has no access to the registry at
+all — see §10.
 
 ## 9. WebSocket ownership and subscriptions
 
@@ -475,31 +477,99 @@ or `available: false` with a machine-readable `reason`.
 
 **Supported today**
 
-| Section | Source |
-|---|---|
-| `marketOverview` — total market cap, total 24h volume, BTC and ETH dominance, 24h market-cap change | CoinGecko `/global` |
-| `sentiment` — Fear & Greed value + classification | alternative.me |
-| `funding` — latest settled rate per listed contract, interval, next settlement boundary | VOLTEX's own `FundingRateRecord` + real configured interval |
-| `openInterest` — per contract, in base units and USD, explicitly `scope: 'venue'` | VOLTEX's own open positions |
-| `markPrices` — mark and index price per contract | VOLTEX `MarkPriceService` |
-| `providers` — per-provider circuit state and health | `ProviderHealth` registry |
+| Section | Source | Scope |
+|---|---|---|
+| `marketOverview` — total market cap, total 24h volume, BTC and ETH dominance, 24h market-cap change | CoinGecko `/global`, **through the gateway** | market-wide |
+| `sentiment` — Fear & Greed value + classification | alternative.me, **through the gateway** | market-wide |
+| `derivatives` — per listed contract: mark price, index price, open interest (base + USD), latest settled funding rate, funding interval, next settlement boundary | VOLTEX's own `MarkPriceService`, open positions and `FundingRateRecord` | **`scope: 'venue'`** |
+| `contracts` — the contracts this exchange actually lists | `FuturesMarketRegistry` | VOLTEX |
+
+Every section is the shared `Availability<T>` (§2): `available: true` with
+a value, a `source` and a `fetchedAt`, or `available: false` with a reason
+and no value-carrying fields. Each contract's fields are **independently
+nullable** — a contract that has never settled funding reports
+`fundingRate: null`, which renders as a dash. It does not report `0`,
+which would read as "funding is flat".
+
+`AnalyticsDataService` **constructs no provider client of its own.**
+Market-wide figures come through `MarketDataGateway`, so they are the same
+cached reads `/markets` already makes: opening Analytics costs no
+additional upstream request. VOLTEX's own derivatives state deliberately
+does NOT go through the gateway — the gateway serves reference data about
+the outside world, and keeping the two on separate paths is what stops an
+external venue's number ever standing in for one of ours (§15).
+
+### Access
+
+| Endpoint | Who | Why |
+|---|---|---|
+| `GET /analytics/overview` | any signed-in user | Ordinary exchange market information. Every figure in it is already visible on `/markets` or the futures terminal. |
+| `GET /analytics/diagnostics` | **admin only** | Provider circuit state, consecutive failures, cooldowns, rate-limit hits. |
+| `GET /market/status` | **admin only** | The same operational data, plus the capability table and catalogue size. |
+
+Analytics was admin-gated until Analytics Live V1, for two reasons: the
+page was an empty admin placeholder, and its payload carried provider
+health. Neither is true now, so the gate moved to where the sensitive data
+actually is rather than being dropped. The split is **structural**:
+`getSnapshot()` has no reference to the health registry at all, so it is
+not a field filter a later edit could quietly widen.
 
 ## 11. Analytics: deliberately unsupported
 
-Returned as `available: false, reason: 'unsupported_metric'` with an
-explanation, and **no value-carrying fields at all** so nothing can be
-plotted as zero:
+Returned in the snapshot's `unsupported` map as
+`available: false, reason: 'unsupported_metric'` with an explanation, and
+**no value-carrying fields at all** so nothing can be plotted as zero. The
+UI renders each as a compact "no source connected" row, which reserves the
+module's place in the information architecture without pretending to be a
+chart that failed to load.
 
-- `liquidations` — no cross-venue liquidation feed is configured.
-- `longShortRatio` — needs per-venue account positioning no provider exposes.
-- `marketWideOpenInterest` — needs a derivatives aggregator; only this
-  venue's own OI exists.
-- `etfFlows` — needs a dedicated vendor.
-- `exchangeFlows` — needs on-chain attribution data.
-- `whaleActivity` — needs labelled on-chain address data.
+| Module | What it would need |
+|---|---|
+| `liquidations` | A cross-venue liquidation feed. This venue records its own liquidations only. |
+| `liquidationHeatmap` | Cross-venue liquidation observations. |
+| `marketWideOpenInterest` | A derivatives aggregator; only this venue's own OI exists. |
+| `longShortRatio` | Per-venue account positioning no provider exposes. |
+| `etfFlows` | A dedicated vendor. |
+| `exchangeFlows` | On-chain attribution data. |
+| `whaleActivity` | Labelled on-chain address data. |
+| `volatility` | A retained historical series this system does not yet keep. |
+| `futuresBasis` | Dated futures quotes; this venue lists perpetuals only. |
+| `correlations` | Equity and commodity series from a vendor. |
+| `sectorRotation` | A sector-classified index series. |
 
 Each would require a new paid or key-bearing provider. None is faked, and
 none is scraped.
+
+### The liquidity map, and what was left out
+
+The archived Analytics branch (`origin/codex/analytics-v0-refine`) contains
+a genuinely good liquidation/liquidity-map module: a bucketed histogram,
+dual cumulative curves, wall/cluster/void classification, nearest-wall and
+void distances, a ranked-zone table and a weighted cascade-risk score.
+
+**Its data was entirely synthetic.** `liquidityModel.ts` generated the
+whole market from a seeded PRNG over hardcoded prices (`BTC: 68420`) and
+per-asset feature tables, behind a "Демонстрационный режим" checkbox.
+
+None of that generator shipped. The module's SLOT is present — titled,
+placed, and holding a compact unavailable state — so a real feed plugs
+into the same position later. What is absent is any code path that could
+produce a number for it. `frontend/src/lib/__tests__/analyticsLive.test.ts`
+asserts that absence directly against the shipped source: no
+`buildLiquidityModel`, no `cascadeRisk`, no `makeRng`/`hashSeed`, no
+`Math.random`, no demo toggle, and no hardcoded market figures anywhere in
+the Analytics sources.
+
+### Frontend cadence
+
+Analytics polls its single dataset on ONE timer at 30s
+(`frontend/src/pages/analytics/analyticsStore.ts`), reference-counted and
+cleaned up on unmount, with in-flight coalescing — the same shape as
+`lib/marketDataStore`. There is no per-card polling: the workspace's only
+`setInterval` drives the funding countdown clock and reaches no fetch.
+30s rather than the ticker store's 3-5s because every figure behind it is
+slow-moving (CoinGecko `/global` is cached 5 minutes server-side, Fear &
+Greed is republished daily, funding settles on an 8-hour boundary).
 
 ## 12. Adding a provider safely
 

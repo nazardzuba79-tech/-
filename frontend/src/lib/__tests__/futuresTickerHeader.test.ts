@@ -41,9 +41,14 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '82944edba1ffcbec0e8c5536444e867ffa6c564a7f3c5f3720d9961182d5dd4d'],
+  ['frontend/src/lib/api.ts', '9dfe51336834918e2f67f230aaa563a109b653ea1b1d16459c4c04e18d50e623'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
+  // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
+  // getAnalyticsOverview and its response types. Every futures method,
+  // including the index-price and internal open-interest reads this suite
+  // protects, is byte-unchanged, and src/api/routes/futures.ts below is
+  // still at its original fingerprint.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });
