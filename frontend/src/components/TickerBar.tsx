@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useMarketTicker } from '../lib/useMarketData';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 import { formatSpotBookNumber } from '../lib/spotOrderBook';
@@ -20,42 +19,40 @@ interface Stats {
  * change, high, low, base volume, quote volume — in that order, with the
  * reference's own sizes and colours (see TradeTerminal.css).
  *
- * Data is unchanged: live Kraken ticker figures, the same 3s poll as before.
+ * Data is unchanged: live Kraken ticker figures, still refreshed on a 3s
+ * cadence. What changed is where they come from — the shared market-data
+ * store (lib/marketDataStore) instead of this component's own
+ * `setInterval` + per-pair request. Every ticker consumer in the tab now
+ * shares ONE poll and ONE request; adding this bar to a page no longer
+ * adds a polling loop.
+ *
  * Labels stay translated rather than hard-coded English, since the app ships
  * seven languages.
  */
 export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair: string; onSelectPair?: () => void; spotPrecision?: boolean }) {
   const { t } = useLanguage();
-  const [stats, setStats] = useState<Stats | null>(null);
   const [baseAsset, quoteAsset] = pair.split('/');
   const displayPrice = spotPrecision ? formatSpotBookNumber : formatPrice;
 
-  useEffect(() => {
-    let cancelled = false;
-    function load() {
-      api
-        .getExternalTicker(pair)
-        .then((res) => {
-          if (cancelled) return;
-          const tk = res.ticker;
-          setStats({
-            lastPrice: parseFloat(tk.lastPrice),
-            changePercent: parseChangePercent(tk.changePercent24h, pair),
-            high24h: parseFloat(tk.high24h),
-            low24h: parseFloat(tk.low24h),
-            volume24h: parseFloat(tk.volume24h),
-            quoteVolume24h: parseFloat(tk.quoteVolume24h),
-          });
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 3000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [pair]);
+  // 3s, the cadence this bar has always used. The store polls at the
+  // fastest cadence any live subscriber asks for, so this stays as fresh
+  // as before while costing the tab nothing extra.
+  const { ticker } = useMarketTicker(pair, 3000);
+
+  // A pair the snapshot does not carry stays null and renders as a dash.
+  // It is never coerced to a zero price, and a failed poll keeps the last
+  // known good figures on screen rather than blanking them — the store
+  // holds the previous snapshot for exactly that reason.
+  const stats: Stats | null = ticker
+    ? {
+        lastPrice: parseFloat(ticker.lastPrice),
+        changePercent: parseChangePercent(ticker.changePercent24h, pair),
+        high24h: parseFloat(ticker.high24h),
+        low24h: parseFloat(ticker.low24h),
+        volume24h: parseFloat(ticker.volume24h),
+        quoteVolume24h: parseFloat(ticker.quoteVolume24h),
+      }
+    : null;
 
   const positive = (stats?.changePercent ?? 0) >= 0;
   const dir = positive ? 'up' : 'down';

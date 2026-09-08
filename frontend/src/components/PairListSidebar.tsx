@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { api } from '../lib/api';
+import { useMarketTickers } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { QUOTE_PRIORITY, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { useFavorites } from '../lib/useFavorites';
@@ -9,32 +9,15 @@ import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
 import './SpotMarketControls.css';
 
-// Per-coin logos, covering this app's newer/smaller listings (SUI, TAO,
-// ENA, …) that the static jsDelivr icon set CryptoIcon falls back to has
-// never had. Not polled: unlike price data, a coin's logo doesn't change
-// minute to minute, and the backend's own rankings cache only refreshes
-// hourly anyway (see CoinGeckoService).
-function useCoinIconMap(): Map<string, string> {
-  const [icons, setIcons] = useState<Map<string, string>>(new Map());
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getExternalRankings()
-      .then((res) => {
-        if (cancelled) return;
-        const iconMap = new Map<string, string>();
-        for (const r of res.rankings) {
-          if (r.image) iconMap.set(r.symbol, r.image);
-        }
-        setIcons(iconMap);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-  return icons;
-}
+// Per-coin logos now come from the Market Data Gateway's asset registry,
+// resolved inside CryptoIcon itself (tier 1 of its fallback chain) via the
+// batched /market/assets/icons endpoint.
+//
+// This replaces a hook that downloaded the ENTIRE 500-coin CoinGecko
+// rankings payload — including a 168-point 7-day sparkline per coin — to
+// build a symbol->image map and throw the rest away. The registry endpoint
+// returns only id/name/logo for the symbols actually on screen, in one
+// request, keyed by canonical id rather than by ticker.
 
 type SortField = 'volume' | 'price' | 'change' | 'symbol';
 
@@ -85,7 +68,6 @@ export const PairListSidebar = forwardRef<
 >(
   function PairListSidebar({ pair, onChange, onCollapse, onResizeStart, onResizeBy, marketWidth }, ref) {
     const { t } = useLanguage();
-    const coinIcons = useCoinIconMap();
     const [tickers, setTickers] = useState<TickerRow[]>([]);
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
@@ -111,51 +93,49 @@ export const PairListSidebar = forwardRef<
     // True once the ticker feed has returned a non-empty list at least
     // once — see loadTickers below.
     const hasLoadedTickersRef = useRef(false);
-    const requestSequence = useRef(0);
-    const requestPending = useRef(false);
 
     useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
 
-    function loadTickers() {
-      if (requestPending.current) return;
-      requestPending.current = true;
-      const sequence = ++requestSequence.current;
-      setLoadError(false);
-      api
-        .getExternalTickers()
-        .then((res) => {
-          if (sequence !== requestSequence.current) return;
-          if (res.tickers.length === 0) {
-            // The feed can come back with an empty array instead of throwing
-            // (a real backend hiccup, not a thrown error). Before any real
-            // data has ever loaded that must still surface a retry state —
-            // otherwise the list just goes silently blank with nothing to
-            // click. Once we've shown a real list at least once, though,
-            // keep it on screen rather than wiping it for a likely-transient
-            // empty poll (same "keep last known good data" behavior TickerBar
-            // already uses on its own fetch failures).
-            if (!hasLoadedTickersRef.current) setLoadError(true);
-            return;
-          }
-          hasLoadedTickersRef.current = true;
-          setTickers(res.tickers);
-          const now = Date.now();
-          if (sortSnapshotRef.current.size === 0 || now - lastSnapshotAtRef.current >= SORT_SNAPSHOT_INTERVAL_MS) {
-            const snapshot = new Map<string, number>();
-            for (const tk of res.tickers) snapshot.set(tk.pair, parseFloat(tk.quoteVolume24h || '0'));
-            sortSnapshotRef.current = snapshot;
-            lastSnapshotAtRef.current = now;
-          }
-        })
-        .catch(() => { if (sequence === requestSequence.current) setLoadError(true); })
-        .finally(() => { if (sequence === requestSequence.current) requestPending.current = false; });
-    }
+    // The shared market-data store replaces this panel's own 4s poll and
+    // its hand-rolled in-flight guard/sequence tracking: the store already
+    // runs one timer and one in-flight request for the whole tab, and
+    // late-arriving responses cannot land out of order because there is
+    // only ever one. Cadence and behaviour are otherwise unchanged.
+    const { tickers: tickerMap, loading, error, refresh } = useMarketTickers(4000);
 
     useEffect(() => {
-      loadTickers();
-      const poll = window.setInterval(loadTickers, 4000);
-      return () => { window.clearInterval(poll); requestSequence.current += 1; requestPending.current = false; };
-    }, []);
+      // The store keeps the last known good snapshot across a failed poll,
+      // so an empty map here means either "still loading" or "the feed has
+      // never returned anything" — the same distinction this panel already
+      // drew, now driven by the store's own loaded/error state rather than
+      // a local ref.
+      if (tickerMap.size > 0) {
+        hasLoadedTickersRef.current = true;
+        setTickers(Array.from(tickerMap.values()));
+        const now = Date.now();
+        if (sortSnapshotRef.current.size === 0 || now - lastSnapshotAtRef.current >= SORT_SNAPSHOT_INTERVAL_MS) {
+          const snapshot = new Map<string, number>();
+          for (const tk of tickerMap.values()) snapshot.set(tk.pair, parseFloat(tk.quoteVolume24h || '0'));
+          sortSnapshotRef.current = snapshot;
+          lastSnapshotAtRef.current = now;
+        }
+        setLoadError(false);
+        return;
+      }
+      // Empty and not loading: surface retry only if a real list has never
+      // been shown, exactly as before — a transient empty poll must not
+      // wipe a list the user is already reading.
+      if (!loading && !hasLoadedTickersRef.current) setLoadError(true);
+    }, [tickerMap, loading]);
+
+    useEffect(() => {
+      if (error && !hasLoadedTickersRef.current) setLoadError(true);
+    }, [error]);
+
+    function loadTickers() {
+      setLoadError(false);
+      refresh();
+    }
 
     useEffect(() => {
       function focusSearch(event: KeyboardEvent) {
@@ -311,7 +291,7 @@ export const PairListSidebar = forwardRef<
                 </button>
                 <button type="button" className="pair-select" aria-label={tk.pair} aria-pressed={tk.pair === pair} onClick={() => onChange(tk.pair)}>
                 <span className="p-icon">
-                  <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} imageUrl={coinIcons.get(tk.pair.split('/')[0])} />
+                  <CryptoIcon symbol={tk.pair.split('/')[0]} size={20} />
                 </span>
                 <span className="p-name">
                   <b className="p-base">{tk.pair.split('/')[0]}</b>

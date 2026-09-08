@@ -13,7 +13,7 @@
  * matching engine — it only reads and caches.
  */
 
-import { ProviderCache } from './marketData/ProviderCache';
+import { ProviderCache, type CachedValue } from './marketData/ProviderCache';
 import {
   HttpProviderClient,
   ProviderHealth,
@@ -190,21 +190,55 @@ export class KrakenMarketDataService {
   }
 
   async listSymbols(): Promise<MarketSymbol[]> {
-    const byPair = await this.getSymbolsMap();
-    return Array.from(byPair.values()).map(({ pair, baseAsset, quoteAsset }) => ({ pair, baseAsset, quoteAsset }));
+    return (await this.listSymbolsWithMeta()).value;
   }
 
   async getTickers(): Promise<MarketTicker[]> {
-    const byPair = await this.getTickersMap();
-    return Array.from(byPair.values());
+    return (await this.getTickersWithMeta()).value;
   }
 
   async getTicker(pair: string): Promise<MarketTicker | null> {
-    const byPair = await this.getTickersMap();
-    return byPair.get(pair.toUpperCase()) ?? null;
+    return (await this.getTickerWithMeta(pair)).value;
+  }
+
+  // ── Freshness-carrying variants ──────────────────────────────────────
+  //
+  // Same data, same caches, same requests — they just do not throw away
+  // the `fetchedAt`/`stale` the ProviderCache already computed. The plain
+  // methods above delegate to these, so there is exactly one code path per
+  // resource and no chance of the two drifting.
+  //
+  // The gateway uses these; every pre-existing caller keeps its original
+  // signature and is unaffected.
+
+  async listSymbolsWithMeta(): Promise<CachedValue<MarketSymbol[]>> {
+    const cached = await this.getSymbolsMapWithMeta();
+    return {
+      value: Array.from(cached.value.values()).map(({ pair, baseAsset, quoteAsset }) => ({ pair, baseAsset, quoteAsset })),
+      fetchedAt: cached.fetchedAt,
+      stale: cached.stale,
+    };
+  }
+
+  async getTickersWithMeta(): Promise<CachedValue<MarketTicker[]>> {
+    const cached = await this.getTickersMapWithMeta();
+    return { value: Array.from(cached.value.values()), fetchedAt: cached.fetchedAt, stale: cached.stale };
+  }
+
+  async getTickerWithMeta(pair: string): Promise<CachedValue<MarketTicker | null>> {
+    const cached = await this.getTickersMapWithMeta();
+    return {
+      value: cached.value.get(pair.toUpperCase()) ?? null,
+      fetchedAt: cached.fetchedAt,
+      stale: cached.stale,
+    };
   }
 
   async getOrderBook(pair: string, limit = 50): Promise<MarketOrderBookSnapshot> {
+    return (await this.getOrderBookWithMeta(pair, limit)).value;
+  }
+
+  async getOrderBookWithMeta(pair: string, limit = 50): Promise<CachedValue<MarketOrderBookSnapshot>> {
     const normalizedPair = pair.toUpperCase();
     // Keyed with the depth too: a 200-level request must not be served the
     // 50-level snapshot a different caller just cached.
@@ -219,7 +253,7 @@ export class KrakenMarketDataService {
         timestamp: Date.now(),
       } satisfies MarketOrderBookSnapshot;
     });
-    return cached.value;
+    return cached;
   }
 
   /**
@@ -242,6 +276,10 @@ export class KrakenMarketDataService {
    * candles still cost one request.
    */
   async getCandles(pair: string, interval: string, limit = 300): Promise<MarketCandle[]> {
+    return (await this.getCandlesWithMeta(pair, interval, limit)).value;
+  }
+
+  async getCandlesWithMeta(pair: string, interval: string, limit = 300): Promise<CachedValue<MarketCandle[]>> {
     const krakenInterval = INTERVAL_MAP[interval];
     if (!krakenInterval) throw new ExternalMarketDataError(`Unsupported interval: ${interval}`);
 
@@ -280,10 +318,14 @@ export class KrakenMarketDataService {
       return mergeCandleSeries(previous, fetched).slice(-MAX_CACHED_CANDLES);
     });
 
-    return cached.value.slice(-limit);
+    return { value: cached.value.slice(-limit), fetchedAt: cached.fetchedAt, stale: cached.stale };
   }
 
   async getRecentTrades(pair: string, limit = 60): Promise<MarketTrade[]> {
+    return (await this.getRecentTradesWithMeta(pair, limit)).value;
+  }
+
+  async getRecentTradesWithMeta(pair: string, limit = 60): Promise<CachedValue<MarketTrade[]>> {
     const normalizedPair = pair.toUpperCase();
     const cached = await this.trades.fetch(`${normalizedPair}:${limit}`, async () => {
       const info = await this.requireSymbol(normalizedPair);
@@ -304,7 +346,7 @@ export class KrakenMarketDataService {
           time: Math.round(time * 1000),
         }));
     });
-    return cached.value;
+    return cached;
   }
 
   private async requireSymbol(normalizedPair: string): Promise<SymbolInfo> {
@@ -315,8 +357,11 @@ export class KrakenMarketDataService {
   }
 
   private async getSymbolsMap(): Promise<Map<string, SymbolInfo>> {
-    const cached = await this.symbols.fetch('assetPairs', () => this.fetchSymbolsMap());
-    return cached.value;
+    return (await this.getSymbolsMapWithMeta()).value;
+  }
+
+  private async getSymbolsMapWithMeta(): Promise<CachedValue<Map<string, SymbolInfo>>> {
+    return this.symbols.fetch('assetPairs', () => this.fetchSymbolsMap());
   }
 
   private async fetchSymbolsMap(): Promise<Map<string, SymbolInfo>> {
@@ -371,10 +416,13 @@ export class KrakenMarketDataService {
   }
 
   private async getTickersMap(): Promise<Map<string, MarketTicker>> {
+    return (await this.getTickersMapWithMeta()).value;
+  }
+
+  private async getTickersMapWithMeta(): Promise<CachedValue<Map<string, MarketTicker>>> {
     // ProviderCache supplies what the hand-rolled `tickersInFlight` field
     // used to: one shared walk for every caller that lands while it runs.
-    const cached = await this.tickers.fetch('all', () => this.fetchTickersMap());
-    return cached.value;
+    return this.tickers.fetch('all', () => this.fetchTickersMap());
   }
 
   private async fetchTickersMap(): Promise<Map<string, MarketTicker>> {

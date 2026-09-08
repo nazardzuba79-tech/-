@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
@@ -41,14 +42,6 @@ import { formatPrice, formatCompact } from '../lib/formatNumber';
 export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; onSelectSymbol?: () => void }) {
   const { t } = useLanguage();
   const [baseAsset, quoteAsset] = symbol.split('/');
-  const [stats, setStats] = useState<{
-    lastPrice: number;
-    changePercent: number;
-    high24h: number;
-    low24h: number;
-    volume24h: number;
-    quoteVolume24h: number;
-  } | null>(null);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
@@ -67,28 +60,18 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
     // Every figure below is re-read for the symbol currently selected, so
     // the whole row always describes one instrument — there is no path
     // where a stat is left over from the previously selected contract.
-    setStats(null);
     setMarkPrice(null);
     setIndexPrice(null);
     setFundingRate(null);
     setOpenInterest(null);
 
+    // The 24h REFERENCE figures (last/change/high/low/volume/turnover) now
+    // come from the shared market-data store — see below. Everything in
+    // this loop is a VOLTEX financial value read from the futures
+    // services, and is deliberately unchanged: mark price, the settled
+    // funding rate and THIS VENUE'S OWN open interest. No external venue's
+    // derivatives metric is read here, and none may substitute for these.
     function load() {
-      api
-        .getExternalTicker(symbol)
-        .then((res) => {
-          if (cancelled) return;
-          const tk = res.ticker;
-          setStats({
-            lastPrice: parseFloat(tk.lastPrice),
-            changePercent: parseChangePercent(tk.changePercent24h, symbol),
-            high24h: parseFloat(tk.high24h),
-            low24h: parseFloat(tk.low24h),
-            volume24h: parseFloat(tk.volume24h),
-            quoteVolume24h: parseFloat(tk.quoteVolume24h),
-          });
-        })
-        .catch(() => {});
       api
         .getFuturesMarkPrice(symbol)
         .then((res) => {
@@ -123,6 +106,30 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
       clearInterval(interval);
     };
   }, [symbol]);
+
+  // Reference spot ticker for this contract's underlying, from the shared
+  // snapshot at the same 4s cadence this bar always used. A contract with
+  // no matching reference ticker yields null and renders as a dash — never
+  // a zero price, and never the previously selected contract's numbers,
+  // because the lookup is keyed on the current symbol.
+  const { ticker } = useMarketTicker(symbol, 4000);
+  const stats: {
+    lastPrice: number;
+    changePercent: number;
+    high24h: number;
+    low24h: number;
+    volume24h: number;
+    quoteVolume24h: number;
+  } | null = ticker
+    ? {
+        lastPrice: parseFloat(ticker.lastPrice),
+        changePercent: parseChangePercent(ticker.changePercent24h, symbol),
+        high24h: parseFloat(ticker.high24h),
+        low24h: parseFloat(ticker.low24h),
+        volume24h: parseFloat(ticker.volume24h),
+        quoteVolume24h: parseFloat(ticker.quoteVolume24h),
+      }
+    : null;
 
   const positive = (stats?.changePercent ?? 0) >= 0;
   const dir = positive ? 'up' : 'down';

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
+import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatAmount, formatCompact } from '../lib/formatNumber';
 import { formatSpotBookNumber } from '../lib/spotOrderBook';
@@ -115,35 +116,32 @@ export function OrderForm({
     return () => { cancelled = true; clearInterval(timer); };
   }, [baseAsset, quoteAsset, side, refreshKey, balanceVersion]);
 
+  const { ticker: referenceTicker } = useMarketTicker(pair, 5000);
+
   // A live reference price is needed for more than just MARKET orders now:
   // the % slider/total estimate for conditional orders, and the inline
   // "must be above/below current price" hint that mirrors the server's
   // own trigger-direction validation.
+  //
+  // Same 5s cadence, same figures, now from the shared market-data store
+  // rather than this form's own per-pair poll — the ticker bar directly
+  // above it was already fetching the identical data.
+  //
+  // This is REFERENCE price only: it drives estimates and the client-side
+  // hint. Order placement, validation and execution are unchanged, and the
+  // server re-validates every trigger direction against its own book.
   useEffect(() => {
-    let cancelled = false;
-    function load() {
-      api
-        .getExternalTicker(pair)
-        .then((res) => {
-          if (cancelled) return;
-          setMarketPrice(positiveOrderNumber(res.ticker.lastPrice));
-          setMarketStats({
-            changePercent24h: parseChangePercent(res.ticker.changePercent24h, pair),
-            high24h: parseFloat(res.ticker.high24h),
-            low24h: parseFloat(res.ticker.low24h),
-            volume24h: parseFloat(res.ticker.volume24h),
-            quoteVolume24h: parseFloat(res.ticker.quoteVolume24h),
-          });
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [pair]);
+    if (!referenceTicker) return;
+    setMarketPrice(positiveOrderNumber(referenceTicker.lastPrice));
+    setMarketStats({
+      changePercent24h: parseChangePercent(referenceTicker.changePercent24h, pair),
+      high24h: parseFloat(referenceTicker.high24h),
+      low24h: parseFloat(referenceTicker.low24h),
+      volume24h: parseFloat(referenceTicker.volume24h),
+      quoteVolume24h: parseFloat(referenceTicker.quoteVolume24h),
+    });
+    return;
+  }, [pair, referenceTicker]);
 
   const effectivePrice =
     family === 'OCO' ? Math.max(Number(ocoTakeProfitPrice) || 0, Number(ocoStopLimitPrice) || 0) :

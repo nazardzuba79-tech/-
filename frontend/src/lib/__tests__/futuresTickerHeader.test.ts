@@ -12,20 +12,38 @@ const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace
 const source = read('frontend/src/components/FuturesTickerBar.tsx');
 const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 
-// Baseline dac39db: protect the real API reads, refresh/reset/cancellation and
-// UTC countdown independently of the presentation-only JSX changes.
+// Baselines re-taken at the Market Data Gateway migration (see
+// docs/MARKET_DATA_ARCHITECTURE.md). What changed in these three files is
+// exactly one thing: the 24h REFERENCE spot figures (last/change/high/low/
+// volume/turnover) now come from the shared market-data store instead of
+// each component running its own poll.
+//
+// What did NOT change, and what the behavioural tests below still prove:
+// mark price, the settled funding rate and this venue's own open interest
+// are still read from the futures services, per symbol, exactly as before.
+// No external venue's derivatives metric is read here, and the seven-block
+// header hierarchy is untouched.
+test('VOLTEX derivatives reads (mark, funding, own open interest) stay on the futures services', () => {
+  const readsBlock = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
+  // The three VOLTEX financial reads are still here, still per symbol.
+  expect(readsBlock).toContain('api\n        .getFuturesMarkPrice(symbol)');
+  expect(readsBlock).toContain('.getFuturesFundingRate(symbol, 1)');
+  expect(readsBlock).toContain('.getFuturesOpenInterest(symbol)');
+  // And no external venue's derivatives data has been introduced.
+  expect(readsBlock).not.toMatch(/binance|bybit|okx|deribit|bitget/i);
+});
 test('market-data reads, including index price, are unchanged', () => {
   expect(hash(source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('))))
-    .toBe('937b5bc60793624f5be536e0a8faca7c983d95b0603acd46ff38fa9cf96ee8d7');
+    .toBe('9754885ec9903e7041b7cb48270db7118c0b222d4a2d8b3e97256da4c79c1131');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '302d129b9378b800f59ecb0fdac52c419da498389b7f0f4dbf3a00dc8509cfaa'],
+  ['frontend/src/lib/api.ts', '82944edba1ffcbec0e8c5536444e867ffa6c564a7f3c5f3720d9961182d5dd4d'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
-  ['frontend/src/components/TickerBar.tsx', '149674004c776087b8f5454971e25b6ad34d4275388f417eef5b7277e35d2ad3'],
+  ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });
@@ -33,12 +51,16 @@ test.each([
 function mount(overrides: Record<string, any> = {}, countdown = false) {
   let cursor = 0;
   const hooks: any[] = [], effects: (() => void)[] = [];
+  // The 24h reference figures moved from this component's own
+  // getExternalTicker call to the shared market-data store; the FIXTURE
+  // VALUES ARE IDENTICAL, so every rendered-output assertion below still
+  // asserts exactly what it did before.
+  const referenceTicker = {
+    lastPrice: '72345.67', changePercent24h: '2.34', high24h: '73000', low24h: '70000',
+    volume24h: '123456', quoteVolume24h: '987654321',
+  };
   const api = {
     getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8 })),
-    getExternalTicker: jest.fn(async () => ({ ticker: {
-      lastPrice: '72345.67', changePercent24h: '2.34', high24h: '73000', low24h: '70000',
-      volume24h: '123456', quoteVolume24h: '987654321',
-    } })),
     getFuturesMarkPrice: jest.fn(async () => ({ markPrice: '72340.12', indexPrice: '71999.88' })),
     getFuturesFundingRate: jest.fn(async () => ({ history: [{ rate: '0.00003' }] })),
     getFuturesOpenInterest: jest.fn(async () => ({ openInterest: '0', openInterestValue: '0' })),
@@ -65,6 +87,14 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
+    if (name === '../lib/useMarketData') {
+      return {
+        useMarketTicker: (_pair: string) => ({
+          ticker: overrides.__noTicker ? null : referenceTicker,
+          loading: false, error: false, stale: false,
+        }),
+      };
+    }
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/formatNumber') return numbers;
     if (name === '../lib/priceChange') return changes;

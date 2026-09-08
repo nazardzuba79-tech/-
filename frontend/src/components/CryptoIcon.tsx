@@ -1,4 +1,24 @@
 import { useEffect, useState } from 'react';
+import { assetMetadataStore } from '../lib/assetMetadataStore';
+
+/**
+ * Icon resolution, in order:
+ *
+ *   1. Canonical asset metadata from the Market Data Gateway's asset
+ *      registry — CoinGecko's own logo for that coin, looked up by
+ *      canonical id rather than by ticker. Batched: a 500-row table costs
+ *      ONE metadata request, never one per row (see lib/assetMetadataStore).
+ *   2. A caller-supplied `imageUrl`, for call sites that already hold one.
+ *   3. The explicit overrides below, for coins the static set is missing.
+ *   4. The jsDelivr cryptocurrency-icons set.
+ *   5. A deterministic letter avatar.
+ *
+ * Tiers 3-5 are the original pipeline, unchanged — they were already the
+ * right answer for a coin the catalogue does not cover, and they need no
+ * network of their own. What is new is tier 1: identity now comes from the
+ * registry, so a ticker collision resolves to the right coin's logo
+ * instead of whichever one happened to own the string.
+ */
 
 // Well-known open icon set (MIT), mirrored on jsDelivr for reliability —
 // same approach most small/mid exchanges use rather than hosting or
@@ -74,6 +94,36 @@ export function assetColor(symbol: string): AssetColor {
   return BRAND_COLORS[symbol.toUpperCase()] ?? { solid: avatarColor(symbol) };
 }
 
+/**
+ * The registry logo for one symbol, if the batched store already holds it.
+ *
+ * Subscribes once per icon but re-renders only when THIS symbol's logo
+ * actually changes, so a 500-row table does not re-render every row every
+ * time one batch lands.
+ */
+function useRegistryLogo(symbol: string, enabled: boolean): string | null {
+  const [logo, setLogo] = useState<string | null>(() =>
+    enabled ? assetMetadataStore.get(symbol)?.logoUrl ?? null : null
+  );
+
+  useEffect(() => {
+    if (!enabled) {
+      setLogo(null);
+      return;
+    }
+    const read = () => assetMetadataStore.get(symbol)?.logoUrl ?? null;
+    setLogo(read());
+    assetMetadataStore.request([symbol]);
+    return assetMetadataStore.subscribe(() => {
+      const next = read();
+      // Guarded: identical values must not schedule a render.
+      setLogo((prev) => (prev === next ? prev : next));
+    });
+  }, [symbol, enabled]);
+
+  return logo;
+}
+
 export function CryptoIcon({
   symbol,
   size = 20,
@@ -88,6 +138,11 @@ export function CryptoIcon({
    * to that jsDelivr icon, then the letter avatar, on any load failure. */
   imageUrl?: string | null;
 }) {
+  // Only consult the registry when the caller has not already supplied a
+  // logo — no point spending a lookup on a question already answered.
+  const registryLogo = useRegistryLogo(symbol, !imageUrl);
+  const preferredUrl = imageUrl ?? registryLogo;
+
   const [preferredFailed, setPreferredFailed] = useState(false);
   const [fallbackFailed, setFallbackFailed] = useState(false);
 
@@ -97,9 +152,9 @@ export function CryptoIcon({
   useEffect(() => {
     setPreferredFailed(false);
     setFallbackFailed(false);
-  }, [symbol, imageUrl]);
+  }, [symbol, preferredUrl]);
 
-  const usingFallback = !imageUrl || preferredFailed;
+  const usingFallback = !preferredUrl || preferredFailed;
 
   if (usingFallback && fallbackFailed) {
     return (
@@ -125,7 +180,7 @@ export function CryptoIcon({
 
   return (
     <img
-      src={usingFallback ? iconUrl(symbol) : imageUrl!}
+      src={usingFallback ? iconUrl(symbol) : preferredUrl!}
       alt={symbol}
       width={size}
       height={size}

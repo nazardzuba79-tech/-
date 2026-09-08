@@ -83,15 +83,26 @@ test('actual stateful BTC → MOG → BTC book initializes grouping before paint
 
 function renderTicker(spotPrecision: boolean) {
   const output: Record<string, any> = {};
-  const stats = { lastPrice: 0.0000001091, high24h: 0.0000001191, low24h: 0.0000000991,
-    changePercent: 1, volume24h: 2000000, quoteVolume24h: 200 };
+  // TickerBar reads the shared market-data store instead of its own poll
+  // now, so the fixture arrives as a raw ticker (string fields, as the API
+  // returns them) rather than pre-parsed stats. The VALUES ARE THE SAME
+  // sub-six-decimal figures, so the assertions below are unchanged.
+  const ticker = {
+    pair: 'MOG/USDT',
+    lastPrice: '0.0000001091', high24h: '0.0000001191', low24h: '0.0000000991',
+    changePercent24h: '1', volume24h: '2000000', quoteVolume24h: '200',
+    bidPrice: '0.0000001090', askPrice: '0.0000001092',
+  };
   new Function('require', 'exports', compile(readFileSync(resolve(frontend, 'src/components/TickerBar.tsx'), 'utf8')))((name: string) => {
-    if (name === 'react') return { ...React, useEffect: () => {}, useState: () => [stats, () => {}] };
+    if (name === 'react') return { ...React, useEffect: () => {}, useState: () => [null, () => {}] };
     if (name === '../lib/spotOrderBook') return helpers;
     if (name === '../lib/formatNumber') return numberFormat;
     if (name === '../lib/api') return { api: {} };
     if (name === '../lib/priceChange') return { parseChangePercent: Number };
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
+    if (name === '../lib/useMarketData') {
+      return { useMarketTicker: () => ({ ticker, loading: false, error: false, stale: false }) };
+    }
     return requireFrontend(name);
   }, output);
   return requireFrontend('react-dom/server').renderToStaticMarkup(React.createElement(output.TickerBar, { pair: 'MOG/USDT', spotPrecision }));

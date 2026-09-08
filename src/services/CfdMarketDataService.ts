@@ -15,7 +15,26 @@
  * NOT tested against the live API from this environment (this sandbox's
  * outbound proxy blocks non-allowlisted hosts) — verify once deployed with
  * a real key.
+ *
+ * Transport, caching and health now go through the same shared primitives
+ * as Kraken/CoinGecko/Fear & Greed (ProviderCache, HttpProviderClient,
+ * ProviderHealth). Before this it was the only key-bearing provider in the
+ * system with a hand-rolled `{tickers, expiresAt}` cache, no request
+ * deduplication, no retry policy, no Retry-After handling and no circuit
+ * breaker — on a metered 8-credits/minute budget, which made it the one
+ * provider where an unprotected request loop costs real money. The TTL and
+ * the six-symbol list are unchanged; what changed is what happens when the
+ * provider says no.
  */
+
+import { ProviderCache, type CachedValue } from './marketData/ProviderCache';
+import {
+  HttpProviderClient,
+  ProviderHealth,
+  logCircuitTransition,
+  providerHealthRegistry,
+  type ProviderRequestPolicy,
+} from './marketData/ProviderHealth';
 
 export class ExternalCfdDataError extends Error {}
 
@@ -29,7 +48,10 @@ export interface CfdTicker {
   symbol: string;
   name: string;
   price: string;
-  changePercent24h: string; // already a percentage value, e.g. "-0.31" — same convention as MarketTicker
+  /** Already a percentage value, e.g. "-0.31" — same convention as
+   *  MarketTicker. ABSENT when Twelve Data did not report one: a missing
+   *  24h change is unknown, not zero, and the UI shows a dash. */
+  changePercent24h?: string;
 }
 
 // Twelve Data's free plan charges ONE credit per symbol in a batched
@@ -55,15 +77,41 @@ export const CFD_INSTRUMENTS: CfdInstrument[] = [
 // 60s, not 30s — halves the credit burn rate to stay under Twelve Data's
 // 8-credits/minute free-plan budget (see CFD_INSTRUMENTS' comment above).
 const TICKERS_TTL_MS = 60_000;
+// Deliberately short. A forex/gold quote is what the CFD order form prices
+// against, so this is trading-adjacent data: one failed poll may be
+// covered by the last good value, a sustained outage may not. Past this
+// the caller gets an explicit unavailable rather than a two-minute-old
+// price presented as the current one.
+const TICKERS_MAX_STALE_MS = 120_000;
 
 export class CfdMarketDataService {
-  private cache: { tickers: CfdTicker[]; expiresAt: number } | null = null;
+  private readonly tickersCache: ProviderCache<CfdTicker[]>;
+  private readonly http: HttpProviderClient;
+  private readonly health: ProviderHealth;
 
   constructor(
     private readonly apiKey: string | undefined,
     private readonly fetchFn: typeof fetch = fetch,
-    private readonly baseUrl = 'https://api.twelvedata.com'
-  ) {}
+    private readonly baseUrl = 'https://api.twelvedata.com',
+    policy: ProviderRequestPolicy = {}
+  ) {
+    this.health = providerHealthRegistry.register(
+      new ProviderHealth('twelvedata', { onStateChange: logCircuitTransition })
+    );
+    this.http = new HttpProviderClient('Twelve Data', {
+      ...policy,
+      fetchFn: this.fetchFn,
+      health: this.health,
+      wrapError: (message) => new ExternalCfdDataError(message),
+    });
+    this.tickersCache = new ProviderCache<CfdTicker[]>({
+      ttlMs: TICKERS_TTL_MS,
+      maxStaleMs: TICKERS_MAX_STALE_MS,
+      maxEntries: 4,
+      onStaleServe: (key, ageMs) =>
+        console.warn(`[marketData] twelvedata serving stale ${key} (${Math.round(ageMs / 1000)}s old)`),
+    });
+  }
 
   /** Whether a real key is configured — callers use this to show an honest
    * "not set up yet" state instead of a scary error when it's simply
@@ -73,20 +121,36 @@ export class CfdMarketDataService {
   }
 
   async getTickers(): Promise<CfdTicker[]> {
-    if (!this.apiKey) return [];
-    if (this.cache && this.cache.expiresAt > Date.now()) return this.cache.tickers;
+    return (await this.getTickersWithMeta()).value;
+  }
 
+  /**
+   * Same data with the freshness the cache already knows about. The
+   * gateway uses this; `getTickers()` above keeps its original signature
+   * so every existing caller is untouched.
+   *
+   * An unconfigured key returns an empty list rather than throwing —
+   * unchanged behaviour, and the distinction the route relies on to show
+   * "not set up yet" instead of an error banner.
+   */
+  async getTickersWithMeta(): Promise<CachedValue<CfdTicker[]>> {
+    if (!this.apiKey) return { value: [], fetchedAt: Date.now(), stale: false };
+    // One in-flight request per key: with the instrument list and the
+    // price panel both mounted, a cold cache now costs one credit, not
+    // two. On an 8-credits/minute budget that is the difference between
+    // fitting and not.
+    return this.tickersCache.fetch('quotes', () => this.fetchTickers());
+  }
+
+  private async fetchTickers(): Promise<CfdTicker[]> {
     const symbolsParam = CFD_INSTRUMENTS.map((i) => i.twelveDataSymbol).join(',');
-    let res: Response;
-    try {
-      res = await this.fetchFn(`${this.baseUrl}/quote?symbol=${encodeURIComponent(symbolsParam)}&apikey=${this.apiKey}`);
-    } catch (err: any) {
-      throw new ExternalCfdDataError(`Failed to reach Twelve Data: ${err.message}`);
-    }
-    if (!res.ok) {
-      throw new ExternalCfdDataError(`Twelve Data responded with HTTP ${res.status}`);
-    }
-    const body = (await res.json()) as Record<string, any>;
+    // The key is a query parameter Twelve Data requires; it is read from
+    // the environment, never logged, and never included in an error
+    // message — HttpProviderClient reports status codes and the provider
+    // name only.
+    const body = (await this.http.getJson(
+      `${this.baseUrl}/quote?symbol=${encodeURIComponent(symbolsParam)}&apikey=${this.apiKey}`
+    )) as Record<string, any>;
 
     // A single-symbol request returns one flat object instead of one keyed
     // by symbol — normalize both shapes the same way.
@@ -110,11 +174,13 @@ export class CfdMarketDataService {
         symbol: instrument.symbol,
         name: instrument.name,
         price: String(raw.close),
-        changePercent24h: String(raw.percent_change ?? '0'),
+        // `?? '0'` would be a fabricated zero. A quote with a price but no
+        // reported 24h change is a real quote with an unknown change, so
+        // the field is omitted and the UI renders a dash for it.
+        ...(raw.percent_change != null ? { changePercent24h: String(raw.percent_change) } : {}),
       });
     }
 
-    this.cache = { tickers, expiresAt: Date.now() + TICKERS_TTL_MS };
     return tickers;
   }
 }

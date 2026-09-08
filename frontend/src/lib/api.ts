@@ -23,6 +23,68 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+/** The normalized spot ticker every VOLTEX surface renders. Shape is
+ *  unchanged from what /market/external/tickers always returned; it is
+ *  named here so the gateway store and the components share one type. */
+export interface MarketTicker {
+  pair: string;
+  lastPrice: string;
+  bidPrice: string;
+  askPrice: string;
+  high24h: string;
+  low24h: string;
+  volume24h: string;
+  quoteVolume24h: string;
+  /** Already a percentage value (e.g. "2.10" = +2.10%) — see
+   *  lib/priceChange.ts. Never re-multiply by 100. */
+  changePercent24h: string;
+}
+
+export interface GlobalMarketSnapshot {
+  totalMarketCapUsd: number;
+  totalVolume24hUsd: number;
+  btcDominancePercent: number | null;
+  ethDominancePercent: number | null;
+  marketCapChangePercent24h: number | null;
+}
+
+/** A gateway section: real data with provenance, or an explicit absence
+ *  carrying no value fields at all. */
+export type GatewaySection<T> =
+  | ({ available: true; value: T } & { source: string; fetchedAt: number; stale: boolean })
+  | { available: false; reason: string; detail?: string };
+
+export interface MarketSnapshotResponse {
+  tickers: GatewaySection<MarketTicker[]>;
+  overview: GatewaySection<GlobalMarketSnapshot>;
+  sentiment: GatewaySection<{ value: number; classification: string; updatedAt: number }>;
+}
+
+export interface CanonicalAsset {
+  id: string;
+  symbol: string;
+  name: string;
+  logoUrl: string | null;
+  providers: { coingecko?: string; kraken?: string };
+  tradingPairs: string[];
+  tradable: boolean;
+  metadataSource: string;
+  rank: number | null;
+  ambiguous: boolean;
+  collidingIds: string[];
+}
+
+export type AssetCatalogueResponse = GatewaySection<{
+  assets: CanonicalAsset[];
+  total: number;
+  catalogueTotal: number;
+  tradableCount: number;
+  collisions: string[];
+  metadataComplete: boolean;
+  limit: number;
+  offset: number;
+}>;
+
 class ApiError extends Error {
   constructor(
     message: string,
@@ -472,20 +534,41 @@ export const api = {
     }>('/arbitrage/opportunities'),
 
   getExternalTickers: () =>
-    request<{
-      source: string;
-      tickers: {
-        pair: string;
-        lastPrice: string;
-        bidPrice: string;
-        askPrice: string;
-        high24h: string;
-        low24h: string;
-        volume24h: string;
-        quoteVolume24h: string;
-        changePercent24h: string;
-      }[];
-    }>('/market/external/tickers'),
+    request<{ source: string; tickers: MarketTicker[] }>('/market/external/tickers'),
+
+  // ── Market Data Gateway ────────────────────────────────────────────
+  //
+  // The endpoints above are unchanged and still work; these are the
+  // gateway-backed ones every market surface should read from. The
+  // difference that matters: each section arrives as either
+  // `{available: true, value, source, fetchedAt, stale}` or
+  // `{available: false, reason}` with NO value-carrying fields — so a
+  // provider outage cannot be mistaken for a zero, and a stale-served
+  // value is visibly stale instead of looking live.
+  //
+  // Do not call getMarketSnapshot from a component directly: go through
+  // lib/marketDataStore, which shares ONE poll and ONE in-flight request
+  // across every consumer in the tab.
+  getMarketSnapshot: () => request<MarketSnapshotResponse>('/market/snapshot'),
+
+  /** Canonical asset catalogue. `tradable` narrows it to assets with a
+   *  real executable VOLTEX pair — the catalogue is reference metadata and
+   *  is deliberately much larger than the tradable set. */
+  getAssetCatalogue: (params: { tradable?: boolean; limit?: number; offset?: number } = {}) => {
+    const query = new URLSearchParams();
+    if (params.tradable) query.set('tradable', 'true');
+    if (params.limit !== undefined) query.set('limit', String(params.limit));
+    if (params.offset !== undefined) query.set('offset', String(params.offset));
+    const suffix = query.toString() ? `?${query}` : '';
+    return request<AssetCatalogueResponse>(`/market/assets${suffix}`);
+  },
+
+  /** Batched icon/display metadata. One request for every symbol on
+   *  screen — never one request per row. */
+  getAssetIcons: (symbols: string[]) =>
+    request<{ assets: Record<string, { id: string; name: string; logoUrl: string | null }> }>(
+      `/market/assets/icons?symbols=${encodeURIComponent(symbols.join(','))}`
+    ),
 
   getCfdTickers: () =>
     request<{

@@ -57,6 +57,8 @@ import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
 import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
+import { MarketDataGateway } from './services/marketData/MarketDataGateway';
+import { marketDataRouter } from './api/routes/marketData';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -114,6 +116,18 @@ const analyticsDataService = new AnalyticsDataService(
   markPriceService,
   futuresMarketRegistry
 );
+
+// The unified reference-market façade. It orchestrates the provider
+// services constructed above rather than replacing them — same Kraken
+// service, same CoinGecko service, same caches, same circuits — and adds
+// the canonical asset registry, provenance/freshness on every answer, and
+// capability routing. It is deliberately given the CFD service too, so
+// "which provider answers a CFD quote" is a routing decision in one place.
+//
+// It reads reference data only. Nothing here touches VOLTEX financial
+// state: mark price, funding settlement, open interest, positions, margin
+// and liquidation stay with the futures services and are unchanged.
+const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService);
 
 // Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
 // req.ip is always the proxy's own address, which would both defeat the
@@ -173,6 +187,8 @@ app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
+// Additive: every pre-existing /market/* route above keeps its shape.
+app.use('/api/v1', marketDataRouter(prisma, marketDataGateway));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

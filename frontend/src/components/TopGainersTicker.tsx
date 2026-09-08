@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { useMarketTickers } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { TOP_COINS } from '../lib/topCoins';
@@ -69,36 +69,33 @@ export function TopGainersTicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const [capacity, setCapacity] = useState<number | null>(null);
 
+  // 15s, this strip's original cadence. It now reads the shared snapshot
+  // instead of running its own poll — a decorative ticker strip should not
+  // cost the tab a request loop of its own. It is served whatever the
+  // fastest live subscriber's cadence produces, so it is never staler than
+  // it was before.
+  const { tickers: tickerMap } = useMarketTickers(15000);
+
   useEffect(() => {
-    let cancelled = false;
-    function load() {
-      api
-        .getExternalTickers()
-        .then((res) => {
-          if (cancelled) return;
-          const universe = symbols ? new Set(symbols) : null;
-          const filtered = res.tickers
-            .filter((tk) =>
-              universe ? universe.has(tk.pair) : tk.pair.endsWith('/USDT') && TOP_COINS.has(tk.pair.split('/')[0])
-            )
-            .map((tk) => ({
-              pair: tk.pair,
-              changePercent: parseChangePercent(tk.changePercent24h, tk.pair),
-              quoteVolume24h: parseFloat(tk.quoteVolume24h || '0'),
-            }))
-            .sort((a, b) => b.quoteVolume24h - a.quoteVolume24h)
-            .slice(0, 24);
-          setItems(filtered);
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 15000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [lang, symbols?.join(',')]);
+    // An empty snapshot leaves the previous rows on screen rather than
+    // emptying the strip: the store keeps the last known good data across
+    // a failed poll, and a blank ticker reads as "the market stopped".
+    if (tickerMap.size === 0) return;
+    const universe = symbols ? new Set(symbols) : null;
+    setItems(
+      Array.from(tickerMap.values())
+        .filter((tk) =>
+          universe ? universe.has(tk.pair) : tk.pair.endsWith('/USDT') && TOP_COINS.has(tk.pair.split('/')[0])
+        )
+        .map((tk) => ({
+          pair: tk.pair,
+          changePercent: parseChangePercent(tk.changePercent24h, tk.pair),
+          quoteVolume24h: parseFloat(tk.quoteVolume24h || '0'),
+        }))
+        .sort((a, b) => b.quoteVolume24h - a.quoteVolume24h)
+        .slice(0, 24)
+    );
+  }, [tickerMap, lang, symbols?.join(',')]);
 
   // Measured, not assumed: item width comes from the first rendered child,
   // so the slot size stays a CSS decision (see .market-ticker-static

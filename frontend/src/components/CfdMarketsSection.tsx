@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
-import { parseChangePercent } from '../lib/priceChange';
+import { parseChangePercent, parseChangePercentOrNull } from '../lib/priceChange';
 import { useCfdTickers } from '../lib/useCfdTickers';
 import { CFD_ICON_BY_SYMBOL } from './CfdInstrumentList';
 
@@ -107,16 +107,17 @@ export function CfdMarketsSection({ id }: { id?: string }) {
             );
           })}
           {cfdTickers.slice(0, 4).map((tk) => {
-            const change = parseChangePercent(tk.changePercent24h, tk.symbol);
+            // CFD feed only: an unreported 24h change is unknown, not 0%,
+            // so it renders as a dash rather than as a flat green +0.00%.
+            const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
             return (
               <div key={tk.symbol} style={styles.tickerStripItem}>
                 <span style={{ fontWeight: 700 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'} {tk.symbol}</span>
                 <span className="mono" style={{ color: 'var(--text-secondary)' }}>
                   {tk.price}
                 </span>
-                <span className={change >= 0 ? 'text-buy' : 'text-sell'}>
-                  {change >= 0 ? '+' : ''}
-                  {change.toFixed(2)}%
+                <span className={change === null ? '' : change >= 0 ? 'text-buy' : 'text-sell'}>
+                  {change === null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`}
                 </span>
               </div>
             );
@@ -171,8 +172,13 @@ export function CfdMarketsSection({ id }: { id?: string }) {
               <span className="market-dashboard__cfd-badge">CFD</span>
               <div className="market-dashboard__cfd-list">
                 {cfdTickers.slice(0, 3).map((tk) => {
-                  const change = parseChangePercent(tk.changePercent24h, tk.symbol);
-                  const positive = change >= 0;
+                  // CFD feed only: an unreported 24h change is unknown, not
+                  // 0%. `changeText` renders a dash for it; `positive` only
+                  // drives colour, where an unknown value is neutral.
+                  const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
+                  const positive = (change ?? 0) >= 0;
+                  const changeText =
+                    change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
                     <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__cfd-row">
                       <CfdMark symbol={tk.symbol} />
@@ -182,9 +188,8 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                       </span>
                       <span className="market-dashboard__cfd-value">
                         <strong className="mono">{tk.price}</strong>
-                        <small className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
-                          {positive ? '+' : ''}
-                          {change.toFixed(2)}%
+                        <small className={change === null ? '' : positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
+                          {changeText}
                         </small>
                       </span>
                     </Link>
@@ -240,8 +245,13 @@ export function CfdMarketsSection({ id }: { id?: string }) {
 
               {popularTab === 'cfd' &&
                 cfdTickers.slice(0, 4).map((tk) => {
-                  const change = parseChangePercent(tk.changePercent24h, tk.symbol);
-                  const positive = change >= 0;
+                  // CFD feed only: an unreported 24h change is unknown, not
+                  // 0%. `changeText` renders a dash for it; `positive` only
+                  // drives colour, where an unknown value is neutral.
+                  const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
+                  const positive = (change ?? 0) >= 0;
+                  const changeText =
+                    change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
                     <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__popular-row">
                       <CfdMark symbol={tk.symbol} />
@@ -252,9 +262,8 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                       <span className="mono market-dashboard__row-price">
                         {tk.price}
                       </span>
-                      <span className={positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
-                        {positive ? '+' : ''}
-                        {change.toFixed(2)}%
+                      <span className={change === null ? '' : positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
+                        {changeText}
                       </span>
                     </Link>
                   );

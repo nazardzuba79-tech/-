@@ -22,3 +22,23 @@ export function parseChangePercent(raw: string, context: string): number {
   }
   return value;
 }
+
+/**
+ * Like `parseChangePercent`, but returns `null` for a value the provider
+ * did not report, instead of 0.
+ *
+ * The distinction matters wherever a feed can legitimately omit the field:
+ * Twelve Data returns a quote's price without a `percent_change` often
+ * enough that defaulting it to "0" was quietly claiming "flat" for
+ * "unknown". A real reported 0 still comes back as 0 — the two are
+ * different facts and this is the function that keeps them different.
+ *
+ * Kraken-sourced tickers always carry a computed change, so those call
+ * sites keep using `parseChangePercent` above and are unaffected.
+ */
+export function parseChangePercentOrNull(raw: string | null | undefined, context: string): number | null {
+  if (raw === null || raw === undefined || raw === '') return null;
+  const value = parseFloat(raw);
+  if (!Number.isFinite(value)) return null;
+  return parseChangePercent(raw, context);
+}

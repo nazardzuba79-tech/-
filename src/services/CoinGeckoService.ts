@@ -33,6 +33,11 @@ export class ExternalRankingError extends Error {}
 export type CoinCategory = 'DEFI' | 'LAYER_1' | 'MEME' | 'STABLECOIN' | 'AI' | 'GAMING' | 'RWA';
 
 export interface CoinRanking {
+  /** CoinGecko's stable coin id ("bitcoin"). Additive: every existing
+   *  consumer keys on `symbol` and is unaffected. The asset registry uses
+   *  this as canonical identity because two different coins can and do
+   *  share a ticker. */
+  id: string;
   symbol: string; // e.g. "BTC" — matches our internal asset codes
   rank: number;
   name: string;
@@ -55,6 +60,12 @@ export interface CoinRanking {
   // Hourly closes over the last 7 days (CoinGecko's own sparkline_in_7d),
   // ~168 points — real history, not synthesized.
   sparkline: number[];
+  /** Other CoinGecko ids that reported this same ticker and lost the
+   *  higher-rank tie-break below. Previously these were dropped silently,
+   *  which made a ticker collision invisible; the registry needs to be
+   *  able to say "XYZ is ambiguous" rather than quietly pick one. Empty
+   *  for the overwhelming majority of coins. */
+  collidingIds: string[];
 }
 
 // Refreshed at most once an hour — this data doesn't need to be
@@ -137,6 +148,10 @@ const LOCAL_CATEGORY_FALLBACK: Record<string, CoinCategory[]> = {
 };
 
 interface CoinGeckoMarketRow {
+  /** CoinGecko's own stable slug ("bitcoin", "ethereum"). The only
+   *  identifier in this response that is guaranteed unique — `symbol` is
+   *  not, which is exactly why the asset registry keys on this. */
+  id: string;
   symbol: string;
   name: string;
   image: string;
@@ -277,8 +292,20 @@ export class CoinGeckoService {
       // CoinGecko occasionally lists two different coins sharing a ticker
       // (e.g. wrapped variants) — keep whichever we see first, which is
       // the higher-ranked one since the response is already rank-sorted.
-      if (bySymbol.has(symbol)) continue;
+      // A row without an id would be a malformed response; fall back to a
+      // deterministic derived id rather than propagating `undefined` into
+      // something whose whole job is to be a stable identifier.
+      const id = typeof m.id === 'string' && m.id.length > 0 ? m.id : `symbol:${symbol.toLowerCase()}`;
+      const seen = bySymbol.get(symbol);
+      if (seen) {
+        // Unchanged behaviour: the first (highest-ranked) row still wins.
+        // The loser is now recorded instead of vanishing, so the asset
+        // registry can represent the collision honestly.
+        if (id !== seen.id && !seen.collidingIds.includes(id)) seen.collidingIds.push(id);
+        continue;
+      }
       bySymbol.set(symbol, {
+        id,
         symbol,
         rank: m.market_cap_rank ?? TOP_N + 1,
         name: m.name,
@@ -291,6 +318,7 @@ export class CoinGeckoService {
         volume24h: m.total_volume ?? 0,
         marketCap: m.market_cap ?? null,
         sparkline: m.sparkline_in_7d?.price ?? [],
+        collidingIds: [],
       });
     }
 

@@ -2,13 +2,16 @@ import { useLanguage } from '../lib/i18n';
 import { SkeletonRow } from './Skeleton';
 import { formatCfdPrice } from '../lib/cfdPresentation';
 import { PriceCell } from './PriceCell';
-import { parseChangePercent } from '../lib/priceChange';
+import { parseChangePercentOrNull } from '../lib/priceChange';
 
 export interface CfdTickerRow {
   symbol: string;
   name: string;
   price: string;
-  changePercent24h: string;
+  /** ABSENT when the reference feed reported a price but no 24h change.
+   *  Unknown is not the same as flat, so it renders as a dash rather than
+   *  as 0.00%. */
+  changePercent24h?: string;
 }
 
 // Fixed emoji badge per instrument — same spirit as PairListSidebar's
@@ -58,8 +61,8 @@ export function CfdInstrumentList({
 
       <div className="cfd-list">
         {tickers.map((tk) => {
-          const change = parseChangePercent(tk.changePercent24h, tk.symbol);
-          const positive = change >= 0;
+          const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
+          const positive = (change ?? 0) >= 0;
           return (
             <button
               key={tk.symbol}
@@ -77,9 +80,8 @@ export function CfdInstrumentList({
                 </span>
               </span>
               <PriceCell value={parseFloat(tk.price)} className="mono cfd-price" format={(value) => formatCfdPrice(value, tk.symbol)} />
-              <span className={`mono cfd-change ${positive ? 'text-buy' : 'text-sell'}`} >
-                {positive ? '+' : ''}
-                {change.toFixed(2)}%
+              <span className={`mono cfd-change ${change === null ? '' : positive ? 'text-buy' : 'text-sell'}`} >
+                {change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`}
               </span>
             </button>
           );

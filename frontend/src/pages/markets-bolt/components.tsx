@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../../lib/api';
+import { useMarketData, useMarketTickers } from '../../lib/useMarketData';
 import { Nav } from '../../components/Nav';
 import { Footer } from '../../components/Footer';
 import { CryptoIcon } from '../../components/CryptoIcon';
@@ -184,20 +185,33 @@ export function MarketsBoltPage() {
   const [page, setPage] = useState(1);
   const [compact, setCompact] = useState(false);
 
+  // Prices and the market-wide overview both come from the shared
+  // market-data store: one poll and one request for the whole tab,
+  // replacing this page's separate 5s ticker loop and 60s global loop.
+  // Cadence is unchanged (5s) and so is every rendered figure.
+  // `stale` is available on this hook for a view that wants to dim a
+  // last-good figure; Markets renders it normally today, so it is not
+  // destructured here rather than being read and ignored.
+  const { tickers: tickerMap, error: tickerError } = useMarketTickers(5000);
+  const { overview: sharedOverview, sentiment: sharedSentiment } = useMarketData(5000);
+
   useEffect(() => {
-    function refreshTickers() {
-      api
-        .getExternalTickers()
-        .then((res) => {
-          setTickers(res.tickers);
-          setError(null);
-        })
-        .catch(() => setError('Не удалось загрузить рыночные данные'));
+    if (tickerMap.size > 0) {
+      setTickers(Array.from(tickerMap.values()));
+      setError(null);
+      return;
     }
-    refreshTickers();
-    const interval = setInterval(refreshTickers, 5000);
-    return () => clearInterval(interval);
-  }, []);
+    // Only surface the error state when nothing has ever loaded — a
+    // transient failure must not wipe a table the user is reading.
+    if (tickerError) setError('Не удалось загрузить рыночные данные');
+  }, [tickerMap, tickerError]);
+
+  useEffect(() => {
+    // An unavailable section stays null, so the headline renders a dash
+    // rather than a market cap of zero dollars.
+    if (sharedOverview) setGlobalMarket(sharedOverview);
+    if (sharedSentiment) setFearGreed({ ...sharedSentiment, updatedAt: Date.now() });
+  }, [sharedOverview, sharedSentiment]);
 
   useEffect(() => {
     function load() {
@@ -211,29 +225,15 @@ export function MarketsBoltPage() {
         .catch(() => {});
     }
     load();
-    const interval = setInterval(load, 10_000);
+    // 5 minutes, not 10 seconds. This is descriptive catalogue metadata
+    // (rank, market cap, 7d/30d change, sparkline) whose server-side cache
+    // refreshes hourly — a 10s poll could never see fresher data, it only
+    // cost VOLTEX ~30 requests a minute per open Markets tab. The poll
+    // remains so a rate-limited first load still recovers on its own.
+    const interval = setInterval(load, 5 * 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  // Market-wide totals + the published Fear & Greed Index. Both are cached
-  // server-side (5 min / 15 min) and the index itself only moves once a
-  // day, so a one-minute poll here is already far more often than the data
-  // changes — it exists to recover from a rate-limited first load, not to
-  // stream anything.
-  useEffect(() => {
-    function load() {
-      api
-        .getGlobalMarket()
-        .then((res) => {
-          if (res.global) setGlobalMarket(res.global);
-          if (res.fearGreed) setFearGreed(res.fearGreed);
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 60_000);
-    return () => clearInterval(interval);
-  }, []);
 
   useEffect(() => setPage(1), [activeCategory, activeKind, activeQuote, activeSector, search]);
 

@@ -1,13 +1,13 @@
 import { useLanguage } from '../lib/i18n';
 import { formatCfdPrice } from '../lib/cfdPresentation';
-import { parseChangePercent } from '../lib/priceChange';
+import { parseChangePercentOrNull } from '../lib/priceChange';
 import { PriceCell } from './PriceCell';
 import type { CfdTickerRow } from './CfdInstrumentList';
 
 /** Only the actual reference-feed fields: no volume, funding or depth. */
 export function CfdTickerBar({ symbol, ticker }: { symbol: string; ticker?: CfdTickerRow }) {
   const { t } = useLanguage();
-  const change = ticker ? parseChangePercent(ticker.changePercent24h, symbol) : null;
+  const change = ticker ? parseChangePercentOrNull(ticker.changePercent24h, symbol) : null;
   return (
     <header className="cfd-ticker-bar">
       <div className="cfd-selected-instrument">

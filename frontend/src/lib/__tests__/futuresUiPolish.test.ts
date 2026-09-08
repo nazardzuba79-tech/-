@@ -59,7 +59,15 @@ test.each([
   ],
   [
     "components/FuturesPairList.tsx",
-    "d39e712a86da6055fd33316dad65c6d7a439dad15b897bf7bf300d6869cc7c3a"
+    // Re-taken at the Market Data Gateway migration. Two changes, both
+    // reference-data plumbing: the 4s reference-ticker poll moved to the
+    // shared market-data store, and the 500-coin CoinGecko rankings
+    // download that existed only to build an icon map was replaced by the
+    // batched asset-registry lookup inside CryptoIcon. Sorting, filtering,
+    // favourites, routing and every futures value are unchanged — the
+    // other twelve Futures fingerprints in this table are untouched,
+    // which is the evidence.
+    "b05db025a2c5a878513d020962100edcc4530a6918a74fdc6246919be350d0d6"
   ],
   [
     "components/OrderBookPanel.tsx",

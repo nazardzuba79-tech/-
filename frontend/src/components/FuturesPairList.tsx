@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
-import { api } from '../lib/api';
+import { useMarketTickers } from '../lib/useMarketData';
 import { useLanguage, Key } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
@@ -62,7 +62,6 @@ export const FuturesPairList = forwardRef<
   const [tickers, setTickers] = useState<Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }>>({});
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('volume_desc');
-  const [coinIcons, setCoinIcons] = useState<Map<string, string>>(new Map());
   // Shared store — see lib/useFavorites; the spot terminal, Markets and
   // the homepage table all read the same set, live.
   const { favorites, toggle: toggleFavoritePair } = useFavorites();
@@ -85,42 +84,30 @@ export const FuturesPairList = forwardRef<
     if (next) setSortId(next.id);
   }
 
-  useEffect(() => {
-    let cancelled = false;
-    function load() {
-      api
-        .getExternalTickers()
-        .then((res) => {
-          if (cancelled) return;
-          const bySymbol: Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }> = {};
-          for (const tk of res.tickers) if (symbols.includes(tk.pair)) bySymbol[tk.pair] = tk;
-          setTickers(bySymbol);
-        })
-        .catch(() => {});
-    }
-    load();
-    const poll = window.setInterval(load, 4000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(poll);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbols.join(',')]);
+  // 4s, this list's original cadence, now served from the shared snapshot
+  // instead of its own poll. Note this is REFERENCE spot price data for
+  // display only — every VOLTEX financial value on the futures side (mark
+  // price, funding, open interest, position state) is unchanged and still
+  // comes from the futures services.
+  const { tickers: tickerMap } = useMarketTickers(4000);
 
-  // Official asset artwork, same source the spot list uses.
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getExternalRankings()
-      .then((res) => {
-        if (cancelled) return;
-        setCoinIcons(new Map(res.rankings.map((r) => [r.symbol, r.image])));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    // Empty means the store has nothing yet; keep the previous rows rather
+    // than resetting every price to a zero placeholder.
+    if (tickerMap.size === 0) return;
+    const bySymbol: Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }> = {};
+    for (const symbol of symbols) {
+      const tk = tickerMap.get(symbol);
+      if (tk) bySymbol[symbol] = tk;
+    }
+    setTickers(bySymbol);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickerMap, symbols.join(',')]);
+
+  // Asset artwork now resolves inside CryptoIcon from the gateway's asset
+  // registry (one batched /market/assets/icons request for the symbols on
+  // screen), replacing a full 500-coin rankings download — sparklines and
+  // all — that existed only to build a symbol->image map.
 
   const rows: Row[] = useMemo(() => {
     const built = symbols
@@ -207,7 +194,7 @@ export const FuturesPairList = forwardRef<
                 <Star size={12} fill={favorites.has(r.symbol) ? 'currentColor' : 'none'} />
               </span>
               <span className="p-icon">
-                <CryptoIcon symbol={base} size={20} imageUrl={coinIcons.get(base)} />
+                <CryptoIcon symbol={base} size={20} />
               </span>
               <span className="p-name">
                   <b className="p-base">{r.symbol.split('/')[0]}</b>

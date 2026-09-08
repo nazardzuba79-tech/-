@@ -53,8 +53,17 @@ test('actual market source retains approved geometry and exposes real keyboard c
   expect(source).toContain('aria-pressed={favorites.has(tk.pair)}');
   expect(source).toContain("role={onResizeBy ? 'separator' : undefined}");
   expect(source).toContain("onResizeBy(event.key === 'ArrowLeft' ? -10 : 10)");
-  expect(source).toContain('if (requestPending.current) return');
-  expect(source).toContain('if (sequence !== requestSequence.current) return');
+  // Duplicate/out-of-order request protection is now structural rather
+  // than hand-rolled: the panel subscribes to the shared market-data store
+  // (lib/marketDataStore), which runs ONE timer and ONE in-flight request
+  // for the whole tab — so a second concurrent request, and therefore an
+  // out-of-order response, cannot exist. That is strictly stronger than
+  // the `requestPending`/`requestSequence` guards it replaces, and is
+  // proven in lib/__tests__/marketDataStore.test.ts.
+  expect(source).toContain('useMarketTickers(4000)');
+  expect(source).not.toContain('setInterval');
+  expect(source).not.toContain('api.getExternalTickers');
+  expect(source).not.toContain('api.getExternalRankings');
   expect(source).toContain("event.key !== '/'");
   expect(source).not.toContain('useSpotPeriodReferences');
   const css = readFileSync(resolve(__dirname, '../../components/SpotMarketControls.css'), 'utf8');
@@ -87,6 +96,9 @@ test('actual controls keep native favourite separate from pair selection and res
     if (name === '../lib/spotOrderBook') return spotBookHelpers;
     if (name === '../lib/priceChange') return { parseChangePercent: Number };
     if (name === '../lib/api') return { api: {} };
+    if (name === '../lib/useMarketData') {
+      return { useMarketTickers: () => ({ tickers: new Map(), loading: false, error: false, stale: false, refresh: () => {} }) };
+    }
     if (name === './CryptoIcon') return { CryptoIcon: () => null };
     return req(name);
   }, output);
