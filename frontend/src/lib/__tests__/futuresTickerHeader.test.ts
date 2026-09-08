@@ -23,25 +23,38 @@ const hash = (text: string) => createHash('sha256').update(text).digest('hex');
 // are still read from the futures services, per symbol, exactly as before.
 // No external venue's derivatives metric is read here, and the seven-block
 // header hierarchy is untouched.
-test('VOLTEX derivatives reads (mark, funding, own open interest) stay on the futures services', () => {
-  const readsBlock = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
-  // The three VOLTEX financial reads are still here, still per symbol.
-  expect(readsBlock).toContain('api\n        .getFuturesMarkPrice(symbol)');
-  expect(readsBlock).toContain('.getFuturesFundingRate(symbol, 1)');
-  expect(readsBlock).toContain('.getFuturesOpenInterest(symbol)');
-  // And no external venue's derivatives data has been introduced.
-  expect(readsBlock).not.toMatch(/binance|bybit|okx|deribit|bitget/i);
+test('VOLTEX derivatives reads (mark, index, funding) stay on the futures services', () => {
+  // The per-symbol VOLTEX loop, isolated from the separate external
+  // market-stats effect beside it.
+  const voltexLoop = source.slice(
+    source.indexOf('  useEffect(() => {', source.indexOf('  const { t }')),
+    source.indexOf('  }, [symbol]);')
+  );
+  // The VOLTEX financial reads are still here, still per symbol.
+  expect(voltexLoop).toContain('api\n        .getFuturesMarkPrice(symbol)');
+  expect(voltexLoop).toContain('.getFuturesFundingRate(symbol, 1)');
+  // And no external venue's data may enter this loop or substitute for
+  // one of its figures.
+  expect(voltexLoop).not.toMatch(/binance|bybit|okx|deribit|bitget|MarketStats/i);
 });
+// Re-taken for Futures Real Derivatives Market Stats. The reads block
+// changed in exactly two ways: a new effect reading the tracked external
+// derivatives endpoint for the header's two MARKET-reference cells, and
+// the removal of the internal `getFuturesOpenInterest` read, which now
+// had no cell to render into. The VOLTEX reads this suite protects —
+// mark price, index price and the settled funding rate — are byte-
+// unchanged inside the per-symbol loop, as the behavioural test above
+// re-proves against the loop in isolation.
 test('market-data reads, including index price, are unchanged', () => {
   expect(hash(source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('))))
-    .toBe('9754885ec9903e7041b7cb48270db7118c0b222d4a2d8b3e97256da4c79c1131');
+    .toBe('109b04904c73ac3c33d7c4ea535ca83100af19d312e90c79b75bf3e3d7d6e61b');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '8f86e162c5d785db22530ca30c53ce717ad42713df31c898e9fe744a54fd1b88'],
+  ['frontend/src/lib/api.ts', '27945eabf912f30d3e916f12e030787bb080de5a1dd3f866dbc78f00bbdc4048'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
@@ -68,6 +81,15 @@ test.each([
   // or spot method is touched — the reads this suite protects are still
   // byte-identical, and src/api/routes/futures.ts below is still at its
   // original fingerprint.
+  //
+  // Re-taken again for Futures Real Derivatives Market Stats (+13/-0).
+  // Purely ADDITIVE: the FuturesMarketStats response type and the
+  // getFuturesMarketStats reader for GET /market/derivatives/:baseAsset.
+  // getFuturesOpenInterest, getFuturesMarkPrice, getFuturesFundingRate
+  // and every spot method are byte-unchanged — the internal open-interest
+  // endpoint keeps its client, its route (still at the original
+  // fingerprint below) and its Analytics consumer; only the HEADER
+  // stopped using it for the MARKET figure.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });
@@ -83,11 +105,24 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     lastPrice: '72345.67', changePercent24h: '2.34', high24h: '73000', low24h: '70000',
     volume24h: '123456', quoteVolume24h: '987654321',
   };
+  // Tracked EXTERNAL derivatives statistics — the header's two
+  // market-reference figures. `getFuturesOpenInterest` is deliberately
+  // absent: this component no longer reads VOLTEX's own open interest,
+  // because the cell asks about the market, not this venue's book.
+  const marketStats = {
+    available: true, source: 'binance', fetchedAt: 0, stale: false,
+    value: {
+      baseAsset: 'BTC',
+      turnover24hUsd: 987654321, turnoverVenues: ['binance', 'okx'],
+      openInterestBase: 1.23456789, openInterestUsd: null,
+      openInterestBaseVenues: ['binance'], openInterestUsdVenues: [],
+    },
+  };
   const api = {
     getFuturesConfig: jest.fn(async () => ({ fundingIntervalHours: 8 })),
     getFuturesMarkPrice: jest.fn(async () => ({ markPrice: '72340.12', indexPrice: '71999.88' })),
     getFuturesFundingRate: jest.fn(async () => ({ history: [{ rate: '0.00003' }] })),
-    getFuturesOpenInterest: jest.fn(async () => ({ openInterest: '0', openInterestValue: '0' })),
+    getFuturesMarketStats: jest.fn(async () => marketStats),
     ...overrides,
   };
   const react = { ...req('react'), memo: (fn: any) => fn,
@@ -152,30 +187,64 @@ test('visible metrics follow price, market, derivatives order without index or b
   expect(text(blocks[0])).toBe('72,345.67futures.markPrice: 72,340.12');
   expect(blocks.slice(1).map(b => text(nodes(b).find(n => n.props.className === 'label')))).toEqual([
     'futures.headerChange24h', 'futures.headerHigh24h', 'futures.headerLow24h',
-    'futures.headerTurnover24h (USDT)', 'futures.openInterest (BTC)', 'futures.headerFunding',
+    // The two market-reference cells now name the unit they actually
+    // show: tracked-venue turnover is a USD figure, not the contract's
+    // USDT quote volume on Kraken's SPOT book.
+    'futures.headerTurnover24h (USD)', 'futures.openInterest (BTC)', 'futures.headerFunding',
   ]);
   expect(text(tree)).not.toMatch(/indexPrice|71,999.88|volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
   expect(text(blocks[6])).toContain('0.0030% / ');
   expect(nodes(blocks[6]).find(n => typeof n.type === 'function')?.props.intervalHours).toBe(8);
 });
-test.each([['0', '999999', '0'], ['1.23456789', '999999', '1.23456789'], ['0.000000001', null, '0.000000001']])(
-  'OI uses real base size %s, not quote notional or invented external data', async (size, value, expected) => {
-    const component = mount({ getFuturesOpenInterest: jest.fn(async () => ({ openInterest: size, openInterestValue: value })) });
-    component.render({ symbol: 'ETH/USDT' }); await flush();
-    const tree = component.render({ symbol: 'ETH/USDT' });
-    const block = nodes(tree).find(n => n.props.className === 'ticker-item' && text(n).startsWith('futures.openInterest'));
-    expect(text(block)).toBe('futures.openInterest (ETH)' + expected);
-    expect(component.api.getFuturesOpenInterest).toHaveBeenCalledWith('ETH/USDT');
-  },
-);
+const oiStats = (value: Record<string, unknown>) =>
+  jest.fn(async () => ({ available: true, source: 'binance', fetchedAt: 0, stale: false,
+    value: { baseAsset: 'ETH', turnover24hUsd: null, turnoverVenues: [], ...value } }));
+
+// The figure is whatever the tracked venues published, rendered in the
+// unit those venues published it in — a real 0 stays 0, a tiny real size
+// is not rounded away, and a venue's USD notional is never printed under
+// a base-currency label.
+test.each([
+  [{ openInterestBase: 0, openInterestUsd: 999999, openInterestBaseVenues: ['binance'], openInterestUsdVenues: ['binance'] },
+    'futures.openInterest (ETH)0futures.marketSource: Binance'],
+  [{ openInterestBase: 1.23456789, openInterestUsd: 999999, openInterestBaseVenues: ['binance', 'okx'], openInterestUsdVenues: ['binance'] },
+    'futures.openInterest (ETH)1.23456789futures.marketSource: Binance + OKX'],
+  [{ openInterestBase: 0.000000001, openInterestUsd: null, openInterestBaseVenues: ['okx'], openInterestUsdVenues: [] },
+    'futures.openInterest (ETH)0.000000001futures.marketSource: OKX'],
+  // No venue reported base units — the cell falls back to USD notional
+  // AND relabels, so the unit on screen is the unit of the number.
+  [{ openInterestBase: null, openInterestUsd: 4_200_000_000, openInterestBaseVenues: [], openInterestUsdVenues: ['okx'] },
+    'futures.openInterest (USD)4.2Bfutures.marketSource: OKX'],
+])('open interest renders the tracked-venue figure %#, in its own unit', async (value, expected) => {
+  const component = mount({ getFuturesMarketStats: oiStats(value) });
+  component.render({ symbol: 'ETH/USDT' }); await flush();
+  const tree = component.render({ symbol: 'ETH/USDT' });
+  const block = nodes(tree).find(n => n.props.className === 'ticker-item' && text(n).startsWith('futures.openInterest'));
+  expect(text(block)).toBe(expected);
+  expect(component.api.getFuturesMarketStats).toHaveBeenCalledWith('ETH');
+});
+
 test('unavailable data stays unavailable rather than becoming fake zero', async () => {
-  const component = mount({ getFuturesOpenInterest: async () => { throw new Error('offline'); },
-    getFuturesFundingRate: async () => ({ history: [] }) });
+  const component = mount({
+    getFuturesMarketStats: async () => ({ available: false, reason: 'provider_unavailable' }),
+    getFuturesFundingRate: async () => ({ history: [] }),
+  });
   component.render(); await flush();
   const tree = component.render();
-  expect(text(tree)).toContain('futures.openInterest (BTC)—');
+  // No number, and no venue credited — an outage names nobody.
+  expect(text(tree)).toContain('futures.openInterest (USD)—');
+  expect(text(tree)).toContain('futures.headerTurnover24h (USD)—');
+  expect(text(tree)).not.toContain('futures.marketSource');
   expect(text(tree)).toContain('futures.headerFunding— / ');
+});
+
+test('a provider read that throws leaves the cells empty, never zeroed', async () => {
+  const component = mount({ getFuturesMarketStats: async () => { throw new Error('offline'); } });
+  component.render(); await flush();
+  const tree = component.render();
+  expect(text(tree)).toContain('futures.openInterest (USD)—');
+  expect(text(tree)).toContain('futures.headerTurnover24h (USD)—');
 });
 test('countdown uses actual clock, ticks and rolls over at the existing UTC boundary', () => {
   const component = mount({}, true);

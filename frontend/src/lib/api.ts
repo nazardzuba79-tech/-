@@ -176,6 +176,23 @@ export interface LongShortRatio {
   stale: boolean;
 }
 
+/** Tracked-venue derivatives statistics for one base asset — the two
+ *  figures the Futures header shows as market reference data. */
+export interface FuturesMarketStats {
+  baseAsset: string;
+  /** Summed over the venues that publish a comparable quote turnover.
+   *  `null` means none did — never zero turnover. */
+  turnover24hUsd: number | null;
+  turnoverVenues: DerivativesVenue[];
+  /** Summed BASE units, only across venues reporting base units. */
+  openInterestBase: number | null;
+  openInterestUsd: number | null;
+  /** Contributors per metric: they genuinely differ, and a base figure
+   *  must be credited to the venues that supplied base units. */
+  openInterestBaseVenues: DerivativesVenue[];
+  openInterestUsdVenues: DerivativesVenue[];
+}
+
 export interface AnalyticsPositioning {
   baseAsset: string;
   ratios: LongShortRatio[];
@@ -773,6 +790,11 @@ export const api = {
    *  /analytics/diagnostics and /market/status, both admin-only. */
   getAnalyticsOverview: (asset?: string) =>
     request<AnalyticsSnapshot>(`/analytics/overview${asset ? `?asset=${encodeURIComponent(asset)}` : ''}`),
+
+  /** Tracked-venue derivatives stats for the Futures header. Deliberately
+   *  its own small endpoint rather than the whole Analytics snapshot. */
+  getFuturesMarketStats: (baseAsset: string) =>
+    request<GatewaySection<FuturesMarketStats>>(`/market/derivatives/${encodeURIComponent(baseAsset)}`),
 
   /** Canonical asset catalogue. `tradable` narrows it to assets with a
    *  real executable VOLTEX pair — the catalogue is reference metadata and

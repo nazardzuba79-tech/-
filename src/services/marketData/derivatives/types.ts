@@ -52,6 +52,37 @@ export interface VenueOpenInterest {
 }
 
 /**
+ * One venue's 24h derivatives turnover, in quote currency (USD/USDT).
+ *
+ * `turnover24hUsd` is `null` when the venue does not publish a figure that
+ * is genuinely a quote-currency turnover. That is not a rare edge case —
+ * see `OkxDerivativesService` — and a null here means "this venue did not
+ * tell us", never "this venue traded nothing".
+ */
+export interface VenueTurnover {
+  venue: DerivativesVenue;
+  contract: string;
+  baseAsset: string;
+  turnover24hUsd: number | null;
+  fetchedAt: number;
+  stale: boolean;
+}
+
+/**
+ * Turnover summed over the venues that answered WITH a comparable figure.
+ *
+ * Same rule as the open-interest aggregate: `venues` lists only actual
+ * contributors, so a label derived from it cannot claim a venue that
+ * contributed nothing.
+ */
+export interface TrackedVenueTurnover {
+  baseAsset: string;
+  /** Null when no tracked venue supplied a quote-currency turnover. */
+  totalTurnoverUsd: number | null;
+  venues: VenueTurnover[];
+}
+
+/**
  * Tracked-venue open interest.
  *
  * Deliberately NOT called market-wide. It is the sum over the venues that

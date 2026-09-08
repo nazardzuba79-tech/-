@@ -13,6 +13,7 @@ import {
   type VenueBasis,
   type VenueFunding,
   type VenueOpenInterest,
+  type VenueTurnover,
 } from './types';
 
 /**
@@ -25,6 +26,8 @@ import {
  *
  * Endpoint families (documented, official, unauthenticated):
  *
+  *   GET /fapi/v1/ticker/24hr       — the rolling 24h window, including a
+ *                                    REAL quote-currency turnover.
  *   GET /fapi/v1/openInterest      — a contract's current open interest.
  *   GET /fapi/v1/premiumIndex      — mark price, index price, the current
  *                                    funding rate and the next funding time.
@@ -74,6 +77,13 @@ const OPEN_INTEREST_STALE_MS = 120_000;
 const PREMIUM_TTL_MS = 30_000;
 const PREMIUM_STALE_MS = 300_000;
 const RATIO_TTL_MS = 60_000;
+/**
+ * A rolling 24h window barely moves second to second, and the Futures
+ * header polls it. 30s is far below the resolution of the figure and
+ * still collapses a burst of readers into one request.
+ */
+const TICKER_TTL_MS = 30_000;
+const TICKER_STALE_MS = 300_000;
 const RATIO_STALE_MS = 600_000;
 
 /** The sampling bucket asked of the ratio endpoints. Named in the payload
@@ -119,6 +129,7 @@ export class BinanceDerivativesService {
   private readonly openInterestCache: ProviderCache<number | null>;
   private readonly premiumCache: ProviderCache<PremiumIndexRow>;
   private readonly ratioCache: ProviderCache<Omit<LongShortRatio, 'fetchedAt' | 'stale'>>;
+  private readonly tickerCache: ProviderCache<number | null>;
 
   constructor(
     private readonly baseUrl: string = DEFAULT_BASE_URL,
@@ -144,6 +155,7 @@ export class BinanceDerivativesService {
     this.openInterestCache = new ProviderCache({ ttlMs: OPEN_INTEREST_TTL_MS, maxStaleMs: OPEN_INTEREST_STALE_MS, ...cache });
     this.premiumCache = new ProviderCache({ ttlMs: PREMIUM_TTL_MS, maxStaleMs: PREMIUM_STALE_MS, ...cache });
     this.ratioCache = new ProviderCache({ ttlMs: RATIO_TTL_MS, maxStaleMs: RATIO_STALE_MS, ...cache });
+    this.tickerCache = new ProviderCache({ ttlMs: TICKER_TTL_MS, maxStaleMs: TICKER_STALE_MS, ...cache });
   }
 
   /** Open interest in BASE units. Binance does not return a USD notional
@@ -175,6 +187,40 @@ export class BinanceDerivativesService {
       openInterestUsd: base !== null && mark !== null ? base * mark : null,
       fetchedAt: oi.fetchedAt,
       stale: oi.stale,
+    };
+  }
+
+  /**
+   * 24h turnover in quote currency, straight from Binance's own field.
+   *
+   * `quoteVolume` on `/fapi/v1/ticker/24hr` IS the quote-currency
+   * turnover for the contract — so it is used verbatim. It is deliberately
+   * NOT reconstructed as `lastPrice x volume`: that product is an
+   * approximation of a number the venue already reports exactly, and the
+   * two disagree whenever price moved during the window.
+   *
+   * A real 0 (a contract that genuinely did not trade) stays 0. Anything
+   * unparseable becomes null, which the aggregate treats as "this venue
+   * did not tell us" rather than as zero turnover.
+   */
+  async getTurnover24h(baseAsset: string): Promise<VenueTurnover | null> {
+    const contract = binanceContractFor(baseAsset);
+    if (contract === null) return null;
+    const cached = await this.tickerCache.fetch(contract, async () => {
+      const body = (await this.http.getJson(
+        `${this.baseUrl}/fapi/v1/ticker/24hr?symbol=${encodeURIComponent(contract)}`
+      )) as Record<string, unknown> | Record<string, unknown>[];
+      const row = (Array.isArray(body) ? body[0] : body) ?? {};
+      if (typeof row !== 'object') throw new BinanceDerivativesError('Binance Derivatives returned a malformed 24h ticker');
+      return numeric((row as Record<string, unknown>).quoteVolume);
+    });
+    return {
+      venue: 'binance',
+      contract,
+      baseAsset: baseAsset.toUpperCase(),
+      turnover24hUsd: cached.value,
+      fetchedAt: cached.fetchedAt,
+      stale: cached.stale,
     };
   }
 

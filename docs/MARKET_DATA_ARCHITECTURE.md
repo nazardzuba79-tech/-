@@ -656,6 +656,8 @@ from Render, where the egress and the region are different:
 7. `GET https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP`
 8. `GET https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=BTC-USDT-SWAP`
 9. `GET https://www.okx.com/api/v5/market/index-tickers?instId=BTC-USDT`
+10. `GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT` — confirm `quoteVolume` is the USDT-denominated 24 h turnover
+11. `GET https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP` — confirm `volCcyQuote24h` is present and quote-denominated, and that `volCcy24h` is the BASE amount the adapter refuses to use
 
 What to confirm: the response field names used by the adapters, that no
 region block applies from Render's egress, and the real rate-limit headers
@@ -678,6 +680,55 @@ anything on the page. Recorded here only so the gaps are legible:
 | ETF flows | Needs a creation/redemption dataset. Scraping a web page is not an API and is not done. |
 | Exchange inflow / outflow | Needs on-chain address attribution. Trading volume is NOT a proxy and is never used as one. |
 | Whale activity | Needs labelled on-chain addresses. Large exchange trades are a different concept and are not substituted for it. |
+
+## 10b. The Futures header's two market-reference figures
+
+`GET /market/derivatives/:baseAsset` — the only endpoint the Futures
+header reads for market data. It is deliberately NOT the Analytics
+snapshot: that payload is large, per-page and rebuilt for a dashboard, and
+a header polling it every 30 s would drag the whole Analytics fan-out
+along for two numbers.
+
+| Cell | Was | Is | Provider | Unit |
+|---|---|---|---|---|
+| `Оборот за 24ч` | Kraken SPOT `quoteVolume24h` for the underlying pair | Summed tracked-venue perpetual quote turnover | Binance `GET /fapi/v1/ticker/24hr` → `quoteVolume`; OKX `GET /api/v5/market/ticker` → `volCcyQuote24h` | USD |
+| `Открытый интерес` | VOLTEX's own `FuturesPosition` aggregate | Summed tracked-venue open interest | reuses `ExternalDerivativesService.getTrackedOpenInterest` | base units, or USD notional when no venue reported base units |
+
+**Why the old figures were wrong questions.** The header sits above a
+PERPETUAL contract. Kraken's spot quote volume describes a different
+market entirely, and VOLTEX's own open interest answers "how big is this
+book", not "how big is this market" — which is what a header metric
+labelled *Open Interest* is read as.
+
+**OKX turnover is `volCcyQuote24h`, and only that.** On OKX SWAP tickers
+`vol24h` is contract count and `volCcy24h` is a BASE amount — not the
+USD-equivalent some third-party summaries describe. Reading `volCcy24h`
+would have published a BTC turnover of a few thousand dollars where the
+real figure is billions. When `volCcyQuote24h` is absent the venue's
+turnover is `null`; no conversion is invented from another venue's price.
+
+**Units are never mixed.** Open interest sums base units only across the
+venues that reported base units. If none did, it falls back to the USD
+notional **and relabels the cell**, so the unit on screen is always the
+unit of the number. A venue contributing to one metric is not credited on
+the other: `turnoverVenues`, `openInterestBaseVenues` and
+`openInterestUsdVenues` are three separate lists, and the UI's source line
+is derived from whichever list backs the figure beside it. There is no
+hardcoded "Binance + OKX" string anywhere in the component.
+
+**Load.** Server-side `ProviderCache` with a 30 s TTL and in-flight
+deduplication; the frontend polls at 30 s, not the 4 s VOLTEX cadence,
+because a rolling 24 h turnover does not move on that timescale. 100
+concurrent header readers collapse to 5 upstream provider requests
+(Binance `openInterest` + `premiumIndex` + `ticker/24hr`, OKX
+`open-interest` + `ticker`), proven in
+`ExternalDerivatives.test.ts`; a second wave inside the TTL adds zero.
+
+**Outage is a dash.** An unavailable section carries no value-carrying
+fields at all, so there is no path from "OKX is down" to "$0 turnover",
+and no source line is printed when nothing contributed. Symbol switching
+clears the previous contract's figures before the new read lands, so BTC's
+turnover can never sit under an ETH header.
 
 ## 11. Analytics: deliberately unsupported
 
@@ -888,12 +939,15 @@ Rules, in force and enforced by types:
    is unchanged, and is deliberate — a mark price built only from an
    internal book can be wicked to trigger liquidations.
 2. **An external venue's derivatives metric is that venue's metric.**
-   Binance open interest is Binance's. If such a feed is ever added it must
-   be labelled with its `DataSource` and must **never** substitute for
-   VOLTEX's own — see §10 of the Futures header rules: the visible
-   "Открытый интерес" block is this venue's own book, in base units, and
-   an external figure would need its own unmistakably source-labelled
-   block.
+   Binance open interest is Binance's. It is labelled with its
+   `DataSource` and must **never** substitute for a VOLTEX financial
+   value. The Futures header now shows tracked-venue turnover and open
+   interest in its two MARKET-reference cells (§10b) — each carries a
+   source line naming the venues that actually contributed. VOLTEX's own
+   open interest did not move: `GET /futures/open-interest/:symbol`, the
+   `FuturesPosition` aggregate behind it and the Analytics VOLTEX section
+   are unchanged; the header simply stopped answering a question about
+   the market with a number about this book.
 3. **Fallback is for availability, never for evasion.** A secondary
    provider may serve a metric only when it is *semantically equivalent*,
    and the `source` must change with it. Fallback must never be used to

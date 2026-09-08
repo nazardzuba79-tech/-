@@ -91,3 +91,19 @@
   .futures-terminal .futures-ticker-bar .futures-primary-price { min-width: 0; }
   .futures-terminal .futures-ticker-bar .futures-funding > .label { white-space: normal; }
 }
+
+/* Compact venue attribution under the two market-reference figures. It is
+   secondary to the number, and it is built from the actual contributor
+   list — so it names Binance alone whenever OKX contributed nothing. */
+.futures-terminal .ticker-item .futures-source {
+  display: block;
+  margin-top: 2px;
+  font-size: 9.5px;
+  line-height: 1.2;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+/* A last-good figure served past its TTL reads as dimmer rather than
+   silently identical to a live one. */
+.futures-terminal .ticker-item .value.is-stale { opacity: .62; }
