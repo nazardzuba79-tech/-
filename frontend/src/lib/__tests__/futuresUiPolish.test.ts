@@ -74,7 +74,22 @@ test.each([
     // favourites, routing and every futures value are unchanged — the
     // other twelve Futures fingerprints in this table are untouched,
     // which is the evidence.
-    "b05db025a2c5a878513d020962100edcc4530a6918a74fdc6246919be350d0d6"
+    //
+    // Re-taken for the data-driven market universe. This one is a REAL
+    // semantic change and is recorded as such, not waved through:
+    //
+    //   1. Unpriced markets carry `null` instead of `0`. The rendered
+    //      output is unchanged — the dash was already guarded — but the
+    //      SORT changes, and that is the point: at 500+ contracts the
+    //      unpriced tail used to sort as the cheapest markets on the
+    //      exchange. Nulls now sort last in BOTH directions.
+    //   2. The list renders through a window. Spacer divs preserve the
+    //      real scroll height; the row markup, grid, classes, favourites,
+    //      search, sort modes and `onChange` routing are untouched.
+    //
+    // No futures financial value is read here and none was added: this
+    // component still shows reference price and 24h change only.
+    "8c3b0ecf61c2339284de70e2f5ce4cb20a778062a904f49470f21bdde9cd2133"
   ],
   [
     "components/OrderBookPanel.tsx",

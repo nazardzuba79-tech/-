@@ -1041,3 +1041,136 @@ trading feature, and the country name "Демократическая Респу
 Generic words like "exchange" and "market" are not provider names and
 were left alone. Source comments and this document still name providers —
 they are engineering references, not the product surface.
+
+## 18. The market universe: discoverable vs executable
+
+The exchange used to expose 40 perpetuals because `MAX_PERP_MARKETS = 40`
+sat in the futures listing rules. That number was doing two unrelated jobs
+at once, and separating them is what this section is about.
+
+### The three questions, kept apart
+
+| Question | Answered by | Scale |
+|---|---|---|
+| Which instruments EXIST? | `MarketUniverse` | hundreds of spot, 500+ perpetuals |
+| Which can VOLTEX EXECUTE? | `FuturesMarketRegistry` | a strict subset |
+| What do they COST? | the ticker feeds | changes every second |
+
+Conflating the first two is what produced the ceiling. The universe changes
+on the timescale of listings and is cached for 15 minutes with a 24-hour
+stale budget; prices are cached for seconds. A price outage can therefore
+never empty the exchange, which was not previously true by construction.
+
+### Flow
+
+```
+Bybit public V5  ->  BybitMarketDataService  ->  ProviderCache / ProviderHealth
+                                                          |
+                                                  MarketUniverse
+                                                     /        \
+                                    FuturesMarketRegistry   GET /market/universe
+                                       (executable)            (discoverable)
+```
+
+Nothing in the browser talks to a venue. Asserted by
+`frontend/src/lib/__tests__/marketUniverseScale.test.ts`.
+
+### What the venue universe is allowed to do
+
+**Only remove.** The executable rule is:
+
+```
+executable = a live index price VOLTEX can actually read
+           AND 24h quote volume >= MIN_PERP_24H_QUOTE_VOLUME
+           AND (universe loaded -> a real Trading USDT-settled LinearPerpetual)
+```
+
+The third clause is new and is a *restriction*. It stops VOLTEX offering a
+"perpetual" on a pair that has no real perpetual contract anywhere, and it
+keeps dated `LinearFutures`, USDC-settled and inverse contracts out of an
+engine that has no expiry, no second settle asset and no coin margin.
+
+When the universe has NOT loaded — first boot, or a venue refusing this
+region — the clause is skipped entirely and the first two rules decide
+alone, exactly as before. An unreachable provider may never shrink the
+exchange.
+
+### What was removed, and what was kept
+
+- **`MAX_PERP_MARKETS = 40` — REMOVED.** It was a rendering limit wearing a
+  listing rule's clothes: nothing financial read it, and it existed because
+  the pair panels mounted every row. That is now handled where it belongs
+  (`useWindowedRows`), so the executable set is data-driven and is *not*
+  replaced by a larger arbitrary number.
+- **`MIN_PERP_24H_QUOTE_VOLUME = 1,000,000 USDT` — KEPT.** A safety rule,
+  not a scalability limit. Liquidation has to be able to actually close a
+  position; a market that trades a few thousand dollars a day cannot absorb
+  one without the insurance fund eating the difference. Raising the visible
+  market count is not a reason to lower it.
+- **`CORE_FUTURES_SYMBOLS` — KEPT.** The floor that stops the terminal being
+  empty with the price feed down.
+
+### Reference pricing is the real ceiling
+
+`MarkPriceService.getIndexPrice()` reads the existing spot index feed, and
+mark price, funding, margin and liquidation all read it. A contract with no
+index price has no mark price, so it has no liquidation price either.
+
+That is why the universe cannot promote a market on its own: an instrument
+that Bybit lists but the index feed does not cover stays **discoverable and
+not executable**. The alternative — pricing it from the venue's own
+`indexPrice` field — is a change to what a liquidation is computed from,
+and it is not made here on unverified data. It is a deliberate follow-up,
+recorded in §19.
+
+### Normalization comes from provider metadata
+
+`baseCoin`, `quoteCoin`, `settleCoin`, `contractType` and `status` are read
+directly. Nothing slices the symbol string: `BTCUSDT` -> `BTC/USDT` is
+derived from the published base and quote, and an instrument that does not
+publish them is rejected rather than reconstructed. `contractType` maps
+through an explicit table, so an unrecognised type is refused instead of
+being assumed to be a perpetual.
+
+Two conversions happen once, at the adapter boundary:
+
+- `price24hPcnt` is a FRACTION upstream and a PERCENTAGE everywhere in
+  VOLTEX. The off-by-100 version of this bug already shipped once.
+- `deliveryTime: "0"` means *absent*, not 1970-01-01.
+
+### Load
+
+| Operation | Upstream requests |
+|---|---|
+| Build the whole universe (~1,900 instruments) | **3** (1 spot + 2 cursor pages at `limit=1000`) |
+| Refresh every ticker in a category | **1** |
+| 100 concurrent ticker readers | **1** (in-flight coalescing) |
+| Per additional market | **0** |
+
+`GET /market/universe` with 1,900 instruments is 613 KB raw, **16 KB
+gzipped**; `?type=linear_perpetual` narrows it to 391 KB / 10 KB. It reads
+the in-memory universe and triggers no upstream call.
+
+### Geo-restriction
+
+Bybit refuses public traffic from some server regions and this adapter does
+nothing about that: no proxy, no alternate host, no spoofed origin. A
+refusal is an ordinary provider failure — the circuit opens, the cached
+universe keeps serving inside its stale budget, and `available: false`
+reaches the caller. Nothing is region-specific in the code, so relocating
+the backend needs no change here.
+
+## 19. Deliberate follow-up: venue-sourced index pricing
+
+Every Bybit perpetual that the current index feed does not cover is
+discoverable and NOT executable. Making it executable requires
+`MarkPriceService` to accept a second, explicitly-routed index source
+(Bybit publishes `indexPrice` on `/v5/market/tickers?category=linear`,
+which is semantically the same quantity).
+
+That is a change to the input of liquidation pricing, and it is not made on
+data nobody has seen: the sandbox proxy returns 403 to CONNECT for
+`api.bybit.com`, so no real Bybit response was observed during this work.
+It should be built only once the endpoint has been verified from a region
+that is not refused, and with the routing recorded per symbol so a mark
+price can always be traced to the feed that produced it.

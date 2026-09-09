@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { MarketDataGateway } from '../../services/marketData/MarketDataGateway';
+import type { MarketUniverse } from '../../services/marketData/bybit/MarketUniverse';
 import type { ExternalDerivativesService } from '../../services/marketData/derivatives/ExternalDerivativesService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
@@ -41,7 +42,11 @@ export function marketDataRouter(
   /** External derivatives reference data. Optional so an environment
    *  without the venues wired answers `provider_not_configured` rather
    *  than failing to construct the router. */
-  externalDerivatives: ExternalDerivativesService | null = null
+  externalDerivatives: ExternalDerivativesService | null = null,
+  /** The discoverable venue instrument universe. Optional for the same
+   *  reason: an environment with no venue wired answers honestly rather
+   *  than failing to construct. */
+  universe: MarketUniverse | null = null
 ): Router {
   const router = Router();
 
@@ -70,6 +75,68 @@ export function marketDataRouter(
     } catch {
       res.json({ available: false, reason: 'provider_unavailable', detail: 'Derivatives statistics could not be read.' });
     }
+  });
+
+  /**
+   * GET /market/universe — the DISCOVERABLE market universe.
+   *
+   * Every real instrument the venue lists: hundreds of spot pairs, 500+
+   * perpetuals. This is deliberately NOT the executable set — `has()` on
+   * the futures registry decides that, and it is a strict subset (see
+   * FuturesMarketRegistry). A market appearing here is a statement that it
+   * exists in the world, never that VOLTEX will take an order on it.
+   *
+   * `executable` is stamped per row from the futures registry, so the UI
+   * never has to guess and can never render a Trade button for a market
+   * the backend would reject.
+   *
+   * One request serves the whole universe. Nothing here is per-instrument,
+   * and nothing triggers an upstream call: it reads the already-refreshed
+   * in-memory universe.
+   */
+  router.get('/market/universe', (req, res) => {
+    if (!universe) {
+      res.json({ available: false, reason: 'provider_not_configured', detail: 'No venue universe is wired in this environment.' });
+      return;
+    }
+    const snapshot = universe.snapshot();
+    if (!snapshot.loaded) {
+      // Never an empty list: "we have not loaded it" and "there are no
+      // markets" are different facts and only one of them is true.
+      res.json({ available: false, reason: 'provider_unavailable', detail: 'The market universe has not loaded yet.' });
+      return;
+    }
+
+    const type = String(req.query.type ?? '');
+    const rows = type ? snapshot.instruments.filter((i) => i.marketType === type) : snapshot.instruments;
+
+    res.json({
+      available: true,
+      fetchedAt: snapshot.refreshedAt,
+      stale: false,
+      value: {
+        counts: {
+          spot: snapshot.instruments.filter((i) => i.marketType === 'spot').length,
+          linearPerpetual: snapshot.instruments.filter((i) => i.marketType === 'linear_perpetual').length,
+          linearFutures: snapshot.instruments.filter((i) => i.marketType === 'linear_futures').length,
+          inverse: snapshot.instruments.filter((i) => i.marketType === 'inverse').length,
+        },
+        instruments: rows.map((i) => ({
+          symbol: i.symbol,
+          marketType: i.marketType,
+          baseAsset: i.baseAsset,
+          quoteAsset: i.quoteAsset,
+          settleAsset: i.settleAsset,
+          status: i.status,
+          filters: i.filters,
+          // Provenance travels in the payload for logs and diagnostics.
+          // The customer-facing UI never renders it — asserted by
+          // frontend/src/lib/__tests__/noProviderBranding.test.ts.
+          provider: i.provider,
+          providerSymbol: i.providerSymbol,
+        })),
+      },
+    });
   });
 
   /**

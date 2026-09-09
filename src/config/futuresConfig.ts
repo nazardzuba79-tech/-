@@ -58,8 +58,32 @@ export const CORE_FUTURES_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 // unwound. Anything failing those is not listed, so we never offer
 // leverage on a market we cannot price or exit.
 export const PERP_QUOTE_ASSET = 'USDT';
+
+/**
+ * 24h quote-volume floor. A SAFETY rule, kept.
+ *
+ * This is not a scalability limit and was not removed with the market-count
+ * ceiling below. A leveraged position on a market too thin to exit is the
+ * failure the futures stack cannot absorb: liquidation has to be able to
+ * actually close the position, and a market that trades a few thousand
+ * dollars a day cannot absorb a liquidation without the insurance fund
+ * eating the difference. Raising the visible market count is not a reason
+ * to lower it.
+ */
 export const MIN_PERP_24H_QUOTE_VOLUME = 1_000_000; // USDT
-export const MAX_PERP_MARKETS = 40;
+
+/**
+ * The old `MAX_PERP_MARKETS = 40` is deliberately gone.
+ *
+ * It was a SCALABILITY ceiling, not a safety rule — nothing financial read
+ * it. It existed because the pair lists rendered every row and the panel
+ * became unusable past a few dozen. That is now handled where it belongs
+ * (windowed rendering in the pair lists), so the executable set is
+ * data-driven: every market that clears the two real rules — a live index
+ * price VOLTEX can actually read, and the volume floor above — is listed,
+ * however many that turns out to be. It is not replaced by a larger
+ * arbitrary number.
+ */
 
 // How often the listed set is recomputed. Deliberately slow: the panel
 // should not reshuffle under a trader's cursor, and nothing about an

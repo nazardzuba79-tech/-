@@ -4,9 +4,9 @@ import {
   CORE_FUTURES_SYMBOLS,
   PERP_QUOTE_ASSET,
   MIN_PERP_24H_QUOTE_VOLUME,
-  MAX_PERP_MARKETS,
   FUTURES_MARKET_REFRESH_MS,
 } from '../config/futuresConfig';
+import type { MarketUniverse } from '../services/marketData/bybit/MarketUniverse';
 
 /**
  * Which perpetual contracts exist.
@@ -21,6 +21,31 @@ import {
  * is the failure mode the old curated list was guarding against. Expressing
  * the guard as a rule keeps that protection while letting the list be as
  * large as the data supports.
+ *
+ * ── Discoverable vs executable ───────────────────────────────────────
+ *
+ * The venue universe (MarketUniverse) knows every instrument that exists —
+ * 500+ perpetuals, hundreds of spot pairs. This class answers a narrower
+ * question: on which of them can VOLTEX safely carry leverage? When the
+ * universe is loaded it is applied as an extra RESTRICTION, never as an
+ * expansion:
+ *
+ *   executable = has a live index price VOLTEX can read
+ *              AND clears the 24h volume floor
+ *              AND is a real Trading USDT-settled LinearPerpetual
+ *
+ * The third clause is new and only ever removes markets. It stops VOLTEX
+ * offering a "perpetual" on a pair that has no real perpetual contract
+ * anywhere, and it keeps dated futures, USDC-settled and inverse contracts
+ * out of an engine that has no expiry, no second settle asset and no
+ * coin-margin support. When the universe has not loaded — first boot, or a
+ * provider refusing this region — the clause is skipped entirely and the
+ * previous two rules decide alone, exactly as before. A provider being
+ * unreachable must never shrink the exchange.
+ *
+ * What is NOT here is a market count. The old 40-symbol ceiling was a
+ * rendering limit wearing a listing rule's clothes; nothing financial read
+ * it. It is gone, and not replaced by a bigger number.
  *
  * Two invariants matter more than freshness:
  *
@@ -39,7 +64,10 @@ export class FuturesMarketRegistry {
 
   constructor(
     private marketData: KrakenMarketDataService,
-    private prisma: PrismaClient
+    private prisma: PrismaClient,
+    /** Optional on purpose: the registry must work, unchanged, with no
+     *  venue universe at all. */
+    private universe: MarketUniverse | null = null
   ) {}
 
   /** The currently listed contracts, ranked by 24h volume descending. */
@@ -79,6 +107,20 @@ export class FuturesMarketRegistry {
     }
   }
 
+  /**
+   * Canonical symbols that are genuinely Trading USDT-settled perpetuals
+   * on the venue, or `null` when the universe has not loaded.
+   *
+   * Null and empty mean very different things and are never conflated:
+   * null is "we do not know, so restrict nothing", empty is "we know, and
+   * none qualify". Returning an empty set for an unloaded universe would
+   * delist the entire exchange the first time a provider refused a region.
+   */
+  private realPerpetualSymbols(): Set<string> | null {
+    if (!this.universe || !this.universe.snapshot().loaded) return null;
+    return new Set(this.universe.perpetualCandidates().map((i) => i.symbol));
+  }
+
   async refresh(): Promise<string[]> {
     let tickers;
     try {
@@ -107,10 +149,15 @@ export class FuturesMarketRegistry {
       return this.symbols;
     }
 
+    // The real-perpetual restriction, applied only when the venue universe
+    // actually loaded. `null` means "unknown", which must not filter
+    // anything out — an unreachable provider may not delist a market.
+    const realPerpetuals = this.realPerpetualSymbols();
+
     const eligible = [...volumeBySymbol.entries()]
       .filter(([, volume]) => volume >= MIN_PERP_24H_QUOTE_VOLUME)
+      .filter(([pair]) => realPerpetuals === null || realPerpetuals.has(pair))
       .sort((a, b) => b[1] - a[1])
-      .slice(0, MAX_PERP_MARKETS)
       .map(([pair]) => pair);
 
     const inFlight = await this.symbolsInFlight();
