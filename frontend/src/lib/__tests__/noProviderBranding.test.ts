@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, join } from 'path';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 
 /**
  * The VOLTEX product surface names no upstream provider or outside venue.
@@ -36,8 +37,11 @@ const code = (text: string) =>
   text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 describe('the dictionary contains no provider branding', () => {
-  const dictionary = read('src/lib/i18n.tsx');
-  // Every quoted VALUE in the translation tables, in all seven languages.
+  // Every quoted VALUE in the translation tables, in all seven languages —
+  // now seven files rather than one, which the helper names explicitly, so
+  // a language dropped from the set fails the read instead of quietly
+  // lowering the count below.
+  const dictionary = readAllLocales();
   const values = [...dictionary.matchAll(/^\s*'[\w.]+':\s*(.+)$/gm)].map((m) => m[1]);
 
   it('has translations to check at all', () => {
@@ -66,7 +70,7 @@ describe('customer-facing components render no provider branding', () => {
    * Walking the tree rather than listing files is deliberate: a NEW page
    * must be covered by this rule without anyone remembering to add it.
    */
-  const EXCLUDED = new Set([join('src', 'lib', 'i18n.tsx'), join('src', 'lib', 'api.ts')]);
+  const EXCLUDED = new Set([join('src', 'lib', 'api.ts')]);
 
   function sources(dir: string, out: string[] = []): string[] {
     for (const entry of readdirSync(resolve(frontend, dir))) {

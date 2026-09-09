@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
 import { createHash } from 'crypto';
+import { readLocale } from '../../../test-utils/i18nSource';
 import ts from 'typescript';
 import * as numbers from '../formatNumber';
 import * as changes from '../priceChange';
@@ -280,7 +281,8 @@ test('symbol selector keyboard behavior is preserved', () => {
   expect(preventDefault).toHaveBeenCalledTimes(1);
 });
 test('professional RU terminology is additive and does not reuse Spot volume labels', () => {
-  const dictionary = read('frontend/src/lib/i18n.tsx');
+  // Russian is the eager locale and lives in its own file now.
+  const dictionary = readLocale('ru');
   for (const label of ['Изменение за 24ч', 'Макс. за 24ч', 'Мин. за 24ч', 'Оборот за 24ч', 'Ставка / Отсчет до финансирования', 'Маркировочная цена']) {
     expect(dictionary).toContain(label);
   }

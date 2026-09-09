@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import { createHash } from 'crypto';
 import ts from 'typescript';
+import { readDictionaries } from '../../../test-utils/i18nSource';
 
 const root = resolve(__dirname, '../../../..');
 const frontend = resolve(root, 'frontend');
@@ -20,8 +21,18 @@ function evaluate(file: string, imports: Record<string, unknown> = {}, suffix = 
   return output;
 }
 // Read the actual seven dictionaries. No copy/number formatter is recreated.
-const translations = evaluate('frontend/src/lib/i18n.tsx', {}, '\nexports.qaDictionaries = DICTS;');
-const language = (lang = 'ru') => ({ lang, t: (key: string) => translations.qaDictionaries[lang][key] ?? key });
+//
+// They live one-per-file under lib/i18n/locales now, so they are read from
+// there rather than out of a `DICTS` map that no longer exists — all seven,
+// same values, and `localeOf` still comes from the real i18n module so the
+// formatter under test is the production one.
+const qaDictionaries = readDictionaries();
+const i18nModule = evaluate('frontend/src/lib/i18n.tsx', {
+  './i18n/locales/ru': { RU: qaDictionaries.ru },
+  './i18n/locales/keys': {},
+});
+const translations = { ...i18nModule, qaDictionaries };
+const language = (lang = 'ru') => ({ lang, t: (key: string) => translations.qaDictionaries[lang as keyof typeof qaDictionaries][key] ?? key });
 const fmt = evaluate(wallet + 'format.ts', { '../../lib/i18n': translations });
 const ui = evaluate(wallet + 'ui.tsx', { '../../lib/i18n': { useLanguage: () => language() } });
 
