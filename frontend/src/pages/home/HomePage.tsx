@@ -9,6 +9,11 @@ import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
 import { useHomeMarket } from './useHomeMarket';
 import './home.css';
+// Loaded AFTER home.css on purpose: this is the Tailwind utilities layer
+// the homepage owns, and it must win specificity ties against the
+// `.vx-home` rules above. See home-tailwind-utilities.css for why the
+// homepage ships its own copy at all.
+import './home-tailwind-utilities.css';
 
 /**
  * The VOLTEX homepage, in the approved section order:
