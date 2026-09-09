@@ -42,6 +42,17 @@ export interface SyntheticTradeDto {
   result: 'WIN' | 'LOSS' | 'BREAKEVEN';
 }
 
+/** What the full trade history adds up to, for one period. */
+export interface SyntheticTradeStats {
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  grossProfit: number;
+  grossLoss: number;
+  netPnlTotal: number;
+  holdingTimeTotalMinutes: number;
+}
+
 export interface SyntheticCopyTradingResponse {
   traderEarnings365?: number;
   trader: { id: string; name: string; vip: boolean };
@@ -64,7 +75,39 @@ export interface SyntheticCopyTradingResponse {
       tradingDays: number; averageTrade: number; followersPnl: number; aum: number;
     };
   };
+  /**
+   * DISPLAY rows only: the latest ten closed trades, newest first.
+   *
+   * A strategy's real history runs to thousands of rows and the browser
+   * never showed more than a hundred of them, so the wire carries ten and
+   * `tradeStats` carries what the rest of them add up to. Fewer than ten
+   * when fewer exist — never padded.
+   */
   trades: SyntheticTradeDto[];
+  /**
+   * Trade-derived aggregates computed server-side over the COMPLETE
+   * history, per period.
+   *
+   * Optional so an older payload (or a test fixture holding the full array)
+   * still works: when it is absent every figure is derived from `trades`
+   * exactly as before. When it is present, `trades` is the ten display rows
+   * and these are the numbers — which is why no statistic is ever computed
+   * from ten trades.
+   */
+  tradeStats?: Record<Period, SyntheticTradeStats>;
+  /** The real number of trades behind the statistics. Shown next to the
+   *  ten-row table, so "2,920 trades" stays 2,920. */
+  tradeHistoryCount?: number;
+  /**
+   * Main traded markets over the COMPLETE history, computed server-side
+   * before the history was trimmed.
+   *
+   * Present exactly when `trades` holds the ten display rows. Deriving this
+   * from those ten would make a strategy that traded BTC, ETH and SOL all
+   * year advertise whatever it happened to trade this morning — which is
+   * the bug this field exists to close.
+   */
+  mainMarkets?: string[];
   equityHistory: { date: string; equity: number }[];
   aumHistory: { date: string; aum: number; followerCount?: number }[];
   dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];
@@ -191,6 +234,10 @@ export interface SyntheticPeriodAnalytics {
   equity: SyntheticCopyTradingResponse['equityHistory'];
   daily: SyntheticCopyTradingResponse['dailyResults'];
   trades: SyntheticCopyTradingResponse['trades'];
+  /** True when `trades` holds the ten DISPLAY rows rather than the period's
+   *  full set, so a caller can tell "these are all of them" from "these are
+   *  the latest ten" instead of guessing from the length. */
+  summarized: boolean;
 }
 
 function sampleStd(values: number[]): number {
@@ -233,12 +280,23 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   const pnl = data.economics
     ? daily.reduce((sum, day) => sum + day.realizedPnl, 0)
     : closingEquity - openingEquity;
+  // Trade-derived aggregates come from the server's pass over the COMPLETE
+  // history when it sent one. `trades` below is then the ten display rows,
+  // and deriving a win rate or a trade count from those ten would be a
+  // different — and wrong — number. Falling back to the local computation
+  // keeps every existing caller and fixture that still holds the full array
+  // working unchanged, and the two paths are asserted equal in the tests.
+  const stats = data.tradeStats?.[period];
   const wins = trades.filter((trade) => trade.netPnl > 0);
   const losses = trades.filter((trade) => trade.netPnl < 0);
+  const winningTrades = stats ? stats.winningTrades : wins.length;
+  const losingTrades = stats ? stats.losingTrades : losses.length;
+  const totalTrades = stats ? stats.totalTrades : trades.length;
   const resolvedTrades = data.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
-    ? wins.length + losses.length : trades.length;
-  const grossProfit = wins.reduce((sum, trade) => sum + trade.netPnl, 0);
-  const grossLoss = Math.abs(losses.reduce((sum, trade) => sum + trade.netPnl, 0));
+    ? winningTrades + losingTrades : totalTrades;
+  const grossProfit = stats ? stats.grossProfit : wins.reduce((sum, trade) => sum + trade.netPnl, 0);
+  const grossLoss = stats ? stats.grossLoss : Math.abs(losses.reduce((sum, trade) => sum + trade.netPnl, 0));
+  const netPnlTotal = stats ? stats.netPnlTotal : trades.reduce((sum, trade) => sum + trade.netPnl, 0);
   const economics = data.economics?.periods[period];
   const returns = data.economics
     ? daily.map(day => day.dailyReturn)
@@ -249,7 +307,9 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
   const downsideDeviation = downside.length
     ? Math.sqrt(downside.reduce((sum, value) => sum + value ** 2, 0) / (economics ? returns.length : downside.length))
     : 0;
-  const holdingTotal = trades.reduce((sum, trade) => sum + trade.holdingTimeMinutes, 0);
+  const holdingTotal = stats
+    ? stats.holdingTimeTotalMinutes
+    : trades.reduce((sum, trade) => sum + trade.holdingTimeMinutes, 0);
   const followerPnl = economics ? economics.netFollowersPnl : period === '7D' ? data.analytics.followerPnl7
     : period === '30D' ? data.analytics.followerPnl30
       : period === '90D' ? data.analytics.followerPnl90
@@ -268,18 +328,18 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
       ? returns.reduce((total, value) => total + value, 0) * 100
       : (returns.reduce((factor, value) => factor * (1 + value), 1) - 1) * 100,
     pnl,
-    winRate: resolvedTrades ? wins.length / resolvedTrades * 100 : 0,
+    winRate: resolvedTrades ? winningTrades / resolvedTrades * 100 : 0,
     maximumDrawdown: economics?.maximumDrawdown ?? maxDrawdown(equity),
-    averagePnl: trades.length ? trades.reduce((sum, trade) => sum + trade.netPnl, 0) / trades.length : 0,
+    averagePnl: totalTrades ? netPnlTotal / totalTrades : 0,
     profitFactor: economics ? economics.profitFactor : grossLoss ? grossProfit / grossLoss : 0,
-    averageTradesPerWeek: trades.length / Math.max(1, daily.length) * 7,
-    averageHoldingTimeMinutes: trades.length ? holdingTotal / trades.length : 0,
+    averageTradesPerWeek: totalTrades / Math.max(1, daily.length) * 7,
+    averageHoldingTimeMinutes: totalTrades ? holdingTotal / totalTrades : 0,
     annualizedVolatility: economics?.annualizedVolatility ?? deviation * Math.sqrt(365) * 100,
     sharpe: economics ? economics.sharpe : deviation ? mean / deviation * Math.sqrt(365) : 0,
     sortino: economics ? economics.sortino : downsideDeviation ? mean / downsideDeviation * Math.sqrt(365) : 0,
-    totalTrades: trades.length,
-    winningTrades: wins.length,
-    losingTrades: losses.length,
+    totalTrades,
+    winningTrades,
+    losingTrades,
     tradingDays: economics?.activeTradingDays ?? daily.length,
     calendarDays: daily.length,
     followerPnl,
@@ -288,6 +348,7 @@ export function selectSyntheticPeriod(data: SyntheticCopyTradingResponse, period
     equity,
     daily,
     trades,
+    summarized: stats !== undefined,
   };
 }
 

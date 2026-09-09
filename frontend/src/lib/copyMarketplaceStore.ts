@@ -1,4 +1,8 @@
 import type { SyntheticCopyTradingResponse } from './syntheticCopyTrading';
+
+/** The marketplace transports display rows, not history. Ten is what the
+ *  trade table shows; anything longer is a payload regression. */
+export const VISIBLE_TRADE_ROWS = 10;
 import type { KseniaResponse, PublicStrategyIdentity } from './kseniaCopyTrading';
 
 export interface CopyMarketplaceResponse {
@@ -44,11 +48,33 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     return numbers(metrics, 'roi masterPnl masterTradingVolume copiedTradingVolume grossFollowersPnl performanceFeeEarnings netFollowersPnl activeTradingDays calendarDays maximumDrawdown annualizedVolatility')
       && ['sharpe','sortino','profitFactor'].every(key => metrics[key] === null || finite(metrics[key]));
   })) return false;
+  // The visible trade rows: at most ten, newest first, each fully formed.
+  // Validated as strictly as the full array was — the array got shorter,
+  // not laxer. `tradeStats` is what the statistics are built from, so it is
+  // validated per period rather than trusted, and a payload carrying the
+  // ten rows WITHOUT it would silently make every trade-derived figure
+  // describe ten trades instead of thousands. That is rejected.
+  const visibleTrades = rows(value.trades, 'entryPrice exitPrice quantity leverage netPnl returnPct holdingTimeMinutes', ['openedAt','closedAt'])
+    && value.trades.length <= VISIBLE_TRADE_ROWS
+    && value.trades.every((trade: any) => typeof trade.id === 'string' && typeof trade.symbol === 'string' && ['LONG','SHORT'].includes(trade.side))
+    && value.trades.every((trade: any, index: number) => index === 0
+      || Date.parse(value.trades[index - 1].closedAt) >= Date.parse(trade.closedAt));
+  const tradeStats = record(value.tradeStats)
+    && ['7D','30D','90D','ALL'].every(period => numbers((value.tradeStats as any)[period],
+      'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal holdingTimeTotalMinutes'))
+    // The real total must be at least what is shown, or the count under the
+    // table would be smaller than the table.
+    && finite(value.tradeHistoryCount) && (value.tradeHistoryCount as number) >= value.trades.length
+    && (value.tradeStats as any).ALL.totalTrades === value.tradeHistoryCount
+    // Main Markets is a FULL-HISTORY aggregate. A summary that omits it
+    // would leave the profile with nothing but the ten display rows to
+    // rank, so the shape is rejected rather than silently downgraded.
+    && Array.isArray(value.mainMarkets) && value.mainMarkets.length > 0
+    && value.mainMarkets.every((market: unknown) => typeof market === 'string' && market.length > 0);
   return rows(value.equityHistory, 'equity', ['date'])
     && rows(value.aumHistory, 'aum', ['date'])
     && rows(value.dailyResults, 'startEquity endEquity realizedPnl dailyReturn drawdown', ['date'])
-    && rows(value.trades, 'entryPrice exitPrice quantity leverage netPnl returnPct holdingTimeMinutes', ['openedAt','closedAt'])
-    && value.trades.every((trade: any) => typeof trade.id === 'string' && typeof trade.symbol === 'string' && ['LONG','SHORT'].includes(trade.side))
+    && visibleTrades && tradeStats
     && rows(value.followers, 'allocatedCapital currentEquity realizedPnl unrealizedPnl roi copiedTrades copyRatio slippageBps latencyMs', ['copyStartDate'])
     && value.followers.every((f: any) => typeof f.id === 'string' && typeof f.displayName === 'string' && typeof f.active === 'boolean'
       && ['startingAllocation','grossPnl','performanceFees','netPnl','copiedVolume','highWaterMark'].every(key => f[key] === undefined || finite(f[key])))
