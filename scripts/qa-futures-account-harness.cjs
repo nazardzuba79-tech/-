@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Local browser-QA harness for the Futures AUTHENTICATED ACCOUNT surface.
+ * Local browser-QA harness for the AUTHENTICATED TERMINAL surface —
+ * Futures account state, and the Spot conditional-order traffic the
+ * charts on both terminals are measured against.
  *
  * `qa-perf-harness.cjs` is deliberately GET-only — it refuses every write
  * verb so no order, transfer or balance change is reachable from it even by
@@ -67,6 +69,7 @@ function freshAccounts() {
         originalQuantity: '0.02000000', remainingQuantity: '0.02000000', status: 'OPEN', reduceOnly: false,
         leverage: 10, marginType: 'ISOLATED', createdAt: new Date(now - 600000).toISOString(),
       }],
+      spotOrders: freshSpotOrders(),
       history: [{
         id: 'pos-a0', symbol: 'ETH/USDT', side: 'SHORT', leverage: 5, marginType: 'ISOLATED',
         entryPrice: '4010.00', realizedPnl: '42.30000000', status: 'CLOSED',
@@ -79,6 +82,7 @@ function freshAccounts() {
       futures: [{ asset: 'USDT', available: '333.00000000', locked: '0' }],
       positions: [],
       orders: [],
+      spotOrders: [],
       history: [],
     },
   };
@@ -154,18 +158,83 @@ function marketRoutes(pathname) {
     };
   }
   if (pathname.startsWith('/api/v1/market/candles')) return [];
+  // Enough of the market surface for BOTH terminals to render real
+  // candles and a real pair list, so the order-traffic counts below are
+  // taken against a working chart rather than an empty one.
+  if (pathname.startsWith('/api/v1/market/external/candles/')) {
+    const base = 104000;
+    return { candles: Array.from({ length: 520 }, (_, i) => ({
+      time: Math.floor((now - (520 - i) * 900_000) / 1000),
+      open: base + i, high: base + i + 40, low: base + i - 40, close: base + i + 10, volume: 12 + (i % 7),
+    })) };
+  }
+  if (pathname === '/api/v1/market/external/tickers') {
+    return { source: 'kraken', tickers: FUTURES_SYMBOLS.map((pair) => ({
+      pair, lastPrice: String(MARK[pair]), bidPrice: String(MARK[pair] - 1), askPrice: String(MARK[pair] + 1),
+      high24h: String(MARK[pair] * 1.02), low24h: String(MARK[pair] * 0.98),
+      volume24h: '1000', quoteVolume24h: '100000000', changePercent24h: '1.20',
+    })) };
+  }
+  if (pathname === '/api/v1/market/external/rankings') {
+    // Shape matters: the real response is { source, rankings: [...] }, and
+    // a fixture returning anything else makes a consumer map over
+    // `undefined` and log a render error that has nothing to do with the
+    // code under test.
+    return { source: 'coingecko', rankings: FUTURES_SYMBOLS.map((pair, i) => {
+      const symbol = pair.split('/')[0];
+      return {
+        symbol, rank: i + 1, name: symbol, image: '', categories: [],
+        price: MARK[pair], changePercent24h: 1.2, changePercent7d: 3.4, changePercent30d: -2.1,
+        volume24h: 1e8, marketCap: (i + 1) * 1e9,
+        sparkline: Array.from({ length: 24 }, (_, n) => 100 + Math.sin(n / 3) * 8),
+      };
+    }) };
+  }
+  if (pathname === '/api/v1/market/global') {
+    return {
+      totalMarketCapUsd: 2.5e12, totalVolume24hUsd: 9e10, btcDominancePercent: 54.2,
+      ethDominancePercent: 13.1, marketCapChangePercent24h: 1.4,
+      fearGreed: { value: 61, classification: 'Greed', updatedAt: Math.floor(now / 1000) },
+    };
+  }
+  if (pathname === '/api/v1/market/assets/icons') return {};
+  if (pathname === '/api/v1/cfd/tickers') return { source: 'twelvedata', configured: false, tickers: [] };
   if (pathname === '/api/v1/support/conversations/mine') return { conversation: null, messages: [] };
   return undefined;
 }
 
-function authedRoutes(pathname, acct) {
+/**
+ * Spot conditional (SL/TP trigger) orders.
+ *
+ * One PENDING_TRIGGER order on BTC/USDT, so the Spot chart genuinely draws
+ * a conditional line and the Futures chart can be shown NOT to — the whole
+ * point of the measurement. Held per account and mutated by PATCH
+ * /orders/:id/trigger, so a drag can be verified end to end.
+ */
+function freshSpotOrders() {
+  return [{
+    id: 'spot-trigger-1', pair: 'BTC/USDT', side: 'SELL', type: 'STOP_LIMIT',
+    price: '98900.00000000', triggerPrice: '99000.00000000', ocoGroupId: null,
+    originalQuantity: '0.10000000', remainingQuantity: '0.10000000',
+    status: 'PENDING_TRIGGER', createdAt: new Date(now - 900000).toISOString(),
+  }];
+}
+
+function authedRoutes(pathname, acct, query) {
   if (pathname === '/api/v1/me') return acct.me;
+  if (pathname === '/api/v1/orders/me') {
+    const status = query?.get('status') ?? '';
+    // Same filter semantics as the real route: the client asks for the
+    // statuses it wants and gets only those.
+    if (!status || status.split(',').includes('PENDING_TRIGGER')) return acct.spotOrders;
+    return [];
+  }
   if (pathname === '/api/v1/balances') return acct.spot;
   if (pathname === '/api/v1/futures/balances') return acct.futures;
   if (pathname === '/api/v1/futures/positions') return acct.positions;
   if (pathname === '/api/v1/futures/positions/history') return acct.history;
   if (pathname === '/api/v1/futures/orders/me') return acct.orders;
-  if (pathname === '/api/v1/orders/me' || pathname === '/api/v1/trades/me') return [];
+  if (pathname === '/api/v1/trades/me') return [];
   if (pathname === '/api/v1/portfolio/summary') return { totalUsd: acct.spot[0].available, assets: [] };
   if (pathname === '/api/v1/referral/me') return { code: 'QA', referredCount: 0 };
   return undefined;
@@ -206,7 +275,7 @@ const server = http.createServer(async (req, res) => {
     if (!acct) return json(401, { error: 'Unauthorized' });
 
     if (req.method === 'GET') {
-      const body = authedRoutes(pathname, acct);
+      const body = authedRoutes(pathname, acct, url.searchParams);
       if (body !== undefined) return json(200, body);
       return json(404, { error: 'not in fixture set' });
     }
@@ -253,6 +322,16 @@ const server = http.createServer(async (req, res) => {
         openedAt: pos.openedAt, closedAt: new Date().toISOString(),
       });
       return json(200, { status: 'CLOSED' });
+    }
+
+    if (req.method === 'PATCH' && /^\/api\/v1\/orders\/[^/]+\/trigger$/.test(pathname)) {
+      const id = pathname.split('/')[4];
+      const order = acct.spotOrders.find((o) => o.id === id);
+      if (!order) return json(404, { error: 'Order not found' });
+      const b = await readBody(req);
+      if (b.triggerPrice) order.triggerPrice = String(b.triggerPrice);
+      if (b.price) order.price = String(b.price);
+      return json(200, { id: order.id, triggerPrice: order.triggerPrice, price: order.price });
     }
 
     if (req.method === 'POST' && pathname === '/api/v1/futures/transfer') {
