@@ -138,14 +138,6 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
 
   const stats24h = derivatives?.available ? derivatives.value : null;
 
-  /** The venues actually behind a figure, as a compact label. Built from
-   *  the contributor list, so it cannot keep naming a venue that supplied
-   *  nothing. */
-  function venueLabel(venues: string[] | undefined): string | null {
-    if (!venues || venues.length === 0) return null;
-    return venues.map((v) => (v === 'binance' ? 'Binance' : v === 'okx' ? 'OKX' : v)).join(' + ');
-  }
-
   // Reference spot ticker for this contract's underlying, from the shared
   // snapshot at the same 4s cadence this bar always used. A contract with
   // no matching reference ticker yields null and renders as a dash — never
@@ -213,40 +205,48 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
         <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
       </div>
       <div className="ticker-item">
-        {/* Tracked external derivatives turnover — NOT this exchange's own
-            and no longer the Kraken SPOT quote volume that used to sit
-            here, which described a different market entirely. */}
-        <span className="label">{`${t('futures.headerTurnover24h')} (USD)`}</span>
+        {/* Derivatives-market turnover, not this exchange's own and no
+            longer the spot quote volume that used to sit here, which
+            described a different market entirely.
+
+            NO SOURCE LINE, deliberately: the customer-facing terminal
+            shows no upstream infrastructure. Provenance is not lost — the
+            response still carries `turnoverVenues`, which admin
+            diagnostics, logs and the test suite read. It simply does not
+            reach the exchange's own UI.
+
+            The label is the contract's QUOTE currency, which is the
+            currency the figure is actually denominated in: these are
+            USDT-margined perpetuals and the upstream figure is the
+            quote-currency turnover, never a converted one. */}
+        <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
         <span className={`value${derivatives?.available && derivatives.stale ? ' is-stale' : ''}`}>
           {stats24h && stats24h.turnover24hUsd !== null ? formatCompact(stats24h.turnover24hUsd) : '—'}
         </span>
-        {venueLabel(stats24h?.turnoverVenues) ? (
-          <small className="futures-source">{`${t('futures.marketSource')}: ${venueLabel(stats24h?.turnoverVenues)}`}</small>
-        ) : null}
       </div>
       <div className="ticker-item">
-        {/* Tracked external open interest. Base units when every
-            contributing venue reported base units — Binance's
-            `openInterest` and OKX's `oiCcy` are both in base currency, so
-            they are directly comparable. When none did, this falls back
-            to the USD notional AND relabels, so the unit on screen is
-            always the unit of the number. Units are never mixed. */}
+        {/* Derivatives-market open interest, in base units when the
+            contributing venues reported base units. When none did, this
+            falls back to the notional AND relabels, so the unit on screen
+            is always the unit of the number. Units are never mixed.
+
+            No source line here either, for the same reason as the cell
+            above: the contributor lists stay in the payload and out of the
+            customer-facing UI. */}
         {(() => {
           const base = stats24h?.openInterestBase ?? null;
-          const usd = stats24h?.openInterestUsd ?? null;
+          const notional = stats24h?.openInterestUsd ?? null;
           const showBase = base !== null;
-          const venues = venueLabel(showBase ? stats24h?.openInterestBaseVenues : stats24h?.openInterestUsdVenues);
           return (
             <>
-              <span className="label">{`${t('futures.openInterest')} (${showBase ? baseAsset : 'USD'})`}</span>
+              <span className="label">{`${t('futures.openInterest')} (${showBase ? baseAsset : quoteAsset})`}</span>
               <span className={`value${derivatives?.available && derivatives.stale ? ' is-stale' : ''}`}>
                 {showBase
                   ? base.toLocaleString('en-US', { maximumSignificantDigits: 12 })
-                  : usd !== null
-                    ? formatCompact(usd)
+                  : notional !== null
+                    ? formatCompact(notional)
                     : '—'}
               </span>
-              {venues ? <small className="futures-source">{`${t('futures.marketSource')}: ${venues}`}</small> : null}
             </>
           );
         })()}

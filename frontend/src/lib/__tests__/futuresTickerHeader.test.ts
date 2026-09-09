@@ -187,10 +187,10 @@ test('visible metrics follow price, market, derivatives order without index or b
   expect(text(blocks[0])).toBe('72,345.67futures.markPrice: 72,340.12');
   expect(blocks.slice(1).map(b => text(nodes(b).find(n => n.props.className === 'label')))).toEqual([
     'futures.headerChange24h', 'futures.headerHigh24h', 'futures.headerLow24h',
-    // The two market-reference cells now name the unit they actually
-    // show: tracked-venue turnover is a USD figure, not the contract's
-    // USDT quote volume on Kraken's SPOT book.
-    'futures.headerTurnover24h (USD)', 'futures.openInterest (BTC)', 'futures.headerFunding',
+    // The two market-reference cells name the unit they actually show —
+    // the contract's quote currency for turnover — and nothing else. No
+    // upstream venue is named anywhere in this header.
+    'futures.headerTurnover24h (USDT)', 'futures.openInterest (BTC)', 'futures.headerFunding',
   ]);
   expect(text(tree)).not.toMatch(/indexPrice|71,999.88|volume24h|123,456/);
   expect(text(tree)).toContain('987.65M');
@@ -201,22 +201,25 @@ const oiStats = (value: Record<string, unknown>) =>
   jest.fn(async () => ({ available: true, source: 'binance', fetchedAt: 0, stale: false,
     value: { baseAsset: 'ETH', turnover24hUsd: null, turnoverVenues: [], ...value } }));
 
-// The figure is whatever the tracked venues published, rendered in the
-// unit those venues published it in — a real 0 stays 0, a tiny real size
-// is not rounded away, and a venue's USD notional is never printed under
-// a base-currency label.
+// The figure is whatever the market published, rendered in the unit it
+// was published in — a real 0 stays 0, a tiny real size is not rounded
+// away, and a notional is never printed under a base-currency label.
+//
+// Every expectation below is the COMPLETE text of the cell, so a venue
+// name reappearing anywhere in it would fail these outright.
 test.each([
   [{ openInterestBase: 0, openInterestUsd: 999999, openInterestBaseVenues: ['binance'], openInterestUsdVenues: ['binance'] },
-    'futures.openInterest (ETH)0futures.marketSource: Binance'],
+    'futures.openInterest (ETH)0'],
   [{ openInterestBase: 1.23456789, openInterestUsd: 999999, openInterestBaseVenues: ['binance', 'okx'], openInterestUsdVenues: ['binance'] },
-    'futures.openInterest (ETH)1.23456789futures.marketSource: Binance + OKX'],
+    'futures.openInterest (ETH)1.23456789'],
   [{ openInterestBase: 0.000000001, openInterestUsd: null, openInterestBaseVenues: ['okx'], openInterestUsdVenues: [] },
-    'futures.openInterest (ETH)0.000000001futures.marketSource: OKX'],
-  // No venue reported base units — the cell falls back to USD notional
-  // AND relabels, so the unit on screen is the unit of the number.
+    'futures.openInterest (ETH)0.000000001'],
+  // No venue reported base units — the cell falls back to the notional
+  // AND relabels to the quote currency, so the unit on screen is the unit
+  // of the number.
   [{ openInterestBase: null, openInterestUsd: 4_200_000_000, openInterestBaseVenues: [], openInterestUsdVenues: ['okx'] },
-    'futures.openInterest (USD)4.2Bfutures.marketSource: OKX'],
-])('open interest renders the tracked-venue figure %#, in its own unit', async (value, expected) => {
+    'futures.openInterest (USDT)4.2B'],
+])('open interest renders the market figure %#, in its own unit and with no venue named', async (value, expected) => {
   const component = mount({ getFuturesMarketStats: oiStats(value) });
   component.render({ symbol: 'ETH/USDT' }); await flush();
   const tree = component.render({ symbol: 'ETH/USDT' });
@@ -232,19 +235,29 @@ test('unavailable data stays unavailable rather than becoming fake zero', async 
   });
   component.render(); await flush();
   const tree = component.render();
-  // No number, and no venue credited — an outage names nobody.
-  expect(text(tree)).toContain('futures.openInterest (USD)—');
-  expect(text(tree)).toContain('futures.headerTurnover24h (USD)—');
-  expect(text(tree)).not.toContain('futures.marketSource');
+  expect(text(tree)).toContain('futures.openInterest (USDT)—');
+  expect(text(tree)).toContain('futures.headerTurnover24h (USDT)—');
   expect(text(tree)).toContain('futures.headerFunding— / ');
+});
+
+test('the header names no upstream venue, in any state', async () => {
+  for (const overrides of [
+    {},
+    { getFuturesMarketStats: async () => ({ available: false, reason: 'provider_unavailable' }) },
+    { getFuturesMarketStats: async () => { throw new Error('offline'); } },
+  ]) {
+    const component = mount(overrides);
+    component.render(); await flush();
+    expect(text(component.render())).not.toMatch(/binance|okx|kraken|coingecko|marketSource/i);
+  }
 });
 
 test('a provider read that throws leaves the cells empty, never zeroed', async () => {
   const component = mount({ getFuturesMarketStats: async () => { throw new Error('offline'); } });
   component.render(); await flush();
   const tree = component.render();
-  expect(text(tree)).toContain('futures.openInterest (USD)—');
-  expect(text(tree)).toContain('futures.headerTurnover24h (USD)—');
+  expect(text(tree)).toContain('futures.openInterest (USDT)—');
+  expect(text(tree)).toContain('futures.headerTurnover24h (USDT)—');
 });
 test('countdown uses actual clock, ticks and rolls over at the existing UTC boundary', () => {
   const component = mount({}, true);

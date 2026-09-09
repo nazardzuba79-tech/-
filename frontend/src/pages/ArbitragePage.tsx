@@ -19,7 +19,7 @@ const REFRESH_INTERVAL_MS = 15_000;
 
 /**
  * Real, live cross-exchange price comparison — every row here is a genuine
- * quote pulled from Binance/OKX/our own Kraken mirror at request time (see
+ * quote pulled from the connected upstreams at request time (see
  * ArbitrageService on the backend), not a demo/mock. Deliberately framed
  * as a monitor rather than a bot: the platform never transfers or trades
  * funds on the user's behalf on another exchange, and real cross-exchange
@@ -97,9 +97,13 @@ export function ArbitragePage() {
                           <span style={{ fontWeight: 700 }}>{o.pair}</span>
                         </div>
                       </td>
+                      {/* Prices only. `o.buyExchange` / `o.sellExchange`
+                          still arrive in the response and are still read by
+                          logs and the test suite — they are simply not
+                          rendered, because the customer-facing UI names no
+                          outside venue. */}
                       <td style={styles.td}>
                         <div style={styles.exchangeCell}>
-                          <span style={styles.exchangeName}>{o.buyExchange}</span>
                           <span className="mono" style={styles.priceText}>
                             {o.buyPrice.toLocaleString(undefined, { maximumFractionDigits: 6 })}
                           </span>
@@ -107,7 +111,6 @@ export function ArbitragePage() {
                       </td>
                       <td style={styles.td}>
                         <div style={styles.exchangeCell}>
-                          <span style={styles.exchangeName}>{o.sellExchange}</span>
                           <span className="mono" style={styles.priceText}>
                             {o.sellPrice.toLocaleString(undefined, { maximumFractionDigits: 6 })}
                           </span>

@@ -88,38 +88,22 @@ export function formatCountdown(targetMs: number | null | undefined, now: number
   return `${h}:${m}:${s}`;
 }
 
-/** Provider names are proper nouns and are shown verbatim rather than
- *  translated — "CoinGecko" is "CoinGecko" in every language. */
-const SOURCE_LABEL: Record<string, string> = {
-  coingecko: 'CoinGecko',
-  'alternative.me': 'Alternative.me',
-  kraken: 'Kraken',
-  twelvedata: 'Twelve Data',
-  binance: 'Binance',
-  okx: 'OKX',
-  voltex: 'VOLTEX',
-};
-
-export function sourceLabel(source: string): string {
-  return SOURCE_LABEL[source] ?? source;
-}
-
 /**
- * The compact provenance line: `CoinGecko · updated 12s ago`.
+ * The compact freshness line: `updated 12s ago`.
  *
- * Deliberately small and secondary. §7 of the brief is explicit that every
- * metric must not carry a giant provider label — but the information has
- * to be reachable, so it sits once per module rather than once per number,
- * and a stale reading is visually distinct rather than silently identical
- * to a live one.
+ * It carries HOW OLD a reading is and nothing about where it came from.
+ * No upstream provider is named anywhere in the customer-facing UI; the
+ * `source` and `venues` fields stay in the API payload for logs, admin
+ * diagnostics and the test suite, and stop at the network boundary.
+ *
+ * A stale reading is still visually distinct rather than silently
+ * identical to a live one — that part was never about branding.
  */
-export function SourceTag({
-  source,
+export function FreshnessTag({
   fetchedAt,
   stale,
   live,
 }: {
-  source: string;
   fetchedAt?: number | null;
   stale?: boolean;
   /** VOLTEX's own state is read per request, so it is labelled "Live"
@@ -142,8 +126,7 @@ export function SourceTag({
   return (
     <span className={`vx-source${stale ? ' is-stale' : ''}`}>
       <span className="vx-source-dot" aria-hidden />
-      {sourceLabel(source)}
-      {age ? <span className="vx-source-age">· {stale ? t('analytics.stale') : age}</span> : null}
+      {age ? <span className="vx-source-age">{stale ? t('analytics.stale') : age}</span> : null}
     </span>
   );
 }
@@ -229,45 +212,26 @@ export function UnavailableModule({ titleKey, detail }: { titleKey: Key; detail?
 }
 
 /**
- * The venue label for a multi-venue figure.
+ * A min–max range across the readings behind a market figure.
  *
- * Built from the venues that ACTUALLY contributed, never written by hand.
- * That is the whole point: when OKX is down, this returns "Binance", so
- * the page cannot keep claiming "Binance + OKX" over a figure OKX had no
- * part in. §26 of the brief is explicit about it and this is where it is
- * enforced for the UI.
+ * This replaced the per-venue table. A row without the name of the venue
+ * that produced it is not information, so rather than anonymising rows
+ * the modules now report the DISPERSION of the market readings, which is
+ * real and needs no attribution. Deliberately NOT an average: an average
+ * of two venues' funding is not a rate anyone can be charged.
+ *
+ * Returns null when nothing reported, so an absent range renders as the
+ * module's own empty state rather than as a zero-width range.
  */
-export function venuesLabel(venues: { venue: string }[] | undefined): string | null {
-  if (!venues || venues.length === 0) return null;
-  return venues.map((v) => sourceLabel(v.venue)).join(' + ');
-}
-
-/** A compact table row of one venue's figure, so every number on a
- *  multi-venue module carries the venue that produced it. */
-export function VenueRow({
-  venue,
-  contract,
-  value,
-  tone,
-  stale,
-}: {
-  venue: string;
-  contract?: string;
-  value: string | null;
-  tone?: 'positive' | 'negative';
-  stale?: boolean;
-}) {
-  return (
-    <div className={`vx-venue-row${stale ? ' is-stale' : ''}`}>
-      <span className="vx-venue-name">
-        {sourceLabel(venue)}
-        {contract ? <small className="vx-venue-contract">{contract}</small> : null}
-      </span>
-      <span className={`vx-venue-value${value === null ? ' is-unavailable' : tone ? ` is-${tone}` : ''}`}>
-        {value ?? DASH}
-      </span>
-    </div>
-  );
+export function rangeOf(
+  values: (number | null | undefined)[],
+  format: (n: number) => string
+): string | null {
+  const real = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (real.length === 0) return null;
+  const low = Math.min(...real);
+  const high = Math.max(...real);
+  return low === high ? format(low) : `${format(low)} … ${format(high)}`;
 }
 
 /**

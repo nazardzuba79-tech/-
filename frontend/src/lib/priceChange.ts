@@ -17,7 +17,7 @@ export function parseChangePercent(raw: string, context: string): number {
     // silently rendering a number that will look like a bug to the user.
     console.warn(
       `[priceChange] Suspicious 24h change for ${context}: ${value}% (raw="${raw}"). ` +
-        `Treating as real, but this is above the ${ANOMALY_THRESHOLD_PCT}% sanity threshold — worth checking the upstream Kraken data.`
+        `Treating as real, but this is above the ${ANOMALY_THRESHOLD_PCT}% sanity threshold — worth checking the upstream feed.`
     );
   }
   return value;

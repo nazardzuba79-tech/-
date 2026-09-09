@@ -96,23 +96,35 @@ describe('VOLTEX financial values in the header are untouched', () => {
   });
 });
 
-describe('units and attribution', () => {
+describe('units, and no provider branding', () => {
   it('labels the unit it is actually showing, and never mixes the two', () => {
     const oiCell = openInterestCell();
-    // Base units when base units exist, USD otherwise — and the label
-    // follows the same condition, so the unit on screen is the unit of
-    // the number.
-    expect(oiCell).toContain('showBase ? baseAsset : ');
-    expect(oiCell).toContain("'USD'");
+    // Base units when base units exist, the contract's quote currency
+    // otherwise — and the label follows the same condition, so the unit
+    // on screen is the unit of the number.
+    expect(oiCell).toContain('showBase ? baseAsset : quoteAsset');
     expect(oiCell).toContain('showBase');
   });
 
-  it('builds the source label from the ACTUAL contributors, per metric', () => {
-    expect(barCode).toContain('venueLabel(stats24h?.turnoverVenues)');
-    expect(barCode).toContain('openInterestBaseVenues');
-    expect(barCode).toContain('openInterestUsdVenues');
-    // No hardcoded "Binance + OKX" anywhere — the label is derived.
-    expect(barCode).not.toMatch(/Binance \+ OKX/);
+  it('names no upstream venue anywhere in the customer-facing header', () => {
+    // Comments are stripped from `barCode`, so this covers everything the
+    // component can actually render.
+    expect(barCode).not.toMatch(/binance|okx|kraken|coingecko|twelvedata/i);
+    expect(barCode).not.toContain('marketSource');
+    expect(barCode).not.toContain('venueLabel');
+    expect(barCode).not.toContain('futures-source');
+  });
+
+  it('keeps the contributor lists in the API contract, out of the UI', () => {
+    // Provenance is not deleted — it stops at the network boundary, where
+    // logs, admin diagnostics and the test suite still read it.
+    const api = read('src/lib/api.ts');
+    for (const field of ['turnoverVenues', 'openInterestBaseVenues', 'openInterestUsdVenues']) {
+      expect(api).toContain(field);
+      expect(barCode).not.toContain(field);
+    }
+    expect(readRepo('src/services/marketData/derivatives/ExternalDerivativesService.ts'))
+      .toContain('openInterestBaseVenues');
   });
 
   it('clears the previous symbol\'s stats immediately on a switch', () => {
