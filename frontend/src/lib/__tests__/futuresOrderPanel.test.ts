@@ -459,6 +459,121 @@ describe('unknown data is never fabricated', () => {
   });
 });
 
+// ── The submit button matches the submit guard ───────────────────────
+
+describe('the submit button reflects the SAME guard handleSubmit uses', () => {
+  const submitButton = (tree: any) =>
+    nodes(tree).find((n) => n.type === 'button' && n.props?.type === 'submit');
+
+  test('1. a known account state leaves the button enabled', async () => {
+    const f = await pricedForm();
+    expect(submitButton(f.tree).props.disabled).toBe(false);
+    submit(f.tree);
+    await tick();
+    expect(f.placed).toHaveBeenCalled();
+  });
+
+  test('2. an unknown leverage ceiling disables the button, matching the guard', async () => {
+    // positions unknown -> exposure unknown -> effectiveMaxLeverage null.
+    const f = await pricedForm({ account: accountState({ positions: resource(null) }) });
+    expect(nodes(f.tree).find((n) => n.type === f.form.components.FuturesMarginLeverage).props.max).toBeNull();
+    expect(submitButton(f.tree).props.disabled).toBe(true);
+    // And the guard still refuses, so the two agree rather than one
+    // compensating for the other.
+    submit(f.tree);
+    await tick();
+    expect(f.placed).not.toHaveBeenCalled();
+  });
+
+  test('2b. unknown ORDERS disables it for the same reason', async () => {
+    const f = await pricedForm({ account: accountState({ orders: resource(null) }) });
+    expect(submitButton(f.tree).props.disabled).toBe(true);
+  });
+
+  test('3. REDUCE ONLY stays enabled with unknown exposure — it does not need it', async () => {
+    const f = await pricedForm({
+      account: accountState({ positions: resource(null), orders: resource(null) }),
+    });
+    // Before ticking reduce-only, the same account state disables it.
+    expect(submitButton(f.tree).props.disabled).toBe(true);
+
+    nodes(f.tree).find((n) => n.type === 'input' && n.props.type === 'checkbox')
+      .props.onChange({ target: { checked: true } });
+    await tick();
+    const tree = f.render();
+
+    // A risk-REDUCING order short-circuits the projection before reading
+    // positions or orders, so the ceiling is known and the button is live.
+    expect(submitButton(tree).props.disabled).toBe(false);
+    submit(tree);
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ reduceOnly: true }));
+  });
+
+  test('4. while submitting, the button is disabled', async () => {
+    let release!: () => void;
+    const placed = jest.fn(() => new Promise<void>((r) => { release = () => r(); }));
+    const f = await pricedForm({ placed });
+    expect(submitButton(f.tree).props.disabled).toBe(false);
+
+    submit(f.tree);
+    await tick();
+    expect(submitButton(f.render()).props.disabled).toBe(true);
+
+    release();
+    await tick();
+    expect(submitButton(f.render()).props.disabled).toBe(false);
+  });
+
+  test('4b. a second submit while one is in flight sends nothing extra', async () => {
+    const placed = jest.fn(() => new Promise<void>(() => {}));
+    const f = await pricedForm({ placed });
+    submit(f.tree);
+    await tick();
+    submit(f.render());
+    await tick();
+    expect(placed).toHaveBeenCalledTimes(1);
+  });
+
+  test('5. the payload is unchanged by this gating', async () => {
+    const f = await pricedForm();
+    submit(f.tree);
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith({
+      symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '50000',
+      quantity: '1', leverage: 10, marginType: 'ISOLATED', reduceOnly: false,
+    });
+    expect(Object.keys(f.placed.mock.calls[0][0]).sort()).toEqual(
+      ['leverage', 'marginType', 'price', 'quantity', 'reduceOnly', 'side', 'symbol', 'type']
+    );
+  });
+
+  test('the high-leverage confirmation is a prompt, not a precondition', async () => {
+    // Disabling the button on the warning threshold would make high
+    // leverage unusable rather than guarded; it stays enabled and the
+    // confirm still gates the send.
+    const confirm = jest.fn(() => false);
+    const f = await pricedForm({ confirm });
+    nodes(f.tree).find((n) => n.type === f.form.components.FuturesMarginLeverage)
+      .props.onLeverageChange(20);
+    await tick();
+    const tree = f.render();
+    expect(submitButton(tree).props.disabled).toBe(false);
+    submit(tree);
+    await tick();
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(f.placed).not.toHaveBeenCalled();
+  });
+
+  test('button and guard read one expression, not two copies', () => {
+    const code = source(FORM);
+    expect(code).toContain('disabled={!canSubmit}');
+    expect(code).toContain('if (!canSubmit) return;');
+    // The old visual-only condition is gone.
+    expect(code).not.toContain('disabled={submitting}');
+  });
+});
+
 // ── L. No spot conditional-order surface, no invented TP/SL ──────────
 
 describe('L. the panel references no spot conditional-order machinery', () => {

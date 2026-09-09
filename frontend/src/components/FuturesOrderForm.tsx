@@ -236,10 +236,35 @@ export function FuturesOrderForm({
     }
   }
 
+  /**
+   * The single source of truth for "can this order be submitted".
+   *
+   * `handleSubmit` and the submit button read the SAME expression, so a
+   * button that looks actionable always is. The button previously reacted
+   * to the submitting flag alone, which left it live while the leverage
+   * ceiling was unknown — a CTA that looks pressable and silently does
+   * nothing is the worst kind of control in a trading interface.
+   *
+   * The conditions are EXACTLY the ones the guard already had, and
+   * deliberately no more:
+   *   - the high-leverage confirmation stays inside `handleSubmit`: it is a
+   *     prompt to answer, not a precondition to meet, and disabling the
+   *     button on it would make high leverage unusable rather than guarded;
+   *   - no balance, order or exposure requirement is added. In particular a
+   *     REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even when
+   *     positions and orders are unknown (PR #14: the projection
+   *     short-circuits before reading them), so risk-reducing orders stay
+   *     submittable during an outage — which is when they matter most.
+   */
+  const canSubmit = Boolean(config)
+    && effectiveMaxLeverage !== null
+    && leverage <= effectiveMaxLeverage
+    && !submitting;
+
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!config || effectiveMaxLeverage === null || leverage > effectiveMaxLeverage || submitting) return;
-    if (leverage >= config.highLeverageWarningThreshold && !window.confirm(
+    if (!canSubmit) return;
+    if (leverage >= config!.highLeverageWarningThreshold && !window.confirm(
       `${t('futures.leverageWarningTitle')}\n\n${t('futures.leverageWarningBody', { leverage })}`
     )) return;
     submitOrder();
@@ -400,7 +425,7 @@ export function FuturesOrderForm({
             sides; only the surface is now the common one. */}
         <button
           type="submit"
-          disabled={submitting}
+          disabled={!canSubmit}
           className={`submit-btn ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}

@@ -93,7 +93,18 @@ test.each([
     // preview and every margin calculation are untouched — futuresFinalPolish's
     // 24 behavioural tests assert them directly and still pass with every
     // asserted value unchanged.
-    "919fd948778273dee25633b369b616cf1bebc131bee3be3484b7dbc42411e629"
+    //
+    // Re-taken once more within the same PR, for one UX consistency fix:
+    // the guard `handleSubmit` already had is extracted into a single
+    // `canSubmit` boolean that the submit button's `disabled` now reads
+    // too. The CONDITIONS are unchanged — config present, a known
+    // effectiveMaxLeverage, leverage within it, not already submitting —
+    // and nothing was added: no balance, order or exposure requirement.
+    // The high-leverage confirmation deliberately stays inside
+    // handleSubmit (a prompt, not a precondition), and a reduce-only order
+    // keeps a non-null ceiling with unknown exposure, so risk-reducing
+    // orders remain submittable during an outage.
+    "2567f9ac2942e135baf23c5804de6dba388b8530a09a26bb2f3ea960c1da4671"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -186,6 +197,13 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  expect(source).not.toContain('styles.');
  expect(source).toContain("aria-pressed={side === 'BUY'}");
  expect(source).toContain("aria-pressed={type === 'MARKET'}");
- expect(source).toContain('disabled={submitting}');
+ // The submit button now reflects the SAME condition handleSubmit uses,
+ // not just the in-flight flag: a CTA that looks pressable while the guard
+ // would refuse is misleading in a trading interface. `submitting` is still
+ // one of the conditions, so "disabled while sending" stays pinned, and the
+ // button and the guard are pinned to ONE expression rather than two copies.
+ expect(source).toContain('disabled={!canSubmit}');
+ expect(source).toContain('if (!canSubmit) return;');
+ expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });
 });
