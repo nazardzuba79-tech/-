@@ -250,8 +250,10 @@ test('every dollar figure quoted to a member matches the one eligibility constan
 });
 
 test('normalization only reverses exact approved UX edits, never hides copy-action or financial drift', () => {
+  // Loading-only change: Ksenia now shares Nazar's unavailable-fee disabled guard.
+  // The click action, deposit threshold, and wrong-action/money checks below remain.
   const hash = (text: string) => createHash('sha256').update(text).digest('hex');
-  const approved = 'cd2ed289d64d986e9355f26557e9428ff19c98b7bf6f5246576cf861e0afa2ce';
+  const approved = '7f6c10d06947ba5b6aed87bdcfebf56aedfe9ac509ec1ffae3abf4b82b778807';
   expect(hash(restoreCopyButtonDepositUx(body('CopyButton')))).toBe(approved);
   const wrongAction = body('CopyButton').replace('toggleFollowing(trader.id)', 'toggleFollowing("wrong-trader")');
   expect(hash(restoreCopyButtonDepositUx(wrongAction))).not.toBe(approved);

@@ -49,11 +49,14 @@ test('normal API paths replace review-only sources without altering token or req
   expect(api).toContain("('/copy-trading/identities')");
   expect(api).not.toMatch(/reviewReadPath|reviewMarketData|review-api|review-synthetic\.json|exchange-api-review/);
   const page = source('src/pages/CopyTradingPage.tsx');
-  expect(page).toContain('api.getNazarCopyTrading()');
-  expect(page).toContain('api.getKseniaCopyTrading()');
+  expect(api).toContain("('/copy-trading/marketplace', { signal })");
+  expect(page).toContain('useCopyMarketplace()');
+  expect(page).not.toMatch(/api\.get(NazarCopyTrading|KseniaCopyTrading|CopyStrategyIdentities)\(/);
   expect(page).not.toMatch(/getSyntheticCopyTrading|advanceSimulation|resetSimulation|isAdmin|import\.meta\.env\.MODE/);
-  expect(page).toContain('window.setInterval');
-  expect(page).toContain('new Date().toISOString().slice(0, 10)');
+  const store = source('src/lib/copyMarketplaceStore.ts');
+  expect(store).toContain('setInterval');
+  expect(store).toContain("new Date(this.now()).toISOString().slice(0, 10)");
+  expect(store).toContain("window.addEventListener('focus', this.onFocus)");
 });
 
 test('owner media never falls back to a viewer or an unrelated administrator', () => {

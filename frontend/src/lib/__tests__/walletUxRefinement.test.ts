@@ -436,6 +436,13 @@ test.each([
   ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
   ['src/api/middleware/auth.ts', 'a2f258c6b2a3993670ec8378f82e36fb4132ab803036dd1ecd4bd1751ac3e13c'],
 ])('preserves existing financial/data/format/modal source %s exactly', (file, hash) => {
-  const source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
+  let source = file === wallet + 'TransactionHistory.tsx' ? restoreApprovedHistoryTypography(read(file)) : read(file);
+  if (file === 'frontend/src/lib/api.ts') {
+    // Remove exactly this task's additive read method before the historical
+    // fingerprint. Its pre-existing mismatch must remain visible unchanged.
+    const bootstrap = "  getCopyMarketplace: (signal?: AbortSignal) => request<import('./copyMarketplaceStore').CopyMarketplaceResponse>('/copy-trading/marketplace', { signal }),\n";
+    expect(source.split(bootstrap)).toHaveLength(2);
+    source = source.replace(bootstrap, '');
+  }
   expect(createHash('sha256').update(source).digest('hex')).toBe(hash);
 });

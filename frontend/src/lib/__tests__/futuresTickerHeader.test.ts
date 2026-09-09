@@ -41,7 +41,9 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '8f86e162c5d785db22530ca30c53ce717ad42713df31c898e9fe744a54fd1b88'],
+  ['frontend/src/lib/api.ts', '8a3a39a391fa327ad22defd847cefc151db08c6f29529c8b25ef1e88f10d6098'],
+  // Re-fingerprinted for one additive getCopyMarketplace method. Auth, API_BASE,
+  // existing endpoints, financial methods, and error handling are unchanged.
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —

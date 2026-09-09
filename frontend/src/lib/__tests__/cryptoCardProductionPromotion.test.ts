@@ -60,7 +60,7 @@ const approvedCardSources: Record<string, string> = {
 // permit only those inline additions; no financial calculation/hash is relaxed.
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "6c95993336f9807959af249b1f61e4ba504f5f82c5db0a7ef7972a53531ff371",
-  "frontend/src/components/Nav.tsx": "06402eaa54ff5f3d055351a75f24c4defbbe3c680827e0f3fbc1d014f09f4316",
+  "frontend/src/components/Nav.tsx": "b5863b54dcae5fa5169b5c8300549531045ffac925bf22de17e4d3eb6aa83fb8",
   "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
   "frontend/src/pages/home/home.css": "ac7dc7590edc32493816c7abb1b9de908a4c123213d45c2633e30e7b86459154",
   // Owner-reference wrist/slogan mount plus concurrent production 41979fb ATM wording.
@@ -85,9 +85,9 @@ const preservedMainSources: Record<string, string> = {
   // drift this change exists to remove. Not one executable byte differs
   // — the deposit read, the portfolio-history call and the $0 fallback
   // for an account with no snapshot are all unchanged.
-  "frontend/src/pages/CopyTradingPage.tsx": "3377f4c29a8736da28e2508f491d302aefe146953e888b18ef8d9c2bbd8592e5",
+  "frontend/src/pages/CopyTradingPage.tsx": "df3d2ad4d7f2820bd624b73bc2206d06204170be6558897b468613a7ab0dc49f",
   // Preserve owner Copy cleanup already on starting main bd41a81.
-  "frontend/src/pages/copy-trading-bolt/components.tsx": "d29f19854ac8e791a8f2d24a9dd5e37769bdb32b4ef665d179b1b64361348b18",
+  "frontend/src/pages/copy-trading-bolt/components.tsx": "74a1425612e878860001d316397f25c2ec5f0e5ab306ddc7beb4a9195564db26",
   // Re-taken for the owner-requested deposit gate change: the constant is
   // $20,000 -> $10,000, plus the doc comment around it. This file IS the
   // gate, so its fingerprint moving is the intended record of that
@@ -98,7 +98,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/CopyEligibilityContext.tsx": "1bfbc017c8009081addcc710f72dcc49a86347e05ccc5e04b857c9465db15240",
   "frontend/src/pages/copy-trading-bolt/CopyTradingBolt.css": "7b287821fe20bdd9eba8ec86ae0b392ae373b75c11cd48309031f4bbc80daf33",
   // Owner-requested marketplace card polish; profile/chart CSS is separately frozen.
-  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "4a23c8b6f80086e232b747846fb32b92741eebd3261ad1cc5764f7869626f869",
+  "frontend/src/pages/copy-trading-bolt/CopyTradingRefinement.css": "423767504a6a3361560fc09a949aa100b7a84e198e165b465d519564a008bb31",
   "frontend/src/pages/copy-trading-bolt/demoPerformance.ts": "1339781ee31f193dcd7f7fe4a5d8a9257383cf4e0c8a29ffca69101d7cb6bead",
   "frontend/src/pages/copy-trading-bolt/FeaturedAvatarContext.tsx": "08d27c9108d4b5e0d0cd972cc1d7739ccba71c545bdb85bcc3ffebe5ddc633bd",
   "frontend/src/pages/copy-trading-bolt/KseniaReview.css": "fd12204a82592875691f06aa00400fa98ee3a75ea9257bd30dc825a435218134",
@@ -110,7 +110,7 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/copy-trading-bolt/traderVisuals.ts": "c87ac8d078d4d9038a33b18ddded787630a93834a7444042cc7899723ae4e74a",
   "frontend/src/pages/copy-trading-bolt/useCopyLists.ts": "322cc598e49f4d64a3d058d0d8f232ddce43e5ce3e604bfd88de7cd9cac10480",
   "frontend/src/lib/syntheticCopyTrading.ts": "f7f9664a0630d3eda53a2ca6ba61c1a20613fb2991d57ae0a5ecc53ed27ca4ea",
-  "frontend/src/lib/kseniaCopyTrading.ts": "dec995b8c3e11223a1f878c884db47c6823e7a12e60c34d7f7b75e4fa9b313ab",
+  "frontend/src/lib/kseniaCopyTrading.ts": "619cac73c8cd4871413cce39b77d817a4e6e192ba56f83be7c93acab29a88c37",
   "frontend/src/lib/dailyReturnChart.ts": "6f6e1c0394cc3c581dac03b6b2e7e2ffb4dd49fa85454135bf667c7dc82f6407",
   "frontend/src/lib/copyTradingMoney.ts": "1d29908f9517ed1f9de08965fc84cda4d39c29577dbba5dce62b50488d7da539",
   "frontend/tailwind.config.js": "9cfbd5faaf195d1ce52bdf1d8b378ed7ea5b43f3e106af17bf9be44832fe5999"
@@ -156,6 +156,9 @@ test('all approved masters and the two new presentation assets are byte-exact an
 });
 
 test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
+  // Loading task refreshes only Nav (intent prefetch), CopyTradingPage (shared
+  // bootstrap), components/CSS (stable unavailable slots/photo boxes), and the
+  // nullable Ksenia projection. Existing restoration and all byte checks remain.
   for (const [file, expected] of Object.entries(preservedMainSources)) {
     let text = source(file);
     if (file === 'frontend/src/pages/home/HomeCardSection.tsx') {

@@ -8,6 +8,41 @@ import { nazarPresentationResponse, NAZAR_PRESENTATION_REVISION } from '../nazar
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const now = () => new Date('2026-09-06T12:00:00Z');
+
+test.each(['nazar', 'ksenia'] as const)('%s existing daily cache collapses 100 reads and expires exactly at UTC midnight', async strategy => {
+  const { db, delegate } = database();
+  let clock = new Date('2026-09-06T23:59:59.000Z');
+  const service = new CopyPerformanceService(db, () => clock);
+  const cold = await Promise.all(Array.from({ length: 100 }, () => service.get(strategy)));
+  expect(delegate.findUnique).toHaveBeenCalledTimes(1);
+  expect(delegate.create).toHaveBeenCalledTimes(1);
+  cold.forEach(response => expect(response).toBe(cold[0]));
+  clock = new Date('2026-09-06T23:59:59.999Z');
+  expect(await service.get(strategy)).toBe(cold[0]);
+  expect(delegate.findUnique).toHaveBeenCalledTimes(1);
+  clock = new Date('2026-09-07T00:00:00.000Z');
+  const next = await Promise.all(Array.from({ length: 100 }, () => service.get(strategy)));
+  expect(delegate.findUnique).toHaveBeenCalledTimes(2);
+  expect(delegate.updateMany).toHaveBeenCalledTimes(1);
+  expect(next[0]).not.toBe(cold[0]);
+  next.forEach(response => expect(response).toBe(next[0]));
+  expect(next[0].simulation.simulatedAt.slice(0, 10)).toBe('2026-09-07');
+});
+
+test('a failed day refresh does not poison coalescing or reset canonical persisted history', async () => {
+  const { db, delegate, rows } = database();
+  let clock = now();
+  const service = new CopyPerformanceService(db, () => clock);
+  await service.get('ksenia');
+  const original = rows.get(PERFORMANCE_SCENARIOS.ksenia.id).stateText;
+  clock = new Date('2026-09-07T00:00:00Z');
+  delegate.findUnique.mockRejectedValueOnce(new Error('temporary read failure'));
+  const failures = await Promise.allSettled(Array.from({ length: 100 }, () => service.get('ksenia')));
+  expect(failures.every(result => result.status === 'rejected')).toBe(true);
+  expect(rows.get(PERFORMANCE_SCENARIOS.ksenia.id).stateText).toBe(original);
+  expect((await service.get('ksenia')).simulation.simulatedAt.slice(0, 10)).toBe('2026-09-07');
+  expect(delegate.create).toHaveBeenCalledTimes(1);
+});
 function database() {
   const rows = new Map<string, any>();
   const delegate = {

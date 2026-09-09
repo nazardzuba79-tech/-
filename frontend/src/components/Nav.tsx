@@ -9,6 +9,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
 import { TopGainersTicker } from './TopGainersTicker';
+import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -181,6 +182,8 @@ export function Nav({
             <Link
               key={l.to}
               to={l.to}
+              onMouseEnter={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
+              onFocus={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
               className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
             >
               {l.label}

@@ -43,3 +43,56 @@ test('storage failures are explicit 503 without leaking details or falling back 
   expect(response.body).toEqual({ error: 'Strategy performance temporarily unavailable' });
   expect(JSON.stringify(response.body)).not.toContain('private');
 });
+
+test('marketplace bootstrap preserves both original responses and identity allowlist behind real session auth', async () => {
+  const { app, service, token, db } = setup();
+  await request(app).get('/api/v1/copy-trading/marketplace').expect(401);
+  const { body, headers } = await request(app).get('/api/v1/copy-trading/marketplace').set('Authorization', `Bearer ${token}`).expect(200);
+  expect(body.nazar).toEqual(await service.get('nazar'));
+  expect(body.ksenia).toEqual(await service.get('ksenia'));
+  expect(body.identities).toHaveLength(2);
+  expect(body.errors).toEqual({});
+  expect(Number.isFinite(Date.parse(body.generatedAt))).toBe(true);
+  expect(headers['cache-control']).toBe('no-store');
+  expect(db.session.findUnique).toHaveBeenCalledTimes(1);
+});
+
+test.each(['nazar', 'ksenia', 'identities'])('marketplace keeps other sections when %s fails', async failed => {
+  const { app, service, token, db } = setup();
+  service.get.mockImplementation(async (strategy: string) => {
+    if (strategy === failed) throw new Error('private failure');
+    return { trader: { name: strategy }, realZero: 0 };
+  });
+  if (failed === 'identities') db.copyStrategyOwner.findUnique.mockRejectedValue(new Error('private owner'));
+  const { body } = await request(app).get('/api/v1/copy-trading/marketplace').set('Authorization', `Bearer ${token}`).expect(200);
+  expect(body[failed]).toBeNull();
+  for (const section of ['nazar', 'ksenia', 'identities'].filter(key => key !== failed)) expect(body[section]).not.toBeNull();
+  expect(body.errors).toEqual({ [failed]: 'temporarily_unavailable' });
+  expect(JSON.stringify(body)).not.toContain('private');
+});
+
+test('marketplace total failure returns explicit nulls and 503', async () => {
+  const { app, service, token, db } = setup();
+  service.get.mockRejectedValue(new Error('private database'));
+  db.copyStrategyOwner.findUnique.mockRejectedValue(new Error('private identity'));
+  const { body } = await request(app).get('/api/v1/copy-trading/marketplace').set('Authorization', `Bearer ${token}`).expect(503);
+  expect([body.nazar, body.ksenia, body.identities]).toEqual([null, null, null]);
+  expect(Object.keys(body.errors)).toHaveLength(3);
+  expect(JSON.stringify(body)).not.toContain('private');
+});
+
+test('marketplace starts both strategies before either resolves', async () => {
+  const { app, service, token } = setup();
+  const releases: (() => void)[] = [];
+  let bothStarted!: () => void;
+  const started = new Promise<void>(resolve => { bothStarted = resolve; });
+  service.get.mockImplementation((name: string) => new Promise(resolve => {
+    releases.push(() => resolve({ trader: { name } }));
+    if (releases.length === 2) bothStarted();
+  }));
+  const pending = request(app).get('/api/v1/copy-trading/marketplace').set('Authorization', `Bearer ${token}`).then(response => response);
+  await started;
+  expect(service.get.mock.calls.map((args: unknown[]) => args[0])).toEqual(['nazar', 'ksenia']);
+  releases.forEach(release => release());
+  expect((await pending).status).toBe(200);
+});
