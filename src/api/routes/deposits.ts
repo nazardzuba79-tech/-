@@ -5,6 +5,7 @@ import { ChainConfig } from '../../config/chains';
 import { DepositService, DepositVerificationError, PriceSource } from '../../services/DepositService';
 import { TreasuryWalletService } from '../../services/TreasuryWalletService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
+import { MIN_DEPOSIT_USD, DEPOSIT_USD_PEGGED_ASSETS } from '../../config/limits';
 
 // The only chains this deployment knows how to verify deposits on — see
 // deposit-verifiers/. A chain only actually appears to users (via
@@ -51,17 +52,23 @@ export function depositsRouter(prisma: PrismaClient, priceSource: PriceSource): 
   // treasury address configured for), with the exact assets supported on
   // each — the deposit UI should only ever offer these, so a user can't
   // send something the backend has no way to credit.
-  router.get('/deposit-chains', requireAuth(prisma), async (_req, res) => {
-    const chains: { chain: string; nativeAsset: string; tokens: string[] }[] = [];
+  router.get('/deposit-chains', requireAuth(prisma), async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[] }[] = [];
     for (const chain of KNOWN_CHAINS) {
       try {
         const config = await resolveChainConfig(treasuryWallets, chain);
-        chains.push({ chain: config.chain, nativeAsset: config.nativeAsset, tokens: Object.keys(config.tokens) });
+        const tokens = Object.keys(config.tokens);
+        chains.push({ chain: config.chain, nativeAsset: config.nativeAsset, tokens,
+          supportedAssets: config.type === 'tron' ? tokens : [config.nativeAsset, ...tokens] });
       } catch {
         // not configured on this deployment — omit it
       }
     }
-    res.json(chains);
+    // Opt-in envelope preserves the original array contract for older clients.
+    res.json(req.query.includeConfig === 'true'
+      ? { chains, minDepositUsd: MIN_DEPOSIT_USD, usdPeggedAssets: DEPOSIT_USD_PEGGED_ASSETS }
+      : chains.map(({ supportedAssets: _supported, ...chain }) => chain));
   });
 
   // Shows YOUR treasury wallet address (e.g. Trust Wallet) — same address

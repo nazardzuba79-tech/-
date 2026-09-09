@@ -2,11 +2,11 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
 import { ChainConfig } from '../config/chains';
 import { createVerifier } from './deposit-verifiers';
-import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT } from '../config/limits';
+import { MIN_DEPOSIT_USD, REFERRAL_REWARD_PERCENT, DEPOSIT_USD_PEGGED_ASSETS } from '../config/limits';
 
 export { DepositVerificationError } from './deposit-verifiers';
 
-const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
+const STABLECOINS = new Set<string>(DEPOSIT_USD_PEGGED_ASSETS);
 
 // Only what DepositService needs from KrakenMarketDataService — narrow
 // interface so tests can supply a plain mock instead of the real thing.
@@ -54,7 +54,12 @@ export class DepositService {
     // self-service path.
     performedByAdminId?: string;
   }): Promise<{ status: 'CREDITED' | 'PENDING' | 'BELOW_MINIMUM'; amount: string; confirmations: number; minDepositUsd?: number }> {
-    const { userId, txHash, asset, performedByAdminId } = params;
+    const { userId, performedByAdminId } = params;
+    // Verifiers accept case-insensitive asset symbols. Use that same canonical
+    // symbol for USD valuation and crediting, so "usdt" cannot bypass the peg.
+    const asset = params.asset.toUpperCase();
+    // TRON hashes are hexadecimal, unlike Solana's case-sensitive signatures.
+    const txHash = this.chainConfig.type === 'tron' ? params.txHash.toLowerCase() : params.txHash;
 
     // Idempotency: if we've already recorded this tx, don't re-verify or re-credit.
     const existing = await this.prisma.deposit.findUnique({

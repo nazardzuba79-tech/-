@@ -175,7 +175,7 @@ const RU_SUPPORT: LegalContent = {
     {
       heading: 'Как пополнить баланс',
       body: [
-        'Открой «Пополнить» → выбери сеть → отправь средства на показанный адрес → вставь хеш транзакции для проверки. Минимальная сумма пополнения — 1000 USD в эквиваленте; сумма ниже минимума не будет зачислена.',
+        'Открой «Пополнить» → выбери сеть → отправь средства на показанный адрес → вставь хеш транзакции для проверки. Актуальная минимальная сумма в USD указана в форме пополнения; сумма ниже минимума не будет зачислена.',
       ],
     },
     {
@@ -415,7 +415,7 @@ const EN_SUPPORT: LegalContent = {
     {
       heading: 'How to deposit',
       body: [
-        'Open "Deposit" → pick a network → send funds to the address shown → paste the transaction hash to verify it. The minimum deposit is the equivalent of $1000 USD; anything below that will not be credited.',
+        'Open "Deposit" → pick a network → send funds to the address shown → paste the transaction hash to verify it. The current USD-equivalent minimum is shown in the deposit form; anything below that will not be credited.',
       ],
     },
     {
@@ -601,7 +601,7 @@ const ZH_SUPPORT: LegalContent = {
   sections: [
     {
       heading: '如何充值',
-      body: ['打开"充值" → 选择网络 → 将资金发送到显示的地址 → 粘贴交易哈希进行验证。最低充值金额为等值 1000 美元,低于该金额的充值不会入账。'],
+      body: ['打开"充值" → 选择网络 → 将资金发送到显示的地址 → 粘贴交易哈希进行验证。当前以美元等值计算的最低充值金额显示在充值表单中，低于该金额的充值不会入账。'],
     },
     {
       heading: '订单未成交',
@@ -798,7 +798,7 @@ const ES_SUPPORT: LegalContent = {
     {
       heading: 'Cómo depositar',
       body: [
-        'Abre "Depositar" → elige una red → envía los fondos a la dirección mostrada → pega el hash de la transacción para verificarla. El depósito mínimo es el equivalente a $1000 USD; cualquier cantidad menor no será acreditada.',
+        'Abre "Depositar" → elige una red → envía los fondos a la dirección mostrada → pega el hash de la transacción para verificarla. El mínimo actual equivalente en USD se muestra en el formulario de depósito; cualquier cantidad menor no será acreditada.',
       ],
     },
     {
@@ -1023,7 +1023,7 @@ const HI_SUPPORT: LegalContent = {
     {
       heading: 'डिपॉज़िट कैसे करें',
       body: [
-        '"डिपॉज़िट" खोलें → एक नेटवर्क चुनें → दिखाए गए एड्रेस पर फंड भेजें → इसे वेरिफ़ाई करने के लिए ट्रांज़ैक्शन हैश पेस्ट करें। न्यूनतम डिपॉज़िट $1000 USD के बराबर है; इससे कम कुछ भी जमा नहीं किया जाएगा।',
+        '"डिपॉज़िट" खोलें → एक नेटवर्क चुनें → दिखाए गए एड्रेस पर फंड भेजें → इसे वेरिफ़ाई करने के लिए ट्रांज़ैक्शन हैश पेस्ट करें। USD के बराबर वर्तमान न्यूनतम राशि डिपॉज़िट फ़ॉर्म में दिखाई जाती है; इससे कम राशि जमा नहीं की जाएगी।',
       ],
     },
     {
@@ -1248,7 +1248,7 @@ const JA_SUPPORT: LegalContent = {
     {
       heading: '入金方法',
       body: [
-        '「入金」を開く → ネットワークを選択 → 表示されたアドレスに資金を送金 → トランザクションハッシュを貼り付けて確認します。最低入金額は1000米ドル相当です。これを下回る金額は反映されません。',
+        '「入金」を開く → ネットワークを選択 → 表示されたアドレスに資金を送金 → トランザクションハッシュを貼り付けて確認します。現在の米ドル相当の最低入金額は入金フォームに表示されます。これを下回る金額は反映されません。',
       ],
     },
     {
@@ -1473,7 +1473,7 @@ const KO_SUPPORT: LegalContent = {
     {
       heading: '입금 방법',
       body: [
-        '"입금"을 열기 → 네트워크 선택 → 표시된 주소로 자금 전송 → 트랜잭션 해시를 붙여넣어 확인합니다. 최소 입금액은 1000달러 상당이며, 이보다 적은 금액은 입금 처리되지 않습니다.',
+        '"입금"을 열기 → 네트워크 선택 → 표시된 주소로 자금 전송 → 트랜잭션 해시를 붙여넣어 확인합니다. 현재 USD 상당 최소 입금액은 입금 양식에 표시되며, 이보다 적은 금액은 입금 처리되지 않습니다.',
       ],
     },
     {
