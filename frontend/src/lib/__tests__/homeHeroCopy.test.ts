@@ -1,11 +1,13 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 import ts from 'typescript';
 
 const frontend = resolve(__dirname, '../../..');
 const read = (file: string) => readFileSync(resolve(frontend, file), 'utf8');
-const source = read('src/lib/i18n.tsx');
+// Every language's dictionary, so `rows()` still returns seven values.
+const source = readAllLocales();
 const rows = (key: string) => [...source.matchAll(new RegExp(`'${key.replace(/\./g, '\\.')}': '([^']*)'`, 'g'))].map(match => match[1]);
 const req = createRequire(resolve(frontend, 'package.json'));
 const React = req('react');

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 import { createHash } from 'crypto';
 import ts from 'typescript';
 import * as presentation from '../cfdPresentation';
@@ -420,7 +421,9 @@ test('all CSS selectors are scoped and chart stays on the unchanged real Trading
   expect(executable).not.toMatch(/candles|orderBook|volume|funding|openInterest/);
 });
 test('CFD reference-price disclaimer matches the unchanged 60-second poll in every language', () => {
-  const disclaimers = read('lib/i18n.tsx').split('\n').filter(line => line.includes("'trade.cfdPriceDisclaimer':"));
+  // One line per language, now across the seven locale files rather than
+  // one bundled dictionary. Same seven, named explicitly.
+  const disclaimers = readAllLocales().split('\n').filter(line => line.includes("'trade.cfdPriceDisclaimer':"));
   expect(disclaimers).toHaveLength(7);
   expect(disclaimers.every(line => line.includes('60') && !line.includes('30'))).toBe(true);
   expect(read('lib/useCfdTickers.ts')).toContain('const POLL_MS = 60_000');

@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { existsSync, readFileSync, readdirSync } from 'fs';
 import { resolve } from 'path';
 import { restoreCopyDepositUx } from '../../../test-utils/copyDepositUx';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 
 const repository = resolve(__dirname, '../../../..');
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
@@ -220,7 +221,12 @@ test('Card remains an authenticated standalone route, independent of Spot termin
 });
 
 test('all 196 Card-related shared translations retain owner-approved English product branding', () => {
-  const text = source('frontend/src/lib/i18n.tsx');
+  // The seven dictionaries in language order, exactly as they appeared in
+  // the single file before the split — so the 196 entries below are the
+  // same 196 lines, in the same order, and the digest is UNCHANGED. That
+  // the hash still matches is the proof the split moved bytes without
+  // touching one of them.
+  const text = readAllLocales();
   expect(text).not.toMatch(/^\s*'card\./m);
   // Snapshot only the reviewed Card/Home/Auth/support entry points, across all
   // seven dictionaries. The complete Card product dictionaries remain byte-exact
