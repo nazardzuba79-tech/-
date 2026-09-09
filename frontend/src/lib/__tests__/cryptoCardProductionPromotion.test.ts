@@ -61,7 +61,14 @@ const approvedCardSources: Record<string, string> = {
 const preservedMainSources: Record<string, string> = {
   "frontend/src/App.tsx": "6c95993336f9807959af249b1f61e4ba504f5f82c5db0a7ef7972a53531ff371",
   "frontend/src/components/Nav.tsx": "06402eaa54ff5f3d055351a75f24c4defbbe3c680827e0f3fbc1d014f09f4316",
-  "frontend/src/components/Footer.tsx": "7d72658c25f6185816779d68f7bf5720992e50f5788fccaf08fdf3b18b486b63",
+  // Re-taken for the dead-code cleanup. COMMENT ONLY, +2/-2: the doc
+  // comment pointed at BotsComingSoon, a cancelled AI-Bots component
+  // deleted in the same commit, so the pointer had nowhere to go.
+  // Verified by stripping comments and diffing the executable source
+  // against origin/main — byte-identical. Every link, label and the
+  // non-interactive social row are unchanged, and `nav.botsSoon`, which
+  // this file still reads, was deliberately kept in the dictionary.
+  "frontend/src/components/Footer.tsx": "298af18d0b6bd6cfa722be2c70723d191527a1a8def1e7e468457304d8d7ad58",
   "frontend/src/pages/home/home.css": "ac7dc7590edc32493816c7abb1b9de908a4c123213d45c2633e30e7b86459154",
   // Owner-reference wrist/slogan mount plus concurrent production 41979fb ATM wording.
   "frontend/src/pages/home/HomeCardSection.tsx": "0a0d3a39815049ec05c48d8f7a1ec091bf6534fb31039ac8c2fc892b85dcae92",

@@ -1,5 +1,5 @@
 /** Minimal 7-day price sparkline — pure SVG polyline, same no-charting-
- * library approach as PortfolioDonut and the order book's depth bars.
+ * library approach as the order book's depth bars.
  * Green when the period ends higher than it started, red otherwise. */
 export function Sparkline({ points, width = 100, height = 32 }: { points: number[]; width?: number; height?: number }) {
   if (points.length < 2) {
