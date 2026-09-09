@@ -258,7 +258,12 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(source).toContain("data-chart-drawings={drawingToolsOn ? 'shapes' : undefined} display={drawingToolsOn && drawingsHidden ? 'none' : undefined}");
     expect(source).toContain('(!drawingToolsOn || !drawingsHidden) && labels.map');
     // Normalize only whitespace: the conditional lines remain outside the hidden drawing group.
-    expect(source.replace(/\s+/g, ' ')).toContain('</g> {conditionalOrders.map');
+    // The literal now carries the spot gate, because conditional orders are
+    // a SPOT-ONLY feature and the futures chart must not draw them (see
+    // priceChartMarketOrders.test.ts). The property under test is unchanged
+    // and in fact strengthened: the block still sits immediately after
+    // `</g>`, outside the hidden drawing group, AND is pinned to spot.
+    expect(source.replace(/\s+/g, ' ')).toContain('</g> {spotConditionalOrders && conditionalOrders.map');
     expect(source).toContain('if (drawingToolsOn && hiddenRef.current) return');
     expect(source).toContain('return () => cancelGestureRef.current?.()');
     expect(source).toContain("...(drawingToolsOn ? { zIndex: 4 } : {})");

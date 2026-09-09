@@ -213,6 +213,22 @@ export function PriceChart({
    * had.
    */
   const spotChartRefinements = terminal && market === 'spot';
+  /**
+   * Conditional (SL/TP trigger) orders are a SPOT-ONLY feature.
+   *
+   * `/orders/me?status=PENDING_TRIGGER` is the SPOT order book. There is no
+   * futures conditional-order contract behind it — a futures trigger order
+   * would come from the futures services, and none exists — so on the
+   * futures terminal this chart was polling an authenticated spot endpoint
+   * every 4 seconds for lines that describe a different product's orders.
+   * PR #14's QA measured ~97 such requests in one run.
+   *
+   * The request is not made at all here, rather than made and hidden: the
+   * traffic is the problem, not just the pixels. Nothing about the spot
+   * path changes — same endpoint, same 4s cadence, same pair filter, same
+   * drag and the same updateOrderTrigger call.
+   */
+  const spotConditionalOrders = market === 'spot';
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   // The candlestick series stays the single coordinate-conversion
@@ -857,8 +873,17 @@ export function PriceChart({
   }, [pair, interval, drawingToolsOn, spotChartRefinements]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
-  // cadence OpenOrdersPanel already polls at.
+  // cadence OpenOrdersPanel already polls at. Spot only: see
+  // `spotConditionalOrders` above.
   useEffect(() => {
+    if (!spotConditionalOrders) {
+      // No request, no timer. Also drop anything a previous spot context
+      // left behind, so a chart that is no longer spot cannot keep drawing
+      // spot lines. Functional update: no extra render when already empty,
+      // and no dependency on the value being cleared.
+      setConditionalOrders((previous) => (previous.length === 0 ? previous : []));
+      return;
+    }
     let cancelled = false;
     function load() {
       api
@@ -876,10 +901,13 @@ export function PriceChart({
     load();
     const poll = window.setInterval(load, 4000);
     return () => {
+      // `cancelled` covers the stale-response case without relying on the
+      // router remounting: leaving spot re-runs this effect, the cleanup
+      // fires first, and a request already in the air can no longer commit.
       cancelled = true;
       window.clearInterval(poll);
     };
-  }, [pair]);
+  }, [pair, spotConditionalOrders]);
 
   // Swap which price series is visible — candlestick stays the permanent
   // coordinate-conversion authority (see the comment on seriesRef above),
@@ -924,6 +952,10 @@ export function PriceChart({
 
   const startDrag = useCallback(
     (order: ConditionalOrder, e: React.MouseEvent) => {
+      // Belt and braces: the lines are not rendered off spot, so there is
+      // nothing to grab — but this makes `api.updateOrderTrigger` provably
+      // unreachable from a non-spot chart rather than merely unreached.
+      if (!spotConditionalOrders) return;
       e.preventDefault();
       const triggerPrice = parseFloat(order.triggerPrice ?? order.price ?? '0');
       draggingRef.current = {
@@ -970,19 +1002,23 @@ export function PriceChart({
         }
         api
           .getMyOrders('PENDING_TRIGGER')
-          .then((orders) =>
+          .then((orders) => {
+            // A drag that started on spot can still be resolving when the
+            // chart is no longer spot. Dropping it here keeps the same
+            // guarantee the poll's `cancelled` flag gives.
+            if (!spotConditionalOrders) return;
             setConditionalOrders(
               orders
                 .filter((o) => o.pair === pair)
                 .map((o) => ({ id: o.id, side: o.side, type: o.type, triggerPrice: o.triggerPrice, price: o.price, ocoGroupId: o.ocoGroupId }))
-            )
-          )
+            );
+          })
           .catch(() => {});
       }
       window.addEventListener('mousemove', handleMove);
       window.addEventListener('mouseup', handleUp);
     },
-    [pair, yToPrice]
+    [pair, yToPrice, spotConditionalOrders]
   );
 
   function toScreen(p: Point): { x: number; y: number } | null {
@@ -1515,7 +1551,7 @@ export function PriceChart({
               })()}
             </g>
 
-            {conditionalOrders.map((o) => {
+            {spotConditionalOrders && conditionalOrders.map((o) => {
               const isDragging = draggingOrderId === o.id;
               const price = isDragging && dragPrice !== null ? dragPrice : parseFloat(o.triggerPrice ?? o.price ?? '0');
               const y = priceToY(price);
