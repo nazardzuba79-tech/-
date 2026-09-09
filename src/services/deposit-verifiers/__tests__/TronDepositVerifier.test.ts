@@ -2,7 +2,8 @@ import { TronDepositVerifier } from '../TronDepositVerifier';
 import { DepositVerificationError } from '../errors';
 import { ChainConfig } from '../../../config/chains';
 
-const TREASURY = 'TTreasuryAddressXXXXXXXXXXXXXXXXXX';
+// Public zero-address fixture, never a production treasury.
+const TREASURY = 'T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb';
 const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
 
 const chainConfig: ChainConfig = {
@@ -20,6 +21,25 @@ function jsonResponse(body: any, ok = true, status = 200) {
 }
 
 describe('TronDepositVerifier', () => {
+  it.each(['0'.repeat(40), '41' + '0'.repeat(40), '0x' + '0'.repeat(40), TREASURY])('matches an event recipient encoded as %s', async recipient => {
+    const fetchFn = jest.fn().mockResolvedValueOnce(jsonResponse({ success:true,data:[{
+      block_number:100,event_name:'Transfer',contract_address:USDT_CONTRACT,
+      result:{from:'sender',to:recipient,value:'300000000'},
+    }] })).mockResolvedValueOnce(jsonResponse({block_header:{raw_data:{number:118}}}));
+    const result = await new TronDepositVerifier(chainConfig,fetchFn).verify('tx1','USDT');
+    expect(result.amount.toString()).toBe('300'); expect(result.confirmations).toBe(19);
+  });
+
+  it.each(['-1','0','1.5','bad'])('rejects invalid or nonpositive base-unit amount %s', async value => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse({success:true,data:[{block_number:100,event_name:'Transfer',contract_address:USDT_CONTRACT,result:{from:'sender',to:TREASURY,value}}]}));
+    await expect(new TronDepositVerifier(chainConfig,fetchFn).verify('tx1','USDT')).rejects.toThrow(DepositVerificationError);
+  });
+
+  it('rejects an invalid Base58 checksum without treating it as the recipient', async () => {
+    const fetchFn = jest.fn().mockResolvedValue(jsonResponse({success:true,data:[]}));
+    await expect(new TronDepositVerifier({...chainConfig,treasuryAddress:TREASURY.slice(0,-1)+'a'},fetchFn).verify('tx1','USDT')).rejects.toThrow('Invalid Tron token or treasury configuration');
+  });
+
   it('rejects an asset with no configured TRC-20 contract (including the native asset)', async () => {
     const verifier = new TronDepositVerifier(chainConfig, jest.fn());
     await expect(verifier.verify('tx1', 'TRX')).rejects.toThrow('Unsupported asset on Tron');

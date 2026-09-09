@@ -626,6 +626,8 @@ export const api = {
   getDepositChains: () =>
     request<{ chain: string; nativeAsset: string; tokens: string[] }[]>('/deposit-chains'),
 
+  getDepositConfig: () => request<import('./depositMinimum').DepositConfig>('/deposit-chains?includeConfig=true'),
+
   getDepositAddress: (chain: string) =>
     request<{ chain: string; address: string; supportedAssets: string[]; note: string }>(
       `/deposit-address/${chain}`

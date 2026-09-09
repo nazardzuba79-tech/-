@@ -194,24 +194,24 @@ describe('DepositService', () => {
     });
   });
 
-  describe('minimum deposit ($1000 USD-equivalent)', () => {
-    it('does not credit a confirmed deposit worth less than $1000', async () => {
+  describe('minimum deposit ($300 USD-equivalent)', () => {
+    it('does not credit a confirmed deposit worth less than $300', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
-        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.1') }), // 0.1 ETH
+        getTransaction: jest.fn().mockResolvedValue({ to: TREASURY, value: ethers.parseEther('0.01') }), // 0.01 ETH
       }));
 
       const prisma = makePrismaMock();
-      // 0.1 ETH @ $3000/ETH = $300, below the $1000 minimum.
+      // 0.01 ETH @ $3000/ETH = $30, below the $300 minimum.
       const service = new DepositService(prisma, chainConfig, makePriceSource('3000'));
       const result = await service.claimDeposit({ userId: 'u1', txHash: '0x' + '5'.repeat(64), asset: 'ETH' });
 
       expect(result.status).toBe('BELOW_MINIMUM');
-      expect(result.minDepositUsd).toBe(1000);
+      expect(result.minDepositUsd).toBe(300);
     });
 
-    it('still credits a confirmed deposit at or above $1000', async () => {
+    it('still credits a confirmed deposit at or above $300', async () => {
       mockJsonRpcProvider.mockImplementation(() => ({
         getTransactionReceipt: jest.fn().mockResolvedValue({ status: 1, blockNumber: 100, logs: [] }),
         getBlockNumber: jest.fn().mockResolvedValue(102),
