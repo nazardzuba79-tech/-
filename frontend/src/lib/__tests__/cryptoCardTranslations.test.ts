@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 import { cardCopy } from '../../pages/crypto-card-final/data/cardCopy';
 
 test('Crypto Card has complete nonempty copy in all seven supported languages', () => {
@@ -48,7 +49,8 @@ test('all localized dictionaries reject obsolete products and availability claim
 });
 
 test('the obsolete global card namespace is removed without dropping Home or Auth card copy', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../i18n.tsx'), 'utf8');
+  // The dictionaries moved one-per-file; this still asserts all seven.
+  const source = readAllLocales();
   expect(source).not.toMatch(/^\s*'card\.[^']+'/m);
   expect(source.match(/'home\.card\.name':/g)).toHaveLength(7);
   expect(source.match(/'authShell\.card\.title':/g)).toHaveLength(7);

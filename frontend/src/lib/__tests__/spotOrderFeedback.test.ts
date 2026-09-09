@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 import ts from 'typescript';
 import { spotOrderFeedback } from '../spotOrderFeedback';
 import { positiveOrderNumber } from '../spotOrderEntry';
@@ -74,7 +75,7 @@ describe('actual OrderForm submit handler', () => {
     expect(source).toContain("aria-pressed={execution === 'MARKET'}");
   });
   test('all seven supported languages have each new outcome message and partial quantities', () => {
-    const translations = fs.readFileSync(path.resolve(__dirname, '../i18n.tsx'), 'utf8');
+    const translations = readAllLocales();
     for (const key of ['trade.orderCancelledNoFill', 'trade.orderPartiallyFilledCancelled', 'trade.orderStatusUnconfirmed']) {
       expect(translations.split(`'${key}':`).length - 1).toBe(7);
     }

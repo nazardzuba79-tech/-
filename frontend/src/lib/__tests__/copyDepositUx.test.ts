@@ -5,6 +5,7 @@ import { createHash } from 'crypto';
 import ts from 'typescript';
 import { nazarTrader, marketplaceTraders } from '../../pages/copy-trading-bolt/traders';
 import { restoreCopyButtonDepositUx, restoreCopyDepositUx } from '../../../test-utils/copyDepositUx';
+import { readAllLocales } from '../../../test-utils/i18nSource';
 
 const frontend = resolve(__dirname, '../../..');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -223,7 +224,7 @@ test('every dollar figure quoted to a member matches the one eligibility constan
   const comma = threshold.toLocaleString('en-US');
 
   // Collect every "$<figure>" a member can read on the Copy Trading path.
-  const i18nLines = read('src/lib/i18n.tsx').split('\n').filter(line =>
+  const i18nLines = readAllLocales().split('\n').filter(line =>
     line.includes("'marketing.feature.copyTrading.text':") || line.includes("'marketing.faq.a5':"));
   // Seven languages x two keys. Asserted so a new language cannot be added
   // without this guard seeing it.
