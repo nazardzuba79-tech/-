@@ -72,7 +72,28 @@ test.each([
     // resource is read, so the initial paint and risk-reducing orders are
     // unaffected. projectFuturesExposureNotional itself, getLeverageTier,
     // the tier table and the order payload are byte-unchanged.
-    "592b3244922baa48c15c2a401bed5ae5ae6e485cdc056b3dc19a1d5d7a14145a"
+    //
+    // Re-taken for the professional order-panel redesign — the one change
+    // in this file's history that is deliberately a UX change. What differs:
+    //   * MarginTypeToggle and LeverageSlider are replaced by ONE compact
+    //     FuturesMarginLeverage popover, so the panel keeps exactly one
+    //     persistent slider and that slider is position size. The bounds it
+    //     receives are the SAME values: config.minLeverage, the live
+    //     effectiveMaxLeverage, config.highLeverageWarningThreshold.
+    //   * the position-size slider now takes explicit 10/25/50/75/100
+    //     presets; the sizing formula is byte-identical.
+    //   * the fee row renders a dash. VOLTEX has no futures fee source —
+    //     none in src/futures, none in futuresConfig, no fee column in the
+    //     Prisma schema — so the figure it used to print was not a real
+    //     zero, it was a number nobody computed.
+    //   * Order Value and Required Margin render a dash when the price or
+    //     quantity is unknown instead of printing 0.00. Both formulas are
+    //     unchanged; only the rendering of an unknown changed.
+    // The ORDER PAYLOAD, leverage tiers, exposure projection, liquidation
+    // preview and every margin calculation are untouched — futuresFinalPolish's
+    // 24 behavioural tests assert them directly and still pass with every
+    // asserted value unchanged.
+    "919fd948778273dee25633b369b616cf1bebc131bee3be3484b7dbc42411e629"
   ],
   [
     "components/FuturesAccountSummary.tsx",

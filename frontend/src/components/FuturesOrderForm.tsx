@@ -2,12 +2,15 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { LeverageSlider } from './LeverageSlider';
-import { MarginTypeToggle } from './MarginTypeToggle';
+import { FuturesMarginLeverage } from './FuturesMarginLeverage';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
+
+/** Owner-approved position-size presets. The track still snaps to 0 as
+ *  well, so the size can be dragged back to nothing. */
+const SIZE_PRESETS = [10, 25, 50, 75, 100];
 
 export function FuturesOrderForm({
   symbol,
@@ -87,6 +90,17 @@ export function FuturesOrderForm({
   const effectivePrice = type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
+  /**
+   * Whether Order Value and Required Margin describe a real order.
+   *
+   * Both formulas above are unchanged. What changes is the RENDERING of a
+   * figure nobody has entered yet, or one that depends on a mark price the
+   * client has not received: a MARKET order with no mark price used to
+   * show "0.00 USDT" for its value, which reads as a free order rather
+   * than an unknown one.
+   */
+  const orderSizeKnown = Number.isFinite(effectivePrice) && effectivePrice > 0
+    && quantity !== '' && Number.isFinite(parseFloat(quantity));
 
   // Live liquidation-price preview — same formula the backend uses
   // (src/futures/marginMath.ts) to actually set it at fill time. Purely
@@ -268,19 +282,20 @@ export function FuturesOrderForm({
       </div>
 
       <form onSubmit={handleSubmit} className="fo-form">
-        <MarginTypeToggle value={marginType} onChange={setMarginType} />
-
-        {config && effectiveMaxLeverage !== null && (
-          <>
-            <LeverageSlider
-              value={leverage}
-              onChange={setLeverage}
-              min={config.minLeverage}
-              max={effectiveMaxLeverage}
-              warningThreshold={config.highLeverageWarningThreshold}
-            />
-          </>
-        )}
+        {/* One compact control where a margin-mode toggle and a full
+            leverage slider used to stack. The panel now has exactly ONE
+            persistent slider, and it is position size. Every bound comes
+            from the same values as before: config.minLeverage, the live
+            effectiveMaxLeverage, and config.highLeverageWarningThreshold. */}
+        <FuturesMarginLeverage
+          marginType={marginType}
+          onMarginTypeChange={setMarginType}
+          leverage={leverage}
+          onLeverageChange={setLeverage}
+          min={config?.minLeverage ?? 1}
+          max={config ? effectiveMaxLeverage : null}
+          warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
+        />
 
         {type === 'LIMIT' ? (
           <label className="fo-label">
@@ -332,7 +347,8 @@ export function FuturesOrderForm({
           />
         </label>
 
-        <PercentSlider value={percent} onChange={applyPercent} />
+        {/* The ONLY persistent slider in this panel. */}
+        <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} />
 
         <label className="fo-reduceOnlyRow">
           <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />
@@ -343,24 +359,35 @@ export function FuturesOrderForm({
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.orderValue')}</span>
             <span className="mono">
-              {notional.toFixed(2)} {quoteAsset}
+              {orderSizeKnown ? `${notional.toFixed(2)} ${quoteAsset}` : '—'}
             </span>
           </div>
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.margin')}</span>
             <span className="mono">
-              {requiredMargin.toFixed(2)} {quoteAsset}
+              {orderSizeKnown ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'}
             </span>
-          </div>
-          <div className="fo-infoRow">
-            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
-            <span className="mono">0.00 {quoteAsset} (0%)</span>
           </div>
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
             <span className="mono" style={{ color: liqPreview ? 'var(--sell)' : 'var(--text-tertiary)' }}>
               {liqPreview ? liqPreview.toFixed(2) : '—'}
             </span>
+          </div>
+          {/* FEES.
+              VOLTEX has no futures trading-fee source: there is no fee
+              rate in src/futures, none in src/config/futuresConfig, and no
+              fee column anywhere in the Prisma schema. The only `feeRate`
+              in the codebase is Copy Trading's PERFORMANCE fee, which is a
+              different thing entirely and does not apply to an order here.
+              This row used to read "0.00 USDT (0%)", which was not a real
+              zero — it was a number nobody computed. Until an authoritative
+              futures fee exists it stays a dash. Inventing a maker/taker
+              rate, or copying another venue's, would be worse than saying
+              nothing. */}
+          <div className="fo-infoRow">
+            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
+            <span className="mono" style={{ color: 'var(--text-tertiary)' }}>—</span>
           </div>
         </div>
 

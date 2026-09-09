@@ -284,11 +284,12 @@ function orderForm(account: ReturnType<typeof accountState>) {
   return { form, placed, props, change, render: () => form.render(props) };
 }
 
-/** The slider is the exposure-derived leverage preview: it is rendered only
- *  when `effectiveMaxLeverage` is a number, and its `max` IS that ceiling. */
+/** The compact margin/leverage control carries the exposure-derived
+ *  ceiling: `max` IS `effectiveMaxLeverage`, and it is null exactly when
+ *  the account state needed to derive it is unknown. */
 const leverageCeiling = (form: any, tree: any) => {
-  const slider = nodes(tree).find((n: any) => n.type === form.components.LeverageSlider);
-  return slider ? slider.props.max : null;
+  const control = nodes(tree).find((n: any) => n.type === form.components.FuturesMarginLeverage);
+  return control ? control.props.max : null;
 };
 
 async function pricedForm(account: ReturnType<typeof accountState>) {

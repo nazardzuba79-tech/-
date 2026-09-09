@@ -129,8 +129,23 @@ function nodes(tree: any): any[] {
   return tree && typeof tree === 'object' ? [tree, ...nodes(tree.props?.children)] : [];
 }
 const level = (price: string, quantity = '1') => ({ price, quantity });
-beforeEach(() => jest.useFakeTimers());
-afterEach(() => jest.useRealTimers());
+/**
+ * FuturesMarginLeverage registers its outside-click / Escape listeners on
+ * `document`, which this suite's `node` environment does not provide. The
+ * listeners are only ever reachable from a real click in a real browser,
+ * so the component is right not to guard them; the harness supplies the
+ * global instead.
+ */
+const savedDocument = (globalThis as any).document;
+beforeEach(() => {
+  jest.useFakeTimers();
+  (globalThis as any).document = { addEventListener: () => {}, removeEventListener: () => {} };
+});
+afterEach(() => {
+  jest.useRealTimers();
+  if (savedDocument === undefined) delete (globalThis as any).document;
+  else (globalThis as any).document = savedDocument;
+});
 
 test.each([
   ['BTC/USDT', '79100.1', '79100.2'], ['ETH/USDT', '2483.11', '2483.12'],
@@ -255,17 +270,35 @@ async function leverageForm() {
   return { form, render, part, change, confirm, placed, getMe, tree };
 }
 
-test.each([1, 5, 10, 20, 50, 100])('real form + slider select %dx and pass it unchanged to the order API', async leverage => {
+// The panel's leverage control is now FuturesMarginLeverage — a compact
+// popover instead of an inline slider — so the panel keeps exactly one
+// persistent slider (position size). It exposes the SAME bounds under the
+// same names (`min`, `max`) and reports the selection through
+// `leverage`/`onLeverageChange`. Every value asserted below is unchanged:
+// the same ceilings, the same selections, the same order payload, the same
+// confirmation rule.
+test.each([1, 5, 10, 20, 50, 100])('real form + leverage control select %dx and pass it unchanged to the order API', async leverage => {
   const f = await leverageForm();
-  let slider = f.part(f.tree, 'LeverageSlider');
-  expect(slider.props.min).toBe(1); expect(slider.props.max).toBe(100);
-  const control = mount('components/LeverageSlider.tsx');
-  const range = nodes(control.render(slider.props)).find(n => n.type === 'input' && n.props.type === 'range');
-  expect(range.props).toMatchObject({ min: 1, max: 100, step: 1 });
-  range.props.onChange({ target: { value: String(leverage) } });
-  const tree = f.render(); slider = f.part(tree, 'LeverageSlider');
-  expect(slider.props.value).toBe(leverage);
-  expect(nodes(control.render(slider.props)).some(n => n.type === 'span' && JSON.stringify(n.props.children) === JSON.stringify([leverage, 'x']))).toBe(true);
+  let control = f.part(f.tree, 'FuturesMarginLeverage');
+  expect(control.props.min).toBe(1); expect(control.props.max).toBe(100);
+
+  // Drive the REAL control: open its popover and click the chip, rather
+  // than calling the callback directly.
+  const widget = mount('components/FuturesMarginLeverage.tsx');
+  const props = () => f.part(f.render(), 'FuturesMarginLeverage').props;
+  widget.render(props());
+  nodes(widget.render(props())).find(n => n.type === 'button').props.onClick();
+  const chip = nodes(widget.render(props())).find(
+    n => n.props?.className?.includes?.('fo-mlChip') && [n.props.children].flat(2).join('') === `${leverage}x`
+  );
+  expect(chip).toBeDefined();
+  chip.props.onClick();
+
+  const tree = f.render(); control = f.part(tree, 'FuturesMarginLeverage');
+  expect(control.props.leverage).toBe(leverage);
+  // The control's own trigger reports the selection back to the trader.
+  expect(JSON.stringify(widget.render(control.props))).toContain(`${leverage}x`);
+
   nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '50000', quantity: '1', leverage, marginType: 'ISOLATED', reduceOnly: false });
   expect(f.confirm).toHaveBeenCalledTimes(leverage >= 20 ? 1 : 0);
@@ -276,12 +309,12 @@ test.each([1, 5, 10, 20, 50, 100])('real form + slider select %dx and pass it un
 
 test.each([[50000, 100], [50000.01, 50], [250000, 50], [250000.01, 20], [1000000, 20], [1000000.01, 10], [5000000, 10], [5000000.01, 5]])(
   'form caps a %d USDT notional at %dx', async (notional, max) => {
-    const f = await leverageForm(); f.part(f.tree, 'LeverageSlider').props.onChange(100);
+    const f = await leverageForm(); f.part(f.tree, 'FuturesMarginLeverage').props.onLeverageChange(100);
     f.change(f.tree, '0.00', String(notional)); f.render();
-    const slider = f.part(f.render(), 'LeverageSlider');
-    expect(slider.props.max).toBe(max); expect(slider.props.value).toBe(max);
+    const control = f.part(f.render(), 'FuturesMarginLeverage');
+    expect(control.props.max).toBe(max); expect(control.props.leverage).toBe(max);
     f.change(f.render(), '0.00', '50000');
-    expect(f.part(f.render(), 'LeverageSlider').props.max).toBe(100);
+    expect(f.part(f.render(), 'FuturesMarginLeverage').props.max).toBe(100);
   }
 );
 
@@ -325,22 +358,23 @@ test('form leverage ceiling reflects the expected aggregate tier while reduction
   nodes(tree).find(n => n.type === 'input' && n.props.placeholder === '0.00').props.onChange({ target: { value: '10000.01' } });
   nodes(tree).find(n => n.type === 'input' && n.props.placeholder === '0.00000').props.onChange({ target: { value: '1' } });
   tree = form.render(formProps);
-  expect(nodes(tree).find(n => n.type === form.components.LeverageSlider).props.max).toBe(50);
+  expect(nodes(tree).find(n => n.type === form.components.FuturesMarginLeverage).props.max).toBe(50);
 
   nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
   tree = form.render(formProps);
-  expect(nodes(tree).find(n => n.type === form.components.LeverageSlider).props.max).toBe(100);
+  expect(nodes(tree).find(n => n.type === form.components.FuturesMarginLeverage).props.max).toBe(100);
 });
 
 test('high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact', async () => {
-  const f = await leverageForm(); f.part(f.tree, 'LeverageSlider').props.onChange(100);
+  const f = await leverageForm(); f.part(f.tree, 'FuturesMarginLeverage').props.onLeverageChange(100);
   f.confirm.mockReturnValue(false);
   nodes(f.render()).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(f.placed).not.toHaveBeenCalled();
   let tree = f.render();
   nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.marketOrder').props.onClick();
   nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
-  f.part(tree, 'MarginTypeToggle').props.onChange('CROSS');
+  // Margin mode now lives in the same compact control as leverage.
+  f.part(tree, 'FuturesMarginLeverage').props.onMarginTypeChange('CROSS');
   nodes(tree).find(n => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });
   f.confirm.mockReturnValue(true); tree = f.render();
   nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
