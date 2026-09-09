@@ -1151,6 +1151,37 @@ Two conversions happen once, at the adapter boundary:
 gzipped**; `?type=linear_perpetual` narrows it to 391 KB / 10 KB. It reads
 the in-memory universe and triggers no upstream call.
 
+### Freshness: carried through, never restated
+
+The universe is a COMBINATION of two provider reads, and its freshness is
+the freshness of its stalest half:
+
+```
+refreshedAt = min(spot.fetchedAt, linear.fetchedAt)      never now()
+stale       = spot.stale || linear.stale                 either half
+```
+
+`ProviderCache` already tracks both per read. The rule is that
+`MarketUniverse` and `GET /market/universe` **pass them through** rather
+than restate them. Stamping `now()` on a value the cache served from its
+stale window, or answering a hardcoded `stale: false`, is how day-old data
+starts looking freshly refreshed — and this endpoint feeds a decision about
+which markets exist.
+
+One stale half makes the whole snapshot stale, because a caller cannot act
+on "the perpetuals are current but the spot pairs are a day old" without
+being told which is which.
+
+The failure paths keep the same discipline. A refresh that fails past the
+cache's stale budget still serves the previous universe — that is the whole
+point of stale-last-good — but it marks it `stale: true` and leaves
+`refreshedAt` at the real provider fetch time. So does a successful-looking
+empty answer, whose result is kept but is not confirmed current. A universe
+that has never loaded is not "stale": it has nothing to be stale about, and
+answers `available: false` instead.
+
+A recovered provider clears the flag and re-dates from the new read.
+
 ### Geo-restriction
 
 Bybit refuses public traffic from some server regions and this adapter does

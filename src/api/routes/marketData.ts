@@ -112,8 +112,12 @@ export function marketDataRouter(
 
     res.json({
       available: true,
+      // The PROVIDER's own fetch time and staleness, carried through
+      // rather than restated. A stale-last-good universe is still served —
+      // that is the point of the stale budget — but it is never presented
+      // as a fresh read, and `fetchedAt` is not re-dated to now.
       fetchedAt: snapshot.refreshedAt,
-      stale: false,
+      stale: snapshot.stale,
       value: {
         counts: {
           spot: snapshot.instruments.filter((i) => i.marketType === 'spot').length,

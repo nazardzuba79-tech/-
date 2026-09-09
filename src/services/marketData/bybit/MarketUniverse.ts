@@ -1,3 +1,4 @@
+import type { CachedValue } from '../ProviderCache';
 import type { BybitMarketDataService } from './BybitMarketDataService';
 import type { MarketType, NormalizedInstrument } from './types';
 
@@ -41,14 +42,32 @@ export interface UniverseRefreshResult {
   ok: boolean;
   spotCount: number;
   linearCount: number;
+  /** Whether the universe now held is stale-last-good rather than fresh. */
+  stale: boolean;
   /** Set only when the refresh failed. The previous universe was kept. */
   error?: string;
 }
 
 export interface MarketUniverseSnapshot {
   instruments: NormalizedInstrument[];
-  /** Epoch ms of the last SUCCESSFUL refresh; null if never. */
+  /**
+   * When the PROVIDER actually produced this data (epoch ms), not when we
+   * last looked at it. Null before the first successful load.
+   *
+   * Reading a stale-last-good value out of the cache does not advance
+   * this: the data is exactly as old as it was, and stamping `now()` on it
+   * is how old data starts looking freshly refreshed.
+   */
   refreshedAt: number | null;
+  /**
+   * True when what we hold is stale-last-good rather than a fresh read.
+   *
+   * The universe is a COMBINATION of two provider reads, so it is only as
+   * fresh as its stalest half: one stale side makes the whole snapshot
+   * stale, because a caller cannot act on "the perpetuals are current but
+   * the spot pairs are a day old" without knowing which is which.
+   */
+  stale: boolean;
   /** True once at least one refresh has succeeded. */
   loaded: boolean;
 }
@@ -98,20 +117,25 @@ export function isUsableSpotInstrument(instrument: NormalizedInstrument): boolea
 export class MarketUniverse {
   private instruments: NormalizedInstrument[] = [];
   private refreshedAt: number | null = null;
+  private stale = false;
   private loaded = false;
   private timer: NodeJS.Timeout | null = null;
 
   constructor(
     private readonly bybit: BybitMarketDataService,
+    /** `now` is accepted so a test can drive one clock through the whole
+     *  stack. This class no longer dates anything itself — freshness comes
+     *  from the provider cache — so it is not read here. */
     private readonly options: { refreshMs?: number; now?: () => number } = {}
   ) {}
 
-  private now(): number {
-    return (this.options.now ?? Date.now)();
-  }
-
   snapshot(): MarketUniverseSnapshot {
-    return { instruments: this.instruments, refreshedAt: this.refreshedAt, loaded: this.loaded };
+    return {
+      instruments: this.instruments,
+      refreshedAt: this.refreshedAt,
+      stale: this.stale,
+      loaded: this.loaded,
+    };
   }
 
   /** Instruments of one market type. Returns [] before the first load,
@@ -140,42 +164,58 @@ export class MarketUniverse {
    * failed. On any failure the previous universe is left exactly as it was
    * and the reason is reported.
    */
+  /** What we currently hold, described honestly, for the failure paths. */
+  private held(error: string): UniverseRefreshResult {
+    return {
+      ok: false,
+      spotCount: this.instruments.filter((i) => i.marketType === 'spot').length,
+      linearCount: this.instruments.filter((i) => i.marketType !== 'spot').length,
+      stale: this.stale,
+      error,
+    };
+  }
+
   async refresh(): Promise<UniverseRefreshResult> {
-    let spot: NormalizedInstrument[];
-    let linear: NormalizedInstrument[];
+    let spot: CachedValue<NormalizedInstrument[]>;
+    let linear: CachedValue<NormalizedInstrument[]>;
     try {
-      const [spotResult, linearResult] = await Promise.all([
+      [spot, linear] = await Promise.all([
         this.bybit.listSpotInstruments(),
         this.bybit.listLinearInstruments(),
       ]);
-      spot = spotResult.value;
-      linear = linearResult.value;
     } catch (err) {
       // The previous universe survives untouched. This is the single most
       // important line in the class: an outage must not empty the exchange.
+      //
+      // It is marked stale, though, and `refreshedAt` is NOT advanced: the
+      // read failed even past the cache's stale budget, so what we still
+      // serve is definitively old and has to say so.
       const error = err instanceof Error ? err.message : String(err);
       console.error('[MarketUniverse] Refresh failed, keeping previous universe:', error);
-      return {
-        ok: false,
-        spotCount: this.instruments.filter((i) => i.marketType === 'spot').length,
-        linearCount: this.instruments.filter((i) => i.marketType !== 'spot').length,
-        error,
-      };
+      if (this.loaded) this.stale = true;
+      return this.held(error);
     }
 
     // An empty answer from a SUCCESSFUL request is still not a reason to
     // empty a universe that previously had content — a venue does not
     // delist everything at once, so this is far likelier to be an upstream
-    // fault that happened to return 200.
-    if (spot.length === 0 && linear.length === 0 && this.loaded) {
+    // fault that happened to return 200. What we keep is not confirmed
+    // current either, so it is marked stale for the same reason as above.
+    if (spot.value.length === 0 && linear.value.length === 0 && this.loaded) {
       console.error('[MarketUniverse] Provider returned an empty universe, keeping previous listing');
-      return { ok: false, spotCount: 0, linearCount: 0, error: 'empty_universe' };
+      this.stale = true;
+      return this.held('empty_universe');
     }
 
-    this.instruments = [...spot, ...linear];
-    this.refreshedAt = this.now();
+    this.instruments = [...spot.value, ...linear.value];
+    // The provider's OWN fetch time, and the OLDER of the two halves: a
+    // combination is only as fresh as its stalest constituent, and a
+    // stale-last-good serve must not be re-dated to now.
+    this.refreshedAt = Math.min(spot.fetchedAt, linear.fetchedAt);
+    // One stale half makes the whole snapshot stale.
+    this.stale = spot.stale || linear.stale;
     this.loaded = true;
-    return { ok: true, spotCount: spot.length, linearCount: linear.length };
+    return { ok: true, spotCount: spot.value.length, linearCount: linear.value.length, stale: this.stale };
   }
 
   start(): void {

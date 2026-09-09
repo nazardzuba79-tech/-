@@ -338,7 +338,7 @@ describe('MarketUniverse', () => {
       url.includes('category=spot') ? ok([spotRow('BTCUSDT')]) : ok([perp('ETHUSDT')])
     );
     const result = await universe.refresh();
-    expect(result).toMatchObject({ ok: true, spotCount: 1, linearCount: 1 });
+    expect(result).toMatchObject({ ok: true, spotCount: 1, linearCount: 1, stale: false });
     expect(universe.spot()).toHaveLength(1);
     expect(universe.perpetualCandidates()).toHaveLength(1);
   });
@@ -424,5 +424,197 @@ describe('MarketUniverse', () => {
     expect(universe.perpetualCandidates()).toHaveLength(1200);
     // 1 spot + 2 linear pages = 3 upstream requests for 1900 instruments.
     expect(calls).toHaveLength(3);
+  });
+});
+
+
+// ── Freshness: the universe is a COMBINATION of two provider reads ───
+//
+// `ProviderCache` already tracks `fetchedAt` and `stale` per read. The
+// bug these tests exist to prevent is losing that on the way out: copying
+// `.value` alone, re-dating the result to `now()`, and then reporting
+// `stale: false` — which turns a day-old stale-last-good universe into
+// something that looks freshly refreshed.
+//
+// The rules asserted below:
+//
+//   refreshedAt = min(spot.fetchedAt, linear.fetchedAt)   never now()
+//   stale       = spot.stale || linear.stale              either half
+//
+// A combination is only as fresh as its stalest constituent, because a
+// caller cannot act on "the perpetuals are current but the spot pairs are
+// a day old" without being told which is which.
+
+describe('MarketUniverse freshness', () => {
+  /**
+   * Drives one clock through the adapter's caches.
+   *
+   * `spotAge`/`linearAge` are how far the clock is advanced BEFORE that
+   * side is first fetched, so the two halves genuinely carry different
+   * provider fetch times rather than a stubbed flag.
+   */
+  function harness() {
+    let clock = 1_000_000;
+    let spotMode: 'ok' | 'fail' = 'ok';
+    let linearMode: 'ok' | 'fail' = 'ok';
+    const { fetchFn } = stub((url) => {
+      const failing = url.includes('category=spot') ? spotMode : linearMode;
+      if (failing === 'fail') return new Error('provider refused');
+      return url.includes('category=spot') ? ok([spotRow('BTCUSDT')]) : ok([perp('ETHUSDT')]);
+    });
+    const svc = new BybitMarketDataService({ fetchFn, baseUrl: 'https://stub', sleep: async () => {}, now: () => clock });
+    const universe = new MarketUniverse(svc, { now: () => clock });
+    return {
+      universe,
+      advance: (ms: number) => { clock += ms; },
+      at: () => clock,
+      failSpot: () => { spotMode = 'fail'; },
+      failLinear: () => { linearMode = 'fail'; },
+      failBoth: () => { spotMode = 'fail'; linearMode = 'fail'; },
+      healAll: () => { spotMode = 'ok'; linearMode = 'ok'; },
+    };
+  }
+
+  const TTL = 15 * 60_000;        // instrument cache TTL
+  const STALE_BUDGET = 24 * 60 * 60_000;
+
+  it('fresh + fresh -> stale:false, dated by the provider', async () => {
+    const h = harness();
+    const t0 = h.at();
+    const result = await h.universe.refresh();
+    expect(result.stale).toBe(false);
+    const snap = h.universe.snapshot();
+    expect(snap.stale).toBe(false);
+    expect(snap.refreshedAt).toBe(t0);
+    expect(snap.loaded).toBe(true);
+  });
+
+  it('stale + fresh -> the whole universe is stale', async () => {
+    const h = harness();
+    await h.universe.refresh();          // both fresh, both cached at t0
+    const t0 = h.at();
+
+    h.advance(TTL + 60_000);             // both caches now past TTL
+    h.failSpot();                        // spot refresh fails -> served stale
+    const result = await h.universe.refresh();
+
+    expect(result.ok).toBe(true);        // still usable
+    expect(result.stale).toBe(true);     // and visibly stale
+    const snap = h.universe.snapshot();
+    expect(snap.stale).toBe(true);
+    // NOT re-dated to now just because a stale value was read.
+    expect(snap.refreshedAt).toBe(t0);
+    expect(snap.refreshedAt).toBeLessThan(h.at());
+    expect(h.universe.spot()).toHaveLength(1);
+  });
+
+  it('fresh + stale -> the whole universe is stale', async () => {
+    const h = harness();
+    await h.universe.refresh();
+    const t0 = h.at();
+
+    h.advance(TTL + 60_000);
+    h.failLinear();
+    const result = await h.universe.refresh();
+
+    expect(result.stale).toBe(true);
+    expect(h.universe.snapshot().stale).toBe(true);
+    // The stalest half dates the combination: the linear side is still at
+    // t0 even though spot just refreshed.
+    expect(h.universe.snapshot().refreshedAt).toBe(t0);
+    expect(h.universe.perpetualCandidates()).toHaveLength(1);
+  });
+
+  it('stale + stale -> stale, still usable, still dated at the real fetch', async () => {
+    const h = harness();
+    await h.universe.refresh();
+    const t0 = h.at();
+
+    h.advance(TTL + 60_000);
+    h.failBoth();
+    const result = await h.universe.refresh();
+
+    expect(result.ok).toBe(true);
+    expect(result.stale).toBe(true);
+    expect(h.universe.snapshot().refreshedAt).toBe(t0);
+    expect(h.universe.spot()).toHaveLength(1);
+    expect(h.universe.perpetualCandidates()).toHaveLength(1);
+  });
+
+  it('a recovered provider clears the stale flag and re-dates honestly', async () => {
+    const h = harness();
+    await h.universe.refresh();
+    const t0 = h.at();
+
+    h.advance(TTL + 60_000);
+    h.failBoth();
+    expect((await h.universe.refresh()).stale).toBe(true);
+
+    h.advance(60_000);
+    h.healAll();
+    const recovered = await h.universe.refresh();
+    expect(recovered.stale).toBe(false);
+    expect(h.universe.snapshot().stale).toBe(false);
+    expect(h.universe.snapshot().refreshedAt).toBe(h.at());
+    expect(h.universe.snapshot().refreshedAt).toBeGreaterThan(t0);
+  });
+
+  it('provider failure with valid stale-last-good keeps the universe AND marks it stale', async () => {
+    const h = harness();
+    await h.universe.refresh();
+    const t0 = h.at();
+
+    // Inside the stale budget: the cache absorbs the failure entirely.
+    h.advance(TTL + 60_000);
+    h.failBoth();
+    const result = await h.universe.refresh();
+
+    expect(result.ok).toBe(true);
+    expect(result.stale).toBe(true);
+    expect(h.universe.snapshot().instruments).toHaveLength(2);
+    expect(h.universe.snapshot().refreshedAt).toBe(t0);
+  });
+
+  it('stale budget exceeded -> refresh fails, universe survives, and says it is stale', async () => {
+    const h = harness();
+    await h.universe.refresh();
+    const t0 = h.at();
+
+    // Past even the stale budget: the cache can no longer serve, so the
+    // refresh genuinely throws. What we still hold must not claim to be
+    // fresh, and must not be re-dated.
+    h.advance(STALE_BUDGET + TTL + 60_000);
+    h.failBoth();
+    const result = await h.universe.refresh();
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toBeDefined();
+    expect(result.stale).toBe(true);
+    const snap = h.universe.snapshot();
+    expect(snap.stale).toBe(true);
+    expect(snap.refreshedAt).toBe(t0);
+    expect(snap.instruments).toHaveLength(2);
+  });
+
+  it('an unloaded universe that fails is not marked stale — it has nothing to be stale about', async () => {
+    const h = harness();
+    h.failBoth();
+    const result = await h.universe.refresh();
+    expect(result.ok).toBe(false);
+    expect(result.stale).toBe(false);
+    expect(h.universe.snapshot().loaded).toBe(false);
+    expect(h.universe.snapshot().refreshedAt).toBeNull();
+  });
+
+  it('never dates the universe from its own clock', async () => {
+    // The regression in one line: `refreshedAt` must come from the
+    // provider read, so advancing the clock without re-fetching cannot
+    // move it.
+    const h = harness();
+    await h.universe.refresh();
+    const dated = h.universe.snapshot().refreshedAt;
+    h.advance(5 * 60_000);              // still inside the TTL: no re-fetch
+    await h.universe.refresh();
+    expect(h.universe.snapshot().refreshedAt).toBe(dated);
   });
 });

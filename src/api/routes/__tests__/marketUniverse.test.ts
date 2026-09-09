@@ -36,8 +36,13 @@ function app(universe: any) {
   return server;
 }
 
-const loaded = (instruments: any[]) => ({
-  snapshot: () => ({ instruments, refreshedAt: 1_700_000_000_000, loaded: true }),
+const loaded = (instruments: any[], over: { refreshedAt?: number | null; stale?: boolean } = {}) => ({
+  snapshot: () => ({
+    instruments,
+    refreshedAt: over.refreshedAt ?? 1_700_000_000_000,
+    stale: over.stale ?? false,
+    loaded: true,
+  }),
 });
 
 describe('GET /market/universe', () => {
@@ -53,7 +58,7 @@ describe('GET /market/universe', () => {
   });
 
   it('says "not loaded" rather than "no markets" before the first refresh', async () => {
-    const res = await request(app({ snapshot: () => ({ instruments: [], refreshedAt: null, loaded: false }) }))
+    const res = await request(app({ snapshot: () => ({ instruments: [], refreshedAt: null, stale: false, loaded: false }) }))
       .get('/api/v1/market/universe');
     expect(res.body.available).toBe(false);
     expect(res.body.reason).toBe('provider_unavailable');
@@ -113,5 +118,42 @@ describe('GET /market/universe', () => {
     ).get('/api/v1/market/universe');
     expect(res.body.value.instruments[0].filters.tickSize).toBeNull();
     expect(res.body.value.instruments[0].filters.qtyStep).toBeNull();
+  });
+
+  // ── Freshness is carried through, never restated ──────────────────
+  //
+  // The route used to hardcode `stale: false`, so a stale-last-good
+  // universe reached the client looking freshly refreshed. Both fields now
+  // come from the snapshot, which in turn comes from the provider cache.
+
+  it('reports a fresh universe as fresh, dated by the provider', async () => {
+    const res = await request(app(loaded([instrument()], { refreshedAt: 1_700_000_000_000, stale: false })))
+      .get('/api/v1/market/universe');
+    expect(res.body.available).toBe(true);
+    expect(res.body.stale).toBe(false);
+    expect(res.body.fetchedAt).toBe(1_700_000_000_000);
+  });
+
+  it('marks a stale-last-good universe stale while still serving it', async () => {
+    const res = await request(app(loaded([instrument()], { refreshedAt: 1_600_000_000_000, stale: true })))
+      .get('/api/v1/market/universe');
+    // Still usable — the stale budget exists precisely so an outage does
+    // not empty the exchange…
+    expect(res.body.available).toBe(true);
+    expect(res.body.value.instruments).toHaveLength(1);
+    // …but never presented as a fresh read.
+    expect(res.body.stale).toBe(true);
+    // And dated when the PROVIDER produced it, not when we served it.
+    expect(res.body.fetchedAt).toBe(1_600_000_000_000);
+    expect(res.body.fetchedAt).toBeLessThan(Date.now());
+  });
+
+  it('does not re-date a stale universe to the moment it was read', async () => {
+    const dated = 1_500_000_000_000;
+    const universe = loaded([instrument()], { refreshedAt: dated, stale: true });
+    const first = await request(app(universe)).get('/api/v1/market/universe');
+    const second = await request(app(universe)).get('/api/v1/market/universe');
+    expect(first.body.fetchedAt).toBe(dated);
+    expect(second.body.fetchedAt).toBe(dated);
   });
 });
