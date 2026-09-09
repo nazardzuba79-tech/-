@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { RU } from './i18n/locales/ru';
 import type { Key } from './i18n/locales/keys';
 
@@ -125,12 +125,31 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     dict: loaded[initial] ?? null,
   }));
 
+  /**
+   * Which language request is the current one.
+   *
+   * Dictionaries arrive over the network, so two of them can be in flight at
+   * once — pick EN, change your mind, pick JA — and they can finish in
+   * either order. Without this, whichever request finished LAST would win,
+   * which is not the same thing as the language the user chose last: a slow
+   * EN landing after a fast JA would silently repaint the app in English
+   * while `exchange_lang` still said Japanese.
+   *
+   * Every intent to change language — the initial read included — claims the
+   * next number, and only the holder of the current number may commit. A
+   * stale result is dropped, not merged.
+   *
+   * A ref rather than state on purpose: claiming a number must take effect
+   * for the very next promise callback, without waiting for a re-render.
+   */
+  const request = useRef(0);
+
   useEffect(() => {
     if (state.dict) return;
-    let cancelled = false;
+    const id = ++request.current;
     loadDictionary(state.lang)
       .then((dict) => {
-        if (!cancelled) setState({ lang: state.lang, dict });
+        if (request.current === id) setState({ lang: state.lang, dict });
       })
       .catch(() => {
         // The stored language's chunk could not be fetched. Falling back to
@@ -138,14 +157,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         // so the switcher shows RU and the user can pick again. The stored
         // preference is deliberately NOT overwritten — a later reload, on a
         // working connection, still gets the language they chose.
-        if (!cancelled) setState({ lang: 'ru', dict: RU });
+        //
+        // Guarded too: if the user has already picked something else while
+        // this was failing, that choice stands and this must not undo it.
+        if (request.current === id) setState({ lang: 'ru', dict: RU });
       });
-    return () => {
-      cancelled = true;
-    };
   }, [state.dict, state.lang]);
 
   function setLang(next: Lang) {
+    // Claimed BEFORE anything else, so an in-flight load started earlier is
+    // stale from this moment — including when the language picked now is
+    // already cached and commits synchronously below.
+    const id = ++request.current;
     // Persist immediately: the preference is the user's choice and survives
     // even if the dictionary fetch then fails.
     try {
@@ -159,7 +182,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       return;
     }
     void loadDictionary(next)
-      .then((dict) => setState({ lang: next, dict }))
+      .then((dict) => {
+        // `loadDictionary` has already put the dictionary in the cache by
+        // now, so even a superseded request leaves the app faster: picking
+        // that language later costs no second request. It just may not
+        // change what is on screen.
+        if (request.current === id) setState({ lang: next, dict });
+      })
       // A failed switch leaves the last valid language on screen, untouched.
       // Nothing flashes, nothing empties, and the switcher still works.
       .catch(() => {});
