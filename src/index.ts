@@ -45,6 +45,8 @@ import { MarkPriceService } from './futures/MarkPriceService';
 import { FuturesPositionService } from './futures/FuturesPositionService';
 import { FundingRateService } from './futures/FundingRateService';
 import { FuturesMarketRegistry } from './futures/FuturesMarketRegistry';
+import { BybitMarketDataService } from './services/marketData/bybit/BybitMarketDataService';
+import { MarketUniverse } from './services/marketData/bybit/MarketUniverse';
 import { LiquidationEngine } from './futures/LiquidationEngine';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
@@ -92,7 +94,24 @@ const markPriceService = new MarkPriceService(marketDataService);
 const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
 // Which contracts are listed is derived from live market data under the
 // listing rules in config/futuresConfig — see FuturesMarketRegistry.
-const futuresMarketRegistry = new FuturesMarketRegistry(marketDataService, prisma);
+/**
+ * The DISCOVERABLE venue universe — every real instrument that exists.
+ *
+ * Public endpoints only, no API key. Bybit refuses public traffic from
+ * some server regions and nothing here works around that: if the region
+ * is refused the universe simply never loads, the registry below skips its
+ * restriction clause, and the exchange keeps working exactly as it did
+ * before this existed.
+ */
+const bybitMarketDataService = new BybitMarketDataService();
+const marketUniverse = new MarketUniverse(bybitMarketDataService);
+marketUniverse.start();
+
+// The EXECUTABLE futures set. The universe is passed as a restriction, not
+// as a source of markets: it can only ever remove a contract that is not a
+// real Trading USDT-settled perpetual. Pricing still comes from the
+// existing index feed, so a market VOLTEX cannot price is never listed.
+const futuresMarketRegistry = new FuturesMarketRegistry(marketDataService, prisma, marketUniverse);
 const fundingRateService = new FundingRateService(prisma, markPriceService, () => futuresMarketRegistry.list());
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
 
@@ -214,7 +233,7 @@ app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 // Additive: every pre-existing /market/* route above keeps its shape.
-app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService));
+app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService, marketUniverse));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

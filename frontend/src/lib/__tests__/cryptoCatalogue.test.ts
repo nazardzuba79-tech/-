@@ -408,7 +408,12 @@ describe('spot and futures pair lists are unchanged', () => {
     // The spot terminal's pair list.
     'src/components/PairListSidebar.tsx': '5d222e312c537849459a662d24c79c4938c6de4f9e06dc517f90f41ee49907c2',
     // The futures pair list.
-    'src/components/FuturesPairList.tsx': '4a6488a56e6ea49730e1db9d2f4f5578f2e5410c78d620614e72b23a92e28c12',
+      // Re-taken for the data-driven market universe: nulls-last sorting for
+  // unpriced markets and windowed rendering. What this suite actually
+  // guards is untouched and re-asserted by the test above — the futures
+  // list still takes its symbols from the backend listing and still does
+  // not derive a tradable pair from a catalogue entry.
+  'src/components/FuturesPairList.tsx': 'babb886a72cbfdc32203547947b327de43fca3ec0c92fc4c3ea1ffa4dbdf7afe',
   };
 
   it('does not derive tradable pairs from catalogue entries', () => {

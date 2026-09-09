@@ -6,6 +6,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
 import { useFavorites } from '../lib/useFavorites';
+import { useWindowedRows } from '../lib/useWindowedRows';
 
 export interface FuturesPairListHandle {
   focusSearch: () => void;
@@ -13,9 +14,13 @@ export interface FuturesPairListHandle {
 
 interface Row {
   symbol: string;
-  lastPrice: number;
-  change: number;
-  quoteVolume24h: number;
+  /** Null when no live ticker covers this market. NOT zero: at 500+
+   *  markets most of the tail has no reference quote at any given moment,
+   *  and a zero would both render as a price and sort as the cheapest
+   *  market on the exchange. */
+  lastPrice: number | null;
+  change: number | null;
+  quoteVolume24h: number | null;
 }
 
 type SortField = 'volume' | 'price' | 'change' | 'symbol';
@@ -115,20 +120,34 @@ export const FuturesPairList = forwardRef<
       .filter((s) => !favoritesOnly || favorites.has(s))
       .map((s) => {
         const tk = tickers[s];
+        const price = tk ? parseFloat(tk.lastPrice) : NaN;
+        const volume = tk ? parseFloat(tk.quoteVolume24h) : NaN;
         return {
           symbol: s,
-          lastPrice: tk ? parseFloat(tk.lastPrice) || 0 : 0,
-          change: tk ? Number(parseChangePercent(tk.changePercent24h, s).toFixed(2)) : 0,
-          quoteVolume24h: tk ? parseFloat(tk.quoteVolume24h) || 0 : 0,
+          lastPrice: Number.isFinite(price) ? price : null,
+          change: tk ? Number(parseChangePercent(tk.changePercent24h, s).toFixed(2)) : null,
+          quoteVolume24h: Number.isFinite(volume) ? volume : null,
         };
       });
+
+    // Nulls last in BOTH directions. An unpriced market is not the
+    // cheapest market and not the biggest faller; it is absent, and
+    // absent belongs at the bottom whichever way the column is sorted.
+    const by = (a: number | null, b: number | null) => {
+      if (a === null && b === null) return 0;
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return (a - b) * sortDir;
+    };
     return built.sort((a, b) => {
       if (sortField === 'symbol') return a.symbol.localeCompare(b.symbol) * sortDir;
-      if (sortField === 'price') return (a.lastPrice - b.lastPrice) * sortDir;
-      if (sortField === 'change') return (a.change - b.change) * sortDir;
-      return (a.quoteVolume24h - b.quoteVolume24h) * sortDir;
+      if (sortField === 'price') return by(a.lastPrice, b.lastPrice);
+      if (sortField === 'change') return by(a.change, b.change);
+      return by(a.quoteVolume24h, b.quoteVolume24h);
     });
   }, [symbols, tickers, search, sortField, sortDir, favoritesOnly, favorites]);
+
+  const windowed = useWindowedRows(rows.length);
 
   return (
     <>
@@ -175,14 +194,21 @@ export const FuturesPairList = forwardRef<
         </button>
       </div>
 
-      <div className="pairs-list">
+      {/* Windowed: the market universe is data-driven now and routinely
+          runs to hundreds of contracts, so only the rows the panel can
+          actually show are in the DOM. Spacers preserve the real scroll
+          height, so the scrollbar and keyboard scrolling behave exactly as
+          they would with every row mounted. */}
+      <div className="pairs-list" ref={windowed.ref}>
         {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
-        {rows.map((r) => {
-          const up = r.change >= 0;
+        {windowed.padTop > 0 && <div style={{ height: windowed.padTop }} aria-hidden />}
+        {rows.slice(windowed.start, windowed.end).map((r) => {
+          const up = (r.change ?? 0) >= 0;
           const base = r.symbol.split('/')[0];
           return (
             <button
               key={r.symbol}
+              data-row
               className={`pair-row ${r.symbol === symbol ? 'active' : ''}`}
               onClick={() => onChange(r.symbol)}
             >
@@ -200,13 +226,14 @@ export const FuturesPairList = forwardRef<
                   <b className="p-base">{r.symbol.split('/')[0]}</b>
                   <span className="p-quote">/{r.symbol.split('/')[1]}</span>
                 </span>
-              <span className="p-price">{tickers[r.symbol] ? formatPrice(r.lastPrice) : '—'}</span>
+              <span className="p-price">{r.lastPrice !== null ? formatPrice(r.lastPrice) : '—'}</span>
               <span className={`p-change ${up ? 'up' : 'down'}`}>
-                {tickers[r.symbol] ? `${up ? '▲' : '▼'} ${up ? '+' : ''}${r.change.toFixed(2)}%` : '—'}
+                {r.change !== null ? `${up ? '▲' : '▼'} ${up ? '+' : ''}${r.change.toFixed(2)}%` : '—'}
               </span>
             </button>
           );
         })}
+        {windowed.padBottom > 0 && <div style={{ height: windowed.padBottom }} aria-hidden />}
       </div>
     </>
   );
