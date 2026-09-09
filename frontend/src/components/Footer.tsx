@@ -8,8 +8,8 @@ import { Logo } from './Logo';
  *
  * The social row is deliberately non-interactive: VOLTEX has no real
  * Twitter/Telegram/Discord accounts to link to, and a footer full of
- * fake social URLs would be worse than none — same "coming soon" honesty
- * as the AI-bots teaser elsewhere in the app (see BotsComingSoon). */
+ * fake social URLs would be worse than none: the row states "coming soon"
+ * rather than linking somewhere that does not exist. */
 export function Footer() {
   const { t } = useLanguage();
 
