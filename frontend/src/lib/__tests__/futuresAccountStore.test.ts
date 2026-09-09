@@ -203,6 +203,44 @@ describe('one timer and one request per resource', () => {
     expect(getFuturesPositionHistory).not.toHaveBeenCalled();
     off();
   });
+
+  test('a subscription with NO wants creates no timer and fetches nothing', async () => {
+    // This is how the history tab subscribes. An absent key means "never
+    // poll this"; a cadence of any value — 60_000 included — would create
+    // a timer, which is exactly the bug this asserts against.
+    const off = futuresAccountStore.subscribe(() => {}, {});
+    await flush();
+
+    expect(futuresAccountStore._timerCount).toBe(0);
+    expect(futuresAccountStore._intervalOf('positionHistory')).toBeNull();
+    expect(getFuturesPositionHistory).not.toHaveBeenCalled();
+
+    jest.advanceTimersByTime(120_000);
+    await flush();
+    expect(futuresAccountStore._timerCount).toBe(0);
+    expect(getFuturesPositionHistory).not.toHaveBeenCalled();
+    off();
+  });
+
+  test('history still loads on demand for a subscriber that polls nothing', async () => {
+    const seen: FuturesAccountState[] = [];
+    const off = futuresAccountStore.subscribe((state) => seen.push(state), {});
+    await flush();
+
+    futuresAccountStore.invalidate(['positionHistory']);
+    await flush();
+
+    // One fetch, delivered to a subscriber that never asked for a cadence,
+    // and still no timer anywhere.
+    expect(getFuturesPositionHistory).toHaveBeenCalledTimes(1);
+    expect(seen[seen.length - 1].positionHistory.data).toEqual([]);
+    expect(futuresAccountStore._timerCount).toBe(0);
+
+    jest.advanceTimersByTime(120_000);
+    await flush();
+    expect(getFuturesPositionHistory).toHaveBeenCalledTimes(1);
+    off();
+  });
 });
 
 // ── 2. Event-driven refresh ──────────────────────────────────────────

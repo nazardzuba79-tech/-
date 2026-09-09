@@ -56,7 +56,23 @@ test.each([
     // The ORDER PAYLOAD, leverage tiers, exposure projection and every
     // margin calculation are untouched, which futuresFinalPolish's 24
     // behavioural tests assert directly and still pass unmodified.
-    "6b652eb3dd00a299f4bbe93695fdc5ded7fe5f91538d3b4e494b08185b6ca138"
+    //
+    // Re-taken again for the review follow-up on the same PR. One further
+    // difference: `positions` and `activeOrders` are no longer coerced from
+    // `null` to `[]` before they reach projectFuturesExposureNotional.
+    // Unknown is not empty, and in THIS direction the coercion was
+    // optimistic — an account whose existing position had not been fetched
+    // projected as if it held none, which yields the highest leverage tier.
+    // `effectiveMaxLeverage` is now null while those inputs are genuinely
+    // needed and unknown, which suspends the leverage slider and the submit
+    // guard until the account state is known.
+    //
+    // The projection is needed only when `!reduceOnly && notional > 0`:
+    // reduce-only and zero-notional short-circuit to a REAL 0 before either
+    // resource is read, so the initial paint and risk-reducing orders are
+    // unaffected. projectFuturesExposureNotional itself, getLeverageTier,
+    // the tier table and the order payload are byte-unchanged.
+    "592b3244922baa48c15c2a401bed5ae5ae6e485cdc056b3dc19a1d5d7a14145a"
   ],
   [
     "components/FuturesAccountSummary.tsx",

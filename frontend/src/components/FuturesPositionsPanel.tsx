@@ -30,11 +30,24 @@ export function FuturesPositionsPanel({
   // Open positions keep the 4s cadence this panel always polled at — it is
   // the fastest any component asks for, and the shared store honours the
   // fastest request, so nothing here refreshes more slowly than before.
-  // History is deliberately NOT polled: it only changes when a position
-  // closes, and this panel already refreshes it on that event.
-  const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : { positionHistory: 60_000 });
-  const positions = account.positions.data ?? [];
-  const history = account.positionHistory.data ?? [];
+  //
+  // History asks for NO cadence at all, which is what an absent key means
+  // to the store: no timer is ever created for it. It changes only when a
+  // position closes, so it is loaded when its tab becomes active and
+  // refreshed explicitly on the events that can change it.
+  const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : {});
+
+  /** `null` = not known yet, or the request failed. It is deliberately NOT
+   *  coerced to `[]`: an empty array is the server saying "you have none",
+   *  and rendering "no open positions" over a failed request would be a
+   *  claim about the account that nobody made. */
+  const positions = account.positions.data;
+  const history = account.positionHistory.data;
+
+  // The one history load, on tab activation.
+  useEffect(() => {
+    if (tab === 'history') refreshFuturesAccount(['positionHistory']);
+  }, [tab]);
 
   // `refreshKey` still means "the page says the account changed" — it now
   // asks the shared store rather than issuing this panel's own request.
@@ -82,7 +95,13 @@ export function FuturesPositionsPanel({
       {error && <div style={styles.error}>{error}</div>}
 
       {tab === 'open' ? (
-        positions.length === 0 ? (
+        positions === null ? (
+          // Unknown, not empty. Same distinction CfdPositionsPanel already
+          // makes, with the same two existing strings.
+          <div style={styles.empty}>
+            {account.positions.failed ? t('futures.loadPositionsError') : t('trade.loading')}
+          </div>
+        ) : positions.length === 0 ? (
           <div style={styles.empty}>{t('futures.noPositions')}</div>
         ) : (
           <div style={styles.tableWrap}>
@@ -137,6 +156,10 @@ export function FuturesPositionsPanel({
             </table>
           </div>
         )
+      ) : history === null ? (
+        <div style={styles.empty}>
+          {account.positionHistory.failed ? t('futures.loadPositionsError') : t('trade.loading')}
+        </div>
       ) : history.length === 0 ? (
         <div style={styles.empty}>{t('futures.noPositionHistory')}</div>
       ) : (

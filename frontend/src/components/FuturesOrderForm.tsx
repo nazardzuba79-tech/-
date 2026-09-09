@@ -57,8 +57,12 @@ export function FuturesOrderForm({
    *  fake zero here would silently size every percentage order at nothing
    *  while looking like a funded account with no free margin. */
   const availableMargin = account.balances.data ? (balanceRow ? parseFloat(balanceRow.available) : 0) : null;
-  const positions = account.positions.data ?? [];
-  const activeOrders = account.orders.data ?? [];
+  /** UNKNOWN is not EMPTY. These stay `null` until the server actually
+   *  answered — coercing them to `[]` would tell the exposure projection
+   *  that the account holds no position and no working order, which is a
+   *  strictly optimistic guess, not a safe default. */
+  const positions = account.positions.data;
+  const activeOrders = account.orders.data;
 
   useEffect(() => {
     api.getFuturesConfig().then(setConfig).catch(() => {});
@@ -89,10 +93,22 @@ export function FuturesOrderForm({
   // informational here: nothing about submitting the order depends on
   // this number, it just shows the trader what to expect before they commit.
   const orderTier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
-  const currentPosition = positions.find(
+
+  // The projection reads the account's existing position and working orders
+  // ONLY on this path: a reduce-only order and a zero-notional order both
+  // short-circuit to 0 before either is touched, so they need no account
+  // state at all. That matters — reduce-only is how a trader sheds risk,
+  // and an outage is the worst possible moment to block it.
+  const exposureNeedsAccountState = !reduceOnly && notional > 0;
+  const exposureInputsKnown = positions !== null && activeOrders !== null;
+  /** False only when the projection genuinely needs positions/orders and
+   *  one of them has not been answered yet. */
+  const exposureKnown = !exposureNeedsAccountState || exposureInputsKnown;
+
+  const currentPosition = positions?.find(
     (position) => position.symbol === symbol && position.marginType === marginType
   );
-  const pendingExposureOrders = activeOrders
+  const pendingExposureOrders = (activeOrders ?? [])
     .filter((order) =>
       order.symbol === symbol
       && order.marginType === marginType
@@ -105,24 +121,35 @@ export function FuturesOrderForm({
       price: Number(order.price),
     }))
     .filter((order) => Number.isFinite(order.remainingQuantity) && Number.isFinite(order.price));
-  const projectedExposure = reduceOnly || notional <= 0
+
+  /** `null` = cannot be projected because the account state is unknown.
+   *  `0` is a REAL zero: a reduce-only order, nothing typed yet, or an
+   *  account that genuinely answered with no position and no orders. */
+  const projectedExposure: number | null = !exposureNeedsAccountState
     ? 0
-    : projectFuturesExposureNotional({
-        position: currentPosition
-          ? {
-              side: currentPosition.side,
-              size: Number(currentPosition.size),
-              entryPrice: Number(currentPosition.entryPrice),
-            }
-          : null,
-        activeOrders: pendingExposureOrders,
-        candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
-      });
-  const resultingTier = config && projectedExposure > 0
+    : exposureInputsKnown
+      ? projectFuturesExposureNotional({
+          position: currentPosition
+            ? {
+                side: currentPosition.side,
+                size: Number(currentPosition.size),
+                entryPrice: Number(currentPosition.entryPrice),
+              }
+            : null,
+          activeOrders: pendingExposureOrders,
+          candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
+        })
+      : null;
+  const resultingTier = config && projectedExposure !== null && projectedExposure > 0
     ? getLeverageTier(config.leverageTiers, projectedExposure)
     : null;
   // Informational only: the backend recomputes this projection transactionally.
-  const effectiveMaxLeverage = config
+  // But an unknown existing exposure must not be shown as a ceiling: it
+  // would quote a maximum leverage derived from an account the client has
+  // not actually seen, and the ceiling can only ever be too HIGH that way.
+  // Null suspends the slider and the submit guard until the state is known,
+  // which is what the backend would enforce anyway.
+  const effectiveMaxLeverage = config && exposureKnown
     ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
     : null;
   useEffect(() => {

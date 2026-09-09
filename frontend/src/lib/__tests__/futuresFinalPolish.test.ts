@@ -236,6 +236,15 @@ async function leverageForm() {
   const form = mount('components/FuturesOrderForm.tsx', { confirm, api: {
     getFuturesConfig: () => Promise.resolve(tierConfig), getMe,
     getFuturesBalances: () => Promise.resolve([{ asset: 'USDT', available: '1000000', locked: '0' }]),
+    // A REAL empty account, answered by the server. These two were
+    // previously left unstubbed (and so never resolved) because the form
+    // coerced an unanswered request to an empty array — which is the
+    // review finding this fixture now avoids relying on. The assertions
+    // below are unchanged: an account that genuinely holds no position and
+    // no working order projects exactly the candidate's own notional, the
+    // same number the coercion used to produce.
+    getFuturesPositions: () => Promise.resolve([]),
+    getMyFuturesOrders: () => Promise.resolve([]),
     getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }), placeFuturesOrder: placed,
   } });
   form.render(props); await tick();
