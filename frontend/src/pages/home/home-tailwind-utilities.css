@@ -1,0 +1,40 @@
+/* The Tailwind utilities the homepage USES, and must therefore OWN.
+ *
+ * HomePage.tsx and its sections are written in Tailwind utilities — flex,
+ * flex-col, gap-5, pb-7, grid, md:grid-cols-*, text-home-muted — and
+ * tailwind.config.js has always scanned `./src/pages/home/**`, so those
+ * utilities were generated. What was missing is where they are EMITTED:
+ * Tailwind writes the generated layer into whichever stylesheet carries
+ * this directive, and only Settings (`settings-arctic/
+ * tailwind-utilities.css`) and Crypto Card (`crypto-card-final/
+ * crypto-card.css`) carried one.
+ *
+ * While the app shipped one monolithic stylesheet that was invisible: the
+ * homepage was silently borrowing utilities emitted for other routes.
+ * Route code splitting moved those two files into lazy chunks that `/`
+ * never loads, and the borrowed styles went with them. The homepage has no
+ * route CSS chunk of its own — it is the eager landing route — so it was
+ * left with `.vx-home` chrome and no layout at all: `.flex-col` computed
+ * `display: block`, `.gap-5` computed `gap: normal`.
+ *
+ * This file makes the dependency explicit and local. The page that uses
+ * the utilities is the page that ships them, so `/` is fully styled on a
+ * cold first visit with no other route ever touched.
+ *
+ * WHY A SEPARATE FILE rather than a line appended to home.css: it mirrors
+ * `settings-arctic/tailwind-utilities.css`, which is the established
+ * precedent here, and it keeps home.css — the approved homepage design,
+ * fingerprinted by two preservation suites — byte-for-byte unchanged. A
+ * build-plumbing fix has no business perturbing the hash that exists to
+ * prove the design has not drifted.
+ *
+ * IMPORT ORDER MATTERS: HomePage.tsx imports this AFTER './home.css'. The
+ * `:where(.vx-home)` block in home.css is the homepage's zero-specificity
+ * stand-in for the preflight that is deliberately switched off, and the
+ * ordinary `.vx-home` rules there score 0,1,0 — the same as a utility — so
+ * the utilities layer has to come second to win those ties.
+ *
+ * `corePlugins.preflight` stays FALSE. This emits the utilities layer
+ * only, never a global element reset, so nothing leaks to Trade, Futures,
+ * Admin or any other surface. */
+@tailwind utilities;
