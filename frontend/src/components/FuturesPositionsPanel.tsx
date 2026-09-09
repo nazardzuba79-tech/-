@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 
 type Tab = 'open' | 'history';
 
@@ -23,42 +24,37 @@ export function FuturesPositionsPanel({
   const { t } = useLanguage();
   const [ownTab, setTab] = useState<Tab>('open');
   const tab: Tab = controlledTab ?? ownTab;
-  const [positions, setPositions] = useState<Awaited<ReturnType<typeof api.getFuturesPositions>>>([]);
-  const [history, setHistory] = useState<Awaited<ReturnType<typeof api.getFuturesPositionHistory>>>([]);
   const [closingId, setClosingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [localRefresh, setLocalRefresh] = useState(0);
+
+  // Open positions keep the 4s cadence this panel always polled at — it is
+  // the fastest any component asks for, and the shared store honours the
+  // fastest request, so nothing here refreshes more slowly than before.
+  // History is deliberately NOT polled: it only changes when a position
+  // closes, and this panel already refreshes it on that event.
+  const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : { positionHistory: 60_000 });
+  const positions = account.positions.data ?? [];
+  const history = account.positionHistory.data ?? [];
+
+  // `refreshKey` still means "the page says the account changed" — it now
+  // asks the shared store rather than issuing this panel's own request.
+  useEffect(() => {
+    if (refreshKey > 0) refreshFuturesAccount(tab === 'open' ? ['positions'] : ['positionHistory']);
+  }, [refreshKey, tab]);
 
   useEffect(() => {
-    let cancelled = false;
-    function load() {
-      if (tab === 'open') {
-        api
-          .getFuturesPositions()
-          .then((res) => {
-            if (cancelled) return;
-            setPositions(res);
-            onCount?.(res.length);
-          })
-          .catch(() => {});
-      } else {
-        api.getFuturesPositionHistory().then((res) => !cancelled && setHistory(res)).catch(() => {});
-      }
-    }
-    load();
-    const interval = tab === 'open' ? setInterval(load, 4000) : null;
-    return () => {
-      cancelled = true;
-      if (interval) clearInterval(interval);
-    };
-  }, [tab, refreshKey, localRefresh, onCount]);
+    if (account.positions.data) onCount?.(account.positions.data.length);
+  }, [account.positions.data, onCount]);
 
   async function handleClose(positionId: string) {
     setError(null);
     setClosingId(positionId);
     try {
       await api.closeFuturesPosition(positionId);
-      setLocalRefresh((k) => k + 1);
+      // A close changes the open list, the history AND the margin the
+      // position was holding, so all three are refreshed at once instead of
+      // only this panel's own list.
+      refreshFuturesAccount(['positions', 'positionHistory', 'balances']);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('futures.closePositionError'));
     } finally {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRightIcon, ArrowUpDownIcon } from 'lucide-react';
 import { api, ApiError } from '../../lib/api';
+import { refreshFuturesAccount } from '../../lib/useFuturesAccount';
 import { useLanguage } from '../../lib/i18n';
 import { FieldError, FieldLabel, Modal, PrimaryButton, SecondaryButton, Select, SummaryRow, TextInput } from './ui';
 import { decimalsFor, formatAmount } from './format';
@@ -68,6 +69,9 @@ export function TransferModal({ open, onClose, onSubmitted }: { open: boolean; o
       setDone(true);
       setAmount('');
       load();
+      // Keeps the shared futures account store honest when a transfer is
+      // made from the Wallet page rather than the terminal.
+      refreshFuturesAccount(['balances']);
       onSubmitted();
     } catch (err) {
       setServerError(err instanceof ApiError ? err.message : t('futures.transferError'));

@@ -36,11 +36,45 @@ test.each([
     "components/FuturesOrderForm.tsx",
     // The ceiling now mirrors resulting position + active-order exposure;
     // backend FuturesPositionService remains authoritative.
-    "7f76f8eb7bd189ece3aa433dbf7497c5d3845955c7be0838a1993cc2cc24ca33"
+    //
+    // Re-taken for the shared Futures account store. What differs, exactly:
+    //   * the three `setInterval`s that fetched balances, positions and
+    //     open orders are replaced by ONE `useFuturesAccount` subscription
+    //     at the SAME 5s cadence. Same endpoints, same arguments.
+    //   * `availableMargin` is `number | null` instead of `number`. It was
+    //     initialised to 0 and left at 0 when the balances request failed —
+    //     a fake zero on the most financially sensitive figure in the form.
+    //     `null` now means "not known" and renders as a dash.
+    //   * `applyPercent` returns early on an unknown balance instead of
+    //     sizing from that fake 0. The formula is byte-identical.
+    //   * the liquidation PREVIEW is suppressed when the balance is unknown
+    //     AND the margin type is CROSS — the only case where `freeBalance`
+    //     enters previewLiquidationPrice at all (ISOLATED ignores it). Same
+    //     formula, same inputs whenever the balance is known.
+    //   * a `refreshFuturesAccount` call after a successful placement, so
+    //     the locked margin updates immediately rather than up to 5s later.
+    // The ORDER PAYLOAD, leverage tiers, exposure projection and every
+    // margin calculation are untouched, which futuresFinalPolish's 24
+    // behavioural tests assert directly and still pass unmodified.
+    "6b652eb3dd00a299f4bbe93695fdc5ded7fe5f91538d3b4e494b08185b6ca138"
   ],
   [
     "components/FuturesAccountSummary.tsx",
-    "2f43b406127e674d5df05e3a365a410e15be1d0a86057b89e48aa2dacd8c249e"
+    // Re-taken for the shared Futures account store. What differs, exactly:
+    //   * its own 5s `setInterval` over /futures/balances + /futures/positions
+    //     is replaced by ONE `useFuturesAccount` subscription at the SAME
+    //     5s cadence, shared with the order form above it — so the two can
+    //     no longer show different snapshots of the same account.
+    //   * every displayed figure is `number | null`. Margin balance,
+    //     available margin, unrealised PnL and both margin percentages used
+    //     to render 0.00 / 0.00% when their request failed, which is the
+    //     fake zero VOLTEX forbids and was reproduced in browser QA against
+    //     a 503. They render a dash now.
+    // The margin, PnL and maintenance-margin arithmetic is unchanged: same
+    // reduce over the same fields, same getLeverageTier lookup, same
+    // maintenanceMarginRate. A real 0 (a funded account with no position)
+    // is still 0, not a dash.
+    "1dbf44621981375573b8223032b5791c5e8fbe3dae0f05ce0ed6af5bde712389"
   ],
   [
     "components/LeverageSlider.tsx",

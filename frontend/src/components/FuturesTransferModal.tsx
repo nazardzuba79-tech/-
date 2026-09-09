@@ -1,6 +1,7 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { refreshFuturesAccount } from '../lib/useFuturesAccount';
 
 /** Moves funds between the spot and futures wallets — the futures wallet
  * is a fully separate balance (see FuturesBalance's schema comment), so
@@ -38,6 +39,12 @@ export function FuturesTransferModal({ onClose }: { onClose: () => void }) {
       setAmount('');
       setDone(true);
       loadBalances();
+      // A transfer changes the futures wallet the whole terminal behind
+      // this modal is showing. It used to refresh only this modal's own two
+      // figures, leaving the order form's available margin and the margin
+      // summary stale until their next poll — up to five seconds of a
+      // trader seeing the old balance right after moving funds.
+      refreshFuturesAccount(['balances']);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('futures.transferError'));
     } finally {

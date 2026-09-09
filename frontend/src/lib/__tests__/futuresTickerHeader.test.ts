@@ -55,7 +55,7 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', '27945eabf912f30d3e916f12e030787bb080de5a1dd3f866dbc78f00bbdc4048'],
+  ['frontend/src/lib/api.ts', 'd91e0bf4c4d9a5f767b1b618ae924584368443dff97dcc16afb6fd50c4e737ee'],
   ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
@@ -91,6 +91,21 @@ test.each([
   // endpoint keeps its client, its route (still at the original
   // fingerprint below) and its Analytics consumer; only the HEADER
   // stopped using it for the MARKET figure.
+  //
+  // Re-taken again for the Futures account store (+35/-0). Purely
+  // ADDITIVE apart from two lines: `setToken` and `clearToken` each gained
+  // a `notifySessionChange()` call. The rest is the new `onSessionChange`
+  // subscription used by lib/futuresAccountStore to drop authenticated
+  // account state when the session changes — module-level caches outlive
+  // the components that read them, because a logout here is a route change
+  // rather than a reload.
+  //
+  // NOTHING about a request changed: not `request()`, not a URL, not a
+  // header, not the Authorization token, not `handleUnauthorized`. Every
+  // futures method this suite protects — getFuturesMarkPrice,
+  // getFuturesOpenInterest, getFuturesFundingRate — and every spot method
+  // is byte-unchanged, and src/api/routes/futures.ts below is still at its
+  // original fingerprint.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });
