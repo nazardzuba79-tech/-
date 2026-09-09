@@ -43,6 +43,37 @@
 .futures-terminal .leverage-control input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: #354351; }
 .futures-terminal .leverage-control input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent-yellow); }
 .futures-terminal .leverage-control input[type="range"]:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 4px; border-radius: 4px; }
+/* Compact margin-mode + leverage control. Replaces a full-width segmented
+   toggle stacked on a leverage slider, so the panel keeps exactly ONE
+   persistent slider (position size). Same terminal surfaces, densities and
+   accent as the controls around it — no gradients, no glow, no cards. */
+.futures-terminal .fo-mlWrap { position: relative; min-width: 0; }
+.futures-terminal .fo-mlTrigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-mlTrigger:disabled { color: #6b7684; cursor: not-allowed; }
+.futures-terminal .fo-mlTrigger[aria-expanded="true"] { border-color: var(--accent-yellow); }
+.futures-terminal .fo-mlTriggerText { display: flex; align-items: baseline; gap: 7px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.futures-terminal .fo-mlTriggerSep { color: #6b7684; }
+.futures-terminal .fo-mlTriggerLev { color: var(--accent-yellow); font-size: 14px; font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-mlHigh { color: #ef5350; }
+.futures-terminal .fo-mlChevron { color: #a5b0bc; font-size: 11px; }
+/* Anchored to the trigger and clamped to the panel, so it can never push
+   the terminal into horizontal scroll at any width. */
+.futures-terminal .fo-mlPopover { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--panel); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
+.futures-terminal .fo-mlSection { display: flex; flex-direction: column; gap: 8px; }
+.futures-terminal .fo-mlSectionTitle { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #a5b0bc; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.futures-terminal .fo-mlRange { color: #6b7684; font-size: 11px; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-mlModeRow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.futures-terminal .fo-mlMode { padding: 8px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #aeb9c4; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-mlModeActive { background: var(--panel); border-color: var(--accent-yellow); color: var(--text-primary); }
+.futures-terminal .fo-mlStepper { display: grid; grid-template-columns: 36px 1fr 36px; gap: 6px; }
+.futures-terminal .fo-mlStep { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
+.futures-terminal .fo-mlStep:disabled { color: #55606d; cursor: not-allowed; }
+.futures-terminal .fo-mlValue { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; text-align: center; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; font-variant-numeric: tabular-nums; outline: none; }
+.futures-terminal .fo-mlValue:focus { border-color: var(--accent-yellow); }
+.futures-terminal .fo-mlChips { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+.futures-terminal .fo-mlChip { padding: 6px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #aeb9c4; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-mlChipActive { background: var(--accent-yellow); border-color: var(--accent-yellow); color: #14181d; }
+.futures-terminal .fo-mlWarn { color: #ef5350; font-size: 11px; line-height: 15px; }
 .futures-terminal .fo-label { display: flex; flex-direction: column; gap: 7px; color: #afbac5; font-size: 13px; }
 .futures-terminal .fo-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; line-height: 20px; font-variant-numeric: tabular-nums; outline: none; }
 .futures-terminal .fo-input:focus { border-color: var(--accent-yellow); }

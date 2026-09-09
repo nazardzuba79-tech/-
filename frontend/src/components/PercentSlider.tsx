@@ -1,19 +1,32 @@
 import { useRef } from 'react';
 
-const MARKS = [0, 25, 50, 75, 100];
+const DEFAULT_PRESETS = [0, 25, 50, 75, 100];
 
-/** Draggable percent-of-balance slider + snap-to preset buttons, shared by
- * the spot and futures order forms — same interaction in both, so it lives
- * once here instead of being reimplemented per form. */
-export function PercentSlider({ value, onChange }: { value: number; onChange: (pct: number) => void }) {
+/**
+ * Draggable percent-of-balance slider + snap-to preset buttons.
+ *
+ * `presets` names the buttons. The track always snaps to 0 as well, so the
+ * size can be dragged back to nothing even when 0 is not offered as a
+ * button. Omitting the prop reproduces the original behaviour exactly.
+ */
+export function PercentSlider({
+  value,
+  onChange,
+  presets = DEFAULT_PRESETS,
+}: {
+  value: number;
+  onChange: (pct: number) => void;
+  presets?: number[];
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const marks = Array.from(new Set([0, ...presets])).sort((a, b) => a - b);
 
   function setFromClientX(clientX: number) {
     const track = trackRef.current;
     if (!track) return;
     const rect = track.getBoundingClientRect();
     const pct = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-    const nearest = MARKS.reduce((acc, m) => (Math.abs(pct - m) < Math.abs(pct - acc) ? m : acc));
+    const nearest = marks.reduce((acc, m) => (Math.abs(pct - m) < Math.abs(pct - acc) ? m : acc));
     onChange(nearest);
   }
 
@@ -37,13 +50,13 @@ export function PercentSlider({ value, onChange }: { value: number; onChange: (p
       >
         <div style={styles.trackBg} />
         <div style={{ ...styles.trackFill, width: `${value}%` }} />
-        {MARKS.map((m) => (
+        {marks.map((m) => (
           <div key={m} style={{ ...styles.tick, left: `${m}%` }} />
         ))}
         <div style={{ ...styles.thumb, left: `${value}%` }} />
       </div>
       <div style={styles.percentRow}>
-        {MARKS.map((pct) => (
+        {presets.map((pct) => (
           <button
             key={pct}
             type="button"
@@ -106,8 +119,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   percentRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: 8,
+    gridAutoFlow: 'column',
+    gridAutoColumns: '1fr',
+    gap: 6,
   },
   percentBtn: {
     background: 'var(--panel-alt)',

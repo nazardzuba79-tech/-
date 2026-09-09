@@ -72,7 +72,39 @@ test.each([
     // resource is read, so the initial paint and risk-reducing orders are
     // unaffected. projectFuturesExposureNotional itself, getLeverageTier,
     // the tier table and the order payload are byte-unchanged.
-    "592b3244922baa48c15c2a401bed5ae5ae6e485cdc056b3dc19a1d5d7a14145a"
+    //
+    // Re-taken for the professional order-panel redesign — the one change
+    // in this file's history that is deliberately a UX change. What differs:
+    //   * MarginTypeToggle and LeverageSlider are replaced by ONE compact
+    //     FuturesMarginLeverage popover, so the panel keeps exactly one
+    //     persistent slider and that slider is position size. The bounds it
+    //     receives are the SAME values: config.minLeverage, the live
+    //     effectiveMaxLeverage, config.highLeverageWarningThreshold.
+    //   * the position-size slider now takes explicit 10/25/50/75/100
+    //     presets; the sizing formula is byte-identical.
+    //   * the fee row renders a dash. VOLTEX has no futures fee source —
+    //     none in src/futures, none in futuresConfig, no fee column in the
+    //     Prisma schema — so the figure it used to print was not a real
+    //     zero, it was a number nobody computed.
+    //   * Order Value and Required Margin render a dash when the price or
+    //     quantity is unknown instead of printing 0.00. Both formulas are
+    //     unchanged; only the rendering of an unknown changed.
+    // The ORDER PAYLOAD, leverage tiers, exposure projection, liquidation
+    // preview and every margin calculation are untouched — futuresFinalPolish's
+    // 24 behavioural tests assert them directly and still pass with every
+    // asserted value unchanged.
+    //
+    // Re-taken once more within the same PR, for one UX consistency fix:
+    // the guard `handleSubmit` already had is extracted into a single
+    // `canSubmit` boolean that the submit button's `disabled` now reads
+    // too. The CONDITIONS are unchanged — config present, a known
+    // effectiveMaxLeverage, leverage within it, not already submitting —
+    // and nothing was added: no balance, order or exposure requirement.
+    // The high-leverage confirmation deliberately stays inside
+    // handleSubmit (a prompt, not a precondition), and a reduce-only order
+    // keeps a non-null ceiling with unknown exposure, so risk-reducing
+    // orders remain submittable during an outage.
+    "2567f9ac2942e135baf23c5804de6dba388b8530a09a26bb2f3ea960c1da4671"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -165,6 +197,13 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  expect(source).not.toContain('styles.');
  expect(source).toContain("aria-pressed={side === 'BUY'}");
  expect(source).toContain("aria-pressed={type === 'MARKET'}");
- expect(source).toContain('disabled={submitting}');
+ // The submit button now reflects the SAME condition handleSubmit uses,
+ // not just the in-flight flag: a CTA that looks pressable while the guard
+ // would refuse is misleading in a trading interface. `submitting` is still
+ // one of the conditions, so "disabled while sending" stays pinned, and the
+ // button and the guard are pinned to ONE expression rather than two copies.
+ expect(source).toContain('disabled={!canSubmit}');
+ expect(source).toContain('if (!canSubmit) return;');
+ expect(source).toMatch(/const canSubmit = [\s\S]*?&& !submitting;/);
 });
 });
