@@ -51,6 +51,16 @@ const BINANCE_PREMIUM = {
 const BINANCE_RATIO = [
   { symbol: 'BTCUSDT', longAccount: '0.6442', shortAccount: '0.3558', longShortRatio: '1.8101', timestamp: '1700000000000' },
 ];
+/** Binance's real quote-currency turnover field. */
+const BINANCE_TICKER = { symbol: 'BTCUSDT', lastPrice: '50100.00', volume: '120000.5', quoteVolume: '6012030000.00' };
+/**
+ * OKX's swap ticker. `volCcy24h` is the BASE amount for a derivatives
+ * instrument and `vol24h` is a CONTRACT count — neither is a turnover, and
+ * the fixture carries deliberately small values so a test that wrongly
+ * used one would produce an obviously absurd total.
+ */
+const OKX_TICKER = { code: '0', msg: '', data: [{ instId: 'BTC-USDT-SWAP', last: '50080', vol24h: '9876543', volCcy24h: '11788.887619' }] };
+
 const OKX_OI = { code: '0', msg: '', data: [{ instId: 'BTC-USDT-SWAP', oi: '250000', oiCcy: '2500.5', oiUsd: '125000000', ts: '1700000000000' }] };
 const OKX_FUNDING = {
   code: '0',
@@ -65,6 +75,7 @@ function binanceRoutes() {
     { match: /openInterest\?/, reply: () => res(BINANCE_OI) },
     { match: /premiumIndex/, reply: () => res(BINANCE_PREMIUM) },
     { match: /LongShort/, reply: () => res(BINANCE_RATIO) },
+    { match: /ticker\/24hr/, reply: () => res(BINANCE_TICKER) },
   ];
 }
 function okxRoutes() {
@@ -73,6 +84,7 @@ function okxRoutes() {
     { match: /public\/funding-rate/, reply: () => res(OKX_FUNDING) },
     { match: /public\/mark-price/, reply: () => res(OKX_MARK) },
     { match: /market\/index-tickers/, reply: () => res(OKX_INDEX) },
+    { match: /market\/ticker\?/, reply: () => res(OKX_TICKER) },
   ];
 }
 
@@ -509,5 +521,218 @@ describe('tracked assets', () => {
       expect(binanceContractFor(asset)).not.toBeNull();
       expect(okxContractFor(asset)).not.toBeNull();
     }
+  });
+});
+
+// ── 24h turnover ────────────────────────────────────────────────────
+
+describe('24h turnover', () => {
+  function svc(opts: { binanceFails?: boolean; okxFails?: boolean; okxTicker?: unknown; binanceTicker?: unknown } = {}) {
+    const b = router(
+      opts.binanceFails
+        ? [{ match: /./, reply: () => res({}, { status: 500 }) }]
+        : [
+            { match: /ticker\/24hr/, reply: () => res('binanceTicker' in opts ? opts.binanceTicker : BINANCE_TICKER) },
+            ...binanceRoutes(),
+          ]
+    );
+    const o = router(
+      opts.okxFails
+        ? [{ match: /./, reply: () => res({}, { status: 500 }) }]
+        : [{ match: /market\/ticker\?/, reply: () => res('okxTicker' in opts ? opts.okxTicker : OKX_TICKER) }, ...okxRoutes()]
+    );
+    return {
+      service: new ExternalDerivativesService(
+        new BinanceDerivativesService('https://fapi.test', { fetchFn: b.fetchFn, policy: NO_RETRY }),
+        new OkxDerivativesService('https://okx.test', { fetchFn: o.fetchFn, policy: NO_RETRY })
+      ),
+      b,
+      o,
+    };
+  }
+
+  it("uses Binance's own quote-currency field verbatim, not price x base volume", async () => {
+    const { service, b } = svc();
+    const section = await service.getTrackedTurnover24h('BTC');
+    if (!section.available) throw new Error('expected available');
+
+    // Exactly `quoteVolume`. The approximation lastPrice x volume would be
+    // 50100 * 120000.5 = 6,012,025,050 — close, and wrong.
+    expect(section.value.totalTurnoverUsd).toBe(6_012_030_000);
+    expect(section.value.totalTurnoverUsd).not.toBe(50100 * 120000.5);
+    expect(b.calls.some((u) => u.includes('/fapi/v1/ticker/24hr?symbol=BTCUSDT'))).toBe(true);
+  });
+
+  it('reports NO turnover for OKX rather than misreading a base amount as a turnover', async () => {
+    const { service } = svc();
+    const section = await service.getTrackedTurnover24h('BTC');
+    if (!section.available) throw new Error('expected available');
+
+    // OKX answered, but its swap ticker publishes no quote-currency
+    // turnover: volCcy24h is a BASE amount and vol24h is a contract count.
+    // Neither may appear in the total, and OKX must not be credited.
+    expect(section.value.venues.map((v) => v.venue)).toEqual(['binance']);
+    expect(section.value.totalTurnoverUsd).toBe(6_012_030_000);
+    expect(section.value.totalTurnoverUsd).not.toBe(6_012_030_000 + 11_788.887619);
+    expect(section.value.totalTurnoverUsd).not.toBe(6_012_030_000 + 9_876_543);
+  });
+
+  it('picks up a genuine OKX quote field if the venue ever publishes one', async () => {
+    const { service } = svc({
+      okxTicker: { code: '0', data: [{ instId: 'BTC-USDT-SWAP', volCcy24h: '11788.88', volCcyQuote24h: '3000000000' }] },
+    });
+    const section = await service.getTrackedTurnover24h('BTC');
+    if (!section.available) throw new Error('expected available');
+    expect(section.value.venues.map((v) => v.venue).sort()).toEqual(['binance', 'okx']);
+    expect(section.value.totalTurnoverUsd).toBe(6_012_030_000 + 3_000_000_000);
+  });
+
+  it('falls back to the single available venue when the other is down', async () => {
+    const { service } = svc({ okxFails: true });
+    const section = await service.getTrackedTurnover24h('BTC');
+    if (!section.available) throw new Error('expected available');
+    expect(section.value.venues.map((v) => v.venue)).toEqual(['binance']);
+    expect(section.value.totalTurnoverUsd).toBe(6_012_030_000);
+  });
+
+  it('is unavailable — never zero — when every venue is down', async () => {
+    const { service } = svc({ binanceFails: true, okxFails: true });
+    const section = await service.getTrackedTurnover24h('BTC');
+    expect(section.available).toBe(false);
+    expect(section).toMatchObject({ reason: 'provider_unavailable' });
+    expect(section).not.toHaveProperty('value');
+  });
+
+  it('is unavailable when every venue answers but none publishes a comparable figure', async () => {
+    const { service } = svc({ binanceFails: true });
+    const section = await service.getTrackedTurnover24h('BTC');
+    // Binance down, OKX up but reporting no quote turnover. That is "no
+    // data", which is a different fact from "providers unavailable", and
+    // it is emphatically not zero.
+    expect(section.available).toBe(false);
+    expect(section).toMatchObject({ reason: 'no_data' });
+    expect(section).not.toHaveProperty('value');
+  });
+
+  it('keeps a REAL zero turnover as zero', async () => {
+    const { service } = svc({ binanceTicker: { ...BINANCE_TICKER, quoteVolume: '0' } });
+    const section = await service.getTrackedTurnover24h('BTC');
+    if (!section.available) throw new Error('expected available');
+    expect(section.value.totalTurnoverUsd).toBe(0);
+    expect(section.value.venues[0].turnover24hUsd).toBe(0);
+  });
+
+  it('treats an unparseable turnover as unreported, not as zero', async () => {
+    const { service } = svc({ binanceTicker: { ...BINANCE_TICKER, quoteVolume: 'n/a' } });
+    const section = await service.getTrackedTurnover24h('BTC');
+    expect(section.available).toBe(false);
+    expect(section).toMatchObject({ reason: 'no_data' });
+  });
+
+  it('survives a malformed 24h ticker body', async () => {
+    for (const body of [null, 'oops', { code: '51001', data: [] }]) {
+      const { service } = svc({ binanceTicker: body, okxTicker: body });
+      const section = await service.getTrackedTurnover24h('BTC');
+      expect(section.available).toBe(false);
+      expect(section).not.toHaveProperty('value');
+    }
+  });
+});
+
+// ── The combined read the Futures header makes ──────────────────────
+
+describe('futures market stats', () => {
+  function svc(opts: { binanceFails?: boolean; okxFails?: boolean } = {}) {
+    const b = router(
+      opts.binanceFails
+        ? [{ match: /./, reply: () => res({}, { status: 500 }) }]
+        : [{ match: /ticker\/24hr/, reply: () => res(BINANCE_TICKER) }, ...binanceRoutes()]
+    );
+    const o = router(
+      opts.okxFails
+        ? [{ match: /./, reply: () => res({}, { status: 500 }) }]
+        : [{ match: /market\/ticker\?/, reply: () => res(OKX_TICKER) }, ...okxRoutes()]
+    );
+    return {
+      service: new ExternalDerivativesService(
+        new BinanceDerivativesService('https://fapi.test', { fetchFn: b.fetchFn, policy: NO_RETRY }),
+        new OkxDerivativesService('https://okx.test', { fetchFn: o.fetchFn, policy: NO_RETRY })
+      ),
+      b,
+      o,
+    };
+  }
+
+  it('sums BASE-unit open interest only across venues that reported base units', async () => {
+    const { service } = svc();
+    const section = await service.getFuturesMarketStats('BTC');
+    if (!section.available) throw new Error('expected available');
+
+    // Binance openInterest (81234.567 BTC) + OKX oiCcy (2500.5 BTC). Both
+    // are base-currency quantities, so they are directly comparable — and
+    // no venue's price was applied to another venue's quantity.
+    expect(section.value.openInterestBase).toBeCloseTo(81234.567 + 2500.5, 6);
+    expect(section.value.openInterestBaseVenues.sort()).toEqual(['binance', 'okx']);
+    expect(section.value.baseAsset).toBe('BTC');
+  });
+
+  it('credits each metric to its OWN contributors, because they differ', async () => {
+    const { service } = svc();
+    const section = await service.getFuturesMarketStats('BTC');
+    if (!section.available) throw new Error('expected available');
+    // OKX contributes open interest but no turnover. A single combined
+    // venue list would misattribute one of the two figures.
+    expect(section.value.turnoverVenues).toEqual(['binance']);
+    expect(section.value.openInterestBaseVenues.sort()).toEqual(['binance', 'okx']);
+  });
+
+  it('drops a failed venue from every contributor list', async () => {
+    const { service } = svc({ okxFails: true });
+    const section = await service.getFuturesMarketStats('BTC');
+    if (!section.available) throw new Error('expected available');
+    expect(section.value.openInterestBaseVenues).toEqual(['binance']);
+    expect(section.value.turnoverVenues).toEqual(['binance']);
+    expect(section.value.openInterestBase).toBeCloseTo(81234.567, 6);
+  });
+
+  it('still reports open interest when only turnover is unavailable', async () => {
+    // Binance down: no turnover anywhere, but OKX still has open interest.
+    const { service } = svc({ binanceFails: true });
+    const section = await service.getFuturesMarketStats('BTC');
+    if (!section.available) throw new Error('expected available');
+    expect(section.value.turnover24hUsd).toBeNull();
+    expect(section.value.turnoverVenues).toEqual([]);
+    expect(section.value.openInterestBase).toBeCloseTo(2500.5, 6);
+    expect(section.value.openInterestBaseVenues).toEqual(['okx']);
+  });
+
+  it('is unavailable when both halves are, and carries no value fields', async () => {
+    const { service } = svc({ binanceFails: true, okxFails: true });
+    const section = await service.getFuturesMarketStats('BTC');
+    expect(section.available).toBe(false);
+    expect(section).not.toHaveProperty('value');
+  });
+
+  it('never mixes units: a USD total is summed only from USD reporters', async () => {
+    const { service } = svc();
+    const section = await service.getFuturesMarketStats('BTC');
+    if (!section.available) throw new Error('expected available');
+    // Binance's notional is priced at Binance's own mark; OKX supplies its
+    // own oiUsd. Neither borrowed the other's price.
+    expect(section.value.openInterestUsd).toBeCloseTo(81234.567 * 50100 + 125_000_000, 0);
+    expect(section.value.openInterestUsdVenues.sort()).toEqual(['binance', 'okx']);
+  });
+
+  it('collapses 100 header readers into a bounded provider request count', async () => {
+    const { service, b, o } = svc();
+    await Promise.all(Array.from({ length: 100 }, () => service.getFuturesMarketStats('BTC')));
+    // openInterest + premiumIndex + ticker/24hr on Binance; open-interest
+    // + ticker on OKX. Five requests for a hundred readers.
+    expect(b.calls.length + o.calls.length).toBe(5);
+
+    const after = b.calls.length + o.calls.length;
+    await Promise.all(Array.from({ length: 100 }, () => service.getFuturesMarketStats('BTC')));
+    // Second wave, cache still fresh: zero additional upstream requests.
+    expect(b.calls.length + o.calls.length).toBe(after);
   });
 });

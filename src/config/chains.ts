@@ -120,7 +120,8 @@ export function loadChainConfig(chain: string): ChainConfig {
   const type = CHAIN_TYPE_OVERRIDES[chain.toLowerCase()] ?? 'evm';
 
   const base = {
-    chain,
+    // One persisted namespace for the case-insensitive TRON route spelling.
+    chain: type === 'tron' ? 'tron' : chain,
     type,
     // Deliberately NOT requireEnv() here — the treasury address is exactly
     // the one thing TreasuryWalletService.applyOverride() lets an admin set

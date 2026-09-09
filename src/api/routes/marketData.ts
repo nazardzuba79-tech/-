@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { MarketDataGateway } from '../../services/marketData/MarketDataGateway';
+import type { ExternalDerivativesService } from '../../services/marketData/derivatives/ExternalDerivativesService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import type { PrismaClient } from '@prisma/client';
@@ -34,8 +35,42 @@ import type { AssetSortKey } from '../../services/marketData/AssetRegistry';
  * Reserving non-2xx for genuine server faults keeps a provider outage from
  * looking like a bug in VOLTEX.
  */
-export function marketDataRouter(prisma: PrismaClient, gateway: MarketDataGateway): Router {
+export function marketDataRouter(
+  prisma: PrismaClient,
+  gateway: MarketDataGateway,
+  /** External derivatives reference data. Optional so an environment
+   *  without the venues wired answers `provider_not_configured` rather
+   *  than failing to construct the router. */
+  externalDerivatives: ExternalDerivativesService | null = null
+): Router {
   const router = Router();
+
+  /**
+   * Tracked-venue derivatives statistics for ONE asset.
+   *
+   * Exists so the Futures header does not have to poll the whole
+   * Analytics snapshot for two numbers. It reads the same per-venue
+   * ProviderCaches every other consumer uses, so it adds no upstream
+   * request of its own: a hundred readers cost what one reader costs.
+   *
+   * Public market reference data, like the rest of this router — no auth,
+   * no VOLTEX account state, and nothing here can reach an order book.
+   */
+  router.get('/market/derivatives/:baseAsset', async (req, res) => {
+    if (!externalDerivatives) {
+      res.json({ available: false, reason: 'provider_not_configured', detail: 'No external derivatives venue is wired in this environment.' });
+      return;
+    }
+    // Bounded before it reaches an adapter; the adapters then refuse
+    // anything not in their explicit contract maps, so a client cannot
+    // steer a Binance/OKX request at an arbitrary symbol.
+    const baseAsset = String(req.params.baseAsset ?? '').slice(0, 12).toUpperCase();
+    try {
+      res.json(await externalDerivatives.getFuturesMarketStats(baseAsset));
+    } catch {
+      res.json({ available: false, reason: 'provider_unavailable', detail: 'Derivatives statistics could not be read.' });
+    }
+  });
 
   /**
    * The single shared snapshot: all spot tickers, market-wide overview and

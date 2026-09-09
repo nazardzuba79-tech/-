@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, CopyIcon, TriangleAlertIcon } from 'lucide-react';
-import { api } from '../../lib/api';
+import { useDepositOptions } from '../../lib/useDepositOptions';
 import { Key, useLanguage } from '../../lib/i18n';
 import { FieldLabel, Modal, SecondaryButton, Select } from './ui';
 import { formatAmount, formatUsd } from './format';
-
-const MIN_DEPOSIT_USD = 1000;
-const STABLECOINS = new Set(['USDT', 'USDC', 'DAI', 'TUSD']);
 
 /**
  * The approved V3 deposit design, on the real deposit backend.
@@ -27,64 +24,10 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
     ton: 'deposit.chain.ton',
   };
 
-  const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
-  const [chain, setChain] = useState<string | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
-  const [assets, setAssets] = useState<string[]>([]);
-  const [asset, setAsset] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { chains, chain, setChain, address, assets, asset, setAsset,
+    error: loadError, minDepositUsd, minEquivalent, stable } = useDepositOptions(open);
+  const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   const [copied, setCopied] = useState(false);
-  const [minEquivalent, setMinEquivalent] = useState<number | null>(null);
-
-  // Only chains this deployment actually has a treasury address for — which
-  // is what stops the modal offering a network it cannot verify a deposit on.
-  useEffect(() => {
-    if (!open) return;
-    api
-      .getDepositChains()
-      .then((res) => {
-        setChains(res);
-        if (res.length > 0) setChain((cur) => cur ?? res[0].chain);
-      })
-      .catch(() => setError(t('deposit.loadChainsError')));
-  }, [open, t]);
-
-  useEffect(() => {
-    if (!chain) return;
-    setAddress(null);
-    api
-      .getDepositAddress(chain)
-      .then((res) => {
-        setAddress(res.address);
-        setAssets(res.supportedAssets);
-        setAsset(res.supportedAssets[0] ?? '');
-      })
-      .catch(() => setError(t('deposit.loadAddressError')));
-  }, [chain, t]);
-
-  // Live minimum conversion off the same market feed the terminal prices
-  // from. On failure it stays null and the plain dollar hint is shown
-  // instead — never a fabricated conversion.
-  useEffect(() => {
-    if (!asset) return;
-    setMinEquivalent(null);
-    if (STABLECOINS.has(asset)) {
-      setMinEquivalent(MIN_DEPOSIT_USD);
-      return;
-    }
-    let cancelled = false;
-    api
-      .getExternalTicker(`${asset}/USDT`)
-      .then((res) => {
-        if (cancelled) return;
-        const price = parseFloat(res.ticker.lastPrice);
-        if (Number.isFinite(price) && price > 0) setMinEquivalent(MIN_DEPOSIT_USD / price);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [asset]);
 
   useEffect(() => {
     if (!copied) return;
@@ -156,9 +99,9 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
           <dl className="border-t border-hair-soft px-3.5 py-2.5">
             <dt className="text-[11px] text-ink-4">{t('deposit.minAmount')}</dt>
             <dd className="num mt-1 text-[12.5px] font-medium text-ink-2">
-              {asset && minEquivalent !== null && !STABLECOINS.has(asset)
-                ? `${formatUsd(MIN_DEPOSIT_USD, lang, 0)} ≈ ${formatAmount(minEquivalent, lang, 8)} ${asset}`
-                : formatUsd(MIN_DEPOSIT_USD, lang, 0)}
+              {minDepositUsd === null ? '—' : asset && minEquivalent !== null && !stable
+                ? `${formatUsd(minDepositUsd, lang, 0)} ≈ ${formatAmount(minEquivalent, lang, 8)} ${asset}`
+                : formatUsd(minDepositUsd, lang, 0)}
             </dd>
           </dl>
         </div>

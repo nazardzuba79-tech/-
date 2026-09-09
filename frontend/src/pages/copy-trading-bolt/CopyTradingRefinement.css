@@ -1,4 +1,8 @@
 /* Copy Trading only. Shared navigation and every other product retain their theme. */
+/* The owner photo replaces initials in the existing fixed avatar box. */
+.copytrading-bolt-root .avatar-stack { position: relative; overflow: hidden; flex-shrink: 0; }
+.copytrading-bolt-root .avatar-stack > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+.copytrading-bolt-root .marketplace-freshness { height: 20px; line-height: 20px; font-size: 11px; color: #afb5c0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .copytrading-bolt-root:not(.profile-view) { background: #191c22; }
 .copytrading-bolt-root:not(.profile-view) .app { background: radial-gradient(ellipse at 75% 0, #3b302326, transparent 45%), #191c22; }
 .copytrading-bolt-root .copy-hero::before { background: radial-gradient(ellipse at 72% 20%, #be923017, transparent 60%), linear-gradient(180deg, #22252c, #191c22); }

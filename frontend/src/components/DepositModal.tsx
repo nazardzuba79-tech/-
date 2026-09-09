@@ -1,11 +1,6 @@
-import { useState, useEffect } from 'react';
-import { api } from '../lib/api';
+import { useState } from 'react';
+import { useDepositOptions } from '../lib/useDepositOptions';
 import { useLanguage, localeOf } from '../lib/i18n';
-
-const MIN_DEPOSIT_USD = 1000;
-// Mirrors the backend's STABLECOINS set (src/services/DepositService.ts) —
-// for these, $1000 IS the equivalent amount, no price lookup needed.
-const STABLECOINS = new Set(['USDT', 'USDC', 'USD', 'DAI']);
 
 /**
  * Deposit is now purely "here's the address" — no tx-hash entry. An admin
@@ -23,70 +18,10 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     solana: t('deposit.chain.solana'),
     ton: t('deposit.chain.ton'),
   };
-  const [chains, setChains] = useState<{ chain: string; nativeAsset: string; tokens: string[] }[]>([]);
-  const [chainsLoaded, setChainsLoaded] = useState(false);
-  const [chain, setChain] = useState<string | null>(null);
-  const [address, setAddress] = useState<string | null>(null);
-  const [assets, setAssets] = useState<string[]>([]);
-  const [asset, setAsset] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { chains, chainsLoaded, chain, setChain, address, assets, asset, setAsset,
+    error: loadError, minDepositUsd, minEquivalent, stable } = useDepositOptions(true);
+  const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   const [copied, setCopied] = useState(false);
-  const [minEquivalent, setMinEquivalent] = useState<number | null>(null);
-
-  // Only ever offer chains the backend has a treasury address configured
-  // for — this is what stops someone from being shown a network/address
-  // this deployment can't actually verify a deposit on.
-  useEffect(() => {
-    api
-      .getDepositChains()
-      .then((res) => {
-        setChains(res);
-        if (res.length > 0) setChain(res[0].chain);
-      })
-      .catch(() => setError(t('deposit.loadChainsError')))
-      .finally(() => setChainsLoaded(true));
-  }, []);
-
-  useEffect(() => {
-    if (!chain) return;
-    setAddress(null);
-    api
-      .getDepositAddress(chain)
-      .then((res) => {
-        setAddress(res.address);
-        setAssets(res.supportedAssets);
-        setAsset(res.supportedAssets[0] ?? '');
-      })
-      .catch(() => setError(t('deposit.loadAddressError')));
-  }, [chain]);
-
-  // Live $1000 -> crypto conversion, using the same Kraken mirror the rest
-  // of the app prices pairs from — so the minimum shown here is never a
-  // stale/guessed number, and matches what the backend actually enforces
-  // (see MIN_DEPOSIT_USD in src/config/limits.ts).
-  useEffect(() => {
-    if (!asset) return;
-    setMinEquivalent(null);
-    if (STABLECOINS.has(asset)) {
-      setMinEquivalent(MIN_DEPOSIT_USD);
-      return;
-    }
-    let cancelled = false;
-    api
-      .getExternalTicker(`${asset}/USDT`)
-      .then((res) => {
-        if (cancelled) return;
-        const price = parseFloat(res.ticker.lastPrice);
-        // On failure/bad data, minEquivalent just stays null and the UI
-        // falls back to the plain $-only hint — never show a fabricated
-        // conversion.
-        if (Number.isFinite(price) && price > 0) setMinEquivalent(MIN_DEPOSIT_USD / price);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [asset]);
 
   async function handleCopy() {
     if (!address) return;
@@ -106,15 +41,15 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div style={styles.minBadge}>
-          {asset && minEquivalent !== null
+          {minDepositUsd === null ? t('trade.loading') : asset && minEquivalent !== null && !stable
             ? t('deposit.minAmountEquivalent', {
-                amount: MIN_DEPOSIT_USD,
+                amount: minDepositUsd,
                 equivalent: minEquivalent.toLocaleString(localeOf(lang), {
                   maximumFractionDigits: minEquivalent < 1 ? 8 : 2,
                 }),
                 asset,
               })
-            : t('deposit.minAmountHint', { amount: MIN_DEPOSIT_USD })}
+            : t('deposit.minAmountHint', { amount: minDepositUsd })}
         </div>
 
         {!chainsLoaded && !error && (
@@ -154,7 +89,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
               })}
             </div>
 
-            {assets.length > 1 && (
+            {assets.length > 0 && (
               <label style={styles.label}>
                 {t('deposit.asset')}
                 <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
@@ -171,7 +106,7 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
           </>
         )}
 
-        {chains.length === 0 && error && <div style={styles.error}>{error}</div>}
+        {error && <div style={styles.error}>{error}</div>}
       </div>
     </div>
   );
@@ -189,6 +124,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   modal: {
     width: 440,
+    maxWidth: 'calc(100vw - 24px)',
     borderRadius: 8,
     padding: 24,
     maxHeight: '90vh',

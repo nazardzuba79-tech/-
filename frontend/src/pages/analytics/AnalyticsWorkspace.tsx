@@ -5,10 +5,9 @@ import {
   DASH,
   LongShortBar,
   Metric,
+  FreshnessTag,
   Module,
-  SourceTag,
   UnavailableModule,
-  VenueRow,
   correlationTone,
   formatCountdown,
   formatFundingRate,
@@ -17,7 +16,7 @@ import {
   formatQuantity,
   formatSignedPercent,
   formatUsd,
-  venuesLabel,
+  rangeOf,
 } from './presentation';
 import './analytics.css';
 
@@ -151,10 +150,10 @@ export function AnalyticsWorkspace() {
           meta={
             <div className="vx-source-row">
               {overview?.available ? (
-                <SourceTag source={overview.source} fetchedAt={overview.fetchedAt} stale={overview.stale} />
+                <FreshnessTag fetchedAt={overview.fetchedAt} stale={overview.stale} />
               ) : null}
               {sentiment?.available ? (
-                <SourceTag source={sentiment.source} fetchedAt={sentiment.fetchedAt} stale={sentiment.stale} />
+                <FreshnessTag fetchedAt={sentiment.fetchedAt} stale={sentiment.stale} />
               ) : null}
             </div>
           }
@@ -240,7 +239,7 @@ export function AnalyticsWorkspace() {
           meta={
             <div className="vx-source-row">
               <span className="vx-scope">{t('analytics.venueScope')}</span>
-              {derivatives?.available ? <SourceTag source="voltex" live /> : null}
+              {derivatives?.available ? <FreshnessTag live /> : null}
             </div>
           }
           note={t('analytics.derivativesNote')}
@@ -298,35 +297,24 @@ export function AnalyticsWorkspace() {
             meta={
               externalOi?.available ? (
                 <div className="vx-source-row">
-                  {/* Derived from the venues that CONTRIBUTED, so it can
-                      never keep naming one that was down. */}
-                  <span className="vx-scope">{venuesLabel(externalOi.venues) ?? t('analytics.trackedVenues')}</span>
-                  <SourceTag source={externalOi.source} fetchedAt={externalOi.fetchedAt} stale={externalOi.stale} />
+                  <FreshnessTag fetchedAt={externalOi.fetchedAt} stale={externalOi.stale} />
                 </div>
               ) : null
             }
             note={t('analytics.trackedVenueOiNote')}
           >
             {externalOi?.available ? (
-              <>
-                <Metric
-                  emphasis
-                  label={t('analytics.openInterestUsd')}
-                  value={formatUsd(externalOi.value.totalOpenInterestUsd)}
-                  hint={venuesLabel(externalOi.venues) ?? undefined}
-                />
-                <div className="vx-venue-table">
-                  {externalOi.value.venues.map((v) => (
-                    <VenueRow
-                      key={v.venue}
-                      venue={v.venue}
-                      contract={v.contract}
-                      value={formatUsd(v.openInterestUsd)}
-                      stale={v.stale}
-                    />
-                  ))}
-                </div>
-              </>
+              /* The aggregate only. The per-venue table that used to sit
+                 here named the markets it summed, which the customer-
+                 facing UI no longer does; `externalOi.venues` still rides
+                 in the payload for logs and admin diagnostics. The note
+                 above still says this is not the whole market, which is
+                 the claim that mattered. */
+              <Metric
+                emphasis
+                label={t('analytics.openInterestUsd')}
+                value={formatUsd(externalOi.value.totalOpenInterestUsd)}
+              />
             ) : (
               <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
             )}
@@ -337,38 +325,28 @@ export function AnalyticsWorkspace() {
             meta={
               externalFunding?.available ? (
                 <div className="vx-source-row">
-                  <span className="vx-scope">{venuesLabel(externalFunding.venues) ?? t('analytics.trackedVenues')}</span>
-                  <SourceTag source={externalFunding.source} fetchedAt={externalFunding.fetchedAt} stale={externalFunding.stale} />
+                  <FreshnessTag fetchedAt={externalFunding.fetchedAt} stale={externalFunding.stale} />
                 </div>
               ) : null
             }
             note={t('analytics.fundingComparisonNote')}
           >
             {externalFunding?.available ? (
-              <div className="vx-venue-table">
-                {/* VOLTEX's own rate sits alongside for comparison and is
-                    labelled VOLTEX — the external rates never replace it. */}
-                <VenueRow
-                  venue="voltex"
-                  contract={activeSymbol ?? undefined}
-                  value={formatFundingRate(contract?.fundingRate ?? null)}
-                  tone={
-                    contract?.fundingRate != null && Number.isFinite(Number(contract.fundingRate))
-                      ? Number(contract.fundingRate) >= 0 ? 'positive' : 'negative'
-                      : undefined
-                  }
-                />
-                {externalFunding.value.venues.map((v) => (
-                  <VenueRow
-                    key={v.venue}
-                    venue={v.venue}
-                    contract={v.contract}
-                    value={v.fundingRate === null ? null : formatFundingRate(String(v.fundingRate))}
-                    tone={v.fundingRate === null ? undefined : v.fundingRate >= 0 ? 'positive' : 'negative'}
-                    stale={v.stale}
-                  />
-                ))}
-              </div>
+              /* The market's RANGE, not a row per venue: a rate without
+                 the name of the venue charging it is not information, and
+                 naming venues is exactly what the customer-facing UI no
+                 longer does. Deliberately not an average — an average of
+                 two venues' funding is not a rate anyone can be charged.
+                 VOLTEX's own settled rate keeps its place in the VOLTEX
+                 derivatives module above; it is not repeated here. */
+              <Metric
+                emphasis
+                label={t('analytics.marketRange')}
+                value={rangeOf(
+                  externalFunding.value.venues.map((v) => v.fundingRate),
+                  (n) => formatFundingRate(String(n)) ?? DASH
+                )}
+              />
             ) : (
               <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
             )}
@@ -380,8 +358,7 @@ export function AnalyticsWorkspace() {
           meta={
             positioning?.available ? (
               <div className="vx-source-row">
-                <span className="vx-scope">{t('analytics.trackedVenues')}: Binance</span>
-                <SourceTag source={positioning.source} fetchedAt={positioning.fetchedAt} stale={positioning.stale} />
+                <FreshnessTag fetchedAt={positioning.fetchedAt} stale={positioning.stale} />
               </div>
             ) : null
           }
@@ -412,7 +389,7 @@ export function AnalyticsWorkspace() {
             title={`${t('analytics.realizedVolatility')}${volatility?.available ? ` · ${volatility.value.baseAsset}` : ''}`}
             meta={
               volatility?.available ? (
-                <SourceTag source={volatility.source} fetchedAt={volatility.fetchedAt} stale={volatility.stale} />
+                <FreshnessTag fetchedAt={volatility.fetchedAt} stale={volatility.stale} />
               ) : null
             }
             note={t('analytics.realizedVolatilityNote')}
@@ -439,26 +416,21 @@ export function AnalyticsWorkspace() {
             meta={
               basis?.available ? (
                 <div className="vx-source-row">
-                  <span className="vx-scope">{venuesLabel(basis.venues) ?? t('analytics.trackedVenues')}</span>
-                  <SourceTag source={basis.source} fetchedAt={basis.fetchedAt} stale={basis.stale} />
+                  <FreshnessTag fetchedAt={basis.fetchedAt} stale={basis.stale} />
                 </div>
               ) : null
             }
             note={t('analytics.perpetualBasisNote')}
           >
             {basis?.available ? (
-              <div className="vx-venue-table">
-                {basis.value.venues.map((v) => (
-                  <VenueRow
-                    key={v.venue}
-                    venue={v.venue}
-                    contract={v.contract}
-                    value={v.basisPercent === null ? null : formatSignedPercent(v.basisPercent, 4)}
-                    tone={v.basisPercent === null ? undefined : v.basisPercent >= 0 ? 'positive' : 'negative'}
-                    stale={v.stale}
-                  />
-                ))}
-              </div>
+              <Metric
+                emphasis
+                label={t('analytics.marketRange')}
+                value={rangeOf(
+                  basis.value.venues.map((v) => v.basisPercent),
+                  (n) => formatSignedPercent(n, 4) ?? DASH
+                )}
+              />
             ) : (
               <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
             )}
@@ -472,7 +444,7 @@ export function AnalyticsWorkspace() {
             title={t('analytics.cryptoCorrelations')}
             meta={
               correlations?.available ? (
-                <SourceTag source={correlations.source} fetchedAt={correlations.fetchedAt} stale={correlations.stale} />
+                <FreshnessTag fetchedAt={correlations.fetchedAt} stale={correlations.stale} />
               ) : null
             }
             note={t('analytics.correlationNote')}
@@ -502,7 +474,7 @@ export function AnalyticsWorkspace() {
             title={t('analytics.sectorRotation')}
             meta={
               sectors?.available ? (
-                <SourceTag source={sectors.source} fetchedAt={sectors.fetchedAt} stale={sectors.stale} />
+                <FreshnessTag fetchedAt={sectors.fetchedAt} stale={sectors.stale} />
               ) : null
             }
             note={t('analytics.sectorNote')}

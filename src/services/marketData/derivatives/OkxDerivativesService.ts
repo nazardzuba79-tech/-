@@ -6,7 +6,7 @@ import {
   providerHealthRegistry,
   type ProviderRequestPolicy,
 } from '../ProviderHealth';
-import { numeric, type VenueBasis, type VenueFunding, type VenueOpenInterest } from './types';
+import { numeric, type VenueBasis, type VenueFunding, type VenueOpenInterest, type VenueTurnover } from './types';
 
 /**
  * OKX v5 public derivatives market data.
@@ -20,6 +20,7 @@ import { numeric, type VenueBasis, type VenueFunding, type VenueOpenInterest } f
  *   GET /api/v5/public/funding-rate?instId=…
  *   GET /api/v5/public/mark-price?instType=SWAP&instId=…
  *   GET /api/v5/market/index-tickers?instId=…
+ *   GET /api/v5/market/ticker?instId=…            (see the turnover note)
  *
  * ── The v5 envelope ─────────────────────────────────────────────────
  *
@@ -29,6 +30,30 @@ import { numeric, type VenueBasis, type VenueFunding, type VenueOpenInterest } f
  * `data[0]` off an empty array. Every read here goes through `rows()`,
  * which requires `code === '0'` and a non-empty `data`, so an OKX-level
  * error becomes a thrown error the circuit and the cache can see.
+ *
+ * ── 24h turnover: why this venue usually reports none ───────────────
+ *
+ * OKX's ticker does NOT publish a quote-currency turnover for swaps. Its
+ * two volume fields mean something else for a derivatives instrument:
+ *
+ *   vol24h     — the number of CONTRACTS traded.
+ *   volCcy24h  — for derivatives, the BASE amount, not the quote amount.
+ *
+ * CCXT's own OKX adapter documents exactly this ("note, for derivatives
+ * this is base-amount") and consequently sets `quoteVolume` only for spot
+ * markets, leaving it undefined for swaps. Several third-party write-ups
+ * claim `volCcy24h` is a USD-equivalent turnover; against the adapter
+ * every serious integrator relies on, they are wrong, and taking their
+ * word would have published BTC turnover of about eleven thousand dollars
+ * instead of billions.
+ *
+ * So this service reports `null` turnover unless OKX supplies a field
+ * that is unambiguously a quote-currency figure. It deliberately does NOT
+ * reconstruct one as base x last price: that is an invented number, and a
+ * missing contribution is honest where a fabricated one is not. The
+ * aggregate handles a null contributor by naming only the venues that did
+ * contribute. `volCcyQuote24h` is read when present purely so a future
+ * OKX field of that name is picked up without another release.
  *
  * ── Long/short positioning ──────────────────────────────────────────
  *
@@ -53,6 +78,8 @@ const OPEN_INTEREST_STALE_MS = 120_000;
 const FUNDING_TTL_MS = 60_000;
 const FUNDING_STALE_MS = 600_000;
 const PRICE_TTL_MS = 15_000;
+const TICKER_TTL_MS = 30_000;
+const TICKER_STALE_MS = 300_000;
 const PRICE_STALE_MS = 120_000;
 
 /** Base asset -> OKX perpetual swap instrument. Explicit, for the same
@@ -99,6 +126,7 @@ export class OkxDerivativesService {
   private readonly fundingCache: ProviderCache<{ fundingRate: number | null; nextFundingTime: number | null; fundingTime: number | null }>;
   private readonly markCache: ProviderCache<number | null>;
   private readonly indexCache: ProviderCache<number | null>;
+  private readonly tickerCache: ProviderCache<number | null>;
 
   constructor(
     private readonly baseUrl: string = DEFAULT_BASE_URL,
@@ -122,6 +150,7 @@ export class OkxDerivativesService {
     this.fundingCache = new ProviderCache({ ttlMs: FUNDING_TTL_MS, maxStaleMs: FUNDING_STALE_MS, ...cache });
     this.markCache = new ProviderCache({ ttlMs: PRICE_TTL_MS, maxStaleMs: PRICE_STALE_MS, ...cache });
     this.indexCache = new ProviderCache({ ttlMs: PRICE_TTL_MS, maxStaleMs: PRICE_STALE_MS, ...cache });
+    this.tickerCache = new ProviderCache({ ttlMs: TICKER_TTL_MS, maxStaleMs: TICKER_STALE_MS, ...cache });
   }
 
   async getOpenInterest(baseAsset: string): Promise<VenueOpenInterest | null> {
@@ -146,6 +175,33 @@ export class OkxDerivativesService {
       baseAsset: baseAsset.toUpperCase(),
       openInterestBase: cached.value.openInterestBase,
       openInterestUsd: cached.value.openInterestUsd,
+      fetchedAt: cached.fetchedAt,
+      stale: cached.stale,
+    };
+  }
+
+  /**
+   * 24h turnover, if and only if OKX gives one that is comparable.
+   *
+   * See the class comment: for a swap, `volCcy24h` is a BASE amount and
+   * `vol24h` is a contract count. Neither is a quote-currency turnover, so
+   * neither is used as one. Only an explicitly quote-denominated field
+   * counts, and its absence yields `null` — never a converted guess.
+   */
+  async getTurnover24h(baseAsset: string): Promise<VenueTurnover | null> {
+    const contract = okxContractFor(baseAsset);
+    if (contract === null) return null;
+    const cached = await this.tickerCache.fetch(contract, async () => {
+      const row = await this.row(`/api/v5/market/ticker?instId=${encodeURIComponent(contract)}`);
+      // The ONLY field taken as turnover. `volCcy24h` and `vol24h` are
+      // deliberately not consulted — they do not mean this.
+      return numeric(row.volCcyQuote24h);
+    });
+    return {
+      venue: 'okx',
+      contract,
+      baseAsset: baseAsset.toUpperCase(),
+      turnover24hUsd: cached.value,
       fetchedAt: cached.fetchedAt,
       stale: cached.stale,
     };
