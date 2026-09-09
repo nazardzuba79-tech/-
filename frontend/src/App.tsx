@@ -1,31 +1,86 @@
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
-import { RegisterPage } from './pages/register/RegisterPage';
-import { TradePage } from './pages/TradePage';
-import { FuturesPage } from './pages/FuturesPage';
-import { MarketsPage } from './pages/MarketsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { CardPage } from './pages/CardPage';
-import { OtcPage } from './pages/OtcPage';
-import { WalletPage } from './pages/WalletPage';
-import { CopyTradingPage } from './pages/CopyTradingPage';
-import { ArbitragePage } from './pages/ArbitragePage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { LegalPage } from './pages/LegalPage';
-import { ReferralRedirectPage } from './pages/ReferralRedirectPage';
+import { RouteShell } from './RouteShell';
 import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
-import { AdminLayout } from './pages/admin/AdminLayout';
-import { AdminWalletsPage } from './pages/admin/AdminWalletsPage';
-import { AdminUsersPage } from './pages/admin/AdminUsersPage';
-import { AdminUserDetailPage } from './pages/admin/AdminUserDetailPage';
-import { AdminKycPage } from './pages/admin/AdminKycPage';
-import { AdminWithdrawalsPage } from './pages/admin/AdminWithdrawalsPage';
-import { AdminDepositsPage } from './pages/admin/AdminDepositsPage';
-import { AdminProductsPage } from './pages/admin/AdminProductsPage';
-import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';
+
+/**
+ * Route-level code splitting.
+ *
+ * Every page in this app used to ship in one JavaScript file. Opening the
+ * wallet downloaded the futures terminal, the charting library, the Copy
+ * Trading marketplace and all eight admin screens; a signed-out visitor
+ * reading the homepage downloaded the same. One bundle, paid for in full
+ * on the very first paint, by everyone.
+ *
+ * Two pages stay EAGER on purpose:
+ *
+ *   HomePage — the first thing a signed-out visitor sees. Lazy-loading it
+ *   would put a second network round trip in front of the first pixel,
+ *   which is the opposite of the goal.
+ *
+ *   AuthPage — reached from the homepage in one click, and small.
+ *
+ * Everything else is fetched when its route is actually entered. Nothing
+ * here is split finer than a route: a dozen micro-chunks would trade one
+ * big download for a dozen round trips.
+ */
+const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
+const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
+const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
+const OtcPage = lazy(() => import('./pages/OtcPage').then((m) => ({ default: m.OtcPage })));
+const WalletPage = lazy(() => import('./pages/WalletPage').then((m) => ({ default: m.WalletPage })));
+const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage })));
+const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
+const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
+const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
+const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const AdminWalletsPage = lazy(() => import('./pages/admin/AdminWalletsPage').then((m) => ({ default: m.AdminWalletsPage })));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })));
+const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
+const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
+const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
+const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
+const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage })));
+const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
+
+/**
+ * Warms the chunk a signed-in user is most likely to open next, once the
+ * browser is idle and the current page has already painted.
+ *
+ * Without this, splitting would make the first navigation SLOWER than the
+ * single bundle was: the chunk would only start downloading on the click.
+ * With it, the chunk is usually already in the HTTP cache by then, so the
+ * click stays instant and the first paint is still small.
+ *
+ * Idle-only and failure-tolerant on purpose — this is a nicety, and it
+ * must never compete with the current page's own requests.
+ */
+function usePrefetchLikelyRoutes() {
+  useEffect(() => {
+    if (!getToken()) return;
+    const warm = () => {
+      const terminal = defaultTradingPath();
+      void (terminal === '/futures' ? import('./pages/FuturesPage') : import('./pages/TradePage')).catch(() => {});
+      void import('./pages/WalletPage').catch(() => {});
+    };
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+      .requestIdleCallback;
+    if (idle) {
+      const handle = idle(warm, { timeout: 3000 });
+      return () => (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback?.(handle);
+    }
+    const timer = setTimeout(warm, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+}
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation();
@@ -44,8 +99,13 @@ function RedirectIfAuthed({ children }: { children: JSX.Element }) {
 }
 
 export function App() {
+  usePrefetchLikelyRoutes();
   return (
     <BrowserRouter>
+      {/* One boundary around the whole route table rather than one per
+          route: the fallback is a background hold, so a single boundary
+          produces exactly the same pixels with far less machinery. */}
+      <Suspense fallback={<RouteShell />}>
       <Routes>
         {/* These two, and AuthPage's post-sign-in redirect, are the only
             places the app picks a terminal without the user naming one, so
@@ -175,6 +235,7 @@ export function App() {
           <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>
       </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
