@@ -332,7 +332,15 @@ function api(pathname, query) {
       trader: { id, name, vip: true },
       simulation: { seed: 1, mode: 'REAL_TIME', simulatedAt: new Date(now).toISOString(), stateVersion: 8 },
       traderEarnings365: 412000,
-      economics: { periods: [], review: {} },
+      economics: {
+        methodology: 'DAILY_TWR', performanceFeeRate: 0.2,
+        periods: Object.fromEntries(['7D','30D','90D','ALL'].map(p => [p, {
+          roi: 5.2, masterPnl: 420000, masterTradingVolume: 92000000, copiedTradingVolume: 71000000,
+          grossFollowersPnl: 398000, performanceFeeEarnings: 80000, netFollowersPnl: 318000,
+          activeTradingDays: 300, calendarDays: 365, maximumDrawdown: 12.8, annualizedVolatility: 34.2,
+          sharpe: 1.42, sortino: 2.1, profitFactor: 1.87,
+        }])),
+      },
       analytics: {
         roi7: 2.1, roi30: 8.4, roi90: 22.7, roiAll: 64.2, winRate: 61.4, maximumDrawdown: 12.8,
         averageWinR: 1.9, averageLossR: 1, plRatio: 1.9, grossProfit: 900000, grossLoss: 480000,
@@ -348,10 +356,11 @@ function api(pathname, query) {
           tradingDays: 365, averageTrade: 339, followersPnl: 318000, aum: 4200000 },
       },
       trades: Array.from({ length: 2920 }, (_, i) => ({
-        id: `${id}-t${i}`, symbol: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'][i % 3], side: i % 2 ? 'BUY' : 'SELL',
+        id: `${id}-t${i}`, symbol: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'][i % 3], side: i % 2 ? 'LONG' : 'SHORT',
         openedAt: new Date(now - i * 3600000).toISOString(), closedAt: new Date(now - i * 3600000 + 900000).toISOString(),
         entryPrice: 104000 + i, exitPrice: 104200 + i, quantity: 0.12, leverage: 10,
-        realizedPnl: (i % 3 ? 1 : -1) * (120 + i), returnPercent: 0.42, rMultiple: 0.9, holdingMinutes: 15,
+        netPnl: (i % 3 ? 1 : -1) * (120 + i), returnPct: 0.42, holdingTimeMinutes: 40 + (i % 13),
+        grossPnl: 130 + i, fees: 1.2, funding: 0.3, riskR: 0.9, result: i % 3 ? 'WIN' : 'LOSS',
       })),
       equityHistory: Array.from({ length: 365 }, (_, i) => ({ date: day(i), equity: 1000000 + i * 1150 })),
       aumHistory: Array.from({ length: 365 }, (_, i) => ({ date: day(i), aum: 3000000 + i * 3200, followerCount: 100 + i })),
@@ -365,17 +374,43 @@ function api(pathname, query) {
       weekly: Array.from({ length: 52 }, (_, i) => ({ period: `W${i}`, roi: 1.2, pnl: 8000, trades: 24, winRate: 61, maxDrawdown: 3.1 })),
       monthly: Array.from({ length: 12 }, (_, i) => ({ period: `M${i}`, roi: 5.2, pnl: 34000, trades: 103, winRate: 61, maxDrawdown: 6.4 })),
     });
+    // The server now summarizes before responding (see
+    // src/services/copyTrading/marketplaceSummary.ts): statistics from the
+    // complete history, ten display rows on the wire. `?full=1` serves the
+    // old shape so the before/after measurement uses one fixture.
+    const PERIOD_DAYS = { '7D': 7, '30D': 30, '90D': 90, ALL: Infinity };
+    const summarize = (data) => {
+      const stats = {};
+      const last = data.equityHistory[data.equityHistory.length - 1];
+      for (const period of ['7D', '30D', '90D', 'ALL']) {
+        const cutoff = period === 'ALL' ? ''
+          : new Date(Date.parse(`${last.date}T00:00:00Z`) - PERIOD_DAYS[period] * 86400000).toISOString().slice(0, 10);
+        const rows = period === 'ALL' ? data.trades : data.trades.filter((t) => t.closedAt.slice(0, 10) > cutoff);
+        const wins = rows.filter((t) => t.netPnl > 0);
+        const losses = rows.filter((t) => t.netPnl < 0);
+        stats[period] = {
+          totalTrades: rows.length, winningTrades: wins.length, losingTrades: losses.length,
+          grossProfit: wins.reduce((s, t) => s + t.netPnl, 0),
+          grossLoss: Math.abs(losses.reduce((s, t) => s + t.netPnl, 0)),
+          netPnlTotal: rows.reduce((s, t) => s + t.netPnl, 0),
+          holdingTimeTotalMinutes: rows.reduce((s, t) => s + t.holdingTimeMinutes, 0),
+        };
+      }
+      return { ...data, tradeStats: stats, tradeHistoryCount: data.trades.length,
+        trades: [...data.trades].sort((a, b) => Date.parse(b.closedAt) - Date.parse(a.closedAt)).slice(0, 10) };
+    };
+    const shape = query.get('full') === '1' ? (d) => d : summarize;
     return {
-      nazar: strategy('nazar', 'Nazar'),
-      ksenia: { ...strategy('ksenia', 'Ksenia'), provenance: 'SYNTHETIC_REVIEW' },
-      identities: [{ traderId: 'nazar', displayName: 'Nazar', avatarUrl: null },
-                   { traderId: 'ksenia', displayName: 'Ksenia', avatarUrl: null }],
+      nazar: shape(strategy('VX-001', 'Nazar')),
+      ksenia: shape({ ...strategy('VX-KSENIA', 'Ksenia'), provenance: 'SYNTHETIC_REVIEW', traderEarnings365: 412000 }),
+      identities: [{ traderId: 'VX-001', displayName: 'Nazar', avatarUrl: null, verified: true, premium: true, avatarVersion: null },
+                   { traderId: 'VX-KSENIA', displayName: 'Ksenia', avatarUrl: null, verified: true, premium: true, avatarVersion: null }],
       generatedAt: new Date(now).toISOString(), errors: {},
     };
   }
   if (pathname === '/api/v1/copy-trading/identities') {
-    return { identities: [{ traderId: 'nazar', displayName: 'Nazar', avatarUrl: null },
-                          { traderId: 'ksenia', displayName: 'Ksenia', avatarUrl: null }] };
+    return { identities: [{ traderId: 'VX-001', displayName: 'Nazar', avatarUrl: null, verified: true, premium: true, avatarVersion: null },
+                          { traderId: 'VX-KSENIA', displayName: 'Ksenia', avatarUrl: null, verified: true, premium: true, avatarVersion: null }] };
   }
   // ── Analytics ─────────────────────────────────────────────────────
   //

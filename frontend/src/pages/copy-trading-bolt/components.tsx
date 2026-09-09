@@ -41,6 +41,7 @@ import { useCopyEligibility } from './CopyEligibilityContext';
 import { useFavorites, useFollowing } from './useCopyLists';
 import { useFeaturedAvatar } from './FeaturedAvatarContext';
 import type { SyntheticCopyTradingResponse, SyntheticPeriodAnalytics } from '../../lib/syntheticCopyTrading';
+import { VISIBLE_TRADE_ROWS } from '../../lib/copyMarketplaceStore';
 import { formatSyntheticHistoryDate, formatSyntheticTradePrice, formatSyntheticTradeTime, selectSyntheticPeriod, syntheticAumMilestones, syntheticChartData, syntheticMainMarkets, syntheticPerformancePoints } from '../../lib/syntheticCopyTrading';
 import { dailyReturnChart } from '../../lib/dailyReturnChart';
 import { publicSignedUsdt, publicUsdtNumber } from '../../lib/copyTradingMoney';
@@ -429,7 +430,14 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
         <div><span>{periodData ? 'Накопленный PnL · USDT' : 'PnL · история недоступна'}</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}>{periodData ? signedUsd(periodData.pnl) : '—'}</strong></div>
       </div>
       {periodData && !simpleReturn && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
-        <span>Оборот мастера · {period} <strong>{numberLabel(periodData.economics?.masterTradingVolume ?? periodData.trades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0))} USDT</strong></span>
+        {/* The server's own figure when it has one. The local sum is a
+            fallback for data that still carries its full trade history —
+            summing the ten DISPLAY rows would report a period's turnover as
+            whatever ten trades happen to add up to, so a summary payload
+            without an economics figure shows a dash instead of a wrong
+            number. `numberLabel(null)` is that dash. */}
+        <span>Оборот мастера · {period} <strong>{numberLabel(periodData.economics?.masterTradingVolume
+          ?? (periodData.summarized ? null : periodData.trades.reduce((sum, trade) => sum + trade.entryPrice * trade.quantity, 0)))} USDT</strong></span>
         <span>Оборот копирования · {period} <strong>{periodData.economics ? `${numberLabel(periodData.economics.copiedTradingVolume)} USDT` : '—'}</strong></span>
       </div>}
       {chart ? <div className="profile-chart-wrap">
@@ -504,11 +512,14 @@ function MetricsPanel({ metrics, period, compact = false }: { metrics: ProfileMe
 function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: SyntheticPeriodAnalytics }) {
   const fallback = useMemo(() => trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? [] : generateTrades(trader), [trader]);
   const simpleReturn = periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
-  const visibleTrades = periodData?.trades.slice(0, simpleReturn ? 20 : 100);
+  // The latest ten. The server now sends exactly these rows rather than the
+  // whole history, so this is a display cap over what arrived, not a filter
+  // hiding data the browser holds.
+  const visibleTrades = periodData?.trades.slice(0, VISIBLE_TRADE_ROWS);
   const cashflowHistory = periodData?.economics !== undefined;
   return (
     <section className="profile-panel profile-trades-panel">
-      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
+      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.totalTrades}` : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
       <div className="table-scroll">
         <table>
           <thead><tr>{['Pair', 'Side', 'Entry', 'Exit', 'Size', 'PnL', 'ROI', cashflowHistory ? 'Open Time · UTC' : 'Open Time', cashflowHistory ? 'Close Time · UTC' : 'Close Time', 'Holding', 'Status'].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
@@ -533,6 +544,10 @@ function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: Synt
 }
 
 function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { trader: Trader; metrics: ProfileMetrics; periodData?: SyntheticPeriodAnalytics; strategyTrades?: SyntheticCopyTradingResponse['trades'] }) {
+  // Built from whatever trade rows are present. With the summary payload
+  // that is the latest ten, so it is only ever a fallback: `strategyTrades`
+  // below takes precedence for the modeled strategies, and for an ordinary
+  // trader the local model still supplies its own full set.
   const markets = periodData?.trades.reduce<Record<string, number>>((map, trade) => ({ ...map, [trade.symbol]: (map[trade.symbol] ?? 0) + 1 }), {}) ?? {};
   const mainMarkets = strategyTrades
     ? syntheticMainMarkets(strategyTrades).join(' · ') || '—'
