@@ -17,10 +17,45 @@ export function getToken(): string | null {
 
 export function setToken(token: string) {
   localStorage.setItem(TOKEN_KEY, token);
+  notifySessionChange();
 }
 
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  notifySessionChange();
+}
+
+/**
+ * Session-change notification.
+ *
+ * Shared, module-level caches of AUTHENTICATED data outlive the components
+ * that read them — a logout is a client-side route change, not a reload,
+ * so nothing unmounts the module. Anything holding account data therefore
+ * has to be told when the session changes, so it can drop what it holds
+ * before the next user can see it.
+ *
+ * This only broadcasts; it does not touch the token, the request path or
+ * any header. Listeners must not throw — one bad listener may not stop the
+ * others from clearing their state.
+ */
+type SessionListener = () => void;
+const sessionListeners = new Set<SessionListener>();
+
+export function onSessionChange(listener: SessionListener): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
+function notifySessionChange() {
+  for (const listener of Array.from(sessionListeners)) {
+    try {
+      listener();
+    } catch {
+      // A listener that fails must not prevent the rest from clearing.
+    }
+  }
 }
 
 /** The normalized spot ticker every VOLTEX surface renders. Shape is

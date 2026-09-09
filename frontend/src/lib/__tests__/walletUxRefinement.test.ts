@@ -438,7 +438,16 @@ test.each([
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
   [wallet + 'DepositModal.tsx', '1db97b349fe86b39fd81c8a35129ebfc319d47b866b0572963483ef76c8d61e4'],
   [wallet + 'WithdrawModal.tsx', 'fe3a8d9fa872116f18ccd03aa530f3bf82787ab7652634e88af6efa977dc4220'],
-  [wallet + 'TransferModal.tsx', '69cae20e547f1f9945f3960647519eb3e7a44fa53980ea905b85cb11ccb705e4'],
+  // Re-taken for the Futures account store (+4/-0, purely additive): one
+  // import and one `refreshFuturesAccount(['balances'])` after a SUCCESSFUL
+  // transfer, so the shared futures account state does not keep serving a
+  // pre-transfer balance to the terminal for up to one poll interval. No
+  // financial figure, validation rule, format, amount, direction, error
+  // path or modal behaviour in this file changed — the call sits after
+  // `load()` on the success path only. The other two hashes in this suite
+  // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
+  // and are deliberately left untouched.
+  [wallet + 'TransferModal.tsx', '81d78430c88e2b691e8bbeecc81aca8f077d16580231581df248c370e6b2fc0d'],
   [wallet + 'ui.tsx', 'b23415fc704a89bab6592ec2148e4869f3fcbbc5d4980e31bd1dd9e8e30f153e'],
   [wallet + 'TransactionHistory.tsx', '3650f07956b54e5451e945d6d3e4561cfa0247bfd00d3549d6770374545037d5'],
   ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],

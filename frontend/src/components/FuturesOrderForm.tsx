@@ -6,6 +6,7 @@ import { LeverageSlider } from './LeverageSlider';
 import { MarginTypeToggle } from './MarginTypeToggle';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
+import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
 
 export function FuturesOrderForm({
@@ -41,43 +42,31 @@ export function FuturesOrderForm({
   const [leverage, setLeverage] = useState(10);
   const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
   const [reduceOnly, setReduceOnly] = useState(false);
-  const [availableMargin, setAvailableMargin] = useState(0);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
-  const [positions, setPositions] = useState<Awaited<ReturnType<typeof api.getFuturesPositions>>>([]);
-  const [activeOrders, setActiveOrders] = useState<Awaited<ReturnType<typeof api.getMyFuturesOrders>>>([]);
-  const [exposureRefreshKey, setExposureRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Balances, positions and open orders all come from the one shared
+  // account store now, at the same 5s cadence this form always used. The
+  // three `setInterval`s that used to live in this file are gone; so is the
+  // second copy of /futures/balances and the third of /futures/positions.
+  const account = useFuturesAccount({ balances: 5000, positions: 5000, orders: 5000 });
+  const balanceRow = account.balances.data?.find((x) => x.asset === quoteAsset);
+  /** null = not known (never loaded, or the request failed). Never 0: a
+   *  fake zero here would silently size every percentage order at nothing
+   *  while looking like a funded account with no free margin. */
+  const availableMargin = account.balances.data ? (balanceRow ? parseFloat(balanceRow.available) : 0) : null;
+  /** UNKNOWN is not EMPTY. These stay `null` until the server actually
+   *  answered — coercing them to `[]` would tell the exposure projection
+   *  that the account holds no position and no working order, which is a
+   *  strictly optimistic guess, not a safe default. */
+  const positions = account.positions.data;
+  const activeOrders = account.orders.data;
 
   useEffect(() => {
     api.getFuturesConfig().then(setConfig).catch(() => {});
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    // Polled on the same 5s cadence as FuturesAccountSummary's own margin
-    // balance, which sits right below this form — without it, a transfer
-    // completed in the modal (or a fill that just locked margin) left this
-    // figure stale until the trader happened to flip Long/Short, while the
-    // summary card below it had already caught up.
-    function load() {
-      api
-        .getFuturesBalances()
-        .then((balances) => {
-          if (cancelled) return;
-          const b = balances.find((x) => x.asset === quoteAsset);
-          setAvailableMargin(b ? parseFloat(b.available) : 0);
-        })
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [quoteAsset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,26 +84,6 @@ export function FuturesOrderForm({
     };
   }, [symbol]);
 
-  useEffect(() => {
-    let cancelled = false;
-    function load() {
-      Promise.all([
-        api.getFuturesPositions(),
-        api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED'),
-      ]).then(([nextPositions, nextOrders]) => {
-        if (cancelled) return;
-        setPositions(nextPositions);
-        setActiveOrders(nextOrders);
-      }).catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [symbol, exposureRefreshKey]);
-
   const effectivePrice = type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
@@ -124,10 +93,22 @@ export function FuturesOrderForm({
   // informational here: nothing about submitting the order depends on
   // this number, it just shows the trader what to expect before they commit.
   const orderTier = config && notional > 0 ? getLeverageTier(config.leverageTiers, notional) : null;
-  const currentPosition = positions.find(
+
+  // The projection reads the account's existing position and working orders
+  // ONLY on this path: a reduce-only order and a zero-notional order both
+  // short-circuit to 0 before either is touched, so they need no account
+  // state at all. That matters — reduce-only is how a trader sheds risk,
+  // and an outage is the worst possible moment to block it.
+  const exposureNeedsAccountState = !reduceOnly && notional > 0;
+  const exposureInputsKnown = positions !== null && activeOrders !== null;
+  /** False only when the projection genuinely needs positions/orders and
+   *  one of them has not been answered yet. */
+  const exposureKnown = !exposureNeedsAccountState || exposureInputsKnown;
+
+  const currentPosition = positions?.find(
     (position) => position.symbol === symbol && position.marginType === marginType
   );
-  const pendingExposureOrders = activeOrders
+  const pendingExposureOrders = (activeOrders ?? [])
     .filter((order) =>
       order.symbol === symbol
       && order.marginType === marginType
@@ -140,41 +121,60 @@ export function FuturesOrderForm({
       price: Number(order.price),
     }))
     .filter((order) => Number.isFinite(order.remainingQuantity) && Number.isFinite(order.price));
-  const projectedExposure = reduceOnly || notional <= 0
+
+  /** `null` = cannot be projected because the account state is unknown.
+   *  `0` is a REAL zero: a reduce-only order, nothing typed yet, or an
+   *  account that genuinely answered with no position and no orders. */
+  const projectedExposure: number | null = !exposureNeedsAccountState
     ? 0
-    : projectFuturesExposureNotional({
-        position: currentPosition
-          ? {
-              side: currentPosition.side,
-              size: Number(currentPosition.size),
-              entryPrice: Number(currentPosition.entryPrice),
-            }
-          : null,
-        activeOrders: pendingExposureOrders,
-        candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
-      });
-  const resultingTier = config && projectedExposure > 0
+    : exposureInputsKnown
+      ? projectFuturesExposureNotional({
+          position: currentPosition
+            ? {
+                side: currentPosition.side,
+                size: Number(currentPosition.size),
+                entryPrice: Number(currentPosition.entryPrice),
+              }
+            : null,
+          activeOrders: pendingExposureOrders,
+          candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
+        })
+      : null;
+  const resultingTier = config && projectedExposure !== null && projectedExposure > 0
     ? getLeverageTier(config.leverageTiers, projectedExposure)
     : null;
   // Informational only: the backend recomputes this projection transactionally.
-  const effectiveMaxLeverage = config
+  // But an unknown existing exposure must not be shown as a ceiling: it
+  // would quote a maximum leverage derived from an account the client has
+  // not actually seen, and the ceiling can only ever be too HIGH that way.
+  // Null suspends the slider and the submit guard until the state is known,
+  // which is what the backend would enforce anyway.
+  const effectiveMaxLeverage = config && exposureKnown
     ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
     : null;
   useEffect(() => {
     if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
   }, [effectiveMaxLeverage, leverage]);
-  const liqPreview =
-    orderTier && effectivePrice > 0 && quantity
-      ? previewLiquidationPrice({
-          entryPrice: effectivePrice,
-          side: side === 'BUY' ? 'LONG' : 'SHORT',
-          leverage,
-          marginType,
-          maintenanceMarginRate: orderTier.maintenanceMarginRate,
-          notional,
-          freeBalance: availableMargin,
-        })
-      : null;
+  // `freeBalance` only enters the formula for CROSS margin (it is the
+  // backstop ratio; ISOLATED ignores it entirely — see futuresMath). So an
+  // unknown balance suppresses the preview for CROSS, where it would
+  // otherwise be computed from a fake 0 and quote a liquidation price
+  // closer to entry than the real one, and changes nothing for ISOLATED.
+  // The formula itself is untouched: when the balance is known, the inputs
+  // are exactly what they were.
+  const liqPreviewComputable =
+    orderTier && effectivePrice > 0 && quantity && (marginType === 'ISOLATED' || availableMargin !== null);
+  const liqPreview = liqPreviewComputable
+    ? previewLiquidationPrice({
+        entryPrice: effectivePrice,
+        side: side === 'BUY' ? 'LONG' : 'SHORT',
+        leverage,
+        marginType,
+        maintenanceMarginRate: orderTier!.maintenanceMarginRate,
+        notional,
+        freeBalance: availableMargin ?? 0,
+      })
+    : null;
 
   // % slider spends a share of available margin, scaled up by leverage —
   // spending 100% of margin at 10x opens a 10x-larger notional than at 1x,
@@ -182,6 +182,10 @@ export function FuturesOrderForm({
   function applyPercent(pct: number) {
     setPercent(pct);
     if (!effectivePrice || effectivePrice <= 0) return;
+    // An unknown available margin sizes nothing. Previously this read a
+    // fake 0 and produced a quantity of 0; refusing to size is the same
+    // outcome without writing a misleading number into the field.
+    if (availableMargin === null) return;
     const marginToSpend = availableMargin * (pct / 100);
     setQuantity(((marginToSpend * leverage) / effectivePrice).toFixed(8));
   }
@@ -203,7 +207,10 @@ export function FuturesOrderForm({
       setPrice('');
       setQuantity('');
       setPercent(0);
-      setExposureRefreshKey((key) => key + 1);
+      // The account really did change: refresh it now rather than waiting
+      // for whichever poll fires next. Balances too — placing an order
+      // locks margin, and that figure used to lag by up to five seconds.
+      refreshFuturesAccount(['balances', 'positions', 'orders']);
       onPlaced();
       toast.success(t('trade.orderPlaced'));
     } catch (err) {
@@ -308,7 +315,7 @@ export function FuturesOrderForm({
           <span className="fo-qtyLabelRow">
             {t('trade.quantity')}
             <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
-              {t('futures.availableMargin')}: {availableMargin.toFixed(2)} {quoteAsset}
+              {t('futures.availableMargin')}: {availableMargin === null ? '—' : availableMargin.toFixed(2)} {quoteAsset}
             </span>
           </span>
           <input

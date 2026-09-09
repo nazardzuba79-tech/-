@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
 
 type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
@@ -23,48 +23,53 @@ export function FuturesAccountSummary({
 }) {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [balance, setBalance] = useState<{ available: number; locked: number }>({ available: 0, locked: 0 });
-  const [positions, setPositions] = useState<Awaited<ReturnType<typeof api.getFuturesPositions>>>([]);
   const [showBalance, setShowBalance] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    function load() {
-      api
-        .getFuturesBalances()
-        .then((balances) => {
-          if (cancelled) return;
-          const b = balances.find((x) => x.asset === quoteAsset);
-          setBalance({ available: b ? parseFloat(b.available) : 0, locked: b ? parseFloat(b.locked) : 0 });
-        })
-        .catch(() => {});
-      api
-        .getFuturesPositions()
-        .then((res) => !cancelled && setPositions(res))
-        .catch(() => {});
-    }
-    load();
-    const interval = setInterval(load, 5000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [quoteAsset]);
+  // One shared poll for the whole terminal — this card, the order form and
+  // the positions table now read the SAME snapshot instead of three
+  // independently timed copies of it. The 5s cadence is the one this card
+  // always used.
+  const account = useFuturesAccount({ balances: 5000, positions: 5000 });
 
-  const marginBalance = balance.available + balance.locked;
-  const pnl = positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0);
-  const initialMargin = positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0);
-  const maintenanceMargin = config
+  // `null` means "not known", and stays null when a request fails. It is
+  // never coerced to 0: reporting an empty margin account to a trader whose
+  // balance request simply failed is the exact fake zero VOLTEX forbids,
+  // and it is what this card used to do.
+  const row = account.balances.data?.find((x) => x.asset === quoteAsset);
+  const available = account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
+  const locked = account.balances.data ? (row ? parseFloat(row.locked) : 0) : null;
+  const positions = account.positions.data;
+
+  const marginBalance = available !== null && locked !== null ? available + locked : null;
+
+  // Every figure below is derived exactly as before — same reduce, same
+  // leverage tier lookup, same maintenance-margin rate. The only change is
+  // that an unknown positions list yields null rather than a total of 0.
+  const pnl = positions
+    ? positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0)
+    : null;
+  const initialMargin = positions
+    ? positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0)
+    : null;
+  const maintenanceMargin = positions && config
     ? positions.reduce((sum, p) => {
         const notional = parseFloat(p.size) * parseFloat(p.markPrice ?? p.entryPrice);
         const tier = getLeverageTier(config.leverageTiers, notional);
         return sum + (tier ? notional * tier.maintenanceMarginRate : 0);
       }, 0)
-    : 0;
-  const initialMarginPct = marginBalance > 0 ? (initialMargin / marginBalance) * 100 : 0;
-  const maintenanceMarginPct = marginBalance > 0 ? (maintenanceMargin / marginBalance) * 100 : 0;
+    : null;
+
+  // A percentage of an unknown balance is unknown. A real 0% — no
+  // position against a funded account — is still 0%.
+  const pct = (part: number | null) =>
+    part === null || marginBalance === null ? null : marginBalance > 0 ? (part / marginBalance) * 100 : 0;
+  const initialMarginPct = pct(initialMargin);
+  const maintenanceMarginPct = pct(maintenanceMargin);
 
   const mask = (s: string) => (showBalance ? s : '****');
+  /** The one place an unknown becomes visible text. Never a zero. */
+  const show = (value: number | null, format: (n: number) => string) =>
+    value === null ? '—' : mask(format(value));
 
   return (
     <div style={styles.wrap}>
@@ -74,8 +79,15 @@ export function FuturesAccountSummary({
           <button type="button" onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
             {showBalance ? <EyeIcon /> : <EyeOffIcon />}
           </button>
-          <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}>
-            {t('futures.unrealizedPnl')} {mask(`${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}`)}
+          <span
+            className="mono"
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
+            }}
+          >
+            {t('futures.unrealizedPnl')} {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
           </span>
         </div>
       </div>
@@ -83,30 +95,30 @@ export function FuturesAccountSummary({
       <div style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.initialMarginPct')}</span>
-          <span className="mono">{initialMarginPct.toFixed(2)}%</span>
+          <span className="mono">{initialMarginPct === null ? '—' : `${initialMarginPct.toFixed(2)}%`}</span>
         </div>
         <div style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${Math.min(100, initialMarginPct)}%`, background: 'var(--accent)' }} />
+          <div style={{ ...styles.barFill, width: `${Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
         </div>
       </div>
 
       <div style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.maintenanceMarginPct')}</span>
-          <span className="mono">{maintenanceMarginPct.toFixed(2)}%</span>
+          <span className="mono">{maintenanceMarginPct === null ? '—' : `${maintenanceMarginPct.toFixed(2)}%`}</span>
         </div>
         <div style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${Math.min(100, maintenanceMarginPct)}%`, background: '#f0a63a' }} />
+          <div style={{ ...styles.barFill, width: `${Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
         </div>
       </div>
 
       <div style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginBalance')}</span>
-        <span className="mono">{mask(marginBalance.toFixed(2))} {quoteAsset}</span>
+        <span className="mono">{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
       <div style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.availableMargin')}</span>
-        <span className="mono">{mask(balance.available.toFixed(2))} {quoteAsset}</span>
+        <span className="mono">{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
 
       <div style={styles.actionsRow}>

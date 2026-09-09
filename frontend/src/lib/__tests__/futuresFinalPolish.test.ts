@@ -41,6 +41,53 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       }
     },
   };
+  // The futures account resources now come from ONE shared store
+  // (lib/futuresAccountStore) rather than each component's own
+  // `setInterval`. This shim reimplements the store's CONTRACT on top of
+  // the same `api` proxy these tests already stub, so every assertion below
+  // still exercises the real component against the real API surface: same
+  // endpoints, same call counts, same Spot/Futures separation. The store
+  // itself is covered separately by futuresAccountStore.test.ts.
+  const blankResource = () => ({ data: null, loading: false, refreshing: false, failed: false, loaded: false, fetchedAt: 0 });
+  const accountFetchers: Record<string, () => Promise<any>> = {
+    balances: () => api.getFuturesBalances(),
+    positions: () => api.getFuturesPositions(),
+    orders: () => api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED'),
+    positionHistory: () => api.getFuturesPositionHistory(),
+  };
+  let accountState: any = {
+    balances: blankResource(), positions: blankResource(),
+    orders: blankResource(), positionHistory: blankResource(),
+  };
+  let publishAccount: (next: any) => void = () => {};
+  // The real store keeps ONE in-flight request per resource and lets
+  // concurrent callers join it. Without modelling that here, the shim would
+  // count two calls where the app issues one.
+  const accountInFlight: Record<string, Promise<any> | null> = {};
+  const loadAccount = (keys: string[]) => keys.forEach(key => {
+    if (accountInFlight[key]) return;
+    accountInFlight[key] = accountFetchers[key]()
+    .then((data: any) => {
+      accountState = { ...accountState, [key]: { ...accountState[key], data, loaded: true, loading: false, refreshing: false, failed: false, fetchedAt: 1 } };
+      publishAccount(accountState);
+    })
+    .catch(() => {
+      accountState = { ...accountState, [key]: { ...accountState[key], loaded: true, loading: false, refreshing: false, failed: true } };
+      publishAccount(accountState);
+    })
+    .finally(() => { accountInFlight[key] = null; });
+  });
+  const futuresAccountModule = {
+    useFuturesAccount(wants: Record<string, number>) {
+      const [state, setState] = react.useState(accountState);
+      publishAccount = setState;
+      const keys = Object.keys(wants ?? {});
+      react.useEffect(() => { loadAccount(keys); }, [JSON.stringify(keys)]);
+      return state;
+    },
+    refreshFuturesAccount: (keys?: string[]) => loadAccount(keys ?? Object.keys(accountFetchers)),
+  };
+
   const output: any = {};
   const compiled = ts.transpileModule(source(file), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
@@ -48,6 +95,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, params?: any) => params ? `${key}:${JSON.stringify(params)}` : key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/spotOrderBook') return bookMath;
@@ -188,6 +236,15 @@ async function leverageForm() {
   const form = mount('components/FuturesOrderForm.tsx', { confirm, api: {
     getFuturesConfig: () => Promise.resolve(tierConfig), getMe,
     getFuturesBalances: () => Promise.resolve([{ asset: 'USDT', available: '1000000', locked: '0' }]),
+    // A REAL empty account, answered by the server. These two were
+    // previously left unstubbed (and so never resolved) because the form
+    // coerced an unanswered request to an empty array — which is the
+    // review finding this fixture now avoids relying on. The assertions
+    // below are unchanged: an account that genuinely holds no position and
+    // no working order projects exactly the candidate's own notional, the
+    // same number the coercion used to produce.
+    getFuturesPositions: () => Promise.resolve([]),
+    getMyFuturesOrders: () => Promise.resolve([]),
     getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }), placeFuturesOrder: placed,
   } });
   form.render(props); await tick();
