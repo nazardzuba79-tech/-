@@ -512,50 +512,6 @@
   color: var(--text-tertiary);
 }
 
-/* ── One row per venue ───────────────────────────────────────────── */
-
-.vx-analytics .vx-venue-table {
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-}
-
-.vx-analytics .vx-venue-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-top: 1px solid var(--border);
-}
-.vx-analytics .vx-venue-row:first-child { border-top: 0; }
-.vx-analytics .vx-venue-row.is-stale { opacity: .72; }
-
-.vx-analytics .vx-venue-name {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.vx-analytics .vx-venue-contract {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 400;
-  color: var(--text-tertiary);
-}
-
-.vx-analytics .vx-venue-value {
-  font-family: var(--font-mono);
-  font-size: 13.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.vx-analytics .vx-venue-value.is-positive { color: var(--buy); }
-.vx-analytics .vx-venue-value.is-negative { color: var(--sell); }
-.vx-analytics .vx-venue-value.is-unavailable { color: var(--text-tertiary); }
-
 /* ── Long / short split ──────────────────────────────────────────── */
 
 .vx-analytics .vx-ls { padding: 4px 0 2px; }
@@ -655,5 +611,4 @@
   }
   .vx-analytics .vx-corr-samples,
   .vx-analytics .vx-sector-meta { grid-column: 1 / -1; }
-  .vx-analytics .vx-venue-row { flex-wrap: wrap; }
 }

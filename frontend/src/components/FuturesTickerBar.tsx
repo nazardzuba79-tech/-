@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
+import type { FuturesMarketStats, GatewaySection } from '../lib/api';
 import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
@@ -45,8 +46,16 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
-  const [openInterest, setOpenInterest] = useState<{ size: number; value: number | null } | null>(null);
   const [fundingIntervalHours, setFundingIntervalHours] = useState<number | null>(null);
+  /**
+   * Tracked external derivatives statistics — turnover and open interest.
+   *
+   * These are the two MARKET-REFERENCE figures in this header, and they
+   * describe other venues' perpetual markets, not VOLTEX's book. Mark
+   * price, funding and the countdown beside them stay VOLTEX's own and
+   * are read from the futures services exactly as before.
+   */
+  const [derivatives, setDerivatives] = useState<GatewaySection<FuturesMarketStats> | null>(null);
 
   useEffect(() => {
     api
@@ -63,14 +72,20 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
     setMarkPrice(null);
     setIndexPrice(null);
     setFundingRate(null);
-    setOpenInterest(null);
+    // Cleared on every symbol change, so BTC's turnover and open interest
+    // can never sit under an ETH header while the new read is in flight.
+    setDerivatives(null);
 
-    // The 24h REFERENCE figures (last/change/high/low/volume/turnover) now
-    // come from the shared market-data store — see below. Everything in
-    // this loop is a VOLTEX financial value read from the futures
-    // services, and is deliberately unchanged: mark price, the settled
-    // funding rate and THIS VENUE'S OWN open interest. No external venue's
+    // Everything in this loop is a VOLTEX financial value read from the
+    // futures services, and is deliberately unchanged: mark price, the
+    // index price and the settled funding rate. No external venue's
     // derivatives metric is read here, and none may substitute for these.
+    //
+    // VOLTEX's OWN open interest is no longer read here: the header's
+    // "Open Interest" cell asks about the MARKET, and this venue's book
+    // was never an answer to that question. `/futures/open-interest` and
+    // its client method are untouched — internal risk and the Analytics
+    // VOLTEX section still read them.
     function load() {
       api
         .getFuturesMarkPrice(symbol)
@@ -88,16 +103,6 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
           setFundingRate(latest ? parseFloat(latest.rate) : null);
         })
         .catch(() => {});
-      api
-        .getFuturesOpenInterest(symbol)
-        .then((res) => {
-          if (cancelled) return;
-          setOpenInterest({
-            size: parseFloat(res.openInterest),
-            value: res.openInterestValue !== null ? parseFloat(res.openInterestValue) : null,
-          });
-        })
-        .catch(() => {});
     }
     load();
     const interval = setInterval(load, 4000);
@@ -106,6 +111,32 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
       clearInterval(interval);
     };
   }, [symbol]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDerivatives(null);
+    function load() {
+      api
+        .getFuturesMarketStats(baseAsset)
+        .then((res) => {
+          if (!cancelled) setDerivatives(res);
+        })
+        // A failed read leaves the previous value alone; the section's own
+        // `available` flag is what decides whether a figure renders.
+        .catch(() => {});
+    }
+    load();
+    // Slower than the 4s VOLTEX loop on purpose: a rolling 24h turnover
+    // and an open-interest snapshot do not move on that timescale, and
+    // the server caches them for 15-30s anyway.
+    const interval = setInterval(load, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [baseAsset]);
+
+  const stats24h = derivatives?.available ? derivatives.value : null;
 
   // Reference spot ticker for this contract's underlying, from the shared
   // snapshot at the same 4s cadence this bar always used. A contract with
@@ -174,16 +205,51 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
         <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
       </div>
       <div className="ticker-item">
+        {/* Derivatives-market turnover, not this exchange's own and no
+            longer the spot quote volume that used to sit here, which
+            described a different market entirely.
+
+            NO SOURCE LINE, deliberately: the customer-facing terminal
+            shows no upstream infrastructure. Provenance is not lost — the
+            response still carries `turnoverVenues`, which admin
+            diagnostics, logs and the test suite read. It simply does not
+            reach the exchange's own UI.
+
+            The label is the contract's QUOTE currency, which is the
+            currency the figure is actually denominated in: these are
+            USDT-margined perpetuals and the upstream figure is the
+            quote-currency turnover, never a converted one. */}
         <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
-        <span className="value">{stats ? formatCompact(stats.quoteVolume24h) : '—'}</span>
+        <span className={`value${derivatives?.available && derivatives.stale ? ' is-stale' : ''}`}>
+          {stats24h && stats24h.turnover24hUsd !== null ? formatCompact(stats24h.turnover24hUsd) : '—'}
+        </span>
       </div>
       <div className="ticker-item">
-        <span className="label">{`${t('futures.openInterest')} (${baseAsset})`}</span>
-        <span className="value">
-          {openInterest === null || !Number.isFinite(openInterest.size)
-            ? '—'
-            : openInterest.size.toLocaleString('en-US', { maximumSignificantDigits: 12 })}
-        </span>
+        {/* Derivatives-market open interest, in base units when the
+            contributing venues reported base units. When none did, this
+            falls back to the notional AND relabels, so the unit on screen
+            is always the unit of the number. Units are never mixed.
+
+            No source line here either, for the same reason as the cell
+            above: the contributor lists stay in the payload and out of the
+            customer-facing UI. */}
+        {(() => {
+          const base = stats24h?.openInterestBase ?? null;
+          const notional = stats24h?.openInterestUsd ?? null;
+          const showBase = base !== null;
+          return (
+            <>
+              <span className="label">{`${t('futures.openInterest')} (${showBase ? baseAsset : quoteAsset})`}</span>
+              <span className={`value${derivatives?.available && derivatives.stale ? ' is-stale' : ''}`}>
+                {showBase
+                  ? base.toLocaleString('en-US', { maximumSignificantDigits: 12 })
+                  : notional !== null
+                    ? formatCompact(notional)
+                    : '—'}
+              </span>
+            </>
+          );
+        })()}
       </div>
       <div className="ticker-item futures-funding">
         <span className="label">{t('futures.headerFunding')}</span>

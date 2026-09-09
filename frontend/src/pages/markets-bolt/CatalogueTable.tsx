@@ -213,12 +213,13 @@ export function CatalogueTable({
         </div>
       </header>
 
-      {/* One compact source line for the whole table, rather than a
-          provider label on every row. */}
+      {/* One compact freshness line for the whole table. It says HOW OLD
+          the data is and nothing about where it came from — the payload's
+          `source` is still there for logs and admin diagnostics. */}
       {meta ? (
         <p className={`vx-cat-source${meta.stale ? ' is-stale' : ''}`}>
           <span className="vx-cat-dot" aria-hidden />
-          {t('catalogue.sourceLine')} · CoinGecko ·{' '}
+          {t('catalogue.sourceLine')} ·{' '}
           {meta.stale ? t('catalogue.stale') : ageLabel(meta.fetchedAt, t)}
           {!metadataComplete ? <span className="vx-cat-partial"> · {t('catalogue.partial')}</span> : null}
           {status === 'error' ? <span className="vx-cat-partial"> · {t('markets.loadError')}</span> : null}

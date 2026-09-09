@@ -633,10 +633,13 @@ NOT. A metric may only appear on the page if it has a row here.
 ### Partial-venue behaviour
 
 Binance up and OKX down produces a value built from Binance alone, with
-`venues` naming Binance alone — the label the UI prints is derived from
-that list, so it cannot keep saying "Binance + OKX" over a figure OKX had
-no part in. Both down is `available: false`, not an empty aggregate.
-Verified in a real browser at 1440 (see `outputs/analytics-phase2/`).
+`venues` naming Binance alone. Both down is `available: false`, not an
+empty aggregate. The contributor list is consumed by logs, admin
+diagnostics and the test suite; since §17 it is not rendered anywhere in
+the customer-facing UI, so the class of bug it guarded against — a label
+still claiming a venue that contributed nothing — is now structurally
+impossible on screen. Verified in a real browser at 1440 (see
+`outputs/analytics-phase2/` and `outputs/no-provider-branding/`).
 
 ### Production verification required
 
@@ -656,6 +659,8 @@ from Render, where the egress and the region are different:
 7. `GET https://www.okx.com/api/v5/public/funding-rate?instId=BTC-USDT-SWAP`
 8. `GET https://www.okx.com/api/v5/public/mark-price?instType=SWAP&instId=BTC-USDT-SWAP`
 9. `GET https://www.okx.com/api/v5/market/index-tickers?instId=BTC-USDT`
+10. `GET https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=BTCUSDT` — confirm `quoteVolume` is the USDT-denominated 24 h turnover
+11. `GET https://www.okx.com/api/v5/market/ticker?instId=BTC-USDT-SWAP` — confirm `volCcyQuote24h` is present and quote-denominated, and that `volCcy24h` is the BASE amount the adapter refuses to use
 
 What to confirm: the response field names used by the adapters, that no
 region block applies from Render's egress, and the real rate-limit headers
@@ -678,6 +683,55 @@ anything on the page. Recorded here only so the gaps are legible:
 | ETF flows | Needs a creation/redemption dataset. Scraping a web page is not an API and is not done. |
 | Exchange inflow / outflow | Needs on-chain address attribution. Trading volume is NOT a proxy and is never used as one. |
 | Whale activity | Needs labelled on-chain addresses. Large exchange trades are a different concept and are not substituted for it. |
+
+## 10b. The Futures header's two market-reference figures
+
+`GET /market/derivatives/:baseAsset` — the only endpoint the Futures
+header reads for market data. It is deliberately NOT the Analytics
+snapshot: that payload is large, per-page and rebuilt for a dashboard, and
+a header polling it every 30 s would drag the whole Analytics fan-out
+along for two numbers.
+
+| Cell | Was | Is | Provider | Unit |
+|---|---|---|---|---|
+| `Оборот за 24ч` | Kraken SPOT `quoteVolume24h` for the underlying pair | Summed tracked-venue perpetual quote turnover | Binance `GET /fapi/v1/ticker/24hr` → `quoteVolume`; OKX `GET /api/v5/market/ticker` → `volCcyQuote24h` | USD |
+| `Открытый интерес` | VOLTEX's own `FuturesPosition` aggregate | Summed tracked-venue open interest | reuses `ExternalDerivativesService.getTrackedOpenInterest` | base units, or USD notional when no venue reported base units |
+
+**Why the old figures were wrong questions.** The header sits above a
+PERPETUAL contract. Kraken's spot quote volume describes a different
+market entirely, and VOLTEX's own open interest answers "how big is this
+book", not "how big is this market" — which is what a header metric
+labelled *Open Interest* is read as.
+
+**OKX turnover is `volCcyQuote24h`, and only that.** On OKX SWAP tickers
+`vol24h` is contract count and `volCcy24h` is a BASE amount — not the
+USD-equivalent some third-party summaries describe. Reading `volCcy24h`
+would have published a BTC turnover of a few thousand dollars where the
+real figure is billions. When `volCcyQuote24h` is absent the venue's
+turnover is `null`; no conversion is invented from another venue's price.
+
+**Units are never mixed.** Open interest sums base units only across the
+venues that reported base units. If none did, it falls back to the USD
+notional **and relabels the cell**, so the unit on screen is always the
+unit of the number. A venue contributing to one metric is not credited on
+the other: `turnoverVenues`, `openInterestBaseVenues` and
+`openInterestUsdVenues` are three separate lists. Since §17 none of them
+is rendered: the header shows the figure and its unit and names no venue.
+The lists stay in the response for logs, admin diagnostics and tests.
+
+**Load.** Server-side `ProviderCache` with a 30 s TTL and in-flight
+deduplication; the frontend polls at 30 s, not the 4 s VOLTEX cadence,
+because a rolling 24 h turnover does not move on that timescale. 100
+concurrent header readers collapse to 5 upstream provider requests
+(Binance `openInterest` + `premiumIndex` + `ticker/24hr`, OKX
+`open-interest` + `ticker`), proven in
+`ExternalDerivatives.test.ts`; a second wave inside the TTL adds zero.
+
+**Outage is a dash.** An unavailable section carries no value-carrying
+fields at all, so there is no path from "OKX is down" to "$0 turnover".
+Symbol switching
+clears the previous contract's figures before the new read lands, so BTC's
+turnover can never sit under an ETH header.
 
 ## 11. Analytics: deliberately unsupported
 
@@ -888,12 +942,15 @@ Rules, in force and enforced by types:
    is unchanged, and is deliberate — a mark price built only from an
    internal book can be wicked to trigger liquidations.
 2. **An external venue's derivatives metric is that venue's metric.**
-   Binance open interest is Binance's. If such a feed is ever added it must
-   be labelled with its `DataSource` and must **never** substitute for
-   VOLTEX's own — see §10 of the Futures header rules: the visible
-   "Открытый интерес" block is this venue's own book, in base units, and
-   an external figure would need its own unmistakably source-labelled
-   block.
+   Binance open interest is Binance's. It is labelled with its
+   `DataSource` and must **never** substitute for a VOLTEX financial
+   value. The Futures header now shows tracked-venue turnover and open
+   interest in its two MARKET-reference cells (§10b), unattributed on
+   screen per §17 and attributed in the payload. VOLTEX's own
+   open interest did not move: `GET /futures/open-interest/:symbol`, the
+   `FuturesPosition` aggregate behind it and the Analytics VOLTEX section
+   are unchanged; the header simply stopped answering a question about
+   the market with a number about this book.
 3. **Fallback is for availability, never for evasion.** A secondary
    provider may serve a metric only when it is *semantically equivalent*,
    and the `source` must change with it. Fallback must never be used to
@@ -923,3 +980,64 @@ that reproduce each failure mode exactly (`ProviderFailureMatrix.test.ts`),
 but the assumption that a given provider *emits* those responses is
 unverified from here. The Twelve Data credit accounting in particular is
 read from its published documentation, not measured.
+
+## 17. No provider branding in the customer-facing UI
+
+**Rule.** The VOLTEX product surface names no upstream provider or outside
+venue. Not "Binance", not "OKX", not "Kraken", not "CoinGecko", not
+"Twelve Data", not "Alternative.me", and not the wording that implied
+them — "tracked venue", "external venue", "external exchanges", "data
+source connected".
+
+**Where provenance still lives, unchanged.** This is a presentation rule,
+not a data-contract change. Every `source`, `venues`, `turnoverVenues`,
+`openInterestBaseVenues`, `openInterestUsdVenues` and `VenueAttribution`
+field is still populated, still typed, still asserted by the test suite,
+and still returned over the API. `GET /analytics/diagnostics` (admin)
+still reports each venue by name with its circuit state. Server logs are
+untouched. Nothing about attribution was deleted — it stops at the
+network boundary instead of reaching the screen.
+
+**What changed on screen.**
+
+| Surface | Before | After |
+|---|---|---|
+| Futures header | `Оборот за 24ч (USD)` + `Рыночные данные: Binance + OKX` under each figure | `Оборот за 24ч (USDT)` / `Открытый интерес (BTC)`, value only |
+| Analytics module meta | `CoinGecko · updated 12s ago` | `updated 12s ago` (`SourceTag` → `FreshnessTag`) |
+| Analytics open interest | aggregate + one row per named venue | aggregate only |
+| Analytics funding, basis | one row per named venue | a min–max **range** across the readings |
+| Analytics positioning | `Tracked venues: Binance`, note "Binance statistics…" | no scope chip; note "Reference positioning statistics…" |
+| Markets catalogue | `Market data · CoinGecko · 20s ago` | `Market data · 20s ago` |
+| Arbitrage rows | venue name above each price | price only |
+
+**Why ranges rather than anonymous rows.** A funding rate without the name
+of the venue charging it is not information, and relabelling those rows
+"Venue A / Venue B" would be obfuscation rather than removal. The
+dispersion of the readings is real, needs no attribution, and is what
+survives honestly — so the modules report a min–max range. Deliberately
+NOT an average: an average of two venues' funding is not a rate anyone
+can be charged, which §10a already prohibited.
+
+**What the honesty rules still guarantee.** Removing the labels did not
+weaken any claim the earlier phases made. The aggregate open interest
+still says in words that it is *not the whole market*. The positioning
+note still says it is *not a market-wide long/short ratio*. An outage is
+still a dash and never a zero. Units are still never mixed: the Futures
+open-interest cell relabels itself to the quote currency when no venue
+reports base units.
+
+**One leak no string edit can close.** The browser still opens
+`wss://ws.kraken.com/v2` directly for the live spot feed, so the upstream
+is visible in devtools' network panel to anyone who looks. Closing that
+needs the server-side WebSocket fan-out recorded as not implemented in
+§9 — it is an architecture change, not a copy change, and it is out of
+scope here. Flagged rather than silently left unmentioned.
+
+**Deliberately NOT removed.** Product copy that merely contains a banned
+word without exposing infrastructure: KYC's "Under review" /
+"Submit for review", the withdrawal "sent after review" notice, Copy
+Trading's "Review their stats", the `/demo/*` API paths of the demo-
+trading feature, and the country name "Демократическая Республика Конго".
+Generic words like "exchange" and "market" are not provider names and
+were left alone. Source comments and this document still name providers —
+they are engineering references, not the product surface.

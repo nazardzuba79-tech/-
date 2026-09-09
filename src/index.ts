@@ -214,7 +214,7 @@ app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 // Additive: every pre-existing /market/* route above keeps its shape.
-app.use('/api/v1', marketDataRouter(prisma, marketDataGateway));
+app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

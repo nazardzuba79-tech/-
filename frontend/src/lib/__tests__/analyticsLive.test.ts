@@ -221,13 +221,15 @@ describe('Analytics — real data rendering', () => {
     expect(html).toContain('$3.48T');
   });
 
-  it('shows compact provider provenance without shouting it on every metric', () => {
+  it('shows compact freshness without naming any upstream provider', () => {
     const html = renderWorkspace(READY);
-    expect(html).toContain('CoinGecko');
-    expect(html).toContain('Alternative.me');
-    // One provenance tag per module, not one per figure: six overview
-    // metrics, at most a couple of source tags.
+    // Freshness stayed — where the reading came from did not. The
+    // customer-facing exchange UI names no upstream infrastructure.
+    expect(html).not.toMatch(/CoinGecko|Alternative\.me|Kraken|Binance|OKX|Twelve Data/i);
+    // One freshness tag per module, not one per figure: six overview
+    // metrics, at most a couple of tags.
     expect((html.match(/vx-source-dot/g) ?? []).length).toBeLessThanOrEqual(4);
+    expect((html.match(/vx-source-dot/g) ?? []).length).toBeGreaterThan(0);
   });
 
   it('builds the asset selector from the contracts VOLTEX actually lists', () => {
