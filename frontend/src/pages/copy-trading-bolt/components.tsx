@@ -50,6 +50,8 @@ import { TraderAvatarArt } from './TraderAvatarArt';
 import { isModeledResponse, isModeledTraderData, isModeledAggregate, preserveModeledSource } from '../../lib/modeledCopyData';
 import { VerifiedBadge } from './VerifiedBadge';
 import { CopyDepositDialog } from './CopyDepositDialog';
+import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
+import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -119,7 +121,17 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
   const visual = getTraderVisual(trader.id);
   const photo = trader.id === nazarTrader.id ? featuredAvatar : trader.id === 'VX-KSENIA' ? trader.ownerAvatarUrl : visual.avatarSrc;
   const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const [loadedPhoto, setLoadedPhoto] = useState<string | null>(null);
   const className = `avatar avatar-${trader.tone} ${large ? 'avatar-large' : ''}`;
+  // Operator initials exist immediately; the approved photo overlays the same
+  // fixed box only after decoding. An error never exposes a broken image.
+  if (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') return (
+    <div className={`${className} avatar-stack`}>
+      <span aria-hidden="true">{trader.initials}</span>
+      {photo && failedPhoto !== photo && <img className="avatar-photo" src={photo} alt="" decoding="async"
+        style={{ opacity: loadedPhoto === photo ? 1 : 0 }} onLoad={() => setLoadedPhoto(photo)} onError={() => setFailedPhoto(photo)} />}
+    </div>
+  );
   if (photo && failedPhoto !== photo) {
     return <img className={`${className} avatar-photo`} src={photo} alt="" loading="lazy" decoding="async" onError={() => setFailedPhoto(photo)} />;
   }
@@ -135,7 +147,7 @@ function CopyButton({ trader, compact = false }: { trader: Trader; compact?: boo
   const [showDepositRequirement, setShowDepositRequirement] = useState(false);
   const isFollowing = following.has(trader.id);
 
-  if (trader.id === nazarTrader.id && !Number.isFinite(trader.performanceFee) && !isFollowing) {
+  if ((trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && !Number.isFinite(trader.performanceFee) && !isFollowing) {
     return <button className={`button button-copy ${compact ? 'button-small' : ''}`} disabled title="Условия стратегии недоступны">Данные недоступны</button>;
   }
 
@@ -229,7 +241,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
   // anything, and a lifetime figure next to a 30-day ROI reads as if the
   // two belong together when they don't.
   const liveProfit = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? followerProfitForPeriod(synthetic, period) : null;
-  const copierProfit = liveProfit ?? getCopierProfit(trader, period);
+  const copierProfit = liveProfit ?? (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? Number.NaN : getCopierProfit(trader, period));
   const sharpe = selectedMetrics?.sharpe;
   const drawdown = selectedMetrics?.maximumDrawdown;
   const winRate = selectedMetrics && 'winRate' in selectedMetrics ? selectedMetrics.winRate : undefined;
@@ -313,7 +325,7 @@ function unsignedPercent(value: number): string {
 }
 
 function fallbackMetrics(trader: Trader, period: Period): ProfileMetrics {
-  if (trader.id === nazarTrader.id) return {
+  if (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') return {
     roi: NaN, pnl: NaN, winRate: NaN, maximumDrawdown: NaN, averagePnl: NaN,
     profitFactor: null, averageTradesPerWeek: NaN, averageHoldingTimeMinutes: NaN,
     annualizedVolatility: NaN, sharpe: null, sortino: null, totalTrades: NaN,
@@ -394,7 +406,7 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
       const points = syntheticPerformancePoints(periodData, mode);
       return profileChart(points.map(point => point.value), points.map(point => point.date), mode, period === 'ALL');
     }
-    if (trader.id !== nazarTrader.id) {
+    if (trader.id !== nazarTrader.id && trader.id !== 'VX-KSENIA') {
       const selected = selectDemoPerformance(trader, period);
       return profileChart(selected.rebasedEquity.map(value => (value / 10_000 - 1) * 100), selected.equity.map(point => point.date), 'ROI', period === 'ALL');
     }
@@ -490,13 +502,13 @@ function MetricsPanel({ metrics, period, compact = false }: { metrics: ProfileMe
 }
 
 function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: SyntheticPeriodAnalytics }) {
-  const fallback = useMemo(() => generateTrades(trader), [trader]);
+  const fallback = useMemo(() => trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? [] : generateTrades(trader), [trader]);
   const simpleReturn = periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
   const visibleTrades = periodData?.trades.slice(0, simpleReturn ? 20 : 100);
   const cashflowHistory = periodData?.economics !== undefined;
   return (
     <section className="profile-panel profile-trades-panel">
-      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
+      <div className="profile-panel-heading"><div><span>Исполнено стратегией</span><h2>{simpleReturn ? 'Последние закрытые сделки' : 'История сделок'}</h2></div><strong>{periodData ? `Показано ${visibleTrades?.length ?? 0} из ${periodData.trades.length}` : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? 'История недоступна' : `${fallback.length} закрытых`}</strong></div>
       <div className="table-scroll">
         <table>
           <thead><tr>{['Pair', 'Side', 'Entry', 'Exit', 'Size', 'PnL', 'ROI', cashflowHistory ? 'Open Time · UTC' : 'Open Time', cashflowHistory ? 'Close Time · UTC' : 'Close Time', 'Holding', 'Status'].map((heading) => <th key={heading}>{heading}</th>)}</tr></thead>
@@ -524,7 +536,7 @@ function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { 
   const markets = periodData?.trades.reduce<Record<string, number>>((map, trade) => ({ ...map, [trade.symbol]: (map[trade.symbol] ?? 0) + 1 }), {}) ?? {};
   const mainMarkets = strategyTrades
     ? syntheticMainMarkets(strategyTrades).join(' · ') || '—'
-    : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || (trader.id === nazarTrader.id ? '—' : 'BTC · ETH · SOL');
+    : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? '—' : 'BTC · ETH · SOL');
   const style: Record<Trader['category'], string> = { trend: 'Trend', swing: 'Swing', quant: 'Quant', arbitrage: 'Market Neutral', futures: 'Futures', 'long-term': 'Long Term', 'multi-asset': 'Intraday / Swing' };
   const rows = [
     ['Trading Style', style[trader.category]],
@@ -704,6 +716,12 @@ function MarketplaceHero({ trader, synthetic, onOpen }: { trader: Trader; synthe
   );
 }
 
+function marketplaceAvailabilityText(state: CopyMarketplaceState) {
+  return state.nazar || state.ksenia
+    ? 'Данные требуют обновления. Показаны последние загруженные значения.'
+    : 'Данные временно недоступны.';
+}
+
 function MarketplaceBottom() {
   const faqs = [
     ['Что такое копитрейдинг?', 'Копитрейдинг автоматически повторяет сделки выбранного трейдера в пределах заданных вами условий риска.'],
@@ -734,7 +752,7 @@ function MarketplaceBottom() {
   );
 }
 
-export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, kseniaSynthetic }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null }) {
+export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = kseniaTraderShell, kseniaSynthetic, availability }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null; availability?: CopyMarketplaceState }) {
   const { favorites } = useFavorites();
   const { following } = useFollowing();
   const [tab, setTab] = useState<MarketTab>('leaderboard');
@@ -744,12 +762,9 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
   const [period, setPeriod] = useState<Period>('90D');
   const [page, setPage] = useState(1);
 
-  // Which roster each tab draws from. Leaderboard is the curated ranking
-  // and so excludes Nazar (he has his own featured slot directly above the
-  // grid — listing him twice on the same screen would be a duplicate);
-  // every other tab searches the full roster including him, which is what
-  // makes searching for "Nazar" or starring him actually work.
-  const dynamicRoster = useMemo(() => [nazara, ...(ksenia ? [ksenia] : []), ...marketplaceTraders], [nazara, ksenia]);
+  // Both operator identities have permanent slots, even before their first
+  // successful response. Search/favorites still operate on that same roster.
+  const dynamicRoster = useMemo(() => [nazara, ksenia, ...marketplaceTraders], [nazara, ksenia]);
   const tabRoster = useMemo(() => {
     switch (tab) {
       case 'favorites': return dynamicRoster.filter((t) => favorites.has(t.id));
@@ -762,11 +777,11 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
   const visibleTraders = useMemo(() => {
     let result = searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown: item.id === nazara.id
       ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
-      : item.id === ksenia?.id && kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : selectDemoPerformance(item, period).maximumDrawdown }));
+      : item.id === ksenia.id ? kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : item.drawdown : selectDemoPerformance(item, period).maximumDrawdown }));
     result = sortTraders(result, sortBy, period);
-    if (tab === 'leaderboard') {
-      const featured = result.find((item) => item.id === nazara.id);
-      if (featured) result = [featured, ...result.filter((item) => item.id !== nazara.id)];
+    if (tab === 'leaderboard' || sortBy === 'Top Performance') {
+      const featured = [nazara.id, ksenia.id].flatMap(id => result.filter(item => item.id === id));
+      result = [...featured, ...result.filter(item => item.id !== nazara.id && item.id !== ksenia.id)];
     }
     return result;
   }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic, ksenia, kseniaSynthetic]);
@@ -784,6 +799,12 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia, k
       <MarketplaceHero trader={nazara} synthetic={synthetic} onOpen={onOpen} />
 
       <section className="market-controls">
+        <div className="marketplace-freshness" role="status" aria-live="polite" title={availability
+          ? Object.entries(availability.fetchedAt).map(([key, at]) => `${key}: ${at ? new Date(at).toLocaleString('ru-RU') : '—'}`).join(' · ') : undefined}>
+          {availability && Object.values(availability.stale).some(Boolean)
+            ? marketplaceAvailabilityText(availability)
+            : availability?.refreshing && !availability.settled ? 'Загрузка данных…' : '\u00a0'}
+        </div>
         <div className="market-toolbar">
           <div className="market-tabs" role="tablist">
             {MARKET_TABS.map((t) => {

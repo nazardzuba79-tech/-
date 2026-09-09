@@ -9,6 +9,22 @@ import { PUBLIC_STRATEGIES, resolveStrategyOwner } from '../../services/copyTrad
  * The existing legacy synthetic/admin and real account routes remain separate. */
 export function copyPerformanceRouter(prisma: PrismaClient, service = new CopyPerformanceService(prisma)) {
   const router = Router();
+  // One authenticated bootstrap; a failed section must not discard its peers.
+  // PerformanceService already coalesces and caches each UTC-day projection.
+  // Identity/KYC is read afresh: it can legitimately change within the day.
+  router.get('/copy-trading/marketplace', requireAuth(prisma), async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const results = await Promise.allSettled([
+      service.get('nazar'),
+      service.get('ksenia'),
+      Promise.all(PUBLIC_STRATEGIES.map(id => resolveStrategyOwner(prisma, id))),
+    ]);
+    const [nazar, ksenia, identities] = results.map(result => result.status === 'fulfilled' ? result.value : null);
+    const errors = Object.fromEntries(results.flatMap((result, index) => result.status === 'rejected'
+      ? [[['nazar', 'ksenia', 'identities'][index], 'temporarily_unavailable']] : []));
+    res.status(results.every(result => result.status === 'rejected') ? 503 : 200)
+      .json({ nazar, ksenia, identities, generatedAt: new Date().toISOString(), errors });
+  });
   for (const strategy of ['nazar', 'ksenia'] as const) {
     router.get(`/copy-trading/${strategy}`, requireAuth(prisma), async (_req, res) => {
       res.setHeader('Cache-Control', 'no-store');

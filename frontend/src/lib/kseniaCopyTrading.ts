@@ -9,8 +9,11 @@ export type KseniaResponse = SyntheticCopyTradingResponse & { provenance: 'SYNTH
 export function withStrategyIdentityVerification(trader: Trader, identity?: PublicStrategyIdentity): Trader {
   return { ...trader, identityVerified: identity?.traderId === trader.id && identity.verified === true };
 }
-export function kseniaTrader(data: KseniaResponse, identity?: PublicStrategyIdentity): Trader {
+export function kseniaTrader(data?: KseniaResponse | null, identity?: PublicStrategyIdentity): Trader {
   // Stateless DTO projection only; no Nazar state or engine mutation.
   return withStrategyIdentityVerification({ ...syntheticNazaraTrader(data), id: KSENIA_TRADER_ID, name: 'Ksenia', initials: 'K', tone: 'slate',
     strategy: 'Multi-Asset Strategy', verified: identity?.verified ?? false, ownerAvatarUrl: identity?.avatarUrl ?? null }, identity);
 }
+
+/** Synchronous identity only. All inherited dynamic metrics are NaN/dashes. */
+export const kseniaTraderShell = kseniaTrader();
