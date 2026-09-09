@@ -98,6 +98,16 @@ export interface SyntheticCopyTradingResponse {
   /** The real number of trades behind the statistics. Shown next to the
    *  ten-row table, so "2,920 trades" stays 2,920. */
   tradeHistoryCount?: number;
+  /**
+   * Main traded markets over the COMPLETE history, computed server-side
+   * before the history was trimmed.
+   *
+   * Present exactly when `trades` holds the ten display rows. Deriving this
+   * from those ten would make a strategy that traded BTC, ETH and SOL all
+   * year advertise whatever it happened to trade this morning — which is
+   * the bug this field exists to close.
+   */
+  mainMarkets?: string[];
   equityHistory: { date: string; equity: number }[];
   aumHistory: { date: string; aum: number; followerCount?: number }[];
   dailyResults: { date: string; startEquity: number; endEquity: number; realizedPnl: number; dailyReturn: number; drawdown: number }[];

@@ -65,7 +65,12 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     // The real total must be at least what is shown, or the count under the
     // table would be smaller than the table.
     && finite(value.tradeHistoryCount) && (value.tradeHistoryCount as number) >= value.trades.length
-    && (value.tradeStats as any).ALL.totalTrades === value.tradeHistoryCount;
+    && (value.tradeStats as any).ALL.totalTrades === value.tradeHistoryCount
+    // Main Markets is a FULL-HISTORY aggregate. A summary that omits it
+    // would leave the profile with nothing but the ten display rows to
+    // rank, so the shape is rejected rather than silently downgraded.
+    && Array.isArray(value.mainMarkets) && value.mainMarkets.length > 0
+    && value.mainMarkets.every((market: unknown) => typeof market === 'string' && market.length > 0);
   return rows(value.equityHistory, 'equity', ['date'])
     && rows(value.aumHistory, 'aum', ['date'])
     && rows(value.dailyResults, 'startEquity endEquity realizedPnl dailyReturn drawdown', ['date'])

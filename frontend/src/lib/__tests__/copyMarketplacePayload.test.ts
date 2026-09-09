@@ -3,7 +3,8 @@ import { resolve } from 'path';
 import { gzipSync } from 'zlib';
 import { selectSyntheticPeriod, type SyntheticCopyTradingResponse } from '../syntheticCopyTrading';
 import { validStrategy, VISIBLE_TRADE_ROWS } from '../copyMarketplaceStore';
-import { summarizeStrategy } from '../../../../src/services/copyTrading/marketplaceSummary';
+import { syntheticMainMarkets } from '../syntheticCopyTrading';
+import { summarizeStrategy, mainMarketsOf } from '../../../../src/services/copyTrading/marketplaceSummary';
 import type { Period } from '../../pages/copy-trading-bolt/traders';
 
 /**
@@ -182,10 +183,31 @@ describe('payload size', () => {
     // production, not an artefact of a small fixture.
     const large = fullStrategy('VX-001', 2920);
     const largeSummary = summarizeStrategy(large as never) as unknown as SyntheticCopyTradingResponse;
-    const before = Buffer.from(JSON.stringify({ nazar: large, ksenia: large }));
-    const after = Buffer.from(JSON.stringify({ nazar: largeSummary, ksenia: largeSummary }));
-    const tradesBefore = Buffer.byteLength(JSON.stringify(large.trades)) * 2;
-    const tradesAfter = Buffer.byteLength(JSON.stringify(largeSummary.trades)) * 2;
+    // ONE envelope shape, ONE serializer, both sides. The earlier version of
+    // this measurement reported trade bytes larger than the payload that
+    // contained them, because the two figures came from different
+    // serializations of the same data. Everything below is
+    // `JSON.stringify` over the same envelope, and the sanity assertions
+    // at the end make that impossible to get wrong again unnoticed.
+    const envelope = (nazar: unknown, ksenia: unknown) => ({
+      nazar, ksenia,
+      identities: [
+        { traderId: 'VX-001', displayName: 'Nazar', avatarUrl: null, verified: true, premium: true, avatarVersion: null },
+        { traderId: 'VX-KSENIA', displayName: 'Ksenia', avatarUrl: null, verified: true, premium: true, avatarVersion: null },
+      ],
+      generatedAt: new Date(END).toISOString(),
+      errors: {},
+    });
+    const beforeEnvelope = envelope(large, large);
+    const afterEnvelope = envelope(largeSummary, largeSummary);
+    const before = Buffer.from(JSON.stringify(beforeEnvelope));
+    const after = Buffer.from(JSON.stringify(afterEnvelope));
+    // Trade bytes measured from the SAME objects, with the same serializer.
+    const tradeBytes = (e: { nazar: unknown; ksenia: unknown }) =>
+      Buffer.byteLength(JSON.stringify((e.nazar as { trades: unknown }).trades))
+      + Buffer.byteLength(JSON.stringify((e.ksenia as { trades: unknown }).trades));
+    const tradesBefore = tradeBytes(beforeEnvelope);
+    const tradesAfter = tradeBytes(afterEnvelope);
 
     // eslint-disable-next-line no-console
     console.log(JSON.stringify({
@@ -197,6 +219,12 @@ describe('payload size', () => {
     }, null, 2));
 
     // The payload was ~98% trades; what remains must be a small fraction.
+    // A part cannot be bigger than the whole. The old numbers failed this.
+    expect(tradesBefore).toBeLessThanOrEqual(before.length);
+    expect(tradesAfter).toBeLessThanOrEqual(after.length);
+
+    // The payload was overwhelmingly trades; what remains must be a small
+    // fraction of it.
     expect(after.length).toBeLessThan(before.length / 8);
     expect(tradesAfter).toBeLessThan(tradesBefore / 100);
     expect(largeSummary.tradeStats?.ALL.totalTrades).toBe(2920);
@@ -231,5 +259,114 @@ describe('wiring', () => {
     // touched by this change.
     expect(route).toContain('Promise.allSettled');
     expect(route).toContain("res.setHeader('Cache-Control', 'no-store')");
+  });
+});
+
+
+// ── Main Markets is a FULL-HISTORY aggregate ────────────────────────
+//
+// The trap this section exists for: the ten rows the browser receives are
+// the LATEST ten, and a strategy's most recent morning need not look
+// anything like its year. Ranking those ten would put whatever it traded
+// this morning under "Main Markets".
+
+describe('Main Markets describes the whole history, not the visible ten', () => {
+  /**
+   * A history that disagrees with itself on purpose.
+   *
+   * 300 older trades in BTC/ETH/SOL, then 12 recent trades in XRP and DOGE.
+   * The latest ten are therefore entirely XRP/DOGE while the strategy's
+   * actual markets are BTC, ETH and SOL.
+   */
+  function conflicted(): SyntheticCopyTradingResponse {
+    const base = fullStrategy('VX-001', 0);
+    const older = Array.from({ length: 300 }, (_, i) => ({
+      ...trade(i + 20),
+      symbol: ['BTC/USDT', 'BTC/USDT', 'ETH/USDT', 'SOL/USDT'][i % 4],
+      closedAt: new Date(END - (i + 20) * DAY).toISOString(),
+    }));
+    const recent = Array.from({ length: 12 }, (_, i) => ({
+      ...trade(i),
+      symbol: i % 2 ? 'XRP/USDT' : 'DOGE/USDT',
+      closedAt: new Date(END - i * 3_600_000).toISOString(),
+    }));
+    return { ...base, trades: [...recent, ...older] } as SyntheticCopyTradingResponse;
+  }
+
+  const history = conflicted();
+  const summarized = summarizeStrategy(history as never) as unknown as SyntheticCopyTradingResponse;
+
+  it('the fixture really does disagree — the ten are not the history', () => {
+    // Guards the assertions below: if the ten happened to rank the same,
+    // this whole section would prove nothing.
+    const fromTen = syntheticMainMarkets(summarized.trades);
+    const fromAll = syntheticMainMarkets(history.trades);
+    expect(summarized.trades).toHaveLength(10);
+    expect(summarized.trades.every((t) => /XRP|DOGE/.test(t.symbol))).toBe(true);
+    expect(fromTen).not.toEqual(fromAll);
+    expect(fromAll.slice(0, 3)).toEqual(['BTC', 'ETH', 'SOL']);
+  });
+
+  it('carries the full-history answer on the wire', () => {
+    // Exactly what the client's own function returns for the WHOLE array.
+    expect(summarized.mainMarkets).toEqual(syntheticMainMarkets(history.trades));
+    expect(summarized.mainMarkets?.slice(0, 3)).toEqual(['BTC', 'ETH', 'SOL']);
+  });
+
+  it('does NOT become the ranking of the latest ten', () => {
+    // The regression in one line. Before the fix, the profile derived Main
+    // Markets from `strategyTrades`, which is now those ten. Asserted as a
+    // real array first, so an ABSENT field cannot pass this by being
+    // trivially unequal to the ten-row ranking.
+    expect(Array.isArray(summarized.mainMarkets)).toBe(true);
+    expect(summarized.mainMarkets).not.toEqual(syntheticMainMarkets(summarized.trades));
+    expect(summarized.mainMarkets?.slice(0, 3)).not.toEqual(['DOGE', 'XRP']);
+  });
+
+  it('preserves the XRP retention rule rather than a plain top three', () => {
+    // The rule that is easy to lose in a rewrite: XRP traded at all but
+    // outside the top three is APPENDED, so the list can hold four.
+    expect(summarized.mainMarkets).toContain('XRP');
+    expect(summarized.mainMarkets).toHaveLength(4);
+  });
+
+  it('is validated at the network boundary', () => {
+    expect(validStrategy(summarized, 'VX-001')).toBe(true);
+    const { mainMarkets, ...without } = summarized as never as Record<string, unknown>;
+    // A summary that omits it would leave the profile with only ten rows
+    // to rank, so the shape is rejected outright.
+    expect(validStrategy(without, 'VX-001')).toBe(false);
+    expect(validStrategy({ ...summarized, mainMarkets: [] }, 'VX-001')).toBe(false);
+    expect(validStrategy({ ...summarized, mainMarkets: ['BTC', 7] }, 'VX-001')).toBe(false);
+  });
+});
+
+describe('the ported Main Markets algorithm cannot drift from the original', () => {
+  // Two implementations exist — the client's, and the server port that runs
+  // before the history is trimmed. They are compared over generated
+  // histories rather than trusted to stay in step.
+  const SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'XRP/USDT', 'DOGE/USDT', 'ADA/USDT', 'LINKUSDT'];
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])('agrees on generated history #%i', (seed) => {
+    let state = seed * 7919;
+    const next = () => (state = (state * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const trades = Array.from({ length: 40 + seed * 13 }, () => ({ symbol: SYMBOLS[Math.floor(next() * SYMBOLS.length)] }));
+    expect(mainMarketsOf(trades)).toEqual(syntheticMainMarkets(trades as never));
+  });
+
+  it('agrees on the edge cases', () => {
+    for (const trades of [
+      [],
+      [{ symbol: 'BTC/USDT' }],
+      [{ symbol: 'XRP/USDT' }],
+      // XRP present but ranked fourth — the retention rule.
+      [...Array(5).fill({ symbol: 'BTC/USDT' }), ...Array(4).fill({ symbol: 'ETH/USDT' }),
+       ...Array(3).fill({ symbol: 'SOL/USDT' }), { symbol: 'XRP/USDT' }],
+      // An exact tie, broken alphabetically.
+      [{ symbol: 'ETH/USDT' }, { symbol: 'BTC/USDT' }, { symbol: 'ADA/USDT' }, { symbol: 'SOL/USDT' }],
+      // The bare-USDT suffix form.
+      [{ symbol: 'LINKUSDT' }, { symbol: 'LINKUSDT' }, { symbol: 'XRPUSDT' }],
+    ]) {
+      expect(mainMarketsOf(trades)).toEqual(syntheticMainMarkets(trades as never));
+    }
   });
 });

@@ -543,15 +543,28 @@ function TradesPanel({ trader, periodData }: { trader: Trader; periodData?: Synt
   );
 }
 
-function TradingProfilePanel({ trader, metrics, periodData, strategyTrades }: { trader: Trader; metrics: ProfileMetrics; periodData?: SyntheticPeriodAnalytics; strategyTrades?: SyntheticCopyTradingResponse['trades'] }) {
+function TradingProfilePanel({ trader, metrics, periodData, strategyTrades, strategyMainMarkets }: { trader: Trader; metrics: ProfileMetrics; periodData?: SyntheticPeriodAnalytics; strategyTrades?: SyntheticCopyTradingResponse['trades']; strategyMainMarkets?: string[] }) {
   // Built from whatever trade rows are present. With the summary payload
   // that is the latest ten, so it is only ever a fallback: `strategyTrades`
   // below takes precedence for the modeled strategies, and for an ordinary
   // trader the local model still supplies its own full set.
   const markets = periodData?.trades.reduce<Record<string, number>>((map, trade) => ({ ...map, [trade.symbol]: (map[trade.symbol] ?? 0) + 1 }), {}) ?? {};
-  const mainMarkets = strategyTrades
-    ? syntheticMainMarkets(strategyTrades).join(' · ') || '—'
-    : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? '—' : 'BTC · ETH · SOL');
+  // Order matters, and the first branch is the point of it.
+  //
+  //  1. The server's full-history aggregate, when the payload is a summary.
+  //     `strategyTrades` then holds ten DISPLAY rows, and ranking those ten
+  //     would describe this morning rather than the strategy.
+  //  2. The local computation, for a payload that still carries its whole
+  //     history — every existing caller and fixture.
+  //  3. The period's own rows, then the long-standing defaults.
+  //
+  // A summarized payload can never reach branch 2: `validStrategy` rejects
+  // one that carries the ten rows without `mainMarkets`.
+  const mainMarkets = strategyMainMarkets?.length
+    ? strategyMainMarkets.join(' · ')
+    : strategyTrades
+      ? syntheticMainMarkets(strategyTrades).join(' · ') || '—'
+      : Object.entries(markets).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([symbol]) => symbol.replace('/USDT', '').replace(/USDT$/, '')).join(' · ') || (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? '—' : 'BTC · ETH · SOL');
   const style: Record<Trader['category'], string> = { trend: 'Trend', swing: 'Swing', quant: 'Quant', arbitrage: 'Market Neutral', futures: 'Futures', 'long-term': 'Long Term', 'multi-asset': 'Intraday / Swing' };
   const rows = [
     ['Trading Style', style[trader.category]],
@@ -681,7 +694,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
 
       {activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
-          <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} /></aside>
+          <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>
           <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /></div>
         </div>
         <FollowersPanel trader={trader} metrics={metrics} synthetic={liveSynthetic} period={period} />

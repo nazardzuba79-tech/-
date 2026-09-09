@@ -356,7 +356,12 @@ function api(pathname, query) {
           tradingDays: 365, averageTrade: 339, followersPnl: 318000, aum: 4200000 },
       },
       trades: Array.from({ length: 2920 }, (_, i) => ({
-        id: `${id}-t${i}`, symbol: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'][i % 3], side: i % 2 ? 'LONG' : 'SHORT',
+        // The last 12 trades are deliberately XRP/DOGE while the strategy's
+        // year is BTC/ETH/SOL, so the browser QA can see for itself that
+        // Main Markets describes the history and not this morning.
+        id: `${id}-t${i}`,
+        symbol: i < 12 ? (i % 2 ? 'XRP/USDT' : 'DOGE/USDT') : ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'][i % 3],
+        side: i % 2 ? 'LONG' : 'SHORT',
         openedAt: new Date(now - i * 3600000).toISOString(), closedAt: new Date(now - i * 3600000 + 900000).toISOString(),
         entryPrice: 104000 + i, exitPrice: 104200 + i, quantity: 0.12, leverage: 10,
         netPnl: (i % 3 ? 1 : -1) * (120 + i), returnPct: 0.42, holdingTimeMinutes: 40 + (i % 13),
@@ -396,7 +401,16 @@ function api(pathname, query) {
           holdingTimeTotalMinutes: rows.reduce((s, t) => s + t.holdingTimeMinutes, 0),
         };
       }
-      return { ...data, tradeStats: stats, tradeHistoryCount: data.trades.length,
+      // Main Markets over the COMPLETE history, mirroring
+      // marketplaceSummary.mainMarketsOf — including the XRP retention rule.
+      const counts = data.trades.reduce((r, t) => {
+        const sym = t.symbol.replace('/USDT', '').replace(/USDT$/, '');
+        r[sym] = (r[sym] ?? 0) + 1; return r;
+      }, {});
+      const mainMarkets = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 3).map(([sym]) => sym);
+      if (counts.XRP && !mainMarkets.includes('XRP')) mainMarkets.push('XRP');
+      return { ...data, tradeStats: stats, mainMarkets, tradeHistoryCount: data.trades.length,
         trades: [...data.trades].sort((a, b) => Date.parse(b.closedAt) - Date.parse(a.closedAt)).slice(0, 10) };
     };
     const shape = query.get('full') === '1' ? (d) => d : summarize;

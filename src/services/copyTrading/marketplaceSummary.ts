@@ -50,6 +50,34 @@ export interface PeriodTradeStats {
 
 export type TradeStats = Record<Period, PeriodTradeStats>;
 
+/**
+ * The strategy's main traded markets, over the COMPLETE history.
+ *
+ * A verbatim port of the client's `syntheticMainMarkets`, including the
+ * rule that is easy to miss: this is NOT a plain "top 3". Markets are
+ * ranked by trade count with ties broken alphabetically, the top three are
+ * taken, and then — if XRP was traded at all but did not make the top
+ * three — XRP is appended anyway, so the list can legitimately hold four
+ * entries.
+ *
+ * It lives here because the client used to derive it from the full trade
+ * array, and the wire now carries ten rows. Deriving it from ten would
+ * make a strategy that trades BTC, ETH and SOL all year advertise whatever
+ * it happened to trade this morning. The two implementations are asserted
+ * equal over generated histories in the tests, so this port cannot drift.
+ */
+export function mainMarketsOf(trades: { symbol: string }[]): string[] {
+  const counts = trades.reduce<Record<string, number>>((result, trade) => {
+    const symbol = trade.symbol.replace('/USDT', '').replace(/USDT$/, '');
+    result[symbol] = (result[symbol] ?? 0) + 1;
+    return result;
+  }, {});
+  const markets = Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 3).map(([symbol]) => symbol);
+  if (counts.XRP && !markets.includes('XRP')) markets.push('XRP');
+  return markets;
+}
+
 type Trade = SyntheticCopyResponse['trades'][number];
 
 /**
@@ -107,6 +135,9 @@ export type StrategySummary = Omit<SyntheticCopyResponse, 'trades'> & {
   /** How many trades the summary was computed from, so the client can state
    *  the real total next to a ten-row table. */
   tradeHistoryCount: number;
+  /** Main traded markets over the COMPLETE history — never over the ten
+   *  display rows. */
+  mainMarkets: string[];
 };
 
 /**
@@ -130,5 +161,7 @@ export function summarizeStrategy<T extends SyntheticCopyResponse>(data: T): T |
     trades: latestTrades(data),
     tradeStats: computeTradeStats(data),
     tradeHistoryCount: data.trades.length,
+    // Computed BEFORE the history is trimmed, from every trade.
+    mainMarkets: mainMarketsOf(data.trades),
   };
 }
