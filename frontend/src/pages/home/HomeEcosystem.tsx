@@ -24,6 +24,17 @@ export function HomeEcosystem() {
   const windowRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef(0);
+  const focusedRef = useRef<HTMLElement | null>(null);
+
+  const revealFocused = () => {
+    const target = focusedRef.current, viewport = windowRef.current;
+    focusedRef.current = null;
+    if (!target || !viewport) return;
+    const item = target.getBoundingClientRect(), bounds = viewport.getBoundingClientRect();
+    if (item.left < bounds.left + 24 || item.right > bounds.right - 24) {
+      target.scrollIntoView({ block: 'nearest', inline: 'center' });
+    }
+  };
 
   // Transfer the current CSS transform into native scroll without a visual jump.
   // There is no frame loop: JS runs only on a pause/resume or user interaction.
@@ -35,7 +46,11 @@ export function HomeEcosystem() {
     setPaused(true);
   };
   useLayoutEffect(() => {
-    if (paused && windowRef.current) windowRef.current.scrollLeft = offsetRef.current;
+    if (paused && windowRef.current) {
+      windowRef.current.scrollLeft = offsetRef.current;
+      // A keyboard target may have been outside the moving viewport.
+      revealFocused();
+    }
   }, [paused]);
 
   const resume = () => {
@@ -60,7 +75,11 @@ export function HomeEcosystem() {
 
         <div ref={windowRef} className="vx-eco-window"
           onPointerDown={event => { if (event.pointerType === 'touch') pause(); }}
-          onFocusCapture={pause}>
+          onFocusCapture={event => {
+            focusedRef.current = event.target as HTMLElement;
+            if (paused) revealFocused();
+            else pause();
+          }}>
           <div ref={trackRef} className="vx-eco-track">
             {[false, true].map(duplicate => (
               <div className="vx-eco-group" key={String(duplicate)} aria-hidden={duplicate || undefined}>
