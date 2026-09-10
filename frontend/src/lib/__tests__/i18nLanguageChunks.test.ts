@@ -77,10 +77,19 @@ describe('translation integrity', () => {
     // `futures.protectionNoMarkPrice` — the honest words for a trigger that
     // is executing and for a missing mark price — both asserted by name
     // below.
+    // Advanced again for the CFD chart's TradingView failure fallback:
+    // +3/-0 per file against main, and `git diff --numstat` over the
+    // locales directory reports `3  0` for all seven — no deletion
+    // anywhere. The three keys per language are
+    // `trade.cfdChartUnavailable`, `trade.cfdChartUnavailableHint` and
+    // `trade.cfdChartRetry`, the words the chart area uses when
+    // TradingView's CDN cannot be reached; asserted by name below, in
+    // seven distinct translations, so this re-take cannot quietly cover
+    // anything else.
     const digests: Record<string, string> = {
-      ru: '33e34ea00c9fc322', en: '8abf0ba7d1745274', zh: '8c98dabf9fa01550',
-      es: '0dd2f672c837de1f', hi: '1b6cdd189218eb78', ja: '5ff958eff2e81f9a',
-      ko: 'b3d30f2712093028',
+      ru: '2abfe37c4e46471c', en: '52f9acb4e18c8d24', zh: '1433789cf649b0f8',
+      es: '028acdedbf892c83', hi: 'eb0022ae026d427f', ja: '3c0446be48258099',
+      ko: 'ba6e2581125aa314',
     };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
@@ -88,6 +97,20 @@ describe('translation integrity', () => {
       const body = source.slice(source.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
+    }
+  });
+
+  it('carries the CFD chart-unavailable vocabulary in every language, translated', () => {
+    // The keys the latest re-take accounts for. Named here so the digests
+    // above cannot be advanced for something else, and asserted distinct so
+    // no locale is quietly serving another language's string as its own.
+    for (const key of ['trade.cfdChartUnavailable', 'trade.cfdChartUnavailableHint', 'trade.cfdChartRetry']) {
+      const lines = LOCALES.map((code) => {
+        const line = readLocale(code).split('\n').find((l) => l.includes(`'${key}':`));
+        expect(line).toBeDefined();
+        return line!.slice(line!.indexOf(':') + 1).trim();
+      });
+      expect(new Set(lines).size).toBe(LOCALES.length);
     }
   });
 

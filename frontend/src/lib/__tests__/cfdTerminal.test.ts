@@ -416,7 +416,11 @@ test('all CSS selectors are scoped and chart stays on the unchanged real Trading
   const chart = read('components/CfdChart.tsx');
   for (const symbol of rows.map(r => r.symbol)) expect(chart).toContain(`${symbol}: '${symbol === 'XAUUSD' ? 'OANDA' : 'FX'}:${symbol}'`);
   expect(chart).toContain('https://s3.tradingview.com/tv.js'); expect(chart).toContain('autosize: true');
-  expect(chart).toContain('[symbol, lang, containerId]');
+  // Symbol and language still drive re-initialisation, and the ONLY thing
+  // added to that list is the retry counter — which is what lets Retry
+  // re-run the same load path instead of needing a second one. Pinned by
+  // name so the dependency list cannot grow silently.
+  expect(chart).toContain('[symbol, lang, containerId, attempt]');
   const executable = ts.createPrinter({ removeComments: true }).printFile(ts.createSourceFile('chart.tsx', chart, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
   expect(executable).not.toMatch(/candles|orderBook|volume|funding|openInterest/);
 });

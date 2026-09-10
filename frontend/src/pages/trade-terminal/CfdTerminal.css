@@ -39,6 +39,15 @@
 .cfd-terminal .cfd-chart-canvas { flex: 1; min-width: 0; min-height: 240px; position: relative; }
 .cfd-terminal .cfd-chart-canvas > div, .cfd-terminal .cfd-chart-canvas iframe { max-width: 100%; }
 .cfd-terminal .cfd-disclaimer { flex-shrink: 0; padding: 8px 14px; border-top: 1px solid var(--border); font-size: 10px; line-height: 1.5; color: #a5b0bc; }
+/* Shown in the chart's own place when TradingView's CDN could not be
+   reached — same dark surface, no chart drawn from substituted data. It
+   takes the canvas's `flex: 1` slot so the terminal's three-column layout
+   and the disclaimer below it do not move. */
+.cfd-terminal .cfd-chart-fallback { flex: 1; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px 20px; text-align: center; }
+.cfd-terminal .cfd-chart-fallback-title { font-size: 13px; font-weight: 600; color: #e8ecf3; }
+.cfd-terminal .cfd-chart-fallback-text { max-width: 320px; font-size: 11px; line-height: 1.5; color: #a5b0bc; }
+.cfd-terminal .cfd-chart-retry { margin-top: 4px; padding: 7px 18px; border: 1px solid var(--border); border-radius: 7px; background: transparent; color: #e8ecf3; font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.cfd-terminal .cfd-chart-retry:hover { background: rgba(255, 255, 255, 0.05); border-color: #3a4351; }
 .cfd-terminal .cfd-order-panel { min-width: 0; }
 .cfd-terminal .cfd-sideTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 12px 2px; padding: 3px; background: var(--panel-alt); border-radius: 6px; }
 .cfd-terminal .cfd-sideTab { padding: 9px 2px; border: 1px solid transparent; border-radius: 4px; color: #aeb9c4; background: transparent; font-size: 13px; font-weight: 700; cursor: pointer; }
