@@ -87,6 +87,16 @@ async function lockFuturesBook(tx: Prisma.TransactionClient): Promise<void> {
  * execution time, so a trader who manually closed part of the position gets
  * exactly the remainder protected.
  *
+ * RESTING ENTRIES. Winning the claim also CANCELS every non-reduce-only
+ * futures order the same user has resting in the same
+ * `(userId, symbol, marginType)` risk bucket, in the very same transaction.
+ * Without that, closing the position was only half an answer: a resting BUY
+ * outlived the stop that closed the LONG, filled later, and re-opened the
+ * same exposure with no protection on it — the protection rows having been
+ * resolved along with the position they were keyed to. Reduce-only orders
+ * are left alone; they can only shrink an opposing position, so they cannot
+ * re-open anything.
+ *
  * MARK PRICE UNAVAILABLE. `getMarkPrice` answers `null`, and null is not a
  * number: nothing triggers, nothing is cancelled, nothing is fabricated as
  * zero. The trigger simply stays armed for a later tick, which is the same
@@ -362,9 +372,39 @@ export class FuturesProtectionService {
     // Releasing early is safe because the position is what guards execution
     // from here on — a reduce-only close finds no capacity if anything else
     // closed it meanwhile.
-    const claim = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await lockFuturesBook(tx);
-      return tx.futuresPositionProtection.updateMany({
+    // AND, IN THE SAME TRANSACTION, THE BUCKET'S RESTING ENTRIES GO.
+    //
+    // Closing the position was never enough on its own. A non-reduce-only
+    // order of the same user resting in the same
+    // `(userId, symbol, marginType)` bucket survived the close, filled
+    // later, and re-opened the exact exposure this stop had just closed —
+    // unprotected, because the protection rows died with the position they
+    // were keyed to. The trigger and those cancellations have to commit
+    // together or the gap between them is the defect.
+    //
+    // This runs through `withFuturesBook`, so it is the same advisory lock
+    // the hand-rolled `lockFuturesBook` took here before, plus the staged
+    // book and the commit verification — which is what lets the cancelled
+    // orders leave the published book in the same step. Nothing is cancelled
+    // and nothing is refunded unless the CAS below returns count === 1: a
+    // losing watcher must not touch another worker's orders or balances.
+    //
+    // WHY THIS IS WRAPPED. `withFuturesBook` runs SERIALIZABLE, where losing
+    // a race is not always reported as "the predicate matched no rows" —
+    // PostgreSQL may abort the loser outright with a serialization failure.
+    // The claim used to run at READ COMMITTED, where the loser simply waited
+    // for the row lock and then saw `count === 0`; moving it in here to get
+    // the cancellations into the same transaction is what made 40001
+    // reachable. Verified against a real server: two workers racing one
+    // trigger aborted the loser rather than returning zero.
+    //
+    // An abort means the whole transaction rolled back, so this sweep
+    // claimed nothing, cancelled nothing and released nothing — which is
+    // exactly "another actor won". It is reported as such, and the trigger
+    // is left claimable for the next tick. Nothing else is swallowed: any
+    // other error still propagates.
+    const claimed = await this.claimAndClearBucket(async (tx: Prisma.TransactionClient) => {
+      const claim = await tx.futuresPositionProtection.updateMany({
         where: {
           id: protectionId,
           status: { in: CLAIMABLE },
@@ -373,8 +413,29 @@ export class FuturesProtectionService {
         },
         data: { status: 'TRIGGERING', triggeredAt: new Date(), attempts: { increment: 1 } },
       });
+      // Lost the race. No session is returned, so nothing is published, and
+      // the transaction commits having changed nothing at all.
+      if (claim.count === 0) return { result: false };
+
+      // Won — but only a position that is still OPEN identifies a bucket
+      // worth clearing. If it has already gone (manual close, liquidation,
+      // the sibling trigger), this claim resolves to CANCELLED downstream
+      // and the trader's resting orders are none of its business.
+      const position = await tx.futuresPosition.findUnique({ where: { id: positionId } });
+      if (!position || position.status !== 'OPEN') return { result: true };
+
+      const { session } = await this.positionService.cancelBucketEntryOrdersWithin(tx, {
+        userId: position.userId,
+        symbol: position.symbol,
+        marginType: position.marginType,
+      });
+      // A failure anywhere above — a cancellation, a margin release, the
+      // commit verification — throws out of here, so the claim rolls back
+      // with it. The trigger stays claimable, no order is left half
+      // cancelled, and no margin is released twice.
+      return { session, result: true };
     });
-    if (claim.count === 0) return false;
+    if (!claimed) return false;
 
     // Re-read AFTER the claim, so the size closed is the size the position
     // has now — never the size it had when the trigger was created.
@@ -453,6 +514,23 @@ export class FuturesProtectionService {
   }
 
   /**
+   * Run the claim transaction, translating a serialization abort into an
+   * ordinary lost race. See the note at the call site for why SERIALIZABLE
+   * makes that necessary and why it is safe: an aborted transaction changed
+   * nothing at all.
+   */
+  private async claimAndClearBucket(
+    work: (tx: Prisma.TransactionClient) => Promise<{ session?: unknown; result: boolean }>
+  ): Promise<boolean> {
+    try {
+      return await this.positionService.withFuturesBook(work as never);
+    } catch (err) {
+      if (isSerializationFailure(err)) return false;
+      throw err;
+    }
+  }
+
+  /**
    * Take back a claim that no process is still working on. The only way to
    * strand a row in TRIGGERING is for the backend to die mid-close, so this
    * is restart recovery. It cannot double-close: the reclaimed trigger
@@ -504,6 +582,20 @@ export class Conflict extends Error {}
  *  it. The route maps it to 503: the instruction was fine, the data it needs
  *  is temporarily missing. */
 export class MarkPriceUnavailable extends Error {}
+
+/**
+ * Did PostgreSQL abort this transaction because another one got to the same
+ * rows first?
+ *
+ * `P2034` is Prisma's wrapper; `40001` (serialization_failure) and `40P01`
+ * (deadlock_detected) are the SQLSTATEs underneath it. All three mean the
+ * transaction was rolled back in full, so a caller can treat them as "the
+ * work did not happen" without checking what, if anything, had been written.
+ */
+export function isSerializationFailure(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  return code === 'P2034' || code === '40001' || code === '40P01';
+}
 
 /**
  * Has the mark price reached this trigger's level?

@@ -272,21 +272,107 @@ export class FuturesPositionService {
       if (order.status !== 'OPEN' && order.status !== 'PARTIALLY_FILLED') return { result: null };
 
       const session = await FuturesBookTransaction.load(tx, order.symbol);
-      session.staged.cancelOrder(order.symbol, order.id);
-      await tx.futuresOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
-
-      if (!order.reduceOnly) {
-        const [, quote] = order.symbol.split('/');
-        const remaining = new BigNumber(order.remainingQuantity.toString());
-        const price = order.price ? new BigNumber(order.price.toString()) : null;
-        if (price) {
-          const releasedMargin = computeInitialMargin(remaining.times(price), order.leverage);
-          await this.adjustBalance(tx, userId, quote, { available: releasedMargin, locked: releasedMargin.negated() });
-        }
-      }
+      await this.cancelRestingOrderWithin(tx, session, order);
 
       return { session, result: { ...order, status: 'CANCELLED' } };
     });
+  }
+
+  /**
+   * Run `work` inside the futures-book transaction — the same advisory lock,
+   * the same commit verification, the same synchronous book publication that
+   * every placement and cancellation already goes through.
+   *
+   * It exists so a caller that must be ATOMIC with order cancellation
+   * (`FuturesProtectionService`, when a trigger wins its claim) does not need
+   * its own `MatchingEngine` reference, and cannot accidentally open a second,
+   * nested `FuturesBookTransaction` — which would deadlock on this class's own
+   * per-engine queue rather than in PostgreSQL, and be that much harder to see.
+   *
+   * The caller must therefore NOT be inside one already.
+   */
+  async withFuturesBook<T>(
+    work: (tx: TxClient) => Promise<{ session?: FuturesBookTransaction; result: T }>
+  ): Promise<T> {
+    return FuturesBookTransaction.run(this.prisma, this.engine, work);
+  }
+
+  /**
+   * Cancel one resting order using a transaction and staged book the CALLER
+   * owns — extracted verbatim out of `cancelOrder` rather than written twice,
+   * so the cancellation and its margin release have exactly one implementation
+   * in this service. Not a new formula: `computeInitialMargin(remaining ×
+   * price)` at the order's own leverage is the same reserve placement took,
+   * returned once.
+   *
+   * `reduceOnly` orders reserved no margin, so they release none — the guard
+   * is kept here rather than at the call sites so no caller has to remember it.
+   */
+  async cancelRestingOrderWithin(
+    tx: TxClient,
+    session: FuturesBookTransaction,
+    order: {
+      id: string;
+      userId: string;
+      symbol: string;
+      reduceOnly: boolean;
+      leverage: number;
+      remainingQuantity: { toString(): string };
+      price: { toString(): string } | null;
+    }
+  ): Promise<void> {
+    session.staged.cancelOrder(order.symbol, order.id);
+    await tx.futuresOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+
+    if (!order.reduceOnly) {
+      const [, quote] = order.symbol.split('/');
+      const remaining = new BigNumber(order.remainingQuantity.toString());
+      const price = order.price ? new BigNumber(order.price.toString()) : null;
+      if (price) {
+        const releasedMargin = computeInitialMargin(remaining.times(price), order.leverage);
+        await this.adjustBalance(tx, order.userId, quote, { available: releasedMargin, locked: releasedMargin.negated() });
+      }
+    }
+  }
+
+  /**
+   * Cancel every resting ENTRY order in one risk bucket, inside a transaction
+   * that already holds the futures-book lock.
+   *
+   * THE DEFECT THIS EXISTS FOR. A TP/SL trigger closes the position it
+   * protects — but a non-reduce-only order of the same user resting in the
+   * same `(userId, symbol, marginType)` bucket was left alive, and filling
+   * later re-opened the very exposure the stop had just closed, with no
+   * protection on it at all. The trigger and these cancellations have to be
+   * one atomic step, or the gap between them is the bug.
+   *
+   * `reduceOnly` orders are deliberately NOT cancelled: they can only shrink
+   * an existing opposing position, so they can never re-open exposure, and
+   * the execution path already retires the ones that lose their capacity.
+   *
+   * The staged session is returned so the caller publishes the book with these
+   * orders gone, exactly as `cancelOrder` does — it is only loaded when there
+   * is something to cancel, so the common case costs one indexed query.
+   */
+  async cancelBucketEntryOrdersWithin(
+    tx: TxClient,
+    bucket: { userId: string; symbol: string; marginType: string }
+  ): Promise<{ session?: FuturesBookTransaction; cancelledOrderIds: string[] }> {
+    const resting = await tx.futuresOrder.findMany({
+      where: {
+        userId: bucket.userId,
+        symbol: bucket.symbol,
+        marginType: bucket.marginType,
+        reduceOnly: false,
+        status: { in: ['OPEN', 'PARTIALLY_FILLED'] },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    if (resting.length === 0) return { cancelledOrderIds: [] };
+
+    const session = await FuturesBookTransaction.load(tx, bucket.symbol);
+    for (const order of resting) await this.cancelRestingOrderWithin(tx, session, order);
+    return { session, cancelledOrderIds: resting.map((order) => order.id) };
   }
 
   /** Current transactional capacity, re-read between every fill on BOTH sides. */
