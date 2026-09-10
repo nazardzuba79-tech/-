@@ -79,6 +79,56 @@ export class FuturesPositionService {
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
 
+      // ADMISSION: no NEW exposure into a bucket whose close is already
+      // under way.
+      //
+      // Cancelling the bucket's resting entries when a trigger wins its
+      // claim closes only half the hole. The claim commits and RELEASES the
+      // futures-book lock before the reduce-only close runs — deliberately,
+      // because that close opens its own transaction and takes the same
+      // lock. In that window a user can place a BRAND NEW non-reduce-only
+      // order into the same `(userId, symbol, marginType)` bucket. It was
+      // not there to be cancelled, it survives the close, and when it fills
+      // it re-opens the very exposure the stop just closed.
+      //
+      // So the gap is closed from the other side: while a close is in
+      // flight, the bucket does not admit new exposure. This runs under the
+      // futures-book lock AND the bucket's own exposure lock, taken just
+      // above, and BEFORE the market estimate, the exposure and tier
+      // checks, the margin reservation, the order row and matching — a
+      // rejected admission writes nothing at all.
+      //
+      // The state is read from the database, never from memory: the whole
+      // point is that another PROCESS may hold the claim. It is also not a
+      // permanent bucket lock — a claim resolves to EXECUTED / CANCELLED /
+      // FAILED, and one orphaned by a dead backend is reclaimed after
+      // PROTECTION_STALE_CLAIM_MS — after which admission is normal again.
+      //
+      // Reduce-only is deliberately still admitted: the close itself is a
+      // reduce-only MARKET through this very method, so blocking it would
+      // block the thing being protected. Reduce-only cannot open or
+      // increase exposure, which is the only thing this guard exists to
+      // prevent.
+      if (!params.reduceOnly) {
+        // Every OPEN position in the bucket, not just the first: the
+        // database has no unique constraint over (userId, symbol,
+        // marginType), and a claim held against a row this read skipped
+        // would be a claim silently ignored.
+        const bucketPositions = await tx.futuresPosition.findMany({
+          where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
+        });
+        if (bucketPositions.length > 0) {
+          const closing = await tx.futuresPositionProtection.findFirst({
+            where: { positionId: { in: bucketPositions.map((row) => row.id) }, status: 'TRIGGERING' },
+          });
+          if (closing) {
+            throw new Error(
+              'A stop is currently closing this position; new orders for it are rejected until that completes'
+            );
+          }
+        }
+      }
+
       const existingPosition = await tx.futuresPosition.findFirst({
         where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
       });

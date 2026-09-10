@@ -602,4 +602,83 @@ describePg('claim + bucket clear is one transaction on real PostgreSQL', () => {
       await cleanup(f.user.id);
     }
   }, 60_000);
+
+  // ── The window BETWEEN the claim and the close ─────────────────────
+  //
+  // The claim transaction commits and releases the futures-book lock before
+  // the reduce-only close runs — it must, or the close would deadlock
+  // against itself taking the same lock. Cancelling the bucket's resting
+  // entries therefore closes only half the hole: a BRAND NEW entry placed in
+  // that window was never there to be cancelled, outlives the close, and
+  // reopens the exposure when it fills.
+  //
+  // Admission refuses it, and these two run that refusal through real
+  // `placeOrder` against real SQL — the placing "process" being a second
+  // FuturesPositionService with its own MatchingEngine, which knows nothing
+  // about the claim except what the database tells it.
+
+  /** Well below the resting reduce-only ask, so it would REST rather than
+   *  match — the question is whether it is admitted at all. */
+  const newEntry = (userId: string) => ({
+    userId, symbol: 'BTC/USDT', side: 'BUY' as const, type: 'LIMIT' as const,
+    price: new BigNumber('40000'), quantity: new BigNumber('1'),
+    leverage: 10, marginType: 'ISOLATED' as const,
+  });
+
+  const restingEntries = (userId: string) =>
+    prisma!.futuresOrder.findMany({
+      where: { userId, symbol: 'BTC/USDT', marginType: 'ISOLATED', reduceOnly: false, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } },
+    });
+
+  pgIt('a new entry placed between the claim and the close is refused', async () => {
+    const f = await seedBucket();
+    try {
+      // T1: claim + bucket clear commits. The lock is released; the
+      // reduce-only close has NOT run yet. This is the window.
+      expect(await claimAndClear(serviceFor(), f.protection.id, f.position)).toBe(true);
+      const afterClear = await balanceOf(f.user.id);
+      expect(afterClear.available.toString()).toBe('9000');
+
+      // T2: another process tries to open new exposure in the same bucket.
+      await expect(serviceFor().placeOrder(newEntry(f.user.id)))
+        .rejects.toThrow('A stop is currently closing this position');
+
+      // Nothing survives that could reopen the position, and the refusal
+      // wrote nothing: no row, no reservation.
+      expect(await restingEntries(f.user.id)).toHaveLength(0);
+      const after = await balanceOf(f.user.id);
+      expect(after.available.toString()).toBe(afterClear.available.toString());
+      expect(after.locked.toString()).toBe(afterClear.locked.toString());
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
+
+  pgIt('and once the trigger resolves, the very same order is admitted normally', async () => {
+    const f = await seedBucket();
+    try {
+      expect(await claimAndClear(serviceFor(), f.protection.id, f.position)).toBe(true);
+      await expect(serviceFor().placeOrder(newEntry(f.user.id))).rejects.toThrow();
+
+      // The close finishes and the trigger resolves, as fire() leaves it.
+      await prisma!.futuresPositionProtection.update({
+        where: { id: f.protection.id },
+        data: { status: 'EXECUTED', resolvedAt: new Date() },
+      });
+
+      // Ordinary business again — the guard was a window, not a lock on the
+      // bucket.
+      const placed = await serviceFor().placeOrder(newEntry(f.user.id));
+      expect(placed.order.status).toBe('OPEN');
+      const resting = await restingEntries(f.user.id);
+      expect(resting).toHaveLength(1);
+      expect(resting[0].id).toBe(placed.order.id);
+      // 1 × 40000 / 10 reserved out of the 9000 the cancellation returned.
+      const after = await balanceOf(f.user.id);
+      expect(after.available.toString()).toBe('5000');
+      expect(after.locked.toString()).toBe('5000');
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
 });

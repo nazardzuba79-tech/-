@@ -808,29 +808,50 @@ describe('the futures path is the only path', () => {
     expect(code).not.toContain('Kraken');
   });
 
-  it('the dependency is one-way: the order path knows nothing about TP/SL', () => {
+  it('the dependency is one-way: the order path reads protection STATE, never the service', () => {
     // FuturesPositionService is the trusted engine every fill, margin move
-    // and position write goes through. Protection calls INTO it and it
-    // never calls back — so normal LIMIT and MARKET placement, reduce-only
-    // capacity, the exposure/tier checks and the margin reconciliation are
-    // reached by exactly the code they were reached by before, with no
-    // branch that only a triggered order takes.
+    // and position write goes through. Protection calls INTO it and it must
+    // never call back — so normal LIMIT and MARKET placement, reduce-only
+    // capacity, the exposure/tier checks and the margin reconciliation stay
+    // reachable by exactly the code they were reached by before.
+    //
+    // WHAT CHANGED, AND WHY THIS TEST DID. The order path used to name
+    // nothing about TP/SL at all, and this asserted the word was absent.
+    // That is no longer the truth to pin: admission now has to refuse new
+    // exposure into a bucket whose close is already in flight, and the only
+    // authoritative answer to "is one in flight" lives in the protection
+    // table. Reading a row is not a dependency; CALLING the service would
+    // be, and that is the cycle worth forbidding. So the invariant is
+    // narrowed rather than dropped, and it is narrowed to something
+    // stricter than "no imports": the ONLY protection identifier the
+    // executable code may name is the Prisma model, and the only thing it
+    // may know about that model is the TRIGGERING status. No trigger
+    // semantics — no kinds, no levels, no mark-price comparison — cross
+    // into the engine, so there is still no branch here that only a
+    // triggered order takes.
     const source = require('fs').readFileSync(require('path').resolve(__dirname, '../FuturesPositionService.ts'), 'utf8');
-    // EXECUTABLE code, with comments stripped. The engine gained a generic
-    // "cancel this risk bucket's resting entry orders" primitive, and its
-    // doc comment says plainly which defect that exists for — naming the
-    // caller in prose is how the file explains itself, and pinning the
-    // invariant to the prose would only make the comment dishonest. What
-    // must stay true is that no protection module is imported and no
-    // protection identifier is reachable from any code path here.
     const ts = require('typescript');
     const orderPath = ts
       .createPrinter({ removeComments: true })
       .printFile(ts.createSourceFile('FuturesPositionService.ts', source, ts.ScriptTarget.Latest, true));
-    for (const term of ['Protection', 'protection', 'takeProfit', 'stopLoss', 'triggerPrice', 'TAKE_PROFIT', 'STOP_LOSS']) {
+
+    // Nothing but the table itself. A helper, a type, an imported symbol or
+    // a service handle would all show up here.
+    expect(new Set(orderPath.match(/\w*[Pp]rotection\w*/g) ?? [])).toEqual(new Set(['futuresPositionProtection']));
+    // And nothing but the one status. Deciding anything else about a
+    // trigger is protection's job, not the engine's.
+    expect(orderPath).toContain("status: 'TRIGGERING'");
+    for (const term of ['takeProfit', 'stopLoss', 'triggerPrice', 'TAKE_PROFIT', 'STOP_LOSS', 'hasCrossed']) {
       expect(orderPath).not.toContain(term);
     }
-    expect(source).not.toMatch(/from '\.\/FuturesProtectionService'/);
+    // No import and no executable reference — the cycle itself. Prose is
+    // exempt on purpose: `cancelRestingOrderWithin`'s doc comment names the
+    // caller it exists for, and pinning the invariant to the comment would
+    // only pressure the comment into being dishonest. The `\w*Protection\w*`
+    // set above is what actually forbids a reference, since any identifier
+    // would have to contain the word.
+    expect(source).not.toMatch(/import[\s\S]*?from '\.\/FuturesProtectionService'/);
+    expect(orderPath).not.toContain('FuturesProtectionService');
     // And the one thing protection relies on is still the reduce-only
     // guarantee itself, stated in the engine rather than assumed here.
     expect(orderPath).toContain('reduceOnly order would exceed the current position size');

@@ -22,10 +22,16 @@ function makeFakePrisma(opts?: {
   userCreatedAt?: Date;
   orders?: any[];
   positions?: any[];
+  /** TP/SL rows, so admission can be asked the one question it now asks
+   *  the database: is a close already in flight for this bucket? */
+  protections?: any[];
 }) {
   const balances = new Map(Object.entries(opts?.balances ?? {}));
   const orders = new Map<string, any>((opts?.orders ?? []).map((order) => [order.id, { createdAt: new Date(), updatedAt: new Date(), ...order }]));
   const positions = new Map<string, any>((opts?.positions ?? []).map((position) => [position.id, { ...position }]));
+  const protections = new Map<string, any>(
+    (opts?.protections ?? []).map((row) => [row.id, { kind: 'STOP_LOSS', triggerPrice: '1', revision: 0, ...row }])
+  );
   const trades: any[] = [];
   const faults = { beforeCommit: undefined as (() => Promise<void>) | undefined };
   const userCreatedAt = opts?.userCreatedAt ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000); // 1yr-old account by default
@@ -65,7 +71,30 @@ function makeFakePrisma(opts?: {
         && (where.reduceOnly === undefined || order.reduceOnly === where.reduceOnly)
       ).map((order) => ({ ...order }))),
     },
+    futuresPositionProtection: {
+      findFirst: jest.fn(async ({ where }: any) => {
+        for (const row of protections.values()) {
+          if (
+            (where.positionId?.in === undefined || where.positionId.in.includes(row.positionId)) &&
+            (where.status === undefined || row.status === where.status)
+          ) {
+            return { ...row };
+          }
+        }
+        return null;
+      }),
+      update: jest.fn(async ({ where: { id }, data }: any) => {
+        Object.assign(protections.get(id), data);
+        return { ...protections.get(id) };
+      }),
+    },
     futuresPosition: {
+      findMany: jest.fn(async ({ where }: any) => Array.from(positions.values()).filter((p) =>
+        (where.userId === undefined || p.userId === where.userId)
+        && (where.symbol === undefined || p.symbol === where.symbol)
+        && (where.marginType === undefined || p.marginType === where.marginType)
+        && (where.status === undefined || p.status === where.status)
+      ).map((p) => ({ ...p }))),
       findFirst: jest.fn(async ({ where }: any) => {
         for (const p of positions.values()) {
           if (
@@ -96,7 +125,7 @@ function makeFakePrisma(opts?: {
   };
 
   const prisma = { $queryRaw: jest.fn(async () => [{ status: 'committed' }]), $transaction: jest.fn(async (fn: any) => {
-    const snapshot = [balances, orders, positions].map(map => structuredClone([...map.entries()]));
+    const snapshot = [balances, orders, positions, protections].map(map => structuredClone([...map.entries()]));
     const tradeCount = trades.length;
     let callbackCompleted = false;
     try {
@@ -105,7 +134,7 @@ function makeFakePrisma(opts?: {
       await faults.beforeCommit?.();
       return result;
     } catch (error) {
-      [balances, orders, positions].forEach((map, index) => {
+      [balances, orders, positions, protections].forEach((map, index) => {
         map.clear();
         for (const [key, value] of snapshot[index]) map.set(key, value);
       });
@@ -114,7 +143,7 @@ function makeFakePrisma(opts?: {
       throw error;
     }
   }) } as any;
-  return { prisma, balances, orders, positions, trades, faults, riskLock: tx.$queryRaw, tx };
+  return { prisma, balances, orders, positions, protections, trades, faults, riskLock: tx.$queryRaw, tx };
 }
 
 function bal(balances: Map<string, { available: string; locked: string }>, userId: string, asset: string) {
@@ -925,5 +954,203 @@ describe('FuturesPositionService.placeOrder', () => {
     await service.placeOrder({ userId: 'taker', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: new BigNumber(60500), quantity: new BigNumber(1), leverage: 10, marginType: 'ISOLATED' });
 
     expect(spy).toHaveBeenCalledWith('BTC/USDT', expect.any(BigNumber));
+  });
+});
+
+// ── Admission while a stop is closing the position ───────────────────
+
+/**
+ * THE REMAINING HALF OF THE REOPEN RACE.
+ *
+ * When a trigger wins its claim it now cancels the bucket's resting entry
+ * orders in the same transaction. But that transaction COMMITS and releases
+ * the futures-book lock before the reduce-only close runs — it has to, or
+ * the close would deadlock against itself taking the same lock.
+ *
+ * In that window nothing stopped a user placing a BRAND NEW non-reduce-only
+ * order into the same `(userId, symbol, marginType)` bucket. It was never
+ * there to be cancelled, it outlives the close, and when it fills it
+ * re-opens the exposure the stop just closed.
+ *
+ * So admission refuses it: while a TRIGGERING protection exists for an OPEN
+ * position in this bucket, the bucket takes no new exposure. Reduce-only is
+ * still admitted, because the close itself is a reduce-only MARKET through
+ * this very method.
+ */
+describe('a bucket whose stop is mid-close admits no new exposure', () => {
+  const REJECTION = 'A stop is currently closing this position; new orders for it are rejected until that completes';
+
+  const position = (over: Record<string, any> = {}) => ({
+    id: 'pos-1', userId: 'taker', symbol: 'BTC/USDT', side: 'LONG', size: '1', entryPrice: '60000',
+    leverage: 10, marginType: 'ISOLATED', initialMargin: '6000', liquidationPrice: '54000',
+    status: 'OPEN', realizedPnl: '0', ...over,
+  });
+  const protection = (over: Record<string, any> = {}) => ({
+    id: 'prot-1', positionId: 'pos-1', userId: 'taker', symbol: 'BTC/USDT',
+    kind: 'STOP_LOSS', status: 'TRIGGERING', ...over,
+  });
+
+  /** Liquidity resting on BOTH sides before anything under test runs, so a
+   *  MARKET order here fails on admission rather than on an empty book —
+   *  otherwise "rejected" would prove nothing about the guard. The bid sits
+   *  below the ask so the two do not cross each other on the way in. */
+  async function setup(opts: Parameters<typeof makeFakePrisma>[0] = {}) {
+    const engine = new MatchingEngine();
+    const state = makeFakePrisma({
+      balances: {
+        'taker:USDT': { available: '1000000', locked: '0' },
+        'other:USDT': { available: '1000000', locked: '0' },
+        'maker:USDT': { available: '1000000', locked: '0' },
+        'bidder:USDT': { available: '1000000', locked: '0' },
+      },
+      ...opts,
+    });
+    const service = new FuturesPositionService(state.prisma, engine, makeMarkPriceService('60000'));
+    await service.placeOrder({
+      userId: 'maker', symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT',
+      price: new BigNumber(60000), quantity: new BigNumber(5), leverage: 10, marginType: 'ISOLATED',
+    });
+    await service.placeOrder({
+      userId: 'bidder', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT',
+      price: new BigNumber(59000), quantity: new BigNumber(5), leverage: 10, marginType: 'ISOLATED',
+    });
+    const makerOrders = state.orders.size;
+    const makerLocked = bal(state.balances, 'maker', 'USDT').locked.toFixed();
+    return { service, engine, ...state, makerOrders, makerLocked };
+  }
+
+  const entry = (over: Record<string, any> = {}) => ({
+    userId: 'taker', symbol: 'BTC/USDT', side: 'BUY' as const, type: 'LIMIT' as const,
+    price: new BigNumber(60000), quantity: new BigNumber(1), leverage: 10, marginType: 'ISOLATED' as const, ...over,
+  });
+
+  it('1. rejects a non-reduceOnly LIMIT, writing no order row and locking no margin', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+    const before = bal(f.balances, 'taker', 'USDT');
+
+    await expect(f.service.placeOrder(entry())).rejects.toThrow(REJECTION);
+
+    // Nothing partial: no row, no reservation, and the book is untouched.
+    expect(f.orders.size).toBe(f.makerOrders);
+    expect([...f.orders.values()].some((o) => o.userId === 'taker')).toBe(false);
+    expect(bal(f.balances, 'taker', 'USDT').locked.toFixed()).toBe(before.locked.toFixed());
+    expect(bal(f.balances, 'taker', 'USDT').available.toFixed()).toBe(before.available.toFixed());
+    expect(f.engine.getBook('BTC/USDT').getBook('BUY').map((o) => o.userId)).toEqual(['bidder']);
+    // And the position it was going to reopen is still exactly as it was.
+    expect(f.positions.get('pos-1')).toMatchObject({ size: '1', status: 'OPEN' });
+  });
+
+  it('2. rejects a non-reduceOnly MARKET the same way, even with liquidity waiting', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+    const before = bal(f.balances, 'taker', 'USDT');
+
+    await expect(
+      f.service.placeOrder(entry({ type: 'MARKET', price: undefined }))
+    ).rejects.toThrow(REJECTION);
+
+    // The maker's 5 BTC is sitting right there — this was refused by
+    // admission, not by the book.
+    expect(f.trades).toHaveLength(0);
+    expect(f.orders.size).toBe(f.makerOrders);
+    expect(bal(f.balances, 'taker', 'USDT').locked.toFixed()).toBe(before.locked.toFixed());
+    expect(bal(f.balances, 'maker', 'USDT').locked.toFixed()).toBe(f.makerLocked);
+  });
+
+  it('3. still admits the reduce-only close itself — it is the thing being protected', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+
+    const result = await f.service.placeOrder({
+      userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'MARKET',
+      quantity: new BigNumber(1), leverage: 10, marginType: 'ISOLATED', reduceOnly: true,
+    });
+
+    expect(result.trades).toHaveLength(1);
+    expect(f.positions.get('pos-1')).toMatchObject({ status: 'CLOSED', size: '0' });
+  });
+
+  it('4. another USER placing into the same market is unaffected', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+
+    const result = await f.service.placeOrder(entry({ userId: 'other' }));
+
+    expect(result.order.status).toBe('FILLED');
+  });
+
+  it('5. the same user in another SYMBOL is unaffected', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+
+    const result = await f.service.placeOrder(entry({ symbol: 'ETH/USDT', price: new BigNumber(3000) }));
+
+    expect(result.order.status).toBe('OPEN');
+    expect(f.orders.get(result.order.id)).toMatchObject({ symbol: 'ETH/USDT', reduceOnly: false });
+  });
+
+  it('6. the same user in another MARGIN TYPE is unaffected', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+
+    const result = await f.service.placeOrder(entry({ marginType: 'CROSS' }));
+
+    expect(result.order.status).toBe('FILLED');
+    expect([...f.positions.values()].find((p) => p.userId === 'taker' && p.marginType === 'CROSS')).toBeTruthy();
+  });
+
+  it('7. a PENDING protection is an ARMED stop, not a closing one — admission is normal', async () => {
+    // The distinction the guard turns on. Almost every protected position in
+    // production sits here, and blocking it would break ordinary trading.
+    const f = await setup({ positions: [position()], protections: [protection({ status: 'PENDING' })] });
+
+    const result = await f.service.placeOrder(entry());
+
+    expect(result.order.status).toBe('FILLED');
+    expect(f.positions.get('pos-1')).toMatchObject({ size: '2' });
+  });
+
+  it.each(['EXECUTED', 'CANCELLED', 'FAILED'])('8. a %s protection blocks nothing — the close is over', async (status) => {
+    const f = await setup({ positions: [position()], protections: [protection({ status })] });
+
+    const result = await f.service.placeOrder(entry());
+
+    expect(result.order.status).toBe('FILLED');
+  });
+
+  it('10. the guard is temporary: once the claim resolves the bucket admits orders again', async () => {
+    const f = await setup({ positions: [position()], protections: [protection()] });
+
+    // Mid-close: refused.
+    await expect(f.service.placeOrder(entry())).rejects.toThrow(REJECTION);
+
+    // The close completes and resolves the trigger, exactly as fire() does.
+    await f.service.placeOrder({
+      userId: 'taker', symbol: 'BTC/USDT', side: 'SELL', type: 'MARKET',
+      quantity: new BigNumber(1), leverage: 10, marginType: 'ISOLATED', reduceOnly: true,
+    });
+    f.protections.get('prot-1')!.status = 'EXECUTED';
+
+    // A genuinely new order is now ordinary business — this was never a
+    // permanent lock on the bucket.
+    const result = await f.service.placeOrder(entry());
+    expect(result.order.status).toBe('FILLED');
+    expect(f.orders.get(result.order.id)).toMatchObject({ userId: 'taker', reduceOnly: false });
+  });
+
+  it('the block is decided by DATABASE state, not by anything held in memory', async () => {
+    // Two services over the same database, each with its OWN matching
+    // engine — the way two backend processes see each other. The one that
+    // knows nothing about the claim must still refuse.
+    const f = await setup({ positions: [position()], protections: [protection()] });
+    const stranger = new FuturesPositionService(f.prisma, new MatchingEngine(), makeMarkPriceService('60000'));
+
+    await expect(stranger.placeOrder(entry())).rejects.toThrow(REJECTION);
+  });
+
+  it('a TRIGGERING claim on a CLOSED position blocks nothing', async () => {
+    // The bucket match is against an OPEN position. A stale claim pointing
+    // at a position that is already gone protects nothing and must not
+    // wedge the bucket.
+    const f = await setup({ positions: [position({ status: 'CLOSED', size: '0' })], protections: [protection()] });
+
+    const result = await f.service.placeOrder(entry());
+
+    expect(result.order.status).toBe('FILLED');
   });
 });
