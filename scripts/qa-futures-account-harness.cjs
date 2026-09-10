@@ -220,6 +220,72 @@ function freshSpotOrders() {
   }];
 }
 
+/**
+ * Futures TP/SL fixture state, keyed by position id.
+ *
+ * Deliberately mirrors the SERVER contract rather than the UI's wishes: the
+ * positions payload carries `protection`, and the editor's PUT/DELETE are
+ * the only way it ever changes. So a browser run genuinely exercises "the
+ * row shows server state" — if the UI ever painted a local draft as armed,
+ * a reload against this harness would contradict it.
+ */
+function protectionOf(acct, positionId) {
+  acct.protection = acct.protection || {};
+  acct.protection[positionId] = acct.protection[positionId] || { takeProfit: null, stopLoss: null };
+  return acct.protection[positionId];
+}
+
+function protectionTrigger(kind, triggerPrice, revision = 0) {
+  return {
+    id: `prot-${kind}-${Date.now()}`, kind, triggerPrice: String(triggerPrice),
+    status: 'PENDING', lastError: null, attempts: 0, revision,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Two states the real server can be in that a browser run has to be able to
+ * reach, driven by /__qa/protection-state:
+ *
+ *   triggering  — a trigger has been claimed and is executing, so PUT and
+ *                 DELETE answer 409 PROTECTION_TRIGGERING
+ *   markDown    — no authoritative mark price, so ARMING answers 503
+ *                 MARK_PRICE_UNAVAILABLE while REMOVING still succeeds
+ *
+ * Fixture switches, not new product behaviour: the codes, the statuses and
+ * which verbs they block are exactly what FuturesProtectionService does.
+ */
+const qaProtectionState = { triggering: false, markDown: false };
+
+/** The same rules FuturesProtectionService.validateTriggers enforces. */
+function validateProtection(position, takeProfit, stopLoss) {
+  const mark = qaProtectionState.markDown ? undefined : MARK[position.symbol];
+  const long = position.side === 'LONG';
+  for (const [label, v] of [['takeProfit', takeProfit], ['stopLoss', stopLoss]]) {
+    if (v === null) continue;
+    if (!Number.isFinite(v) || v <= 0) return `${label} must be a positive price`;
+  }
+  if (takeProfit !== null && stopLoss !== null) {
+    const ordered = long ? stopLoss < takeProfit : stopLoss > takeProfit;
+    if (!ordered) {
+      return long
+        ? 'stopLoss must be below takeProfit for a LONG position'
+        : 'stopLoss must be above takeProfit for a SHORT position';
+    }
+  }
+  if (!Number.isFinite(mark)) return null;
+  if (long) {
+    if (takeProfit !== null && !(takeProfit > mark)) return 'takeProfit must be above the current mark price for a LONG position';
+    if (stopLoss !== null && !(stopLoss < mark)) return 'stopLoss must be below the current mark price for a LONG position';
+  } else {
+    if (takeProfit !== null && !(takeProfit < mark)) return 'takeProfit must be below the current mark price for a SHORT position';
+    if (stopLoss !== null && !(stopLoss > mark)) return 'stopLoss must be above the current mark price for a SHORT position';
+  }
+  return null;
+}
+
+const PROTECTION_PATH = /^\/api\/v1\/futures\/positions\/([^/]+)\/protection$/;
+
 function authedRoutes(pathname, acct, query) {
   if (pathname === '/api/v1/me') return acct.me;
   if (pathname === '/api/v1/orders/me') {
@@ -231,7 +297,15 @@ function authedRoutes(pathname, acct, query) {
   }
   if (pathname === '/api/v1/balances') return acct.spot;
   if (pathname === '/api/v1/futures/balances') return acct.futures;
-  if (pathname === '/api/v1/futures/positions') return acct.positions;
+  if (pathname === '/api/v1/futures/positions') {
+    return acct.positions.map((p) => ({ ...p, protection: protectionOf(acct, p.id) }));
+  }
+  const read = PROTECTION_PATH.exec(pathname);
+  if (read) {
+    const position = acct.positions.find((p) => p.id === read[1]);
+    if (!position) return undefined; // 404, same as another user's position
+    return { positionId: position.id, ...protectionOf(acct, position.id) };
+  }
   if (pathname === '/api/v1/futures/positions/history') return acct.history;
   if (pathname === '/api/v1/futures/orders/me') return acct.orders;
   if (pathname === '/api/v1/trades/me') return [];
@@ -249,7 +323,17 @@ const server = http.createServer(async (req, res) => {
   };
 
   if (pathname === '/__qa/hits') return json(200, Object.fromEntries(hits));
-  if (pathname === '/__qa/reset') { hits.clear(); accounts = freshAccounts(); failing = new Set(); return json(200, { ok: true }); }
+  if (pathname === '/__qa/reset') {
+    hits.clear(); accounts = freshAccounts(); failing = new Set();
+    qaProtectionState.triggering = false; qaProtectionState.markDown = false;
+    return json(200, { ok: true });
+  }
+  // ?triggering=1&markDown=1 — see qaProtectionState.
+  if (pathname === '/__qa/protection-state') {
+    qaProtectionState.triggering = url.searchParams.get('triggering') === '1';
+    qaProtectionState.markDown = url.searchParams.get('markDown') === '1';
+    return json(200, { ...qaProtectionState });
+  }
   if (pathname === '/__qa/fail') {
     const spec = url.searchParams.get('paths');
     failing = new Set(spec ? spec.split(',').filter(Boolean) : []);
@@ -281,6 +365,46 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ── Writes against the in-memory fixture account ────────────────
+    const protectionWrite = PROTECTION_PATH.exec(pathname);
+    if (protectionWrite && (req.method === 'PUT' || req.method === 'DELETE')) {
+      const position = acct.positions.find((p) => p.id === protectionWrite[1]);
+      if (!position) return json(404, { error: 'Position not found or not open' });
+      const state = protectionOf(acct, position.id);
+
+      // A claimed trigger cannot be edited or cancelled — there is no honest
+      // way to recall a market order already on its way.
+      if (qaProtectionState.triggering) {
+        return json(409, {
+          error: "This position's stop loss is executing right now; protection cannot be changed until it settles",
+          code: 'PROTECTION_TRIGGERING',
+        });
+      }
+
+      if (req.method === 'DELETE') {
+        state.takeProfit = null;
+        state.stopLoss = null;
+        res.writeHead(204, { 'access-control-allow-origin': '*' });
+        return res.end();
+      }
+      const b = await readBody(req);
+      const tp = b.takeProfit === undefined || b.takeProfit === null ? null : num(b.takeProfit);
+      const sl = b.stopLoss === undefined || b.stopLoss === null ? null : num(b.stopLoss);
+      // ARMING needs an authoritative mark price. CLEARING never does — a
+      // trader must always be able to take a stop off.
+      if ((tp !== null || sl !== null) && qaProtectionState.markDown) {
+        return json(503, {
+          error: `No authoritative mark price for ${position.symbol}; protection was not changed`,
+          code: 'MARK_PRICE_UNAVAILABLE',
+        });
+      }
+      const problem = validateProtection(position, tp, sl);
+      if (problem) return json(400, { error: problem, code: 'INVALID_PROTECTION' });
+      const bump = (side) => (side ? side.revision + 1 : 0);
+      state.takeProfit = tp === null ? null : protectionTrigger('TAKE_PROFIT', tp, bump(state.takeProfit));
+      state.stopLoss = sl === null ? null : protectionTrigger('STOP_LOSS', sl, bump(state.stopLoss));
+      return json(200, { positionId: position.id, ...state });
+    }
+
     if (req.method === 'POST' && pathname === '/api/v1/futures/orders') {
       const b = await readBody(req);
       const price = b.type === 'MARKET' ? MARK[b.symbol] : num(b.price);

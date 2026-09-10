@@ -50,13 +50,60 @@ export class LiquidationEngine {
     return liquidatedCount;
   }
 
-  /** Force-closes one position at `markPrice`. Re-checks status inside the
-   * transaction so a position closed by the user between the scan and now
-   * is never double-liquidated. Returns false (no-op) in that case. */
+  /** Force-closes one position at `markPrice`. CLAIMS the position inside
+   * the transaction so a position closed by the user, or by a TP/SL
+   * trigger, between the scan and now is never double-liquidated. Returns
+   * false (no-op) in that case. */
   async liquidatePosition(positionId: string, markPrice: BigNumber): Promise<boolean> {
     return this.prisma.$transaction(async (tx: TxClient) => {
+      // THE SAME LOCK EVERY FUTURES CLOSE ALREADY TAKES.
+      //
+      // `FuturesBookTransaction.run` wraps every placement, cancellation and
+      // reduce-only close in exactly this advisory transaction lock — the
+      // same literal key, because a different one would serialize nothing.
+      // Taking it here makes the ordering between liquidation and a TP/SL or
+      // manual close DETERMINISTIC rather than a question of how READ
+      // COMMITTED and SERIALIZABLE snapshots happen to interleave:
+      //
+      //   close wins the lock  -> liquidation waits, then sees the position
+      //                           is no longer OPEN and no-ops
+      //   liquidation wins it  -> it settles, and the close's reduce-only
+      //                           preflight then finds no opposing capacity
+      //
+      // Either way exactly one settlement happens. The conditional claim
+      // below is KEPT as defence in depth, so the invariant does not rest on
+      // a single mechanism.
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended('futures-book', 0))::text AS locked`
+      );
+
+      // A CONDITIONAL WRITE, not a read-then-check.
+      //
+      // Belt to the lock's braces. Even holding `futures-book`, a
+      // `findUnique` + `if (status !== 'OPEN')` guard would be a snapshot
+      // read at READ COMMITTED, and a status set by anything that does NOT
+      // take the lock would still slip past it and settle a position
+      // somebody else had already settled: PnL realized twice and the same
+      // margin released twice. `updateMany` compiles to a single
+      // `UPDATE ... WHERE id = ? AND status = 'OPEN'`, and PostgreSQL takes
+      // the row lock and re-evaluates that predicate against the newest
+      // committed version, so exactly one closer can ever see count === 1.
+      //
+      // Only the guard changed. The liquidation trigger condition, the
+      // maintenance-margin and liquidation-price formulas, the total
+      // forfeiture of locked margin and the insurance-fund settlement below
+      // are all exactly as they were.
+      const claimed = await tx.futuresPosition.updateMany({
+        where: { id: positionId, status: 'OPEN' },
+        data: { status: 'LIQUIDATED' },
+      });
+      if (claimed.count === 0) return false;
+
+      // Read AFTER the claim: this now reflects any concurrent partial
+      // reduce that committed first, so size and margin are the position's
+      // real current figures rather than a pre-claim snapshot's.
       const position = await tx.futuresPosition.findUnique({ where: { id: positionId } });
-      if (!position || position.status !== 'OPEN') return false;
+      if (!position) return false;
 
       const side = position.side as PositionSide;
       const size = new BigNumber(position.size.toString());
@@ -82,6 +129,8 @@ export class LiquidationEngine {
       await tx.futuresPosition.update({
         where: { id: position.id },
         data: {
+          // status is already LIQUIDATED from the claim above; restated here
+          // so the row this method writes is complete and self-describing.
           status: 'LIQUIDATED',
           closedAt: new Date(),
           size: '0',

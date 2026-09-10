@@ -1,9 +1,10 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { FuturesPositionService } from '../../futures/FuturesPositionService';
+import { FuturesProtectionService, NotFound, Conflict, MarkPriceUnavailable } from '../../futures/FuturesProtectionService';
 import { MarkPriceService } from '../../futures/MarkPriceService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { FuturesMarketRegistry } from '../../futures/FuturesMarketRegistry';
@@ -38,6 +39,24 @@ const placeOrderSchema = z
     path: ['price'],
   });
 
+/**
+ * TP/SL for an open position. A PUT of the WHOLE protection, so an omitted
+ * or null side means "no trigger on that side" rather than "leave it alone"
+ * — that is what makes removing one leg expressible without a second verb.
+ */
+const protectionSchema = z.object({
+  takeProfit: z
+    .string()
+    .refine((v) => new BigNumber(v).isGreaterThan(0), 'takeProfit must be > 0')
+    .nullable()
+    .optional(),
+  stopLoss: z
+    .string()
+    .refine((v) => new BigNumber(v).isGreaterThan(0), 'stopLoss must be > 0')
+    .nullable()
+    .optional(),
+});
+
 const transferSchema = z.object({
   asset: z.string(),
   amount: z.string().refine((v) => new BigNumber(v).isGreaterThan(0), 'amount must be > 0'),
@@ -57,7 +76,8 @@ export function futuresRouter(
   engine: MatchingEngine,
   positionService: FuturesPositionService,
   markPriceService: MarkPriceService,
-  marketRegistry: FuturesMarketRegistry
+  marketRegistry: FuturesMarketRegistry,
+  protectionService: FuturesProtectionService
 ): Router {
   const router = Router();
 
@@ -221,6 +241,11 @@ export function futuresRouter(
     for (const symbol of new Set(positions.map((p) => p.symbol))) {
       markPrices.set(symbol, await markPriceService.getMarkPrice(symbol));
     }
+    // TP/SL travels WITH the position rather than behind a second endpoint
+    // the client would have to poll per row. One extra indexed read for the
+    // whole list, and the positions table the trader is already watching
+    // shows real server state without any new timer anywhere.
+    const protection = await protectionService.activeProtectionByPosition(positions.map((p) => p.id));
 
     res.json(
       positions.map((p) => {
@@ -244,6 +269,10 @@ export function futuresRouter(
           unrealizedPnl: unrealizedPnl?.toString() ?? null,
           roe: roe ? roe.times(100).toString() : null,
           openedAt: p.openedAt,
+          // Real, persisted trigger state — never an echo of something the
+          // client typed. `null` on a side means no protection is armed
+          // there, which is a fact the server is asserting.
+          protection: protection.get(p.id) ?? { takeProfit: null, stopLoss: null },
         };
       })
     );
@@ -304,6 +333,48 @@ export function futuresRouter(
     }
   });
 
+  /**
+   * Take Profit / Stop Loss on an OPEN futures position.
+   *
+   * Futures-only by construction: nothing here reads or writes `Order`,
+   * `PENDING_TRIGGER`, `updateOrderTrigger` or any other part of the spot
+   * conditional-order stack, and the trigger authority is the futures MARK
+   * price. The separation PR #15 established stays intact.
+   *
+   * Ownership is checked on the POSITION, and a position belonging to
+   * somebody else answers 404 exactly like one that does not exist, so
+   * these routes cannot be used to discover another account's positions.
+   */
+  router.get('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+    const protection = await protectionService.getProtection(req.userId!, req.params.positionId);
+    if (!protection) return res.status(404).json({ error: 'Position not found' });
+    res.json(protection);
+  });
+
+  router.put('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    const parsed = protectionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const { takeProfit, stopLoss } = parsed.data;
+    try {
+      const protection = await protectionService.setProtection(req.userId!, req.params.positionId, {
+        takeProfit: takeProfit ? new BigNumber(takeProfit) : null,
+        stopLoss: stopLoss ? new BigNumber(stopLoss) : null,
+      });
+      res.json(protection);
+    } catch (err: any) {
+      return protectionError(res, err);
+    }
+  });
+
+  router.delete('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    try {
+      await protectionService.clearProtection(req.userId!, req.params.positionId);
+      res.status(204).send();
+    } catch (err: any) {
+      return protectionError(res, err);
+    }
+  });
+
   router.get('/futures/balances', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
     const balances = await prisma.futuresBalance.findMany({ where: { userId: req.userId } });
     res.json(balances.map((b) => ({ asset: b.asset, available: b.available.toString(), locked: b.locked.toString() })));
@@ -361,6 +432,29 @@ export function futuresRouter(
   });
 
   return router;
+}
+
+/**
+ * One error contract for all three protection routes.
+ *
+ * The codes carry real meaning, so a client can react rather than guess:
+ *
+ *   404  not yours, or not there — deliberately the same answer for both
+ *   409  a trigger on this position is EXECUTING; the same request will
+ *        succeed once it settles, and nothing was changed
+ *   503  no authoritative mark price to arm a trigger against; the
+ *        instruction was fine, the data it needs is temporarily missing
+ *   400  the instruction itself is wrong (a level on the wrong side, say)
+ *
+ * `code` is machine-readable so the UI never has to match on prose.
+ */
+function protectionError(res: Response, err: any) {
+  if (err instanceof NotFound) return res.status(404).json({ error: err.message, code: 'NOT_FOUND' });
+  if (err instanceof Conflict) return res.status(409).json({ error: err.message, code: 'PROTECTION_TRIGGERING' });
+  if (err instanceof MarkPriceUnavailable) {
+    return res.status(503).json({ error: err.message, code: 'MARK_PRICE_UNAVAILABLE' });
+  }
+  return res.status(400).json({ error: err.message, code: 'INVALID_PROTECTION' });
 }
 
 function symbolFromSlug(slug: string): string {
