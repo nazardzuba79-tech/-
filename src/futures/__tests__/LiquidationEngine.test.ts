@@ -82,13 +82,24 @@ function makeFakePrisma(
     },
   };
 
+  // The engine now takes the SAME `futures-book` advisory lock every futures
+  // close takes, so the transaction client has to answer $queryRaw. Recorded
+  // rather than simulated: that the real lock actually serializes is proven
+  // against a live PostgreSQL in futuresBookLock.pg.test.ts, which a fake
+  // cannot do.
+  const locks: string[] = [];
+  (tx as any).$queryRaw = jest.fn(async (sql: any) => {
+    locks.push(Array.isArray(sql?.strings) ? sql.strings.join('?') : String(sql?.sql ?? sql));
+    return [{ locked: 'true' }];
+  });
+
   const findManyOpen = jest.fn(async () => Array.from(positionMap.values()).filter((p) => p.status === 'OPEN'));
   const prisma = {
     $transaction: jest.fn(async (fn: any) => fn(tx)),
     futuresPosition: { findMany: findManyOpen },
   } as any;
 
-  return { prisma, positionMap, balanceMap, insuranceFund, insuranceLedger };
+  return { prisma, positionMap, balanceMap, insuranceFund, insuranceLedger, locks };
 }
 
 function makeMarkPriceService(price: string) {
@@ -392,5 +403,50 @@ describe('a position closed underneath the sweep is never settled twice', () => 
     // Settled against 0.5 at 3000 margin, not the 1 / 6000 the scan saw.
     expect(positionMap.get('p1').realizedPnl).toBe('-3000');
     expect(balanceMap.get('u1:USDT')).toEqual({ available: '7000', locked: '0' });
+  });
+});
+
+describe('the sweep runs inside the shared futures-book lock', () => {
+  it('takes the SAME advisory key every futures close takes, before it claims anything', async () => {
+    const positions = [{
+      id: 'p1', userId: 'u1', symbol: 'BTC/USDT', side: 'LONG', size: '1',
+      entryPrice: '60000', leverage: 10, initialMargin: '6000',
+      liquidationPrice: '54300', status: 'OPEN',
+    }];
+    const { prisma, locks } = makeFakePrisma(positions, { 'u1:USDT': { available: '4000', locked: '6000' } });
+
+    await new LiquidationEngine(prisma, makeMarkPriceService('54000')).liquidatePosition('p1', new BigNumber('54000'));
+
+    // A DIFFERENT key would serialize nothing at all, which is the whole
+    // failure mode this guards: the string must be identical to the one
+    // FuturesBookTransaction uses.
+    expect(locks).toHaveLength(1);
+    expect(locks[0]).toContain('pg_advisory_xact_lock');
+    expect(locks[0]).toContain("hashtextextended('futures-book', 0)");
+
+    const source = require('fs').readFileSync(require('path').resolve(__dirname, '../LiquidationEngine.ts'), 'utf8');
+    const shared = require('fs').readFileSync(require('path').resolve(__dirname, '../FuturesBookTransaction.ts'), 'utf8');
+    const key = "pg_advisory_xact_lock(hashtextextended('futures-book', 0))";
+    expect(source).toContain(key);
+    expect(shared).toContain(key);
+    // Taken BEFORE the claim, or the serialization would come too late.
+    const code = source
+      .slice(source.indexOf('async liquidatePosition('))
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    expect(code.indexOf('pg_advisory_xact_lock')).toBeLessThan(code.indexOf('updateMany'));
+  });
+
+  it('the lock is taken even when the position turns out not to be liquidatable', async () => {
+    // Otherwise a no-op sweep could still race a close it never waited for.
+    const positions = [{
+      id: 'p1', userId: 'u1', symbol: 'BTC/USDT', side: 'LONG', size: '0',
+      entryPrice: '60000', leverage: 10, initialMargin: '6000',
+      liquidationPrice: '54300', status: 'CLOSED',
+    }];
+    const { prisma, locks } = makeFakePrisma(positions, { 'u1:USDT': { available: '4000', locked: '0' } });
+
+    expect(await new LiquidationEngine(prisma, makeMarkPriceService('54000')).liquidatePosition('p1', new BigNumber('54000'))).toBe(false);
+    expect(locks).toHaveLength(1);
   });
 });

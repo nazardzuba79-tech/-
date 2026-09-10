@@ -23,6 +23,15 @@ const source = (path: string) => readFileSync(resolve(frontend, 'src', path), 'u
 const pending = () => new Promise<any>(() => {});
 const tick = async () => { for (let i = 0; i < 6; i += 1) await Promise.resolve(); };
 
+/** The shape `lib/api` really throws: a message plus `status` and a parsed
+ *  `body` carrying a machine-readable `code`. The component branches on the
+ *  code, so a bare Error here would leave that branch untested. */
+class ApiError extends Error {
+  constructor(message: string, public status = 400, public body: Record<string, unknown> = {}) {
+    super(message);
+  }
+}
+
 const CELL = 'components/FuturesPositionProtection.tsx';
 const PANEL = 'components/FuturesPositionsPanel.tsx';
 
@@ -72,7 +81,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   const output: any = {};
   new Function('require', 'exports', 'window', 'document', compiled)((name: string) => {
     if (name === 'react') return react;
-    if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/api') return { api, ApiError };
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name.endsWith('.css')) return {};
@@ -290,7 +299,11 @@ describe('creating, editing and removing protection', () => {
 
 describe('a failed save never looks like a successful one', () => {
   it('keeps the editor open, shows the reason, and leaves the chips on server state', async () => {
-    const save = jest.fn().mockRejectedValue(new Error('stopLoss must be below the current mark price for a LONG position'));
+    // A real ApiError, which is what `lib/api` throws — a bare Error would
+    // exercise the generic fallback instead of the server-message path.
+    const save = jest.fn().mockRejectedValue(
+      new ApiError('stopLoss must be below the current mark price for a LONG position', 400, { code: 'INVALID_PROTECTION' })
+    );
     const c = cell({ protection: { takeProfit: trigger('TAKE_PROFIT', '110000'), stopLoss: null }, save });
     const tree = openEditor(c);
     type(tree, 'sl', '150000');
@@ -307,7 +320,7 @@ describe('a failed save never looks like a successful one', () => {
   });
 
   it('a failed remove does not clear the chips either', async () => {
-    const clear = jest.fn().mockRejectedValue(new Error('boom'));
+    const clear = jest.fn().mockRejectedValue(new ApiError('boom', 400, { code: 'INVALID_PROTECTION' }));
     const c = cell({ protection: { takeProfit: trigger('TAKE_PROFIT', '110000'), stopLoss: null }, clear });
     const tree = openEditor(c);
     tree && byClass(tree, 'fut-tpslRemove')[0].props.onClick();
@@ -338,6 +351,82 @@ describe('a failed save never looks like a successful one', () => {
 });
 
 // ── Separation and wiring ───────────────────────────────────────────
+
+// ── Review follow-up: honest words for 409 and 503 ──────────────────
+
+describe('a conflict and a missing mark price are told plainly, never papered over', () => {
+  it('409 while a trigger is executing: the chips stay, and the row is refreshed to show the truth', async () => {
+    const save = jest.fn().mockRejectedValue(
+      new ApiError('stop loss is executing', 409, { code: 'PROTECTION_TRIGGERING' })
+    );
+    const c = cell({ protection: { takeProfit: null, stopLoss: trigger('STOP_LOSS', '95000') }, save });
+    const tree = openEditor(c);
+    type(tree, 'sl', '90000');
+    await submitForm(c.render());
+    const after = c.render();
+
+    expect(text(after)).toContain('futures.protectionTriggering');
+    // Server state, unchanged — the edit did not happen.
+    expect(chips(after)).toEqual(['futures.stopLossShort 95000']);
+    // The row IS refreshed, so the trader sees the trigger firing rather
+    // than a frozen snapshot.
+    expect(c.onSaved).toHaveBeenCalledTimes(1);
+    // Still open, so the message is readable.
+    expect(nodes(after).some((n: any) => n.type === 'form')).toBe(true);
+  });
+
+  it('409 on a REMOVE never reads as a successful cancellation', async () => {
+    const clear = jest.fn().mockRejectedValue(
+      new ApiError('take profit is executing', 409, { code: 'PROTECTION_TRIGGERING' })
+    );
+    const c = cell({ protection: { takeProfit: trigger('TAKE_PROFIT', '110000'), stopLoss: null }, clear });
+    const tree = openEditor(c);
+    byClass(tree, 'fut-tpslRemove')[0].props.onClick();
+    await tick();
+    const after = c.render();
+
+    expect(text(after)).toContain('futures.protectionTriggering');
+    // The chip is still there. Nothing was cancelled, and nothing pretends
+    // it was.
+    expect(chips(after)).toEqual(['futures.takeProfitShort 110000']);
+  });
+
+  it('503 with no mark price says so, and does not blame the trader', async () => {
+    const save = jest.fn().mockRejectedValue(
+      new ApiError('No authoritative mark price', 503, { code: 'MARK_PRICE_UNAVAILABLE' })
+    );
+    const c = cell({ save });
+    const tree = openEditor(c);
+    type(tree, 'tp', '110000');
+    await submitForm(c.render());
+    const after = c.render();
+
+    expect(text(after)).toContain('futures.protectionNoMarkPrice');
+    expect(chips(after)).toEqual([]);
+    // Nothing was armed, so nothing is refreshed as though it had been.
+    expect(c.onSaved).not.toHaveBeenCalled();
+  });
+
+  it('any other failure still shows the server’s own words', async () => {
+    const save = jest.fn().mockRejectedValue(
+      new ApiError('stopLoss must be below the current mark price for a LONG position', 400, { code: 'INVALID_PROTECTION' })
+    );
+    const c = cell({ save });
+    const tree = openEditor(c);
+    type(tree, 'sl', '150000');
+    await submitForm(c.render());
+    expect(text(c.render())).toContain('must be below the current mark price');
+  });
+
+  it('the component branches on the CODE, not on message text', () => {
+    const code = source(CELL);
+    expect(code).toContain("code === 'PROTECTION_TRIGGERING'");
+    expect(code).toContain("code === 'MARK_PRICE_UNAVAILABLE'");
+    // Matching on prose would break the moment a message is reworded or
+    // translated. The code is the contract.
+    expect(code).not.toMatch(/err\.message\.includes|message\.match\(/);
+  });
+});
 
 describe('futures-only, and wired into the positions table', () => {
   it('the control never touches a spot conditional-order endpoint', () => {

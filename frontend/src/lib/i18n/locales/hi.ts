@@ -925,6 +925,8 @@ export const HI: Record<Key, string> = {
   'futures.protectionError': 'TP/SL सहेजा नहीं जा सका',
   'futures.protectionRetrying': 'पुनः प्रयास',
   'futures.protectionNotSet': 'सेट नहीं',
+  'futures.protectionTriggering': 'एक ट्रिगर अभी निष्पादित हो रहा है — निपटान के बाद सुरक्षा बदली जा सकती है।',
+  'futures.protectionNoMarkPrice': 'फ़्यूचर्स मार्क प्राइस उपलब्ध नहीं है। अभी TP/SL सेट नहीं हो सकता; हटाना अब भी काम करता है।',
   'futures.loadPositionsError': 'पोज़ीशन लोड नहीं की जा सकीं',
   'futures.long': 'लॉन्ग',
   'futures.short': 'शॉर्ट',

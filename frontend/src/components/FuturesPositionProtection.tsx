@@ -147,7 +147,7 @@ export function FuturesPositionProtectionCell({
     } catch (err) {
       // The editor STAYS OPEN and the chips stay on the old server state.
       // A failed save must not look like a successful one.
-      setError(err instanceof ApiError ? err.message : t('futures.protectionError'));
+      reportFailure(err);
     } finally {
       setSaving(false);
     }
@@ -162,10 +162,39 @@ export function FuturesPositionProtectionCell({
       setOpen(false);
       onSaved();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('futures.protectionError'));
+      reportFailure(err);
     } finally {
       setSaving(false);
     }
+  }
+
+  /**
+   * Two server states get their own words, because they are not bugs and the
+   * trader can act on them:
+   *
+   *   409 PROTECTION_TRIGGERING  a trigger on this position is executing.
+   *       Nothing was changed, and nothing CAN be — there is no honest way to
+   *       recall a market order already in the book. The row is refreshed so
+   *       it shows what is really happening rather than the stale chips.
+   *   503 MARK_PRICE_UNAVAILABLE  no futures mark price to arm against.
+   *       Removing protection still works, which is the important half.
+   *
+   * Anything else keeps the server's own message. In every case the editor
+   * stays open and the chips stay on server state.
+   */
+  function reportFailure(err: unknown) {
+    const code = err instanceof ApiError ? err.body?.code : undefined;
+    if (code === 'PROTECTION_TRIGGERING') {
+      setError(t('futures.protectionTriggering'));
+      // Show the truth: the trigger is firing, so repaint from the server.
+      onSaved();
+      return;
+    }
+    if (code === 'MARK_PRICE_UNAVAILABLE') {
+      setError(t('futures.protectionNoMarkPrice'));
+      return;
+    }
+    setError(err instanceof ApiError ? err.message : t('futures.protectionError'));
   }
 
   const hasAny = Boolean(tp || sl);

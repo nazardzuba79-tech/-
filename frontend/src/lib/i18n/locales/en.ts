@@ -952,6 +952,8 @@ export const EN: Record<Key, string> = {
   'futures.protectionError': 'Could not save TP/SL',
   'futures.protectionRetrying': 'Retrying',
   'futures.protectionNotSet': 'Not set',
+  'futures.protectionTriggering': 'A trigger is executing right now — protection can be changed once it settles.',
+  'futures.protectionNoMarkPrice': 'No futures mark price available. TP/SL cannot be armed right now; removing it still works.',
   'futures.loadPositionsError': 'Could not load positions',
   'futures.long': 'Long',
   'futures.short': 'Short',

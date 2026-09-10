@@ -224,6 +224,9 @@ export interface FuturesProtectionTrigger {
    *  a failure — a FAILED trigger is retried while the position is open. */
   lastError: string | null;
   attempts: number;
+  /** Compare-and-swap token. Bumped by every mutation, so two versions of
+   *  the same trigger are distinguishable even though the id does not move. */
+  revision: number;
   createdAt: string;
   updatedAt: string;
 }

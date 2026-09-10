@@ -56,16 +56,35 @@ export class LiquidationEngine {
    * false (no-op) in that case. */
   async liquidatePosition(positionId: string, markPrice: BigNumber): Promise<boolean> {
     return this.prisma.$transaction(async (tx: TxClient) => {
+      // THE SAME LOCK EVERY FUTURES CLOSE ALREADY TAKES.
+      //
+      // `FuturesBookTransaction.run` wraps every placement, cancellation and
+      // reduce-only close in exactly this advisory transaction lock — the
+      // same literal key, because a different one would serialize nothing.
+      // Taking it here makes the ordering between liquidation and a TP/SL or
+      // manual close DETERMINISTIC rather than a question of how READ
+      // COMMITTED and SERIALIZABLE snapshots happen to interleave:
+      //
+      //   close wins the lock  -> liquidation waits, then sees the position
+      //                           is no longer OPEN and no-ops
+      //   liquidation wins it  -> it settles, and the close's reduce-only
+      //                           preflight then finds no opposing capacity
+      //
+      // Either way exactly one settlement happens. The conditional claim
+      // below is KEPT as defence in depth, so the invariant does not rest on
+      // a single mechanism.
+      await tx.$queryRaw(
+        Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended('futures-book', 0))::text AS locked`
+      );
+
       // A CONDITIONAL WRITE, not a read-then-check.
       //
-      // This transaction runs at the PostgreSQL default (READ COMMITTED) and
-      // holds none of the `futures-book` advisory lock that serializes order
-      // placement, so a reduce-only close — a manual Close, or a stop loss
-      // firing — can commit between a snapshot read and this write. A
-      // `findUnique` + `if (status !== 'OPEN')` guard would still see OPEN
-      // from its own snapshot and go on to settle a position somebody else
-      // had already settled: PnL realized twice and the same margin released
-      // twice. `updateMany` compiles to a single
+      // Belt to the lock's braces. Even holding `futures-book`, a
+      // `findUnique` + `if (status !== 'OPEN')` guard would be a snapshot
+      // read at READ COMMITTED, and a status set by anything that does NOT
+      // take the lock would still slip past it and settle a position
+      // somebody else had already settled: PnL realized twice and the same
+      // margin released twice. `updateMany` compiles to a single
       // `UPDATE ... WHERE id = ? AND status = 'OPEN'`, and PostgreSQL takes
       // the row lock and re-evaluates that predicate against the newest
       // committed version, so exactly one closer can ever see count === 1.

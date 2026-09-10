@@ -965,6 +965,8 @@ export const RU = {
   'futures.protectionError': 'Не удалось сохранить TP/SL',
   'futures.protectionRetrying': 'Повтор',
   'futures.protectionNotSet': 'Не задано',
+  'futures.protectionTriggering': 'Триггер сейчас исполняется — изменить защиту можно после его завершения.',
+  'futures.protectionNoMarkPrice': 'Нет маркировочной цены фьючерса. Установить TP/SL сейчас нельзя; удаление доступно.',
   'futures.loadPositionsError': 'Не удалось загрузить позиции',
   'futures.long': 'Лонг',
   'futures.short': 'Шорт',

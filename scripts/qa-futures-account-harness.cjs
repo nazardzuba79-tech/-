@@ -235,17 +235,31 @@ function protectionOf(acct, positionId) {
   return acct.protection[positionId];
 }
 
-function protectionTrigger(kind, triggerPrice) {
+function protectionTrigger(kind, triggerPrice, revision = 0) {
   return {
     id: `prot-${kind}-${Date.now()}`, kind, triggerPrice: String(triggerPrice),
-    status: 'PENDING', lastError: null, attempts: 0,
+    status: 'PENDING', lastError: null, attempts: 0, revision,
     createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
   };
 }
 
+/**
+ * Two states the real server can be in that a browser run has to be able to
+ * reach, driven by /__qa/protection-state:
+ *
+ *   triggering  — a trigger has been claimed and is executing, so PUT and
+ *                 DELETE answer 409 PROTECTION_TRIGGERING
+ *   markDown    — no authoritative mark price, so ARMING answers 503
+ *                 MARK_PRICE_UNAVAILABLE while REMOVING still succeeds
+ *
+ * Fixture switches, not new product behaviour: the codes, the statuses and
+ * which verbs they block are exactly what FuturesProtectionService does.
+ */
+const qaProtectionState = { triggering: false, markDown: false };
+
 /** The same rules FuturesProtectionService.validateTriggers enforces. */
 function validateProtection(position, takeProfit, stopLoss) {
-  const mark = MARK[position.symbol];
+  const mark = qaProtectionState.markDown ? undefined : MARK[position.symbol];
   const long = position.side === 'LONG';
   for (const [label, v] of [['takeProfit', takeProfit], ['stopLoss', stopLoss]]) {
     if (v === null) continue;
@@ -309,7 +323,17 @@ const server = http.createServer(async (req, res) => {
   };
 
   if (pathname === '/__qa/hits') return json(200, Object.fromEntries(hits));
-  if (pathname === '/__qa/reset') { hits.clear(); accounts = freshAccounts(); failing = new Set(); return json(200, { ok: true }); }
+  if (pathname === '/__qa/reset') {
+    hits.clear(); accounts = freshAccounts(); failing = new Set();
+    qaProtectionState.triggering = false; qaProtectionState.markDown = false;
+    return json(200, { ok: true });
+  }
+  // ?triggering=1&markDown=1 — see qaProtectionState.
+  if (pathname === '/__qa/protection-state') {
+    qaProtectionState.triggering = url.searchParams.get('triggering') === '1';
+    qaProtectionState.markDown = url.searchParams.get('markDown') === '1';
+    return json(200, { ...qaProtectionState });
+  }
   if (pathname === '/__qa/fail') {
     const spec = url.searchParams.get('paths');
     failing = new Set(spec ? spec.split(',').filter(Boolean) : []);
@@ -346,6 +370,16 @@ const server = http.createServer(async (req, res) => {
       const position = acct.positions.find((p) => p.id === protectionWrite[1]);
       if (!position) return json(404, { error: 'Position not found or not open' });
       const state = protectionOf(acct, position.id);
+
+      // A claimed trigger cannot be edited or cancelled — there is no honest
+      // way to recall a market order already on its way.
+      if (qaProtectionState.triggering) {
+        return json(409, {
+          error: "This position's stop loss is executing right now; protection cannot be changed until it settles",
+          code: 'PROTECTION_TRIGGERING',
+        });
+      }
+
       if (req.method === 'DELETE') {
         state.takeProfit = null;
         state.stopLoss = null;
@@ -355,10 +389,19 @@ const server = http.createServer(async (req, res) => {
       const b = await readBody(req);
       const tp = b.takeProfit === undefined || b.takeProfit === null ? null : num(b.takeProfit);
       const sl = b.stopLoss === undefined || b.stopLoss === null ? null : num(b.stopLoss);
+      // ARMING needs an authoritative mark price. CLEARING never does — a
+      // trader must always be able to take a stop off.
+      if ((tp !== null || sl !== null) && qaProtectionState.markDown) {
+        return json(503, {
+          error: `No authoritative mark price for ${position.symbol}; protection was not changed`,
+          code: 'MARK_PRICE_UNAVAILABLE',
+        });
+      }
       const problem = validateProtection(position, tp, sl);
-      if (problem) return json(400, { error: problem });
-      state.takeProfit = tp === null ? null : protectionTrigger('TAKE_PROFIT', tp);
-      state.stopLoss = sl === null ? null : protectionTrigger('STOP_LOSS', sl);
+      if (problem) return json(400, { error: problem, code: 'INVALID_PROTECTION' });
+      const bump = (side) => (side ? side.revision + 1 : 0);
+      state.takeProfit = tp === null ? null : protectionTrigger('TAKE_PROFIT', tp, bump(state.takeProfit));
+      state.stopLoss = sl === null ? null : protectionTrigger('STOP_LOSS', sl, bump(state.stopLoss));
       return json(200, { positionId: position.id, ...state });
     }
 

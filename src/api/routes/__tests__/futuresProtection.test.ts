@@ -6,7 +6,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import BigNumber from 'bignumber.js';
 import { futuresRouter } from '../futures';
-import { NotFound } from '../../../futures/FuturesProtectionService';
+import { NotFound, Conflict, MarkPriceUnavailable } from '../../../futures/FuturesProtectionService';
 
 /**
  * The HTTP contract for futures TP/SL, and the two things a REST surface
@@ -228,6 +228,59 @@ describe('the positions list carries protection so the client needs no second po
       markPrice: '105000',
     });
     expect(res.body[0].unrealizedPnl).toBe('10000');
+  });
+});
+
+describe('the error contract carries a machine-readable code', () => {
+  const failing = (error: Error) => makeApp({
+    protection: {
+      setProtection: jest.fn(async () => { throw error; }),
+      clearProtection: jest.fn(async () => { throw error; }),
+    },
+  });
+
+  it('a trigger mid-execution is 409 PROTECTION_TRIGGERING, on PUT and DELETE alike', async () => {
+    const conflict = new Conflict("This position's stop loss is executing right now; protection cannot be changed until it settles");
+
+    const put = await request(failing(conflict).app).put(URL).set('Authorization', authHeader('owner')).send({ takeProfit: '120000' });
+    expect(put.status).toBe(409);
+    expect(put.body).toMatchObject({ code: 'PROTECTION_TRIGGERING' });
+    expect(put.body.error).toMatch(/executing right now/);
+
+    const del = await request(failing(conflict).app).delete(URL).set('Authorization', authHeader('owner'));
+    expect(del.status).toBe(409);
+    expect(del.body).toMatchObject({ code: 'PROTECTION_TRIGGERING' });
+    // A DELETE that conflicts must NOT answer 204 — that would tell the
+    // trader their protection was cancelled when it is firing.
+    expect(del.status).not.toBe(204);
+  });
+
+  it('no mark price is 503 MARK_PRICE_UNAVAILABLE, not a 400 that blames the trader', async () => {
+    const unavailable = new MarkPriceUnavailable('No authoritative mark price for BTC/USDT; protection was not changed');
+    const res = await request(failing(unavailable).app).put(URL).set('Authorization', authHeader('owner')).send({ stopLoss: '95000' });
+    expect(res.status).toBe(503);
+    expect(res.body).toMatchObject({ code: 'MARK_PRICE_UNAVAILABLE' });
+  });
+
+  it('not-found stays 404, and a bad instruction stays 400 — each with its own code', async () => {
+    const missing = await request(failing(new NotFound('Position not found or not open')).app)
+      .put(URL).set('Authorization', authHeader('owner')).send({ takeProfit: '120000' });
+    expect(missing.status).toBe(404);
+    expect(missing.body).toMatchObject({ code: 'NOT_FOUND' });
+
+    const bad = await request(failing(new Error('takeProfit must be above the current mark price for a LONG position')).app)
+      .put(URL).set('Authorization', authHeader('owner')).send({ takeProfit: '120000' });
+    expect(bad.status).toBe(400);
+    expect(bad.body).toMatchObject({ code: 'INVALID_PROTECTION' });
+  });
+
+  it('all four codes are distinct, so a client can branch on them', async () => {
+    const codes = new Set<string>();
+    for (const [error] of [[new NotFound('x')], [new Conflict('x')], [new MarkPriceUnavailable('x')], [new Error('x')]] as const) {
+      const res = await request(failing(error as Error).app).put(URL).set('Authorization', authHeader('owner')).send({ takeProfit: '120000' });
+      codes.add(res.body.code);
+    }
+    expect(codes.size).toBe(4);
   });
 });
 

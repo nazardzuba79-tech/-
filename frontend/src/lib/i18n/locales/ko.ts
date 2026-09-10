@@ -925,6 +925,8 @@ export const KO: Record<Key, string> = {
   'futures.protectionError': 'TP/SL을 저장하지 못했습니다',
   'futures.protectionRetrying': '재시도 중',
   'futures.protectionNotSet': '미설정',
+  'futures.protectionTriggering': '트리거가 실행 중입니다. 정산 후에 설정을 변경할 수 있습니다.',
+  'futures.protectionNoMarkPrice': '선물 마크 가격이 없습니다. 지금은 TP/SL을 설정할 수 없지만 삭제는 가능합니다.',
   'futures.loadPositionsError': '포지션을 불러올 수 없습니다',
   'futures.long': '롱',
   'futures.short': '숏',

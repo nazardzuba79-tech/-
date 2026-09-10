@@ -71,10 +71,16 @@ describe('translation integrity', () => {
     // / `futures.*Short` / `futures.*Label` / `futures.protection*` keys the
     // position-row TP/SL control needs, asserted by name below so this
     // re-take cannot quietly cover anything else.
+    // Advanced again by the TP/SL review follow-up: still +16/-0 per file
+    // against main, with no deletion anywhere in the locales directory. The
+    // two extra keys per language are `futures.protectionTriggering` and
+    // `futures.protectionNoMarkPrice` — the honest words for a trigger that
+    // is executing and for a missing mark price — both asserted by name
+    // below.
     const digests: Record<string, string> = {
-      ru: 'd81cedb2098cc28e', en: 'bb75f9295d8100aa', zh: '07c27d6b880d06b0',
-      es: '85c19cf32ace9696', hi: '132e9304b4cd2b67', ja: 'd16fc93ac3065975',
-      ko: 'dec6721187be9c2b',
+      ru: '33e34ea00c9fc322', en: '8abf0ba7d1745274', zh: '8c98dabf9fa01550',
+      es: '0dd2f672c837de1f', hi: '1b6cdd189218eb78', ja: '5ff958eff2e81f9a',
+      ko: 'b3d30f2712093028',
     };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
@@ -94,8 +100,10 @@ describe('translation integrity', () => {
       'futures.protectionMarkHint', 'futures.protectionSave', 'futures.protectionRemove',
       'futures.protectionCancel', 'futures.protectionSaving', 'futures.protectionError',
       'futures.protectionRetrying', 'futures.protectionNotSet',
+      // The review follow-up's two states.
+      'futures.protectionTriggering', 'futures.protectionNoMarkPrice',
     ];
-    expect(TPSL_KEYS).toHaveLength(14);
+    expect(TPSL_KEYS).toHaveLength(16);
     for (const code of LOCALES) {
       for (const key of TPSL_KEYS) {
         expect({ code, key, value: typeof (dicts[code] as any)[key] })

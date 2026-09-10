@@ -2,6 +2,8 @@ import BigNumber from 'bignumber.js';
 import {
   FuturesProtectionService,
   NotFound,
+  Conflict,
+  MarkPriceUnavailable,
   hasCrossed,
   validateTriggers,
 } from '../FuturesProtectionService';
@@ -28,14 +30,23 @@ import { PROTECTION_STALE_CLAIM_MS } from '../../config/futuresConfig';
 type Row = Record<string, any>;
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
-function makeFakePrisma(positions: Row[], protections: Row[] = []) {
+function makeFakePrisma(
+  positions: Row[],
+  protections: Row[] = [],
+  /** Fires the first time the futures-book advisory lock is taken — i.e.
+   *  once a mutation is INSIDE its transaction. That is the window in which
+   *  a close commits while a request waits for the lock. */
+  onLock?: () => void
+) {
   const positionMap = new Map<string, Row>(positions.map((p) => [p.id, { realizedPnl: '0', ...p }]));
   const protectionMap = new Map<string, Row>(
     protections.map((p) => [
       p.id,
-      { status: 'PENDING', attempts: 0, lastError: null, triggeredAt: null, resolvedAt: null, createdAt: new Date(), updatedAt: new Date(), ...p },
+      { status: 'PENDING', attempts: 0, revision: 0, lastError: null, triggeredAt: null, resolvedAt: null, createdAt: new Date(), updatedAt: new Date(), ...p },
     ])
   );
+  /** Every `pg_advisory_xact_lock` the code under test issues. */
+  const locks: string[] = [];
 
   const matches = (row: Row, where: Row): boolean =>
     Object.entries(where).every(([key, cond]) => {
@@ -45,6 +56,11 @@ function makeFakePrisma(positions: Row[], protections: Row[] = []) {
         if ('lt' in cond) return value !== null && value !== undefined && new Date(value) < new Date(cond.lt);
         return false;
       }
+      // `triggerPrice` is DECIMAL(36,18) in PostgreSQL, where `numeric = $1`
+      // compares by VALUE — '95000' and '95000.000000000000000000' are equal.
+      // A fake that compared them as strings would fail claims the database
+      // would accept, and hide the ones it would reject.
+      if (key === 'triggerPrice') return new BigNumber(String(value)).isEqualTo(new BigNumber(String(cond)));
       return value === cond;
     });
 
@@ -73,7 +89,7 @@ function makeFakePrisma(positions: Row[], protections: Row[] = []) {
       await tick();
       const row = {
         id: `prot-${protectionMap.size + 1}`,
-        status: 'PENDING', attempts: 0, lastError: null, triggeredAt: null, resolvedAt: null,
+        status: 'PENDING', attempts: 0, revision: 0, lastError: null, triggeredAt: null, resolvedAt: null,
         createdAt: new Date(), updatedAt: new Date(), ...data,
       };
       protectionMap.set(row.id, row);
@@ -124,18 +140,62 @@ function makeFakePrisma(positions: Row[], protections: Row[] = []) {
     },
   };
 
+  // The advisory lock is MODELLED, not merely recorded: a transaction that
+  // takes it waits for the previous holder and keeps it until it commits,
+  // which is what `pg_advisory_xact_lock` does. Without that these tests
+  // could not tell a serialized design from an unserialized one.
+  //
+  // It is still a model. That the REAL lock behaves this way is proven
+  // separately against a live PostgreSQL in `futuresBookLock.pg.test.ts`.
+  let lockQueue: Promise<void> = Promise.resolve();
+  let lockCount = 0;
+
+  const makeTxClient = () => {
+    let release: (() => void) | null = null;
+    const client = {
+      futuresPosition: positionDelegate,
+      futuresPositionProtection: protectionDelegate,
+      $queryRaw: async (sql: any) => {
+        const text = Array.isArray(sql?.strings) ? sql.strings.join('?') : String(sql?.sql ?? sql);
+        locks.push(text);
+        if (!text.includes('pg_advisory_xact_lock')) return [{}];
+        const waitFor = lockQueue;
+        lockQueue = new Promise<void>((resolve) => { release = resolve; });
+        await waitFor;
+        if (++lockCount === 1) onLock?.();
+        return [{ locked: 'true' }];
+      },
+    };
+    return { client, finish: () => release?.() };
+  };
+
   const prisma = {
     futuresPosition: positionDelegate,
     futuresPositionProtection: protectionDelegate,
-    $transaction: async (fn: any) => fn({ futuresPosition: positionDelegate, futuresPositionProtection: protectionDelegate }),
+    $transaction: async (fn: any) => {
+      const { client, finish } = makeTxClient();
+      try {
+        return await fn(client);
+      } finally {
+        // COMMIT or ROLLBACK — either way the transaction-scoped lock goes.
+        finish();
+      }
+    },
   } as any;
 
-  return { prisma, positionMap, protectionMap };
+  return { prisma, positionMap, protectionMap, locks };
 }
 
-function makeMarkPrice(price: string | null) {
+function makeMarkPrice(price: string | null, betweenScanAndClaim?: () => void) {
   const service = new MarkPriceService({} as any);
-  jest.spyOn(service, 'getMarkPrice').mockResolvedValue(price === null ? null : new BigNumber(price));
+  // The sweep reads mark prices AFTER capturing the armed rows and BEFORE
+  // claiming any of them, so a side effect here lands in exactly the window
+  // a trader's edit would: the scan has already decided, the claim has not
+  // yet run.
+  jest.spyOn(service, 'getMarkPrice').mockImplementation(async () => {
+    betweenScanAndClaim?.();
+    return price === null ? null : new BigNumber(price);
+  });
   return service;
 }
 
@@ -685,5 +745,356 @@ describe('the futures path is the only path', () => {
     // guarantee itself, stated in the engine rather than assumed here.
     expect(orderPath).toContain('reduceOnly order would exceed the current position size');
     expect(orderPath).toContain('reduceOnly fill exceeds the current opposing position');
+  });
+});
+
+// ── Review follow-up 1: the stale scan ──────────────────────────────
+
+/**
+ * A sweep decides to fire against ONE version of a trigger. By the time it
+ * claims, the trader may have edited that trigger, removed it, or replaced
+ * it. The claim has to prove it is taking the version the decision was made
+ * about — otherwise a stop edited from 95000 down to 90000 gets executed at
+ * 94000, a level that never crossed.
+ *
+ * The edit is injected inside `getMarkPrice`, which the sweep calls AFTER
+ * capturing the armed rows and BEFORE claiming any of them: precisely the
+ * window that matters.
+ */
+describe('a stale scan cannot fire a trigger that has since been edited', () => {
+  it('A. SL scanned at 95000, edited to 90000 before the claim, mark 94000 -> ZERO orders', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    const editToNinety = () => {
+      const row = protectionMap.get('p-sl')!;
+      if (row.triggerPrice !== '95000') return;
+      row.triggerPrice = '90000';
+      row.revision += 1;
+    };
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('94000', editToNinety));
+
+    expect(await svc.checkAndTrigger()).toBe(0);
+    // 94000 is BELOW the old 95000 but ABOVE the new 90000. The position must
+    // not be closed at a level the live instruction never reached.
+    expect(calls).toHaveLength(0);
+    expect(positionMap.get('pos-1')!.status).toBe('OPEN');
+    // Untouched: still armed, and never counted as attempted.
+    expect(protectionMap.get('p-sl')).toMatchObject({ status: 'PENDING', triggerPrice: '90000', attempts: 0 });
+  });
+
+  it('B. TP scanned, removed before the claim -> ZERO orders', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-tp', kind: 'TAKE_PROFIT', triggerPrice: '110000' })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    const removeIt = () => {
+      const row = protectionMap.get('p-tp')!;
+      if (row.status !== 'PENDING') return;
+      row.status = 'CANCELLED';
+      row.revision += 1;
+      row.resolvedAt = new Date();
+    };
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('111000', removeIt));
+
+    expect(await svc.checkAndTrigger()).toBe(0);
+    expect(calls).toHaveLength(0);
+    expect(positionMap.get('pos-1')!.status).toBe('OPEN');
+    expect(protectionMap.get('p-tp')!.status).toBe('CANCELLED');
+  });
+
+  it('C. the trigger is REPLACED at a level that has also crossed — the stale sweep still cannot claim it', async () => {
+    // The subtle one. 94000 crosses the old 95000 AND the new 94500, so a
+    // price-only check would wave this through. The replacement is a
+    // different instruction with a different history (attempts reset), and a
+    // sweep that never evaluated it has no business executing it: the CAS
+    // token is what makes that decidable.
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000', attempts: 3, status: 'FAILED' })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    const replace = () => {
+      const row = protectionMap.get('p-sl')!;
+      if (row.revision !== 0) return;
+      row.triggerPrice = '94500';
+      row.status = 'PENDING';
+      row.attempts = 0;
+      row.revision += 1;
+    };
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('94000', replace));
+
+    expect(await svc.checkAndTrigger()).toBe(0);
+    expect(calls).toHaveLength(0);
+    expect(protectionMap.get('p-sl')).toMatchObject({ status: 'PENDING', triggerPrice: '94500', attempts: 0 });
+
+    // And the NEXT sweep, which evaluated the replacement, does fire it.
+    const next = makePositionService(positionMap);
+    expect(await new FuturesProtectionService(prisma, next.service, makeMarkPrice('94000')).checkAndTrigger()).toBe(1);
+    expect(next.calls).toHaveLength(1);
+    expect(protectionMap.get('p-sl')!.status).toBe('EXECUTED');
+  });
+
+  it('an untouched trigger still fires — the CAS narrows the claim, it does not break it', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000', revision: 7 })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    expect(await new FuturesProtectionService(prisma, service, makeMarkPrice('94000')).checkAndTrigger()).toBe(1);
+    expect(calls).toHaveLength(1);
+    expect(protectionMap.get('p-sl')!.status).toBe('EXECUTED');
+  });
+
+  it('the claim carries BOTH the CAS token and the value it decided from', async () => {
+    // A write that somehow failed to bump `revision` still cannot resurrect a
+    // stale decision, because the price it was made from is in the predicate
+    // too. Belt and braces, asserted on the actual query.
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    const priceOnlyEdit = () => {
+      const row = protectionMap.get('p-sl')!;
+      if (row.triggerPrice !== '95000') return;
+      row.triggerPrice = '90000'; // revision deliberately NOT bumped
+    };
+    expect(await new FuturesProtectionService(prisma, service, makeMarkPrice('94000', priceOnlyEdit)).checkAndTrigger()).toBe(0);
+    expect(calls).toHaveLength(0);
+  });
+});
+
+// ── Review follow-up 2: mutation vs a live claim ────────────────────
+
+describe('edit and delete refuse to overwrite a trigger that is executing', () => {
+  const triggering = () => [
+    arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000', status: 'TRIGGERING', triggeredAt: new Date() }),
+    arm({ id: 'p-tp', kind: 'TAKE_PROFIT', triggerPrice: '110000', status: 'PENDING' }),
+  ];
+
+  it('D. a PUT during TRIGGERING is a CONFLICT, and changes nothing', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], triggering());
+    const { service } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('100000'));
+
+    await expect(svc.setProtection('user-1', 'pos-1', {
+      takeProfit: new BigNumber('120000'), stopLoss: new BigNumber('90000'),
+    })).rejects.toBeInstanceOf(Conflict);
+
+    // Not one field moved — the live claim is untouched and the other leg is
+    // not quietly re-armed either.
+    expect(protectionMap.get('p-sl')).toMatchObject({ status: 'TRIGGERING', triggerPrice: '95000', revision: 0 });
+    expect(protectionMap.get('p-tp')).toMatchObject({ status: 'PENDING', triggerPrice: '110000', revision: 0 });
+  });
+
+  it('E. a DELETE during TRIGGERING is a CONFLICT, and never reports a cancellation', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], triggering());
+    const { service } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('100000'));
+
+    await expect(svc.clearProtection('user-1', 'pos-1')).rejects.toBeInstanceOf(Conflict);
+    expect(protectionMap.get('p-sl')!.status).toBe('TRIGGERING');
+    expect(protectionMap.get('p-tp')!.status).toBe('PENDING');
+  });
+
+  it('a sweep and an edit racing for the lock produce ONE coherent outcome, whichever wins', async () => {
+    // Both orderings are legitimate; what must never happen is both. The
+    // claim and the mutation take the SAME futures-book lock, so one runs to
+    // COMMIT before the other starts, and the loser sees the winner's state:
+    //
+    //   claim first -> the edit is refused with a conflict, the close happens
+    //   edit  first -> the CAS token has moved, so the stale sweep cannot
+    //                  claim and places nothing
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' })]
+    );
+    const { service, calls } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('94000'));
+
+    const edit = svc
+      .setProtection('user-1', 'pos-1', { takeProfit: null, stopLoss: new BigNumber('90000') })
+      .then(() => 'saved' as const)
+      .catch((e) => (e instanceof Conflict ? ('conflict' as const) : (`other:${e.message}` as const)));
+    const [fired, editOutcome] = await Promise.all([svc.checkAndTrigger(), edit]);
+
+    const row = protectionMap.get('p-sl')!;
+    if (fired === 1) {
+      // The sweep won: the position is closed and the edit was refused
+      // rather than silently overwriting a trigger already on its way.
+      expect(editOutcome).toBe('conflict');
+      expect(calls).toHaveLength(1);
+      expect(row).toMatchObject({ status: 'EXECUTED', triggerPrice: '95000' });
+      expect(positionMap.get('pos-1')!.status).toBe('CLOSED');
+    } else {
+      // The edit won: nothing was closed at the superseded level, and the
+      // new instruction is the live one.
+      expect(editOutcome).toBe('saved');
+      expect(calls).toHaveLength(0);
+      expect(row).toMatchObject({ status: 'PENDING', triggerPrice: '90000', revision: 1 });
+      expect(positionMap.get('pos-1')!.status).toBe('OPEN');
+    }
+    // Never both.
+    expect(fired === 1 && editOutcome === 'saved').toBe(false);
+  });
+
+  it('a claim taken while an edit is mid-transaction is impossible — both take the same lock', async () => {
+    // The specific hole this closes: without the shared lock, a mutation
+    // could read "nothing is TRIGGERING", the sweep could claim, and the
+    // mutation could then overwrite a trigger whose close was already on its
+    // way. The claim is issued inside a transaction that takes the lock.
+    const source = require('fs').readFileSync(require('path').resolve(__dirname, '../FuturesProtectionService.ts'), 'utf8');
+    // Anchored on CODE, not prose: the comments in this method mention both
+    // names, so matching bare words would compare the wrong offsets.
+    const fireBody = source
+      .slice(source.indexOf('private async fire('), source.indexOf('private async reclaimOrphanedClaims'))
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const lockAt = fireBody.indexOf('await lockFuturesBook(tx)');
+    const claimAt = fireBody.indexOf('tx.futuresPositionProtection.updateMany(');
+    const placeAt = fireBody.indexOf('this.positionService.placeOrder(');
+    expect(lockAt).toBeGreaterThanOrEqual(0);
+    expect(claimAt).toBeGreaterThan(lockAt);
+    // …and released before the order is placed, or it would deadlock against
+    // the order path's own transaction taking the same lock.
+    expect(placeAt).toBeGreaterThan(claimAt);
+    expect(fireBody.slice(placeAt)).not.toContain('lockFuturesBook');
+  });
+
+  it('once the claim resolves, the same mutation succeeds', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000', status: 'FAILED', lastError: 'thin book' })]
+    );
+    const { service } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('100000'));
+    const state = await svc.setProtection('user-1', 'pos-1', { takeProfit: null, stopLoss: new BigNumber('96000') });
+    expect(state!.stopLoss).toMatchObject({ triggerPrice: '96000', status: 'PENDING', lastError: null });
+    expect(protectionMap.get('p-sl')!.revision).toBe(1);
+  });
+
+  it('F. a position that closes while the mutation waits for the lock re-arms NOTHING', async () => {
+    let closed = false;
+    const state: any = {};
+    const closeItUnderTheLock = () => {
+      if (closed) return;
+      closed = true;
+      const position = state.positionMap.get('pos-1')!;
+      position.status = 'CLOSED';
+      position.size = '0';
+    };
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], [], closeItUnderTheLock);
+    state.positionMap = positionMap;
+    const { service } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('100000'));
+
+    // The pre-flight read saw OPEN; the position closed before the write.
+    await expect(svc.setProtection('user-1', 'pos-1', { takeProfit: new BigNumber('110000'), stopLoss: null }))
+      .rejects.toBeInstanceOf(NotFound);
+    expect(protectionMap.size).toBe(0);
+  });
+
+  it('clearing stale protection on an ALREADY closed position still works', async () => {
+    // The mirror of F: a trader must be able to tidy away protection left on
+    // a position that has closed. It arms nothing, so OPEN is not required.
+    const { prisma, positionMap, protectionMap } = makeFakePrisma(
+      [{ ...LONG, status: 'CLOSED', size: '0' }],
+      [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' })]
+    );
+    const { service } = makePositionService(positionMap);
+    await new FuturesProtectionService(prisma, service, makeMarkPrice('100000')).clearProtection('user-1', 'pos-1');
+    expect(protectionMap.get('p-sl')!.status).toBe('CANCELLED');
+  });
+
+  it('every protection mutation runs under the SAME futures-book advisory lock', async () => {
+    const { prisma, positionMap, locks } = makeFakePrisma([LONG]);
+    const { service } = makePositionService(positionMap);
+    const svc = new FuturesProtectionService(prisma, service, makeMarkPrice('100000'));
+
+    await svc.setProtection('user-1', 'pos-1', { takeProfit: new BigNumber('110000'), stopLoss: null });
+    await svc.clearProtection('user-1', 'pos-1');
+
+    expect(locks).toHaveLength(2);
+    for (const sql of locks) {
+      // The exact key FuturesBookTransaction uses. A different key would
+      // serialize nothing at all.
+      expect(sql).toContain('pg_advisory_xact_lock');
+      expect(sql).toContain("hashtextextended('futures-book', 0)");
+    }
+  });
+});
+
+// ── Review follow-up 4: arming requires a mark price ────────────────
+
+describe('a trigger is never armed without an authoritative mark price', () => {
+  const noMark = (positionMap: Map<string, Row>, prisma: any) =>
+    new FuturesProtectionService(prisma, makePositionService(positionMap).service, makeMarkPrice(null));
+
+  it('J. creating a take profit with no mark price is REJECTED, and writes nothing', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG]);
+    await expect(noMark(positionMap, prisma).setProtection('user-1', 'pos-1', {
+      takeProfit: new BigNumber('110000'), stopLoss: null,
+    })).rejects.toBeInstanceOf(MarkPriceUnavailable);
+    expect(protectionMap.size).toBe(0);
+  });
+
+  it('K. creating a stop loss with no mark price is REJECTED, and writes nothing', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG]);
+    await expect(noMark(positionMap, prisma).setProtection('user-1', 'pos-1', {
+      takeProfit: null, stopLoss: new BigNumber('95000'),
+    })).rejects.toBeInstanceOf(MarkPriceUnavailable);
+    expect(protectionMap.size).toBe(0);
+  });
+
+  it('L. editing existing protection with no mark price is REJECTED, and the old server state stands', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], [
+      arm({ id: 'p-tp', kind: 'TAKE_PROFIT', triggerPrice: '110000' }),
+      arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' }),
+    ]);
+    await expect(noMark(positionMap, prisma).setProtection('user-1', 'pos-1', {
+      takeProfit: new BigNumber('115000'), stopLoss: new BigNumber('95000'),
+    })).rejects.toBeInstanceOf(MarkPriceUnavailable);
+
+    expect(protectionMap.get('p-tp')).toMatchObject({ triggerPrice: '110000', status: 'PENDING', revision: 0 });
+    expect(protectionMap.get('p-sl')).toMatchObject({ triggerPrice: '95000', status: 'PENDING', revision: 0 });
+  });
+
+  it('M. DELETE succeeds with no mark price — a stop can always be REMOVED', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], [
+      arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' }),
+    ]);
+    await noMark(positionMap, prisma).clearProtection('user-1', 'pos-1');
+    expect(protectionMap.get('p-sl')!.status).toBe('CANCELLED');
+  });
+
+  it('N. a PUT that clears BOTH legs succeeds with no mark price', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG], [
+      arm({ id: 'p-tp', kind: 'TAKE_PROFIT', triggerPrice: '110000' }),
+      arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' }),
+    ]);
+    const state = await noMark(positionMap, prisma).setProtection('user-1', 'pos-1', { takeProfit: null, stopLoss: null });
+    expect(state!.takeProfit!.status).toBe('CANCELLED');
+    expect(state!.stopLoss!.status).toBe('CANCELLED');
+  });
+
+  it('the mark price is not even READ when the request only removes protection', async () => {
+    // Not merely tolerated — not consulted. A feed outage cannot block a
+    // trader from taking a stop off.
+    const { prisma, positionMap } = makeFakePrisma([LONG], [arm({ id: 'p-sl', kind: 'STOP_LOSS', triggerPrice: '95000' })]);
+    const markPriceService = new MarkPriceService({} as any);
+    const spy = jest.spyOn(markPriceService, 'getMarkPrice').mockResolvedValue(new BigNumber('100000'));
+    const svc = new FuturesProtectionService(prisma, makePositionService(positionMap).service, markPriceService);
+
+    await svc.clearProtection('user-1', 'pos-1');
+    await svc.setProtection('user-1', 'pos-1', { takeProfit: null, stopLoss: null });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('and zero is never used in place of a missing mark price', async () => {
+    const { prisma, positionMap, protectionMap } = makeFakePrisma([LONG]);
+    // A zero mark would make every LONG take profit "above the mark" and
+    // every stop loss "below" it — every level would validate. Proving the
+    // rejection happens is proving zero was not substituted.
+    await expect(noMark(positionMap, prisma).setProtection('user-1', 'pos-1', {
+      takeProfit: new BigNumber('0.00000001'), stopLoss: null,
+    })).rejects.toBeInstanceOf(MarkPriceUnavailable);
+    expect(protectionMap.size).toBe(0);
   });
 });

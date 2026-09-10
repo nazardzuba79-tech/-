@@ -925,6 +925,8 @@ export const ES: Record<Key, string> = {
   'futures.protectionError': 'No se pudo guardar el TP/SL',
   'futures.protectionRetrying': 'Reintentando',
   'futures.protectionNotSet': 'Sin definir',
+  'futures.protectionTriggering': 'Un disparador se está ejecutando ahora mismo: podrás cambiar la protección cuando termine.',
+  'futures.protectionNoMarkPrice': 'No hay precio de marca del futuro. No se puede activar TP/SL ahora; eliminarlo sí funciona.',
   'futures.loadPositionsError': 'No se pudieron cargar las posiciones',
   'futures.long': 'Largo',
   'futures.short': 'Corto',

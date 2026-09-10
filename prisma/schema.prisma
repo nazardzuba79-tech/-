@@ -634,6 +634,12 @@ model FuturesPositionProtection {
   /// makes two watcher ticks unable to fire the same trigger twice — see
   /// FuturesProtectionService.
   status       String          @default("PENDING")
+  /// COMPARE-AND-SWAP token. Bumped by every mutation, and carried in the
+  /// watcher's claim predicate, so a sweep that decided to fire against one
+  /// version of this row cannot execute a DIFFERENT version. Without it a
+  /// scan of "SL 95000, PENDING" could claim the row the trader had since
+  /// edited to 90000 and close the position at a level that never crossed.
+  revision     Int             @default(0)
   /// Why the last execution attempt failed, when it did. Never a reason to
   /// silently drop protection: a FAILED row is re-claimed on a later tick
   /// for as long as the position is still open.

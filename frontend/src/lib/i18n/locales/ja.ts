@@ -925,6 +925,8 @@ export const JA: Record<Key, string> = {
   'futures.protectionError': 'TP/SL を保存できませんでした',
   'futures.protectionRetrying': '再試行中',
   'futures.protectionNotSet': '未設定',
+  'futures.protectionTriggering': 'トリガーが実行中です。決済後に設定を変更できます。',
+  'futures.protectionNoMarkPrice': '先物のマーク価格を取得できません。現在 TP/SL は設定できませんが、削除は可能です。',
   'futures.loadPositionsError': 'ポジションを読み込めませんでした',
   'futures.long': 'ロング',
   'futures.short': 'ショート',

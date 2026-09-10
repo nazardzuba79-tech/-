@@ -1,10 +1,10 @@
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 import { FuturesPositionService } from '../../futures/FuturesPositionService';
-import { FuturesProtectionService, NotFound } from '../../futures/FuturesProtectionService';
+import { FuturesProtectionService, NotFound, Conflict, MarkPriceUnavailable } from '../../futures/FuturesProtectionService';
 import { MarkPriceService } from '../../futures/MarkPriceService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { FuturesMarketRegistry } from '../../futures/FuturesMarketRegistry';
@@ -362,8 +362,7 @@ export function futuresRouter(
       });
       res.json(protection);
     } catch (err: any) {
-      if (err instanceof NotFound) return res.status(404).json({ error: err.message });
-      res.status(400).json({ error: err.message });
+      return protectionError(res, err);
     }
   });
 
@@ -372,8 +371,7 @@ export function futuresRouter(
       await protectionService.clearProtection(req.userId!, req.params.positionId);
       res.status(204).send();
     } catch (err: any) {
-      if (err instanceof NotFound) return res.status(404).json({ error: err.message });
-      res.status(400).json({ error: err.message });
+      return protectionError(res, err);
     }
   });
 
@@ -434,6 +432,29 @@ export function futuresRouter(
   });
 
   return router;
+}
+
+/**
+ * One error contract for all three protection routes.
+ *
+ * The codes carry real meaning, so a client can react rather than guess:
+ *
+ *   404  not yours, or not there — deliberately the same answer for both
+ *   409  a trigger on this position is EXECUTING; the same request will
+ *        succeed once it settles, and nothing was changed
+ *   503  no authoritative mark price to arm a trigger against; the
+ *        instruction was fine, the data it needs is temporarily missing
+ *   400  the instruction itself is wrong (a level on the wrong side, say)
+ *
+ * `code` is machine-readable so the UI never has to match on prose.
+ */
+function protectionError(res: Response, err: any) {
+  if (err instanceof NotFound) return res.status(404).json({ error: err.message, code: 'NOT_FOUND' });
+  if (err instanceof Conflict) return res.status(409).json({ error: err.message, code: 'PROTECTION_TRIGGERING' });
+  if (err instanceof MarkPriceUnavailable) {
+    return res.status(503).json({ error: err.message, code: 'MARK_PRICE_UNAVAILABLE' });
+  }
+  return res.status(400).json({ error: err.message, code: 'INVALID_PROTECTION' });
 }
 
 function symbolFromSlug(slug: string): string {

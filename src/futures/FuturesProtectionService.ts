@@ -16,6 +16,21 @@ export const PROTECTION_KINDS: ProtectionKind[] = ['TAKE_PROFIT', 'STOP_LOSS'];
 const CLAIMABLE = ['PENDING', 'FAILED'];
 
 /**
+ * THE SAME advisory lock `FuturesBookTransaction` takes around every futures
+ * placement, cancellation and close — same literal key, deliberately, because
+ * a different key would serialize nothing.
+ *
+ * Holding it here means a protection mutation and a position's execution can
+ * never interleave: whoever gets the lock first runs to COMMIT, and the other
+ * then reads committed state rather than a snapshot that has since moved.
+ */
+async function lockFuturesBook(tx: Prisma.TransactionClient): Promise<void> {
+  await tx.$queryRaw(
+    Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended('futures-book', 0))::text AS locked`
+  );
+}
+
+/**
  * Real Take Profit / Stop Loss for perpetual futures positions.
  *
  * WHAT MAKES IT REAL
@@ -132,20 +147,50 @@ export class FuturesProtectionService {
     positionId: string,
     input: { takeProfit: BigNumber | null; stopLoss: BigNumber | null }
   ) {
-    const position = await this.prisma.futuresPosition.findUnique({ where: { id: positionId } });
-    if (!position || position.userId !== userId) throw new NotFound('Position not found or not open');
-    if (position.status !== 'OPEN') throw new NotFound('Position not found or not open');
+    const arming = input.takeProfit !== null || input.stopLoss !== null;
 
-    const side = position.side as PositionSide;
-    // Validate against the same mark price the trigger will later be judged
-    // by. When it is unavailable the price-relative checks are SKIPPED
-    // rather than run against an invented number — the ordering rules below
-    // still apply, and a trigger that is already through its level simply
-    // fires on the first tick that has a mark price, which is honest.
-    const markPrice = await this.markPriceService.getMarkPrice(position.symbol);
-    validateTriggers(side, input, markPrice);
+    // Read once outside the transaction only to answer "whose position is
+    // this, and what side is it" for validation. It is NOT the authority for
+    // the write — every one of these checks is repeated inside the
+    // transaction below, under the futures-book lock, because the position
+    // can close between here and there.
+    const preview = await this.prisma.futuresPosition.findUnique({ where: { id: positionId } });
+    if (!preview || preview.userId !== userId) throw new NotFound('Position not found or not open');
+    if (preview.status !== 'OPEN') throw new NotFound('Position not found or not open');
+
+    // ARMING REQUIRES AN AUTHORITATIVE MARK PRICE.
+    //
+    // The trigger will be judged against the mark price, so a trigger armed
+    // without one is a level nobody has checked is on the right side of the
+    // market — a "take profit" that could be sitting at an instant loss. When
+    // the feed is down the honest answer is to refuse the instruction, not to
+    // accept it against a fabricated reference. Zero is never substituted.
+    //
+    // Removing protection is exempt: a clear needs no price to be correct,
+    // and refusing to let a trader REMOVE a stop because the feed is down
+    // would be the wrong failure direction entirely.
+    const markPrice = arming ? await this.markPriceService.getMarkPrice(preview.symbol) : null;
+    if (arming && !markPrice) {
+      throw new MarkPriceUnavailable(
+        `No authoritative mark price for ${preview.symbol}; protection was not changed`
+      );
+    }
+    validateTriggers(preview.side as PositionSide, input, markPrice);
 
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await lockFuturesBook(tx);
+
+      // Re-read UNDER THE LOCK. Ownership and OPEN are re-checked here, not
+      // only above: a close (manual, triggered or liquidation) may have
+      // committed while this request was being validated, and re-arming
+      // protection on a position that no longer exists would be a lie.
+      const position = await tx.futuresPosition.findUnique({ where: { id: positionId } });
+      if (!position || position.userId !== userId || position.status !== 'OPEN') {
+        throw new NotFound('Position not found or not open');
+      }
+
+      await this.refuseWhileTriggering(tx, positionId);
+
       for (const kind of PROTECTION_KINDS) {
         const price = kind === 'TAKE_PROFIT' ? input.takeProfit : input.stopLoss;
         if (price === null) {
@@ -167,7 +212,12 @@ export class FuturesProtectionService {
           resolvedAt: null,
         };
         if (existing) {
-          await tx.futuresPositionProtection.update({ where: { id: existing.id }, data });
+          await tx.futuresPositionProtection.update({
+            where: { id: existing.id },
+            // The CAS token moves on every write, so any sweep still holding
+            // the previous version of this row can no longer claim it.
+            data: { ...data, revision: { increment: 1 } },
+          });
         } else {
           await tx.futuresPositionProtection.create({
             data: { positionId, userId, symbol: position.symbol, kind, ...data },
@@ -181,11 +231,41 @@ export class FuturesProtectionService {
 
   /** Remove both sides. */
   async clearProtection(userId: string, positionId: string) {
-    const position = await this.prisma.futuresPosition.findUnique({ where: { id: positionId } });
-    if (!position || position.userId !== userId) throw new NotFound('Position not found');
+    // No mark price is read or required: clearing is correct without one.
+    const preview = await this.prisma.futuresPosition.findUnique({ where: { id: positionId } });
+    if (!preview || preview.userId !== userId) throw new NotFound('Position not found');
+
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await lockFuturesBook(tx);
+      const position = await tx.futuresPosition.findUnique({ where: { id: positionId } });
+      if (!position || position.userId !== userId) throw new NotFound('Position not found');
+      // Deliberately NOT requiring OPEN: protection on a position that has
+      // already closed is exactly the stale state a trader should be able to
+      // tidy away, and doing so arms nothing.
+      await this.refuseWhileTriggering(tx, positionId);
       for (const kind of PROTECTION_KINDS) await this.resolveKind(tx, positionId, kind, 'CANCELLED');
     });
+  }
+
+  /**
+   * A trigger that has already been claimed is EXECUTING — a reduce-only
+   * MARKET close may be in the book right now. There is no honest way to
+   * "cancel" that from here, so the mutation is refused rather than allowed
+   * to report a save or a cancellation that the market has already overtaken.
+   *
+   * This is a conflict, not a failure: once the claim resolves to EXECUTED,
+   * CANCELLED or FAILED, the ordinary state model applies again and the same
+   * request will succeed.
+   */
+  private async refuseWhileTriggering(tx: Prisma.TransactionClient, positionId: string): Promise<void> {
+    const live = await tx.futuresPositionProtection.findMany({
+      where: { positionId, status: 'TRIGGERING' },
+    });
+    if (live.length === 0) return;
+    const kinds = live.map((r) => (r.kind === 'TAKE_PROFIT' ? 'take profit' : 'stop loss')).join(' and ');
+    throw new Conflict(
+      `This position's ${kinds} is executing right now; protection cannot be changed until it settles`
+    );
   }
 
   // ── The watcher ───────────────────────────────────────────────────
@@ -232,7 +312,10 @@ export class FuturesProtectionService {
         continue;
       }
 
-      if (await this.fire(row.id, row.positionId, row.kind as ProtectionKind)) executed++;
+      // The WHOLE scanned row goes to fire(), not just its id: the claim has
+      // to prove it is taking the same version of the trigger this decision
+      // was made about.
+      if (await this.fire(row)) executed++;
     }
     return executed;
   }
@@ -242,12 +325,54 @@ export class FuturesProtectionService {
    * a race that another actor won, and every one of them leaves the books
    * untouched.
    */
-  private async fire(protectionId: string, positionId: string, kind: ProtectionKind): Promise<boolean> {
-    // THE claim. Exactly one caller — this tick, the next tick, another
-    // process — can see count === 1.
-    const claim = await this.prisma.futuresPositionProtection.updateMany({
-      where: { id: protectionId, status: { in: CLAIMABLE } },
-      data: { status: 'TRIGGERING', triggeredAt: new Date(), attempts: { increment: 1 } },
+  private async fire(scanned: {
+    id: string;
+    positionId: string;
+    kind: string;
+    revision: number;
+    triggerPrice: { toString(): string };
+  }): Promise<boolean> {
+    const protectionId = scanned.id;
+    const positionId = scanned.positionId;
+    const kind = scanned.kind as ProtectionKind;
+
+    // THE claim, and a COMPARE-AND-SWAP rather than a bare status check.
+    //
+    // Between the scan deciding this trigger has crossed and this line, the
+    // trader may have edited it, removed it, or replaced it. With only
+    // `id + status` the claim would happily take the NEW row on the strength
+    // of a decision made about the OLD one — closing a position at a level
+    // that never crossed. `revision` moves on every mutation, so a stale
+    // sweep gets count === 0 and places nothing. `triggerPrice` is carried
+    // too: it is the value the decision was actually made from, so the claim
+    // stays correct even for a write that somehow failed to bump revision.
+    //
+    // Exactly one caller — this tick, the next tick, another process — can
+    // see count === 1.
+    //
+    // The claim runs under the futures-book lock, so it cannot interleave
+    // with `setProtection`/`clearProtection`, which hold the same lock while
+    // they check for a live claim. Without that, a mutation could read "no
+    // trigger is executing", the claim could land, and the mutation could
+    // then overwrite a row whose close was already on its way.
+    //
+    // The lock is released by this COMMIT, deliberately BEFORE the order is
+    // placed: `placeOrder` opens its own transaction and takes the same lock,
+    // and holding it across that call would deadlock against ourselves.
+    // Releasing early is safe because the position is what guards execution
+    // from here on — a reduce-only close finds no capacity if anything else
+    // closed it meanwhile.
+    const claim = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await lockFuturesBook(tx);
+      return tx.futuresPositionProtection.updateMany({
+        where: {
+          id: protectionId,
+          status: { in: CLAIMABLE },
+          revision: scanned.revision,
+          triggerPrice: scanned.triggerPrice.toString(),
+        },
+        data: { status: 'TRIGGERING', triggeredAt: new Date(), attempts: { increment: 1 } },
+      });
     });
     if (claim.count === 0) return false;
 
@@ -370,6 +495,16 @@ export class FuturesProtectionService {
  *  to 404 so ownership cannot be probed through the status code. */
 export class NotFound extends Error {}
 
+/** A trigger on this position is mid-execution, so the requested change
+ *  cannot be honoured. The route maps it to 409: it is a state conflict the
+ *  same request will clear on its own, not a bad request. */
+export class Conflict extends Error {}
+
+/** No authoritative futures mark price, so a trigger cannot be armed against
+ *  it. The route maps it to 503: the instruction was fine, the data it needs
+ *  is temporarily missing. */
+export class MarkPriceUnavailable extends Error {}
+
 /**
  * Has the mark price reached this trigger's level?
  *
@@ -401,10 +536,15 @@ export function hasCrossed(
  *   - Always: a price must be a real positive number, and on a LONG a stop
  *     must sit below the take profit (above, on a SHORT). These need no
  *     market data, so they are enforced unconditionally.
- *   - Only with a mark price: the trigger must be on the side of the
- *     current mark that its name implies, so "take profit" cannot be set
- *     where it would immediately register a loss. With no mark price the
- *     check is skipped rather than run against a made-up number.
+ *   - With a mark price: the trigger must be on the side of the current mark
+ *     that its name implies, so "take profit" cannot be set where it would
+ *     immediately register a loss.
+ *
+ * `markPrice` is nullable here only because CLEARING protection calls this
+ * with nothing to validate. Arming without one never reaches this function:
+ * `setProtection` refuses it with MarkPriceUnavailable first, so no trigger
+ * is ever created against a missing reference — and certainly not against a
+ * zero standing in for one.
  */
 export function validateTriggers(
   side: PositionSide,
@@ -453,6 +593,7 @@ function serialize(row?: {
   status: string;
   lastError: string | null;
   attempts: number;
+  revision: number;
   createdAt: Date;
   updatedAt: Date;
 } | null) {
@@ -464,6 +605,9 @@ function serialize(row?: {
     status: row.status,
     lastError: row.lastError,
     attempts: row.attempts,
+    // Exposed so a client can tell two versions of the same trigger apart
+    // rather than assuming an unchanged id means unchanged instructions.
+    revision: row.revision,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

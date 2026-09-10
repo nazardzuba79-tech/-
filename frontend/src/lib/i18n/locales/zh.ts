@@ -949,6 +949,8 @@ export const ZH: Record<Key, string> = {
   'futures.protectionError': '无法保存止盈/止损',
   'futures.protectionRetrying': '重试中',
   'futures.protectionNotSet': '未设置',
+  'futures.protectionTriggering': '触发单正在执行，结算完成后即可修改保护设置。',
+  'futures.protectionNoMarkPrice': '暂无合约标记价格，当前无法设置止盈/止损；移除仍可使用。',
   'futures.loadPositionsError': '无法加载持仓',
   'futures.long': '多',
   'futures.short': '空',

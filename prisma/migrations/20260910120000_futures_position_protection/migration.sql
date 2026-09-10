@@ -22,6 +22,10 @@ CREATE TABLE "FuturesPositionProtection" (
     "triggerPrice" DECIMAL(36,18) NOT NULL,
     -- PENDING | TRIGGERING | EXECUTED | CANCELLED | FAILED
     "status" TEXT NOT NULL DEFAULT 'PENDING',
+    -- Compare-and-swap token, bumped by every mutation and carried in the
+    -- watcher's claim predicate, so a sweep cannot execute a version of the
+    -- trigger it never evaluated. See FuturesProtectionService.
+    "revision" INTEGER NOT NULL DEFAULT 0,
     "lastError" TEXT,
     "attempts" INTEGER NOT NULL DEFAULT 0,
     "triggeredAt" TIMESTAMP(3),
