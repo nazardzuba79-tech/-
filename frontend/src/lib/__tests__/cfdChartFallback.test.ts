@@ -84,8 +84,12 @@ function mount(options: { lang?: string; tradingView?: any; hasContainer?: boole
   // The container the widget is told to draw into. `innerHTML = ''` is what
   // the component does to it, so it has to be writable.
   const container = { innerHTML: 'stale' };
+  const attempts = { count: 0 };
   const document = {
-    createElement: (): FakeScript => ({ src: '', async: false, onload: null, onerror: null, parentNode: null }),
+    createElement: (): FakeScript => {
+      attempts.count += 1;
+      return { src: '', async: false, onload: null, onerror: null, parentNode: null };
+    },
     head,
     getElementById: (id: string) => (options.hasContainer === false ? null : { ...container, id }),
   } as any;
@@ -106,7 +110,7 @@ function mount(options: { lang?: string; tradingView?: any; hasContainer?: boole
 
   const Component = output.CfdChart;
   const api = {
-    scripts, widgets, win,
+    scripts, widgets, win, attempts,
     render(props: any = { symbol: 'XAUUSD' }) {
       index = 0;
       const tree = Component(props);
@@ -121,6 +125,9 @@ function mount(options: { lang?: string; tradingView?: any; hasContainer?: boole
       scripts[scripts.length - 1].onload!();
     },
     fail() { scripts[scripts.length - 1].onerror!(); },
+    /** The bytes arrive and the browser fires `load`, but the script's own
+     *  execution never publishes `window.TradingView`. */
+    loadWithoutGlobal() { scripts[scripts.length - 1].onload!(); },
   };
   return api;
 }
@@ -295,6 +302,70 @@ test('I. a throwing widget constructor shows the fallback instead of crashing', 
   expect(unhandled).toEqual([]);
 });
 
+test('J. a script that loads WITHOUT publishing window.TradingView is not retained either', async () => {
+  /**
+   * The second way the retry could be poisoned, found in review of PR #23.
+   *
+   * `onerror` is not the only failure. A classic external script can finish
+   * loading — the browser fires `load` — while its own execution throws, or
+   * while it simply never publishes the global. Resolving on `load` alone
+   * cached a promise that was permanently useless: Retry was handed that
+   * RESOLVED promise, found no `window.TradingView`, and fell straight back
+   * to the error state without ever issuing a request. Unrecoverable
+   * without a full page reload, exactly like the rejected-promise case.
+   */
+  const unhandled: unknown[] = [];
+  const onUnhandled = (reason: unknown) => unhandled.push(reason);
+  process.on('unhandledRejection', onUnhandled);
+  try {
+    const c = mount();
+    c.render();
+    expect(c.attempts.count).toBe(1);
+
+    // The bytes arrive; the global does not.
+    c.loadWithoutGlobal();
+    await flush();
+
+    let tree = c.render();
+    expect(fallbackOf(tree)).toBeDefined();
+    expect(canvasOf(tree)).toBeUndefined();
+    expect(disclaimerOf(tree)).toBeDefined();
+    expect(c.widgets).toHaveLength(0);
+    // Not retained: the useless promise is gone and so is its tag.
+    expect(c.scripts).toHaveLength(0);
+
+    // Retry issues ONE new request...
+    retryOf(tree).props.onClick();
+    c.render();
+    expect(c.attempts.count).toBe(2);
+    expect(c.scripts).toHaveLength(1);
+
+    // ...and more clicks while it is in the air add nothing.
+    for (let i = 0; i < 3; i++) {
+      const again = c.render();
+      if (retryOf(again)) retryOf(again).props.onClick();
+      c.render();
+    }
+    expect(c.attempts.count).toBe(2);
+    expect(c.scripts).toHaveLength(1);
+
+    // The second attempt behaves: it publishes the global and loads.
+    c.succeed();
+    await flush();
+    tree = c.render();
+    expect(fallbackOf(tree)).toBeUndefined();
+    expect(canvasOf(tree)).toBeDefined();
+    expect(c.widgets).toHaveLength(1);
+    expect(c.widgets[0].symbol).toBe('OANDA:XAUUSD');
+    // Exactly two attempts in total: the bad load and the one retry.
+    expect(c.attempts.count).toBe(2);
+  } finally {
+    process.off('unhandledRejection', onUnhandled);
+  }
+  await flush();
+  expect(unhandled).toEqual([]);
+});
+
 describe('the failure path invents nothing, and says so in every language', () => {
   it('no candle, quote or alternate provider appears in the component', () => {
     const executable = ts.createPrinter({ removeComments: true })
@@ -307,14 +378,20 @@ describe('the failure path invents nothing, and says so in every language', () =
     expect(executable).toContain('withdateranges: true');
   });
 
-  it('the rejected promise is cleared before the rejection is delivered', () => {
+  it('the useless promise is cleared before the rejection is delivered', () => {
     const src = read('components/CfdChart.tsx');
-    const onerror = src.slice(src.indexOf('script.onerror'), src.indexOf('document.head.appendChild'));
+    const fail = src.slice(src.indexOf('const fail = () =>'), src.indexOf('script.onload'));
     // Order matters: clearing after `reject` would still work, but clearing
     // inside the handler at all is the whole fix, so it is pinned here.
-    expect(onerror).toContain('tvScriptPromise = null');
-    expect(onerror.indexOf('tvScriptPromise = null')).toBeLessThan(onerror.indexOf('reject('));
-    expect(onerror).toContain('removeChild(script)');
+    expect(fail).toContain('tvScriptPromise = null');
+    expect(fail.indexOf('tvScriptPromise = null')).toBeLessThan(fail.indexOf('reject('));
+    expect(fail).toContain('removeChild(script)');
+    // Both failure paths go through it — a `load` event that did not
+    // publish the global is a failure too, not a resolution.
+    expect(src).toContain('script.onerror = fail;');
+    const onload = src.slice(src.indexOf('script.onload'), src.indexOf('script.onerror'));
+    expect(onload).toContain('TradingView) resolve();');
+    expect(onload).toContain('else fail();');
   });
 
   it('all three strings exist in all seven locales, none of them Russian by default', () => {

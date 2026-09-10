@@ -40,14 +40,28 @@ function loadTradingViewScript(): Promise<void> {
     const script = document.createElement('script');
     script.src = TV_SCRIPT_SRC;
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
+
+    /** Both ways this can go wrong, so the two cannot drift apart: forget
+     *  the promise FIRST, drop the dead tag, then reject. The caller is
+     *  told the same thing either way — the chart is not available — and
+     *  nothing about which of the two happened reaches the UI. */
+    const fail = () => {
       tvScriptPromise = null;
-      // The dead tag goes with it, so a retry is not appended alongside a
-      // node the browser has already given up on.
       script.parentNode?.removeChild(script);
       reject(new Error('Failed to load TradingView widget script'));
     };
+
+    script.onload = () => {
+      // A `load` event only says the bytes arrived. If the script's own
+      // execution threw, or it simply did not publish the global, then
+      // resolving here would cache a promise that is permanently useless:
+      // every later Retry would be handed that resolved promise, find no
+      // `window.TradingView`, and fall straight back to the error state
+      // without ever issuing a request. So the global is what decides.
+      if (typeof window !== 'undefined' && (window as any).TradingView) resolve();
+      else fail();
+    };
+    script.onerror = fail;
     document.head.appendChild(script);
   });
   return tvScriptPromise;
