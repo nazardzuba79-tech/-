@@ -4,6 +4,8 @@ import { ArrowRightIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { HomeMarket, formatCompactUsd, formatPriceValue } from './useHomeMarket';
 import { useLanguage } from '../../lib/i18n';
+import { CountUp } from './HomeMotion';
+import { LiveValue } from './LiveValue';
 
 /**
  * Five market panels. Each reads its own source and shows its own state,
@@ -16,7 +18,7 @@ import { useLanguage } from '../../lib/i18n';
  */
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex h-full flex-col rounded-[8px] border border-white/6 bg-ink-850 p-4">
+    <section className="vx-intel-panel flex h-full flex-col rounded-[8px] border border-white/6 bg-ink-850 p-4">
       <h3 className="mb-3 text-[13px] font-semibold text-white">{title}</h3>
       <div className="flex flex-1 flex-col">{children}</div>
     </section>
@@ -108,7 +110,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
   );
 
   return (
-    <div className="mx-auto grid w-full max-w-[1460px] grid-cols-1 items-stretch gap-3 px-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <div className="vx-intelligence mx-auto grid w-full max-w-[1460px] grid-cols-1 items-stretch gap-3 px-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       {/* 1 — Fear & Greed (real) */}
       <Panel title={t('home.overview.fearGreed')}>
         {market.globalStatus === 'loading' ? (
@@ -119,7 +121,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
               <div className="relative">
                 <Gauge value={fg.value} />
                 <div className="absolute inset-x-0 bottom-0 text-center">
-                  <div className="text-[28px] font-bold leading-none tabular-nums text-white">{fg.value}</div>
+                  <div className="text-[28px] font-bold leading-none tabular-nums text-white"><CountUp value={fg.value} format={n => Math.round(n).toString()} /></div>
                   <div className="text-[11px] text-home-muted">{fg.classification}</div>
                 </div>
               </div>
@@ -143,7 +145,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
               <div className="text-[11px] text-faint">{t('home.overview.marketCap')}</div>
               <div className="flex items-baseline justify-between">
                 <span className="font-mono text-[17px] font-semibold tabular-nums text-white">
-                  {formatCompactUsd(g.totalMarketCapUsd)}
+                  <CountUp value={g.totalMarketCapUsd} format={formatCompactUsd} />
                 </span>
                 {g.marketCapChangePercent24h !== null && (
                   <span
@@ -158,7 +160,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
             <div className="border-b border-white/6 pb-3">
               <div className="text-[11px] text-faint">{t('markets.volume24h')}</div>
               <div className="font-mono text-[17px] font-semibold tabular-nums text-white">
-                {formatCompactUsd(g.totalVolume24hUsd)}
+                <CountUp value={g.totalVolume24hUsd} format={formatCompactUsd} />
               </div>
             </div>
             <div className="flex items-center justify-between text-[11.5px]">
@@ -219,7 +221,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
                 <CryptoIcon symbol={p.base} size={20} imageUrl={market.logoOf(p.base)} />
                 <span className="text-[12px] text-white/85">{p.base}</span>
                 <span className="ml-auto font-mono text-[11.5px] tabular-nums text-white/85">
-                  {formatPriceValue(p.price)}
+                  <LiveValue value={p.price} format={formatPriceValue} />
                 </span>
                 <span
                   className={`w-14 text-right font-mono text-[11.5px] tabular-nums ${p.change >= 0 ? 'text-up' : 'text-down'}`}

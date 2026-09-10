@@ -1,0 +1,106 @@
+/* Homepage presentation only. The approved card image and shared product
+   renderer remain byte-exact; perspective is applied to their outer frame. */
+.vx-home { --vx-ease: cubic-bezier(.22,.7,.25,1); }
+.vx-home main > * { min-width: 0; }
+.vx-home main { gap: 0; }
+.vx-home .vx-hero-stage { position: relative; }
+.vx-home .vx-hero-stage > section > div:last-child { padding-bottom: 82px; }
+.vx-home .vx-hero-stage > section > div:last-child > div:last-child { margin-right: 0; min-width: 0; }
+.vx-home .vx-motion-stage .vx-atmos,
+.vx-home .vx-motion-stage .vx-atmos-alt,
+.vx-home .vx-motion-stage .vx-arc,
+.vx-home .vx-motion-stage .vx-arc-slow { animation-play-state: paused; will-change: auto; }
+.vx-home .vx-motion-active .vx-atmos,
+.vx-home .vx-motion-active .vx-atmos-alt,
+.vx-home .vx-motion-active .vx-arc,
+.vx-home .vx-motion-active .vx-arc-slow { animation-play-state: running; }
+.vx-home .vx-enter { will-change: auto; }
+.vx-home .vx-reveal { transition-duration: 650ms; }
+
+/* One connected instrument strip, with quiet internal dividers. */
+.vx-home .vx-intelligence {
+  position: relative; gap: 0; margin-top: 28px; margin-bottom: 20px;
+  padding-top: 28px; padding-bottom: 28px;
+  background: linear-gradient(115deg,rgba(31,48,72,.35),rgba(10,16,24,.8) 60%,rgba(27,36,48,.2));
+  border-top: 1px solid #a0b3d51c; border-bottom: 1px solid #a0b3d518;
+}
+.vx-home .vx-intel-panel {
+  min-width: 0; padding: 8px 22px; min-height: 226px; background: transparent;
+  border: 0; border-right: 1px solid #a0b3d519; border-radius: 0;
+  transition: background 240ms ease;
+}
+.vx-home .vx-intel-panel:last-child { border-right: 0; }
+.vx-home .vx-intel-panel h3 { letter-spacing: .01em; color: #c6d0df; margin-bottom: 22px; }
+.vx-home .vx-intel-panel:hover { background: #ffffff02; }
+.vx-home .vx-intel-panel svg path { transform-origin: center; }
+.vx-home .vx-shown .vx-intel-panel:first-child svg { animation: vx-gauge-reveal 800ms var(--vx-ease) both; }
+@keyframes vx-gauge-reveal { from { opacity: .2; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(0); } }
+
+.vx-home .vx-card-stage { padding: 40px 0 66px; perspective: 1400px; }
+.vx-home .vx-card-stage #card { max-width: 1360px; }
+.vx-home .vx-card-stage #card > div { border: 0; overflow: visible; background: transparent; }
+.vx-home .vx-card-stage .vx-home-card-artwork {
+  transform: perspective(1200px) rotateX(var(--vx-tilt-x,0deg)) rotateY(var(--vx-tilt-y,0deg));
+  transition: transform 500ms var(--vx-ease), filter 500ms ease;
+  isolation: isolate;
+}
+.vx-home .vx-card-stage .vx-home-card-artwork::after {
+  content: ''; position: absolute; inset: 10% 8%; pointer-events: none; opacity: 0;
+  background: linear-gradient(115deg, transparent 38%, #fff4cc0c 49%, #fff4cc1a 50%, transparent 62%);
+  transform: translateX(-20%); mix-blend-mode: screen;
+}
+.vx-home .vx-card-stage.vx-motion-active .vx-home-card-artwork::after { animation: vx-card-reflection 1400ms var(--vx-ease) 400ms both; }
+@keyframes vx-card-reflection { 0% { opacity: 0; transform: translateX(-20%); } 35% { opacity: .6; } 100% { opacity: 0; transform: translateX(20%); } }
+.vx-home .vx-card-stage .vx-arc,
+.vx-home .vx-card-stage .vx-arc-slow { translate: var(--vx-light-x,0px) var(--vx-light-y,0px); transition: translate 600ms var(--vx-ease); }
+.vx-home .vx-card-stage .vx-home-card-benefit-icon { transition: translate 250ms var(--vx-ease), border-color 250ms ease; }
+.vx-home .vx-card-stage li:hover .vx-home-card-benefit-icon { translate: 0 -2px; border-color: #e0b86880; }
+
+.vx-home main a:not(.vx-heat-tile), .vx-home main button { transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, translate 180ms var(--vx-ease); }
+.vx-home main a[class*="bg-gold"]:hover { box-shadow: 0 5px 24px #dca53620; translate: 0 -1px; }
+.vx-home main a:active, .vx-home main button:active { translate: 0 1px; }
+.vx-home main :is(a,button):focus-visible { outline: 2px solid #e0a93f; outline-offset: 4px; }
+.vx-home main > .vx-reveal:has(#markets) { padding-top: 32px; }
+.vx-home main > .vx-reveal:last-child { padding-top: 42px; padding-bottom: 32px; }
+.vx-home footer { border-top: 1px solid #a0b3d512; }
+
+@media (min-width: 1440px) {
+  .vx-home .vx-hero-stage > section > div:last-child { padding-top: 70px; padding-bottom: 96px; }
+}
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .vx-home .vx-intel-panel:nth-child(3) { border-right: 0; }
+  .vx-home .vx-intel-panel:nth-child(n+4) { margin-top: 26px; border-top: 1px solid #a0b3d519; padding-top: 22px; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  .vx-home .vx-intel-panel:nth-child(even) { border-right: 0; }
+  .vx-home .vx-intel-panel:nth-child(n+3) { margin-top: 22px; border-top: 1px solid #a0b3d519; padding-top: 22px; }
+}
+@media (max-width: 767px) {
+  .vx-home .vx-hero-stage > section > div:last-child { padding-bottom: 40px; padding-top: 32px; }
+  .vx-home .vx-intelligence { padding: 20px 14px; margin-top: 22px; margin-bottom: 0; }
+  .vx-home .vx-card-stage { padding: 24px 0 40px; }
+  .vx-home .vx-card-stage #card { padding-left: 8px; padding-right: 8px; }
+  .vx-home .vx-card-stage #card > div > div:last-child { gap: 8px; }
+  .vx-home main > .vx-reveal:last-child { padding-top: 26px; }
+}
+@media (max-width: 639px) {
+  .vx-home header > div { padding-inline: 16px; gap: 10px; }
+  .vx-home header > div > div { gap: 4px; }
+  .vx-home header > div > div > a { padding-inline: 9px; font-size: 11px; }
+  .vx-home header > div > div > button { flex-shrink: 0; min-width: 30px; }
+  .vx-home .vx-intelligence { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .vx-home .vx-intel-panel { padding: 8px 12px; min-height: 220px; }
+  .vx-home .vx-intel-panel:nth-child(even) { border-right: 0; }
+  .vx-home .vx-intel-panel:nth-child(n+3) { margin-top: 20px; padding-top: 20px; border-top: 1px solid #a0b3d519; }
+  .vx-home .vx-intel-panel:last-child { grid-column: 1 / -1; min-height: 0; }
+  .vx-home .vx-intel-panel h3 { font-size: 12px; margin-bottom: 16px; }
+  .vx-home .vx-intel-panel:nth-child(4) li { flex-wrap: wrap; gap: 5px; }
+  .vx-home .vx-intel-panel:nth-child(4) li > :nth-child(3) { margin-left: auto; }
+  .vx-home .vx-intel-panel:nth-child(4) li > :last-child { width: auto; margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-home *, .vx-home *::before, .vx-home *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+  .vx-home .vx-card-stage .vx-home-card-artwork { transform: none; }
+  .vx-home .vx-card-stage .vx-arc, .vx-home .vx-card-stage .vx-arc-slow { translate: none; }
+  .vx-home .vx-reveal { opacity: 1; transform: none; }
+}
