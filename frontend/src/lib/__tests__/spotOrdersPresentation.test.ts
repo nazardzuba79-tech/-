@@ -248,7 +248,17 @@ describe('Spot orders truthful dense presentation', () => {
     const pageSource = (file: string) => readFileSync(resolve(__dirname, '../../pages', file), 'utf8').replace(/\r\n/g, '\n');
     const css = pageSource('trade-terminal/TradeTerminal.css');
     const [shared, spot] = css.split('/* Final Spot-only reconciliation.');
-    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('ceb3d8f0e8b3bcbabf4e43c1696e5417294843c7fd75546c5761b443cc9c1fea');
+    // Re-taken once, from ceb3d8f0…, for the shared authenticated header
+    // fix: `.trade-terminal *` blanket-reset margin and padding on the
+    // global nav that renders inside this wrapper, collapsing it into the
+    // top-left corner on /trade and /futures in production. The reset now
+    // carries `:not(:where(.global-header, .global-header *))`, which is
+    // zero-specificity and therefore changes nothing about how the terminal
+    // itself cascades. That one selector is the entire diff to this section
+    // — the assertion below pins it, so the fingerprint cannot be re-taken
+    // again to cover a different edit without also deleting that line.
+    expect(shared).toContain('.trade-terminal *:not(:where(.global-header, .global-header *)),');
+    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('873d9210fc4a00220d1746591746d00b5d0198f5b2b2b85e7e87fd1246b5bd82');
     const postcss = req('postcss');
     const rules: string[] = [];
     postcss.parse('/* Final Spot-only reconciliation.' + spot).walkRules((rule: { selectors: string[] }) => rules.push(...rule.selectors));

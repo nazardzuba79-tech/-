@@ -81,9 +81,29 @@
   flex-direction: column;
 }
 
-.trade-terminal *,
-.trade-terminal *::before,
-.trade-terminal *::after {
+/* The ported terminal's own reset — and ONLY its own.
+ *
+ * The shared authenticated header renders INSIDE `.trade-terminal` on both
+ * this page and the spot terminal, so a bare `.trade-terminal *` reached it
+ * too. Both selectors score 0,1,0, and this file is a LAZY route chunk that
+ * loads AFTER the eager index.css, so it won every tie: `.global-header`'s
+ * `padding: 0 28px` and `.nav-item`'s `padding: 0 11px; margin: 8px 0`
+ * computed to 0 and the whole navigation collapsed into the top-left corner
+ * — on /trade and /futures only, because no other route loads this chunk.
+ *
+ * That was never the intent. The variables block above says as much: "the
+ * global nav sits on --bg-primary (near-black, set in index.css, untouched
+ * here)". This makes "untouched" true.
+ *
+ * `:not(:where(...))` rather than `:not(...)`: `:where()` contributes zero
+ * specificity, so the selector still scores exactly 0,1,0 and every rule
+ * inside the terminal cascades precisely as it did before. Nothing about
+ * the terminal's own reset changes — it simply stops crossing into a
+ * component it does not own. `box-sizing: border-box` is not lost for the
+ * header either; index.css sets it globally on `*`. */
+.trade-terminal *:not(:where(.global-header, .global-header *)),
+.trade-terminal *:not(:where(.global-header, .global-header *))::before,
+.trade-terminal *:not(:where(.global-header, .global-header *))::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
