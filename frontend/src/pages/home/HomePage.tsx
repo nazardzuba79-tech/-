@@ -2,8 +2,9 @@ import { HomeHeader } from './HomeHeader';
 import { HomeHero } from './HomeHero';
 import { HomeTicker } from './HomeTicker';
 import { HomeMarketOverview } from './HomeMarketOverview';
-import { HomeCardSection } from './HomeCardSection';
+import { HomeCardPresentation } from './HomeCardPresentation';
 import { HomeMarkets } from './HomeMarkets';
+import { HomeEcosystem } from './HomeEcosystem';
 import { HomeFaq } from './HomeFaq';
 import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
@@ -52,13 +53,16 @@ export function HomePage() {
           <HomeWorldActivity />
         </Reveal>
         <Reveal>
-          <MotionStage className="vx-card-stage" tilt><HomeCardSection /></MotionStage>
+          <HomeCardPresentation />
         </Reveal>
         <Reveal>
           <HomeHeatmap market={market} />
         </Reveal>
         <Reveal>
           <HomeMarkets market={market} />
+        </Reveal>
+        <Reveal>
+          <HomeEcosystem />
         </Reveal>
         <Reveal>
           <HomeFaq />

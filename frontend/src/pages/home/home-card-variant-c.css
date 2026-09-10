@@ -1,0 +1,124 @@
+/* Variant C only. A/B artwork, renderers and their existing styles are unchanged. */
+.vx-home .vx-card-stage.vx-card-variant-c { padding: 26px 0 36px; }
+.vx-home .vx-card-stage.vx-card-variant-c #card { max-width: 1440px; margin: 0 auto; padding: 0 32px; }
+.vx-home .vx-card-stage.vx-card-variant-c #card > div { position: relative; isolation: isolate; min-height: 750px; }
+.vx-home .vx-card-c-composition::before {
+  content: ''; position: absolute; inset: -20px -32px -20px; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 38% 49% at 64% 42%, #71502a24, transparent 82%),
+    radial-gradient(ellipse 24% 30% at 85% 47%, #2037451a, transparent 88%),
+    radial-gradient(ellipse 74% 70% at 62% 45%, #0e1114, transparent 85%);
+}
+.vx-home .vx-card-c-copy { position: relative; z-index: 3; width: 29%; padding-top: 174px; }
+.vx-home .vx-card-c-label { display: inline-flex; align-items: center; gap: 9px; color: #d5b774; font-size: 10px; line-height: 1.4; font-weight: 600; letter-spacing: .16em; }
+.vx-home .vx-card-c-message h2 { max-width: 390px; margin: 22px 0 20px; color: #f3f3ef; font-size: clamp(40px,3.6vw,53px); font-weight: 600; line-height: 1.04; letter-spacing: -.045em; text-wrap: balance; }
+.vx-home .vx-card-c-message p { max-width: 310px; color: #a4adbb; font-size: 13px; line-height: 1.75; }
+.vx-home .vx-card-c-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 29px; }
+.vx-home .vx-card-c-actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 43px; padding: 10px 17px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.vx-home .vx-card-c-primary { color: #12100a; background: #e0a93f; border: 1px solid #f0c76c; box-shadow: 0 6px 28px #aa7d2426; }
+.vx-home .vx-card-c-primary:hover { background: #f0c45a; box-shadow: 0 8px 30px #c9a24a30; }
+.vx-home .vx-card-c-secondary { color: #d9dde4; background: #ffffff03; border: 1px solid #b8c3d325; }
+.vx-home .vx-card-c-secondary:hover { border-color: #cdb78160; background: #ffffff06; }
+
+/* The visual occupies 60% of the scene and bleeds into its surroundings.
+   Nested transforms keep pointer perspective separate from gentle rigid drift. */
+.vx-home .vx-card-c-visual { position: absolute; z-index: 1; width: 60%; aspect-ratio: 932 / 1006; left: 28%; top: -20px; pointer-events: none; }
+.vx-home .vx-card-c-plane { position: absolute; inset: 0; transform: perspective(1400px) rotateX(var(--vx-tilt-x,0deg)) rotateY(var(--vx-tilt-y,0deg)); transform-origin: 49% 43%; transition: transform 650ms cubic-bezier(.22,.7,.25,1); }
+.vx-home .vx-card-c-float { position: absolute; inset: 0; animation: vx-card-c-breathe 12s ease-in-out infinite; }
+.vx-home .vx-card-c-base, .vx-home .vx-card-c-product, .vx-home .vx-card-c-coin { position: absolute; inset: 0; width: 100%; height: 100%; mask-repeat: no-repeat; }
+.vx-home .vx-card-c-base > svg, .vx-home .vx-card-c-coin > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.vx-home .vx-card-c-product { overflow: visible; filter: drop-shadow(8px 18px 17px #0007); }
+.vx-home .vx-card-c-coin { animation: vx-card-c-coin-drift 18s ease-in-out infinite alternate; }
+.vx-home .vx-card-c-ambient {
+  position: absolute; inset: 2% -8% 4%; z-index: -1;
+  background:
+    radial-gradient(ellipse 38% 34% at 49% 42%, #bf88411b, transparent 82%),
+    radial-gradient(ellipse 23% 29% at 83% 45%, #32647a0d, transparent 90%);
+  animation: vx-card-c-light 24s ease-in-out infinite alternate;
+}
+
+/* Information belongs to different edges of the same scene, with no rigid column. */
+.vx-home .vx-card-c-features { position: static; margin: 0; padding: 0; list-style: none; }
+.vx-home .vx-card-c-feature {
+  position: absolute; z-index: 4; display: flex; align-items: flex-start; gap: 10px;
+  padding: 13px; border: 1px solid #c4ad791e; border-radius: 12px;
+  background: linear-gradient(135deg, #191e24c9, #0c1116b8);
+  box-shadow: 0 10px 36px #0003, inset 0 1px #ffffff03;
+  backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px);
+  transition: translate 250ms ease, border-color 250ms ease, background-color 250ms ease;
+}
+.vx-home .vx-card-c-feature:hover { translate: 0 -3px; border-color: #c4ad7945; background-color: #b2954d09; }
+.vx-home .vx-card-c-feature > div { min-width: 0; }
+.vx-home .vx-card-c-feature h3 { color: #e6e7e8; font-size: 13px; font-weight: 600; line-height: 1.35; }
+.vx-home .vx-card-c-feature p { margin-top: 5px; color: #919caa; font-size: 11px; line-height: 1.55; }
+.vx-home .vx-card-c-feature .vx-home-card-benefit-icon { flex: 0 0 32px; width: 32px; height: 32px; border-radius: 9px; border-color: #c4ad7924; background: #10161b9c; color: #cdb88a; }
+.vx-home .vx-card-c-feature .vx-home-card-benefit-icon > svg { width: 20px; height: 20px; }
+.vx-home .vx-card-c-feature .vx-home-card-benefit-icon > img { width: 25px; height: auto; }
+.vx-home .vx-card-c-feature-world { left: 48%; top: 0; width: 235px; }
+.vx-home .vx-card-c-feature-apple { right: 0; top: 108px; width: 219px; }
+.vx-home .vx-card-c-feature-ai { right: 0; top: 332px; width: 184px; }
+.vx-home .vx-card-c-feature-atm { left: 44%; top: 640px; width: 244px; }
+.vx-home .vx-card-c-feature-privacy { right: 1%; top: 574px; width: 258px; }
+
+.vx-home .vx-card-variant-c .vx-card-c-float,
+.vx-home .vx-card-variant-c .vx-card-c-coin,
+.vx-home .vx-card-variant-c .vx-card-c-ambient { animation-play-state: paused; }
+.vx-home .vx-card-variant-c.vx-motion-active .vx-card-c-float,
+.vx-home .vx-card-variant-c.vx-motion-active .vx-card-c-coin,
+.vx-home .vx-card-variant-c.vx-motion-active .vx-card-c-ambient { animation-play-state: running; }
+@keyframes vx-card-c-breathe { 0%,100% { transform: translateY(3px); } 50% { transform: translateY(-3px); } }
+@keyframes vx-card-c-coin-drift { from { translate: 0 0; } to { translate: var(--vx-coin-x,1px) var(--vx-coin-y,-3px); } }
+@keyframes vx-card-c-light { from { transform: translate(-4px,3px); opacity: .8; } to { transform: translate(7px,-4px); opacity: 1; } }
+
+@media (min-width: 1200px) and (max-width: 1359px) {
+  .vx-home .vx-card-stage.vx-card-variant-c #card > div { min-height: 700px; }
+  .vx-home .vx-card-c-copy { padding-top: 154px; }
+  .vx-home .vx-card-c-feature-apple { width: 193px; top: 92px; }
+  .vx-home .vx-card-c-feature-ai { width: 177px; top: 306px; }
+  .vx-home .vx-card-c-feature-atm { top: 575px; }
+  .vx-home .vx-card-c-feature-privacy { width: 235px; top: 520px; }
+}
+@media (max-width: 1199px) {
+  .vx-home .vx-card-stage.vx-card-variant-c #card { padding-inline: 28px; }
+  .vx-home .vx-card-stage.vx-card-variant-c #card > div { display: grid; min-height: 0; }
+  .vx-home .vx-card-c-copy { display: contents; }
+  .vx-home .vx-card-c-message { grid-row: 1; text-align: center; max-width: 640px; margin: 0 auto; }
+  .vx-home .vx-card-c-message h2 { max-width: 620px; margin-inline: auto; font-size: 46px; }
+  .vx-home .vx-card-c-message p { max-width: 440px; margin-inline: auto; }
+  .vx-home .vx-card-c-visual { grid-row: 2; position: relative; width: min(88%,760px); left: auto; top: auto; margin: -4px auto -110px; }
+  .vx-home .vx-card-c-features { grid-row: 3; position: relative; z-index: 4; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; max-width: 920px; margin: 0 auto; }
+  .vx-home .vx-card-c-feature { position: relative; left: auto; right: auto; top: auto; width: auto; }
+  .vx-home .vx-card-c-feature:nth-child(4) { grid-column: 1 / 2; }
+  .vx-home .vx-card-c-feature:last-child { grid-column: 2 / 4; }
+  .vx-home .vx-card-c-actions { grid-row: 4; justify-content: center; margin-top: 22px; }
+}
+@media (max-width: 639px) {
+  /* Only the comparison toolbar changes for the additional option. */
+  .vx-home .vx-card-comparison { flex-wrap: wrap; row-gap: 10px; }
+  .vx-home .vx-card-comparison > span { flex-basis: 100%; }
+  .vx-home .vx-card-comparison > div { width: 100%; }
+  .vx-home .vx-card-comparison button { flex: 1; }
+  .vx-home .vx-card-stage.vx-card-variant-c { padding: 20px 0 30px; }
+  .vx-home .vx-card-stage.vx-card-variant-c #card { padding-inline: 24px; }
+  .vx-home .vx-card-c-message { text-align: left; }
+  .vx-home .vx-card-c-message h2 { font-size: clamp(34px,10vw,42px); margin-top: 19px; margin-bottom: 17px; }
+  .vx-home .vx-card-c-message p { font-size: 13px; }
+  .vx-home .vx-card-c-label { font-size: 9px; }
+  .vx-home .vx-card-c-visual { width: calc(100% + 40px); margin: 12px -20px -36px; }
+  .vx-home .vx-card-c-features { width: 100%; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+  .vx-home .vx-card-c-feature { display: block; padding: 12px; border-radius: 11px; }
+  .vx-home .vx-card-c-feature .vx-home-card-benefit-icon { margin-bottom: 10px; }
+  .vx-home .vx-card-c-feature h3 { font-size: 12px; }
+  .vx-home .vx-card-c-feature p { font-size: 11px; line-height: 1.55; }
+  .vx-home .vx-card-c-feature:nth-child(4) { grid-column: auto; }
+  .vx-home .vx-card-c-feature:last-child { grid-column: 1 / -1; display: flex; align-items: center; }
+  .vx-home .vx-card-c-feature:last-child .vx-home-card-benefit-icon { margin-bottom: 0; }
+  .vx-home .vx-card-c-actions { justify-content: stretch; gap: 8px; margin-top: 19px; }
+  .vx-home .vx-card-c-actions a { flex: 1; padding-inline: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-home .vx-card-variant-c .vx-card-c-plane,
+  .vx-home .vx-card-variant-c .vx-card-c-float { transform: none; }
+  .vx-home .vx-card-variant-c .vx-card-c-coin { translate: none; }
+  .vx-home .vx-card-variant-c .vx-card-c-feature:hover { translate: none; }
+}

@@ -1,0 +1,75 @@
+/* Comparison controls exist only on explicit ?cardVariant=A/B preview URLs.
+   No Variant B rule reaches the original A surface or the /card product page. */
+.vx-home .vx-card-comparison {
+  scroll-margin-top: 84px;
+  max-width: 1312px; margin: 0 auto 24px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  color: #939eae; font-size: 10px; letter-spacing: .12em;
+}
+.vx-home .vx-card-comparison > div { display: flex; gap: 4px; }
+.vx-home .vx-card-comparison button {
+  padding: 9px 14px; border: 1px solid #a5b5cf25; border-radius: 6px;
+  font-size: 12px; letter-spacing: 0; white-space: nowrap;
+}
+.vx-home .vx-card-comparison button[aria-pressed="true"] {
+  color: #efc86d; border-color: #d8af5155; background: #d8af5110;
+}
+
+/* Let the photograph occupy the column gutters while copy stays above the
+   ambient layers. Its intrinsic aspect ratio still reserves the full height. */
+.vx-home .vx-card-variant-b #card > div { isolation: isolate; }
+.vx-home .vx-card-variant-b #card > div::before {
+  content: ''; position: absolute; inset: -35px 0; z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 33% 47% at 57% 44%, #a4753017, transparent 80%),
+    radial-gradient(ellipse 47% 60% at 64% 55%, #10161e70, transparent 90%);
+}
+.vx-home .vx-card-variant-b #card > div > div:last-child > :is(:first-child,ul) {
+  position: relative; z-index: 2;
+}
+.vx-home .vx-card-variant-b .vx-home-card-artwork {
+  flex: 0 0 auto; width: calc(100% + 36px); max-width: none;
+}
+.vx-home .vx-card-variant-b .vx-home-card-artwork::before {
+  content: ''; position: absolute; inset: 3% -8% 3% -10%; z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 42% 41% at 50% 39%, #bd893c1a, transparent 80%),
+    radial-gradient(ellipse 38% 42% at 70% 50%, #314a6214, transparent 85%);
+}
+
+/* Outer opacity only, never blur. The last two masks intersect to dissolve
+   the top/right/bottom photo boundaries. Ten additive, fully opaque islands
+   protect currency faces, using the unchanged homepage SVG viewBox
+   (516 80 932 1006). The watch/card remain in the solid central plateau. */
+.vx-home .vx-card-variant-b .vx-home-card-artwork > svg {
+  mask-image:
+    radial-gradient(ellipse 8.8% 8.2% at 21.7% 11.5%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 8.5% 7.9% at 12.2% 24.3%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 8.9% 8.3% at 9% 38.2%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.2% 8.5% at 13% 52.6%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.4% 8.7% at 22.9% 65.3%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 8% 7.4% at 72.2% 12.3%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.2% 8.5% at 82.2% 25.3%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.2% 8.5% at 87.8% 40%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.2% 8.5% at 83.8% 54.3%, #000 90%, transparent 100%),
+    radial-gradient(ellipse 9.3% 8.6% at 76.2% 67.2%, #000 90%, transparent 100%),
+    linear-gradient(90deg, transparent, #000 10%, #000 74%, transparent 100%),
+    linear-gradient(180deg, transparent, #000 13%, #000 69%, transparent 100%);
+  mask-composite: add, add, add, add, add, add, add, add, add, add, intersect;
+  mask-repeat: no-repeat;
+}
+
+@media (max-width: 1023px) {
+  .vx-home .vx-card-variant-b .vx-home-card-artwork { width: calc(100% + 24px); }
+  .vx-home .vx-card-variant-b #card > div::before {
+    background: radial-gradient(ellipse 65% 33% at 53% 47%, #8d70341a, transparent 90%);
+  }
+}
+@media (max-width: 639px) {
+  .vx-home .vx-card-comparison { padding-inline: 24px; gap: 8px; }
+  .vx-home .vx-card-comparison > span { font-size: 8px; letter-spacing: .07em; }
+  .vx-home .vx-card-comparison button { padding: 9px 10px; }
+  .vx-home .vx-card-variant-b .vx-home-card-artwork { width: calc(100% + 16px); }
+}

@@ -1115,4 +1115,21 @@ export const RU = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': 'Слишком много попыток. Попробуйте позже.',
+
+  // --- Homepage institutional ecosystem ---
+  'home.ecosystem.label': "GLOBAL MARKET INFRASTRUCTURE",
+  'home.ecosystem.globalMarkets': "Глобальные рынки",
+  'home.ecosystem.equities': "Акции",
+  'home.ecosystem.derivatives': "Деривативы",
+  'home.ecosystem.capitalMarkets': "Рынки капитала",
+  'home.ecosystem.title': "Глобальная финансовая экосистема",
+  'home.ecosystem.subtitle': "VOLTEX создаёт инфраструктуру для доступа к глобальным рынкам, ориентируясь на стандарты крупнейших мировых бирж и финансовых институтов.",
+  'home.ecosystem.pause': "Остановить движение",
+  'home.ecosystem.resume': "Продолжить движение",
+  'home.ecosystem.nasdaq': "Глобальные электронные рынки",
+  'home.ecosystem.nyse': "Глобальный рынок акций",
+  'home.ecosystem.cme': "Глобальные рынки деривативов",
+  'home.ecosystem.jpmorgan': "Глобальные банковские услуги и рынки",
+  'home.ecosystem.goldman': "Глобальные банковские услуги и рынки",
+  'home.ecosystem.morganstanley': "Институциональные ценные бумаги и управление капиталом",
 } as const;

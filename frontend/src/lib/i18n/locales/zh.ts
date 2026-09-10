@@ -1097,4 +1097,21 @@ export const ZH: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': '尝试次数过多，请稍后再试。',
+
+  // --- Homepage institutional ecosystem ---
+  'home.ecosystem.label': "全球市场基础设施",
+  'home.ecosystem.globalMarkets': "全球市场",
+  'home.ecosystem.equities': "股票",
+  'home.ecosystem.derivatives': "衍生品",
+  'home.ecosystem.capitalMarkets': "资本市场",
+  'home.ecosystem.title': "全球金融生态系统",
+  'home.ecosystem.subtitle': "VOLTEX 致力于构建连接全球市场的基础设施，并以世界领先交易所和金融机构的标准为参考。",
+  'home.ecosystem.pause': "暂停滚动",
+  'home.ecosystem.resume': "继续滚动",
+  'home.ecosystem.nasdaq': "全球电子交易市场",
+  'home.ecosystem.nyse': "全球股票市场",
+  'home.ecosystem.cme': "全球衍生品市场",
+  'home.ecosystem.jpmorgan': "全球银行业务与市场",
+  'home.ecosystem.goldman': "全球银行业务与市场",
+  'home.ecosystem.morganstanley': "机构证券与财富管理",
 };
