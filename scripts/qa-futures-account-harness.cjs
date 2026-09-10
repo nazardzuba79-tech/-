@@ -220,6 +220,58 @@ function freshSpotOrders() {
   }];
 }
 
+/**
+ * Futures TP/SL fixture state, keyed by position id.
+ *
+ * Deliberately mirrors the SERVER contract rather than the UI's wishes: the
+ * positions payload carries `protection`, and the editor's PUT/DELETE are
+ * the only way it ever changes. So a browser run genuinely exercises "the
+ * row shows server state" — if the UI ever painted a local draft as armed,
+ * a reload against this harness would contradict it.
+ */
+function protectionOf(acct, positionId) {
+  acct.protection = acct.protection || {};
+  acct.protection[positionId] = acct.protection[positionId] || { takeProfit: null, stopLoss: null };
+  return acct.protection[positionId];
+}
+
+function protectionTrigger(kind, triggerPrice) {
+  return {
+    id: `prot-${kind}-${Date.now()}`, kind, triggerPrice: String(triggerPrice),
+    status: 'PENDING', lastError: null, attempts: 0,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+  };
+}
+
+/** The same rules FuturesProtectionService.validateTriggers enforces. */
+function validateProtection(position, takeProfit, stopLoss) {
+  const mark = MARK[position.symbol];
+  const long = position.side === 'LONG';
+  for (const [label, v] of [['takeProfit', takeProfit], ['stopLoss', stopLoss]]) {
+    if (v === null) continue;
+    if (!Number.isFinite(v) || v <= 0) return `${label} must be a positive price`;
+  }
+  if (takeProfit !== null && stopLoss !== null) {
+    const ordered = long ? stopLoss < takeProfit : stopLoss > takeProfit;
+    if (!ordered) {
+      return long
+        ? 'stopLoss must be below takeProfit for a LONG position'
+        : 'stopLoss must be above takeProfit for a SHORT position';
+    }
+  }
+  if (!Number.isFinite(mark)) return null;
+  if (long) {
+    if (takeProfit !== null && !(takeProfit > mark)) return 'takeProfit must be above the current mark price for a LONG position';
+    if (stopLoss !== null && !(stopLoss < mark)) return 'stopLoss must be below the current mark price for a LONG position';
+  } else {
+    if (takeProfit !== null && !(takeProfit < mark)) return 'takeProfit must be below the current mark price for a SHORT position';
+    if (stopLoss !== null && !(stopLoss > mark)) return 'stopLoss must be above the current mark price for a SHORT position';
+  }
+  return null;
+}
+
+const PROTECTION_PATH = /^\/api\/v1\/futures\/positions\/([^/]+)\/protection$/;
+
 function authedRoutes(pathname, acct, query) {
   if (pathname === '/api/v1/me') return acct.me;
   if (pathname === '/api/v1/orders/me') {
@@ -231,7 +283,15 @@ function authedRoutes(pathname, acct, query) {
   }
   if (pathname === '/api/v1/balances') return acct.spot;
   if (pathname === '/api/v1/futures/balances') return acct.futures;
-  if (pathname === '/api/v1/futures/positions') return acct.positions;
+  if (pathname === '/api/v1/futures/positions') {
+    return acct.positions.map((p) => ({ ...p, protection: protectionOf(acct, p.id) }));
+  }
+  const read = PROTECTION_PATH.exec(pathname);
+  if (read) {
+    const position = acct.positions.find((p) => p.id === read[1]);
+    if (!position) return undefined; // 404, same as another user's position
+    return { positionId: position.id, ...protectionOf(acct, position.id) };
+  }
   if (pathname === '/api/v1/futures/positions/history') return acct.history;
   if (pathname === '/api/v1/futures/orders/me') return acct.orders;
   if (pathname === '/api/v1/trades/me') return [];
@@ -281,6 +341,27 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ── Writes against the in-memory fixture account ────────────────
+    const protectionWrite = PROTECTION_PATH.exec(pathname);
+    if (protectionWrite && (req.method === 'PUT' || req.method === 'DELETE')) {
+      const position = acct.positions.find((p) => p.id === protectionWrite[1]);
+      if (!position) return json(404, { error: 'Position not found or not open' });
+      const state = protectionOf(acct, position.id);
+      if (req.method === 'DELETE') {
+        state.takeProfit = null;
+        state.stopLoss = null;
+        res.writeHead(204, { 'access-control-allow-origin': '*' });
+        return res.end();
+      }
+      const b = await readBody(req);
+      const tp = b.takeProfit === undefined || b.takeProfit === null ? null : num(b.takeProfit);
+      const sl = b.stopLoss === undefined || b.stopLoss === null ? null : num(b.stopLoss);
+      const problem = validateProtection(position, tp, sl);
+      if (problem) return json(400, { error: problem });
+      state.takeProfit = tp === null ? null : protectionTrigger('TAKE_PROFIT', tp);
+      state.stopLoss = sl === null ? null : protectionTrigger('STOP_LOSS', sl);
+      return json(200, { positionId: position.id, ...state });
+    }
+
     if (req.method === 'POST' && pathname === '/api/v1/futures/orders') {
       const b = await readBody(req);
       const price = b.type === 'MARKET' ? MARK[b.symbol] : num(b.price);

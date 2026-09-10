@@ -63,10 +63,18 @@ describe('translation integrity', () => {
     // re-escaped or reflowed. Recorded as content digests rather than as a
     // whole-file hash, so a comment added above a dictionary cannot force a
     // re-take of a claim about the STRINGS.
+    //
+    // Re-taken for real Futures TP/SL. Every one of the seven files is
+    // +14/-0: not a single existing line was removed, edited, retyped or
+    // reflowed — `git diff` over the locales directory contains no deletion
+    // at all. The 14 additions per language are exactly the `futures.tpsl`
+    // / `futures.*Short` / `futures.*Label` / `futures.protection*` keys the
+    // position-row TP/SL control needs, asserted by name below so this
+    // re-take cannot quietly cover anything else.
     const digests: Record<string, string> = {
-      ru: '63cf2ead9c9d8e84', en: 'b4b656d97c591141', zh: '6bc681ad6156dcf1',
-      es: 'b0461146eedebdaf', hi: 'acb730acefbb7068', ja: '53f55b87f9d18e82',
-      ko: '1248998a1bc7f197',
+      ru: 'd81cedb2098cc28e', en: 'bb75f9295d8100aa', zh: '07c27d6b880d06b0',
+      es: '85c19cf32ace9696', hi: '132e9304b4cd2b67', ja: 'd16fc93ac3065975',
+      ko: 'dec6721187be9c2b',
     };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
@@ -74,6 +82,32 @@ describe('translation integrity', () => {
       const body = source.slice(source.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
+    }
+  });
+
+  it('carries the futures TP/SL vocabulary in every language, translated', () => {
+    // The keys the re-take above accounts for. Named here so the digests
+    // cannot be advanced for some other change while pointing at this one.
+    const TPSL_KEYS = [
+      'futures.tpsl', 'futures.takeProfitShort', 'futures.stopLossShort',
+      'futures.takeProfitLabel', 'futures.stopLossLabel', 'futures.protectionTitle',
+      'futures.protectionMarkHint', 'futures.protectionSave', 'futures.protectionRemove',
+      'futures.protectionCancel', 'futures.protectionSaving', 'futures.protectionError',
+      'futures.protectionRetrying', 'futures.protectionNotSet',
+    ];
+    expect(TPSL_KEYS).toHaveLength(14);
+    for (const code of LOCALES) {
+      for (const key of TPSL_KEYS) {
+        expect({ code, key, value: typeof (dicts[code] as any)[key] })
+          .toEqual({ code, key, value: 'string' });
+        expect((dicts[code] as any)[key].length).toBeGreaterThan(0);
+      }
+      // Actually translated, not the Russian copied across: the longest
+      // string of the set differs from Russian in every other language.
+      if (code !== 'ru') {
+        expect({ code, same: (dicts[code] as any)['futures.protectionMarkHint'] === (dicts.ru as any)['futures.protectionMarkHint'] })
+          .toEqual({ code, same: false });
+      }
     }
   });
 

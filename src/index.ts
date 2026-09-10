@@ -48,6 +48,7 @@ import { FuturesMarketRegistry } from './futures/FuturesMarketRegistry';
 import { BybitMarketDataService } from './services/marketData/bybit/BybitMarketDataService';
 import { MarketUniverse } from './services/marketData/bybit/MarketUniverse';
 import { LiquidationEngine } from './futures/LiquidationEngine';
+import { FuturesProtectionService } from './futures/FuturesProtectionService';
 import { OrderService } from './services/OrderService';
 import { PriceWatcherService } from './services/PriceWatcherService';
 import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
@@ -114,6 +115,12 @@ marketUniverse.start();
 const futuresMarketRegistry = new FuturesMarketRegistry(marketDataService, prisma, marketUniverse);
 const fundingRateService = new FundingRateService(prisma, markPriceService, () => futuresMarketRegistry.list());
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
+// Take Profit / Stop Loss. Its own sweep, deliberately NOT folded into the
+// liquidation engine: a stop loss exists to close a position before it ever
+// reaches liquidation, so the two run independently and neither can delay
+// the other. It executes only through futuresPositionService's ordinary
+// reduce-only path — no separate accounting.
+const futuresProtectionService = new FuturesProtectionService(prisma, futuresPositionService, markPriceService);
 
 // Shares the spot engine/prisma/priceSource with ordersRouter's own
 // OrderService instance — OrderService holds no in-process state beyond
@@ -225,7 +232,7 @@ app.use('/api/v1', adminAuditLogRouter(prisma));
 app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
-app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry));
+app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
@@ -258,6 +265,7 @@ async function start() {
   futuresMarketRegistry.start();
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
+  futuresProtectionService.startScheduler();
   cfdLiquidationEngine.startScheduler();
   priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
 
@@ -273,6 +281,7 @@ process.on('SIGTERM', async () => {
   futuresMarketRegistry.stop();
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();
+  futuresProtectionService.stopScheduler();
   cfdLiquidationEngine.stopScheduler();
   priceWatcherService.stopScheduler();
   await prisma.$disconnect();

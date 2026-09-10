@@ -43,6 +43,22 @@ export const FUNDING_INTERVAL_HOURS = 8;
 // against its liquidation price.
 export const LIQUIDATION_CHECK_INTERVAL_MS = 5_000;
 
+// How often the TP/SL watcher re-checks every armed protective trigger
+// against its contract's MARK price. Deliberately faster than the
+// liquidation sweep: a stop loss exists precisely so a position is closed
+// before it ever reaches liquidation, so it must not be the slower of the
+// two. It is still a background sweep, never an execution authority on its
+// own — see FuturesProtectionService.
+export const PROTECTION_CHECK_INTERVAL_MS = 3_000;
+
+// How long a trigger may sit in TRIGGERING before the watcher treats the
+// claim as orphaned and takes it again. The only way to reach that state is
+// a process dying between claiming a trigger and finishing its close, so
+// this is restart recovery, not a timeout on execution: reclaiming is safe
+// because a reclaimed trigger re-reads the position and does nothing at all
+// if the earlier attempt already closed it.
+export const PROTECTION_STALE_CLAIM_MS = 60_000;
+
 // The contracts that are always offered, whatever the market data says.
 // Everything else is admitted by FuturesMarketRegistry against the rules
 // below; these three are the floor, so the terminal is never empty even

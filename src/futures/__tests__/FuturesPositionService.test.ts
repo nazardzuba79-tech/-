@@ -132,7 +132,12 @@ describe('Futures API config -> schema -> actual position service', () => {
     const mark = makeMarkPriceService('50000');
     const service = new FuturesPositionService(state.prisma, engine, mark);
     const app = express(); app.use(express.json());
-    app.use(futuresRouter(state.prisma, engine, service, mark, { list: () => ['BTC/USDT'], has: (s: string) => s === 'BTC/USDT' } as any));
+    // No protection in this suite: it is about order placement, and an
+    // account with no TP/SL set is exactly what these cases describe. The
+    // empty map makes every position report both sides null, which is what
+    // the route does for a real account that has armed nothing.
+    const protection = { activeProtectionByPosition: async () => new Map() } as any;
+    app.use(futuresRouter(state.prisma, engine, service, mark, { list: () => ['BTC/USDT'], has: (s: string) => s === 'BTC/USDT' } as any, protection));
     return { app, service, engine, ...state };
   }
 

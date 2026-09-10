@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
 
 type Tab = 'open' | 'history';
 
@@ -116,6 +117,7 @@ export function FuturesPositionsPanel({
                   <Th>{t('futures.liqPrice')}</Th>
                   <Th>{t('futures.unrealizedPnl')}</Th>
                   <Th>{t('futures.roe')}</Th>
+                  <Th>{t('futures.tpsl')}</Th>
                   <Th></Th>
                 </tr>
               </thead>
@@ -140,6 +142,16 @@ export function FuturesPositionsPanel({
                       <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice}</Td>
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{pnl !== null ? pnl.toFixed(2) : '—'}</Td>
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</Td>
+                      <Td>
+                        {/* Real server-held protection, carried on the same
+                            positions payload this table already reads — no
+                            extra endpoint and no extra timer. */}
+                        <FuturesPositionProtectionCell
+                          positionId={p.id}
+                          protection={p.protection ?? null}
+                          onSaved={() => refreshFuturesAccount(['positions'])}
+                        />
+                      </Td>
                       <Td>
                         <button
                           onClick={() => handleClose(p.id)}

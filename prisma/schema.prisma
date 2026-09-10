@@ -119,6 +119,7 @@ model User {
   futuresPositions FuturesPosition[]
   futuresBalances  FuturesBalance[]
   futuresOrders    FuturesOrder[]
+  futuresProtections FuturesPositionProtection[]
   cfdPositions     CfdPosition[]
   /// Set the first time this user confirms the futures risk disclaimer
   /// (see /futures/risk-ack). Must be non-null before any position can be
@@ -593,9 +594,61 @@ model FuturesPosition {
   updatedAt        DateTime @updatedAt
 
   fundingPayments  FundingPayment[]
+  protections      FuturesPositionProtection[]
 
   @@index([userId, status])
   @@index([symbol, status])
+}
+
+/// Take Profit / Stop Loss for an ALREADY OPEN futures position.
+///
+/// Deliberately its OWN table rather than extra columns on FuturesOrder.
+/// FuturesBookTransaction.load() rebuilds the executable book from every
+/// FuturesOrder row with status OPEN | PARTIALLY_FILLED and rejects anything
+/// that is not a priced LIMIT — so an armed-but-untriggered trigger living
+/// there would either corrupt the book or force a filter into the single
+/// hottest safety-critical loader in the futures stack. Here it cannot reach
+/// the order book at all: a trigger only ever becomes a NORMAL reduce-only
+/// MARKET order, created through the same FuturesPositionService.placeOrder
+/// path a manual close uses, at the moment it fires.
+///
+/// One row per (position, kind), rewritten in place — PUT replaces, so no
+/// second row is ever needed, and the unique pair is what makes the atomic
+/// claim below trivially correct.
+///
+/// NO QUANTITY IS STORED, on purpose. Protection always closes whatever the
+/// position's CURRENT remaining size is, read inside the executing
+/// transaction; a stored size would go stale the moment the trader closes
+/// part of the position by hand.
+model FuturesPositionProtection {
+  id           String          @id @default(uuid())
+  positionId   String
+  position     FuturesPosition @relation(fields: [positionId], references: [id])
+  userId       String
+  user         User            @relation(fields: [userId], references: [id])
+  symbol       String
+  kind         String // TAKE_PROFIT | STOP_LOSS
+  triggerPrice Decimal         @db.Decimal(36, 18)
+  /// PENDING | TRIGGERING | EXECUTED | CANCELLED | FAILED. The claim from
+  /// PENDING/FAILED to TRIGGERING is a conditional UPDATE, which is what
+  /// makes two watcher ticks unable to fire the same trigger twice — see
+  /// FuturesProtectionService.
+  status       String          @default("PENDING")
+  /// Why the last execution attempt failed, when it did. Never a reason to
+  /// silently drop protection: a FAILED row is re-claimed on a later tick
+  /// for as long as the position is still open.
+  lastError    String?
+  attempts     Int             @default(0)
+  /// When the current TRIGGERING claim was taken, so a claim orphaned by a
+  /// process restart can be safely reclaimed rather than stranding the row.
+  triggeredAt  DateTime?
+  resolvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@unique([positionId, kind])
+  @@index([status, symbol])
+  @@index([userId])
 }
 
 /// One row per funding interval per symbol — the rate actually applied,

@@ -213,6 +213,27 @@ export interface LongShortRatio {
 
 /** Tracked-venue derivatives statistics for one base asset — the two
  *  figures the Futures header shows as market reference data. */
+/** One armed futures protective trigger, exactly as the server holds it. */
+export interface FuturesProtectionTrigger {
+  id: string;
+  kind: 'TAKE_PROFIT' | 'STOP_LOSS';
+  triggerPrice: string;
+  /** PENDING | TRIGGERING | EXECUTED | CANCELLED | FAILED. */
+  status: string;
+  /** Why the last attempt failed, when it did. Protection is not dropped on
+   *  a failure — a FAILED trigger is retried while the position is open. */
+  lastError: string | null;
+  attempts: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FuturesPositionProtection {
+  positionId: string;
+  takeProfit: FuturesProtectionTrigger | null;
+  stopLoss: FuturesProtectionTrigger | null;
+}
+
 export interface FuturesMarketStats {
   baseAsset: string;
   /** Summed over the venues that publish a comparable quote turnover.
@@ -1255,6 +1276,14 @@ export const api = {
         unrealizedPnl: string | null;
         roe: string | null;
         openedAt: string;
+        /** Real, server-held TP/SL for this position. `null` on a side is
+         *  the server saying nothing is armed there — it is never a local
+         *  echo of something typed into the editor. Travels with the
+         *  position so no second endpoint has to be polled per row. */
+        protection: {
+          takeProfit: FuturesProtectionTrigger | null;
+          stopLoss: FuturesProtectionTrigger | null;
+        };
       }[]
     >('/futures/positions'),
 
@@ -1275,6 +1304,23 @@ export const api = {
     >('/futures/positions/history'),
 
   closeFuturesPosition: (positionId: string) => request(`/futures/positions/${positionId}/close`, { method: 'POST' }),
+
+  // Take Profit / Stop Loss on an OPEN futures position. Futures-only: these
+  // are the futures protection routes, driven by the futures MARK price
+  // server-side. Nothing here touches the spot conditional-order surface
+  // (`/orders/me?status=PENDING_TRIGGER`, `updateOrderTrigger`, spot OCO).
+  getFuturesPositionProtection: (positionId: string) =>
+    request<FuturesPositionProtection>(`/futures/positions/${positionId}/protection`),
+
+  /** PUT replaces BOTH sides: `null` removes that side. */
+  setFuturesPositionProtection: (positionId: string, body: { takeProfit: string | null; stopLoss: string | null }) =>
+    request<FuturesPositionProtection>(`/futures/positions/${positionId}/protection`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
+  clearFuturesPositionProtection: (positionId: string) =>
+    request(`/futures/positions/${positionId}/protection`, { method: 'DELETE' }),
 
   getFuturesBalances: () => request<{ asset: string; available: string; locked: string }[]>('/futures/balances'),
 

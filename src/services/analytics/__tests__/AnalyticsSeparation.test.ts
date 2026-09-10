@@ -38,6 +38,7 @@ const FINANCIAL_SOURCES = [
   'src/futures/MarkPriceService.ts',
   'src/futures/FundingRateService.ts',
   'src/futures/LiquidationEngine.ts',
+  'src/futures/FuturesProtectionService.ts',
   'src/futures/FuturesPositionService.ts',
   'src/futures/FuturesMarketExecution.ts',
   'src/futures/marginMath.ts',

@@ -55,8 +55,8 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', 'd91e0bf4c4d9a5f767b1b618ae924584368443dff97dcc16afb6fd50c4e737ee'],
-  ['src/api/routes/futures.ts', 'faefff61ff7e0564fdb6cb96e4fa4c726dc1c43db68e45eb292c19c266d7d7fb'],
+  ['frontend/src/lib/api.ts', 'e8faf16089caa1158f34e890a86c2974d5d03d1ef33f65aebdedc9f69191b434'],
+  ['src/api/routes/futures.ts', '971409d747e749f755b0171bcdd4202b34536e559b336d10116f495b29f65f91'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
@@ -106,6 +106,21 @@ test.each([
   // getFuturesOpenInterest, getFuturesFundingRate — and every spot method
   // is byte-unchanged, and src/api/routes/futures.ts below is still at its
   // original fingerprint.
+  //
+  // BOTH re-taken for real Futures TP/SL. api.ts is +46/-0 — not one line
+  // removed or edited: two response interfaces, a `protection` field on the
+  // getFuturesPositions response TYPE, and three readers/mutators for
+  // GET/PUT/DELETE /futures/positions/:id/protection. futures.ts is +74/-1,
+  // and the single removed line is `marketRegistry: FuturesMarketRegistry`
+  // gaining a trailing comma because a sixth router parameter follows it.
+  //
+  // Every read this suite exists to protect is untouched in both files:
+  // getFuturesMarkPrice / GET /futures/mark-price/:symbol,
+  // getFuturesOpenInterest / GET /futures/open-interest/:symbol,
+  // getFuturesFundingRate / GET /futures/funding-rate/:symbol, the order
+  // book route, `request()`, the Authorization header, `handleUnauthorized`
+  // and every spot method. The protection routes are new paths under
+  // /futures/positions and reach none of them.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
   expect(hash(read(path))).toBe(expected);
 });

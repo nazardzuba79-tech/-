@@ -50,13 +50,41 @@ export class LiquidationEngine {
     return liquidatedCount;
   }
 
-  /** Force-closes one position at `markPrice`. Re-checks status inside the
-   * transaction so a position closed by the user between the scan and now
-   * is never double-liquidated. Returns false (no-op) in that case. */
+  /** Force-closes one position at `markPrice`. CLAIMS the position inside
+   * the transaction so a position closed by the user, or by a TP/SL
+   * trigger, between the scan and now is never double-liquidated. Returns
+   * false (no-op) in that case. */
   async liquidatePosition(positionId: string, markPrice: BigNumber): Promise<boolean> {
     return this.prisma.$transaction(async (tx: TxClient) => {
+      // A CONDITIONAL WRITE, not a read-then-check.
+      //
+      // This transaction runs at the PostgreSQL default (READ COMMITTED) and
+      // holds none of the `futures-book` advisory lock that serializes order
+      // placement, so a reduce-only close — a manual Close, or a stop loss
+      // firing — can commit between a snapshot read and this write. A
+      // `findUnique` + `if (status !== 'OPEN')` guard would still see OPEN
+      // from its own snapshot and go on to settle a position somebody else
+      // had already settled: PnL realized twice and the same margin released
+      // twice. `updateMany` compiles to a single
+      // `UPDATE ... WHERE id = ? AND status = 'OPEN'`, and PostgreSQL takes
+      // the row lock and re-evaluates that predicate against the newest
+      // committed version, so exactly one closer can ever see count === 1.
+      //
+      // Only the guard changed. The liquidation trigger condition, the
+      // maintenance-margin and liquidation-price formulas, the total
+      // forfeiture of locked margin and the insurance-fund settlement below
+      // are all exactly as they were.
+      const claimed = await tx.futuresPosition.updateMany({
+        where: { id: positionId, status: 'OPEN' },
+        data: { status: 'LIQUIDATED' },
+      });
+      if (claimed.count === 0) return false;
+
+      // Read AFTER the claim: this now reflects any concurrent partial
+      // reduce that committed first, so size and margin are the position's
+      // real current figures rather than a pre-claim snapshot's.
       const position = await tx.futuresPosition.findUnique({ where: { id: positionId } });
-      if (!position || position.status !== 'OPEN') return false;
+      if (!position) return false;
 
       const side = position.side as PositionSide;
       const size = new BigNumber(position.size.toString());
@@ -82,6 +110,8 @@ export class LiquidationEngine {
       await tx.futuresPosition.update({
         where: { id: position.id },
         data: {
+          // status is already LIQUIDATED from the claim above; restated here
+          // so the row this method writes is complete and self-describing.
           status: 'LIQUIDATED',
           closedAt: new Date(),
           size: '0',
