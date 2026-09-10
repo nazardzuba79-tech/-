@@ -3,6 +3,9 @@ import BigNumber from 'bignumber.js';
 import { randomUUID } from 'crypto';
 import { LiquidationEngine } from '../LiquidationEngine';
 import { MarkPriceService } from '../MarkPriceService';
+import { FuturesPositionService } from '../FuturesPositionService';
+import { isSerializationFailure } from '../FuturesProtectionService';
+import { MatchingEngine } from '../../matching-engine/MatchingEngine';
 
 /**
  * The `futures-book` advisory lock, against a REAL PostgreSQL.
@@ -117,6 +120,10 @@ async function cleanup(userId: string) {
     await db.insuranceFundLedger.deleteMany({ where: { positionId: { in: positionIds } } }).catch(() => {});
   }
   await db.futuresPosition.deleteMany({ where: { userId } });
+  // Orders too: FuturesBookTransaction.load() rebuilds the book from every
+  // active row for the symbol, so one left behind would make a LATER test's
+  // load throw for reasons that have nothing to do with that test.
+  await db.futuresOrder.deleteMany({ where: { userId } });
   await db.futuresBalance.deleteMany({ where: { userId } });
   await db.user.delete({ where: { id: userId } }).catch(() => {});
 }
@@ -442,6 +449,236 @@ describePg('the protection claim, on a real database', () => {
       ).rejects.toThrow();
     } finally {
       await cleanup(user.id);
+    }
+  }, 60_000);
+});
+
+/**
+ * The bucket clear, against the real database.
+ *
+ * The fake-Prisma suite proves the decision logic. What it cannot prove is
+ * that the claim and the cancellations really are ONE transaction on
+ * PostgreSQL — that an abort takes both back, that two processes racing the
+ * same trigger produce exactly one refund, and that the bucket filter is a
+ * real SQL predicate rather than a filter the fake happened to agree with.
+ *
+ * These drive the production code: `FuturesPositionService.withFuturesBook`
+ * (which is `FuturesBookTransaction.run`, advisory lock, SERIALIZABLE and
+ * `pg_xact_status` commit verification included) and the real
+ * `cancelBucketEntryOrdersWithin`.
+ */
+describePg('claim + bucket clear is one transaction on real PostgreSQL', () => {
+  /** A separate engine per service instance, so two of them serialize the
+   *  way two PROCESSES do — through the database — rather than through the
+   *  in-process queue FuturesBookTransaction keeps per engine. */
+  const serviceFor = () =>
+    new FuturesPositionService(prisma!, new MatchingEngine(), new MarkPriceService({} as any));
+
+  async function seedBucket() {
+    const { user, position } = await seed();
+    const db = prisma!;
+    const protection = await db.futuresPositionProtection.create({
+      data: {
+        positionId: position.id, userId: user.id, symbol: 'BTC/USDT',
+        kind: 'STOP_LOSS', triggerPrice: '55000', status: 'PENDING',
+      },
+    });
+    const order = (over: Record<string, any> = {}) => ({
+      userId: user.id, symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT',
+      price: '50000', originalQuantity: '1', remainingQuantity: '1',
+      status: 'OPEN', reduceOnly: false, leverage: 10, marginType: 'ISOLATED', ...over,
+    });
+    const entry = await db.futuresOrder.create({ data: order() });
+    const otherSymbol = await db.futuresOrder.create({ data: order({ symbol: 'ETH/USDT' }) });
+    const otherMargin = await db.futuresOrder.create({ data: order({ marginType: 'CROSS' }) });
+    const reduceOnly = await db.futuresOrder.create({ data: order({ reduceOnly: true, side: 'SELL' }) });
+    return { user, position, protection, entry, otherSymbol, otherMargin, reduceOnly };
+  }
+
+  /** Exactly the shape fire() uses: CAS claim, then the bucket clear, then
+   *  the same narrow serialization catch fire() applies around both.
+   *
+   *  The catch is not test scaffolding. FuturesBookTransaction.run is
+   *  SERIALIZABLE, so when two workers reach the same claim row the loser is
+   *  ABORTED by PostgreSQL (40001) rather than being made to wait and then
+   *  seeing count === 0. An aborted transaction changed nothing, so losing
+   *  that way and losing the CAS are the same outcome — and fire() must treat
+   *  them the same or one worker's sweep dies on a race it was supposed to
+   *  survive. Anything that is not a serialization failure still propagates,
+   *  which the abort test above depends on. */
+  const claimAndClear = async (service: FuturesPositionService, protectionId: string, position: any, after?: () => void) => {
+    try {
+      return await service.withFuturesBook(async (tx) => {
+        const claim = await tx.futuresPositionProtection.updateMany({
+          where: { id: protectionId, status: { in: ['PENDING', 'FAILED'] }, revision: 0, triggerPrice: '55000' },
+          data: { status: 'TRIGGERING', triggeredAt: new Date(), attempts: { increment: 1 } },
+        });
+        if (claim.count === 0) return { result: false };
+        const { session } = await service.cancelBucketEntryOrdersWithin(tx, {
+          userId: position.userId, symbol: position.symbol, marginType: position.marginType,
+        });
+        after?.();
+        return { session, result: true };
+      });
+    } catch (err) {
+      if (isSerializationFailure(err)) return false;
+      throw err;
+    }
+  };
+
+  pgIt('cancels only the bucket, refunds the reserve exactly once', async () => {
+    const f = await seedBucket();
+    try {
+      const before = await balanceOf(f.user.id);
+      expect(await claimAndClear(serviceFor(), f.protection.id, f.position)).toBe(true);
+
+      const orders = await prisma!.futuresOrder.findMany({ where: { userId: f.user.id } });
+      const status = (id: string) => orders.find((o) => o.id === id)!.status;
+      expect(status(f.entry.id)).toBe('CANCELLED');
+      // Real SQL predicates, not a fake's agreement with itself.
+      expect(status(f.otherSymbol.id)).toBe('OPEN');
+      expect(status(f.otherMargin.id)).toBe('OPEN');
+      expect(status(f.reduceOnly.id)).toBe('OPEN');
+
+      // 1 × 50000 / 10 = 5000, moved locked -> available once.
+      const after = await balanceOf(f.user.id);
+      expect(new BigNumber(after.available.toString()).minus(before.available.toString()).toString()).toBe('5000');
+      expect(new BigNumber(after.locked.toString()).minus(before.locked.toString()).toString()).toBe('-5000');
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
+
+  pgIt('an abort after the cancellations takes the claim back with them', async () => {
+    const f = await seedBucket();
+    try {
+      const before = await balanceOf(f.user.id);
+      await expect(
+        claimAndClear(serviceFor(), f.protection.id, f.position, () => {
+          throw new Error('margin release failed');
+        })
+      ).rejects.toThrow('margin release failed');
+
+      // Nothing half-done: the trigger is claimable again, the order still
+      // rests, and the reserve was not returned.
+      const protection = await prisma!.futuresPositionProtection.findUniqueOrThrow({ where: { id: f.protection.id } });
+      expect(protection.status).toBe('PENDING');
+      const entry = await prisma!.futuresOrder.findUniqueOrThrow({ where: { id: f.entry.id } });
+      expect(entry.status).toBe('OPEN');
+      const after = await balanceOf(f.user.id);
+      expect(after.available.toString()).toBe(before.available.toString());
+      expect(after.locked.toString()).toBe(before.locked.toString());
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
+
+  pgIt('two workers racing the same trigger: one cancellation, one refund', async () => {
+    const f = await seedBucket();
+    try {
+      const before = await balanceOf(f.user.id);
+      // Two services, two engines — they can only serialize through the
+      // database, which is the point.
+      const [a, b] = await Promise.all([
+        claimAndClear(serviceFor(), f.protection.id, f.position),
+        claimAndClear(serviceFor(), f.protection.id, f.position),
+      ]);
+
+      expect([a, b].filter(Boolean)).toHaveLength(1);
+      const after = await balanceOf(f.user.id);
+      // Refunded once, not twice — the loser's CAS returned 0 rows and it
+      // cancelled and released nothing.
+      expect(new BigNumber(after.available.toString()).minus(before.available.toString()).toString()).toBe('5000');
+      const entry = await prisma!.futuresOrder.findUniqueOrThrow({ where: { id: f.entry.id } });
+      expect(entry.status).toBe('CANCELLED');
+
+      // The loser did not merely fail to cancel — it left no trace at all.
+      // attempts is incremented by the claim itself, so a second increment
+      // would mean a second transaction committed against this trigger.
+      const protection = await prisma!.futuresPositionProtection.findUniqueOrThrow({ where: { id: f.protection.id } });
+      expect(protection.status).toBe('TRIGGERING');
+      expect(protection.attempts).toBe(1);
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
+
+  // ── The window BETWEEN the claim and the close ─────────────────────
+  //
+  // The claim transaction commits and releases the futures-book lock before
+  // the reduce-only close runs — it must, or the close would deadlock
+  // against itself taking the same lock. Cancelling the bucket's resting
+  // entries therefore closes only half the hole: a BRAND NEW entry placed in
+  // that window was never there to be cancelled, outlives the close, and
+  // reopens the exposure when it fills.
+  //
+  // Admission refuses it, and these two run that refusal through real
+  // `placeOrder` against real SQL — the placing "process" being a second
+  // FuturesPositionService with its own MatchingEngine, which knows nothing
+  // about the claim except what the database tells it.
+
+  /** Well below the resting reduce-only ask, so it would REST rather than
+   *  match — the question is whether it is admitted at all. */
+  const newEntry = (userId: string) => ({
+    userId, symbol: 'BTC/USDT', side: 'BUY' as const, type: 'LIMIT' as const,
+    price: new BigNumber('40000'), quantity: new BigNumber('1'),
+    leverage: 10, marginType: 'ISOLATED' as const,
+  });
+
+  const restingEntries = (userId: string) =>
+    prisma!.futuresOrder.findMany({
+      where: { userId, symbol: 'BTC/USDT', marginType: 'ISOLATED', reduceOnly: false, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } },
+    });
+
+  pgIt('a new entry placed between the claim and the close is refused', async () => {
+    const f = await seedBucket();
+    try {
+      // T1: claim + bucket clear commits. The lock is released; the
+      // reduce-only close has NOT run yet. This is the window.
+      expect(await claimAndClear(serviceFor(), f.protection.id, f.position)).toBe(true);
+      const afterClear = await balanceOf(f.user.id);
+      expect(afterClear.available.toString()).toBe('9000');
+
+      // T2: another process tries to open new exposure in the same bucket.
+      await expect(serviceFor().placeOrder(newEntry(f.user.id)))
+        .rejects.toThrow('A stop is currently closing this position');
+
+      // Nothing survives that could reopen the position, and the refusal
+      // wrote nothing: no row, no reservation.
+      expect(await restingEntries(f.user.id)).toHaveLength(0);
+      const after = await balanceOf(f.user.id);
+      expect(after.available.toString()).toBe(afterClear.available.toString());
+      expect(after.locked.toString()).toBe(afterClear.locked.toString());
+    } finally {
+      await cleanup(f.user.id);
+    }
+  }, 60_000);
+
+  pgIt('and once the trigger resolves, the very same order is admitted normally', async () => {
+    const f = await seedBucket();
+    try {
+      expect(await claimAndClear(serviceFor(), f.protection.id, f.position)).toBe(true);
+      await expect(serviceFor().placeOrder(newEntry(f.user.id))).rejects.toThrow();
+
+      // The close finishes and the trigger resolves, as fire() leaves it.
+      await prisma!.futuresPositionProtection.update({
+        where: { id: f.protection.id },
+        data: { status: 'EXECUTED', resolvedAt: new Date() },
+      });
+
+      // Ordinary business again — the guard was a window, not a lock on the
+      // bucket.
+      const placed = await serviceFor().placeOrder(newEntry(f.user.id));
+      expect(placed.order.status).toBe('OPEN');
+      const resting = await restingEntries(f.user.id);
+      expect(resting).toHaveLength(1);
+      expect(resting[0].id).toBe(placed.order.id);
+      // 1 × 40000 / 10 reserved out of the 9000 the cancellation returned.
+      const after = await balanceOf(f.user.id);
+      expect(after.available.toString()).toBe('5000');
+      expect(after.locked.toString()).toBe('5000');
+    } finally {
+      await cleanup(f.user.id);
     }
   }, 60_000);
 });

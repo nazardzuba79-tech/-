@@ -79,6 +79,56 @@ export class FuturesPositionService {
       const user = await tx.user.findUnique({ where: { id: params.userId } });
       if (!user) throw new Error('User not found');
 
+      // ADMISSION: no NEW exposure into a bucket whose close is already
+      // under way.
+      //
+      // Cancelling the bucket's resting entries when a trigger wins its
+      // claim closes only half the hole. The claim commits and RELEASES the
+      // futures-book lock before the reduce-only close runs — deliberately,
+      // because that close opens its own transaction and takes the same
+      // lock. In that window a user can place a BRAND NEW non-reduce-only
+      // order into the same `(userId, symbol, marginType)` bucket. It was
+      // not there to be cancelled, it survives the close, and when it fills
+      // it re-opens the very exposure the stop just closed.
+      //
+      // So the gap is closed from the other side: while a close is in
+      // flight, the bucket does not admit new exposure. This runs under the
+      // futures-book lock AND the bucket's own exposure lock, taken just
+      // above, and BEFORE the market estimate, the exposure and tier
+      // checks, the margin reservation, the order row and matching — a
+      // rejected admission writes nothing at all.
+      //
+      // The state is read from the database, never from memory: the whole
+      // point is that another PROCESS may hold the claim. It is also not a
+      // permanent bucket lock — a claim resolves to EXECUTED / CANCELLED /
+      // FAILED, and one orphaned by a dead backend is reclaimed after
+      // PROTECTION_STALE_CLAIM_MS — after which admission is normal again.
+      //
+      // Reduce-only is deliberately still admitted: the close itself is a
+      // reduce-only MARKET through this very method, so blocking it would
+      // block the thing being protected. Reduce-only cannot open or
+      // increase exposure, which is the only thing this guard exists to
+      // prevent.
+      if (!params.reduceOnly) {
+        // Every OPEN position in the bucket, not just the first: the
+        // database has no unique constraint over (userId, symbol,
+        // marginType), and a claim held against a row this read skipped
+        // would be a claim silently ignored.
+        const bucketPositions = await tx.futuresPosition.findMany({
+          where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
+        });
+        if (bucketPositions.length > 0) {
+          const closing = await tx.futuresPositionProtection.findFirst({
+            where: { positionId: { in: bucketPositions.map((row) => row.id) }, status: 'TRIGGERING' },
+          });
+          if (closing) {
+            throw new Error(
+              'A stop is currently closing this position; new orders for it are rejected until that completes'
+            );
+          }
+        }
+      }
+
       const existingPosition = await tx.futuresPosition.findFirst({
         where: { userId: params.userId, symbol: params.symbol, marginType: params.marginType, status: 'OPEN' },
       });
@@ -272,21 +322,107 @@ export class FuturesPositionService {
       if (order.status !== 'OPEN' && order.status !== 'PARTIALLY_FILLED') return { result: null };
 
       const session = await FuturesBookTransaction.load(tx, order.symbol);
-      session.staged.cancelOrder(order.symbol, order.id);
-      await tx.futuresOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
-
-      if (!order.reduceOnly) {
-        const [, quote] = order.symbol.split('/');
-        const remaining = new BigNumber(order.remainingQuantity.toString());
-        const price = order.price ? new BigNumber(order.price.toString()) : null;
-        if (price) {
-          const releasedMargin = computeInitialMargin(remaining.times(price), order.leverage);
-          await this.adjustBalance(tx, userId, quote, { available: releasedMargin, locked: releasedMargin.negated() });
-        }
-      }
+      await this.cancelRestingOrderWithin(tx, session, order);
 
       return { session, result: { ...order, status: 'CANCELLED' } };
     });
+  }
+
+  /**
+   * Run `work` inside the futures-book transaction — the same advisory lock,
+   * the same commit verification, the same synchronous book publication that
+   * every placement and cancellation already goes through.
+   *
+   * It exists so a caller that must be ATOMIC with order cancellation
+   * (`FuturesProtectionService`, when a trigger wins its claim) does not need
+   * its own `MatchingEngine` reference, and cannot accidentally open a second,
+   * nested `FuturesBookTransaction` — which would deadlock on this class's own
+   * per-engine queue rather than in PostgreSQL, and be that much harder to see.
+   *
+   * The caller must therefore NOT be inside one already.
+   */
+  async withFuturesBook<T>(
+    work: (tx: TxClient) => Promise<{ session?: FuturesBookTransaction; result: T }>
+  ): Promise<T> {
+    return FuturesBookTransaction.run(this.prisma, this.engine, work);
+  }
+
+  /**
+   * Cancel one resting order using a transaction and staged book the CALLER
+   * owns — extracted verbatim out of `cancelOrder` rather than written twice,
+   * so the cancellation and its margin release have exactly one implementation
+   * in this service. Not a new formula: `computeInitialMargin(remaining ×
+   * price)` at the order's own leverage is the same reserve placement took,
+   * returned once.
+   *
+   * `reduceOnly` orders reserved no margin, so they release none — the guard
+   * is kept here rather than at the call sites so no caller has to remember it.
+   */
+  async cancelRestingOrderWithin(
+    tx: TxClient,
+    session: FuturesBookTransaction,
+    order: {
+      id: string;
+      userId: string;
+      symbol: string;
+      reduceOnly: boolean;
+      leverage: number;
+      remainingQuantity: { toString(): string };
+      price: { toString(): string } | null;
+    }
+  ): Promise<void> {
+    session.staged.cancelOrder(order.symbol, order.id);
+    await tx.futuresOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+
+    if (!order.reduceOnly) {
+      const [, quote] = order.symbol.split('/');
+      const remaining = new BigNumber(order.remainingQuantity.toString());
+      const price = order.price ? new BigNumber(order.price.toString()) : null;
+      if (price) {
+        const releasedMargin = computeInitialMargin(remaining.times(price), order.leverage);
+        await this.adjustBalance(tx, order.userId, quote, { available: releasedMargin, locked: releasedMargin.negated() });
+      }
+    }
+  }
+
+  /**
+   * Cancel every resting ENTRY order in one risk bucket, inside a transaction
+   * that already holds the futures-book lock.
+   *
+   * THE DEFECT THIS EXISTS FOR. A TP/SL trigger closes the position it
+   * protects — but a non-reduce-only order of the same user resting in the
+   * same `(userId, symbol, marginType)` bucket was left alive, and filling
+   * later re-opened the very exposure the stop had just closed, with no
+   * protection on it at all. The trigger and these cancellations have to be
+   * one atomic step, or the gap between them is the bug.
+   *
+   * `reduceOnly` orders are deliberately NOT cancelled: they can only shrink
+   * an existing opposing position, so they can never re-open exposure, and
+   * the execution path already retires the ones that lose their capacity.
+   *
+   * The staged session is returned so the caller publishes the book with these
+   * orders gone, exactly as `cancelOrder` does — it is only loaded when there
+   * is something to cancel, so the common case costs one indexed query.
+   */
+  async cancelBucketEntryOrdersWithin(
+    tx: TxClient,
+    bucket: { userId: string; symbol: string; marginType: string }
+  ): Promise<{ session?: FuturesBookTransaction; cancelledOrderIds: string[] }> {
+    const resting = await tx.futuresOrder.findMany({
+      where: {
+        userId: bucket.userId,
+        symbol: bucket.symbol,
+        marginType: bucket.marginType,
+        reduceOnly: false,
+        status: { in: ['OPEN', 'PARTIALLY_FILLED'] },
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    if (resting.length === 0) return { cancelledOrderIds: [] };
+
+    const session = await FuturesBookTransaction.load(tx, bucket.symbol);
+    for (const order of resting) await this.cancelRestingOrderWithin(tx, session, order);
+    return { session, cancelledOrderIds: resting.map((order) => order.id) };
   }
 
   /** Current transactional capacity, re-read between every fill on BOTH sides. */
