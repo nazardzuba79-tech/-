@@ -1073,4 +1073,19 @@ export const ES: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': 'Demasiados intentos. Inténtalo más tarde.',
+
+  // --- Homepage institutional ecosystem ---
+  'home.ecosystem.title': "Un ecosistema financiero global",
+  'home.ecosystem.subtitle': "VOLTEX está creando infraestructura para acceder a los mercados globales, tomando como referencia los estándares de las principales bolsas e instituciones financieras del mundo.",
+  'home.ecosystem.disclaimer': "La mención de estas instituciones no implica una colaboración ni un respaldo a VOLTEX.",
+  'home.ecosystem.pause': "Pausar movimiento",
+  'home.ecosystem.resume': "Reanudar movimiento",
+  'home.ecosystem.scrollHint': "Desliza para explorar",
+  'home.ecosystem.nasdaq': "Mercados electrónicos globales",
+  'home.ecosystem.nyse': "Mercado global de acciones",
+  'home.ecosystem.cme': "Mercados globales de derivados",
+  'home.ecosystem.jpmorgan': "Banca y mercados globales",
+  'home.ecosystem.bofa': "Mercados globales y banca de inversión",
+  'home.ecosystem.goldman': "Banca y mercados globales",
+  'home.ecosystem.morganstanley': "Valores institucionales y gestión patrimonial",
 };

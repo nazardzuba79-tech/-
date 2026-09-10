@@ -4,6 +4,7 @@ import { HomeTicker } from './HomeTicker';
 import { HomeMarketOverview } from './HomeMarketOverview';
 import { HomeCardPresentation } from './HomeCardPresentation';
 import { HomeMarkets } from './HomeMarkets';
+import { HomeEcosystem } from './HomeEcosystem';
 import { HomeFaq } from './HomeFaq';
 import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
@@ -59,6 +60,9 @@ export function HomePage() {
         </Reveal>
         <Reveal>
           <HomeMarkets market={market} />
+        </Reveal>
+        <Reveal>
+          <HomeEcosystem />
         </Reveal>
         <Reveal>
           <HomeFaq />

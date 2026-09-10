@@ -1073,4 +1073,19 @@ export const HI: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': 'बहुत अधिक प्रयास। बाद में पुनः प्रयास करें।',
+
+  // --- Homepage institutional ecosystem ---
+  'home.ecosystem.title': "एक वैश्विक वित्तीय इकोसिस्टम",
+  'home.ecosystem.subtitle': "VOLTEX वैश्विक बाज़ारों तक पहुँच के लिए बुनियादी ढाँचा बना रहा है, जिसमें दुनिया के प्रमुख एक्सचेंजों और वित्तीय संस्थानों के मानकों से प्रेरणा ली जाती है।",
+  'home.ecosystem.disclaimer': "इन संस्थानों के उल्लेख का अर्थ VOLTEX के साथ साझेदारी या उसका समर्थन नहीं है।",
+  'home.ecosystem.pause': "गतिविधि रोकें",
+  'home.ecosystem.resume': "गतिविधि जारी रखें",
+  'home.ecosystem.scrollHint': "स्वाइप करके देखें",
+  'home.ecosystem.nasdaq': "वैश्विक इलेक्ट्रॉनिक बाज़ार",
+  'home.ecosystem.nyse': "वैश्विक शेयर बाज़ार",
+  'home.ecosystem.cme': "वैश्विक डेरिवेटिव बाज़ार",
+  'home.ecosystem.jpmorgan': "वैश्विक बैंकिंग और बाज़ार",
+  'home.ecosystem.bofa': "वैश्विक बाज़ार और निवेश बैंकिंग",
+  'home.ecosystem.goldman': "वैश्विक बैंकिंग और बाज़ार",
+  'home.ecosystem.morganstanley': "संस्थागत प्रतिभूतियाँ और संपत्ति प्रबंधन",
 };

@@ -86,10 +86,11 @@ describe('translation integrity', () => {
     // TradingView's CDN cannot be reached; asserted by name below, in
     // seven distinct translations, so this re-take cannot quietly cover
     // anything else.
+    // Homepage ecosystem: exactly 13 new home.ecosystem keys per locale; no existing strings changed.
     const digests: Record<string, string> = {
-      ru: '2abfe37c4e46471c', en: '52f9acb4e18c8d24', zh: '1433789cf649b0f8',
-      es: '028acdedbf892c83', hi: 'eb0022ae026d427f', ja: '3c0446be48258099',
-      ko: 'ba6e2581125aa314',
+      ru: '6578ee522b9ffbb4', en: '7a41975e9db4a052', zh: '289191db830a0a36',
+      es: 'f5d6e16bc5c72060', hi: '7d4b056983947bf9', ja: '13cd31ff80ee4db8',
+      ko: 'e302621bf58bb5bc',
     };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
