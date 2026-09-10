@@ -88,7 +88,8 @@ const preservedMainSources: Record<string, string> = {
   // copy, routes and Card pixels. No other stored fingerprint is changed.
   "frontend/src/pages/home/HomeMarketOverview.tsx": "68cdf86445ba586d5b6fe87b9f0ec6784cf7199d02114b4da7df80312f65dc3f",
   "frontend/src/pages/home/HomeMarkets.tsx": "6a26e97e12bd6aae0a10c18383fa0f7d2b2dc9efde83957c0377012b155f386c",
-  "frontend/src/pages/home/HomePage.tsx": "89d43ff82faff59d7e87214fa7f9b63960118d8919efaf7cd2571b52172a5d45",
+  // Owner-requested A/B Card preview wrapper only; original Card renderer/assets stay pinned.
+  "frontend/src/pages/home/HomePage.tsx": "b81e15c43cd487934a7762c36c8cd1379eaf3b784d1b6d0cd94d7ba34481009f",
   "frontend/src/pages/home/HomeTicker.tsx": "07c91f993f4428f1ad5d79096b392071690726cbc5f5e9f9148f2775938c1d4d",
   "frontend/src/pages/home/PhonePreview.tsx": "919ebb21bbdae8eaf2588ba510ad36cc9d8cd75c66f6c2c802d73ec0771327d6",
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
