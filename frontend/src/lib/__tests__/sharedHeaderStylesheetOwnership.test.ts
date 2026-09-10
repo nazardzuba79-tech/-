@@ -283,23 +283,42 @@ describe('the shared authenticated header does not depend on a lazy stylesheet',
         }
       }
     }
-    // Two documented leftovers from ported archives, both on pages whose
-    // own QA is unaffected — recorded here rather than silently allowed, so
-    // the list cannot grow without someone deciding it should:
+    // One documented leftover, on a page that renders no shared Nav at all:
+    // auth-shell.css styles `.header-icon` under `.vx-auth-work`, the login
+    // shell. Recorded here rather than silently allowed, so the list cannot
+    // grow without someone deciding it should.
     //
-    //  * CopyTradingBolt.css hides `.mobile-menu` (the archive's own burger)
-    //    and then re-shows the real one with `display: grid !important` in
-    //    its narrow media query — verified at 390px, the burger opens the
-    //    shared drawer on /copy-trading exactly as it does elsewhere.
-    //  * auth-shell.css styles `.header-icon` under `.vx-auth-work`, which
-    //    is the login shell — a page that renders no shared Nav at all.
+    // `.copytrading-bolt-root .mobile-menu` used to be on this list too, on
+    // the reasoning that a `display: grid !important` in the archive's own
+    // `max-width: 760px` block put the burger back. The audit measured that
+    // and it was false: index.css shows the burger from 860px down, so
+    // between 761px and 860px the hide won and /copy-trading had NO header
+    // navigation at all — `.main-nav` hidden by the media query, the burger
+    // hidden by the route chunk. Both archive rules are gone; the exception
+    // is not documented any more because there is nothing left to document.
     expect([...new Set(subjects)].sort()).toEqual([
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon',
       'src/pages/auth-shell/auth-shell.css: .vx-auth-work .header-icon:hover',
-      'src/pages/copy-trading-bolt/CopyTradingBolt.css: .copytrading-bolt-root .mobile-menu',
     ]);
-    expect(read('src/pages/copy-trading-bolt/CopyTradingBolt.css'))
-      .toContain('.copytrading-bolt-root .mobile-menu { display: grid !important; }');
+  });
+
+  it('and the shared burger is index.css\'s alone, at every width', () => {
+    // The specific regression: a route chunk may not decide whether the
+    // shared header's burger is shown. Nothing outside the eager stylesheet
+    // may set `display` on `.mobile-menu` — not to hide it, and not with an
+    // `!important` that puts it back, which is what made the gap between
+    // the two media queries invisible in review.
+    const offenders: string[] = [];
+    for (const file of stylesheets()) {
+      if (file === EAGER_SHEET) continue;
+      for (const rule of rules(read(file))) {
+        if (!/(^|;)\s*display\s*:/.test(rule.declarations)) continue;
+        for (const sel of selectorList(rule.selector)) {
+          if (/\.(mobile-menu|nav-burger|main-nav|nav-mobile-menu)(?![\w-])/.test(sel)) offenders.push(`${file}: ${sel}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });
 
