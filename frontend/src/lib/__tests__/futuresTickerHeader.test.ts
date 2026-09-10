@@ -46,9 +46,25 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
 // mark price, index price and the settled funding rate — are byte-
 // unchanged inside the per-symbol loop, as the behavioural test above
 // re-proves against the loop in isolation.
+// Re-taken again for the /futures/config dedup. The reads block changed in
+// exactly one way, and it is asserted below rather than only hashed: the
+// funding interval is read from the ONE shared store instead of this
+// component's own `api.getFuturesConfig()` mount effect, because a cold
+// /futures fetched that static endpoint three times over. The VOLTEX
+// reads this suite exists to protect — mark price, index price and the
+// settled funding rate — are byte-unchanged, as the behavioural tests
+// above re-prove.
 test('market-data reads, including index price, are unchanged', () => {
-  expect(hash(source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('))))
-    .toBe('109b04904c73ac3c33d7c4ea535ca83100af19d312e90c79b75bf3e3d7d6e61b');
+  const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
+  // What the re-take is allowed to have changed, pinned so the digest
+  // cannot be advanced again for something else without deleting these.
+  expect(reads).toContain('useFuturesConfig().config?.fundingIntervalHours ?? null');
+  expect(reads).not.toContain('getFuturesConfig');
+  // What it is not allowed to have changed.
+  for (const read of ['getFuturesMarkPrice', 'getFuturesFundingRate']) {
+    expect(reads).toContain(read);
+  }
+  expect(hash(reads)).toBe('27318636dc7aaa60b1c29ff82bfaf892cbc2f2dbbeae15392b56c5d2592a152e');
 });
 test('funding countdown implementation is unchanged', () => {
   expect(hash(source.slice(source.indexOf('const NextFundingCountdown'))))
@@ -165,6 +181,24 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     getFuturesMarketStats: jest.fn(async () => marketStats),
     ...overrides,
   };
+
+  /**
+   * The header reads `/futures/config` through the one shared store now
+   * rather than its own mount effect (see lib/futuresConfigStore). The stub
+   * resolves the SAME `getFuturesConfig` this harness already defines — and
+   * still honours an override — so the funding interval driving the
+   * countdown below is exactly the one this test supplies.
+   */
+  let sharedFuturesConfig: any = null;
+  void Promise.resolve(api.getFuturesConfig()).then((c: any) => { sharedFuturesConfig = c; }).catch(() => {});
+  const futuresConfigModule = {
+    useFuturesConfig: () => ({
+      config: sharedFuturesConfig,
+      loading: sharedFuturesConfig === null,
+      failed: false,
+      loaded: sharedFuturesConfig !== null,
+    }),
+  };
   const react = { ...req('react'), memo: (fn: any) => fn,
     useState(initial: any) {
       const i = cursor++;
@@ -186,6 +220,7 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
   new Function('require', 'exports', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
+    if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/useMarketData') {
       return {
         useMarketTicker: (_pair: string) => ({

@@ -27,6 +27,7 @@ import {
   baseOf,
 } from './markets';
 import './MarketsBolt.css';
+import { useFuturesConfig } from '../../lib/futuresConfigStore';
 
 // Mirrors api.getGlobalMarket's payload — market-WIDE figures, not this
 // exchange's own turnover (see markets.ts's computeVolumeSummary).
@@ -139,18 +140,13 @@ export function MarketsBoltPage() {
   // by hand — see CORE_FUTURES_SYMBOLS for why the initial value exists.
   const [futuresSymbols, setFuturesSymbols] = useState<string[]>(CORE_FUTURES_SYMBOLS);
 
+  // Shared with the futures terminal and the homepage: one read of
+  // /futures/config per tab, not one per component. See lib/futuresConfigStore.
+  const { config: futuresConfig } = useFuturesConfig();
+
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getFuturesConfig()
-      .then((cfg) => {
-        if (!cancelled && cfg.symbols.length > 0) setFuturesSymbols(cfg.symbols);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (futuresConfig && futuresConfig.symbols.length > 0) setFuturesSymbols(futuresConfig.symbols);
+  }, [futuresConfig]);
 
   // Prices and the market-wide overview both come from the shared
   // market-data store: one poll and one request for the whole tab,

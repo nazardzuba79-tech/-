@@ -87,8 +87,20 @@ describe('the futures market list scales', () => {
 
   it('takes its symbols from the backend listing, never from a local list', () => {
     const page = code(read('src/pages/FuturesPage.tsx'));
-    expect(page).toContain('getFuturesConfig');
-    expect(page).toContain('setSymbols(cfg.symbols)');
+    // The listing still comes from /futures/config and nowhere else — the
+    // page now reads it through the ONE shared store rather than its own
+    // mount effect, because a cold /futures fetched that static endpoint
+    // three times over. See lib/futuresConfigStore.
+    expect(page).toContain('useFuturesConfig()');
+    expect(page).toContain('const listed = futuresConfig.symbols;');
+    expect(page).toContain('setSymbols(listed)');
+    // And it does not go back to fetching the endpoint itself.
+    expect(page).not.toContain('getFuturesConfig');
+    // The only local symbol list left is the documented first-paint
+    // placeholder, which the backend listing replaces as soon as it lands.
+    expect(page.match(/\[[^\]]*'[A-Z]+\/USDT'[^\]]*\]/g) ?? []).toEqual([
+      "['BTC/USDT', 'ETH/USDT', 'SOL/USDT']",
+    ]);
   });
 });
 

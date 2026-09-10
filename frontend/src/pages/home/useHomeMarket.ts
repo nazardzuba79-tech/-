@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { parseChangePercent } from '../../lib/priceChange';
+import { futuresConfigStore } from '../../lib/futuresConfigStore';
 
 export interface HomeTicker {
   pair: string;
@@ -135,8 +136,8 @@ export function useHomeMarket(): HomeMarket {
     // Public endpoint (no auth) — the same listing the futures terminal
     // reads, so the homepage's Фьючерсы tab shows the real contract
     // universe rather than a marketing-side guess at it.
-    api
-      .getFuturesConfig()
+    futuresConfigStore
+      .load()
       .then((res) => {
         if (cancelled) return;
         setFuturesSymbols(res.symbols);

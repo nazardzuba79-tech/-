@@ -104,7 +104,18 @@ test.each([
     // handleSubmit (a prompt, not a precondition), and a reduce-only order
     // keeps a non-null ceiling with unknown exposure, so risk-reducing
     // orders remain submittable during an outage.
-    "2567f9ac2942e135baf23c5804de6dba388b8530a09a26bb2f3ea960c1da4671"
+    //
+    // Re-taken for the /futures/config dedup. ONE difference: the form's own
+    // `useState` + mount effect calling `api.getFuturesConfig()` is replaced
+    // by `useFuturesConfig()`, the one shared read of that static endpoint —
+    // a cold /futures fetched it three times inside ~250 ms because this
+    // form, FuturesPage and FuturesTickerBar each fetched it independently.
+    // `config` is the same object with the same `null`-until-known meaning,
+    // so `canSubmit`, the tier table, `effectiveMaxLeverage`, the leverage
+    // bounds and the order payload are byte-unchanged — which
+    // futuresOrderPanel's 40 behavioural tests assert directly and still
+    // pass unmodified.
+    "c9753481c5ea8834ea1fdc15b32183b41865d5023d1a309c1f124053cc2b5d0d"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -144,7 +155,14 @@ test.each([
     // layout class are untouched, and the spot-only MACD warm-up and price
     // axis were explicitly decoupled so enabling the rail does not alter
     // this page's indicators.
-    "4965ab4db97bdd71e60b2da977f8e7cf0a7fde854fe3fcdd6dec77f792309643"
+    //
+    // Re-taken for the /futures/config dedup. ONE difference: the page's own
+    // mount effect calling `api.getFuturesConfig()` is replaced by
+    // `useFuturesConfig()` plus an effect keyed on the shared value. The
+    // listing still comes from the backend and nowhere else, and the
+    // fallback for a contract that is no longer listed is the same
+    // expression it always was — marketUniverseScale asserts both directly.
+    "d3b258620012ff995f51e62d5c621bef76de646df9711675c5fb512ffa7b9b51"
   ],
   [
     "components/FuturesPairList.tsx",

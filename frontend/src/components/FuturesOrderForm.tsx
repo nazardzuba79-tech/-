@@ -7,6 +7,7 @@ import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
+import { useFuturesConfig } from '../lib/futuresConfigStore';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
@@ -46,7 +47,6 @@ export function FuturesOrderForm({
   const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
   const [reduceOnly, setReduceOnly] = useState(false);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
-  const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getFuturesConfig>> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -55,6 +55,11 @@ export function FuturesOrderForm({
   // three `setInterval`s that used to live in this file are gone; so is the
   // second copy of /futures/balances and the third of /futures/positions.
   const account = useFuturesAccount({ balances: 5000, positions: 5000, orders: 5000 });
+  // The leverage bounds and the tier table come from the one shared read of
+  // /futures/config rather than this form's own copy — same values, same
+  // `null`-until-known semantics, one request for the page instead of three.
+  // See lib/futuresConfigStore.
+  const { config } = useFuturesConfig();
   const balanceRow = account.balances.data?.find((x) => x.asset === quoteAsset);
   /** null = not known (never loaded, or the request failed). Never 0: a
    *  fake zero here would silently size every percentage order at nothing
@@ -66,10 +71,6 @@ export function FuturesOrderForm({
    *  strictly optimistic guess, not a safe default. */
   const positions = account.positions.data;
   const activeOrders = account.orders.data;
-
-  useEffect(() => {
-    api.getFuturesConfig().then(setConfig).catch(() => {});
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
