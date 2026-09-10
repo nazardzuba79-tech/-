@@ -20,6 +20,36 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   const hooks: any[] = [], effects: (() => void)[] = [];
   const components: Record<string, any> = {};
   const api = new Proxy(overrides.api ?? {}, { get: (target, key: string) => target[key] ?? pending });
+
+  /**
+   * `/futures/config` is read through the one shared store now, not from a
+   * mount effect in each component (see lib/futuresConfigStore). The stub
+   * below resolves the SAME `getFuturesConfig` this test already provides,
+   * on the same tick the old effect settled on — so every assertion runs
+   * against exactly the config it always did, from exactly the render it
+   * always did.
+   */
+  let sharedFuturesConfig: any = null;
+  const stubbedConfigFetch = (overrides.api ?? {}).getFuturesConfig;
+  if (stubbedConfigFetch) {
+    void Promise.resolve(stubbedConfigFetch()).then((c: any) => { sharedFuturesConfig = c; }).catch(() => {});
+  }
+  const futuresConfigModule = {
+    useFuturesConfig: () => ({
+      config: sharedFuturesConfig,
+      loading: sharedFuturesConfig === null,
+      failed: false,
+      loaded: sharedFuturesConfig !== null,
+    }),
+    futuresConfigStore: {
+      getState: () => futuresConfigModule.useFuturesConfig(),
+      ensure: () => {},
+      load: () => Promise.resolve(sharedFuturesConfig),
+      refresh: () => Promise.resolve(sharedFuturesConfig),
+      subscribe: () => () => {},
+    },
+  };
+
   const react = { ...React, memo: (fn: any) => fn,
     useState(initial: any) {
       const i = index++;
@@ -96,6 +126,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError: Error };
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
+    if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, params?: any) => params ? `${key}:${JSON.stringify(params)}` : key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/spotOrderBook') return bookMath;

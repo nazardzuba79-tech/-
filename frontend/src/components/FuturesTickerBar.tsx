@@ -5,6 +5,7 @@ import { useMarketTicker } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
+import { useFuturesConfig } from '../lib/futuresConfigStore';
 
 /**
  * The futures instrument row, on the same `.ticker-bar` / `.stat` system the
@@ -46,7 +47,11 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [indexPrice, setIndexPrice] = useState<number | null>(null);
   const [fundingRate, setFundingRate] = useState<number | null>(null);
-  const [fundingIntervalHours, setFundingIntervalHours] = useState<number | null>(null);
+  /** From the one shared read of /futures/config — see
+   *  lib/futuresConfigStore. `null` while unknown or after a failed read,
+   *  which is what makes the countdown render "—" rather than a made-up
+   *  interval, exactly as before. */
+  const fundingIntervalHours = useFuturesConfig().config?.fundingIntervalHours ?? null;
   /**
    * Tracked external derivatives statistics — turnover and open interest.
    *
@@ -56,13 +61,6 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
    * are read from the futures services exactly as before.
    */
   const [derivatives, setDerivatives] = useState<GatewaySection<FuturesMarketStats> | null>(null);
-
-  useEffect(() => {
-    api
-      .getFuturesConfig()
-      .then((c) => setFundingIntervalHours(c.fundingIntervalHours))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     let cancelled = false;

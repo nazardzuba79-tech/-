@@ -14,6 +14,7 @@ import { AssetsPanel } from '../components/AssetsPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { rememberTradingMode } from '../lib/tradingMode';
+import { useFuturesConfig } from '../lib/futuresConfigStore';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 
@@ -66,23 +67,20 @@ export function FuturesPage() {
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
 
+  // One shared read of /futures/config for the whole tab — this page, the
+  // order form and the ticker bar used to fetch it independently on mount,
+  // three requests for one static answer. See lib/futuresConfigStore.
+  const { config: futuresConfig } = useFuturesConfig();
+
   useEffect(() => {
-    let cancelled = false;
-    api
-      .getFuturesConfig()
-      .then((cfg) => {
-        if (cancelled || cfg.symbols.length === 0) return;
-        setSymbols(cfg.symbols);
-        // A deep link to a contract that is no longer listed falls back to
-        // the first listed one rather than leaving the terminal pointed at
-        // a market the order route would reject.
-        setSymbol((current) => (cfg.symbols.includes(current) ? current : cfg.symbols[0]));
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!futuresConfig || futuresConfig.symbols.length === 0) return;
+    const listed = futuresConfig.symbols;
+    setSymbols(listed);
+    // A deep link to a contract that is no longer listed falls back to
+    // the first listed one rather than leaving the terminal pointed at
+    // a market the order route would reject.
+    setSymbol((current) => (listed.includes(current) ? current : listed[0]));
+  }, [futuresConfig]);
 
   // Same reason as the spot terminal: this page is not remounted when only
   // the query string changes, so without this a second deep-link into
