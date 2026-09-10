@@ -19,10 +19,16 @@ import { api } from './api';
  *   - ONE in-flight request. A consumer mounting mid-flight joins the
  *     existing promise instead of issuing a second identical one.
  *   - The resolved value is reused by every later consumer, with no
- *     network at all.
+ *     network at all — and on the SAME terms however it is asked for.
+ *     `ensure()` and `load()` share one freshness test, so the homepage's
+ *     imperative read cannot issue a request for an answer `/futures`
+ *     already fetched a moment earlier. `refresh()` is the deliberate
+ *     exception: it is defined to hit the network, so it goes straight to
+ *     the request and never answers from the cache.
  *   - NO timer and NO polling loop. Nothing here schedules anything; a
- *     refresh only ever happens because a consumer mounted and the held
- *     value was older than STALE_AFTER_MS.
+ *     re-read only ever happens because a consumer asked and the held
+ *     value was missing or older than STALE_AFTER_MS, or because someone
+ *     called `refresh()` on purpose.
  *
  * Why there is no session isolation, unlike `futuresAccountStore`
  * -------------------------------------------------------------
@@ -103,9 +109,8 @@ class FuturesConfigStore {
    * rather than raced.
    */
   ensure(): void {
-    if (this.inFlight) return;
-    if (this.state.config !== null && Date.now() - this.fetchedAt <= STALE_AFTER_MS) return;
-    void this.load().catch(() => {
+    if (this.isFresh()) return;
+    void this.fetch().catch(() => {
       // Already recorded on the state as `failed`; this catch only stops
       // an unhandled rejection from a caller that did not want the promise.
     });
@@ -113,12 +118,49 @@ class FuturesConfigStore {
 
   /**
    * The imperative form, for a caller that needs the value itself rather
-   * than a subscription. Shares the same single in-flight request, and
+   * than a subscription — the homepage reads it this way, inside a larger
+   * effect that owns its own error state.
+   *
+   * It answers from the cache on exactly the same terms `ensure()` does.
+   * Without that, `/futures` → homepage inside the freshness window issued
+   * a second request for an answer the tab already held, which is the very
+   * thing this store exists to stop: "one read per tab" has to mean the
+   * same thing whichever way a consumer asks.
+   *
    * REJECTS when the read fails — a failure stays a failure, so a caller
-   * with its own error state (the homepage's `futuresStatus`) can keep
-   * reporting it exactly as it did when it called the API directly.
+   * with its own error state can keep reporting it exactly as it did when
+   * it called the API directly.
    */
   load(): Promise<FuturesConfig> {
+    if (this.inFlight) return this.inFlight;
+    // The exact cached object, not a copy: a consumer keying an effect on
+    // it must not be re-run for having asked twice.
+    if (this.isFresh()) return Promise.resolve(this.state.config as FuturesConfig);
+    return this.fetch();
+  }
+
+  /**
+   * Force a real re-read, whatever the cache holds. This is the explicit
+   * retry seam — the one call that is DEFINED to hit the network — so it
+   * must not be routed through `load()`, which would hand back the fresh
+   * cache and quietly make the seam a no-op. An in-flight request is still
+   * joined: forcing a read does not mean forcing a duplicate one.
+   */
+  refresh(): Promise<FuturesConfig> {
+    return this.fetch();
+  }
+
+  /** Is the held value real and still inside the freshness window? */
+  private isFresh(): boolean {
+    return this.state.config !== null && Date.now() - this.fetchedAt <= STALE_AFTER_MS;
+  }
+
+  /**
+   * The request itself, and the only place it is issued. One at a time:
+   * every caller that arrives while it is in the air joins this promise
+   * rather than starting a second one.
+   */
+  private fetch(): Promise<FuturesConfig> {
     if (this.inFlight) return this.inFlight;
 
     this.emit({ ...this.state, loading: this.state.config === null });
@@ -154,15 +196,6 @@ class FuturesConfigStore {
 
     this.inFlight = request;
     return request;
-  }
-
-  /** Force a re-read, ignoring how fresh the held value is. Nothing calls
-   *  this today; it is the explicit retry seam, so a future "reload
-   *  markets" affordance does not have to reach past the store. */
-  refresh(): Promise<FuturesConfig> {
-    if (this.inFlight) return this.inFlight;
-    this.fetchedAt = 0;
-    return this.load();
   }
 
   private emit(next: FuturesConfigState): void {

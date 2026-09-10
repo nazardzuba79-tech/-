@@ -53,9 +53,34 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+/**
+ * A hand-driven clock. The freshness window is five minutes; `Date.now` is
+ * the only thing the store reads it through, so moving that is enough and
+ * no test waits for real time to pass.
+ */
+const REAL_NOW = Date.now;
+let clock = 1_000_000;
+const advance = (ms: number) => { clock += ms; };
+/**
+ * Drain the microtask queue so a fire-and-forget `ensure()` has fully
+ * settled — `inFlight` cleared included. Awaiting a fixed number of
+ * `Promise.resolve()`s is not enough: the request's `.then().catch()
+ * .finally()` chain can still be pending, leaving `inFlight` set, and a
+ * later `load()` would then join it and LOOK cached whether or not it
+ * respects the freshness window.
+ */
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+const STALE_AFTER_MS = 5 * 60_000;
+
 beforeEach(() => {
   futuresConfigStore._resetForTests();
   getFuturesConfig.mockReset();
+  clock = 1_000_000;
+  Date.now = () => clock;
+});
+
+afterEach(() => {
+  Date.now = REAL_NOW;
 });
 
 describe('the store coalesces every consumer onto one request', () => {
@@ -142,6 +167,133 @@ describe('the store coalesces every consumer onto one request', () => {
   });
 });
 
+describe('the imperative read is cached on the same terms as the hook', () => {
+  /**
+   * The hole this block closes, found in review of PR #22.
+   *
+   * `ensure()` respected the freshness window; `load()` did not — it joined
+   * an in-flight request and otherwise went straight to the network. So
+   * visiting /futures (which mounts three `ensure()` consumers) and then
+   * the homepage (which calls `load()`) inside the window issued a SECOND
+   * request for an answer the tab already held, contradicting the store's
+   * own contract. The old "later consumer" test missed it because it called
+   * `ensure()` after the first load, never `load()` twice.
+   */
+
+  it('A. two awaited loads inside the window make exactly ONE request', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await futuresConfigStore.load();
+    advance(1_000);
+    await futuresConfigStore.load();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('B. load() after a hook-loaded value returns the cache, with no request', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    // What `useFuturesConfig()` does on mount, settled the way a real
+    // navigation would leave it.
+    futuresConfigStore.ensure();
+    await settle();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+
+    advance(30_000);
+    await expect(futuresConfigStore.load()).resolves.toEqual(CONFIG);
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('C. the real route sequence — /futures, then the homepage — costs one request', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+
+    // /futures: FuturesPage, FuturesOrderForm and FuturesTickerBar mount.
+    futuresConfigStore.ensure();
+    futuresConfigStore.ensure();
+    futuresConfigStore.ensure();
+    await settle();
+
+    // Homepage, a minute later: useHomeMarket reads it imperatively. This
+    // is the step that used to issue a second request.
+    advance(60_000);
+    await futuresConfigStore.load();
+    await settle();
+
+    // /markets, then back to /futures, still inside the window.
+    advance(60_000);
+    futuresConfigStore.ensure();
+    await settle();
+    advance(60_000);
+    futuresConfigStore.ensure();
+    futuresConfigStore.ensure();
+    futuresConfigStore.ensure();
+    await settle();
+
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('D. refresh() still performs a real re-read of a perfectly fresh value', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await futuresConfigStore.load();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+
+    // The seam is DEFINED to hit the network. Routing it through `load()`
+    // would hand back the cache and silently make it a no-op.
+    await futuresConfigStore.refresh();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(2);
+  });
+
+  it('D2. refresh() joins an in-flight request rather than duplicating it', async () => {
+    const gate = deferred<Config>();
+    getFuturesConfig.mockReturnValue(gate.promise);
+
+    const loading = futuresConfigStore.load();
+    const forced = futuresConfigStore.refresh();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+
+    gate.resolve(CONFIG);
+    expect(await forced).toBe(await loading);
+  });
+
+  it('E. once the window has passed, load() reads again', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await futuresConfigStore.load();
+
+    advance(STALE_AFTER_MS);          // exactly at the boundary: still fresh
+    await futuresConfigStore.load();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+
+    advance(1);                        // one millisecond past it
+    await futuresConfigStore.load();
+    expect(getFuturesConfig).toHaveBeenCalledTimes(2);
+  });
+
+  it('F. a cached load resolves with the very same object', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    const first = await futuresConfigStore.load();
+    await settle();
+    advance(1_000);
+    const second = await futuresConfigStore.load();
+    // Identity, not equality: a consumer keying an effect on this must not
+    // be re-run for having asked twice — and the identity must come from
+    // the cache, not from a second read that happened to return the same
+    // payload, so the call count is asserted alongside it.
+    expect(second).toBe(first);
+    expect(second).toBe(futuresConfigStore.getState().config);
+    expect(getFuturesConfig).toHaveBeenCalledTimes(1);
+  });
+
+  it('and a cache hit emits nothing, so no consumer re-renders for it', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await futuresConfigStore.load();
+
+    const seen: unknown[] = [];
+    futuresConfigStore.subscribe((state) => seen.push(state));
+    expect(seen).toHaveLength(1);      // the immediate current-state call
+
+    advance(1_000);
+    await futuresConfigStore.load();
+    expect(seen).toHaveLength(1);
+  });
+});
+
 describe('a failure stays a failure', () => {
   it('never substitutes a default config', async () => {
     getFuturesConfig.mockRejectedValue(new Error('network'));
@@ -191,6 +343,45 @@ describe('a failure stays a failure', () => {
     const state = futuresConfigStore.getState();
     expect(state.config).toEqual(CONFIG);
     expect(state.failed).toBe(true);
+  });
+
+  it('G. a failed read never poisons the cache, and load() still retries', async () => {
+    // Nothing has ever loaded: `config` is null, so no amount of time makes
+    // it "fresh", and every asker triggers a real attempt.
+    getFuturesConfig.mockRejectedValueOnce(new Error('first'));
+    await expect(futuresConfigStore.load()).rejects.toThrow('first');
+    expect(futuresConfigStore.getState().config).toBeNull();
+
+    getFuturesConfig.mockRejectedValueOnce(new Error('second'));
+    await expect(futuresConfigStore.load()).rejects.toThrow('second');
+    expect(getFuturesConfig).toHaveBeenCalledTimes(2);
+
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await expect(futuresConfigStore.load()).resolves.toEqual(CONFIG);
+    expect(getFuturesConfig).toHaveBeenCalledTimes(3);
+  });
+
+  it('G2. a failed REFRESH leaves the last good value servable, and the window intact', async () => {
+    getFuturesConfig.mockResolvedValue(CONFIG);
+    await futuresConfigStore.load();
+
+    getFuturesConfig.mockRejectedValue(new Error('refresh failed'));
+    await expect(futuresConfigStore.refresh()).rejects.toThrow('refresh failed');
+    expect(getFuturesConfig).toHaveBeenCalledTimes(2);
+
+    // A failed refresh is not evidence that the held answer went stale, and
+    // `fetchedAt` only moves on success — so a consumer asking now is still
+    // served the last good config, with no request. `failed` stays set, so
+    // a view that wants to mark it stale still can.
+    advance(1_000);
+    await expect(futuresConfigStore.load()).resolves.toEqual(CONFIG);
+    expect(getFuturesConfig).toHaveBeenCalledTimes(2);
+    expect(futuresConfigStore.getState().failed).toBe(true);
+
+    // And once the window really does pass, it reads again.
+    advance(STALE_AFTER_MS + 1);
+    await expect(futuresConfigStore.load()).rejects.toThrow('refresh failed');
+    expect(getFuturesConfig).toHaveBeenCalledTimes(3);
   });
 });
 
