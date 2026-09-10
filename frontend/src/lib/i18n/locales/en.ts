@@ -1104,17 +1104,19 @@ export const EN: Record<Key, string> = {
   'register.error.tooManyAttempts': 'Too many attempts. Please try again later.',
 
   // --- Homepage institutional ecosystem ---
+  'home.ecosystem.label': "GLOBAL MARKET INFRASTRUCTURE",
+  'home.ecosystem.globalMarkets': "Global markets",
+  'home.ecosystem.equities': "Equities",
+  'home.ecosystem.derivatives': "Derivatives",
+  'home.ecosystem.capitalMarkets': "Capital markets",
   'home.ecosystem.title': "A global financial ecosystem",
   'home.ecosystem.subtitle': "VOLTEX is building infrastructure for access to global markets, taking inspiration from the standards of the world’s leading exchanges and financial institutions.",
-  'home.ecosystem.disclaimer': "Mention of these institutions does not imply partnership with or endorsement of VOLTEX.",
   'home.ecosystem.pause': "Pause movement",
   'home.ecosystem.resume': "Resume movement",
-  'home.ecosystem.scrollHint': "Swipe to explore",
   'home.ecosystem.nasdaq': "Global electronic markets",
   'home.ecosystem.nyse': "Global equity marketplace",
   'home.ecosystem.cme': "Global derivatives markets",
   'home.ecosystem.jpmorgan': "Global banking & markets",
-  'home.ecosystem.bofa': "Global markets & investment banking",
   'home.ecosystem.goldman': "Global banking & markets",
   'home.ecosystem.morganstanley': "Institutional securities & wealth management",
 };

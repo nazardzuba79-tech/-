@@ -1,21 +1,20 @@
-# Homepage institution names and asset review
+# Homepage institution artwork — prestige scene
 
-Reviewed 2026-09-10 for the homepage ecosystem section.
+Updated 2026-09-10. The owner's latest brief replaces the previous text rail with six actual brand marks and removes the section disclaimer. No relationship, endorsement, sponsorship or live connectivity is claimed. The network is abstract decoration; it contains no market metrics or timestamps.
 
-The owner explicitly permits clean text names when an official logo cannot be bundled under verified usage terms. This implementation uses that fallback for all seven institutions: ordinary text in the existing site font, without brand-specific typography, copied artwork, icons or remote assets. No logo files were downloaded or bundled.
+All six files are local SVGs in `frontend/public/institutions/`; no logo service, runtime remote image request or font imitation is used. Intrinsic proportions are retained with `object-fit: contain`. The source artwork was not traced or generated.
 
-The available sources below do not establish permission for VOLTEX to use these logos on its commercial homepage. This is an implementation decision based on the permissions verified in this task, not a determination that every possible use is prohibited.
+| File | Original source and handling |
+| --- | --- |
+| `nasdaq.svg` | Extracted the literal full-logo SVG from Nasdaq's own [NEF logo component](https://www.nasdaq.com/sites/acquia.prod/files/mercury-assets/v26.21.1/chunks/index.Diy9TDhb.js), imported by its current homepage navigation. Resolved only the dynamic width/height bindings to the component defaults (155 × 44); applied the component's own inverted wordmark style. All original paths, masks and blue ribbon fills retained. |
+| `nyse.svg` | NYSE's 2022 mark, copied unchanged from [the SVG mirror](https://upload.wikimedia.org/wikipedia/commons/e/e8/NYSE_Logo_2022.svg). [File provenance](https://commons.wikimedia.org/wiki/File:NYSE_Logo_2022.svg) identifies the author as NYSE and the source as nyse.com. The official [NYSE listings page](https://beta.nyse.com/listings) links its current [primary logo](https://beta.nyse.com/publicdocs/images/NYSE_Logo_Primary.svg), but direct downloads from that host and www.nyse.com were blocked with HTTP 403 in this environment. No traced replacement was made. |
+| `cme.svg` | Extracted the static SVG tree from module 98749 of CME's own [current common bundle](https://www.cmegroup.com/etc.clientlibs/cmegroupaem/clientlibs/common.d90a30652b9c2aa8ecaf4205681ea2f3.js), used by its homepage navigation. Parsed static JSX properties without executing the downloaded script. Preserved paths, groups, clips, transforms and fills; added `viewBox="0 0 146 23"` matching the original intrinsic size. The [official brand guide](https://brand.cmegroup.com/logo.html) describes secondary one-color and reversed logos. |
+| `jpmorgan.svg` | Copied unchanged from [J.P. Morgan's current navigation SVG](https://www.jpmorgan.com/content/dam/logos-global/logo-jpm-brown.svg), linked in its [media page](https://www.jpmorgan.com/contact-us/media). |
+| `goldman.svg` | Copied unchanged from the official [Goldman Sachs CDN SVG](https://cdn.gs.com/images/goldman-sachs/v1/gs-vertical-lg.svg). |
+| `morganstanley.svg` | Copied unchanged as `MS_Standard_Logo_2022_White.svg` from the official [white logo ZIP](https://www.morganstanley.com/content/dam/msdotcom/newsroom/media-resources/MorganStanley_Logo_White.zip), linked by the [newsroom](https://www.morganstanley.com/about-us-newsroom/). The [brand guide](https://www.morganstanley.com/content/dam/msdotcom/newsroom/media-resources/Logo_Usage_Guidelines_Press.pdf) specifies white on dark backgrounds; this logo has no enclosing glass plate or effect on the artwork. |
 
-| Institution | Official resources reviewed | Finding for this implementation |
-| --- | --- | --- |
-| Nasdaq | [Legal](https://www.nasdaq.com/legal) | No applicable logo licence verified. Plain name used. |
-| NYSE | [ICE terms of use](https://www.ice.com/privacy-security-center/terms-of-use) | Content and trademark permissions are reserved; logos require prior written permission. Plain name used. |
-| CME Group | [Official logo guide](https://brand.cmegroup.com/logo.html), [terms](https://www.cmegroup.com/pt/terms.html) | A downloadable brand guide is not itself permission for third-party commercial promotion; terms require approval for specific logo uses. Plain name used. |
-| J.P. Morgan | [Media center](https://www.jpmorgan.com/contact-us/media), [terms of use](https://www.jpmorgan.com/terms-of-use) | Downloadable assets are designated for media/editorial use. No applicable commercial permission verified. Plain name used. |
-| Bank of America Securities | [Official newsroom and journalist resources](https://newsroom.bankofamerica.com/content/newsroom/home.html) | No applicable logo licence verified; the linked media library was not retrievable in this review. Plain name used. |
-| Goldman Sachs | [Website terms and conditions](https://www.goldmansachs.com/terms-and-conditions) | Website information cannot be reproduced to third parties without express written consent; no separate applicable logo permission verified. Plain name used. |
-| Morgan Stanley | [Newsroom logo downloads and usage terms](https://www.morganstanley.com/about-us-newsroom/) | Logo downloads are licensed for editorial use; commercial use requires prior written consent. Plain name used. |
+NYSE, CME, J.P. Morgan and Goldman Sachs use a CSS monochrome white presentation (`brightness(0) invert(1)`) for contrast on navy. Their bundled SVG geometry and file fills remain intact. Nasdaq retains its official cyan ribbon and white inverted wordmark; Morgan Stanley uses the supplied white artwork without a filter. Surrounding lighting belongs to the section, not the marks.
 
-The names identify institutions in the global financial ecosystem. Generic descriptors follow the owner's brief. The section does not describe them as VOLTEX partners, sponsors or endorsers and explicitly states that mention does not imply partnership or endorsement.
+The owner requested these specific logos for the review. Asset availability and original provenance do not by themselves establish commercial trademark permission. No independent permission or partnership was verified here. Existing source terms include [ICE](https://www.ice.com/privacy-security-center/terms-of-use), [CME](https://www.cmegroup.com/pt/terms.html), [J.P. Morgan](https://www.jpmorgan.com/terms-of-use), [Goldman Sachs](https://www.goldmansachs.com/terms-and-conditions) and the Morgan Stanley newsroom conditions above. This record is not a claim that those permissions were granted.
 
-A future replacement with actual artwork should record the exact official download, applicable permission, colour variant and clear-space rules here before adding an asset. Do not trace or imitate a wordmark.
+The visible section contains the requested six institutions only. Source records and historical handoff entries remain factual. No disclaimer is rendered beneath the scene, as requested.
