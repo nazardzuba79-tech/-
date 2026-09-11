@@ -45,7 +45,7 @@ function OilIcon({ size = 24 }: { size?: number; strokeWidth?: number }) {
 }
 
 export function HomeHeroAssets({ market }: { market: HomeMarket }) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const copy = globalHeroCopy[lang];
   const btc = market.tickers.find(row => row.pair === 'BTC/USDT');
   const gold = market.cfd?.configured ? market.cfd.tickers.find(row => row.symbol === 'XAUUSD') : undefined;
@@ -58,7 +58,8 @@ export function HomeHeroAssets({ market }: { market: HomeMarket }) {
     { key: 'oil', title: copy.oil, price: null, change: null, Icon: OilIcon, points: [], note: copy.unavailable },
   ];
   return <div className="vx-global-assets">
-    {rows.map(({ key, title, price, change, Icon, points, note }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key} style={{ animationDelay: `${-index*3}s` }}>
+    {rows.map(({ key, title, price, change, Icon, points, note }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
+      data-stale={key === 'btc' && market.tickersStale || undefined} style={{ animationDelay: `${-index*3}s` }}>
       <span className="vx-asset-symbol"><Icon size={24} strokeWidth={1.5}/></span>
       <div className="vx-asset-copy"><span>{title}</span><LiveValue value={price}/>
         {typeof change === 'number' && Number.isFinite(change)
@@ -67,6 +68,7 @@ export function HomeHeroAssets({ market }: { market: HomeMarket }) {
       </div>
       {points.length > 1 && <span className="vx-asset-spark" aria-hidden="true"><Sparkline points={points} width={54} height={25}/></span>}
       {key === 'gold' && gold && <span className="vx-asset-source">{copy.quote}</span>}
+      {key === 'btc' && market.tickersStale && <span className="vx-asset-source vx-asset-stale">{t('analytics.stale')}</span>}
     </div>)}
   </div>;
 }

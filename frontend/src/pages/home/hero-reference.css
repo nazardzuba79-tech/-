@@ -179,3 +179,8 @@
 @media(prefers-reduced-motion:reduce) and (max-width:1100px){.vx-reference-laptop-canvas{transform:scale(var(--scene-sx,1),var(--scene-sy,1)) translate(-480px,-190px)}}
 
 .vx-reference-stage[data-motion-paused='true'] .vx-reference-backdrop{transform:none}
+
+/* Cached quotes remain visible with an explicit stale state after a failed refresh. */
+.vx-home .vx-reference-stage .vx-market-tape[data-stale="true"] .vx-tape-label{display:flex;color:#d3b77f;padding-inline:16px}
+.vx-reference-stage .vx-asset-btc[data-stale="true"]{padding-bottom:17px}
+.vx-reference-stage .vx-asset-stale{color:#d3b77f}

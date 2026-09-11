@@ -31,8 +31,9 @@
 .vx-home .vx-reference-stage .vx-market-tape[data-offscreen="true"] .vx-tape-track,
 .vx-home .vx-reference-stage .vx-market-tape[data-stale="true"] .vx-tape-track { animation-play-state:paused }
 .vx-home .vx-reference-stage .vx-tape-window:focus-within,.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-window { overflow-x:auto }
-.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-track,.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-track { animation:none; transform:none }
-.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-group[aria-hidden],.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-group[aria-hidden] { display:none }
+/* Keyboard focus exposes one static link set; Pause only freezes the current frame. */
+.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-track { animation:none; transform:none }
+.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-group[aria-hidden] { display:none }
 @media (hover:hover) and (pointer:fine) {
  .vx-home .vx-reference-stage .vx-market-tape:hover .vx-tape-track { animation-play-state:paused }
 }
