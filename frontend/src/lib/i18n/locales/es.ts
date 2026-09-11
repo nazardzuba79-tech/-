@@ -1073,4 +1073,19 @@ export const ES: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': 'Demasiados intentos. Inténtalo más tarde.',
+  'home.ecosystem.label': "INFRAESTRUCTURA DE MERCADOS GLOBALES",
+  'home.ecosystem.globalMarkets': "Mercados globales",
+  'home.ecosystem.equities': "Renta variable",
+  'home.ecosystem.derivatives': "Derivados",
+  'home.ecosystem.capitalMarkets': "Mercados de capitales",
+  'home.ecosystem.title': "Un ecosistema financiero global",
+  'home.ecosystem.subtitle': "VOLTEX está creando infraestructura para acceder a los mercados globales, tomando como referencia los estándares de las principales bolsas e instituciones financieras del mundo.",
+  'home.ecosystem.pause': "Pausar movimiento",
+  'home.ecosystem.resume': "Reanudar movimiento",
+  'home.ecosystem.nasdaq': "Mercados electrónicos globales",
+  'home.ecosystem.nyse': "Mercado global de acciones",
+  'home.ecosystem.cme': "Mercados globales de derivados",
+  'home.ecosystem.jpmorgan': "Banca y mercados globales",
+  'home.ecosystem.goldman': "Banca y mercados globales",
+  'home.ecosystem.morganstanley': "Valores institucionales y gestión patrimonial",
 };

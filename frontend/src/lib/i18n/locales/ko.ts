@@ -1073,4 +1073,19 @@ export const KO: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': '시도 횟수가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+  'home.ecosystem.label': "글로벌 시장 인프라",
+  'home.ecosystem.globalMarkets': "글로벌 시장",
+  'home.ecosystem.equities': "주식",
+  'home.ecosystem.derivatives': "파생상품",
+  'home.ecosystem.capitalMarkets': "자본시장",
+  'home.ecosystem.title': "글로벌 금융 생태계",
+  'home.ecosystem.subtitle': "VOLTEX는 세계 주요 거래소와 금융 기관의 기준을 참고하여 글로벌 시장 접근을 위한 인프라를 구축하고 있습니다.",
+  'home.ecosystem.pause': "움직임 일시 정지",
+  'home.ecosystem.resume': "움직임 다시 시작",
+  'home.ecosystem.nasdaq': "글로벌 전자 거래 시장",
+  'home.ecosystem.nyse': "글로벌 주식 시장",
+  'home.ecosystem.cme': "글로벌 파생상품 시장",
+  'home.ecosystem.jpmorgan': "글로벌 은행 업무 및 시장",
+  'home.ecosystem.goldman': "글로벌 은행 업무 및 시장",
+  'home.ecosystem.morganstanley': "기관 증권 및 자산 관리",
 };

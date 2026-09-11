@@ -1,0 +1,46 @@
+{
+  "normal": {
+    "active": [
+      {
+        "name": "vx-session-node",
+        "state": "running"
+      },
+      {
+        "name": "vx-session-node",
+        "state": "running"
+      },
+      {
+        "name": "vx-session-node",
+        "state": "running"
+      },
+      {
+        "name": "vx-session-node",
+        "state": "running"
+      }
+    ],
+    "stages": "vx-motion-stage vx-sessions-stage vx-motion-active"
+  },
+  "manualPause": {
+    "active": [
+      "paused",
+      "paused",
+      "paused",
+      "paused"
+    ],
+    "label": "Продолжить движение карты",
+    "paused": "true"
+  },
+  "offscreen": {
+    "active": [
+      "paused",
+      "paused",
+      "paused",
+      "paused"
+    ],
+    "stages": "vx-motion-stage vx-sessions-stage"
+  },
+  "reducedMotionProduction": {
+    "animationName": "none",
+    "observedAt390": true
+  }
+}

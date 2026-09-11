@@ -83,7 +83,10 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/HomeHero.tsx": "12e58bacc771a3e6a80b0a57bda804af93391ece0f728cf96613de743d4f5011",
   "frontend/src/pages/home/HomeMarketOverview.tsx": "e4e78ef28478c4e498cdec0cf72c39f05ada80c31dbd3ac66461b746d4af414e",
   "frontend/src/pages/home/HomeMarkets.tsx": "39c868803bd823dc362c3a4585c8948cd0ed28132fdd7d9b8c2f23dfe2a22d47",
-  "frontend/src/pages/home/HomePage.tsx": "9df96794188b25f7228a64a7bd0b5133331560ac1be015bc794f4f238bd38227",
+  // Owner-requested assembly restores approved travel hand A, heatmap and
+  // institutions, then mounts sessions immediately after Card. No Hero edit.
+  // Actual DOM order and exact restored Card sources are tested separately.
+  "frontend/src/pages/home/HomePage.tsx": "6924f26cea2f71378d362e0c309b688de29c0822249791ce0da77a8b5ed232a8",
   "frontend/src/pages/home/HomeTicker.tsx": "07c91f993f4428f1ad5d79096b392071690726cbc5f5e9f9148f2775938c1d4d",
   "frontend/src/pages/home/PhonePreview.tsx": "919ebb21bbdae8eaf2588ba510ad36cc9d8cd75c66f6c2c802d73ec0771327d6",
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
