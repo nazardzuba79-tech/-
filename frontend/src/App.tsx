@@ -6,6 +6,7 @@ import { RouteShell } from './RouteShell';
 import { defaultTradingPath } from './lib/tradingMode';
 import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
+import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
 
 /**
  * Route-level code splitting.
@@ -36,7 +37,12 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ de
 const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
 const OtcPage = lazy(() => import('./pages/OtcPage').then((m) => ({ default: m.OtcPage })));
 const WalletPage = lazy(() => import('./pages/WalletPage').then((m) => ({ default: m.WalletPage })));
-const CopyTradingPage = lazy(() => import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage })));
+const CopyTradingPage = lazy(() => {
+  // Also cover SPA navigation without hover (mobile, deep links, keyboard).
+  // Direct entry and nav intent join the same session's in-flight request.
+  prefetchCopyMarketplace();
+  return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
+});
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
 const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));

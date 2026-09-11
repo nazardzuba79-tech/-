@@ -269,6 +269,32 @@
 .copytrading-bolt-root.profile-view .follower-list-note { color: var(--profile-muted); margin: 20px 0 10px; font-size: 11px; line-height: 1.6; }
 .copytrading-bolt-root.profile-view .app :focus-visible { outline: 2px solid #a67924; outline-offset: 3px; }
 /* v8 removes Trading Days: do not leave a fourth empty metric cell. */
+/* Metric placeholders inherit the FINAL value's line box. Do not apply the
+   label span typography to nested value spans, or hydration changes height. */
+.copytrading-bolt-root .copy-marketplace .trader-card .copy-live-metric[class],
+.copytrading-bolt-root.profile-view .trader-profile-page .copy-live-metric[class] {
+  display: inline-block; font: inherit; line-height: inherit; color: inherit;
+  margin: 0; vertical-align: bottom; min-height: 1em; max-width: 100%;
+}
+.copytrading-bolt-root .copy-metric-skeleton[class] {
+  min-width: 5ch; border-radius: 4px; background: currentColor;
+  opacity: .18; overflow: hidden;
+}
+.copytrading-bolt-root .copy-marketplace .trader-card .copy-metric-dash,
+.copytrading-bolt-root.profile-view .trader-profile-page .copy-metric-dash { visibility: hidden; font: inherit; }
+.copytrading-bolt-root .copy-chart-skeleton {
+  background: linear-gradient(110deg, #87919d12, #87919d24, #87919d12);
+  border-radius: 6px;
+}
+.copytrading-bolt-root.profile-view .daily-plot.copy-chart-skeleton { height: 246px; }
+.copytrading-bolt-root .trader-card[data-trader-id="VX-KSENIA"] .nazara-strategy {
+  margin: 9px 0 0; font-size: 11px; line-height: 1.5; color: #b7b8be;
+}
+.copytrading-bolt-root .copy-marketplace .trader-card[data-trader-id="VX-KSENIA"] .card-meta > div > span {
+  /* The follower-profit label wraps to two lines on the narrow card. Reserve
+     both lines even while its fallback font still fits on one. */
+  min-height: 3em;
+}
 .copytrading-bolt-root.profile-view .trader-hero-metrics-simple { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 700px) {
   .copytrading-bolt-root.profile-view .trader-hero-metrics-simple { grid-template-columns: repeat(2, minmax(0, 1fr)); }

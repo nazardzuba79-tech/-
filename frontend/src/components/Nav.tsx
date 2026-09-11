@@ -183,6 +183,7 @@ export function Nav({
               key={l.to}
               to={l.to}
               onMouseEnter={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
+              onPointerDown={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
               onFocus={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
               className={`nav-item top-nav-link${active === l.to ? ' nav-active is-active' : ''}`}
             >
@@ -262,6 +263,9 @@ export function Nav({
           <Fragment key={l.to}>
             <Link
               to={l.to}
+              onMouseEnter={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
+              onFocus={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
+              onPointerDown={l.to === '/copy-trading' ? prefetchCopyMarketplace : undefined}
               style={{ ...styles.mobileLink, ...(active === l.to ? styles.linkActive : {}) }}
             >
               {l.label}

@@ -5,3 +5,4 @@ dist/
 uploads/
 *.tsbuildinfo
 outputs/
+.qa-copy/
