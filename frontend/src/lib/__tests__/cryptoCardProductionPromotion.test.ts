@@ -78,15 +78,23 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
   "frontend/src/pages/home/HomeHeader.tsx": "a2fc2a02f60dd7e3ae19fd27d8d6caf225bbdd37eaeb2a182572592303a619f7",
   // Owner-approved hero copy hierarchy; CTA/preview behavior covered by homeHeroCopy.
-  "frontend/src/pages/home/HomeHero.tsx": "a2f346b9feb47998b3f741a1e84c44be94fbee42553875dd02c39912e58879e0",
-  "frontend/src/pages/home/HomeMarketOverview.tsx": "e4e78ef28478c4e498cdec0cf72c39f05ada80c31dbd3ac66461b746d4af414e",
-  "frontend/src/pages/home/HomeMarkets.tsx": "39c868803bd823dc362c3a4585c8948cd0ed28132fdd7d9b8c2f23dfe2a22d47",
-  "frontend/src/pages/home/HomePage.tsx": "5a2d3507b9c090410e65eaaf3a205039c0513ba252ceafa8098e8fafa3a07910",
-  "frontend/src/pages/home/HomeTicker.tsx": "bf3196e341c7baf711645a3e728f3c482b91eb386abe3e84e428cc4220b09200",
+  "frontend/src/pages/home/HomeHero.tsx": "c57cf2356eb1fae752fdc117076ff55e7ebcfba26b363ae922aff47792fafaa0",
+  // Owner-requested homepage life pass from main 97a1fd3: only Overview,
+  // Markets, Page, Ticker, TerminalPreview and useHomeMarket advance.
+  // Real received candles/depth/trades replace generated illustrations;
+  // one visibility-aware poll feeds every section, and the two new sections
+  // reuse those quotes. homeLiveMarket/homeLiveRendering assert the data
+  // contract; homeHeroCopy and cryptoCardVisualConsistency retain approved
+  // copy, routes and Card pixels. No other stored fingerprint is changed.
+  "frontend/src/pages/home/HomeMarketOverview.tsx": "68cdf86445ba586d5b6fe87b9f0ec6784cf7199d02114b4da7df80312f65dc3f",
+  "frontend/src/pages/home/HomeMarkets.tsx": "6a26e97e12bd6aae0a10c18383fa0f7d2b2dc9efde83957c0377012b155f386c",
+  // Owner-requested A/B Card wrapper and ecosystem section before FAQ; Card renderer/assets stay pinned.
+  "frontend/src/pages/home/HomePage.tsx": "8f3819437638fa0bce4ef1acb2d28b7ee56edb6179b1d6d138867ca1c2bc7fc5",
+  "frontend/src/pages/home/HomeTicker.tsx": "07c91f993f4428f1ad5d79096b392071690726cbc5f5e9f9148f2775938c1d4d",
   "frontend/src/pages/home/PhonePreview.tsx": "919ebb21bbdae8eaf2588ba510ad36cc9d8cd75c66f6c2c802d73ec0771327d6",
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
-  "frontend/src/pages/home/TerminalPreview.tsx": "278010a479c9102267599c93e9f4b712a313088bb6b115786ee3ee0a4b2c3ceb",
-  "frontend/src/pages/home/useHomeMarket.ts": "28d77b6950b9a944cf80d12f9ede522f598a32471fc62309b69e64518a58880e",
+  "frontend/src/pages/home/TerminalPreview.tsx": "c2aa0cae152fac14e481b5047833e37b5212f54e183034960cb1e6ddeaa2506a",
+  "frontend/src/pages/home/useHomeMarket.ts": "6a0b2e1b8ba3382a64208b6555d6da2f28f8623458b13ce5446e7f7f254ce08d",
   // Re-taken for the owner-requested copy-trading deposit gate change
   // ($20,000 -> $10,000). COMMENT ONLY, +1/-1: the doc comment quoted the
   // old figure, and a comment that states the wrong threshold is the
@@ -163,14 +171,24 @@ test('all approved masters and the two new presentation assets are byte-exact an
   expect(existsSync(resolve(directory, 'voltex-cards-phone-register-source.png'))).toBe(false);
 });
 
-test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
-  for (const [file, expected] of Object.entries(preservedMainSources)) {
+test('Homepage motion retains the reviewed homepage sources and exact approved Card composition', () => {
+  // Keep this guarantee independent of older unrelated route/Copy reversals.
+  // Only owner-authorized homepage motion fingerprints may advance here;
+  // product copy, Card masters and routes retain their existing guarantees.
+  for (const [file, expected] of Object.entries(preservedMainSources).filter(([file]) => file.startsWith('frontend/src/pages/home/'))) {
     let text = source(file);
     if (file === 'frontend/src/pages/home/HomeCardSection.tsx') {
       // Only the Homepage framing opt-in changes; all layout/copy stays exact.
       expect(text.split('<WatchCardVisual framing="homepage" />')).toHaveLength(2);
       text = text.replace('<WatchCardVisual framing="homepage" />', '<WatchCardVisual />');
     }
+    expect({ file, sha256: digest(text) }).toEqual({ file, sha256: expected });
+  }
+});
+
+test('Copy preserves its approved source except exact labels and click-only deposit requirement UX', () => {
+  for (const [file, expected] of Object.entries(preservedMainSources).filter(([file]) => !file.startsWith('frontend/src/pages/home/'))) {
+    let text = source(file);
     if (file === 'frontend/src/components/Nav.tsx') {
       // Owner-approved top-nav cleanup: reverse exactly the removed mount/import.
       // Everything else (menus, deposit action, auth and layout) stays byte-exact.

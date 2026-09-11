@@ -1,82 +1,76 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Pause, Play } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
-import { HomeMarket, byVolume, formatPriceValue } from './useHomeMarket';
+import { HomeMarket, byVolume } from './useHomeMarket';
+import { LiveValue } from './LiveValue';
 import { useLanguage } from '../../lib/i18n';
+import { homeLiveCopy } from './homeLiveCopy';
 
-/**
- * The market strip under the hero. Static — no marquee, no auto-scroll, no
- * horizontal scrollbar. It renders only the number of instruments that fit
- * the current width, measured from the real grid, so nothing is ever
- * clipped mid-cell and there is never anything to scroll to.
- *
- * Cells are fixed-width and figures are tabular, so a price going from
- * 4 digits to 5 cannot shift its neighbours.
- */
-const CELL_MIN = 168;
-
+/** Two visual copies of the same received quotes; only one accessible link set.
+ *  No requests, subscriptions or price simulation live in this component. */
 export function HomeTicker({ market }: { market: HomeMarket }) {
-  const { t } = useLanguage();
-  const ref = useRef<HTMLDivElement>(null);
-  const [capacity, setCapacity] = useState(8);
-
+  const { lang, t } = useLanguage();
+  const [paused, setPaused] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  const rows = byVolume(market.tickers, 12);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const measure = () => {
-      const fits = Math.max(2, Math.floor(el.clientWidth / CELL_MIN));
-      setCapacity(Math.min(fits, 8));
+    const node = ref.current;
+    if (!node) return;
+    const visible = () => node.dataset.hidden = String(document.hidden);
+    visible();
+    document.addEventListener('visibilitychange', visible);
+    const observer = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(entries => {
+        node.dataset.offscreen = String(!entries.some(entry => entry.isIntersecting));
+      }) : null;
+    observer?.observe(node);
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', visible);
     };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
   }, []);
-
-  const rows = byVolume(market.tickers, capacity);
+  const copy = homeLiveCopy[lang];
 
   return (
-    <section aria-label={t('home.ticker.aria')} className="mx-auto w-full max-w-[1460px] px-6">
-      <div ref={ref} className="overflow-hidden rounded-[8px] border border-white/6 bg-ink-850">
-        {market.tickersStatus === 'loading' && rows.length === 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="border-b border-r border-white/5 px-3.5 py-[11px] last:border-r-0 xl:border-b-0">
-                <div className="h-[10px] w-14 animate-pulse rounded bg-white/6" />
-                <div className="mt-2 h-[12px] w-20 animate-pulse rounded bg-white/6" />
+    <section ref={ref} aria-label={t('home.ticker.aria')} className="vx-market-tape"
+      data-paused={paused} data-stale={market.tickersStale}>
+      <div className="vx-tape-label">
+        <span className={`vx-feed-dot ${market.tickersStale ? 'vx-feed-stale' : market.tickersStatus !== 'ok' ? 'vx-feed-neutral' : ''}`} aria-hidden="true" />
+        <span>{market.tickersStale ? t('analytics.stale') : t('nav.markets')}</span>
+        <span className="vx-tape-frequency" title={copy.refresh}>15s</span>
+      </div>
+      <div className="vx-tape-window">
+        {rows.length === 0 ? (
+          <div className="vx-tape-empty">
+            {market.tickersStatus === 'loading' ? t('home.markets.loading') : t('home.marketDataUnavailable')}
+          </div>
+        ) : (
+          <div className="vx-tape-track">
+            {[false, true].map(copy => (
+              <div key={String(copy)} className="vx-tape-group" aria-hidden={copy || undefined}>
+                {rows.map(row => (
+                  <Link key={row.pair} tabIndex={copy ? -1 : undefined}
+                    to={`/trade?pair=${encodeURIComponent(row.pair)}`} className="vx-tape-quote">
+                    <CryptoIcon symbol={row.base} size={24} imageUrl={market.logoOf(row.base)} />
+                    <span className="vx-tape-instrument">
+                      <span>{row.pair}</span>
+                      <LiveValue value={row.price} className="vx-tape-price" />
+                    </span>
+                    <LiveValue value={row.change}
+                      format={value => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`}
+                      className={row.change >= 0 ? 'text-up' : 'text-down'} />
+                  </Link>
+                ))}
               </div>
             ))}
           </div>
-        ) : rows.length === 0 ? (
-          <div className="px-4 py-[18px] text-[12px] text-faint">{t('home.marketDataUnavailable')}</div>
-        ) : (
-          <div
-            className="grid"
-            style={{ gridTemplateColumns: `repeat(${Math.min(rows.length, capacity)}, minmax(0, 1fr))` }}
-          >
-            {rows.map((t) => {
-              const up = t.change >= 0;
-              return (
-                <Link
-                  key={t.pair}
-                  to={`/trade?pair=${encodeURIComponent(t.pair)}`}
-                  className="flex items-center gap-2.5 border-r border-white/5 px-3.5 py-[11px] transition-colors duration-150 ease-out last:border-r-0 hover:bg-white/[0.03]"
-                >
-                  <CryptoIcon symbol={t.base} size={22} imageUrl={market.logoOf(t.base)} />
-                  <div className="min-w-0 leading-tight tabular-nums">
-                    <div className="truncate text-[10.5px] text-home-muted">{t.pair}</div>
-                    <div className="font-mono text-[13px] font-medium text-white">{formatPriceValue(t.price)}</div>
-                    <div className={`font-mono text-[10px] ${up ? 'text-up' : 'text-down'}`}>
-                      {up ? '+' : ''}
-                      {t.change.toFixed(2)}%
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
         )}
       </div>
+      <button type="button" className="vx-tape-toggle" aria-label={paused ? copy.resume : copy.pause}
+        aria-pressed={paused} onClick={() => setPaused(value => !value)}>
+        {paused ? <Play size={14} /> : <Pause size={14} />}
+      </button>
     </section>
   );
 }
