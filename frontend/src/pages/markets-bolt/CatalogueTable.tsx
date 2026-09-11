@@ -8,7 +8,8 @@ import {
   useCatalogue,
   type CatalogueSortKey,
 } from '../../lib/catalogueStore';
-import type { CanonicalAsset } from '../../lib/api';
+import { useLiveMarket } from '../../lib/useLiveMarket';
+import { joinReferenceAssets, referenceValues, type ReferenceAsset } from '../../lib/referenceAssets';
 import './CatalogueTable.css';
 
 /**
@@ -45,6 +46,10 @@ import './CatalogueTable.css';
 
 const PER_PAGE = 50;
 const DASH = '—';
+function quoted(formatted: string | null, quote: string): string {
+  if (formatted === null) return DASH;
+  return quote === 'USD' ? formatted : `${formatted.replace(/^\$/, '')} ${quote}`;
+}
 
 export type TradableFilter = 'all' | 'tradable' | 'favorites';
 
@@ -120,7 +125,11 @@ export function CatalogueTable({
   defaultFilter?: TradableFilter;
 }) {
   const { t } = useLanguage();
-  const { assets, catalogueTotal, tradableCount, status, loaded, meta, metadataComplete, refresh } = useCatalogue();
+  const catalogue = useCatalogue();
+  const { tradableCount, status, loaded, meta, metadataComplete, refresh } = catalogue;
+  const live = useLiveMarket();
+  const assets = useMemo(() => joinReferenceAssets(catalogue.assets, live.rows), [catalogue.assets, live.rows]);
+  const catalogueTotal = assets.length || catalogue.catalogueTotal;
 
   const [filter, setFilter] = useState<TradableFilter>(defaultFilter);
   const [sort, setSort] = useState<CatalogueSortKey>('rank');
@@ -169,7 +178,7 @@ export function CatalogueTable({
     setDirection(key === 'symbol' || key === 'name' ? 'asc' : 'desc');
   }
 
-  if (!loaded) {
+  if (!loaded && !assets.length) {
     return (
       <div className="vx-cat-state" role="status">
         <span className="vx-cat-spinner" aria-hidden />
@@ -178,7 +187,7 @@ export function CatalogueTable({
     );
   }
 
-  if (status === 'unavailable') {
+  if (status === 'unavailable' && !assets.length) {
     return (
       <div className="vx-cat-state is-error" role="status">
         <strong>{t('catalogue.unavailable')}</strong>
@@ -220,7 +229,7 @@ export function CatalogueTable({
         <p className={`vx-cat-source${meta.stale ? ' is-stale' : ''}`}>
           <span className="vx-cat-dot" aria-hidden />
           {t('catalogue.sourceLine')} ·{' '}
-          {meta.stale ? t('catalogue.stale') : ageLabel(meta.fetchedAt, t)}
+          {meta.stale || (live.rows.size > 0 && live.status !== 'live') ? t('catalogue.stale') : ageLabel(meta.fetchedAt, t)}
           {!metadataComplete ? <span className="vx-cat-partial"> · {t('catalogue.partial')}</span> : null}
           {status === 'error' ? <span className="vx-cat-partial"> · {t('markets.loadError')}</span> : null}
         </p>
@@ -315,7 +324,7 @@ function CatalogueRow({
   onToggleFavorite,
   onTrade,
 }: {
-  asset: CanonicalAsset;
+  asset: ReferenceAsset;
   favorites: Set<string>;
   onToggleFavorite: (pair: string) => void;
   onTrade: (pair: string) => void;
@@ -332,7 +341,8 @@ function CatalogueRow({
   // market and shows no star for an asset that has none to star.
   const starred = pair !== null && favorites.has(pair);
 
-  const change = asset.market?.changePercent24h ?? null;
+  const values = referenceValues(asset);
+  const change = values.change;
   const changeText = changePct(change);
 
   return (
@@ -355,7 +365,7 @@ function CatalogueRow({
         <span className="vx-cat-asset">
           {/* Logo comes from the batched registry metadata inside
               CryptoIcon — never one request per row. */}
-          <CryptoIcon symbol={asset.symbol} size={22} imageUrl={asset.logoUrl} />
+          <CryptoIcon symbol={asset.symbol} size={22} imageUrl={asset.logoUrl} metadataOnly />
           <span className="vx-cat-symbol">
             {asset.symbol}
             {asset.ambiguous ? (
@@ -368,12 +378,12 @@ function CatalogueRow({
         </span>
       </td>
       <td className="vx-cat-hide-lg">{asset.name}</td>
-      <td className="vx-cat-num">{price(asset.market?.priceUsd) ?? DASH}</td>
+      <td className="vx-cat-num">{quoted(price(values.price), values.priceQuote)}</td>
       <td className={`vx-cat-num ${changeText === null ? '' : change! >= 0 ? 'is-up' : 'is-down'}`}>
         {changeText ?? DASH}
       </td>
       <td className="vx-cat-num vx-cat-hide-md">{usd(asset.market?.marketCapUsd) ?? DASH}</td>
-      <td className="vx-cat-num vx-cat-hide-md">{usd(asset.market?.volume24hUsd) ?? DASH}</td>
+      <td className="vx-cat-num vx-cat-hide-md">{quoted(usd(values.volume), values.volumeQuote)}</td>
       <td className="vx-cat-action">
         {pair ? (
           <button type="button" className="vx-cat-trade" onClick={() => onTrade(pair)}>

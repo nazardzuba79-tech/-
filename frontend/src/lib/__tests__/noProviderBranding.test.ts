@@ -70,7 +70,9 @@ describe('customer-facing components render no provider branding', () => {
    * Walking the tree rather than listing files is deliberate: a NEW page
    * must be covered by this rule without anyone remembering to add it.
    */
-  const EXCLUDED = new Set([join('src', 'lib', 'api.ts')]);
+  // The live contract and pure identity join also carry provenance, just
+  // like api.ts. They produce data, never DOM; checked explicitly below.
+  const EXCLUDED = new Set(['api.ts', 'liveMarketTypes.ts', 'referenceAssets.ts'].map(file => join('src', 'lib', file)));
 
   function sources(dir: string, out: string[] = []): string[] {
     for (const entry of readdirSync(resolve(frontend, dir))) {
@@ -108,6 +110,14 @@ describe('customer-facing components render no provider branding', () => {
 });
 
 describe('provenance is kept, not deleted', () => {
+  it('live provenance remains in pure data modules, with no rendering API', () => {
+    for (const file of ['liveMarketTypes.ts', 'referenceAssets.ts']) {
+      const source = code(read(`src/lib/${file}`));
+      expect(source).toContain('bybit');
+      expect(source).not.toMatch(/createElement|jsx\s*\(|innerHTML|textContent|document\./);
+    }
+    expect(code(read('src/pages/markets-bolt/CatalogueTable.tsx'))).not.toMatch(/asset\.metadataSource|asset\.providers|liveQuote\.provider/);
+  });
   it('still travels in the API contract', () => {
     const api = read('src/lib/api.ts');
     for (const field of ['turnoverVenues', 'openInterestBaseVenues', 'openInterestUsdVenues', 'VenueAttribution']) {

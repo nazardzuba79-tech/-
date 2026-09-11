@@ -128,6 +128,7 @@ export function CryptoIcon({
   symbol,
   size = 20,
   imageUrl,
+  metadataOnly = false,
 }: {
   symbol: string;
   size?: number;
@@ -137,10 +138,12 @@ export function CryptoIcon({
    * jsDelivr set below, which hasn't been updated in years. Falls through
    * to that jsDelivr icon, then the letter avatar, on any load failure. */
   imageUrl?: string | null;
+  /** Canonical reference rows must not guess identity by symbol. */
+  metadataOnly?: boolean;
 }) {
   // Only consult the registry when the caller has not already supplied a
   // logo — no point spending a lookup on a question already answered.
-  const registryLogo = useRegistryLogo(symbol, !imageUrl);
+  const registryLogo = useRegistryLogo(symbol, !imageUrl && !metadataOnly);
   const preferredUrl = imageUrl ?? registryLogo;
 
   const [preferredFailed, setPreferredFailed] = useState(false);
@@ -156,7 +159,7 @@ export function CryptoIcon({
 
   const usingFallback = !preferredUrl || preferredFailed;
 
-  if (usingFallback && fallbackFailed) {
+  if (usingFallback && (fallbackFailed || metadataOnly)) {
     return (
       <div
         style={{

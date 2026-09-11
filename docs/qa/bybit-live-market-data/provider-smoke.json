@@ -1,0 +1,91 @@
+{
+  "at": "2026-09-11T14:49:03.976Z",
+  "livePossible": true,
+  "spotInstruments": 538,
+  "linearInstruments": 869,
+  "before": {
+    "messages": 3837,
+    "batches": 4,
+    "changedRows": 1762,
+    "connectionsOpened": 2,
+    "subscriptions": 55,
+    "reconnects": 0,
+    "malformed": 0,
+    "activeInstruments": 1407,
+    "tickerCount": 1407,
+    "activeAssets": 869,
+    "restRequests": 4,
+    "status": "live",
+    "connections": [
+      {
+        "category": "spot",
+        "topics": 538,
+        "argsChars": 10033,
+        "state": "live"
+      },
+      {
+        "category": "linear",
+        "topics": 869,
+        "argsChars": 16889,
+        "state": "live"
+      }
+    ],
+    "rejectedUpdates": 859,
+    "rejectedTimestamp": 859,
+    "rejectedSequence": 0,
+    "serializedBookBytes": 891810,
+    "providerHealth": {
+      "provider": "bybit",
+      "state": "CLOSED",
+      "healthy": true,
+      "consecutiveFailures": 0,
+      "lastSuccessAt": 1789138144640,
+      "lastFailureAt": null,
+      "cooldownUntil": null,
+      "rateLimitHits": 0
+    }
+  },
+  "after": {
+    "messages": 12231,
+    "batches": 15,
+    "changedRows": 7221,
+    "connectionsOpened": 3,
+    "subscriptions": 109,
+    "reconnects": 1,
+    "malformed": 0,
+    "activeInstruments": 1407,
+    "tickerCount": 1407,
+    "activeAssets": 869,
+    "restRequests": 4,
+    "status": "live",
+    "connections": [
+      {
+        "category": "spot",
+        "topics": 538,
+        "argsChars": 10033,
+        "state": "live"
+      },
+      {
+        "category": "linear",
+        "topics": 869,
+        "argsChars": 16889,
+        "state": "live"
+      }
+    ],
+    "rejectedUpdates": 909,
+    "rejectedTimestamp": 906,
+    "rejectedSequence": 3,
+    "serializedBookBytes": 892771,
+    "providerHealth": {
+      "provider": "bybit",
+      "state": "CLOSED",
+      "healthy": true,
+      "consecutiveFailures": 0,
+      "lastSuccessAt": 1789138144640,
+      "lastFailureAt": null,
+      "cooldownUntil": null,
+      "rateLimitHits": 0
+    }
+  },
+  "restRequests": 4
+}

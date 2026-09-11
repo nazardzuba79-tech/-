@@ -50,6 +50,7 @@ const MAX_PAGES = 40;
 export type BybitCategory = 'spot' | 'linear';
 
 interface BybitEnvelope {
+  time?: unknown;
   retCode?: unknown;
   retMsg?: unknown;
   result?: { list?: unknown; nextPageCursor?: unknown } | null;
@@ -151,7 +152,10 @@ export class BybitMarketDataService {
     );
     this.http = new HttpProviderClient('bybit', {
       health: this.health,
-      fetchFn: options.fetchFn,
+      fetchFn: async (url, init) => {
+        this.requestCount += 1;
+        return (options.fetchFn ?? fetch)(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(10_000) });
+      },
       now: options.now,
       sleep: options.sleep,
       wrapError: (message) => new BybitMarketDataError(message),
@@ -187,8 +191,7 @@ export class BybitMarketDataService {
    * body into an empty instrument list, which is the "outage becomes an
    * empty exchange" failure this whole file is built to prevent.
    */
-  private async call(path: string): Promise<{ list: unknown[]; nextPageCursor: string | null }> {
-    this.requestCount += 1;
+  private async call(path: string): Promise<{ list: unknown[]; nextPageCursor: string | null; eventAt: number | null }> {
     const body = (await this.http.getJson(`${this.baseUrl}${path}`)) as BybitEnvelope | null;
     if (!body || typeof body !== 'object') {
       throw new BybitMarketDataError('Bybit returned a malformed response');
@@ -201,7 +204,7 @@ export class BybitMarketDataService {
     if (!Array.isArray(list)) {
       throw new BybitMarketDataError('Bybit response carried no instrument list');
     }
-    return { list, nextPageCursor: str(body.result?.nextPageCursor) };
+    return { list, nextPageCursor: str(body.result?.nextPageCursor), eventAt: epoch(body.time) };
   }
 
   private normalizeInstrument(raw: unknown, category: BybitCategory): NormalizedInstrument | null {
@@ -372,6 +375,8 @@ export class BybitMarketDataService {
       markPrice: num(row.markPrice),
       fundingRate: num(row.fundingRate),
       openInterest: num(row.openInterest),
+      openInterestValue: num(row.openInterestValue),
+      fundingIntervalMinutes: num(row.fundingIntervalHour) === null ? null : num(row.fundingIntervalHour)! * 60,
     };
   }
 
@@ -384,10 +389,11 @@ export class BybitMarketDataService {
    */
   async getTickers(category: BybitCategory): Promise<CachedValue<NormalizedTicker[]>> {
     return this.tickersCache.fetch(`tickers:${category}`, async () => {
-      const { list } = await this.call(`/v5/market/tickers?category=${category}`);
+      const { list, eventAt } = await this.call(`/v5/market/tickers?category=${category}`);
       return list
         .map((row) => this.normalizeTicker(row, category))
-        .filter((x): x is NormalizedTicker => x !== null);
+        .filter((x): x is NormalizedTicker => x !== null)
+        .map(row => ({ ...row, providerEventAt: eventAt }));
     });
   }
 }

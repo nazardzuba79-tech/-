@@ -61,6 +61,7 @@ import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
 import { MarketDataGateway } from './services/marketData/MarketDataGateway';
+import { collectorFromEnv } from './services/marketData/live/MarketDataCollectorClient';
 import { BinanceDerivativesService } from './services/marketData/derivatives/BinanceDerivativesService';
 import { OkxDerivativesService } from './services/marketData/derivatives/OkxDerivativesService';
 import { ExternalDerivativesService } from './services/marketData/derivatives/ExternalDerivativesService';
@@ -145,7 +146,8 @@ const demoTradingService = new DemoTradingService(prisma, demoEngine);
 // It reads reference data only. Nothing here touches VOLTEX financial
 // state: mark price, funding settlement, open interest, positions, margin
 // and liquidation stay with the futures services and are unchanged.
-const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService);
+const liveReferenceCollector = collectorFromEnv();
+const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService, undefined, liveReferenceCollector?.feed ?? null);
 
 // External derivatives reference data (Binance + OKX public futures
 // endpoints). Public, unauthenticated, no key and no environment variable
@@ -270,6 +272,7 @@ async function start() {
   priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
+  liveReferenceCollector?.start();
 }
 
 start().catch((err) => {
@@ -278,6 +281,7 @@ start().catch((err) => {
 });
 
 process.on('SIGTERM', async () => {
+  liveReferenceCollector?.stop();
   futuresMarketRegistry.stop();
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();

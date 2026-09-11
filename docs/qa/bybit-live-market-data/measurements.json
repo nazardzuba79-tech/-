@@ -1,0 +1,273 @@
+{
+  "measuredAt": "2026-09-11T08:53:53.437Z",
+  "environment": "Local Windows loopback; deterministic fixture; real transports; frontend store in Node; not production or DOM paint latency",
+  "results": [
+    {
+      "batchMs": 200,
+      "fixtureAssets": 650,
+      "activeInstruments": 1300,
+      "tickers": 1300,
+      "restRequests": 5,
+      "restPaths": [
+        "/v5/market/instruments-info?category=spot",
+        "/v5/market/instruments-info?category=linear&limit=1000",
+        "/v5/market/instruments-info?category=linear&limit=1000&cursor=next",
+        "/v5/market/tickers?category=spot",
+        "/v5/market/tickers?category=linear"
+      ],
+      "bybitConnections": 2,
+      "subscriptionRequests": 66,
+      "backendConnections": 1,
+      "frontendSubscribers": 100,
+      "browserConnections": 1,
+      "fixtureInputMessages": 30000,
+      "elapsedMs": 3318.9458999999997,
+      "incomingPerSecond": 9039.01446540602,
+      "coalescedBatches": 15,
+      "batchesPerSecond": 4.519507232703011,
+      "collectorToBackendMs": {
+        "p50": 0.5154999999999745,
+        "p95": 2.375800000000254
+      },
+      "backendToFrontendStoreMs": {
+        "p50": 0,
+        "p95": 1
+      },
+      "initialSnapshotBytes": 762139,
+      "browserSnapshotBytes": 762139,
+      "deltaBatchBytes": {
+        "p50": 23517,
+        "p95": 23517
+      },
+      "tickerBookSerializedBytes": 762201,
+      "processMemoryBytes": {
+        "rss": 132284416,
+        "heapTotal": 74743808,
+        "heapUsed": 43363176,
+        "external": 7029920,
+        "arrayBuffers": 787238
+      },
+      "lookup130000Ms": 2.553899999999885,
+      "counts": {
+        "messages": 30066,
+        "batches": 15,
+        "changedRows": 600,
+        "connectionsOpened": 2,
+        "subscriptions": 66,
+        "reconnects": 0,
+        "malformed": 0,
+        "activeInstruments": 1300,
+        "tickerCount": 1300,
+        "activeAssets": 650,
+        "restRequests": 5,
+        "status": "live",
+        "connections": [
+          {
+            "category": "spot",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          },
+          {
+            "category": "linear",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          }
+        ],
+        "rejectedUpdates": 0,
+        "rejectedTimestamp": 0,
+        "rejectedSequence": 0,
+        "serializedBookBytes": 762201,
+        "providerHealth": {
+          "provider": "bybit",
+          "state": "CLOSED",
+          "healthy": true,
+          "consecutiveFailures": 0,
+          "lastSuccessAt": 1789116821996,
+          "lastFailureAt": null,
+          "cooldownUntil": null,
+          "rateLimitHits": 0
+        }
+      }
+    },
+    {
+      "batchMs": 250,
+      "fixtureAssets": 650,
+      "activeInstruments": 1300,
+      "tickers": 1300,
+      "restRequests": 5,
+      "restPaths": [
+        "/v5/market/instruments-info?category=spot",
+        "/v5/market/instruments-info?category=linear&limit=1000",
+        "/v5/market/instruments-info?category=linear&limit=1000&cursor=next",
+        "/v5/market/tickers?category=spot",
+        "/v5/market/tickers?category=linear"
+      ],
+      "bybitConnections": 2,
+      "subscriptionRequests": 66,
+      "backendConnections": 1,
+      "frontendSubscribers": 100,
+      "browserConnections": 1,
+      "fixtureInputMessages": 30000,
+      "elapsedMs": 3357.8000999999995,
+      "incomingPerSecond": 8934.421081231132,
+      "coalescedBatches": 12,
+      "batchesPerSecond": 3.573768432492453,
+      "collectorToBackendMs": {
+        "p50": 0.519600000000537,
+        "p95": 1.7895000000007713
+      },
+      "backendToFrontendStoreMs": {
+        "p50": 0,
+        "p95": 1
+      },
+      "initialSnapshotBytes": 762139,
+      "browserSnapshotBytes": 762139,
+      "deltaBatchBytes": {
+        "p50": 23516,
+        "p95": 23517
+      },
+      "tickerBookSerializedBytes": 762201,
+      "processMemoryBytes": {
+        "rss": 194457600,
+        "heapTotal": 129310720,
+        "heapUsed": 70131720,
+        "external": 12170120,
+        "arrayBuffers": 2022268
+      },
+      "lookup130000Ms": 3.884900000000016,
+      "counts": {
+        "messages": 30066,
+        "batches": 12,
+        "changedRows": 480,
+        "connectionsOpened": 2,
+        "subscriptions": 66,
+        "reconnects": 0,
+        "malformed": 0,
+        "activeInstruments": 1300,
+        "tickerCount": 1300,
+        "activeAssets": 650,
+        "restRequests": 5,
+        "status": "live",
+        "connections": [
+          {
+            "category": "spot",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          },
+          {
+            "category": "linear",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          }
+        ],
+        "rejectedUpdates": 0,
+        "rejectedTimestamp": 0,
+        "rejectedSequence": 0,
+        "serializedBookBytes": 762201,
+        "providerHealth": {
+          "provider": "bybit",
+          "state": "CLOSED",
+          "healthy": true,
+          "consecutiveFailures": 0,
+          "lastSuccessAt": 1789116825577,
+          "lastFailureAt": null,
+          "cooldownUntil": null,
+          "rateLimitHits": 0
+        }
+      }
+    },
+    {
+      "batchMs": 500,
+      "fixtureAssets": 650,
+      "activeInstruments": 1300,
+      "tickers": 1300,
+      "restRequests": 5,
+      "restPaths": [
+        "/v5/market/instruments-info?category=spot",
+        "/v5/market/instruments-info?category=linear&limit=1000",
+        "/v5/market/instruments-info?category=linear&limit=1000&cursor=next",
+        "/v5/market/tickers?category=spot",
+        "/v5/market/tickers?category=linear"
+      ],
+      "bybitConnections": 2,
+      "subscriptionRequests": 66,
+      "backendConnections": 1,
+      "frontendSubscribers": 100,
+      "browserConnections": 1,
+      "fixtureInputMessages": 30000,
+      "elapsedMs": 3611.2499,
+      "incomingPerSecond": 8307.373023395585,
+      "coalescedBatches": 7,
+      "batchesPerSecond": 1.938387038792303,
+      "collectorToBackendMs": {
+        "p50": 0.8590000000003783,
+        "p95": 0.8849000000009255
+      },
+      "backendToFrontendStoreMs": {
+        "p50": 0,
+        "p95": 1
+      },
+      "initialSnapshotBytes": 762139,
+      "browserSnapshotBytes": 762139,
+      "deltaBatchBytes": {
+        "p50": 23516,
+        "p95": 23516
+      },
+      "tickerBookSerializedBytes": 762201,
+      "processMemoryBytes": {
+        "rss": 220340224,
+        "heapTotal": 210620416,
+        "heapUsed": 102727536,
+        "external": 10789048,
+        "arrayBuffers": 6660501
+      },
+      "lookup130000Ms": 5.782500000001164,
+      "counts": {
+        "messages": 30066,
+        "batches": 7,
+        "changedRows": 280,
+        "connectionsOpened": 2,
+        "subscriptions": 66,
+        "reconnects": 0,
+        "malformed": 0,
+        "activeInstruments": 1300,
+        "tickerCount": 1300,
+        "activeAssets": 650,
+        "restRequests": 5,
+        "status": "live",
+        "connections": [
+          {
+            "category": "spot",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          },
+          {
+            "category": "linear",
+            "topics": 650,
+            "argsChars": 14841,
+            "state": "live"
+          }
+        ],
+        "rejectedUpdates": 0,
+        "rejectedTimestamp": 0,
+        "rejectedSequence": 0,
+        "serializedBookBytes": 762201,
+        "providerHealth": {
+          "provider": "bybit",
+          "state": "CLOSED",
+          "healthy": true,
+          "consecutiveFailures": 0,
+          "lastSuccessAt": 1789116829273,
+          "lastFailureAt": null,
+          "cooldownUntil": null,
+          "rateLimitHits": 0
+        }
+      }
+    }
+  ]
+}

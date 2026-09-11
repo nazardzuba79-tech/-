@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from './api';
 import type { AssetCatalogueResponse, CanonicalAsset } from './api';
+import { referenceValues } from './referenceAssets';
 
 /**
  * The crypto catalogue, loaded ONCE per tab.
@@ -212,7 +213,7 @@ function nullsLast(a: number | null | undefined, b: number | null | undefined, d
   return (av - bv) * direction;
 }
 
-export function filterAndSortAssets(assets: CanonicalAsset[], filter: CatalogueFilter): CanonicalAsset[] {
+export function filterAndSortAssets<T extends CanonicalAsset>(assets: T[], filter: CatalogueFilter): T[] {
   const needle = filter.search?.trim().toLowerCase() ?? '';
   const direction = filter.direction === 'asc' ? 1 : -1;
   const sort = filter.sort ?? 'rank';
@@ -239,11 +240,11 @@ export function filterAndSortAssets(assets: CanonicalAsset[], filter: CatalogueF
       case 'marketCap':
         return nullsLast(a.market?.marketCapUsd, b.market?.marketCapUsd, direction) || a.symbol.localeCompare(b.symbol);
       case 'volume24h':
-        return nullsLast(a.market?.volume24hUsd, b.market?.volume24hUsd, direction) || a.symbol.localeCompare(b.symbol);
+        return nullsLast(referenceValues(a).volume, referenceValues(b).volume, direction) || a.symbol.localeCompare(b.symbol);
       case 'price':
-        return nullsLast(a.market?.priceUsd, b.market?.priceUsd, direction) || a.symbol.localeCompare(b.symbol);
+        return nullsLast(referenceValues(a).price, referenceValues(b).price, direction) || a.symbol.localeCompare(b.symbol);
       case 'change24h':
-        return nullsLast(a.market?.changePercent24h, b.market?.changePercent24h, direction) || a.symbol.localeCompare(b.symbol);
+        return nullsLast(referenceValues(a).change, referenceValues(b).change, direction) || a.symbol.localeCompare(b.symbol);
       case 'symbol':
         return a.symbol.localeCompare(b.symbol) * direction;
       case 'name':

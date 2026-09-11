@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+.git
+.worktrees
+.env
+.env.*
+**/.env
+**/.env.*
+dist
+frontend/dist
+*.log
+.DS_Store
+.qa-live
