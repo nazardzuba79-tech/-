@@ -53,6 +53,7 @@ import { VerifiedBadge } from './VerifiedBadge';
 import { CopyDepositDialog } from './CopyDepositDialog';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
+import { LiveMetric } from './LiveMetric';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -130,7 +131,14 @@ function Avatar({ trader, large = false }: { trader: Trader; large?: boolean }) 
     <div className={`${className} avatar-stack`}>
       <span aria-hidden="true">{trader.initials}</span>
       {photo && failedPhoto !== photo && <img className="avatar-photo" src={photo} alt="" decoding="async"
-        style={{ opacity: loadedPhoto === photo ? 1 : 0 }} onLoad={() => setLoadedPhoto(photo)} onError={() => setFailedPhoto(photo)} />}
+        style={{ opacity: loadedPhoto === photo ? 1 : 0 }} onLoad={event => {
+          const image = event.currentTarget;
+          void image.decode().then(() => {
+            if (image.getAttribute('src') === photo) setLoadedPhoto(photo);
+          }, () => {
+            if (image.getAttribute('src') === photo) setFailedPhoto(photo);
+          });
+        }} onError={() => setFailedPhoto(photo)} />}
     </div>
   );
   if (photo && failedPhoto !== photo) {
@@ -213,7 +221,7 @@ function MiniPerformanceChart({ trader, period, synthetic }: { trader: Trader; p
   const roi = getRoiForPeriod(trader, period);
   const lineColor = roi < 0 ? '#f6465d' : '#19b979';
   const gradientId = `mini-area-${trader.id.replace(/[^a-z0-9]/gi, '')}-${period}`;
-  if (!chart) return <div className="mini-performance-chart profile-empty">История недоступна</div>;
+  if (!chart) return <div className="mini-performance-chart copy-chart-skeleton" role="img" aria-label="История недоступна" />;
   return (
     <svg className={`mini-performance-chart ${roi < 0 ? 'negative' : 'positive'}`} viewBox="0 0 900 280" preserveAspectRatio="none" role="img" aria-label={`${trader.name} ${period} ROI chart`}>
       <defs>
@@ -255,7 +263,7 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
             {isNazara ? <div className="nazara-identity-copy">
               <div className="nazara-name trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} />{trader.vip && <VipBadge />}</div>
             </div> : <>
-              <div><div className="trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div><p><Users size={11} /> {numberLabel(trader.copiers, 0)} подписчиков</p></div>
+              <div><div className="trader-display-name"><h3>{trader.name}</h3><VerifiedBadge verified={trader.identityVerified} /></div><p><Users size={11} /> <LiveMetric value={numberLabel(trader.copiers, 0)} /> подписчиков</p></div>
               {trader.vip && <VipBadge />}
             </>}
           </div>
@@ -265,18 +273,18 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
           <FavoriteButton trader={trader} />
         </div>
       </div>
-      {isNazara && <p className="nazara-strategy">{trader.strategy}</p>}
+      {(isNazara || trader.id === 'VX-KSENIA') && <p className="nazara-strategy">{trader.strategy}</p>}
       <div className="card-return">
         <div className="card-roi-copy">
           <span>ROI <small>{period}</small></span>
-          <strong className={roiClass(periodRoi)}>{formatPercent(periodRoi)}</strong>
+          <strong className={roiClass(periodRoi)}><LiveMetric value={formatPercent(periodRoi)} /></strong>
         </div>
         <MiniPerformanceChart trader={trader} period={period} synthetic={synthetic} />
       </div>
       <div className="card-stats">
         {isNazara || trader.id === 'VX-KSENIA' ? <>
-          <div><span>Win Rate <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong>{winRate == null ? '—' : `${numberLabel(winRate, 1)}%`}</strong></div>
-          <div><span>Просадка <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
+          <div><span>Win Rate <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong><LiveMetric value={winRate == null ? '—' : `${numberLabel(winRate, 1)}%`} /></strong></div>
+          <div><span>Просадка <small>{trader.id === 'VX-KSENIA' ? 'ALL' : period}</small></span><strong><LiveMetric value={drawdown == null ? '—' : `${numberLabel(drawdown)}%`} /></strong></div>
         </> : <>
           <div><span>Просадка <small>{period}</small></span><strong>{drawdown == null ? '—' : `${numberLabel(drawdown)}%`}</strong></div>
           <div><span>Коэффициент Шарпа</span><strong className={sharpe == null ? undefined : roiClass(sharpe)}>{sharpe == null ? '—' : `${sharpe >= 0 ? '+' : ''}${sharpe.toFixed(2)}`}</strong></div>
@@ -284,9 +292,9 @@ function TraderCard({ trader, period, onOpen, synthetic }: { trader: Trader; per
       </div>
       <div className="card-meta">
         {isNazara
-          ? <div><span>Подписчики</span><b>{numberLabel(trader.copiers, 0)}</b></div>
-          : <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}>{formatAccountSize(copierProfit)}</b></div>}
-        <div><span>AUM</span><b>{formatAccountSize(trader.aum)}</b></div>
+          ? <div><span>Подписчики</span><b><LiveMetric value={numberLabel(trader.copiers, 0)} /></b></div>
+          : <div><span>Прибыль подписчиков · {PERIOD_LABEL_RU[period]}</span><b className={roiClass(copierProfit)}><LiveMetric value={formatAccountSize(copierProfit)} /></b></div>}
+        <div><span>AUM</span><b><LiveMetric value={formatAccountSize(trader.aum)} /></b></div>
       </div>
       <div className="card-cta-area">
         <button className="card-view-button" onClick={(event) => { event.stopPropagation(); onOpen(trader); }}>Профиль трейдера <ChevronRight size={13} /></button>
@@ -422,12 +430,12 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
           {(['ROI', 'PnL'] as const).map((item) => <button key={item} className={displayMode === item ? 'active' : ''} disabled={item === 'PnL' && !periodData} title={item === 'PnL' && !periodData ? 'PnL недоступен без истории сделок' : undefined} onClick={() => onMode(item)}>{item}</button>)}
         </div>
       </div>
-      {periodData && periodData.equity.length > 0 && <p className="profile-period-range">
+      {periodData && periodData.equity.length > 0 ? <p className="profile-period-range">
         {period === 'ALL' ? 'ALL · С момента запуска' : `${period} · Скользящий период`} · {formatSyntheticHistoryDate(periodData.equity[0].date)} — {formatSyntheticHistoryDate(periodData.equity[periodData.equity.length - 1].date)} · {periodData.calendarDays} календарных дней
-      </p>}
+      </p> : (trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') && <p className="profile-period-range"><LiveMetric value="—" /></p>}
       <div className="chart-readouts" aria-label="Результат за выбранный период">
-        <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}>{formatPercent(displayedRoi)}</strong></div>
-        <div><span>{periodData ? 'Накопленный PnL · USDT' : 'PnL · история недоступна'}</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}>{periodData ? signedUsd(periodData.pnl) : '—'}</strong></div>
+        <div><span>ROI · {period}</span><strong className={roiClass(displayedRoi)}><LiveMetric value={formatPercent(displayedRoi)} /></strong></div>
+        <div><span>Накопленный PnL · USDT</span><strong className={periodData ? roiClass(periodData.pnl) : undefined}><LiveMetric value={periodData ? signedUsd(periodData.pnl) : '—'} /></strong></div>
       </div>
       {periodData && !simpleReturn && <div className="profile-equity-readouts" aria-label="Торговый оборот за выбранный период">
         {/* The server's own figure when it has one. The local sum is a
@@ -451,7 +459,7 @@ function ProfilePerformanceChart({ trader, period, mode, onMode, periodData }: {
           {simpleReturn && chart.points.map((point, index) => <rect key={point.date} x={Math.max(0, point.x - 450 / Math.max(1, chart.points.length - 1))} y="0" width={900 / Math.max(1, chart.points.length - 1)} height="270" fill="transparent"><title>{point.date}: {displayMode === 'ROI' ? `${numberLabel(point.value, 4)}%` : signedUsd(point.value)}</title></rect>)}
         </svg>
         <div className={`profile-chart-x${period === 'ALL' ? ' profile-chart-x-inception' : ''}`}>{chart.labels.map((label, index) => <span key={`${label}-${index}`}>{label}</span>)}</div>
-      </div> : <div className="profile-empty">История стратегии недоступна. График появится после загрузки данных.</div>}
+      </div> : <div className="profile-chart-wrap copy-chart-skeleton" role="img" aria-label="История стратегии недоступна" />}
     </section>
   );
 }
@@ -463,9 +471,9 @@ function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
   return (
     <section className="profile-panel daily-return-panel">
       <div className="profile-panel-heading"><div><span>Daily Return · %</span><h2>Дневная доходность</h2></div><span>{data?.period}</span></div>
-      {days.length > 0 && <div className="chart-readouts">
-        <div><span>ROI за период</span><strong className={roiClass(plot.roi)}>{formatPercent(plot.roi)}</strong></div>
-      </div>}
+      <div className="chart-readouts">
+        <div><span>ROI за период</span><strong className={days.length ? roiClass(plot.roi) : undefined}><LiveMetric value={days.length ? formatPercent(plot.roi) : '—'} /></strong></div>
+      </div>
       {days.length ? (
         <div className="daily-plot" tabIndex={0} role="region" aria-label="Дневная доходность: история в процентах, прокрутка по горизонтали">
           <svg viewBox={`-65 0 ${plot.width + 75} 236`} style={{ minWidth: 540 }} role="img" aria-label={`Дневная доходность: ${days.length} дней, ROI ${formatPercent(plot.roi)}`}>
@@ -475,7 +483,7 @@ function DailyReturnChart({ data }: { data?: SyntheticPeriodAnalytics }) {
             {[0, Math.floor((days.length - 1) / 2), days.length - 1].map((index, labelIndex) => <text key={labelIndex} x={index / Math.max(1, days.length - 1) * plot.width} y="229" textAnchor={labelIndex === 0 ? 'start' : labelIndex === 2 ? 'end' : 'middle'}>{days[index].date}</text>)}
           </svg>
         </div>
-      ) : <div className="profile-empty">Дневная история недоступна для этого трейдера.</div>}
+      ) : <div className="daily-plot copy-chart-skeleton" role="img" aria-label="Дневная история недоступна" />}
       <div className="daily-legend"><span><i className="gain" /> Прибыльный день</span><span><i className="loss" /> Убыточный день</span></div>
       {days.length > 0 && <p className="daily-note">Один столбец = доходность за день в % · линейная шкала. Внешние движения капитала не являются прибылью или убытком. {data?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? 'ROI — сумма дневных доходностей, без геометрического реинвестирования.' : 'ROI — произведение дневных факторов.'} Все дни сохранены; на узком экране график прокручивается.</p>}
     </section>
@@ -504,7 +512,7 @@ function MetricsPanel({ metrics, period, compact = false }: { metrics: ProfileMe
   return (
     <section className="profile-panel profile-metrics-panel">
       <div className="profile-panel-heading"><div><span>{period === 'ALL' ? 'ALL · SINCE INCEPTION' : `${period} · ROLLING WINDOW`}</span><h2>Performance</h2></div><BarChart3 size={20} /></div>
-      <div className="profile-metrics-grid">{rows.filter(([label]) => !compact || !['Winning Trades', 'Losing Trades', 'Total Trading Days', 'Trading Days', 'Weekly Trades'].includes(label)).map(([label, value, className]) => <div key={label}><span>{label}</span><strong className={className}>{value}</strong></div>)}</div>
+      <div className="profile-metrics-grid">{rows.filter(([label]) => !compact || !['Winning Trades', 'Losing Trades', 'Total Trading Days', 'Trading Days', 'Weekly Trades'].includes(label)).map(([label, value, className]) => <div key={label}><span>{label}</span><strong className={className}><LiveMetric value={value} /></strong></div>)}</div>
     </section>
   );
 }
@@ -568,13 +576,13 @@ function TradingProfilePanel({ trader, metrics, periodData, strategyTrades, stra
   const style: Record<Trader['category'], string> = { trend: 'Trend', swing: 'Swing', quant: 'Quant', arbitrage: 'Market Neutral', futures: 'Futures', 'long-term': 'Long Term', 'multi-asset': 'Intraday / Swing' };
   const rows = [
     ['Trading Style', style[trader.category]],
-    ...(periodData?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' ? [] : [['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)]]),
+    ...((periodData ? periodData.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN' : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA') ? [] : [['Average Holding', durationLabel(metrics.averageHoldingTimeMinutes)]]),
     ['Risk Level', RISK_LABEL_RU[trader.risk]],
     ['Main Markets', mainMarkets],
     ['Trades / Week', numberLabel(metrics.averageTradesPerWeek, 1)],
     ...(trader.id === nazarTrader.id ? [['Performance Fee', unsignedPercent(trader.performanceFee * 100)]] : []),
   ];
-  return <section className="profile-panel trading-profile-panel"><div className="profile-panel-heading"><div><span>Структура стратегии</span><h2>Trading Profile</h2></div><LineChart size={20} /></div><div>{rows.map(([label, value]) => <p key={label}><span>{label}</span><strong>{value}</strong></p>)}</div></section>;
+  return <section className="profile-panel trading-profile-panel"><div className="profile-panel-heading"><div><span>Структура стратегии</span><h2>Trading Profile</h2></div><LineChart size={20} /></div><div>{rows.map(([label, value]) => <p key={label}><span>{label}</span><strong><LiveMetric value={value} /></strong></p>)}</div></section>;
 }
 
 function FollowerHistoryChart({ history, field, label }: {
@@ -660,7 +668,10 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const [period, setPeriod] = useState<Period>('90D');
   const [chartMode, setChartMode] = useState<ProfileChartMode>('ROI');
   const liveSynthetic = synthetic?.trader.id === trader.id ? synthetic : null;
-  const simpleReturn = liveSynthetic?.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN';
+  // Reserve the current operator profile's compact presentation while its
+  // values load. No financial methodology or value is inferred from the shell.
+  const simpleReturn = liveSynthetic ? liveSynthetic.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
+    : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA';
   const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
   const strategyData = useMemo(() => simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [simpleReturn, liveSynthetic]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
@@ -679,10 +690,10 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
           <div><div className="profile-title-row"><h1 className="trader-display-name">{trader.name}<VerifiedBadge verified={trader.identityVerified} /></h1>{trader.vip && <VipBadge />}</div><p>{trader.strategy} · {trader.id}</p></div>
         </div>
         <div className={`trader-hero-metrics${simpleReturn ? ' trader-hero-metrics-simple' : ''}`}>
-          <div><span>Followers</span><strong>{numberLabel(heroFollowers, 0)}</strong></div>
+          <div><span>Followers</span><strong><LiveMetric value={numberLabel(heroFollowers, 0)} /></strong></div>
           {!simpleReturn && <div><span>Trading Days</span><strong>{numberLabel(allTradingDays, 0)}</strong></div>}
-          <div><span>AUM</span><strong>{publicUsdtNumber(heroAum)} USDT</strong></div>
-          <div><span>Max Drawdown</span><strong>{unsignedPercent(heroDrawdown)}</strong></div>
+          <div><span>AUM</span><strong><LiveMetric value={`${publicUsdtNumber(heroAum)} USDT`} /></strong></div>
+          <div><span>Max Drawdown</span><strong><LiveMetric value={unsignedPercent(heroDrawdown)} /></strong></div>
         </div>
         <div className="trader-copy-cta"><FavoriteButton trader={trader} large /><div><CopyButton trader={trader} /></div></div>
       </section>
@@ -806,10 +817,14 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
     let result = searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown: item.id === nazara.id
       ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
       : item.id === ksenia.id ? kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : item.drawdown : selectDemoPerformance(item, period).maximumDrawdown }));
-    result = sortTraders(result, sortBy, period);
     if (tab === 'leaderboard' || sortBy === 'Top Performance') {
+      // Curated slots are identity-based, never a score manufactured for an
+      // unavailable metric. Exclude them BEFORE sorting the ordinary roster:
+      // a NaN comparator must not perturb the surrounding cards either.
       const featured = [nazara.id, ksenia.id].flatMap(id => result.filter(item => item.id === id));
-      result = [...featured, ...result.filter(item => item.id !== nazara.id && item.id !== ksenia.id)];
+      result = [...featured, ...sortTraders(result.filter(item => item.id !== nazara.id && item.id !== ksenia.id), sortBy, period)];
+    } else {
+      result = sortTraders(result, sortBy, period);
     }
     return result;
   }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic, ksenia, kseniaSynthetic]);

@@ -137,7 +137,9 @@ export class CopyMarketplaceStore {
         if (typeof document === 'undefined' || document.visibilityState === 'visible') void this.refresh();
       }, 60_000);
       if (typeof window !== 'undefined') window.addEventListener('focus', this.onFocus);
-      void this.refresh();
+      // A completed intent prefetch is useful too: mounting a few seconds
+      // later must not throw it away and repeat the bootstrap request.
+      void this.prefetch();
     }
     return () => {
       this.listeners.delete(listener);
