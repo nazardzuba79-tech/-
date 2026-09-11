@@ -1,0 +1,100 @@
+/* Institutional scene, isolated from market UI and Card variants A/B/C. */
+.vx-home .vx-ecosystem-stage { padding: 42px 0 20px; }
+.vx-home .vx-ecosystem { position: relative; isolation: isolate; overflow: clip; padding: 58px 24px 16px; scroll-margin-top: 78px; }
+.vx-home .vx-eco-atmosphere { position: absolute; z-index: -1; inset: 0; pointer-events: none; background: radial-gradient(ellipse 44% 46% at 44% 52%, #173b5547, transparent 94%), radial-gradient(ellipse 39% 33% at 72% 67%, #6e59331a, transparent 95%), linear-gradient(180deg, #05070b00, #0a1521b8 28%, #0a111dc4 62%, #05070b00); mask-image: linear-gradient(180deg, transparent, #000 15%, #000 78%, transparent); }
+.vx-home .vx-eco-intro { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; text-align: center; }
+.vx-home .vx-eco-eyebrow { display: inline-flex; align-items: center; gap: 13px; color: #8daebe; font: 500 10px/1.5 var(--font-ui), sans-serif; letter-spacing: .23em; text-transform: uppercase; }
+.vx-home .vx-eco-eyebrow::before,.vx-home .vx-eco-eyebrow::after { content: ''; width: 30px; height: 1px; background: linear-gradient(90deg, transparent, #81969c80); }
+.vx-home .vx-eco-eyebrow::after { rotate: 180deg; }
+.vx-home .vx-eco-intro h2 { margin: 21px 0 0; color: #edf1f5; font-size: clamp(30px,3.15vw,46px); font-weight: 500; line-height: 1.14; letter-spacing: -.04em; text-wrap: balance; }
+.vx-home .vx-eco-intro p { max-width: 740px; margin: 21px auto 0; color: #97a6b7; font-size: 14px; line-height: 1.8; text-wrap: pretty; }
+.vx-home .vx-eco-field { position: relative; max-width: 1240px; height: 520px; margin: 12px auto 0; }
+.vx-home .vx-eco-network { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.vx-home .vx-eco-core { position: absolute; left: 50%; top: 50%; translate: -50% -50%; display: flex; flex-direction: column; align-items: center; gap: 16px; width: 180px; color: #b7c8d4; font-size: 9px; line-height: 1.5; letter-spacing: .2em; text-align: center; text-transform: uppercase; }
+.vx-home .vx-eco-core-cross { width: 19px; height: 19px; position: relative; }
+.vx-home .vx-eco-core-cross::before,.vx-home .vx-eco-core-cross::after { content: ''; position: absolute; background: #c1a56a; }
+.vx-home .vx-eco-core-cross::before { inset: 9px 0; }
+.vx-home .vx-eco-core-cross::after { inset: 0 9px; }
+.vx-home .vx-eco-core-rule { width: 31px; height: 1px; background: #6d8fa84d; }
+.vx-home .vx-eco-micro { position: absolute; color: #6b8a9e; font: 400 9px/1.4 var(--font-ui),sans-serif; letter-spacing: .18em; text-transform: uppercase; }
+.vx-home .vx-eco-micro-equities { left: 11%; top: 12%; }
+.vx-home .vx-eco-micro-derivatives { right: 11%; top: 20%; }
+.vx-home .vx-eco-micro-capital { left: 47%; bottom: 7%; }
+.vx-home .vx-eco-institutions { list-style: none; margin: 0; padding: 0; }
+.vx-home .vx-eco-node { position: absolute; width: 240px; translate: -50% -50%; }
+.vx-home .vx-eco-node-nasdaq { left: 32%; top: 18%; }
+.vx-home .vx-eco-node-nyse { left: 69%; top: 18%; }
+.vx-home .vx-eco-node-cme { left: 16%; top: 53%; width: 258px; }
+.vx-home .vx-eco-node-jpmorgan { left: 85%; top: 52%; }
+.vx-home .vx-eco-node-goldman { left: 34%; top: 82%; }
+.vx-home .vx-eco-node-morganstanley { left: 70%; top: 81%; width: 276px; }
+.vx-home .vx-eco-institution { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 116px; padding: 16px; border: 1px solid transparent; border-radius: 14px; background: radial-gradient(ellipse at 50% 30%, #15263480, #101c2640 50%, transparent 85%); transition: transform 350ms ease, border-color 350ms ease, background-color 350ms ease; }
+.vx-home .vx-eco-institution::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(110deg, #779db409, transparent 42%, #adc4cf05); box-shadow: inset 0 1px #adc8dd0a; }
+.vx-home .vx-eco-institution:is(:hover,:focus-visible,[data-selected="true"]) { transform: translateY(-3px); border-color: #85afc020; background-color: #10263545; }
+.vx-home .vx-eco-logo-space { display: flex; align-items: center; justify-content: center; height: 64px; width: 100%; }
+.vx-home .vx-eco-logo-space img { display: block; width: 180px; height: 54px; max-width: 100%; object-fit: contain; }
+.vx-home .vx-eco-node-nyse img { width: 137px; height: 54px; }
+.vx-home .vx-eco-node-cme img { width: 196px; height: 56px; }
+.vx-home .vx-eco-node-goldman img { width: 134px; height: 57px; }
+.vx-home .vx-eco-node-morganstanley img { width: 222px; height: 44px; }
+.vx-home :is(.vx-eco-node-nyse,.vx-eco-node-cme,.vx-eco-node-jpmorgan,.vx-eco-node-goldman) img { filter: brightness(0) invert(1); }
+.vx-home .vx-eco-node-morganstanley .vx-eco-institution { background: transparent; border-color: transparent; }
+.vx-home .vx-eco-node-morganstanley .vx-eco-institution::before { display: none; }
+.vx-home .vx-eco-descriptor { display: block; max-width: 235px; min-height: 32px; margin-top: 10px; color: #9bb0bf; text-align: center; font-size: 11px; line-height: 1.5; opacity: 0; transition: opacity 220ms ease; }
+.vx-home .vx-eco-institution:is(:hover,:focus,[data-selected="true"]) .vx-eco-descriptor { opacity: 1; }
+.vx-home .vx-eco-motion-control { position: absolute; z-index: 3; top: 51px; right: max(24px,calc((100% - 1240px)/2)); display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #92b8cd1c; border-radius: 50%; color: #8aa5b5; background: #10202b35; }
+.vx-home .vx-eco-motion-control:hover { color: #c3d5e0; border-color: #92b8cd40; }
+.vx-home .vx-eco-network-grid { animation: vx-eco-grid-drift 46s linear infinite; }
+.vx-home .vx-eco-data-node { animation: vx-eco-node-breathe 9s ease-in-out var(--vx-node-delay) infinite alternate; }
+.vx-home .vx-eco-data-paths { stroke-dasharray: 1 49; animation: vx-eco-data-travel 24s linear infinite; }
+.vx-home .vx-ecosystem[data-entered="true"] .vx-eco-node { animation: vx-eco-logo-reveal 1000ms cubic-bezier(.22,.7,.25,1) var(--vx-eco-reveal-delay) both; }
+.vx-home .vx-ecosystem[data-entered] :is(.vx-eco-network-grid,.vx-eco-data-node,.vx-eco-data-paths,.vx-eco-node) { animation-play-state: paused; }
+.vx-home .vx-motion-active .vx-ecosystem:not([data-paused="true"]) :is(.vx-eco-network-grid,.vx-eco-data-node,.vx-eco-data-paths,.vx-eco-node) { animation-play-state: running; }
+@keyframes vx-eco-grid-drift { to { transform: translate(60px,0); } }
+@keyframes vx-eco-node-breathe { from { opacity: .3; } to { opacity: .85; } }
+@keyframes vx-eco-data-travel { to { stroke-dashoffset: -100; } }
+@keyframes vx-eco-logo-reveal { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 801px) and (max-width: 1100px) {
+  .vx-home .vx-eco-node { width: 208px; }
+  .vx-home .vx-eco-node-cme { width: 230px; left: 14%; }
+  .vx-home .vx-eco-node-jpmorgan { left: 86%; }
+  .vx-home .vx-eco-node-morganstanley { width: 250px; }
+  .vx-home .vx-eco-field { height: 490px; }
+  .vx-home .vx-eco-core { width: 130px; font-size: 8px; }
+}
+@media (max-width: 800px) {
+  .vx-home .vx-ecosystem-stage { padding-top: 30px; }
+  .vx-home .vx-ecosystem { padding: 46px 24px 25px; }
+  .vx-home .vx-eco-field { height: auto; margin-top: 35px; }
+  .vx-home .vx-eco-network { inset: -5% -30%; width: 160%; height: 110%; opacity: .65; }
+  .vx-home .vx-eco-core,.vx-home .vx-eco-micro { display: none; }
+  .vx-home .vx-eco-institutions { position: relative; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 20px; max-width: 640px; margin-inline: auto; }
+  .vx-home .vx-eco-node { position: relative; width: auto; left: auto; top: auto; translate: none; }
+  .vx-home .vx-eco-institution { min-height: 132px; height: 100%; padding: 14px; }
+  .vx-home .vx-eco-descriptor { opacity: .85; font-size: 11px; }
+  .vx-home .vx-eco-intro h2 { max-width: 600px; margin-inline: auto; font-size: 37px; }
+  .vx-home .vx-eco-intro p { max-width: 560px; font-size: 13px; }
+  .vx-home .vx-eco-motion-control { top: 5px; right: 24px; }
+}
+@media (max-width: 479px) {
+  .vx-home .vx-ecosystem { padding-inline: 22px; }
+  .vx-home .vx-eco-eyebrow { font-size: 8px; letter-spacing: .16em; gap: 8px; }
+  .vx-home .vx-eco-eyebrow::before,.vx-home .vx-eco-eyebrow::after { width: 15px; }
+  .vx-home .vx-eco-intro h2 { font-size: 32px; margin-top: 19px; }
+  .vx-home .vx-eco-intro p { margin-top: 18px; line-height: 1.75; }
+  .vx-home .vx-eco-field { margin-top: 26px; }
+  .vx-home .vx-eco-institutions { gap: 14px 12px; }
+  .vx-home .vx-eco-institution { padding: 10px 7px; min-height: 132px; }
+  .vx-home .vx-eco-logo-space { height: 49px; }
+  .vx-home .vx-eco-logo-space img { width: 126px; height: 40px; }
+  .vx-home .vx-eco-node-nyse img { width: 105px; height: 40px; }
+  .vx-home .vx-eco-node-cme img { width: 132px; }
+  .vx-home .vx-eco-node-goldman img { width: 95px; height: 40px; }
+  .vx-home .vx-eco-node-morganstanley img { width: 137px; height: 34px; }
+  .vx-home .vx-eco-descriptor { font-size: 11px; line-height: 1.55; margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-home .vx-eco-motion-control { display: none; }
+  .vx-home .vx-eco-institution:is(:hover,:focus,[data-selected="true"]) { transform: none; }
+  .vx-home .vx-eco-node { opacity: 1; transform: none; }
+}

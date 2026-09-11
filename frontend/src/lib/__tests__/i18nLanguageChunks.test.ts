@@ -26,6 +26,14 @@ const module_ = readI18nModule();
  *  do (prefetch, barrels), which a naive substring search would match. */
 const executable = module_.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const dicts = readDictionaries();
+// Restored verbatim from the owner-approved institutional prestige scene.
+// Only these named additions are excluded from the older body fingerprint;
+// the separate assertion below rejects any missing, duplicate or extra key.
+const restoredEcosystemKeys = [
+  'label', 'globalMarkets', 'equities', 'derivatives', 'capitalMarkets',
+  'title', 'subtitle', 'pause', 'resume', 'nasdaq', 'nyse', 'cme',
+  'jpmorgan', 'goldman', 'morganstanley',
+].map(key => `home.ecosystem.${key}`);
 
 // ── Integrity ───────────────────────────────────────────────────────
 
@@ -93,10 +101,21 @@ describe('translation integrity', () => {
     };
     const { createHash } = require('crypto');
     for (const code of LOCALES) {
-      const source = readLocale(code);
+      const source = readLocale(code).split('\n').filter(line => {
+        const key = line.match(/^\s*'([^']+)':/)?.[1];
+        return !key || !restoredEcosystemKeys.includes(key);
+      }).join('\n');
       const body = source.slice(source.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
+    }
+  });
+
+  it('adds exactly the approved institutional vocabulary without changing older dictionary bytes', () => {
+    for (const code of LOCALES) {
+      const keys = [...readLocale(code).matchAll(/^\s*'(home\.ecosystem\.[^']+)':/gm)].map(match => match[1]);
+      expect({ code, keys: keys.sort() }).toEqual({ code, keys: [...restoredEcosystemKeys].sort() });
+      for (const key of restoredEcosystemKeys) expect(dicts[code][key].trim()).not.toBe('');
     }
   });
 

@@ -1,0 +1,13 @@
+PASS frontend/src/lib/__tests__/homeHeroCopy.test.ts
+PASS frontend/src/lib/__tests__/heroReferenceTerminal.test.ts
+PASS frontend/src/lib/__tests__/homeLiveRendering.test.ts
+PASS frontend/src/lib/__tests__/homeLiveMarket.test.ts
+PASS frontend/src/lib/__tests__/homeHeroVisibility.test.ts
+PASS frontend/src/lib/__tests__/homeHeroStream.test.ts
+
+Test Suites: 6 passed, 6 total
+Tests:       49 passed, 49 total
+Snapshots:   0 total
+Time:        2.279 s, estimated 3 s
+Ran all test suites matching /frontend\\src\\lib\\__tests__\\heroReferenceTerminal.test.ts|frontend\\src\\lib\\__tests__\\homeHeroStream.test.ts|frontend\\src\\lib\\__tests__\\homeHeroVisibility.test.ts|frontend\\src\\lib\\__tests__\\homeLiveMarket.test.ts|frontend\\src\\lib\\__tests__\\homeLiveRendering.test.ts|frontend\\src\\lib\\__tests__\\homeHeroCopy.test.ts/i.
+Test results written to: ..\..\outputs\homepage-hero-reference\final-hero-tests.json

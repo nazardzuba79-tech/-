@@ -1,0 +1,144 @@
+[
+  {
+    "cardWidth": 352,
+    "height": 844,
+    "order": [
+      "home-global-hero",
+      "card",
+      "trading-sessions",
+      "ecosystem"
+    ],
+    "overflow": false,
+    "reducedMotion": true,
+    "regions": [
+      {
+        "id": "asia",
+        "overflow": false,
+        "status": "CLOSED"
+      },
+      {
+        "id": "europe",
+        "overflow": false,
+        "status": "ACTIVE"
+      },
+      {
+        "id": "usa",
+        "overflow": false,
+        "status": "ACTIVE"
+      }
+    ],
+    "sessionWidth": 348,
+    "width": 390
+  },
+  {
+    "cardWidth": 730,
+    "height": 1024,
+    "map": {
+      "bottom": 921.46875,
+      "height": 339.21875,
+      "left": 24,
+      "right": 734,
+      "top": 582.25,
+      "width": 710,
+      "x": 24,
+      "y": 582.25
+    },
+    "overflow": false,
+    "panel": {
+      "bottom": 563.2500152587891,
+      "height": 345.9583435058594,
+      "left": 24,
+      "right": 734,
+      "top": 217.2916717529297,
+      "width": 710,
+      "x": 24,
+      "y": 217.2916717529297
+    },
+    "regions": [
+      {
+        "id": "asia",
+        "overflow": false
+      },
+      {
+        "id": "europe",
+        "overflow": false
+      },
+      {
+        "id": "usa",
+        "overflow": false
+      }
+    ],
+    "sessionWidth": 710,
+    "width": 768
+  },
+  {
+    "cardWidth": 966,
+    "height": 900,
+    "overflow": false,
+    "regions": [
+      {
+        "id": "asia",
+        "overflow": false
+      },
+      {
+        "id": "europe",
+        "overflow": false
+      },
+      {
+        "id": "usa",
+        "overflow": false
+      }
+    ],
+    "sessionWidth": 950,
+    "width": 1024
+  },
+  {
+    "cardWidth": 1382,
+    "height": 1080,
+    "motion": true,
+    "order": [
+      "home-global-hero",
+      "card",
+      "trading-sessions",
+      "ecosystem"
+    ],
+    "overflow": false,
+    "regions": [
+      {
+        "id": "asia",
+        "overflow": false
+      },
+      {
+        "id": "europe",
+        "overflow": false
+      },
+      {
+        "id": "usa",
+        "overflow": false
+      }
+    ],
+    "sessionWidth": 1334,
+    "width": 1440
+  },
+  {
+    "cardWidth": 1460,
+    "height": 1080,
+    "overflow": false,
+    "regions": [
+      {
+        "id": "asia",
+        "overflow": false
+      },
+      {
+        "id": "europe",
+        "overflow": false
+      },
+      {
+        "id": "usa",
+        "overflow": false
+      }
+    ],
+    "sessionWidth": 1480,
+    "width": 1920
+  }
+]

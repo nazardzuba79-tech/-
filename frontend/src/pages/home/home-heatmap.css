@@ -1,0 +1,104 @@
+/* Approved market heatmap; old world-clock rules intentionally excluded. */
+.vx-home .vx-heatmap-section { width: 100%; max-width: 1460px; margin: 0 auto; padding: 76px 24px; }
+.vx-home .vx-heatmap-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-bottom: 28px; }
+.vx-home .vx-heatmap-section .vx-section-eyebrow { display: flex; align-items: center; gap: 9px; color: #c3a367; font-size: 10px; font-weight: 650; letter-spacing: .17em; line-height: 1.5; margin-bottom: 16px; }
+.vx-home .vx-heatmap-section .vx-section-eyebrow > span { width: 19px; height: 1px; flex-shrink: 0; background: #be9852; }
+.vx-home .vx-heatmap-heading h2 { max-width: 740px; color: #edf0f4; font-size: clamp(27px, 2.8vw, 39px); font-weight: 600; letter-spacing: -.045em; line-height: 1.15; }
+.vx-home .vx-heatmap-section .vx-section-description { max-width: 330px; flex: 0 1 330px; color: #8c97a8; font-size: 13px; line-height: 1.75; }
+
+.vx-home .vx-heatmap-section { padding-top: 64px; padding-bottom: 68px; }
+.vx-home .vx-heatmap-heading { margin-bottom: 22px; }
+.vx-home .vx-heatmap-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 7px 20px; align-items: center; margin-bottom: 14px; font-size: 10px; color: #8a95a5; }
+.vx-home .vx-heatmap-meta > span:first-child { color: #c6ced8; }
+.vx-home .vx-heatmap-meta .vx-heatmap-stale { color: #d2b476; }
+.vx-home .vx-heatmap-body { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 22px; }
+.vx-home .vx-heatmap-canvas { position: relative; min-width: 0; height: 430px; margin: -3px; }
+.vx-home .vx-heat-tile { position: absolute; padding: 0; overflow: hidden; --heat-rgb: 72, 85, 100; }
+.vx-home .vx-heat-up { --heat-rgb: 26, 137, 98; }
+.vx-home .vx-heat-down { --heat-rgb: 169, 56, 67; }
+.vx-home .vx-heat-tile-inner { position: absolute; inset: 3px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; padding: 8px; border: 1px solid rgba(var(--heat-rgb), .38); border-radius: 5px; background: linear-gradient(140deg, rgba(var(--heat-rgb), var(--heat-strength)), rgba(var(--heat-rgb), .17)); transition: border-color 180ms ease, background-color 250ms ease, box-shadow 180ms ease; }
+.vx-home .vx-heat-tile:hover .vx-heat-tile-inner,
+.vx-home .vx-heat-selected .vx-heat-tile-inner { border-color: #ffffff80; box-shadow: inset 0 0 30px #ffffff05; background-color: #ffffff06; }
+.vx-home .vx-heat-symbol { font-size: clamp(17px, 1.8vw, 27px); font-weight: 600; color: #f1f3f5; letter-spacing: -.04em; line-height: 1.2; }
+.vx-home .vx-heat-tile:first-child .vx-heat-symbol { font-size: clamp(30px, 3.1vw, 47px); }
+.vx-home .vx-heat-percent { margin-top: 7px; color: #f0e7e7; font-size: 15px; font-variant-numeric: tabular-nums; }
+.vx-home .vx-heat-up .vx-heat-percent { color: #b5efd7; }
+.vx-home .vx-heat-down .vx-heat-percent { color: #ffc3c7; }
+.vx-home .vx-heat-price { margin-top: 14px; color: #c3c8cc; font-size: 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.vx-home .vx-heat-price > small { font-size: 8px; opacity: .6; }
+.vx-home .vx-heat-small .vx-heat-symbol { font-size: 15px; }
+.vx-home .vx-heat-small .vx-heat-percent { font-size: 11px; margin-top: 4px; }
+.vx-home .vx-heat-small .vx-heat-price { display: none; }
+.vx-home .vx-heat-tiny .vx-heat-tile-inner > span { display: none; }
+.vx-home .vx-heat-tiny .vx-heat-tile-inner { padding: 0; }
+.vx-home .vx-heatmap-detail { min-width: 0; display: flex; flex-direction: column; padding: 23px 21px 18px; border-top: 1px solid #b9975940; background: linear-gradient(145deg, #151b24, #0c1017); border-radius: 5px; }
+.vx-home .vx-heatmap-detail-top { display: flex; align-items: center; gap: 12px; margin-bottom: 19px; }
+.vx-home .vx-heatmap-detail-top strong { display: block; font-size: 21px; font-weight: 600; letter-spacing: -.035em; color: #e9edf2; }
+.vx-home .vx-heatmap-detail-top span { display: block; margin-top: 4px; color: #7d899a; font-size: 10px; }
+.vx-home .vx-heatmap-select-label { color: #7e8b9d; font-size: 9px; margin-bottom: 6px; }
+.vx-home .vx-heatmap-select { width: 100%; padding: 9px 11px; border: 1px solid #ffffff12; border-radius: 4px; background: #0c1119; color: #c3cbd6; font-size: 11px; color-scheme: dark; }
+.vx-home .vx-heatmap-select option { background: #111721; }
+.vx-home .vx-heatmap-detail dl { display: flex; flex-direction: column; gap: 17px; margin: 22px 0; }
+.vx-home .vx-heatmap-detail dt { color: #7f8a9b; font-size: 10px; }
+.vx-home .vx-heatmap-detail dd { margin: 5px 0 0; color: #e0e6ed; font-size: 17px; font-weight: 500; letter-spacing: -.015em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.vx-home .vx-heatmap-detail .vx-heat-value-up { color: #52cf9d; }
+.vx-home .vx-heatmap-detail .vx-heat-value-down { color: #f1848d; }
+.vx-home .vx-heatmap-trade { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: auto; padding-top: 14px; border-top: 1px solid #ffffff0d; color: #d5b97e; font-size: 12px; transition: color 180ms ease; }
+.vx-home .vx-heatmap-trade:hover { color: #f8d993; }
+.vx-home .vx-heatmap-trade > svg { transition: transform 180ms ease; }
+.vx-home .vx-heatmap-trade:hover > svg { transform: translate(2px, -2px); }
+.vx-home .vx-heatmap-hint { font-size: 9px; line-height: 1.5; color: #6f7b8d; margin-top: 10px; }
+.vx-home .vx-heatmap-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; margin-top: 18px; color: #8d98a8; font-size: 10px; }
+.vx-home .vx-heatmap-legend > span { display: inline-flex; gap: 7px; align-items: center; }
+.vx-home .vx-heatmap-legend i { display: inline-block; width: 6px; height: 6px; background: #6b7684; border-radius: 1px; }
+.vx-home .vx-heat-legend-gain i { background: #329e75; }
+.vx-home .vx-heat-legend-loss i { background: #b8515d; }
+.vx-home .vx-heatmap-legend b { font-weight: 500; color: #bac3ce; }
+.vx-home .vx-heatmap-legend-period { margin-left: auto; font-size: 9px; letter-spacing: .1em; color: #5d6a7c; }
+.vx-home .vx-heatmap-empty { min-height: 300px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; background: linear-gradient(135deg, #111923, #080c12); border: 1px solid #ffffff06; border-radius: 8px; color: #8b97a8; font-size: 12px; text-align: center; padding: 30px; }
+.vx-home .vx-heatmap-empty-mark { color: #8a7754; font-size: 42px; font-weight: 300; }
+.vx-home .vx-heatmap-select:focus-visible,
+.vx-home .vx-heatmap-trade:focus-visible { outline: 2px solid #e0ba6f; outline-offset: 3px; }
+.vx-home .vx-heat-tile:focus-visible { outline: none; z-index: 1; }
+.vx-home .vx-heat-tile:focus-visible .vx-heat-tile-inner { border: 2px solid #f5d491; }
+
+@media (max-width: 1100px) {
+  .vx-home .vx-heatmap-body { grid-template-columns: minmax(0, 1fr) 225px; gap: 15px; }
+  .vx-home .vx-heatmap-detail { padding: 21px 17px 16px; }
+  .vx-home .vx-heatmap-heading { gap: 25px; }
+  .vx-home .vx-heatmap-section .vx-section-description { flex-basis: 270px; max-width: 270px; font-size: 12px; }
+}
+@media (max-width: 767px) {
+  .vx-home .vx-heatmap-section { padding: 48px 24px; }
+  .vx-home .vx-heatmap-heading { display: block; margin-bottom: 24px; }
+  .vx-home .vx-heatmap-section .vx-section-eyebrow { font-size: 9px; letter-spacing: .12em; margin-bottom: 12px; }
+  .vx-home .vx-heatmap-section .vx-section-description { margin-top: 15px; max-width: 420px; font-size: 12px; }
+  .vx-home .vx-heatmap-body { grid-template-columns: 1fr; gap: 18px; }
+  .vx-home .vx-heatmap-canvas { height: 370px; }
+  .vx-home .vx-heat-tile-inner { padding: 4px; inset: 2px; border-radius: 3px; }
+  .vx-home .vx-heat-symbol { font-size: 16px; }
+  .vx-home .vx-heat-percent { font-size: 11px; margin-top: 5px; }
+  .vx-home .vx-heat-price { font-size: 9px; margin-top: 9px; }
+  .vx-home .vx-heat-small .vx-heat-symbol { font-size: 11px; }
+  .vx-home .vx-heat-small .vx-heat-percent { font-size: 9px; }
+  .vx-home .vx-heatmap-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; padding: 20px; }
+  .vx-home .vx-heatmap-detail-top { grid-column: 1; grid-row: 1 / 3; margin-bottom: 0; }
+  .vx-home .vx-heatmap-select-label { grid-column: 2; align-self: end; }
+  .vx-home .vx-heatmap-select { grid-column: 2; align-self: start; }
+  .vx-home .vx-heatmap-detail dl { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; gap: 18px; margin: 22px 0; }
+  .vx-home .vx-heatmap-detail dl > div { flex: 1 1 26%; min-width: 70px; }
+  .vx-home .vx-heatmap-detail dt { font-size: 9px; line-height: 1.5; }
+  .vx-home .vx-heatmap-detail dd { font-size: 15px; }
+  .vx-home .vx-heatmap-trade { grid-column: 1 / -1; }
+  .vx-home .vx-heatmap-hint { grid-column: 1 / -1; }
+}
+@media (max-width: 430px) {
+  .vx-home .vx-heatmap-legend { gap: 12px; }
+  .vx-home .vx-heatmap-legend-period { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vx-home .vx-heat-tile-inner,
+  .vx-home .vx-heatmap-trade,
+  .vx-home .vx-heatmap-trade > svg { transition: none; }
+  .vx-home .vx-heatmap-trade:hover > svg { transform: none; }
+}
