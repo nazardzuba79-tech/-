@@ -5,6 +5,16 @@
 const WebSocket = require('ws');
 const { randomBytes } = require('node:crypto');
 const MAX_BYTES = 16_000_000, MAX_ROWS = 20_000;
+const COLLECTOR_STAGES = new Set([
+  'collector_health','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
+  'diagnostics_invalid_token','ws_missing_token','ws_invalid_token','authenticated_snapshot_fetch',
+  'authenticated_snapshot_parse','authenticated_diagnostics_fetch','authenticated_diagnostics_parse',
+  'request_timeout','secret_leak_check',
+]);
+const SSE_REASONS = new Set([
+  'http_non_200','wrong_content_type','missing_body','unexpected_eof','body_read_error',
+  'parser_error','tracker_validation','silence_watchdog','external_abort','intended_duration_complete',
+]);
 const NUMBERS = ['lastPrice','bidPrice','askPrice','high24h','low24h','volume24h','quoteVolume24h',
   'changePercent24h','indexPrice','markPrice','fundingRate','fundingIntervalMinutes','openInterest','openInterestValue'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -28,6 +38,24 @@ function settings(env) {
 function secretIn(text, token) {
   return [token,JSON.stringify(token).slice(1,-1),encodeURIComponent(token),Buffer.from(token).toString('base64')].some(value=>text.includes(value));
 }
+class SafeDiagnosticError extends Error {
+  constructor(stage,operation) { super(stage);this.name='SafeDiagnosticError';this.stage=stage;this.operation=operation; }
+}
+class TrackerValidationError extends Error {
+  constructor() { super('tracker_validation');this.name='TrackerValidationError'; }
+}
+async function collectorStage(stage,operation) {
+  try{return await operation();}
+  catch(error){
+    if(error instanceof SafeDiagnosticError)throw new SafeDiagnosticError(error.stage,stage);
+    throw new SafeDiagnosticError(stage);
+  }
+}
+function collectorDiagnostic(error) {
+  const stage=error instanceof SafeDiagnosticError&&COLLECTOR_STAGES.has(error.stage)?error.stage:'collector_health';
+  const operation=error instanceof SafeDiagnosticError&&COLLECTOR_STAGES.has(error.operation)?error.operation:undefined;
+  return {stage,...(operation?{operation}:{})};
+}
 async function bodyText(response, limit = MAX_BYTES) {
   if (!response.body) return '';
   const reader=response.body.getReader(), chunks=[]; let bytes=0;
@@ -35,6 +63,15 @@ async function bodyText(response, limit = MAX_BYTES) {
     bytes+=value.byteLength; if(bytes>limit)throw new Error('Payload limit'); chunks.push(Buffer.from(value));
   } return Buffer.concat(chunks).toString('utf8'); }
   finally { await reader.cancel().catch(()=>{}); }
+}
+async function requestCollector(config,path,auth,fetchFn=fetch,timeoutMs=10000) {
+  const timeout=AbortSignal.timeout(timeoutMs);let response,text;
+  try{
+    response=await fetchFn(`${config.collector}${path}`,{redirect:'error',signal:timeout,headers:auth===undefined?{}:{Authorization:`Bearer ${auth}`}});
+    text=await bodyText(response);
+  }catch(error){if(timeout.aborted)throw new SafeDiagnosticError('request_timeout');throw error;}
+  let leaked=false;try{leaked=secretIn(text,config.token);}catch{throw new SafeDiagnosticError('secret_leak_check');}
+  if(leaked)throw new SafeDiagnosticError('secret_leak_check');return {status:response.status,text};
 }
 function parseFrame(text) {
   if (Buffer.byteLength(text)>MAX_BYTES) throw new Error('Payload limit');
@@ -90,7 +127,7 @@ class Tracker {
       this.stats.maxStaleRows=Math.max(this.stats.maxStaleRows,[...rows.values()].filter(r=>r.stale).length);
       this.stats.largestFrameBytes=Math.max(this.stats.largestFrameBytes,Buffer.byteLength(text));
       return frame;
-    } catch {this.stats.rejectedFrames++;throw new Error('Stream validation failed');}
+    } catch {this.stats.rejectedFrames++;throw new TrackerValidationError();}
   }
   report() {
     const rows=[...this.rows.values()];
@@ -128,21 +165,39 @@ async function observeWS(config, tracker, duration, signal) {
     ws.on('error',()=>finish(true));ws.on('close',()=>{if(!ended)finish(true);});
   });
 }
-async function observeSSE(config,tracker,duration,signal) {
+async function observeSSE(config,tracker,duration,signal,onDiagnostic=()=>{},dependencies={}) {
+  const fetchFn=dependencies.fetchFn??fetch;
+  const parserFactory=dependencies.parserFactory??(receive=>new SSEParser(receive));
+  const startedAt=Date.now();
   const abort=new AbortController(),cancel=()=>abort.abort();signal?.addEventListener('abort',cancel,{once:true});
   if(signal?.aborted)abort.abort();
-  let expired=false,rejected=false,timedOut=false;
+  let expired=false,timedOut=false,reason='intended_duration_complete';
   const timer=setTimeout(()=>{expired=true;abort.abort();},duration);
   const watchdog=setInterval(()=>{if(tracker.lastAt&&Date.now()-tracker.lastAt>40000){timedOut=true;abort.abort();}},1000);
   let reader;
   try {
-    const response=await fetch(`${config.api}/api/v1/market/live`,{redirect:'error',signal:abort.signal,headers:{Accept:'text/event-stream'}});
-    if(!response.ok||!response.headers.get('content-type')?.includes('text/event-stream')||!response.body)throw new Error('SSE unavailable');
-    reader=response.body.getReader();const decoder=new TextDecoder();const parser=new SSEParser((text,event)=>tracker.receive(text,event));
-    while(true){const {done,value}=await reader.read();if(done)throw new Error('Unexpected SSE end');parser.push(decoder.decode(value,{stream:true}));}
-  } catch { rejected = !expired || timedOut || signal?.aborted; }
+    let response;
+    try{response=await fetchFn(`${config.api}/api/v1/market/live`,{redirect:'error',signal:abort.signal,headers:{Accept:'text/event-stream'}});}
+    catch{throw new SafeDiagnosticError('body_read_error');}
+    if(!response.ok)throw new SafeDiagnosticError('http_non_200');
+    if(!response.headers.get('content-type')?.includes('text/event-stream'))throw new SafeDiagnosticError('wrong_content_type');
+    if(!response.body)throw new SafeDiagnosticError('missing_body');
+    reader=response.body.getReader();const decoder=new TextDecoder();const parser=parserFactory((text,event)=>tracker.receive(text,event));
+    while(true){
+      let chunk;
+      try{chunk=await reader.read();}catch{throw new SafeDiagnosticError('body_read_error');}
+      if(chunk.done)throw new SafeDiagnosticError('unexpected_eof');
+      try{parser.push(decoder.decode(chunk.value,{stream:true}));}
+      catch(error){throw new SafeDiagnosticError(error instanceof TrackerValidationError?'tracker_validation':'parser_error');}
+    }
+  } catch(error) {
+    reason=timedOut?'silence_watchdog':signal?.aborted?'external_abort':expired?'intended_duration_complete':
+      error instanceof SafeDiagnosticError&&SSE_REASONS.has(error.stage)?error.stage:'body_read_error';
+  }
   finally {clearTimeout(timer);clearInterval(watchdog);signal?.removeEventListener('abort',cancel);await reader?.cancel().catch(()=>{});abort.abort();}
-  if(rejected)throw new Error('Public SSE failed');
+  const diagnostic={reason,elapsedMs:Math.max(0,Date.now()-startedAt)};try{onDiagnostic(diagnostic);}catch{}
+  if(reason!=='intended_duration_complete'){const error=new Error(`Public SSE failed: ${reason}`);error.reason=reason;throw error;}
+  return diagnostic;
 }
 async function denyWS(config,token) {
   return new Promise(resolve=>{
@@ -166,25 +221,29 @@ async function verify(env=process.env, log=console.log, signal) {
   const checks=[];let config;
   const check=(name,pass)=>{checks.push({name,status:pass?'PASS':'FAIL'});log(`${pass?'PASS':'FAIL'} ${name}`);};
   try{config=settings(env);}catch{check('environment configuration',false);return {ok:false,checks};}
-  const request=async(path,auth)=>{
-    const response=await fetch(`${config.collector}${path}`,{redirect:'error',signal:AbortSignal.timeout(10000),headers:auth===undefined?{}:{Authorization:`Bearer ${auth}`}});
-    const text=await bodyText(response);if(secretIn(text,config.token))throw new Error('Secret exposed');return {status:response.status,text};
-  };
+  const request=(path,auth)=>requestCollector(config,path,auth);
   let diagnostics=null,diagnosticsLast=null;
   try {
-    const health=await request('/health');check('collector health',health.status===200&&JSON.parse(health.text).ok===true);
-    for(const path of ['/internal/v1/snapshot','/internal/v1/diagnostics'])for(const auth of [undefined,randomBytes(24).toString('hex')]){
-      const response=await request(path,auth);check(`${path.endsWith('snapshot')?'snapshot':'diagnostics'} ${auth?'invalid':'missing'} token rejected`,response.status===401);
-    }
-    for(const auth of [undefined,randomBytes(24).toString('hex')])check(`internal WS ${auth?'invalid':'missing'} token rejected`,await denyWS(config,auth));
-    const initial=await request('/internal/v1/snapshot',config.token);const frame=parseFrame(initial.text);
+    const health=await collectorStage('collector_health',async()=>{const response=await request('/health');return {response,json:JSON.parse(response.text)};});
+    check('collector health',health.response.status===200&&health.json.ok===true);
+    const deniedHttp=[
+      ['snapshot_missing_token','/internal/v1/snapshot',undefined,'snapshot missing token rejected'],
+      ['snapshot_invalid_token','/internal/v1/snapshot',randomBytes(24).toString('hex'),'snapshot invalid token rejected'],
+      ['diagnostics_missing_token','/internal/v1/diagnostics',undefined,'diagnostics missing token rejected'],
+      ['diagnostics_invalid_token','/internal/v1/diagnostics',randomBytes(24).toString('hex'),'diagnostics invalid token rejected'],
+    ];
+    for(const [stage,path,auth,name] of deniedHttp){const response=await collectorStage(stage,()=>request(path,auth));check(name,response.status===401);}
+    check('internal WS missing token rejected',await collectorStage('ws_missing_token',()=>denyWS(config,undefined)));
+    check('internal WS invalid token rejected',await collectorStage('ws_invalid_token',()=>denyWS(config,randomBytes(24).toString('hex'))));
+    const initial=await collectorStage('authenticated_snapshot_fetch',()=>request('/internal/v1/snapshot',config.token));
+    const frame=await collectorStage('authenticated_snapshot_parse',()=>parseFrame(initial.text));
     check('authenticated HTTP snapshot',initial.status===200&&frame.type==='snapshot');
-    const diag=await request('/internal/v1/diagnostics',config.token);check('authenticated diagnostics',diag.status===200);
-    diagnostics=safeDiagnostics(JSON.parse(diag.text));
-  } catch {check('collector HTTP/auth validation',false);}
+    const diag=await collectorStage('authenticated_diagnostics_fetch',()=>request('/internal/v1/diagnostics',config.token));check('authenticated diagnostics',diag.status===200);
+    diagnostics=await collectorStage('authenticated_diagnostics_parse',()=>safeDiagnostics(JSON.parse(diag.text)));
+  } catch(error) {log(`DIAGNOSTIC collector_http_auth ${JSON.stringify(collectorDiagnostic(error))}`);check('collector HTTP/auth validation',false);}
   const internal=new Tracker(config.token),publicStream=new Tracker(config.token);
   const observe=async(duration)=>{
-    const results=await Promise.allSettled([observeWS(config,internal,duration,signal),observeSSE(config,publicStream,duration,signal)]);
+    const results=await Promise.allSettled([observeWS(config,internal,duration,signal),observeSSE(config,publicStream,duration,signal,event=>log(`DIAGNOSTIC public_sse ${JSON.stringify(event)}`))]);
     results.forEach((r,i)=>check(i?'public SSE observation':'internal WS observation',r.status==='fulfilled'));
   };
   await observe(config.observeMs);
@@ -213,7 +272,7 @@ async function verify(env=process.env, log=console.log, signal) {
   const ok=checks.every(c=>c.status!=='FAIL');log(`${ok?'PASS':'FAIL'} staging verification (read-only; not production readiness)`);
   return {ok,checks,internal:internal.report(),public:publicStream.report(),diagnosticsBefore:diagnostics,diagnosticsAfter:diagnosticsLast};
 }
-module.exports={settings,secretIn,bodyText,parseFrame,Tracker,SSEParser,safeDiagnostics,verify};
+module.exports={settings,secretIn,bodyText,requestCollector,parseFrame,Tracker,SSEParser,safeDiagnostics,collectorStage,collectorDiagnostic,observeSSE,verify};
 if(require.main===module){
   const abort=new AbortController();for(const sig of ['SIGINT','SIGTERM'])process.once(sig,()=>abort.abort());
   verify(process.env,console.log,abort.signal).then(result=>{process.exitCode=result.ok?0:1;}).catch(()=>{console.error('FAIL staging verifier');process.exitCode=1;});

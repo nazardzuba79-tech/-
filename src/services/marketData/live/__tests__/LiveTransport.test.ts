@@ -6,7 +6,7 @@ import type { AddressInfo } from 'net';
 import { LiveFeed } from '../contract';
 import { collectorServer, writeCollectorStream } from '../collectorServer';
 import { MarketDataCollectorClient, collectorFromEnv } from '../MarketDataCollectorClient';
-import { writeLiveStream, marketLiveRouter } from '../../../../api/routes/marketLive';
+import { writeLiveStream, marketLiveRouter, type SseTerminationReason } from '../../../../api/routes/marketLive';
 import express from 'express';
 import { BybitTickerBook } from '../../bybit/BybitTickerBook';
 import type { NormalizedInstrument, NormalizedTicker } from '../../bybit/types';
@@ -61,9 +61,20 @@ describe('collector internal transport and public fanout',()=>{
     expect(collectorFromEnv(env)).toBeNull();
   });
   test('unconfigured public stream reports disabled without an empty fake snapshot',async()=>{
-    const app=express();app.use(marketLiveRouter(null));
-    const res=await request(app).get('/market/live').expect(200);
+    const log=jest.fn(),secret=randomBytes(24).toString('hex');const app=express();app.use(marketLiveRouter(null,log));
+    const res=await request(app).get(`/market/live?secret=${secret}`).set('CF-Ray','0123456789abcdef-FRA')
+      .set('Authorization',`Bearer ${secret}`).set('Cookie',`session=${secret}`).set('X-Body-Preview',secret).expect(200);
     expect(res.text).toContain('"status":"disabled"');expect(res.text).not.toContain('event: snapshot');
+    expect(log).toHaveBeenCalledTimes(1);expect(log.mock.calls[0][0]).toMatchObject({event:'market_sse_terminated',reason:'response_finish',
+      blockedMs:0,backpressureActive:false,correlationId:'0123456789abcdef-FRA'});
+    expect(JSON.stringify(log.mock.calls)).not.toContain(secret);
+  });
+  test.each(['peer_close','response_finish','response_error','server_cleanup'] as SseTerminationReason[])('SSE cleanup reports safe terminal reason %s once',reason=>{
+    const feed=new LiveFeed(`reason-${reason}`);feed.publish('snapshot',[row()]);const log=jest.fn();
+    const response=Object.assign(new EventEmitter(),{write:jest.fn(()=>true),destroy:jest.fn()});
+    const cleanup=writeLiveStream(response as any,feed,log);cleanup(reason);cleanup('server_cleanup');
+    expect(log).toHaveBeenCalledTimes(1);expect(log.mock.calls[0][0]).toMatchObject({event:'market_sse_terminated',reason,
+      blockedMs:0,backpressureActive:false});expect(feed.subscriberCount).toBe(0);
   });
   test('backpressure drops superseded deltas and sends one latest snapshot on drain; cleanup removes listener',()=>{
     jest.useFakeTimers();
@@ -120,15 +131,18 @@ describe('staging readiness boundaries',()=>{
     jest.useFakeTimers();
     try {
       const feed=new LiveFeed('blocked');feed.publish('snapshot',[row()]);
-      const res=Object.assign(new EventEmitter(),{write:jest.fn(()=>false),destroy:jest.fn()});
-      const cleanup=writeLiveStream(res as any,feed);res.once('close',cleanup);res.destroy.mockImplementation(()=>res.emit('close'));
+      const res=Object.assign(new EventEmitter(),{write:jest.fn(()=>false),destroy:jest.fn()}),log=jest.fn();
+      const cleanup=writeLiveStream(res as any,feed,log);res.once('close',cleanup);res.destroy.mockImplementation(()=>res.emit('close'));
       jest.advanceTimersByTime(45000);expect(res.destroy).toHaveBeenCalledTimes(1);expect(feed.subscriberCount).toBe(0);expect(jest.getTimerCount()).toBe(0);
+      expect(log).toHaveBeenCalledTimes(1);expect(log.mock.calls[0][0]).toMatchObject({event:'market_sse_terminated',reason:'backpressure_destroy',
+        elapsedMs:45000,blockedMs:45000,backpressureActive:true});
     }finally{jest.useRealTimers();}
   });
   test('repeated real internal connections and SSE disconnects release long-lived feed listeners',async()=>{
     const feed=new LiveFeed('cleanup'),token=randomBytes(24).toString('hex'),runtime=collectorServer(feed,token,()=>({}));feed.status='live';feed.publish('snapshot',[row()]);
     runtime.server.listen(0,'127.0.0.1');await once(runtime.server,'listening');const url=`http://127.0.0.1:${(runtime.server.address() as AddressInfo).port}`;
-    const api=express();api.use(marketLiveRouter(feed));const server=api.listen(0,'127.0.0.1');await once(server,'listening');
+    const terminations:any[]=[];const api=express();api.use(marketLiveRouter(feed,event=>terminations.push(event)));
+    const server=api.listen(0,'127.0.0.1');await once(server,'listening');
     try{
       for(let i=0;i<10;i++){
         const client=new MarketDataCollectorClient(url,token);client.start();await until(()=>client.counters.frames>=2);expect(feed.subscriberCount).toBe(1);
@@ -136,6 +150,7 @@ describe('staging readiness boundaries',()=>{
         const abort=new AbortController();const response=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/market/live`,{signal:abort.signal});
         await response.body!.getReader().read();expect(feed.subscriberCount).toBe(1);abort.abort();await until(()=>feed.subscriberCount===0);
       }
+      expect(terminations).toHaveLength(10);expect(terminations.every(event=>event.reason==='peer_close')).toBe(true);
     }finally{runtime.close();server.closeAllConnections();server.close();}
   },15000);
 });

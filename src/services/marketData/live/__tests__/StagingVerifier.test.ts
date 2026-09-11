@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-const {settings,Tracker,SSEParser,parseFrame,secretIn,safeDiagnostics,verify}=require('../../../../../scripts/verify-market-data-staging.cjs');
+const {settings,Tracker,SSEParser,parseFrame,secretIn,safeDiagnostics,requestCollector,collectorStage,collectorDiagnostic,observeSSE,verify}=require('../../../../../scripts/verify-market-data-staging.cjs');
 const token=randomBytes(24).toString('hex');
 const row=(overrides:any={})=>({id:'spot:BTCUSDT',pair:'BTC/USDT',symbol:'BTC/USDT',provider:'bybit',providerSymbol:'BTCUSDT',marketType:'spot',baseAsset:'BTC',quoteAsset:'USDT',settleAsset:null,lastPrice:1,bidPrice:null,askPrice:null,high24h:null,low24h:null,volume24h:0,quoteVolume24h:0,changePercent24h:0,indexPrice:null,markPrice:null,fundingRate:null,fundingIntervalMinutes:null,openInterest:null,openInterestValue:null,providerEventAt:10,sequence:1,receivedAt:10,fetchedAt:10,stale:false,...overrides});
 const frame=(type='snapshot',revision=1,rows=[row()],epoch='a')=>JSON.stringify({version:1,type,rows,epoch,revision,status:'live',sentAt:Date.now()});
@@ -45,9 +45,75 @@ describe('read-only staging verifier',()=>{
     const d=safeDiagnostics({token,url:token,status:token,memory:{rss:100,secret:token},connections:[{category:token,state:token,topics:3}]});
     expect(JSON.stringify(d)).not.toContain(token);expect(d.memory.rss).toBe(100);
   });
+  test.each([
+    'collector_health','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
+    'diagnostics_invalid_token','ws_missing_token','ws_invalid_token','authenticated_snapshot_fetch',
+    'authenticated_snapshot_parse','authenticated_diagnostics_fetch','authenticated_diagnostics_parse',
+  ])('collector exception is attributed to safe stage %s without exposing the original error',async(stage:string)=>{
+    let failure:any;
+    try{await collectorStage(stage,async()=>{throw new Error(`Authorization: Bearer ${token}; body=${token}`);});}catch(error){failure=error;}
+    const diagnostic=collectorDiagnostic(failure);
+    expect(diagnostic).toEqual({stage});expect(JSON.stringify(diagnostic)).not.toContain(token);
+  });
+  test('request timeout and secret leak retain the safe request operation only',async()=>{
+    const config={collector:'https://collector.invalid',token};
+    const hangingFetch=jest.fn((_url:string,options:any)=>new Promise((_resolve,reject)=>{
+      const fail=()=>reject(new Error(`Authorization: Bearer ${token}`));
+      if(options.signal.aborted)fail();else options.signal.addEventListener('abort',fail,{once:true});
+    }));
+    let timeout:any;
+    try{await collectorStage('authenticated_snapshot_fetch',()=>requestCollector(config,'/internal/v1/snapshot',token,hangingFetch,5));}catch(error){timeout=error;}
+    expect(collectorDiagnostic(timeout)).toEqual({stage:'request_timeout',operation:'authenticated_snapshot_fetch'});
+    let leak:any;
+    try{await collectorStage('collector_health',()=>requestCollector(config,'/health',undefined,async()=>new Response(token)));}catch(error){leak=error;}
+    expect(collectorDiagnostic(leak)).toEqual({stage:'secret_leak_check',operation:'collector_health'});
+    expect(JSON.stringify([collectorDiagnostic(timeout),collectorDiagnostic(leak)])).not.toContain(token);
+  });
+  test.each([
+    ['http_non_200',()=>({ok:false,status:503,headers:new Headers(),body:null})],
+    ['wrong_content_type',()=>({ok:true,status:200,headers:new Headers({'content-type':'application/json'}),body:null})],
+    ['missing_body',()=>({ok:true,status:200,headers:new Headers({'content-type':'text/event-stream'}),body:null})],
+    ['unexpected_eof',()=>sseResponse({read:async()=>({done:true}),cancel:async()=>{}})],
+    ['body_read_error',()=>sseResponse({read:async()=>{throw new Error(`cookie=${token}; body=${token}`);},cancel:async()=>{}})],
+    ['parser_error',()=>sseResponse({read:async()=>({done:false,value:new TextEncoder().encode('data: x\n\n')}),cancel:async()=>{}}),{parserFactory:()=>({push:()=>{throw new Error(`body=${token}`);}})}],
+    ['tracker_validation',()=>sseResponse({read:async()=>({done:false,value:new TextEncoder().encode('event: snapshot\ndata: {}\n\n')}),cancel:async()=>{}})],
+  ])('public SSE classifies %s without leaking transport details',async(reason:string,response:()=>any,dependencies:any={})=>{
+    const diagnostics:any[]=[];
+    await expect(observeSSE({api:'https://api.invalid'},new Tracker(token),10000,undefined,(event:any)=>diagnostics.push(event),
+      {fetchFn:async()=>response(),...dependencies})).rejects.toMatchObject({reason});
+    expect(diagnostics).toHaveLength(1);expect(diagnostics[0].reason).toBe(reason);expect(JSON.stringify(diagnostics)).not.toContain(token);
+  });
+  test('intended duration is PASS while external abort and terminal silence remain distinct FAIL reasons',async()=>{
+    const abortingFetch=async(_url:string,options:any)=>sseResponse({
+      read:()=>new Promise((_resolve,reject)=>{const fail=()=>reject(new Error(`body=${token}`));
+        if(options.signal.aborted)fail();else options.signal.addEventListener('abort',fail,{once:true});}),cancel:async()=>{},
+    });
+    const completed:any[]=[];
+    await expect(observeSSE({api:'https://api.invalid'},new Tracker(token),5,undefined,(event:any)=>completed.push(event),{fetchFn:abortingFetch}))
+      .resolves.toMatchObject({reason:'intended_duration_complete'});
+    const external=new AbortController();external.abort();const interrupted:any[]=[];
+    await expect(observeSSE({api:'https://api.invalid'},new Tracker(token),10000,external.signal,(event:any)=>interrupted.push(event),{fetchFn:abortingFetch}))
+      .rejects.toMatchObject({reason:'external_abort'});
+    expect(interrupted[0].reason).toBe('external_abort');
+
+    jest.useFakeTimers();
+    try{
+      const tracker=new Tracker(token);tracker.lastAt=Date.now();const watched:any[]=[];
+      const observation=observeSSE({api:'https://api.invalid'},tracker,60000,undefined,(event:any)=>watched.push(event),{fetchFn:abortingFetch});
+      await Promise.resolve();jest.advanceTimersByTime(41000);await Promise.resolve();
+      await expect(observation).rejects.toMatchObject({reason:'silence_watchdog'});
+      expect(watched[0].reason).toBe('silence_watchdog');
+    }finally{jest.useRealTimers();}
+    expect(JSON.stringify([completed,interrupted])).not.toContain(token);
+  });
   test('CLI uses env only, no local storage, financial imports, mutation requests or secret-bearing URLs',()=>{
     const source=readFileSync(resolve(__dirname,'../../../../../scripts/verify-market-data-staging.cjs'),'utf8');
     expect(source).toContain('Authorization:`Bearer ${');expect(source).toContain("redirect:'error'");
     expect(source).not.toMatch(/localStorage|sessionStorage|NEXT_PUBLIC|DATABASE_URL|method:\s*['"](?:POST|PUT|PATCH|DELETE)|console\.(?:error|log)\(.*(?:config|token|\.stack)/);
+    expect(source).not.toMatch(/DIAGNOSTIC[^\n]*(?:error\.(?:message|stack|cause)|response\.(?:body|headers)|Authorization|token)/);
   });
 });
+
+function sseResponse(reader:any) {
+  return {ok:true,status:200,headers:new Headers({'content-type':'text/event-stream'}),body:{getReader:()=>reader}};
+}
