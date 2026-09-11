@@ -159,3 +159,44 @@ test('actual row handlers select exact small price by click, Enter and Space onl
   expect(picked).toEqual(['0.000008110', '0.000008110', '0.000008110']);
   expect(preventDefault).toHaveBeenCalledTimes(2);
 });
+
+// ── The two sides of the book must be the same size ──────────────────
+
+test('an order-book row never compresses, so asks and bids show the same levels', () => {
+  // THE DEFECT THIS PINS. `.orderbook-asks` is a flex container — it is
+  // column-reverse, so the sell side builds upward from the spread — while
+  // `.orderbook-bids` is an ordinary block. A flex child defaults to
+  // `flex-shrink: 1`, so as soon as the asks overflowed (15 rows at 26px
+  // into a 234px column) the browser squeezed every ask row down to its
+  // line-height, 17.4px, while the bids kept 26px and simply clipped.
+  //
+  // Measured in Chromium before the fix: ask row 17.4px, bid row 26px,
+  // 14 sells visible against 9 buys. It reads as "the sells use a smaller
+  // font" — they do not, both are 12px. The ROW was collapsing.
+  //
+  // After: both rows 26px, nine levels visible on each side.
+  const css = readFileSync(resolve(frontend, 'src/pages/trade-terminal/TradeTerminal.css'), 'utf8');
+  const row = css.match(/\.trade-terminal \.ob-row \{[^}]*\}/)?.[0];
+  expect(row).toBeDefined();
+  expect(row).toMatch(/flex-shrink:\s*0/);
+
+  // The asymmetry that makes the rule necessary is real, not assumed: one
+  // side is a flex container and the other is not. If that ever changes,
+  // this test should be revisited rather than silently kept.
+  const asks = css.match(/\.trade-terminal \.orderbook-asks \{[^}]*\}/s)?.[0];
+  const bids = css.match(/\.trade-terminal \.orderbook-bids \{[^}]*\}/s)?.[0];
+  expect(asks).toMatch(/display:\s*flex/);
+  expect(asks).toMatch(/column-reverse/);
+  expect(bids).not.toMatch(/display:\s*flex/);
+
+  // Both sides are clipped, so neither can scroll away from the spread.
+  expect(asks).toMatch(/overflow:\s*hidden/);
+  expect(bids).toMatch(/overflow:\s*hidden/);
+
+  // And the Futures override may set a taller row, but must not reinstate
+  // shrinking by redeclaring flex on it.
+  const futures = readFileSync(resolve(frontend, 'src/pages/trade-terminal/FuturesTerminal.css'), 'utf8');
+  const fRow = futures.match(/\.trade-terminal\.futures-terminal \.ob-row \{[^}]*\}/)?.[0];
+  expect(fRow).toMatch(/height:\s*26px/);
+  expect(fRow).not.toMatch(/flex-shrink:\s*[1-9]/);
+});

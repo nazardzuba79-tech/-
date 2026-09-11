@@ -248,6 +248,15 @@ describe('Spot orders truthful dense presentation', () => {
     const pageSource = (file: string) => readFileSync(resolve(__dirname, '../../pages', file), 'utf8').replace(/\r\n/g, '\n');
     const css = pageSource('trade-terminal/TradeTerminal.css');
     const [shared, spot] = css.split('/* Final Spot-only reconciliation.');
+    // Re-taken a second time for the order book's row rule: `.ob-row` now
+    // carries `flex-shrink: 0`. `.orderbook-asks` is a flex container and
+    // `.orderbook-bids` is not, so an overflowing ask row was being
+    // squeezed from 26px to its 17.4px line-height while bids kept full
+    // height — measured in Chromium as 14 sells against 9 buys, which
+    // reads as a smaller font on the sell side. That one declaration is
+    // the entire diff to this section this time, and the assertion below
+    // pins it the same way the header selector is pinned.
+    //
     // Re-taken once, from ceb3d8f0…, for the shared authenticated header
     // fix: `.trade-terminal *` blanket-reset margin and padding on the
     // global nav that renders inside this wrapper, collapsing it into the
@@ -258,7 +267,8 @@ describe('Spot orders truthful dense presentation', () => {
     // — the assertion below pins it, so the fingerprint cannot be re-taken
     // again to cover a different edit without also deleting that line.
     expect(shared).toContain('.trade-terminal *:not(:where(.global-header, .global-header *)),');
-    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('873d9210fc4a00220d1746591746d00b5d0198f5b2b2b85e7e87fd1246b5bd82');
+    expect(shared).toMatch(/\.trade-terminal \.ob-row \{[^}]*flex-shrink:\s*0/s);
+    expect(createHash('sha256').update(shared.trimEnd()).digest('hex')).toBe('885bf354c4da5a3c3f802b31d813cd8fdb06e23936c276478be67b6420d87346');
     const postcss = req('postcss');
     const rules: string[] = [];
     postcss.parse('/* Final Spot-only reconciliation.' + spot).walkRules((rule: { selectors: string[] }) => rules.push(...rule.selectors));
