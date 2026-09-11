@@ -3,6 +3,11 @@
 How market data gets from an external provider into a VOLTEX page, and the
 rules that keep that path cheap, honest and hard to break.
 
+The diagram below describes the existing REST path. Section 20 adds the
+separate Bybit live reference path; the earlier Kraken/execution and
+CoinGecko budget rules still apply. Historical provider-access observations
+in sections 18–19 are not the result of the new collector smoke test.
+
 ```
 external providers
   Kraken · CoinGecko · alternative.me · Twelve Data · Binance · OKX
@@ -1205,3 +1210,89 @@ data nobody has seen: the sandbox proxy returns 403 to CONNECT for
 It should be built only once the endpoint has been verified from a region
 that is not refused, and with the routing recorded per symbol so a mark
 price can always be traced to the feed that produced it.
+
+## 20. Separate live reference collector (2026-09-11)
+
+This PR implements display/discovery data only. The index-pricing follow-up
+in section 19 is still unimplemented: observing a real Bybit feed does not
+authorize feeding it into VOLTEX mark price or execution.
+
+```text
+Bybit bulk REST -> existing BybitMarketDataService / MarketUniverse
+                            |
+Bybit spot + linear WS -> BybitTickerBook -> coalesced LiveFeed
+                            | separate collector process, Frankfurt-ready
+                            | authenticated HTTP snapshot + internal WS
+                            v
+Oregon API: one MarketDataCollectorClient -> latest-good Map
+                            |
+                   GET /api/v1/market/live (SSE)
+                            |
+                 one browser LiveMarketStore -> Markets catalogue
+
+CoinGecko catalogue -> safe canonical metadata join -> same catalogue
+Kraken/VOLTEX execution and existing snapshot polling -> unchanged
+```
+
+The standalone entry point is `src/marketDataCollector.ts`. It reuses
+`BybitMarketDataService`, `MarketUniverse`, `ProviderCache`,
+`HttpProviderClient` and `ProviderHealth`; the ticker book and feed are
+streaming state, not new REST cache/health frameworks. Only active Trading
+instruments are subscribed. The universe checks for changes through its
+existing cache and removes inactive rows on a replacement snapshot.
+
+Bootstrap fetches all instrument pages and two bulk ticker categories.
+Topics are deduplicated and packed by actual encoded args length, at most
+21,000 characters per connection. Spot requests contain at most ten topics.
+The current live universe needs two WS connections. Spot bid/ask, absent
+from its public ticker WS, are refreshed by one cached bulk REST call every
+five seconds. Linear omitted delta fields preserve previous values; genuine
+zero, missing/null, provider timestamps and cross sequence remain distinct.
+
+The collector sends complete normalized rows for changed symbols every
+250 ms, selected after comparing 200/250/500 ms fixtures. It does not send
+the complete universe every tick. Heartbeat, acknowledged subscriptions,
+bounded exponential reconnect with jitter, resnapshot/resubscription,
+stale-last-good and shutdown generation guards cover both streaming legs.
+Quiet rows become stale after 30 seconds. Slow clients drop superseded
+batches and resynchronize to the latest snapshot; no unbounded delta queue
+is retained. See the operations guide for limits and diagnostic counters.
+
+The API owns one collector connection per process. It validates normalized
+frames, never forwards the bearer secret to browsers, and reconnects on
+epoch/revision gaps. Missing URL/token disables integration without changing
+the existing `/market/snapshot` response or starting provider connections.
+The old Oregon REST universe remains as before; no new Oregon-to-Bybit live
+dependency is added. The browser uses one shared EventSource and Map,
+retains stale last-good rows, and leaves existing polling operational.
+
+The catalogue joins metadata only when exactly one nonambiguous canonical
+CoinGecko identity matches. Collisions stay separate provider-only rows,
+with real symbols and deterministic icon fallback. Metadata, rank, supply
+and market cap stay CoinGecko-owned, with no new metadata requests or change
+to its existing cache budget. `referenceActive`, `referenceMarkets` and
+`liveQuote` do not change `tradable` or `tradingPairs`. Live USDT price and
+turnover are labelled USDT; stale/missing values fall back per field to
+existing catalogue values or an em dash. Only 50 table rows mount per page.
+
+No matching, execution price, VOLTEX mark price, margin, liquidation,
+funding settlement, balances, PnL, Copy Trading or CFD economics changed.
+Financial isolation tests and the diff against current main cover that
+boundary. Other financial ticker consumers keep their current inputs.
+
+Deployment is prepared, not performed. The collector needs no database,
+Prisma migration, Neon, or trading/account keys. The main API remains in
+Oregon; the planned collector region is Frankfurt. Cross-region transport
+uses HTTPS with an environment-only bearer token. Exact runtime settings,
+failure behavior and remaining deployment checks:
+[collector operations](BYBIT_COLLECTOR_OPERATIONS.md).
+
+Measured evidence includes a 650-asset / 1,300-instrument deterministic
+fixture (five bulk REST calls, two provider WS, 66 subscription requests,
+100 frontend subscribers sharing one SSE) and a successful read-only live
+smoke (869 assets / 1,407 tickers, four bootstrap REST calls, two WS and
+55 initial subscriptions, one forced reconnect). Local timings, complete
+test comparison, changed-file manifest and limits are recorded in
+[QA evidence](qa/bybit-live-market-data/README.md). They are not production
+latency or capacity claims. Docker image and cross-region deployment
+remain untested; the standalone TypeScript graph compiles locally.

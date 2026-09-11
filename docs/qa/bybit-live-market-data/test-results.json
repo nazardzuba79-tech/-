@@ -1,34 +1,79 @@
 {
-  "baselineSha": "be8c0b6f89b41197eacff865d74e7e1941e67f98",
+  "baselineSha": "0097d8b72ffb3c5e9f8537e4a9da267ac0586e0f",
+  "implementationSha": "5ec6a061162ab9870eb7a269acb6af9c65c70d70",
   "baseline": {
-    "total": 2477,
-    "passed": 2405,
+    "total": 2483,
+    "passed": 2417,
     "failed": 49,
-    "skipped": 23,
+    "skipped": 17,
     "suites": 159
   },
-  "initialFullCandidate": {
-    "total": 2504,
-    "passed": 2437,
-    "failed": 50,
+  "finalCandidate": {
+    "total": 2513,
+    "passed": 2447,
+    "failed": 49,
     "skipped": 17,
     "suites": 163
   },
   "finalAffectedSuites": {
-    "total": 263,
-    "passed": 263,
+    "total": 265,
+    "passed": 265,
     "failed": 0,
     "skipped": 0,
     "suites": 16
   },
   "preexistingFailures": [
     {
-      "file": "chartDrawings.test.ts",
-      "test": "shared drawing toolbar presentation and chart integration Spot text dialog has an accessible label, safe plain input, real actions and no native modal"
+      "file": "cryptoCardVisualConsistency.test.ts",
+      "test": "Homepage uses unchanged official payment branding and consistent product-specific artwork"
     },
     {
-      "file": "chartDrawings.test.ts",
-      "test": "shared drawing toolbar presentation and chart integration Spot Clear requires an explicit in-app confirmation and leaves native Futures behavior intact"
+      "file": "avatarIdentityPresentation.test.ts",
+      "test": "actual onError removes broken image, retains geometry and retries changed owner URL"
+    },
+    {
+      "file": "avatarIdentityPresentation.test.ts",
+      "test": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
+    },
+    {
+      "file": "DepositService.test.ts",
+      "test": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000"
+    },
+    {
+      "file": "priceChartMarketOrders.test.ts",
+      "test": "futures never touches the spot conditional-order endpoint D. updateOrderTrigger cannot be reached — the drag refuses to start"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "7D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "30D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "90D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "ALL keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "actual profile shows identityVerified=true only inline with its heading"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "actual profile shows identityVerified=false only inline with its heading"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "actual profile shows identityVerified=undefined only inline with its heading"
+    },
+    {
+      "file": "nazarProfileCorrection.test.ts",
+      "test": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
     },
     {
       "file": "walletUxRefinement.test.ts",
@@ -37,50 +82,6 @@
     {
       "file": "walletUxRefinement.test.ts",
       "test": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly"
-    },
-    {
-      "file": "cryptoCardVisualConsistency.test.ts",
-      "test": "Homepage uses unchanged official payment branding and consistent product-specific artwork"
-    },
-    {
-      "file": "cryptoCardProductionPromotion.test.ts",
-      "test": "all approved masters and the two new presentation assets are byte-exact and no superseded source compositions are published"
-    },
-    {
-      "file": "cryptoCardProductionPromotion.test.ts",
-      "test": "Copy preserves its approved source except exact labels and click-only deposit requirement UX"
-    },
-    {
-      "file": "priceChartMarketOrders.test.ts",
-      "test": "futures never touches the spot conditional-order endpoint D. updateOrderTrigger cannot be reached — the drag refuses to start"
-    },
-    {
-      "file": "futuresConfigDedup.test.ts",
-      "test": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
-    },
-    {
-      "file": "sharedHeaderStylesheetOwnership.test.ts",
-      "test": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships"
-    },
-    {
-      "file": "sharedHeaderStylesheetOwnership.test.ts",
-      "test": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header"
-    },
-    {
-      "file": "sharedHeaderStylesheetOwnership.test.ts",
-      "test": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
-    },
-    {
-      "file": "sharedHeaderStylesheetOwnership.test.ts",
-      "test": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
-    },
-    {
-      "file": "copyDepositUx.test.ts",
-      "test": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift"
-    },
-    {
-      "file": "DepositService.test.ts",
-      "test": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000"
     },
     {
       "file": "nazaraCardPresentation.test.ts",
@@ -147,60 +148,48 @@
       "test": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles"
     },
     {
-      "file": "registerWalletTailwindOwnership.test.ts",
-      "test": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
-    },
-    {
-      "file": "homepageTailwindUtilities.test.ts",
-      "test": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
-    },
-    {
-      "file": "homepageTailwindUtilities.test.ts",
-      "test": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
-    },
-    {
-      "file": "avatarIdentityPresentation.test.ts",
-      "test": "actual onError removes broken image, retains geometry and retries changed owner URL"
-    },
-    {
-      "file": "avatarIdentityPresentation.test.ts",
-      "test": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "7D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "30D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "90D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "ALL keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=true only inline with its heading"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=false only inline with its heading"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=undefined only inline with its heading"
-    },
-    {
-      "file": "nazarProfileCorrection.test.ts",
-      "test": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
-    },
-    {
       "file": "copyPrelaunchPromotion.test.ts",
       "test": "normal API paths replace review-only sources without altering token or request behavior"
+    },
+    {
+      "file": "chartDrawings.test.ts",
+      "test": "shared drawing toolbar presentation and chart integration Spot text dialog has an accessible label, safe plain input, real actions and no native modal"
+    },
+    {
+      "file": "chartDrawings.test.ts",
+      "test": "shared drawing toolbar presentation and chart integration Spot Clear requires an explicit in-app confirmation and leaves native Futures behavior intact"
+    },
+    {
+      "file": "copyDepositUx.test.ts",
+      "test": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift"
+    },
+    {
+      "file": "sharedHeaderStylesheetOwnership.test.ts",
+      "test": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships"
+    },
+    {
+      "file": "sharedHeaderStylesheetOwnership.test.ts",
+      "test": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header"
+    },
+    {
+      "file": "sharedHeaderStylesheetOwnership.test.ts",
+      "test": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
+    },
+    {
+      "file": "sharedHeaderStylesheetOwnership.test.ts",
+      "test": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
+    },
+    {
+      "file": "futuresConfigDedup.test.ts",
+      "test": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
+    },
+    {
+      "file": "cryptoCardProductionPromotion.test.ts",
+      "test": "all approved masters and the two new presentation assets are byte-exact and no superseded source compositions are published"
+    },
+    {
+      "file": "cryptoCardProductionPromotion.test.ts",
+      "test": "Copy preserves its approved source except exact labels and click-only deposit requirement UX"
     },
     {
       "file": "TronDepositVerifier.test.ts",
@@ -217,13 +206,20 @@
     {
       "file": "TronDepositVerifier.test.ts",
       "test": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token"
-    }
-  ],
-  "initialAdditionalFailures": [
+    },
     {
-      "file": "noProviderBranding.test.ts",
-      "test": "customer-facing components render no provider branding has no provider name in any executable line"
+      "file": "homepageTailwindUtilities.test.ts",
+      "test": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
+    },
+    {
+      "file": "homepageTailwindUtilities.test.ts",
+      "test": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
+    },
+    {
+      "file": "registerWalletTailwindOwnership.test.ts",
+      "test": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
     }
   ],
-  "resolution": "The added provider literals belong to non-rendering data modules. The existing branding test now treats them like api.ts, asserts they contain no rendering APIs, and still scans every component. All 16 affected suites pass. Baseline skipped six build-output checks because its frontend bundle was absent; candidate included its production bundle. No pre-existing financial or Copy Trading test was changed."
+  "additionalFailures": [],
+  "method": "Both frontend production bundles built. Pristine detached current main compared with stable candidate; same installed dependencies. Candidate excludes only nested .qa-live baseline discovery. No runtime/test edits during final candidate run."
 }
