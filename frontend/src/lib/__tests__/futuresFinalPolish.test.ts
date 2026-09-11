@@ -403,12 +403,13 @@ test('high-leverage cancellation does not send an order; Market/Short/Cross/Redu
   expect(f.placed).not.toHaveBeenCalled();
   let tree = f.render();
   nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.marketOrder').props.onClick();
-  nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
   // Margin mode now lives in the same compact control as leverage.
   f.part(tree, 'FuturesMarginLeverage').props.onMarginTypeChange('CROSS');
   nodes(tree).find(n => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });
   f.confirm.mockReturnValue(true); tree = f.render();
-  nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
+  // SHORT is no longer selected and then submitted — pressing Short IS the
+  // submission. Same payload, reached the way a trader now reaches it.
+  nodes(tree).find(n => n.type === 'button' && n.props.className === 'submit-btn sell').props.onClick(); await tick();
   expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'SELL', type: 'MARKET', price: undefined, quantity: '1', leverage: 100, marginType: 'CROSS', reduceOnly: true });
 });
 

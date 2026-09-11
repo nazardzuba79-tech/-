@@ -394,10 +394,12 @@ describe('the placeFuturesOrder payload is byte-for-byte what it was', () => {
     const f = await pricedForm();
     nodes(f.tree).find((n) => n.type === f.form.components.FuturesMarginLeverage)
       .props.onMarginTypeChange('CROSS');
-    byClass(f.tree, 'fo-sideTab').find((n) => n.props.children === 'futures.sellShort').props.onClick();
     await tick();
-    const tree = f.render();
-    submit(tree);
+    // The side used to be a tab clicked before filling the form in. It is
+    // now the button that submits, so the SHORT button is what sends a
+    // SHORT — this asserts the direction still reaches the payload, by the
+    // route a trader actually takes.
+    sideButton(f.render(), 'sell').props.onClick();
     await tick();
     expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({
       side: 'SELL', marginType: 'CROSS', type: 'LIMIT', price: '50000', quantity: '1',
@@ -490,11 +492,20 @@ describe('unknown data is never fabricated', () => {
   });
 });
 
+/** The two direction buttons. `submit-btn buy` / `submit-btn sell` are the
+ *  classes the CTA already used for its colours — the split reuses them
+ *  rather than inventing a control. */
+const sideButton = (tree: any, side: 'buy' | 'sell') =>
+  nodes(tree).find((n: any) => n.type === 'button' && n.props?.className === `submit-btn ${side}`);
+
 // ── The submit button matches the submit guard ───────────────────────
 
 describe('the submit button reflects the SAME guard handleSubmit uses', () => {
-  const submitButton = (tree: any) =>
-    nodes(tree).find((n) => n.type === 'button' && n.props?.type === 'submit');
+  /** Long and short are the same control twice, under the same guard, so
+   *  every assertion below holds for either. Reading the LONG one keeps
+   *  these tests saying exactly what they said before the split; the pair
+   *  is checked to agree in `both buttons answer to one guard`. */
+  const submitButton = (tree: any) => sideButton(tree, 'buy');
 
   test('1. a known account state leaves the button enabled', async () => {
     const f = await pricedForm();
@@ -539,6 +550,64 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     submit(tree);
     await tick();
     expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ reduceOnly: true }));
+  });
+
+  // ── The direction is the button ──────────────────────────────────
+  //
+  // The side used to be a mode: a tab above the form, entered before any
+  // field was touched. Now the form is direction-neutral and each button
+  // carries its own side. That is only true if the side travels as an
+  // ARGUMENT — a React state update scheduled by the button's click is
+  // NOT visible to a submit handler firing in the same event, so a
+  // `setSide` here would send the PREVIOUS direction. These pin that.
+
+  test('a fresh form sends SHORT when SHORT is pressed — no tab, no prior click', async () => {
+    const f = await pricedForm();
+    // Nothing has selected a side. The first and only act is pressing Short.
+    sideButton(f.tree, 'sell').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL' }));
+  });
+
+  test('a fresh form sends LONG when LONG is pressed', async () => {
+    const f = await pricedForm();
+    sideButton(f.tree, 'buy').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ side: 'BUY' }));
+  });
+
+  test('reversing sends the NEW direction, not the one pressed before it', async () => {
+    // The regression that a state-based side would produce: press Long,
+    // then Short, and the second order goes out as another LONG.
+    const f = await pricedForm();
+    sideButton(f.tree, 'buy').props.onClick();
+    await tick();
+    sideButton(f.render(), 'sell').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledTimes(2);
+    expect(f.placed.mock.calls[0][0]).toMatchObject({ side: 'BUY' });
+    expect(f.placed.mock.calls[1][0]).toMatchObject({ side: 'SELL' });
+  });
+
+  test('both buttons answer to one guard', async () => {
+    // They are the same control twice: whatever disables one disables the
+    // other, or a trader could open a position in a state that refuses to
+    // close it.
+    const f = await pricedForm({ account: accountState({ orders: resource(null) }) });
+    expect(sideButton(f.tree, 'buy').props.disabled).toBe(true);
+    expect(sideButton(f.tree, 'sell').props.disabled).toBe(true);
+
+    const ok = await pricedForm();
+    expect(sideButton(ok.tree, 'buy').props.disabled).toBe(false);
+    expect(sideButton(ok.tree, 'sell').props.disabled).toBe(false);
+  });
+
+  test('neither button is type=submit — the form must not pick a side by itself', async () => {
+    // A `type="submit"` pair would let a stray Enter fire whichever button
+    // the browser considers first, choosing a DIRECTION for the trader.
+    const f = await pricedForm();
+    expect(sideButton(f.tree, 'buy').props.type).toBe('button');
+    expect(sideButton(f.tree, 'sell').props.type).toBe('button');
   });
 
   test('4. while submitting, the button is disabled', async () => {

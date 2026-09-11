@@ -179,17 +179,24 @@ export function FuturesOrderForm({
   // are exactly what they were.
   const liqPreviewComputable =
     orderTier && effectivePrice > 0 && quantity && (marginType === 'ISOLATED' || availableMargin !== null);
-  const liqPreview = liqPreviewComputable
-    ? previewLiquidationPrice({
-        entryPrice: effectivePrice,
-        side: side === 'BUY' ? 'LONG' : 'SHORT',
-        leverage,
-        marginType,
-        maintenanceMarginRate: orderTier!.maintenanceMarginRate,
-        notional,
-        freeBalance: availableMargin ?? 0,
-      })
-    : null;
+  /** The side is no longer chosen before the form is filled in, so the
+   *  preview cannot be for "the selected side" any more — it is computed
+   *  for BOTH and shown as a long/short pair. Same formula, same inputs,
+   *  called twice; nothing about the calculation changed. */
+  const liqPreviewFor = (previewSide: 'LONG' | 'SHORT') =>
+    liqPreviewComputable
+      ? previewLiquidationPrice({
+          entryPrice: effectivePrice,
+          side: previewSide,
+          leverage,
+          marginType,
+          maintenanceMarginRate: orderTier!.maintenanceMarginRate,
+          notional,
+          freeBalance: availableMargin ?? 0,
+        })
+      : null;
+  const liqPreviewLong = liqPreviewFor('LONG');
+  const liqPreviewShort = liqPreviewFor('SHORT');
 
   // % slider spends a share of available margin, scaled up by leverage —
   // spending 100% of margin at 10x opens a 10x-larger notional than at 1x,
@@ -205,13 +212,19 @@ export function FuturesOrderForm({
     setQuantity(((marginToSpend * leverage) / effectivePrice).toFixed(8));
   }
 
-  async function submitOrder() {
+  /** The side is an ARGUMENT, not a read of state. The button that starts
+   *  this is also the button that decides the direction, and a `setSide`
+   *  scheduled by its click is not visible here in the same event — taking
+   *  it as a parameter is what makes "the direction is the button" true
+   *  rather than one render out of date. */
+  async function submitOrder(orderSide: 'BUY' | 'SELL') {
     setError(null);
     setSubmitting(true);
+    setSide(orderSide);
     try {
       await api.placeFuturesOrder({
         symbol,
-        side,
+        side: orderSide,
         type,
         price: type === 'LIMIT' ? price : undefined,
         quantity,
@@ -262,34 +275,25 @@ export function FuturesOrderForm({
     && leverage <= effectiveMaxLeverage
     && !submitting;
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  /** Same guard, same confirmation, same order of checks as before — only
+   *  the direction now arrives from the caller. */
+  function place(orderSide: 'BUY' | 'SELL') {
     if (!canSubmit) return;
     if (leverage >= config!.highLeverageWarningThreshold && !window.confirm(
       `${t('futures.leverageWarningTitle')}\n\n${t('futures.leverageWarningBody', { leverage })}`
     )) return;
-    submitOrder();
+    submitOrder(orderSide);
+  }
+
+  /** Enter in any field still places an order, and it places the one the
+   *  trader last acted on — never a silent guess at the opposite side. */
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    place(side);
   }
 
   return (
     <div className="fo-panel">
-      <div className="fo-sideTabs">
-        <button
-          type="button"
-          onClick={() => setSide('BUY')}
-          className={`fo-sideTab ${side === 'BUY' ? 'fo-sideTabBuy' : ''}`} aria-pressed={side === 'BUY'}
-        >
-          {t('futures.buyLong')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setSide('SELL')}
-          className={`fo-sideTab ${side === 'SELL' ? 'fo-sideTabSell' : ''}`} aria-pressed={side === 'SELL'}
-        >
-          {t('futures.sellShort')}
-        </button>
-      </div>
-
       <div className="fo-typeTabs">
         <button
           type="button"
@@ -394,10 +398,15 @@ export function FuturesOrderForm({
               {orderSizeKnown ? `${requiredMargin.toFixed(2)} ${quoteAsset}` : '—'}
             </span>
           </div>
+          {/* Long and short, in that order, coloured the same as the two
+              buttons below — so the pair reads without a label saying
+              which is which. */}
           <div className="fo-infoRow">
             <span style={{ color: 'var(--text-secondary)' }}>{t('futures.estLiqPrice')}</span>
-            <span className="mono" style={{ color: liqPreview ? 'var(--sell)' : 'var(--text-tertiary)' }}>
-              {liqPreview ? liqPreview.toFixed(2) : '—'}
+            <span className="mono fo-sidePair">
+              <span className="fo-sidePairLong">{liqPreviewLong ? liqPreviewLong.toFixed(2) : '—'}</span>
+              <span className="fo-sidePairSep">/</span>
+              <span className="fo-sidePairShort">{liqPreviewShort ? liqPreviewShort.toFixed(2) : '—'}</span>
             </span>
           </div>
           {/* FEES.
@@ -424,13 +433,33 @@ export function FuturesOrderForm({
             treatment the terminal's design system doesn't use anywhere
             else. Long/Short keep their own labels and their own colour
             sides; only the surface is now the common one. */}
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className={`submit-btn ${side === 'BUY' ? 'buy' : 'sell'}`}
-        >
-          {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
-        </button>
+        {/* TWO BUTTONS, NOT A MODE.
+            The side used to be a tab above the form: a trader had to
+            declare the direction before touching a single field, and
+            reversing meant switching back and losing the view of the
+            other side's numbers. Here the form is direction-neutral and
+            the DIRECTION IS THE BUTTON — the same way every derivatives
+            terminal does it. `side` is still the one piece of state the
+            request carries; it is simply written at the moment of
+            submitting rather than minutes earlier. */}
+        <div className="fo-submitPair">
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => place('BUY')}
+            className="submit-btn buy"
+          >
+            {submitting && side === 'BUY' ? t('auth.wait') : t('futures.buyLong')}
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => place('SELL')}
+            className="submit-btn sell"
+          >
+            {submitting && side === 'SELL' ? t('auth.wait') : t('futures.sellShort')}
+          </button>
+        </div>
       </form>
 
       <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />

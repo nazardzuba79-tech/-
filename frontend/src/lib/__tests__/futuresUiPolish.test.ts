@@ -34,6 +34,28 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
+    // Re-taken for the direction control. What differs, exactly, and
+    // nothing else:
+    //   * the `fo-sideTabs` block is GONE. The side was a mode entered
+    //     before the form was touched; it is now the button that submits.
+    //   * `submitOrder` takes the side as an ARGUMENT rather than reading
+    //     `side` from state. This is not a refactor for taste: a `setSide`
+    //     scheduled by the button's click is not visible to a handler
+    //     firing in the same event, so state here would send the PREVIOUS
+    //     direction. Pinned by three tests in futuresOrderPanel.
+    //   * `handleSubmit` delegates to `place(side)`, so Enter still places
+    //     the order the trader last acted on.
+    //   * the ONE submit button became two, `submit-btn buy` and
+    //     `submit-btn sell` — the same classes, the same `!canSubmit`
+    //     guard, the same labels. Neither is `type="submit"`.
+    //   * the liquidation preview is computed for BOTH directions and
+    //     shown as a long/short pair, because there is no selected side to
+    //     compute it for. `previewLiquidationPrice` is called with exactly
+    //     the arguments it had; only the `side` argument varies, and the
+    //     formula is untouched.
+    // The order payload, the leverage ceiling, the exposure projection,
+    // the margin arithmetic and every guard are unchanged.
+    //
     // The ceiling now mirrors resulting position + active-order exposure;
     // backend FuturesPositionService remains authoritative.
     //
@@ -115,7 +137,7 @@ test.each([
     // bounds and the order payload are byte-unchanged — which
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
-    "c9753481c5ea8834ea1fdc15b32183b41865d5023d1a309c1f124053cc2b5d0d"
+    "a6b3c19d31c33b604d64c6a508f35adabc4fb0a9e763fa6b8b57fbdddfab24b7"
   ],
   [
     "components/FuturesAccountSummary.tsx",
@@ -213,8 +235,23 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  const source=read('components/FuturesOrderForm.tsx');
  expect(source.match(/className="mono fo-input"/g)).toHaveLength(2);
  expect(source).not.toContain('styles.');
- expect(source).toContain("aria-pressed={side === 'BUY'}");
+ // The ORDER TYPE is still a selected mode, so it still reports pressed
+ // state. The SIDE no longer is: there is nothing above the form to press,
+ // the direction is chosen by the button that submits. Asserting
+ // `aria-pressed` for it would now pin a control that must not exist. What
+ // replaces it is stricter — both directions are present as real buttons,
+ // each naming its own side, and NEITHER is type="submit", so a stray
+ // Enter cannot pick a direction on the trader's behalf.
  expect(source).toContain("aria-pressed={type === 'MARKET'}");
+ expect(source).not.toContain('fo-sideTab');
+ expect(source).toContain("onClick={() => place('BUY')}");
+ expect(source).toContain("onClick={() => place('SELL')}");
+ expect(source.match(/className="submit-btn (buy|sell)"/g)).toHaveLength(2);
+ expect(source.match(/type="submit"/g)).toBeNull();
+ // And the direction travels as an argument, never as state read later —
+ // a `setSide` scheduled by the click is not visible to the same event.
+ expect(source).toMatch(/async function submitOrder\(orderSide: 'BUY' \| 'SELL'\)/);
+ expect(source).toContain('side: orderSide,');
  // The submit button now reflects the SAME condition handleSubmit uses,
  // not just the in-flight flag: a CTA that looks pressable while the guard
  // would refuse is misleading in a trading interface. `submitting` is still
