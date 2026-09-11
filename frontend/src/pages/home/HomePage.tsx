@@ -2,27 +2,35 @@ import { HomeHeader } from './HomeHeader';
 import { HomeHero } from './HomeHero';
 import { HomeTicker } from './HomeTicker';
 import { HomeMarketOverview } from './HomeMarketOverview';
-import { HomeCardSection } from './HomeCardSection';
+import { HomeCardPresentation } from './HomeCardPresentation';
 import { HomeMarkets } from './HomeMarkets';
+import { HomeEcosystem } from './HomeEcosystem';
 import { HomeFaq } from './HomeFaq';
 import { HomeFooter } from './HomeFooter';
 import { Reveal } from './Reveal';
 import { useHomeMarket } from './useHomeMarket';
+import { HomeWorldActivity } from './HomeWorldActivity';
+import { HomeHeatmap } from './HomeHeatmap';
+import { MotionStage } from './HomeMotion';
 import './home.css';
 // Loaded AFTER home.css on purpose: this is the Tailwind utilities layer
 // the homepage owns, and it must win specificity ties against the
 // `.vx-home` rules above. See home-tailwind-utilities.css for why the
 // homepage ships its own copy at all.
 import './home-tailwind-utilities.css';
+import './home-live-market.css';
+import './home-world-heatmap.css';
+import './home-motion.css';
 
 /**
- * The VOLTEX homepage, in the approved section order:
+ * Existing product sections retain their order; the world map and heatmap
+ * introduce two wider pauses between the trading data and product story.
  *
  *   header · hero · market strip · market overview · Crypto Card ·
  *   markets + secondary card · FAQ · footer
  *
- * One market hook feeds every section, so the whole page costs a single
- * ticker poll plus three one-shot requests rather than a fetch per block.
+ * One market hook owns ticker polling and the visible hero's real market
+ * detail requests. Presentation components never start data polling.
  * Sections below the fold reveal once as they come into view.
  *
  * Nothing outside this directory is touched: Trade, Futures, Copy Trading,
@@ -36,16 +44,25 @@ export function HomePage() {
     <div className="vx-home">
       <HomeHeader />
       <main className="flex flex-col gap-5 pb-7">
-        <HomeHero market={market} />
+        <MotionStage className="vx-hero-stage" tilt><HomeHero market={market} /></MotionStage>
         <HomeTicker market={market} />
         <Reveal>
           <HomeMarketOverview market={market} />
         </Reveal>
         <Reveal>
-          <HomeCardSection />
+          <HomeWorldActivity />
+        </Reveal>
+        <Reveal>
+          <HomeCardPresentation />
+        </Reveal>
+        <Reveal>
+          <HomeHeatmap market={market} />
         </Reveal>
         <Reveal>
           <HomeMarkets market={market} />
+        </Reveal>
+        <Reveal>
+          <HomeEcosystem />
         </Reveal>
         <Reveal>
           <HomeFaq />

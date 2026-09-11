@@ -38,16 +38,20 @@ test('Crypto Card product naming stays English throughout every supported UI lan
   expect(source).not.toMatch(/крипто[ -]?карт|加密卡|tarjeta cripto|क्रिप्टो कार्ड|暗号資産カード|クリプトカード|크립토 카드/i);
 });
 
-test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline and separate supporting copy without changing CTA targets or terminal previews', lang => {
+test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s preserves the headline and CTA targets in the globe + terminal + asset-pill composition', lang => {
   const index = ['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'].indexOf(lang);
   const code = ts.transpileModule(read('src/pages/home/HomeHero.tsx'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   }}).outputText;
   const output: Record<string, any> = {};
   const overrides: Record<string, unknown> = {
-    '../../lib/i18n': { useLanguage: () => ({ t: (key: string) => rows(key)[index] }) },
+    '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => rows(key)[index] }) },
     './TerminalPreview': { TerminalPreview: () => React.createElement('div', { 'data-preview': 'terminal' }) },
-    './PhonePreview': { PhonePreview: () => React.createElement('div', { 'data-preview': 'phone' }) },
+    './HomeMarketGlobe': { HomeMarketGlobe: () => React.createElement('div', { 'data-preview': 'globe' }) },
+    './HomeHeroAssets': { HomeHeroAssets: () => React.createElement('div', { 'data-preview': 'assets' }) },
+    './useHeroStream': { useHeroStream: (market: unknown) => market },
+    './globalHeroCopy': { globalHeroCopy: Object.fromEntries(['ru','en','zh','es','hi','ja','ko'].map(key => [key,{field:'',globe:'',pause:'Pause',resume:'Resume'}])) },
+    './home-global-hero.css': {},
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
   };
   new Function('require', 'exports', code)((name: string) => overrides[name] ?? req(name), output);
@@ -59,5 +63,6 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
   expect(html).toContain('href="/trade"');
   expect(html).toContain('href="/markets"');
   expect(html.match(/data-preview="terminal"/g)).toHaveLength(1);
-  expect(html.match(/data-preview="phone"/g)).toHaveLength(1);
+  expect(html.match(/data-preview="globe"/g)).toHaveLength(1);
+  expect(html.match(/data-preview="assets"/g)).toHaveLength(1);
 });

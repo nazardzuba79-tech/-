@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import { ArrowRightIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { Sparkline } from '../../components/Sparkline';
-import { HomeMarket, HomeTicker, byVolume, formatPriceValue } from './useHomeMarket';
+import { LiveValue } from './LiveValue';
+import { homeLiveCopy } from './homeLiveCopy';
+import { parseChangePercentOrNull } from '../../lib/priceChange';
+import { HomeMarket, HomeTicker, byVolume } from './useHomeMarket';
 import { useFavorites } from '../../lib/useFavorites';
 import { Key, useLanguage } from '../../lib/i18n';
 
@@ -35,11 +38,9 @@ interface Row {
   symbol: string;
   base: string;
   price: number;
-  change: number;
+  change: number | null;
   /** Turnover in quote currency. CFD reference quotes carry no volume. */
   quoteVolume: number | null;
-  /** A 24h-direction glyph. Only for rows whose change is a real number. */
-  spark: number[] | null;
   /** Already-translated product labels ("Спот", "Фьючерсы", "CFD"). */
   products: string[];
   to: string;
@@ -53,7 +54,6 @@ function spotRow(t: HomeTicker, label: (k: Key) => string, extraProducts: string
     price: t.price,
     change: t.change,
     quoteVolume: t.quoteVolume,
-    spark: sparkFor(t.pair, t.change),
     products: [label('trade.spotTab'), ...extraProducts],
     to: `/trade?pair=${encodeURIComponent(t.pair)}`,
   };
@@ -67,7 +67,6 @@ function futuresRow(t: HomeTicker, label: (k: Key) => string): Row {
     price: t.price,
     change: t.change,
     quoteVolume: t.quoteVolume,
-    spark: sparkFor(t.pair, t.change),
     products: [label('nav.futures')],
     // The futures terminal, not the spot one — these are perpetual
     // contracts and /trade cannot open them.
@@ -76,7 +75,8 @@ function futuresRow(t: HomeTicker, label: (k: Key) => string): Row {
 }
 
 export function HomeMarkets({ market }: { market: HomeMarket }) {
-  const { t } = useLanguage();
+  const { lang, t } = useLanguage();
+  const copy = homeLiveCopy[lang];
   const [tab, setTab] = useState<Tab>('all');
   // The same favourites store the trading terminal, Markets and the futures
   // pair list write to — and live, so starring a pair in another tab is
@@ -97,17 +97,16 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
   const cfd = useMemo<Row[]>(() => {
     if (!market.cfd?.configured) return [];
     return market.cfd.tickers.map((c) => {
-      const change = Number(c.changePercent24h);
+      const change = parseChangePercentOrNull(c.changePercent24h, c.symbol);
       return {
         key: `cfd:${c.symbol}`,
         symbol: c.symbol,
         base: c.symbol.slice(0, 3),
         price: Number(c.price),
-        change: Number.isFinite(change) ? change : 0,
+        change,
         // Twelve Data's quote endpoint carries no turnover for these
         // instruments, so the column is honestly blank rather than zero.
         quoteVolume: null,
-        spark: Number.isFinite(change) ? sparkFor(c.symbol, change) : null,
         products: ['CFD'],
         to: `/trade?market=cfd&symbol=${encodeURIComponent(c.symbol)}`,
       };
@@ -156,7 +155,7 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
   }
 
   return (
-    <section className="mx-auto w-full max-w-[1460px] px-6">
+    <section id="markets" className="vx-home-markets mx-auto w-full max-w-[1460px] px-6">
       <h2 className="mb-4 text-[21px] font-semibold tracking-[-0.01em] text-white">{t('home.markets.title')}</h2>
 
       <div className="overflow-hidden rounded-[8px] border border-white/6 bg-ink-850">
@@ -196,7 +195,8 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                 </tr>
               ) : (
                 rows.map((r) => {
-                  const up = r.change >= 0;
+                  const up = r.change !== null && r.change >= 0;
+                  const samples = market.priceHistory?.[r.symbol] ?? [];
                   return (
                     <tr
                       key={r.key}
@@ -217,24 +217,22 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                         </div>
                       </td>
                       <td className="px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-white">
-                        {formatPriceValue(r.price)}
+                        <LiveValue value={r.price} />
                       </td>
                       <td
                         className={`px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums ${up ? 'text-up' : 'text-down'}`}
                       >
-                        {up ? '+' : ''}
-                        {r.change.toFixed(2)}%
+                        <LiveValue value={r.change} format={value => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`} />
                       </td>
                       <td className="hidden px-2 py-[11px] sm:table-cell">
-                        <div className="mx-auto w-[74px]">
-                          {/* Sparkline colours itself from its own first
-                              and last point, which matches the row's 24h
-                              direction because sparkFor drifts by it. */}
-                          {r.spark ? <Sparkline points={r.spark} width={74} height={24} /> : <span className="block text-center text-[11px] text-faint">—</span>}
+                        <div className="vx-market-spark mx-auto w-[74px]" title={samples.length >= 2 ? copy.observed : copy.waiting}>
+                          {samples.length >= 2
+                            ? <Sparkline points={samples} width={74} height={24} />
+                            : <span className="block text-center text-[11px] text-faint">—</span>}
                         </div>
                       </td>
                       <td className="hidden px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-white/85 sm:table-cell">
-                        {r.quoteVolume === null
+                        {r.quoteVolume === null || !Number.isFinite(r.quoteVolume)
                           ? '—'
                           : r.quoteVolume >= 1e9
                             ? `$${(r.quoteVolume / 1e9).toFixed(2)}B`
@@ -271,20 +269,4 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
       </div>
     </section>
   );
-}
-
-/**
- * A deterministic 7-point shape derived from the row's own 24h change, so
- * the sparkline's direction always agrees with the number beside it. The
- * exchange has no 7-day series on this endpoint, so this is presented as
- * the trend glyph it is rather than being labelled as history.
- */
-function sparkFor(symbol: string, change: number): number[] {
-  const drift = change / 100;
-  let seed = symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rand = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
-  };
-  return Array.from({ length: 7 }, (_, i) => 1 + (drift * i) / 6 + (rand() - 0.5) * 0.02);
 }
