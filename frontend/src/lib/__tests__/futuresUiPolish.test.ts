@@ -34,6 +34,12 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
+    // Re-taken for the removal of the fee row. The owner settled the rate:
+    // VOLTEX charges nothing. A row that can only ever read "nothing" is
+    // noise, so it is gone — from the spot panel too, along with the
+    // frontend-only `FEE_RATE = 0` that multiplied a total into "0.00".
+    // Nothing else in this file moved: no field, no guard, no payload.
+    //
     // Re-taken a second time, for the quantity field's unit. The ONLY
     // difference from the previous fingerprint: the input is wrapped in a
     // `fo-qtyInputRow` div carrying a `fo-unit` span that prints
@@ -145,7 +151,7 @@ test.each([
     // bounds and the order payload are byte-unchanged — which
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
-    "2ce858fcdc2a5cf40bf93e16fd00925cc98173c2fc7ec01cbf38413154d33bf7"
+    "5323ab621673dc2588b9aa8f3d45829ad0c6c3c674aa395a04639c93a1cdb021"
   ],
   [
     "components/FuturesAccountSummary.tsx",

@@ -458,19 +458,36 @@ describe('unknown data is never fabricated', () => {
     expect(control.props.max).toBeNull();
   });
 
-  test('K. the fee row shows a dash — VOLTEX has no futures fee source', async () => {
+  test('K. there is NO fee row — VOLTEX charges nothing, in either terminal', async () => {
+    // This used to assert the row rendered a dash, which was the honest
+    // answer while the rate was merely unknown. The owner has since settled
+    // it: the rate is zero. A line that can only ever say "nothing" asks
+    // the trader to look for something that does not exist, so the row is
+    // gone from BOTH panels — and with it the frontend-only `FEE_RATE = 0`
+    // that multiplied a total to manufacture "0.00".
+    //
+    // The invariant this protects is unchanged and now stricter: no
+    // fabricated fee figure can appear anywhere in either order form.
     const f = await pricedForm();
-    const feeRow = byClass(f.tree, 'fo-infoRow').find((r) => text(r).includes('trade.fee'));
-    expect(feeRow).toBeDefined();
-    expect(text(feeRow)).toContain('—');
-    // The fabricated zero this row used to carry is gone.
-    expect(text(feeRow)).not.toContain('0.00');
-    expect(text(feeRow)).not.toContain('0%');
-    // The fabricated literal must not come back as RENDERED output. The
-    // audit note in the source deliberately quotes it, so this checks the
-    // JSX expression rather than the whole file.
-    expect(source(FORM)).not.toContain("(0%)</span>");
-    expect(source(FORM)).not.toMatch(/0\.00 \{quoteAsset\} \(0%\)/);
+    expect(byClass(f.tree, 'fo-infoRow').find((r) => text(r).includes('trade.fee'))).toBeUndefined();
+    expect(text(f.tree)).not.toContain('trade.fee');
+
+    for (const file of [FORM, 'components/OrderForm.tsx']) {
+      const code = source(file);
+      expect(code).not.toContain("t('trade.fee')");
+      expect(code).not.toContain('FEE_RATE');
+      expect(code).not.toContain('feeAmount');
+      expect(code).not.toContain('(0%)</span>');
+      expect(code).not.toMatch(/\{feeAmount\}/);
+    }
+
+    // Deliberately NOT asserted here: that the word "fee" is absent from
+    // the file. The doc comment where the row used to be explains which
+    // work must bring it back — a config value, settlement at fill, the
+    // amount stored on the trade — and naming those is how the file stays
+    // honest about what is missing. Pinning an invariant to prose only
+    // pressures the prose into lying. The executable checks above are what
+    // forbid a fabricated figure.
   });
 
   test('order value and required margin dash out when the price is unknown', async () => {

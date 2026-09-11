@@ -417,21 +417,23 @@ export function FuturesOrderForm({
               <span className="fo-sidePairShort">{liqPreviewShort ? liqPreviewShort.toFixed(2) : '—'}</span>
             </span>
           </div>
-          {/* FEES.
-              VOLTEX has no futures trading-fee source: there is no fee
-              rate in src/futures, none in src/config/futuresConfig, and no
-              fee column anywhere in the Prisma schema. The only `feeRate`
-              in the codebase is Copy Trading's PERFORMANCE fee, which is a
-              different thing entirely and does not apply to an order here.
-              This row used to read "0.00 USDT (0%)", which was not a real
-              zero — it was a number nobody computed. Until an authoritative
-              futures fee exists it stays a dash. Inventing a maker/taker
-              rate, or copying another venue's, would be worse than saying
-              nothing. */}
-          <div className="fo-infoRow">
-            <span style={{ color: 'var(--text-secondary)' }}>{t('trade.fee')}</span>
-            <span className="mono" style={{ color: 'var(--text-tertiary)' }}>—</span>
-          </div>
+          {/* NO FEE ROW.
+              VOLTEX charges nothing on futures: there is no fee rate in
+              src/futures, none in src/config/futuresConfig, and no fee
+              column in the Prisma schema. (The only `feeRate` in the
+              codebase is Copy Trading's PERFORMANCE fee — a different
+              thing, and not applicable to an order here.)
+
+              The row read "0.00 USDT (0%)" once, which was a number nobody
+              computed, and then a dash. Both were noise: a line that only
+              ever says "nothing" is a line asking the trader to check for
+              something that does not exist. Zero fees are a fact worth
+              stating on a fees page, not a field to leave empty here.
+
+              When a real rate exists it comes back with the work that
+              CHARGES it — a config value, settlement at fill, and the
+              amount stored on the trade. A displayed fee that is not
+              deducted is as wrong as an invented one. */}
         </div>
 
         {error && <div className="fo-error">{error}</div>}
