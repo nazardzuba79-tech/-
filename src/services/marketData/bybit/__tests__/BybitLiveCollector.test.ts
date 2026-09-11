@@ -125,6 +125,20 @@ describe('Bybit live collector', () => {
     expect(reconnectDelay(0,()=>0)).toBe(750); expect(reconnectDelay(40,()=>1)).toBe(30_000);
     expect(reconnectDelay(3,()=>0)).toBeGreaterThan(reconnectDelay(2,()=>1));
   });
+  test('twelve reconnects keep two active sockets, bounded timers and exactly one subscription set per socket',async()=>{
+    jest.useFakeTimers();const f=fixture(3),sockets:Socket[]=[];
+    const c=new BybitLiveTickerCollector(f.rest,{now:()=>1_000_000,random:()=>0,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
+    c.start();await settle();sockets.forEach(s=>s.open());c.flush();const timers=jest.getTimerCount();
+    for(let i=0;i<12;i++){
+      const activeSpot=i===0?sockets[0]:sockets.at(-1)!;activeSpot.terminate();expect(c.feed.status).toBe('stale');
+      expect(c.book.rows.get('spot:ASSET0USDT')).toMatchObject({lastPrice:12.5,stale:true});
+      await jest.advanceTimersByTimeAsync(30001);await settle();sockets.at(-1)!.open();c.flush();
+      expect(c.feed.status).toBe('live');expect(sockets.filter(s=>s.readyState===WebSocket.OPEN)).toHaveLength(2);
+      expect(sockets.at(-1)!.frames.filter(f=>f.op==='subscribe')).toHaveLength(1);expect(jest.getTimerCount()).toBe(timers);
+    }
+    expect(c.diagnostics()).toMatchObject({reconnects:12,activeAssets:3,lastProviderActivityAt:1_000_000});
+    c.stop();expect(jest.getTimerCount()).toBe(0);expect(sockets.every(s=>s.readyState===WebSocket.CLOSED)).toBe(true);
+  });
   test('a delisting removes the row, and a failed refresh cannot mutate the held universe', async () => {
     const f=fixture(2), book=new BybitTickerBook(()=>1_000_000);
     const instruments=(await f.rest.listSpotInstruments()).value;

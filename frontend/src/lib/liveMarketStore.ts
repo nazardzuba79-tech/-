@@ -48,12 +48,15 @@ export class LiveMarketStore {
           if ((!initialized && frame.type !== 'snapshot') || (initialized &&
               (frame.epoch !== this.epoch || frame.revision < this.wireRevision ||
                (frame.type === 'delta' && frame.revision !== this.wireRevision + 1)))) throw new Error('Live stream gap');
+          if (frame.epoch === this.epoch && frame.revision < this.wireRevision) throw new Error('Snapshot rollback');
           const rows = frame.type === 'snapshot' ? new Map<string, LiveQuote>() : new Map(this.state.rows);
           for (const row of frame.rows) {
             if (!row || typeof row.id !== 'string' || row.id !== `${row.marketType}:${row.providerSymbol}` ||
                 typeof row.baseAsset !== 'string' || typeof row.quoteAsset !== 'string' || typeof row.stale !== 'boolean' ||
                 ['lastPrice','changePercent24h','quoteVolume24h'].some(k => row[k] !== null && (typeof row[k] !== 'number' || !Number.isFinite(row[k])))) throw new Error('Invalid live row');
-            rows.set(row.id,row);
+            const previous = this.state.rows.get(row.id);
+            rows.set(row.id, previous && (row.providerEventAt ?? row.fetchedAt) < (previous.providerEventAt ?? previous.fetchedAt)
+              ? { ...previous, stale: true } : row);
           }
           initialized = true; this.epoch = frame.epoch; this.wireRevision = frame.revision;
           this.lastMessage = Date.now(); if (Date.now() - connectedAt >= 60_000) this.attempts = 0;

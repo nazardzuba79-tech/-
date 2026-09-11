@@ -1,5 +1,10 @@
 # Bybit live reference pipeline: review evidence
 
+This is the original implementation report. The later PR #31 staging pass
+has [separate verification documentation](../../BYBIT_STAGING_VERIFICATION.md)
+and [updated test/runtime results](staging-results.json); its newer results
+do not turn the original Docker/deployment limitations into passing checks.
+
 Prepared on 2026-09-11 in an isolated Windows worktree. Original starting
 main was `be8c0b6f89b41197eacff865d74e7e1941e67f98`. A final fetch found PR #29
 merged, so the implementation was rebased without conflicts onto current

@@ -3,6 +3,7 @@
 Dockerfile.market-data
 docs/AI_HANDOFF.md
 docs/BYBIT_COLLECTOR_OPERATIONS.md
+docs/BYBIT_STAGING_VERIFICATION.md
 docs/MARKET_DATA_ARCHITECTURE.md
 docs/qa/bybit-live-market-data/browser-desktop.json
 docs/qa/bybit-live-market-data/browser-mobile.json
@@ -13,6 +14,12 @@ docs/qa/bybit-live-market-data/mobile.png
 docs/qa/bybit-live-market-data/provider-only-mobile.png
 docs/qa/bybit-live-market-data/provider-smoke.json
 docs/qa/bybit-live-market-data/README.md
+docs/qa/bybit-live-market-data/staging-browser-dom.json
+docs/qa/bybit-live-market-data/staging-browser-runtime.json
+docs/qa/bybit-live-market-data/staging-live-desktop.png
+docs/qa/bybit-live-market-data/staging-live-mobile.png
+docs/qa/bybit-live-market-data/staging-local-runtime.json
+docs/qa/bybit-live-market-data/staging-results.json
 docs/qa/bybit-live-market-data/test-results.json
 frontend/src/components/CryptoIcon.tsx
 frontend/src/lib/__tests__/liveMarketStore.test.ts
@@ -27,7 +34,9 @@ package-lock.json
 package.json
 scripts/measure-live-market.cjs
 scripts/qa-live-market-ui.cjs
+scripts/run-market-data-local-qa.cjs
 scripts/smoke-bybit-live.cjs
+scripts/verify-market-data-staging.cjs
 src/api/routes/marketData.ts
 src/api/routes/marketLive.ts
 src/index.ts
@@ -39,6 +48,7 @@ src/services/marketData/bybit/BybitTickerBook.ts
 src/services/marketData/bybit/types.ts
 src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts
 src/services/marketData/live/__tests__/LiveTransport.test.ts
+src/services/marketData/live/__tests__/StagingVerifier.test.ts
 src/services/marketData/live/collectorServer.ts
 src/services/marketData/live/contract.ts
 src/services/marketData/live/MarketDataCollectorClient.ts

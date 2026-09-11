@@ -1296,3 +1296,11 @@ test comparison, changed-file manifest and limits are recorded in
 [QA evidence](qa/bybit-live-market-data/README.md). They are not production
 latency or capacity claims. Docker image and cross-region deployment
 remain untested; the standalone TypeScript graph compiles locally.
+
+The staging review follow-up adds same-epoch reconnect revision guards and
+retains newer matching ticker observations as stale across a restarted
+source's older snapshot, while still replacing authoritative membership.
+Authenticated diagnostics include last provider/ticker activity and process
+memory. The read-only verifier and local standalone-process/browser QA are
+documented in [staging verification](BYBIT_STAGING_VERIFICATION.md). Docker
+and deployed Frankfurt E2E remain explicitly unverified.

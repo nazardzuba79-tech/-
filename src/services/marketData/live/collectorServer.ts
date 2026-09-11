@@ -27,7 +27,13 @@ export function collectorServer(source: LiveSource, token: string, diagnostics: 
     }
     wss.handleUpgrade(req,socket,head,ws => wss.emit('connection',ws,req));
   });
-  wss.on('connection', ws => {
+  wss.on('connection', ws => writeCollectorStream(ws, source));
+  const close = () => { for (const ws of wss.clients) ws.terminate(); wss.close(); server.close(); };
+  return { app, server, close };
+}
+
+/** One bounded writer per authenticated socket; exported for slow-client tests. */
+export function writeCollectorStream(ws: WebSocket, source: LiveSource): void {
     let needsSnapshot = false, blockedAt = 0, alive = true;
     const send = (frame: LiveFrame) => {
       if (ws.readyState !== WebSocket.OPEN) return;
@@ -50,7 +56,4 @@ export function collectorServer(source: LiveSource, token: string, diagnostics: 
     ws.on('pong', () => { alive = true; });
     ws.on('error', () => ws.terminate());
     ws.on('close', () => { clearInterval(heartbeat); clearInterval(drain); unsubscribe(); });
-  });
-  const close = () => { for (const ws of wss.clients) ws.terminate(); wss.close(); server.close(); };
-  return { app, server, close };
 }

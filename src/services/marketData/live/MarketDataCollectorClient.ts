@@ -22,7 +22,7 @@ export class MarketDataCollectorClient {
   private readonly http: HttpProviderClient;
   constructor(private url: string, private token: string, fetchFn?: typeof fetch) {
     const parsed = new URL(url);
-    if (!['https:','http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash) throw new Error('Invalid collector URL');
+    if (!['https:','http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/') throw new Error('Invalid collector URL');
     if (parsed.protocol === 'http:' && !['127.0.0.1','localhost','[::1]'].includes(parsed.hostname)) throw new Error('Collector requires TLS outside loopback');
     this.url = url.replace(/\/+$/, '');
     this.http = new HttpProviderClient('market-data-collector', { fetchFn,
@@ -32,11 +32,11 @@ export class MarketDataCollectorClient {
   start(): void { if (!this.running) { this.running = true; this.generation++; void this.connect(); } }
   private async connect(): Promise<void> {
     const generation = this.generation;
-    this.abort = new AbortController();
-    const timeout = setTimeout(() => this.abort?.abort(), 10_000);
+    const abort = new AbortController(); this.abort = abort;
+    const timeout = setTimeout(() => abort.abort(), 10_000);
     try {
       const data = await this.http.getJson(`${this.url}/internal/v1/snapshot`, {
-        headers: { Authorization: `Bearer ${this.token}` }, signal: this.abort.signal, redirect: 'error',
+        headers: { Authorization: `Bearer ${this.token}` }, signal: abort.signal, redirect: 'error',
       });
       if (!this.running || generation !== this.generation) return;
       const initial = parseLiveFrame(data);
@@ -65,12 +65,22 @@ export class MarketDataCollectorClient {
     finally { clearTimeout(timeout); }
   }
   private apply(frame: LiveFrame, initial: boolean): void {
+    // Reconnecting does not make a rollback within the same epoch valid.
+    if (frame.epoch === this.epoch && frame.revision < this.revision) throw new Error('Snapshot rollback');
     if (!initial && (frame.epoch !== this.epoch || frame.revision < this.revision ||
         (frame.type === 'delta' && frame.revision !== this.revision + 1))) throw new Error('Stream discontinuity');
     this.epoch = frame.epoch; this.revision = frame.revision;
     this.counters.frames++; this.counters.propagationMs = Math.max(0, Date.now() - frame.sentAt);
     this.feed.status = frame.status;
-    this.feed.publish(frame.type, frame.rows);
+    const rows = frame.rows.map(row => {
+      const previous = this.feed.rows.get(row.id);
+      // A restarted collector may bootstrap an older cached observation.
+      // Its snapshot still owns membership; retain only newer matching rows,
+      // explicitly stale until the provider catches up.
+      return previous && (row.providerEventAt ?? row.fetchedAt) < (previous.providerEventAt ?? previous.fetchedAt)
+        ? { ...previous, stale: true } : row;
+    });
+    this.feed.publish(frame.type, rows);
   }
   private disconnect(): void {
     const socket = this.socket; this.socket = null; socket?.terminate();

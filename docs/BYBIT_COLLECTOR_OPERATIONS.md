@@ -2,6 +2,10 @@
 
 This change is prepared for review only. No service has been deployed and no production environment variable has been changed.
 
+The follow-up [staging verification guide](BYBIT_STAGING_VERIFICATION.md)
+contains the reusable verifier, soak command, renewed Docker/runtime checks
+and the explicit blockers before a production-readiness claim.
+
 ## Topology and region
 
 Run one standalone collector in **Render Frankfurt**. The existing exchange API stays in Oregon and connects to the collector's HTTPS origin. Render services in different regions do not share a private network; use its HTTPS service URL with the shared bearer secret. Do not point Oregon directly at the Bybit public WS feeds. Bybit regional refusal is a provider failure, not an invitation to rotate hosts or proxies.

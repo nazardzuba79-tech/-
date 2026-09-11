@@ -45,6 +45,17 @@ describe('shared live reference store',()=>{
     const s=new Source(),store=new LiveMarketStore(()=>s as any),off=store.subscribe(()=>{});s.send('snapshot',[quote()]);
     s.send('delta',[{...quote(),lastPrice:'bad'}],2);expect(store.getState().rows.get(quote().id)?.lastPrice).toBe(10);off();
   });
+  test('reconnect cannot rewind same-epoch revision or provider timestamp; repeated failures clean up',()=>{
+    const sources:Source[]=[];const store=new LiveMarketStore(()=>{const s=new Source();sources.push(s);return s as any;});const off=store.subscribe(()=>{});
+    sources[0].send('snapshot',[{...quote(),providerEventAt:20}],10);sources[0].onerror();jest.advanceTimersByTime(1000);
+    sources[1].send('snapshot',[quote()],9);expect(sources[1].closed).toBe(true);expect(store.getState().rows.get(quote().id)?.providerEventAt).toBe(20);
+    jest.advanceTimersByTime(2000);sources[2].send('snapshot',[quote()],11);
+    expect(store.getState().rows.get(quote().id)).toMatchObject({providerEventAt:20,stale:true});
+    sources[2].send('delta',[{...quote(),providerEventAt:21,lastPrice:0}],12);
+    expect(store.getState().rows.get(quote().id)).toMatchObject({providerEventAt:21,lastPrice:0,stale:false});
+    for(let i=0;i<12;i++){sources.at(-1)!.onerror();jest.advanceTimersByTime(30000);expect(sources.filter(s=>!s.closed)).toHaveLength(1);}
+    off();expect(sources.every(s=>s.closed)).toBe(true);expect(jest.getTimerCount()).toBe(0);
+  });
 });
 describe('safe reference identity and financial separation',()=>{
   test('unique metadata joins, venue values remain separate, execution pairs and market cap stay unchanged',()=>{

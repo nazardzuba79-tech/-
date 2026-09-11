@@ -4,7 +4,7 @@ import request from 'supertest';
 import { randomBytes } from 'crypto';
 import type { AddressInfo } from 'net';
 import { LiveFeed } from '../contract';
-import { collectorServer } from '../collectorServer';
+import { collectorServer, writeCollectorStream } from '../collectorServer';
 import { MarketDataCollectorClient, collectorFromEnv } from '../MarketDataCollectorClient';
 import { writeLiveStream, marketLiveRouter } from '../../../../api/routes/marketLive';
 import express from 'express';
@@ -31,6 +31,8 @@ describe('collector internal transport and public fanout',()=>{
       await request(runtime.app).get('/internal/v1/snapshot').expect(401);
       await request(runtime.app).get('/internal/v1/snapshot').set('Authorization','Bearer wrong').expect(401);
       await request(runtime.app).get('/internal/v1/snapshot').set('Authorization',`Bearer ${token}`).expect(200);
+      await request(runtime.app).get('/internal/v1/diagnostics').expect(401);
+      await request(runtime.app).get('/internal/v1/diagnostics').set('Authorization','Bearer wrong').expect(401);
       const denied=new WebSocket(`ws://127.0.0.1:${port}/internal/v1/stream`); denied.on('error',()=>{});
       const [err]=await once(denied,'error');expect(String(err)).toContain('401');denied.terminate();
       const allowed=new WebSocket(`ws://127.0.0.1:${port}/internal/v1/stream`,{headers:{Authorization:`Bearer ${token}`}});
@@ -75,4 +77,65 @@ describe('collector internal transport and public fanout',()=>{
     expect(response.write.mock.calls[1][0]).toContain('event: snapshot');
     cleanup();expect(feed.subscriberCount).toBe(0);expect(jest.getTimerCount()).toBe(0);jest.useRealTimers();
   });
+});
+
+describe('staging readiness boundaries',()=>{
+  test.each(['http://example.invalid','https://user:pass@example.invalid','https://example.invalid/?token=x','https://example.invalid/#secret','https://example.invalid/private'])('unsafe collector origin is refused: %s',url=>{
+    expect(()=>new MarketDataCollectorClient(url,'test')).toThrow();
+  });
+  test('HTTP bootstrap uses bearer header, refuses redirects and never puts the token in the URL',async()=>{
+    const token=randomBytes(24).toString('hex'),fetchFn=jest.fn(async()=>({ok:false,status:302,headers:new Headers({location:'https://other.invalid'})} as Response));
+    const client=new MarketDataCollectorClient('https://collector.invalid',token,fetchFn);
+    client.start();await until(()=>fetchFn.mock.calls.length===1);client.stop();
+    const [url,options]=(fetchFn.mock.calls as any)[0];expect(url).not.toContain(token);
+    expect(options.redirect).toBe('error');expect(options.headers.Authorization).toBe(`Bearer ${token}`);
+  });
+  test('same-epoch reconnect cannot rewind revision; new epoch cannot rewind retained prices',()=>{
+    const c=new MarketDataCollectorClient('http://localhost:1','test') as any;
+    const current={...row(),providerEventAt:200,lastPrice:20};
+    const f=(epoch:string,revision:number,rows:any[])=>({version:1,type:'snapshot',epoch,revision,rows,status:'live',sentAt:Date.now()});
+    c.apply(f('one',10,[current]),true);
+    expect(()=>c.apply(f('one',9,[{...current,lastPrice:9}]),true)).toThrow();
+    c.apply(f('two',1,[{...current,lastPrice:1,providerEventAt:100}]),true);
+    expect(c.feed.rows.get(current.id)).toMatchObject({lastPrice:20,providerEventAt:200,stale:true});
+    c.apply(f('two',2,[{...current,lastPrice:21,providerEventAt:201}]),false);
+    expect(c.feed.rows.get(current.id)).toMatchObject({lastPrice:21,stale:false});c.stop();
+  });
+  test('internal WS slow writer drops deltas, resynchronizes once and disconnects permanent blockage',()=>{
+    jest.useFakeTimers();
+    try {
+      const feed=new LiveFeed('slow-ws');feed.publish('snapshot',[row()]);
+      const socket=Object.assign(new EventEmitter(),{readyState:WebSocket.OPEN,bufferedAmount:2_000_001,send:jest.fn(),ping:jest.fn(),terminate:jest.fn()});
+      socket.ping.mockImplementation(()=>socket.emit('pong'));socket.terminate.mockImplementation(()=>{socket.readyState=WebSocket.CLOSED as any;socket.emit('close');});
+      writeCollectorStream(socket as any,feed);
+      for(let i=0;i<5000;i++)feed.publish('delta',[{...row(),lastPrice:i}]);
+      expect(socket.send).not.toHaveBeenCalled();expect(feed.subscriberCount).toBe(1);
+      socket.bufferedAmount=0;jest.advanceTimersByTime(250);expect(socket.send).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(socket.send.mock.calls[0][0])).toMatchObject({type:'snapshot',rows:[{lastPrice:4999}]});
+      socket.bufferedAmount=2_000_001;feed.publish('state');jest.advanceTimersByTime(31000);
+      expect(socket.terminate).toHaveBeenCalledTimes(1);expect(feed.subscriberCount).toBe(0);expect(jest.getTimerCount()).toBe(0);
+    }finally{jest.useRealTimers();}
+  });
+  test('permanently blocked SSE is destroyed and close removes timers/listeners',()=>{
+    jest.useFakeTimers();
+    try {
+      const feed=new LiveFeed('blocked');feed.publish('snapshot',[row()]);
+      const res=Object.assign(new EventEmitter(),{write:jest.fn(()=>false),destroy:jest.fn()});
+      const cleanup=writeLiveStream(res as any,feed);res.once('close',cleanup);res.destroy.mockImplementation(()=>res.emit('close'));
+      jest.advanceTimersByTime(45000);expect(res.destroy).toHaveBeenCalledTimes(1);expect(feed.subscriberCount).toBe(0);expect(jest.getTimerCount()).toBe(0);
+    }finally{jest.useRealTimers();}
+  });
+  test('repeated real internal connections and SSE disconnects release long-lived feed listeners',async()=>{
+    const feed=new LiveFeed('cleanup'),token=randomBytes(24).toString('hex'),runtime=collectorServer(feed,token,()=>({}));feed.status='live';feed.publish('snapshot',[row()]);
+    runtime.server.listen(0,'127.0.0.1');await once(runtime.server,'listening');const url=`http://127.0.0.1:${(runtime.server.address() as AddressInfo).port}`;
+    const api=express();api.use(marketLiveRouter(feed));const server=api.listen(0,'127.0.0.1');await once(server,'listening');
+    try{
+      for(let i=0;i<10;i++){
+        const client=new MarketDataCollectorClient(url,token);client.start();await until(()=>client.counters.frames>=2);expect(feed.subscriberCount).toBe(1);
+        client.stop();await until(()=>feed.subscriberCount===0);
+        const abort=new AbortController();const response=await fetch(`http://127.0.0.1:${(server.address() as AddressInfo).port}/market/live`,{signal:abort.signal});
+        await response.body!.getReader().read();expect(feed.subscriberCount).toBe(1);abort.abort();await until(()=>feed.subscriberCount===0);
+      }
+    }finally{runtime.close();server.closeAllConnections();server.close();}
+  },15000);
 });

@@ -24,7 +24,7 @@ interface Connection {
   plan: SubscriptionPlan; ws: WebSocket | null; timer: NodeJS.Timeout | null;
   heartbeat: NodeJS.Timeout | null; attempt: number; stopped: boolean;
   state: 'connecting' | 'live' | 'backoff'; pending: Set<string>; pongAt: number;
-  openedAt: number; topicSet: Set<string>;
+  openedAt: number; topicSet: Set<string>; lastActivityAt: number | null;
 }
 export interface CollectorOptions {
   spotUrl?: string; linearUrl?: string; batchMs?: number; staleMs?: number;
@@ -46,6 +46,8 @@ export class BybitLiveTickerCollector {
   private spotTimer: NodeJS.Timeout | null = null;
   private spotRefreshing = false;
   private refreshing = false;
+  private lastProviderActivityAt: number | null = null;
+  private lastTickerActivityAt: number | null = null;
   private now: () => number;
   constructor(readonly rest: BybitMarketDataService, private options: CollectorOptions = {}) {
     this.now = options.now ?? Date.now;
@@ -71,7 +73,7 @@ export class BybitLiveTickerCollector {
       this.feed.publish('snapshot', [...this.book.rows.values()]); this.book.drain();
       for (const category of ['spot','linear'] as const) {
         for (const plan of planSubscriptions(category, [...this.book.instruments.values()].filter(i => categoryOf(i) === category).map(i => i.providerSymbol))) {
-          const connection: Connection = { plan, ws: null, timer: null, heartbeat: null, attempt: 0, stopped: false, state: 'connecting', pending: new Set(), pongAt: 0, openedAt: 0, topicSet: new Set(plan.topics) };
+          const connection: Connection = { plan, ws: null, timer: null, heartbeat: null, attempt: 0, stopped: false, state: 'connecting', pending: new Set(), pongAt: 0, openedAt: 0, topicSet: new Set(plan.topics), lastActivityAt: null };
           this.connections.push(connection); void this.connect(connection, false);
         }
       }
@@ -143,6 +145,7 @@ export class BybitLiveTickerCollector {
       ws.on('message', data => {
         if (c.stopped || c.ws !== ws) return;
         this.counters.messages++;
+        c.lastActivityAt = this.lastProviderActivityAt = this.now();
         try {
           const m = JSON.parse(data.toString());
           if (m.op === 'pong' || m.ret_msg === 'pong') { c.pongAt = this.now(); return; }
@@ -152,7 +155,7 @@ export class BybitLiveTickerCollector {
             if (!c.pending.size) c.state = 'live';
             return;
           }
-          if (typeof m.topic === 'string' && c.topicSet.has(m.topic)) this.book.apply(c.plan.category, m);
+          if (typeof m.topic === 'string' && c.topicSet.has(m.topic) && this.book.apply(c.plan.category, m)) this.lastTickerActivityAt = this.now();
         } catch { this.counters.malformed++; }
       });
     } catch {
@@ -181,7 +184,9 @@ export class BybitLiveTickerCollector {
     return { ...this.counters, activeInstruments: this.book.instruments.size, tickerCount: this.book.rows.size,
       activeAssets: new Set([...this.book.instruments.values()].map(i => i.baseAsset)).size,
       restRequests: this.rest.upstreamRequestCount, status: this.feed.status,
-      connections: this.connections.map(c => ({ category: c.plan.category, topics: c.plan.topics.length, argsChars: JSON.stringify(c.plan.topics).length, state: c.state })),
+      connections: this.connections.map(c => ({ category: c.plan.category, topics: c.plan.topics.length, argsChars: JSON.stringify(c.plan.topics).length, state: c.state, lastActivityAt: c.lastActivityAt })),
+      lastProviderActivityAt: this.lastProviderActivityAt, lastTickerActivityAt: this.lastTickerActivityAt,
+      memory: process.memoryUsage(), listeners: this.feed.subscriberCount,
       rejectedUpdates: this.book.rejected, rejectedTimestamp: this.book.rejectedTimestamp, rejectedSequence: this.book.rejectedSequence,
       serializedBookBytes: Buffer.byteLength(JSON.stringify([...this.book.rows.values()])), providerHealth: this.rest.healthSnapshot };
   }
