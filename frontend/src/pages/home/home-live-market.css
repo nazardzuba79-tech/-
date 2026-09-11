@@ -1,0 +1,139 @@
+/* Homepage-only market motion. Figures always display received values. */
+.vx-home .vx-reference-stage .vx-live-value { display:inline-block; font-variant-numeric:tabular-nums; white-space:nowrap }
+.vx-home .vx-reference-stage .vx-live-value > span { display:inline-block; border-radius:3px }
+@keyframes vx-quote-up { 0% { background-color:#2ebd8540; color:#82e1b8 } 100% { background-color:transparent } }
+@keyframes vx-quote-down { 0% { background-color:#f0616d40; color:#ffadb3 } 100% { background-color:transparent } }
+.vx-home .vx-reference-stage .vx-live-value > [data-direction="up"] { animation:vx-quote-up 850ms ease-out }
+.vx-home .vx-reference-stage .vx-live-value > [data-direction="down"] { animation:vx-quote-down 850ms ease-out }
+.vx-home .vx-reference-stage .vx-feed-dot { flex:0 0 auto; width:5px; height:5px; border-radius:50%; background:#4fc99a; box-shadow:0 0 9px #4fc99a55 }
+.vx-home .vx-reference-stage .vx-feed-dot.vx-feed-stale { background:#d8ad51; box-shadow:none }
+.vx-home .vx-reference-stage .vx-feed-dot.vx-feed-neutral { background:#697a90; box-shadow:none }
+/* Two visual copies, one accessible link set. */
+.vx-home .vx-reference-stage .vx-market-tape { display:flex; align-items:stretch; position:relative; width:100%; min-width:0; margin:0 auto; border-block:1px solid #ffffff0c; background:linear-gradient(90deg,#0b111c,#131e31 50%,#0b111c); isolation:isolate }
+.vx-home .vx-reference-stage .vx-tape-label { display:flex; align-items:center; gap:9px; flex:0 0 auto; padding:0 22px 0 max(24px,calc((100vw - 1412px)/2)); color:#abb7c9; font-size:11px; letter-spacing:.06em; text-transform:uppercase }
+.vx-home .vx-reference-stage .vx-tape-frequency { font-family:monospace; font-size:10px; color:#7c8da4 }
+.vx-home .vx-reference-stage .vx-tape-window { min-width:0; flex:1; overflow:hidden; mask-image:linear-gradient(90deg,transparent,#000 22px,#000 calc(100% - 22px),transparent) }
+.vx-home .vx-reference-stage .vx-tape-track { display:flex; width:max-content; animation:vx-market-tape 64s linear infinite }
+.vx-home .vx-reference-stage .vx-tape-group { display:flex; flex:0 0 auto }
+.vx-home .vx-reference-stage .vx-tape-quote { display:flex; align-items:center; gap:10px; min-width:228px; padding:14px 24px; border-right:1px solid #ffffff08; color:#e6eaf1; font-size:10px; font-family:monospace }
+.vx-home .vx-reference-stage .vx-tape-quote:hover { background:#ffffff05 }
+.vx-home .vx-reference-stage .vx-tape-instrument { display:flex; flex:1; flex-direction:column; gap:4px }
+.vx-home .vx-reference-stage .vx-tape-instrument > span:first-child { font-size:10px; color:#8999af }
+.vx-home .vx-reference-stage .vx-tape-price { font-size:13px; font-weight:600; color:#eff3fa }
+.vx-home .vx-reference-stage .vx-tape-toggle { flex:0 0 44px; display:grid; place-content:center; color:#c7d0dc; border-left:1px solid #ffffff0c }
+.vx-home .vx-reference-stage .vx-tape-toggle:hover { color:#f0c45a }
+.vx-home .vx-reference-stage .vx-tape-toggle:focus-visible,.vx-home .vx-reference-stage .vx-tape-quote:focus-visible { outline:2px solid #f0c45a; outline-offset:-3px }
+.vx-home .vx-reference-stage .vx-tape-empty { padding:24px; font-size:12px; color:#8a98ac }
+@keyframes vx-market-tape { to { transform:translate3d(-50%,0,0) } }
+.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-track,
+.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-track,
+.vx-home .vx-reference-stage .vx-market-tape[data-hidden="true"] .vx-tape-track,
+.vx-home .vx-reference-stage .vx-market-tape[data-offscreen="true"] .vx-tape-track,
+.vx-home .vx-reference-stage .vx-market-tape[data-stale="true"] .vx-tape-track { animation-play-state:paused }
+.vx-home .vx-reference-stage .vx-tape-window:focus-within,.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-window { overflow-x:auto }
+.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-track,.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-track { animation:none; transform:none }
+.vx-home .vx-reference-stage .vx-tape-window:focus-within .vx-tape-group[aria-hidden],.vx-home .vx-reference-stage .vx-market-tape[data-paused="true"] .vx-tape-group[aria-hidden] { display:none }
+@media (hover:hover) and (pointer:fine) {
+ .vx-home .vx-reference-stage .vx-market-tape:hover .vx-tape-track { animation-play-state:paused }
+}
+/* Compact received OHLC, book snapshots and public trades. */
+.vx-home .vx-reference-stage .vx-live-terminal { width:100%; min-width:0; border:1px solid #8faed026; border-radius:12px; overflow:hidden; background:#080d14; box-shadow:0 36px 80px -25px #000c,0 0 44px #316db615; color:#a9b5c5; font-variant-numeric:tabular-nums }
+.vx-home .vx-reference-stage .vx-terminal-appbar { display:flex; align-items:center; gap:20px; padding:12px 14px; border-bottom:1px solid #ffffff09; background:#121923 }
+.vx-home .vx-reference-stage .vx-terminal-logo { display:flex; align-items:center; gap:6px; font-size:10px; font-weight:700; letter-spacing:.06em; color:#f4f6fa }
+.vx-home .vx-reference-stage .vx-terminal-nav { display:flex; gap:12px; font-size:7px; color:#778499 }
+.vx-home .vx-reference-stage .vx-terminal-feed { display:flex; align-items:center; gap:6px; margin-left:auto; font-size:7px; color:#8496ab; white-space:nowrap }
+.vx-home .vx-reference-stage .vx-selected { color:#f0c45a }
+.vx-home .vx-reference-stage .vx-terminal-instrument { display:flex; flex-wrap:wrap; align-items:center; gap:12px 20px; padding:12px 14px; background:#0d141e; border-bottom:1px solid #ffffff09 }
+.vx-home .vx-reference-stage .vx-terminal-pair { display:flex; align-items:center; gap:8px }
+.vx-home .vx-reference-stage .vx-terminal-pair strong { font-size:10px; color:#edf1f7 }
+.vx-home .vx-reference-stage .vx-terminal-pair > .vx-live-value { font-family:monospace; font-size:16px; font-weight:600 }
+.vx-home .vx-reference-stage .vx-terminal-stats { display:flex; gap:18px }
+.vx-home .vx-reference-stage .vx-terminal-stats > span { display:flex; flex-direction:column; gap:3px; font-family:monospace; font-size:8px }
+.vx-home .vx-reference-stage .vx-terminal-stats small { font-family:inherit; font-size:6px; color:#6f8097 }
+.vx-home .vx-reference-stage .vx-terminal-workspace { display:grid; grid-template-columns:82px minmax(0,1fr) 124px }
+.vx-home .vx-reference-stage .vx-terminal-watchlist { border-right:1px solid #ffffff0a; background:#0b111a; padding:0 6px }
+.vx-home .vx-reference-stage .vx-terminal-pane-title { display:flex; align-items:center; justify-content:space-between; padding:8px 2px; font-size:7px; color:#c4cedb }
+.vx-home .vx-reference-stage .vx-terminal-pane-title > span { font-size:6px; color:#718099 }
+.vx-home .vx-reference-stage .vx-terminal-market { display:flex; justify-content:space-between; gap:2px; padding:9px 3px; font-family:monospace; font-size:6.5px; border-bottom:1px solid #ffffff04 }
+.vx-home .vx-reference-stage .vx-terminal-market.vx-active-market { background:#f0c45a0b }
+.vx-home .vx-reference-stage .vx-terminal-center { min-width:0 }
+.vx-home .vx-reference-stage .vx-terminal-timeframe { display:flex; align-items:center; gap:12px; height:27px; padding:0 10px; border-bottom:1px solid #ffffff09; font-size:7px; color:#6c7e94 }
+.vx-home .vx-reference-stage .vx-terminal-timeframe > span:last-child { margin-left:auto; font-size:6px; letter-spacing:.08em }
+.vx-home .vx-reference-stage .vx-terminal-timeframe .vx-selected { padding:3px 6px; background:#f0c45a0c; border-radius:3px }
+.vx-home .vx-reference-stage .vx-terminal-chart { position:relative; height:214px; padding:10px 0 0; background:radial-gradient(ellipse at 50% 120%,#19395f15,transparent 70%) }
+.vx-home .vx-reference-stage .vx-real-candles { display:block; width:100%; height:100% }
+.vx-home .vx-reference-stage .vx-real-candles text { fill:#617287; font-family:monospace; font-size:7px }
+.vx-home .vx-reference-stage .vx-chart-grid { stroke:#ffffff08; stroke-width:.5 }
+.vx-home .vx-reference-stage .vx-candle-up { fill:#2ebd85; stroke:#2ebd85 }
+.vx-home .vx-reference-stage .vx-candle-down { fill:#f0616d; stroke:#f0616d }
+.vx-home .vx-reference-stage .vx-real-candles g > line { stroke-width:.8 }
+.vx-home .vx-reference-stage .vx-real-candles g > rect { stroke:none; transition:y 320ms ease-out,height 320ms ease-out }
+.vx-home .vx-reference-stage .vx-terminal-stale-label { position:absolute; top:8px; left:8px; color:#b9a375; font-size:7px; background:#080d14cc; padding:3px }
+.vx-home .vx-reference-stage .vx-terminal-empty { display:grid; place-content:center; min-height:130px; height:100%; padding:12px; text-align:center; color:#6f8197; font-size:10px }
+.vx-home .vx-reference-stage .vx-terminal-empty-small { min-height:55px; font-size:8px }
+.vx-home .vx-reference-stage .vx-terminal-trades { border-top:1px solid #ffffff09; padding:0 10px 5px }
+.vx-home .vx-reference-stage .vx-trade-row { display:grid; grid-template-columns:1fr .7fr 1fr 1fr; gap:6px; align-items:center; min-height:20px; font-family:monospace; font-size:7px; border-bottom:1px solid #ffffff04 }
+.vx-home .vx-reference-stage .vx-trade-row > :nth-child(n+3) { text-align:right }
+.vx-home .vx-reference-stage .vx-trade-heading { color:#617188; font-size:6px }
+@keyframes vx-received-row { from { background-color:#283c5238; transform:translateY(-2px) } to { background-color:transparent; transform:none } }
+.vx-home .vx-reference-stage .vx-trade-received { animation:vx-received-row 500ms ease-out both }
+.vx-home .vx-reference-stage .vx-terminal-book { border-left:1px solid #ffffff09; padding:0 7px; background:#0a1019; min-width:0 }
+.vx-home .vx-reference-stage .vx-book-heading { display:flex; justify-content:space-between; padding-bottom:7px; color:#63758b; font-size:6px }
+.vx-home .vx-reference-stage .vx-book-row { position:relative; display:flex; justify-content:space-between; align-items:center; gap:3px; height:18px; padding:0 2px; font-family:monospace; font-size:7px; animation:vx-received-row 500ms ease-out }
+.vx-home .vx-reference-stage .vx-book-row > .vx-live-value { position:relative }
+.vx-home .vx-reference-stage .vx-book-row > .vx-live-value:last-child { color:#92a0b2 }
+.vx-home .vx-reference-stage .vx-book-ask { color:#f0616d }
+.vx-home .vx-reference-stage .vx-book-bid { color:#2ebd85 }
+.vx-home .vx-reference-stage .vx-book-depth { position:absolute; top:1px; bottom:1px; right:0; transition:width 550ms ease-out }
+.vx-home .vx-reference-stage .vx-book-ask .vx-book-depth { background:#f0616d0c }
+.vx-home .vx-reference-stage .vx-book-bid .vx-book-depth { background:#2ebd850c }
+.vx-home .vx-reference-stage .vx-book-mid { border-block:1px solid #ffffff09; margin:5px -2px; padding:9px 3px; font:600 12px monospace }
+.vx-home .vx-reference-stage .vx-terminal-book-note { padding:10px 1px; color:#667b93; font-size:6px; line-height:1.5; border-bottom:1px solid #ffffff09 }
+.vx-home .vx-reference-stage .vx-terminal-movers > div:not(.vx-terminal-pane-title) { display:flex; justify-content:space-between; padding:5px 2px; font:6px monospace }
+.vx-home .vx-reference-stage .vx-terminal-status { display:flex; justify-content:space-between; gap:8px; padding:7px 11px; background:#111a26; border-top:1px solid #ffffff09; color:#687e98; font-size:6px }
+@keyframes vx-spark-reveal { from { clip-path:inset(0 100% 0 0); opacity:.4 } to { clip-path:inset(0); opacity:1 } }
+.vx-home .vx-reference-stage .vx-market-spark svg { animation:vx-spark-reveal 700ms ease-out both }
+@media (max-width:1279px) and (min-width:1024px) {
+ .vx-home .vx-reference-stage .vx-terminal-workspace { grid-template-columns:64px minmax(0,1fr) 112px }
+ .vx-home .vx-reference-stage .vx-terminal-nav { gap:8px; font-size:6px }
+ .vx-home .vx-reference-stage .vx-terminal-stats { gap:12px }
+}
+@media (max-width:767px) {
+ .vx-home .vx-reference-stage .vx-tape-label { padding-inline:16px 7px; font-size:9px; gap:6px }
+ .vx-home .vx-reference-stage .vx-tape-frequency { display:none }
+ .vx-home .vx-reference-stage .vx-tape-quote { min-width:211px; padding:13px 17px }
+ .vx-home .vx-reference-stage .vx-tape-toggle { flex-basis:34px }
+ .vx-home .vx-reference-stage .vx-terminal-appbar { padding:10px; gap:8px }
+ .vx-home .vx-reference-stage .vx-terminal-nav { display:none }
+ .vx-home .vx-reference-stage .vx-terminal-workspace { grid-template-columns:minmax(0,1fr) 110px }
+ .vx-home .vx-reference-stage .vx-terminal-watchlist { display:none }
+ .vx-home .vx-reference-stage .vx-terminal-instrument { padding:11px 10px; gap:10px }
+ .vx-home .vx-reference-stage .vx-terminal-pair { width:100%; justify-content:flex-start }
+ .vx-home .vx-reference-stage .vx-terminal-pair > .vx-live-value { margin-left:auto; font-size:18px }
+ .vx-home .vx-reference-stage .vx-terminal-stats { width:100%; justify-content:space-between; gap:8px }
+ .vx-home .vx-reference-stage .vx-terminal-stats small { font-size:7px }
+ .vx-home .vx-reference-stage .vx-terminal-chart { height:185px }
+ .vx-home .vx-reference-stage .vx-terminal-trades { padding-inline:7px }
+ .vx-home .vx-reference-stage .vx-trade-row { grid-template-columns:1fr .65fr 1fr; gap:4px; font-size:6.5px }
+ .vx-home .vx-reference-stage .vx-trade-row > :last-child { display:none }
+ .vx-home .vx-reference-stage .vx-terminal-timeframe { gap:6px; padding-inline:7px }
+ .vx-home .vx-reference-stage .vx-terminal-timeframe > span:last-child { font-size:5px }
+ .vx-home .vx-reference-stage .vx-terminal-status { font-size:5.5px }
+}
+@media (max-width:639px) {
+ .vx-home .vx-reference-stage .vx-home-markets table { min-width:0; table-layout:auto }
+ .vx-home .vx-reference-stage .vx-home-markets th,.vx-home .vx-reference-stage .vx-home-markets td { padding-inline:6px; font-size:10px }
+ .vx-home .vx-reference-stage .vx-home-markets th:first-child,.vx-home .vx-reference-stage .vx-home-markets td:first-child { padding-left:10px }
+ .vx-home .vx-reference-stage .vx-home-markets td:first-child > div { gap:5px }
+ .vx-home .vx-reference-stage .vx-home-markets td:first-child img { width:18px; height:18px }
+ .vx-home .vx-reference-stage .vx-home-markets td:first-child .leading-tight > span:first-child { font-size:10px; white-space:nowrap }
+ .vx-home .vx-reference-stage .vx-home-markets td:first-child .leading-tight > span:last-child { font-size:8px }
+ .vx-home .vx-reference-stage .vx-home-markets td:last-child a { padding:6px 4px; font-size:9px }
+}
+@media (prefers-reduced-motion:reduce) {
+ .vx-home .vx-reference-stage .vx-live-value > span,.vx-home .vx-reference-stage .vx-book-row,.vx-home .vx-reference-stage .vx-trade-received,.vx-home .vx-reference-stage .vx-market-spark svg,.vx-home .vx-reference-stage .vx-tape-track { animation:none !important }
+ .vx-home .vx-reference-stage .vx-book-depth,.vx-home .vx-reference-stage .vx-real-candles g > rect { transition:none }
+ .vx-home .vx-reference-stage .vx-tape-window { overflow-x:auto; mask-image:none }
+ .vx-home .vx-reference-stage .vx-tape-group[aria-hidden] { display:none }
+ .vx-home .vx-reference-stage .vx-tape-toggle { display:none }
+}

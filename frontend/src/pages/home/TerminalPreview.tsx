@@ -1,329 +1,205 @@
 import { useMemo } from 'react';
 import { LogoMark } from '../../components/Logo';
 import { CryptoIcon } from '../../components/CryptoIcon';
-import { HomeMarket, byVolume, formatPriceValue } from './useHomeMarket';
-import { Key, useLanguage } from '../../lib/i18n';
+import { HomeMarket, HomeCandle, formatPriceValue, formatCompactUsd } from './useHomeMarket';
+import { Key, localeOf, useLanguage } from '../../lib/i18n';
+import { LiveValue } from './LiveValue';
+import { homeLiveCopy } from './homeLiveCopy';
+import { globalHeroCopy } from './globalHeroCopy';
 
-/**
- * A preview of the real terminal, not a second copy of it.
- *
- * Deliberately not the Trade page: mounting that here would open a second
- * websocket, a second order-book poll and a second chart instance on a
- * page whose job is to load fast. This reads from the homepage's one
- * shared market feed instead, so every price, 24h figure and pair in it is
- * genuine while costing no extra subscription.
- *
- * The mini app-bar shows the real product structure. The prototype's
- * "Деривативы", "Earn" and "Ещё" are gone, and Futures is labelled from
- * nav.futures so the preview reads in whatever language the visitor has
- * chosen, exactly as the real app does. Analytics is not listed — it is an
- * admin-gated area and a public landing page must not advertise it.
- */
 const MINI_NAV: Key[] = ['nav.markets', 'nav.trade', 'nav.futures', 'nav.copyTrading'];
+const quantity = (value: number) => value.toLocaleString('en-US', { maximumFractionDigits: 6 });
+const receivedValue = (value: unknown) => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '')
+  && Number.isFinite(Number(value)) ? Number(value) : undefined;
 
-const ORDER_BOOK_STEPS = [
-  0.00042, 0.00031, 0.00025, 0.00019, 0.00013, 0.00008,
-];
-
-function OrderBookRows({
-  mid,
-  side,
-  logoScale,
-}: {
-  mid: number;
-  side: 'ask' | 'bid';
-  logoScale: number[];
+/** Real external depth, normalized only to draw proportional background bars. */
+function OrderBookRows({ rows, side, maximum }: {
+  rows: { price: string; quantity: string }[]; side: 'ask' | 'bid'; maximum: number;
 }) {
-  const sign = side === 'ask' ? 1 : -1;
-  const rows = ORDER_BOOK_STEPS.map((step, i) => ({
-    price: mid * (1 + sign * (side === 'ask' ? ORDER_BOOK_STEPS[ORDER_BOOK_STEPS.length - 1 - i] : step)),
-    depth: logoScale[i % logoScale.length],
-  }));
+  return <>{rows.map(row => (
+    <div key={row.price} className={`vx-book-row vx-book-${side}`}>
+      <span className="vx-book-depth" style={{ width: `${(receivedValue(row.quantity) ?? 0) / (maximum || 1) * 100}%` }} />
+      <LiveValue value={receivedValue(row.price)} />
+      <LiveValue value={receivedValue(row.quantity)} format={quantity} />
+    </div>
+  ))}</>;
+}
+
+/** A tiny SVG renderer for received OHLC values, without a chart framework. */
+function PreviewCandles({ candles, label, livePrice }: { candles: HomeCandle[]; label: string; livePrice?: number }) {
+  const min = Math.min(...candles.map(candle => candle.low), livePrice ?? Infinity);
+  const max = Math.max(...candles.map(candle => candle.high), livePrice ?? -Infinity);
+  const padding = Math.max((max - min) * 0.12, max * 0.00001, 1e-8);
+  const low = min - padding;
+  const span = max - min + padding * 2;
+  const y = (price: number) => 174 - ((price - low) / span) * 158;
+  const step = 540 / candles.length;
+  const last = candles[candles.length - 1];
+  const volumeMax = Math.max(0, ...candles.map(candle => receivedValue(candle.volume) ?? 0));
+  const timeIndices = [...new Set([0, Math.floor((candles.length - 1) / 2), candles.length - 1])];
+  const timeLabel = (time: number) => new Date(time < 1e12 ? time * 1000 : time)
+    .toLocaleTimeString('en-GB', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
   return (
-    <>
-      {rows.map((r, i) => (
-        <div key={i} className="relative flex justify-between px-2 py-[1.6px] font-mono text-[6px] tabular-nums">
-          <span
-            className={`absolute inset-y-0 right-0 ${side === 'ask' ? 'bg-down/10' : 'bg-up/10'}`}
-            style={{ width: `${28 + r.depth * 46}%` }}
-          />
-          <span className={`relative ${side === 'ask' ? 'text-down' : 'text-up'}`}>{formatPriceValue(r.price)}</span>
-          <span className="relative text-white/55">{(r.depth * 2.4).toFixed(4)}</span>
-        </div>
-      ))}
-    </>
+    <svg viewBox="0 0 600 240" preserveAspectRatio="none" role="img" aria-label={label} className="vx-real-candles">
+      {[0.2, 0.4, 0.6, 0.8].map(fraction => {
+        const price = low + span * fraction;
+        return <g key={fraction}>
+          <line x1="0" y1={y(price)} x2="548" y2={y(price)} className="vx-chart-grid" />
+          <text x="598" y={y(price) + 3} textAnchor="end">{formatPriceValue(price)}</text>
+        </g>;
+      })}
+      {candles.map((candle, i) => {
+        const x = 4 + i * step + step / 2;
+        const up = candle.close >= candle.open;
+        const volume = receivedValue(candle.volume);
+        const volumeHeight = volume !== undefined && volume >= 0 && volumeMax > 0 ? volume / volumeMax * 29 : 0;
+        return <g key={candle.time} className={up ? 'vx-candle-up' : 'vx-candle-down'}>
+          <line className="vx-candle-wick" x1="0" y1="0" x2="0" y2="1" vectorEffect="non-scaling-stroke"
+            style={{ transform: `translate(${x}px, ${y(candle.high)}px) scaleY(${Math.max(.65, y(candle.low)-y(candle.high))})` }} />
+          <rect x={x - step * 0.28} y={y(Math.max(candle.open, candle.close))}
+            width={step * 0.56} height={Math.max(0.65, Math.abs(y(candle.open) - y(candle.close)))} />
+          {volume !== undefined && volume >= 0 && <rect className="vx-candle-volume" opacity=".38"
+            x={x - step * 0.28} y={217 - volumeHeight} width={step * 0.56} height={volumeHeight}>
+            <title>{quantity(volume)}</title>
+          </rect>}
+        </g>;
+      })}
+      <g className="vx-last-price-line" style={{ transform: `translateY(${y(livePrice ?? last.close)}px)` }}>
+        <line x1="0" x2="548" y1="0" y2="0" stroke={last.close >= last.open ? '#2ebd85' : '#f0616d'} strokeWidth=".6" strokeDasharray="3 4" />
+        <rect x="548" y="-7" width="52" height="14" rx="2" fill={last.close >= last.open ? '#195e48' : '#69383f'}/>
+        <text x="597" y="2.5" textAnchor="end" style={{ fill: '#e8f4ef', fontSize: 7 }}>{formatPriceValue(livePrice ?? last.close)}</text>
+      </g>
+      <line className="vx-chart-grid" x1="0" x2="548" y1="221" y2="221" />
+      {timeIndices.map(index => <text key={candles[index].time} className="vx-chart-time"
+        x={index === 0 ? 4 : index === candles.length - 1 ? 544 : 274} y="235"
+        textAnchor={index === 0 ? 'start' : index === candles.length - 1 ? 'end' : 'middle'}>
+        {timeLabel(candles[index].time)}
+      </text>)}
+      <text className="vx-chart-time" x="598" y="235" textAnchor="end">UTC</text>
+    </svg>
   );
 }
 
+/** The homepage owns all requests. This terminal only renders received snapshots. */
 export function TerminalPreview({ market }: { market: HomeMarket }) {
-  const { t } = useLanguage();
-  const rows = useMemo(() => byVolume(market.tickers, 10), [market.tickers]);
-  const lead = rows.find((r) => r.pair === 'BTC/USDT') ?? rows[0];
+  const { lang, t } = useLanguage();
+  const copy = homeLiveCopy[lang];
+  const motionCopy = globalHeroCopy[lang];
+  const feed = market.hero;
+  const lead = feed?.pair ? market.tickers.find(row => row.pair === feed.pair) : undefined;
+  const price = receivedValue(feed?.livePrice) ?? receivedValue(lead?.price);
+  const pair = feed?.pair ?? 'BTC/USDT';
+  const base = lead?.base ?? pair.split('/')[0];
+  const quote = lead?.quote ?? pair.split('/')[1] ?? 'USDT';
+  const tradeHref = `/trade?pair=${encodeURIComponent(pair)}`;
   const up = (lead?.change ?? 0) >= 0;
-
-  // Stable per-row depth weights so the book does not reshuffle its bar
-  // widths on every price poll.
-  const depths = useMemo(() => [0.82, 0.54, 0.71, 0.39, 0.63, 0.47], []);
-
-  const stats = lead
-    ? [
-        {
-          label: t('home.preview.change24h'),
-          value: `${up ? '+' : ''}${lead.change.toFixed(2)}%`,
-          up,
-        },
-        { label: t('home.preview.high24h'), value: formatPriceValue(lead.high) },
-        { label: t('home.preview.low24h'), value: formatPriceValue(lead.low) },
-        {
-          label: t('home.preview.volume24h'),
-          value:
-            lead.quoteVolume >= 1e9
-              ? `${(lead.quoteVolume / 1e9).toFixed(2)}B`
-              : `${(lead.quoteVolume / 1e6).toFixed(1)}M`,
-        },
-      ]
-    : [];
+  const book = feed?.book;
+  const maximum = Math.max(0, ...(book ? [...book.asks, ...book.bids].map(row => receivedValue(row.quantity) ?? 0) : []));
+  const candles = useMemo(() => (feed?.candles ?? []).filter(candle =>
+    [candle.time, candle.open, candle.high, candle.low, candle.close].every(value => Number.isFinite(value))
+    && candle.time >= 0 && candle.high >= candle.low && candle.low >= 0), [feed?.candles]);
+  const trades = feed?.trades ?? [];
+  const stale = market.tickersStale || feed?.stale;
+  const timeOf = (timestamp: number) => new Date(timestamp < 1e12 ? timestamp * 1000 : timestamp)
+    .toLocaleTimeString(localeOf(lang), { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 
   return (
-    <div className="w-full overflow-hidden rounded-[10px] border border-white/10 bg-ink-900 shadow-[0_40px_90px_-20px_rgba(0,0,0,0.9)]">
-      {/* app bar */}
-      <div className="flex items-center gap-4 border-b border-white/6 bg-ink-850 px-3 py-[7px]">
-        <span className="flex items-center gap-1.5">
-          <LogoMark size={12} />
-          <span className="text-[9px] font-bold tracking-[0.06em] text-white">VOLTEX</span>
-        </span>
-        <div className="hidden items-center gap-3 text-[7px] text-faint sm:flex">
-          {MINI_NAV.map((n, i) => (
-            <span key={n} className={i === 1 ? 'text-white/80' : undefined}>
-              {t(n)}
-            </span>
-          ))}
+    <div id="home-live-terminal" className="vx-live-terminal" data-stale={!!stale}>
+      <div className="vx-terminal-appbar">
+        <span className="vx-terminal-logo"><LogoMark size={14} /> VOLTEX</span>
+        <div className="vx-terminal-nav">
+          {MINI_NAV.map((item, index) => <span key={item} className={index === 1 ? 'vx-selected' : ''}>{t(item)}</span>)}
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="rounded-[3px] border border-white/10 px-2 py-[3px] text-[6.5px] text-home-muted">{t('auth.login')}</span>
-          <span className="rounded-[3px] bg-gold-500 px-2 py-[3px] text-[6.5px] font-semibold text-ink-950">
-            {t('auth.register')}
-          </span>
+        <span className="vx-terminal-feed" title={feed?.streaming ? motionCopy.live : copy.refresh}>
+          <span className={`vx-feed-dot ${stale ? 'vx-feed-stale' : !feed?.updatedAt ? 'vx-feed-neutral' : ''}`} aria-hidden="true" />
+          {stale ? t('analytics.stale') : feed?.streaming ? motionCopy.live : copy.feed}
+        </span>
+      </div>
+      <div className="vx-terminal-instrument">
+        <div className="vx-terminal-pair">
+          <CryptoIcon symbol={base} size={21} imageUrl={market.logoOf(base)} />
+          <strong>{pair}</strong>
+          <LiveValue value={price} className={up ? 'text-up' : 'text-down'} />
+        </div>
+        <div className="vx-terminal-stats">
+          <span><small>{t('home.preview.change24h')}</small>
+            <LiveValue value={lead?.change} className={up ? 'text-up' : 'text-down'}
+              format={value => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`} /></span>
+          <span><small>{t('home.preview.high24h')}</small><LiveValue value={lead?.high} /></span>
+          <span><small>{t('home.preview.low24h')}</small><LiveValue value={lead?.low} /></span>
+          <span><small>{t('home.preview.volume24h')}</small><LiveValue value={lead?.quoteVolume} format={formatCompactUsd} /></span>
         </div>
       </div>
-
-      {/* instrument bar — every figure below is the live feed */}
-      <div className="flex items-center gap-4 border-b border-white/6 bg-ink-850/60 px-3 py-2">
-        <div className="flex items-center gap-1.5">
-          <CryptoIcon symbol={lead?.base ?? 'BTC'} size={12} imageUrl={market.logoOf(lead?.base ?? 'BTC')} />
-          <span className="text-[8px] font-semibold text-white">{lead?.pair ?? 'BTC/USDT'}</span>
-        </div>
-        <span className={`font-mono text-[11px] font-medium tabular-nums ${up ? 'text-up' : 'text-down'}`}>
-          {lead ? formatPriceValue(lead.price) : '—'}
-        </span>
-        <div className="hidden gap-4 sm:flex">
-          {stats.map((s) => (
-            <div key={s.label} className="leading-tight">
-              <div className="text-[6px] text-faint">{s.label}</div>
-              <div className={`font-mono text-[7.5px] tabular-nums ${s.up ? 'text-up' : 'text-white/85'}`}>
-                {s.value}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-[86px_1fr_112px]">
-        {/* left: real markets by turnover */}
-        <aside className="border-r border-white/6 bg-ink-900">
-          <div className="flex gap-2 border-b border-white/6 px-2 py-1.5 text-[6px]">
-            <span className="text-gold-400">USDT</span>
-            <span className="text-faint">BTC</span>
+      <div className="vx-terminal-workspace vx-terminal-reference-workspace">
+        <section className="vx-terminal-center">
+          <div className="vx-terminal-timeframe">
+            <span className="vx-selected">15m</span><span>OHLC</span>
+            <span>{market.tickerSource ? market.tickerSource.toUpperCase() : copy.feed}</span>
           </div>
-          <div className="flex justify-between px-2 py-1 text-[5.5px] text-faint">
-            <span>{t('markets.pair')}</span>
-            <span>{t('markets.price')}</span>
-          </div>
-          {rows.map((r) => (
-            <div key={r.pair} className="flex items-center justify-between px-2 py-[3.5px]">
-              <span className="truncate text-[6.5px] text-white/70">{r.pair}</span>
-              <span
-                className={`font-mono text-[6.5px] tabular-nums ${r.change >= 0 ? 'text-up' : 'text-down'}`}
-              >
-                {formatPriceValue(r.price)}
-              </span>
-            </div>
-          ))}
-        </aside>
-
-        {/* centre: candles + compact workspace */}
-        <section className="bg-ink-900">
-          <div className="flex items-center gap-2 border-b border-white/6 px-2 py-1 text-[6px] text-faint">
-            {/* The same interval labels PriceChart shows — untranslated
-                there, so untranslated here. */}
-            {['1m', '5m', '15m', '1h', '4h', '1d', '1w'].map((tf) => (
-              <span key={tf} className={tf === '15m' ? 'rounded-[2px] bg-white/10 px-1 text-white' : ''}>
-                {tf}
-              </span>
-            ))}
-            <span className="ml-auto">{t('home.preview.indicators')}</span>
-          </div>
-          <div className="relative">
-            <PreviewCandles className="h-[206px] w-full" up={up} />
-            {lead && (
-              <div className="absolute right-1 top-[58px] rounded-[2px] bg-up px-1 py-[1px] font-mono text-[5.5px] tabular-nums text-ink-950">
-                {formatPriceValue(lead.price)}
-              </div>
-            )}
-          </div>
-          {/* compact lower workspace — kept dense so the chart stays
-              dominant and no large empty black band returns */}
-          <div className="border-t border-white/6">
-            <div className="flex items-center gap-3 border-b border-white/6 px-2 py-[5px] text-[6px]">
-              {(['trade.tabOpenOrders', 'futures.positions', 'trade.tabOrderHistory', 'trade.tabAssets'] as Key[]).map(
-                (k, i) => (
-                  <span
-                    key={k}
-                    className={i === 0 ? 'border-b border-gold-500 pb-[2px] text-white' : 'pb-[2px] text-faint'}
-                  >
-                    {t(k)}
-                  </span>
-                )
-              )}
-            </div>
-            <div className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.9fr_0.8fr] gap-1 border-b border-white/6 px-2 py-[3px] text-[5.5px] text-faint">
-              {(
-                ['home.preview.timePair', 'trade.orderTypeCol', 'trade.side', 'markets.price', 'home.preview.qty'] as Key[]
-              ).map((h) => (
-                <span key={h}>{t(h)}</span>
-              ))}
-            </div>
-            {rows.slice(0, 3).map((r, i) => (
-              <div
-                key={r.pair}
-                className="grid grid-cols-[1.2fr_0.7fr_0.7fr_0.9fr_0.8fr] gap-1 border-b border-white/4 px-2 py-[3.5px] text-[6px] last:border-b-0"
-              >
-                <span className="truncate text-white/60">
-                  <span className="text-faint">14:0{i + 2}</span> {r.pair}
-                </span>
-                <span className="text-white/55">{t('trade.limitOrder')}</span>
-                <span className={i % 2 === 0 ? 'text-up' : 'text-down'}>
-                  {i % 2 === 0 ? t('dashboard.activity.buy') : t('dashboard.activity.sell')}
-                </span>
-                <span className="font-mono tabular-nums text-white/75">{formatPriceValue(r.price)}</span>
-                <span className="font-mono tabular-nums text-white/55">{(0.42 + i * 0.31).toFixed(4)}</span>
-              </div>
-            ))}
+          <div className="vx-terminal-chart">
+            {candles.length > 0
+              ? <PreviewCandles candles={candles} livePrice={receivedValue(feed?.livePrice)} label={`${pair} · ${copy.candles}`} />
+              : <div className="vx-terminal-empty">{feed?.candlesStatus === 'loading'
+                ? t('home.markets.loading') : t('home.dataUnavailable')}</div>}
+            {feed?.candlesStatus === 'error' && candles.length > 0
+              && <span className="vx-terminal-stale-label">{t('analytics.stale')}</span>}
           </div>
         </section>
-
-        {/* right: book + buy/sell */}
-        <aside className="border-l border-white/6 bg-ink-900">
-          <div className="flex items-center justify-between border-b border-white/6 px-2 py-1 text-[6px]">
-            <span className="text-white/80">{t('trade.orderBook')}</span>
-            <span className="text-faint">0.1</span>
-          </div>
-          {lead && <OrderBookRows mid={lead.price} side="ask" logoScale={depths} />}
-          <div className="flex items-center justify-between px-2 py-1">
-            <span className={`font-mono text-[8px] font-semibold tabular-nums ${up ? 'text-up' : 'text-down'}`}>
-              {lead ? formatPriceValue(lead.price) : '—'}
-            </span>
-          </div>
-          {lead && <OrderBookRows mid={lead.price} side="bid" logoScale={depths} />}
-          <div className="border-t border-white/6 px-2 py-2">
-            <div className="mb-1.5 flex gap-2 text-[6px]">
-              <span className="text-white">{t('trade.limitOrder')}</span>
-              <span className="text-faint">{t('trade.marketOrder')}</span>
-              <span className="text-faint">{t('trade.stopOrder')}</span>
+        <aside className="vx-terminal-book">
+          <div className="vx-terminal-pane-title">{t('trade.orderBook')}</div>
+          <div className="vx-book-heading"><span>{t('markets.price')}</span><span>{t('home.preview.qty')}</span></div>
+          {book ? <>
+            <OrderBookRows rows={[...book.asks].reverse()} side="ask" maximum={maximum} />
+            <div className="vx-book-mid">
+              <LiveValue value={price} className={up ? 'text-up' : 'text-down'} />
             </div>
-            {(['markets.price', 'home.preview.qty', 'trade.sum'] as Key[]).map((f) => (
-              <div
-                key={f}
-                className="mb-1 flex justify-between rounded-[2px] border border-white/8 px-1.5 py-[3px] text-[5.5px] text-white/55"
-              >
-                <span>{t(f)}</span>
-                <span className="font-mono tabular-nums text-white/35">0.00</span>
-              </div>
-            ))}
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-              <span className="rounded-[3px] bg-up py-[4px] text-center text-[6.5px] font-semibold text-ink-950">
-                {t('trade.buy')}
-              </span>
-              <span className="rounded-[3px] bg-down py-[4px] text-center text-[6.5px] font-semibold text-ink-950">
-                {t('trade.sell')}
-              </span>
-            </div>
-          </div>
-          <div className="border-t border-white/6 px-2 py-1.5">
-            <div className="mb-1 text-[5.5px] text-faint">{t('home.preview.topMovers')}</div>
-            {rows.slice(0, 4).map((t) => (
-              <div key={t.pair} className="flex justify-between py-[1.5px] text-[6px] tabular-nums">
-                <span className="text-white/60">{t.base}</span>
-                <span className={t.change >= 0 ? 'text-up' : 'text-down'}>
-                  {t.change >= 0 ? '+' : ''}
-                  {t.change.toFixed(2)}%
-                </span>
-              </div>
-            ))}
+            <OrderBookRows rows={book.bids} side="bid" maximum={maximum} />
+          </> : <div className="vx-terminal-empty">
+            {feed?.bookStatus === 'loading' ? t('home.markets.loading') : t('home.dataUnavailable')}
+          </div>}
+          <div className="vx-terminal-book-note">
+            {feed?.bookStatus === 'error' && book ? t('analytics.stale') : feed?.streaming ? motionCopy.live : copy.refresh}
           </div>
         </aside>
+        <aside className="vx-terminal-order-entry" aria-label={t('nav.trade')}>
+          <div className="vx-terminal-order-tabs">
+            <a className="vx-terminal-buy" href={tradeHref}>{t('trade.buy')} {base}</a>
+            <a className="vx-terminal-sell" href={tradeHref}>{t('trade.sell')} {base}</a>
+          </div>
+          <div className="vx-terminal-order-market">{t('trade.marketOrder')}<span>{quote}</span></div>
+          <dl className="vx-terminal-order-fields">
+            <div><dt>{t('trade.price')}</dt><dd><LiveValue value={price} /></dd></div>
+            <div><dt>{t('trade.quantity')}</dt><dd>— <small>{base}</small></dd></div>
+          </dl>
+          <a className="vx-terminal-open-trade" href={tradeHref}>{t('home.cta.openTerminal')}</a>
+          <div className="vx-terminal-available"><span>{t('trade.available')}</span><span>— {quote}</span></div>
+          <div className="vx-terminal-order-note">{t('trade.placeOrderPrompt')}</div>
+        </aside>
+      </div>
+      <div className="vx-terminal-trades vx-terminal-public-trades">
+        <div className="vx-terminal-pane-title">
+          {t('trade.trades')}
+          <span>{feed?.tradesStatus === 'error' && trades.length > 0 ? t('analytics.stale') : pair}</span>
+        </div>
+        <div className="vx-trade-row vx-trade-heading vx-reference-trade-row">
+          <span>{t('trade.time')}</span><span>{t('markets.pair')}</span><span>{t('trade.side')}</span>
+          <span>{t('markets.price')}</span><span>{t('home.preview.qty')}</span>
+        </div>
+        {trades.length > 0 ? trades.slice(0, 4).map(trade => (
+          <div key={trade.id} className="vx-trade-row vx-trade-received vx-reference-trade-row">
+            <time dateTime={new Date(trade.time < 1e12 ? trade.time * 1000 : trade.time).toISOString()}>{timeOf(trade.time)}</time>
+            <span>{pair}</span>
+            <span className={trade.side === 'BUY' ? 'text-up' : 'text-down'}>{t(trade.side === 'BUY' ? 'trade.buy' : 'trade.sell')}</span>
+            <LiveValue value={receivedValue(trade.price)} /><LiveValue value={receivedValue(trade.quantity)} format={quantity} />
+          </div>
+        )) : <div className="vx-terminal-empty vx-terminal-empty-small">
+          {feed?.tradesStatus === 'loading' ? t('home.markets.loading') : t('home.dataUnavailable')}
+        </div>}
+      </div>
+      <div className="vx-terminal-status">
+        <span>{pair} · {copy.candles}</span>
+        <span>{market.tickerUpdatedAt ? timeOf(market.tickerUpdatedAt) : '—'} · {copy.refresh}</span>
       </div>
     </div>
-  );
-}
-
-/**
- * Static candlestick figure. Deliberately deterministic rather than a live
- * simulation: it is decoration inside a preview, and a fake price series
- * animating next to real quotes would be worse than an honest still.
- */
-function PreviewCandles({ className, up }: { className?: string; up: boolean }) {
-  const candles = useMemo(() => {
-    // Fixed pseudo-random walk — same picture on every render, no timers.
-    let seed = 9;
-    const rand = () => {
-      seed = (seed * 1103515245 + 12345) % 2147483648;
-      return seed / 2147483648;
-    };
-    let last = 52;
-    return Array.from({ length: 64 }, () => {
-      const drift = (rand() - 0.46) * 7;
-      const open = last;
-      const close = Math.max(12, Math.min(88, open + drift));
-      const high = Math.max(open, close) + rand() * 4;
-      const low = Math.min(open, close) - rand() * 4;
-      last = close;
-      return { open, close, high, low };
-    });
-  }, []);
-
-  const w = 100 / candles.length;
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={className} aria-hidden="true">
-      {[20, 40, 60, 80].map((y) => (
-        <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="rgba(255,255,255,0.045)" strokeWidth="0.25" />
-      ))}
-      {candles.map((c, i) => {
-        const x = i * w + w / 2;
-        const bull = c.close >= c.open;
-        const color = bull ? '#2ebd85' : '#f0616d';
-        return (
-          <g key={i}>
-            <line x1={x} y1={100 - c.high} x2={x} y2={100 - c.low} stroke={color} strokeWidth="0.28" />
-            <rect
-              x={x - w * 0.3}
-              y={100 - Math.max(c.open, c.close)}
-              width={w * 0.6}
-              height={Math.max(0.6, Math.abs(c.close - c.open))}
-              fill={color}
-            />
-          </g>
-        );
-      })}
-      <line
-        x1="0"
-        y1={100 - candles[candles.length - 1].close}
-        x2="100"
-        y2={100 - candles[candles.length - 1].close}
-        stroke={up ? 'rgba(46,189,133,0.5)' : 'rgba(240,97,109,0.5)'}
-        strokeWidth="0.2"
-        strokeDasharray="1.2 1"
-      />
-    </svg>
   );
 }
