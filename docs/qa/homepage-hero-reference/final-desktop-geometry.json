@@ -1,0 +1,189 @@
+{
+  "animations": [
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-route-pulse",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-reference-halo",
+      "name": "none"
+    },
+    {
+      "c": "vx-asset-pill vx-asset-btc",
+      "name": "none"
+    },
+    {
+      "c": "vx-asset-pill vx-asset-gold",
+      "name": "none"
+    },
+    {
+      "c": "vx-asset-pill vx-asset-oil",
+      "name": "none"
+    },
+    {
+      "c": "vx-tape-track",
+      "name": "none"
+    }
+  ],
+  "boxes": [
+    {
+      "box": {
+        "bottom": 860.6804046630859,
+        "height": 615.0693359375,
+        "left": 840.7487182617188,
+        "right": 1743.0509643554688,
+        "top": 245.6110687255859,
+        "width": 902.30224609375,
+        "x": 840.7487182617188,
+        "y": 245.6110687255859
+      },
+      "class": "vx-reference-display"
+    },
+    {
+      "box": {
+        "bottom": 367.2083435058594,
+        "height": 156.4375,
+        "left": 65.88542175292969,
+        "right": 657.9791717529297,
+        "top": 210.77084350585935,
+        "width": 592.09375,
+        "x": 65.88542175292969,
+        "y": 210.77084350585935
+      },
+      "class": ""
+    },
+    {
+      "box": {
+        "bottom": 447.00001525878906,
+        "height": 67.79167175292969,
+        "left": 65.88542175292969,
+        "right": 570.8437652587891,
+        "top": 379.2083435058594,
+        "width": 504.9583435058594,
+        "x": 65.88542175292969,
+        "y": 379.2083435058594
+      },
+      "class": "vx-reference-subtitle"
+    },
+    {
+      "box": {
+        "bottom": 532.71875,
+        "height": 73.71875,
+        "left": 65.88542175292969,
+        "right": 526.6771087646484,
+        "top": 459,
+        "width": 460.7916870117187,
+        "x": 65.88542175292969,
+        "y": 459
+      },
+      "class": "vx-reference-description"
+    },
+    {
+      "box": {
+        "bottom": 610.1041679382324,
+        "height": 54.38541793823242,
+        "left": 65.88542175292969,
+        "right": 657.9791717529297,
+        "top": 555.71875,
+        "width": 592.09375,
+        "x": 65.88542175292969,
+        "y": 555.71875
+      },
+      "class": "vx-reference-actions"
+    },
+    {
+      "box": {
+        "bottom": 678.1041870117188,
+        "height": 40,
+        "left": 65.88542175292969,
+        "right": 718.6771087646484,
+        "top": 638.1041870117188,
+        "width": 652.7916870117188,
+        "x": 65.88542175292969,
+        "y": 638.1041870117188
+      },
+      "class": "vx-reference-badges"
+    },
+    {
+      "box": {
+        "bottom": 614.2604370117188,
+        "height": 274.0625,
+        "left": 594,
+        "right": 830.8333435058594,
+        "top": 340.19793701171875,
+        "width": 236.83334350585935,
+        "x": 594,
+        "y": 340.19793701171875
+      },
+      "class": "vx-global-assets"
+    },
+    {
+      "box": {
+        "bottom": 1021.6875228881836,
+        "height": 74.67708587646484,
+        "left": 63.97916793823242,
+        "right": 1846.0209159851072,
+        "top": 947.0104370117188,
+        "width": 1782.041748046875,
+        "x": 63.97916793823242,
+        "y": 947.0104370117188
+      },
+      "class": "vx-reference-tape"
+    }
+  ],
+  "clientWidth": 1910,
+  "reduced": true,
+  "scrollWidth": 1910,
+  "viewport": [
+    1920,
+    1080
+  ]
+}

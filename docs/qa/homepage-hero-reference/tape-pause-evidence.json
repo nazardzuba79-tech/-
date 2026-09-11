@@ -1,0 +1,11 @@
+{
+  "tapePausedA": {
+    "copies": 2,
+    "state": "paused",
+    "transform": "matrix(1, 0, 0, 1, -869.274, 0)"
+  },
+  "tapePausedB": {
+    "state": "paused",
+    "transform": "matrix(1, 0, 0, 1, -869.274, 0)"
+  }
+}
