@@ -12,7 +12,6 @@ import { spotOrderFeedback, type SpotOrderFeedback } from '../lib/spotOrderFeedb
 // The exchange charges no trading fee anywhere in this codebase (see the
 // "0% fee" claim already on the registration page) — shown here as an
 // honest 0.00, not a fabricated rate.
-const FEE_RATE = 0;
 
 type OrderFamily = 'LIMIT' | 'MARKET' | 'STOP' | 'TAKE_PROFIT' | 'OCO';
 type Execution = 'LIMIT' | 'MARKET';
@@ -147,7 +146,6 @@ export function OrderForm({
     family === 'OCO' ? Math.max(Number(ocoTakeProfitPrice) || 0, Number(ocoStopLimitPrice) || 0) :
     family === 'LIMIT' || (isConditional && execution === 'LIMIT') ? positiveOrderNumber(price) ?? 0 : marketPrice ?? 0;
   const total = effectivePrice && quantity ? (effectivePrice * parseFloat(quantity)).toFixed(2) : '0.00';
-  const feeAmount = (parseFloat(total) * FEE_RATE).toFixed(2);
 
   // % slider / drag both spend a share of whichever balance funds this
   // side of the trade — quote balance (e.g. USDT) for a buy, base balance
@@ -463,12 +461,6 @@ export function OrderForm({
             </span>
           </div>
 
-          <div className="available-balance">
-            <span>{t('trade.fee')}</span>
-            <span className="amount">
-              {feeAmount} {quoteAsset} (0%)
-            </span>
-          </div>
         </div>
 
         {balanceError && <div className="order-entry-error" role="status">{t('trade.loadAssetsError')} <button type="button" onClick={() => setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button></div>}

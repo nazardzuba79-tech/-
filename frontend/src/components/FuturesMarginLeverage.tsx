@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 
 /**
- * The compact margin-mode + leverage control.
+ * The margin-mode and leverage controls.
  *
- * It replaces two full-width inline controls — a margin-mode segmented
- * toggle and a leverage slider with its own presets — with one summary
- * button that opens a popover. The order panel then has exactly ONE
- * persistent slider, and that slider is position size.
+ * TWO triggers side by side, each opening its own popover — the
+ * arrangement every derivatives terminal uses, and the one the owner
+ * asked for. They replaced a single combined summary button, which in
+ * turn had replaced two full-width stacked controls; the point of that
+ * consolidation is kept, because a popover still costs no permanent
+ * height and the panel still has exactly ONE persistent slider, position
+ * size.
  *
  * This is a different UI over the SAME values. Every bound it enforces
  * comes from the caller: `min` is `config.minLeverage`, `max` is the live
@@ -45,7 +48,8 @@ export function FuturesMarginLeverage({
   warningThreshold: number;
 }) {
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
+  /** Which popover is open — at most one, so the two never overlap. */
+  const [open, setOpen] = useState<null | 'margin' | 'leverage'>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -57,11 +61,11 @@ export function FuturesMarginLeverage({
   useEffect(() => {
     if (!open) return;
     function onPointerDown(event: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(event.target as Node)) setOpen(null);
     }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
-      setOpen(false);
+      setOpen(null);
       triggerRef.current?.focus();
     }
     document.addEventListener('mousedown', onPointerDown);
@@ -77,7 +81,7 @@ export function FuturesMarginLeverage({
   // screen; the form clamps the value, and this closes the popover so the
   // chips are re-read rather than re-clicked from memory.
   useEffect(() => {
-    if (disabled) setOpen(false);
+    if (disabled) setOpen(null);
   }, [disabled]);
 
   /** Presets never exceed the live ceiling, and the ceiling is always
@@ -95,27 +99,41 @@ export function FuturesMarginLeverage({
 
   return (
     <div className="fo-mlWrap" ref={wrapRef}>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="fo-mlTrigger"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className="fo-mlTriggerText">
-          {marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}
-          <span className="fo-mlTriggerSep">·</span>
-          <span className={`mono fo-mlTriggerLev ${isHigh ? 'fo-mlHigh' : ''}`}>
-            {max === null ? '—' : `${leverage}x`}
+      {/* MARGIN MODE and LEVERAGE, as two separate controls. */}
+      <div className="fo-mlRow">
+        <button
+          ref={triggerRef}
+          type="button"
+          className="fo-mlTrigger"
+          aria-haspopup="dialog"
+          aria-expanded={open === 'margin'}
+          disabled={disabled}
+          onClick={() => setOpen((v) => (v === 'margin' ? null : 'margin'))}
+        >
+          <span className="fo-mlTriggerText">
+            {marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}
           </span>
-        </span>
-        <span className="fo-mlChevron" aria-hidden="true">▾</span>
-      </button>
+          <span className="fo-mlChevron" aria-hidden="true">▾</span>
+        </button>
 
-      {open && max !== null && (
-        <div className="fo-mlPopover" role="dialog" aria-label={t('futures.leverage')}>
+        <button
+          type="button"
+          className="fo-mlTrigger fo-mlTriggerLevBtn"
+          aria-haspopup="dialog"
+          aria-expanded={open === 'leverage'}
+          aria-label={t('futures.leverage')}
+          disabled={disabled}
+          onClick={() => setOpen((v) => (v === 'leverage' ? null : 'leverage'))}
+        >
+          <span className={`mono fo-mlTriggerLev ${isHigh ? 'fo-mlHigh' : ''}`}>
+            {max === null ? '—' : `${leverage.toFixed(2)}x`}
+          </span>
+          <span className="fo-mlChevron" aria-hidden="true">▾</span>
+        </button>
+      </div>
+
+      {open === 'margin' && max !== null && (
+        <div className="fo-mlPopover" role="dialog" aria-label={t('futures.marginType')}>
           <div className="fo-mlSection">
             <div className="fo-mlSectionTitle">{t('futures.marginType')}</div>
             <div className="fo-mlModeRow">
@@ -132,7 +150,11 @@ export function FuturesMarginLeverage({
               ))}
             </div>
           </div>
+        </div>
+      )}
 
+      {open === 'leverage' && max !== null && (
+        <div className="fo-mlPopover fo-mlPopoverRight" role="dialog" aria-label={t('futures.leverage')}>
           <div className="fo-mlSection">
             <div className="fo-mlSectionTitle">
               {t('futures.leverage')}

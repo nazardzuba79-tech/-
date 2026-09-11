@@ -25,10 +25,25 @@
 .futures-terminal .orderbook-spread .usd { font-size: 12px; }
 .futures-terminal .ob-spread-detail { font-size: 11px; color: #a5b0bc; }
 .futures-terminal .fo-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; overflow: auto hidden; }
-.futures-terminal .fo-sideTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 10px 12px 2px; padding: 3px; background: var(--panel-alt); border-radius: 6px; }
-.futures-terminal .fo-sideTab { min-width: 0; padding: 9px 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: #aeb9c4; line-height: 18px; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
-.futures-terminal .fo-sideTabBuy { background: #12c98d; border-color: #16d89a; color: #fff; }
-.futures-terminal .fo-sideTabSell { background: #ef5350; border-color: #ff6262; color: #fff; }
+/* The side tabs that used to sit here are gone: the direction is the
+   button at the bottom of the form, not a mode entered before it. Their
+   colours live on in .submit-btn.buy / .submit-btn.sell, which already
+   carried them. */
+
+/* Long and short side by side. They keep the CTA's exact height, radius
+   and treatment — this is the same button twice, not a new control. */
+.futures-terminal .fo-submitPair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* The sticky CTA rule below targets a direct .submit-btn child of the
+   form; the pair is what sticks now, so the shadow and offset move to it
+   and the buttons inside stay ordinary. */
+.futures-terminal .fo-form .fo-submitPair { position: sticky; bottom: 0; z-index: 2; flex-shrink: 0; box-shadow: 0 -8px 0 var(--workspace-bg); }
+.futures-terminal .fo-form .fo-submitPair .submit-btn { position: static; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12); }
+/* A value that differs by direction, shown for both instead of only for
+   whichever side was selected — there is no selected side any more. */
+.futures-terminal .fo-sidePair { display: inline-flex; gap: 5px; align-items: baseline; }
+.futures-terminal .fo-sidePairLong { color: #12c98d; }
+.futures-terminal .fo-sidePairShort { color: #ef5350; }
+.futures-terminal .fo-sidePairSep { color: var(--text-tertiary); }
 .futures-terminal .fo-typeTabs { display: flex; gap: 22px; min-height: 43px; padding: 0 14px; border-bottom: 1px solid var(--border-color); }
 .futures-terminal .fo-typeTab { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #a5b0bc; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .futures-terminal .fo-typeTabActive { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
@@ -47,7 +62,19 @@
    toggle stacked on a leverage slider, so the panel keeps exactly ONE
    persistent slider (position size). Same terminal surfaces, densities and
    accent as the controls around it — no gradients, no glow, no cards. */
+/* The quantity's unit, inside the field rather than beside the label. */
+.futures-terminal .fo-qtyInputRow { position: relative; display: flex; align-items: center; }
+.futures-terminal .fo-qtyInputRow .fo-input { width: 100%; padding-right: 52px; }
+.futures-terminal .fo-unit { position: absolute; right: 11px; color: var(--text-secondary); font-size: 12px; font-weight: 600; pointer-events: none; }
+
 .futures-terminal .fo-mlWrap { position: relative; min-width: 0; }
+/* Two triggers, side by side. Margin mode carries the longer label so it
+   takes the wider column; leverage is a short number and does not need it. */
+.futures-terminal .fo-mlRow { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 8px; }
+.futures-terminal .fo-mlTriggerLevBtn { justify-content: space-between; }
+/* The leverage popover hangs from the right trigger, so it is anchored to
+   the right edge instead of stretching the full panel width. */
+.futures-terminal .fo-mlPopoverRight { left: auto; right: 0; min-width: 210px; }
 .futures-terminal .fo-mlTrigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .futures-terminal .fo-mlTrigger:disabled { color: #6b7684; cursor: not-allowed; }
 .futures-terminal .fo-mlTrigger[aria-expanded="true"] { border-color: var(--accent-yellow); }

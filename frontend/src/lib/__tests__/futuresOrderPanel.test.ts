@@ -235,7 +235,8 @@ describe('A. the panel keeps exactly ONE persistent slider', () => {
     });
     // Closed: just the trigger.
     expect(nodes(tree).filter((n) => n.type === 'input')).toHaveLength(0);
-    nodes(tree).find((n) => n.type === 'button').props.onClick();
+    // The stepper lives behind the LEVERAGE trigger, the second of the two.
+    byClass(tree, 'fo-mlTrigger')[1].props.onClick();
     const open = control.render({
       marginType: 'ISOLATED', onMarginTypeChange: jest.fn(),
       leverage: 10, onLeverageChange: jest.fn(),
@@ -266,8 +267,10 @@ describe('B. leverage bounds come from the same values as before', () => {
       min: 1, max: 50, warningThreshold: 20, ...overrides,
     };
     control.render(p);
-    const trigger = nodes(control.render(p)).find((n) => n.type === 'button');
-    trigger.props.onClick();
+    // Margin mode and leverage are two separate controls now; the leverage
+    // popover is behind the SECOND trigger. Same bounds, same clamp — only
+    // the door changed.
+    byClass(control.render(p), 'fo-mlTrigger')[1].props.onClick();
     return { control, tree: control.render(p), props: p };
   };
 
@@ -394,10 +397,12 @@ describe('the placeFuturesOrder payload is byte-for-byte what it was', () => {
     const f = await pricedForm();
     nodes(f.tree).find((n) => n.type === f.form.components.FuturesMarginLeverage)
       .props.onMarginTypeChange('CROSS');
-    byClass(f.tree, 'fo-sideTab').find((n) => n.props.children === 'futures.sellShort').props.onClick();
     await tick();
-    const tree = f.render();
-    submit(tree);
+    // The side used to be a tab clicked before filling the form in. It is
+    // now the button that submits, so the SHORT button is what sends a
+    // SHORT — this asserts the direction still reaches the payload, by the
+    // route a trader actually takes.
+    sideButton(f.render(), 'sell').props.onClick();
     await tick();
     expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({
       side: 'SELL', marginType: 'CROSS', type: 'LIMIT', price: '50000', quantity: '1',
@@ -453,19 +458,36 @@ describe('unknown data is never fabricated', () => {
     expect(control.props.max).toBeNull();
   });
 
-  test('K. the fee row shows a dash — VOLTEX has no futures fee source', async () => {
+  test('K. there is NO fee row — VOLTEX charges nothing, in either terminal', async () => {
+    // This used to assert the row rendered a dash, which was the honest
+    // answer while the rate was merely unknown. The owner has since settled
+    // it: the rate is zero. A line that can only ever say "nothing" asks
+    // the trader to look for something that does not exist, so the row is
+    // gone from BOTH panels — and with it the frontend-only `FEE_RATE = 0`
+    // that multiplied a total to manufacture "0.00".
+    //
+    // The invariant this protects is unchanged and now stricter: no
+    // fabricated fee figure can appear anywhere in either order form.
     const f = await pricedForm();
-    const feeRow = byClass(f.tree, 'fo-infoRow').find((r) => text(r).includes('trade.fee'));
-    expect(feeRow).toBeDefined();
-    expect(text(feeRow)).toContain('—');
-    // The fabricated zero this row used to carry is gone.
-    expect(text(feeRow)).not.toContain('0.00');
-    expect(text(feeRow)).not.toContain('0%');
-    // The fabricated literal must not come back as RENDERED output. The
-    // audit note in the source deliberately quotes it, so this checks the
-    // JSX expression rather than the whole file.
-    expect(source(FORM)).not.toContain("(0%)</span>");
-    expect(source(FORM)).not.toMatch(/0\.00 \{quoteAsset\} \(0%\)/);
+    expect(byClass(f.tree, 'fo-infoRow').find((r) => text(r).includes('trade.fee'))).toBeUndefined();
+    expect(text(f.tree)).not.toContain('trade.fee');
+
+    for (const file of [FORM, 'components/OrderForm.tsx']) {
+      const code = source(file);
+      expect(code).not.toContain("t('trade.fee')");
+      expect(code).not.toContain('FEE_RATE');
+      expect(code).not.toContain('feeAmount');
+      expect(code).not.toContain('(0%)</span>');
+      expect(code).not.toMatch(/\{feeAmount\}/);
+    }
+
+    // Deliberately NOT asserted here: that the word "fee" is absent from
+    // the file. The doc comment where the row used to be explains which
+    // work must bring it back — a config value, settlement at fill, the
+    // amount stored on the trade — and naming those is how the file stays
+    // honest about what is missing. Pinning an invariant to prose only
+    // pressures the prose into lying. The executable checks above are what
+    // forbid a fabricated figure.
   });
 
   test('order value and required margin dash out when the price is unknown', async () => {
@@ -490,11 +512,20 @@ describe('unknown data is never fabricated', () => {
   });
 });
 
+/** The two direction buttons. `submit-btn buy` / `submit-btn sell` are the
+ *  classes the CTA already used for its colours — the split reuses them
+ *  rather than inventing a control. */
+const sideButton = (tree: any, side: 'buy' | 'sell') =>
+  nodes(tree).find((n: any) => n.type === 'button' && n.props?.className === `submit-btn ${side}`);
+
 // ── The submit button matches the submit guard ───────────────────────
 
 describe('the submit button reflects the SAME guard handleSubmit uses', () => {
-  const submitButton = (tree: any) =>
-    nodes(tree).find((n) => n.type === 'button' && n.props?.type === 'submit');
+  /** Long and short are the same control twice, under the same guard, so
+   *  every assertion below holds for either. Reading the LONG one keeps
+   *  these tests saying exactly what they said before the split; the pair
+   *  is checked to agree in `both buttons answer to one guard`. */
+  const submitButton = (tree: any) => sideButton(tree, 'buy');
 
   test('1. a known account state leaves the button enabled', async () => {
     const f = await pricedForm();
@@ -539,6 +570,64 @@ describe('the submit button reflects the SAME guard handleSubmit uses', () => {
     submit(tree);
     await tick();
     expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ reduceOnly: true }));
+  });
+
+  // ── The direction is the button ──────────────────────────────────
+  //
+  // The side used to be a mode: a tab above the form, entered before any
+  // field was touched. Now the form is direction-neutral and each button
+  // carries its own side. That is only true if the side travels as an
+  // ARGUMENT — a React state update scheduled by the button's click is
+  // NOT visible to a submit handler firing in the same event, so a
+  // `setSide` here would send the PREVIOUS direction. These pin that.
+
+  test('a fresh form sends SHORT when SHORT is pressed — no tab, no prior click', async () => {
+    const f = await pricedForm();
+    // Nothing has selected a side. The first and only act is pressing Short.
+    sideButton(f.tree, 'sell').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL' }));
+  });
+
+  test('a fresh form sends LONG when LONG is pressed', async () => {
+    const f = await pricedForm();
+    sideButton(f.tree, 'buy').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledWith(expect.objectContaining({ side: 'BUY' }));
+  });
+
+  test('reversing sends the NEW direction, not the one pressed before it', async () => {
+    // The regression that a state-based side would produce: press Long,
+    // then Short, and the second order goes out as another LONG.
+    const f = await pricedForm();
+    sideButton(f.tree, 'buy').props.onClick();
+    await tick();
+    sideButton(f.render(), 'sell').props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledTimes(2);
+    expect(f.placed.mock.calls[0][0]).toMatchObject({ side: 'BUY' });
+    expect(f.placed.mock.calls[1][0]).toMatchObject({ side: 'SELL' });
+  });
+
+  test('both buttons answer to one guard', async () => {
+    // They are the same control twice: whatever disables one disables the
+    // other, or a trader could open a position in a state that refuses to
+    // close it.
+    const f = await pricedForm({ account: accountState({ orders: resource(null) }) });
+    expect(sideButton(f.tree, 'buy').props.disabled).toBe(true);
+    expect(sideButton(f.tree, 'sell').props.disabled).toBe(true);
+
+    const ok = await pricedForm();
+    expect(sideButton(ok.tree, 'buy').props.disabled).toBe(false);
+    expect(sideButton(ok.tree, 'sell').props.disabled).toBe(false);
+  });
+
+  test('neither button is type=submit — the form must not pick a side by itself', async () => {
+    // A `type="submit"` pair would let a stray Enter fire whichever button
+    // the browser considers first, choosing a DIRECTION for the trader.
+    const f = await pricedForm();
+    expect(sideButton(f.tree, 'buy').props.type).toBe('button');
+    expect(sideButton(f.tree, 'sell').props.type).toBe('button');
   });
 
   test('4. while submitting, the button is disabled', async () => {
@@ -643,16 +732,34 @@ describe('the popover behaves like a popover', () => {
   test('it starts closed and toggles', () => {
     const control = mount(CONTROL);
     expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(0);
-    nodes(control.render(p)).find((n) => n.type === 'button').props.onClick();
+    byClass(control.render(p), 'fo-mlTrigger')[1].props.onClick();
     expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
   });
 
-  test('the trigger summarises mode and leverage in one line', () => {
+  test('mode and leverage are two triggers, each showing only its own value', () => {
+    // They used to be one summary button reading "Isolated · 10x". The
+    // owner asked for the arrangement every derivatives terminal uses, so
+    // each value now has its own control — and neither repeats the other's.
     const control = mount(CONTROL);
-    const tree = control.render(p);
-    const trigger = byClass(tree, 'fo-mlTrigger')[0];
-    expect(text(trigger)).toContain('futures.isolated');
-    expect(text(trigger)).toContain('10x');
+    const [mode, lev] = byClass(control.render(p), 'fo-mlTrigger');
+    expect(text(mode)).toContain('futures.isolated');
+    expect(text(mode)).not.toContain('10');
+    expect(text(lev)).toContain('10.00x');
+    expect(text(lev)).not.toContain('futures.isolated');
+  });
+
+  test('each trigger opens its OWN popover, and never both at once', () => {
+    const control = mount(CONTROL);
+    const openTrigger = (i: number) => byClass(control.render(p), 'fo-mlTrigger')[i].props.onClick();
+    openTrigger(0);
+    expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
+    expect(byClass(control.render(p), 'fo-mlMode').length).toBeGreaterThan(0);
+    expect(byClass(control.render(p), 'fo-mlChip')).toHaveLength(0);
+
+    openTrigger(1);
+    expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
+    expect(byClass(control.render(p), 'fo-mlChip').length).toBeGreaterThan(0);
+    expect(byClass(control.render(p), 'fo-mlMode')).toHaveLength(0);
   });
 
   test('it marks high leverage without changing the threshold', () => {
@@ -665,11 +772,18 @@ describe('the popover behaves like a popover', () => {
 
   test('it declares dialog semantics and an expanded state', () => {
     const control = mount(CONTROL);
-    const trigger = byClass(control.render(p), 'fo-mlTrigger')[0];
-    expect(trigger.props['aria-haspopup']).toBe('dialog');
-    expect(trigger.props['aria-expanded']).toBe(false);
-    trigger.props.onClick();
-    expect(byClass(control.render(p), 'fo-mlTrigger')[0].props['aria-expanded']).toBe(true);
+    // Both triggers declare it, and opening one must not mark the other
+    // expanded — a screen reader would otherwise announce two open dialogs.
+    for (const i of [0, 1]) {
+      const fresh = mount(CONTROL);
+      const trigger = byClass(fresh.render(p), 'fo-mlTrigger')[i];
+      expect(trigger.props['aria-haspopup']).toBe('dialog');
+      expect(trigger.props['aria-expanded']).toBe(false);
+      trigger.props.onClick();
+      const after = byClass(fresh.render(p), 'fo-mlTrigger');
+      expect(after[i].props['aria-expanded']).toBe(true);
+      expect(after[1 - i].props['aria-expanded']).toBe(false);
+    }
   });
 
   test('outside-click and Escape handling is registered while open only', () => {
