@@ -86,6 +86,18 @@ describe('Bybit live collector', () => {
     book.stale(new Set([id])); expect(book.rows.get(id)).toMatchObject({lastPrice:0,stale:true});
     book.bootstrap('linear',await f.rest.getTickers('linear')); expect(book.rows.get(id)?.lastPrice).toBe(0);
   });
+  test('spot REST bid/ask can advance after a newer WS tick without rewinding any WS fields', async () => {
+    const f = fixture(1); const book = new BybitTickerBook(() => 1_000_020);
+    book.setUniverse((await f.rest.listSpotInstruments()).value);
+    const initial = await f.rest.getTickers('spot'); book.bootstrap('spot',initial);
+    book.apply('spot',{topic:'tickers.ASSET0USDT',type:'snapshot',ts:1_000_020,cs:20,data:{lastPrice:'20'}});
+    const later = {...initial, fetchedAt:1_000_025, value:initial.value.map(t => ({...t,providerEventAt:1_000_010,lastPrice:15,bidPrice:14,askPrice:16}))};
+    book.bootstrap('spot',later);
+    expect(book.rows.get('spot:ASSET0USDT')).toMatchObject({lastPrice:20,bidPrice:14,askPrice:16,providerEventAt:1_000_020,sequence:20,receivedAt:1_000_020,stale:false});
+    book.bootstrap('spot',initial);
+    book.bootstrap('spot',{...later,stale:true,value:later.value.map(t=>({...t,providerEventAt:1_000_015,bidPrice:0}))});
+    expect(book.rows.get('spot:ASSET0USDT')).toMatchObject({lastPrice:20,bidPrice:14,askPrice:16});
+  });
   test('disconnect retains last-good, reconnect bootstraps and resubscribes once, stop cancels retry', async () => {
     jest.useFakeTimers(); let now = 1_000_000; const f = fixture(3,()=>now); const sockets: Socket[] = [];
     const c = new BybitLiveTickerCollector(f.rest,{now:()=>now,random:()=>0,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});

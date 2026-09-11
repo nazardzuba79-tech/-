@@ -19,6 +19,7 @@ export class BybitTickerBook {
   readonly rows = new Map<string, LiveTicker>();
   readonly instruments = new Map<string, NormalizedInstrument>();
   private dirty = new Set<string>();
+  private spotRestAt = new Map<string, number>();
   rejected = 0;
   rejectedTimestamp = 0;
   rejectedSequence = 0;
@@ -27,7 +28,7 @@ export class BybitTickerBook {
     this.instruments.clear();
     for (const i of instruments) if (i.status === 'Trading') this.instruments.set(`${categoryOf(i)}:${i.providerSymbol}`, i);
     const valid = new Set([...this.instruments.values()].map(instrumentKey));
-    for (const id of this.rows.keys()) if (!valid.has(id)) { this.rows.delete(id); this.dirty.delete(id); }
+    for (const id of this.rows.keys()) if (!valid.has(id)) { this.rows.delete(id); this.dirty.delete(id); this.spotRestAt.delete(id); }
   }
   bootstrap(category: BybitCategory, data: CachedValue<NormalizedTicker[]>): void {
     for (const ticker of data.value) {
@@ -36,7 +37,19 @@ export class BybitTickerBook {
       const id = instrumentKey(i), old = this.rows.get(id);
       // A cached REST bootstrap cannot rewind a newer WS quote.
       const eventAt = ticker.providerEventAt ?? null;
-      if (old && (eventAt ?? data.fetchedAt) < (old.providerEventAt ?? old.fetchedAt)) continue;
+      const restAt = eventAt ?? data.fetchedAt;
+      if (old && restAt < (old.providerEventAt ?? old.fetchedAt)) {
+        // A WS tick can arrive while REST is in flight. Spot bid/ask are
+        // REST-only, so update them independently without rolling back the
+        // newer WS price, timestamp, sequence or freshness. Cached/older REST
+        // must not rewind these fields either.
+        if (category === 'spot' && !data.stale && restAt > (this.spotRestAt.get(id) ?? 0)) {
+          this.rows.set(id, { ...old, bidPrice: ticker.bidPrice, askPrice: ticker.askPrice });
+          this.spotRestAt.set(id, restAt); this.dirty.add(id);
+        }
+        continue;
+      }
+      if (category === 'spot') this.spotRestAt.set(id, restAt);
       this.rows.set(id, { ...ticker, id, symbol: i.symbol, pair: i.symbol, provider: 'bybit', marketType: i.marketType,
         baseAsset: i.baseAsset, quoteAsset: i.quoteAsset, settleAsset: i.settleAsset,
         openInterestValue: ticker.openInterestValue ?? null,
