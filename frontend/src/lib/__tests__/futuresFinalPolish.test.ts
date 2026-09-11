@@ -318,7 +318,11 @@ test.each([1, 5, 10, 20, 50, 100])('real form + leverage control select %dx and 
   const widget = mount('components/FuturesMarginLeverage.tsx');
   const props = () => f.part(f.render(), 'FuturesMarginLeverage').props;
   widget.render(props());
-  nodes(widget.render(props())).find(n => n.type === 'button').props.onClick();
+  // Margin mode and leverage are two triggers now; the chips are behind
+  // the leverage one.
+  nodes(widget.render(props()))
+    .filter(n => n.type === 'button' && n.props?.className?.includes?.('fo-mlTrigger'))[1]
+    .props.onClick();
   const chip = nodes(widget.render(props())).find(
     n => n.props?.className?.includes?.('fo-mlChip') && [n.props.children].flat(2).join('') === `${leverage}x`
   );
@@ -328,7 +332,7 @@ test.each([1, 5, 10, 20, 50, 100])('real form + leverage control select %dx and 
   const tree = f.render(); control = f.part(tree, 'FuturesMarginLeverage');
   expect(control.props.leverage).toBe(leverage);
   // The control's own trigger reports the selection back to the trader.
-  expect(JSON.stringify(widget.render(control.props))).toContain(`${leverage}x`);
+  expect(JSON.stringify(widget.render(control.props))).toContain(`${leverage.toFixed(2)}x`);
 
   nodes(tree).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(f.placed).toHaveBeenCalledWith({ symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '50000', quantity: '1', leverage, marginType: 'ISOLATED', reduceOnly: false });

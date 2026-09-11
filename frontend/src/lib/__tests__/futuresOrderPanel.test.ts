@@ -235,7 +235,8 @@ describe('A. the panel keeps exactly ONE persistent slider', () => {
     });
     // Closed: just the trigger.
     expect(nodes(tree).filter((n) => n.type === 'input')).toHaveLength(0);
-    nodes(tree).find((n) => n.type === 'button').props.onClick();
+    // The stepper lives behind the LEVERAGE trigger, the second of the two.
+    byClass(tree, 'fo-mlTrigger')[1].props.onClick();
     const open = control.render({
       marginType: 'ISOLATED', onMarginTypeChange: jest.fn(),
       leverage: 10, onLeverageChange: jest.fn(),
@@ -266,8 +267,10 @@ describe('B. leverage bounds come from the same values as before', () => {
       min: 1, max: 50, warningThreshold: 20, ...overrides,
     };
     control.render(p);
-    const trigger = nodes(control.render(p)).find((n) => n.type === 'button');
-    trigger.props.onClick();
+    // Margin mode and leverage are two separate controls now; the leverage
+    // popover is behind the SECOND trigger. Same bounds, same clamp — only
+    // the door changed.
+    byClass(control.render(p), 'fo-mlTrigger')[1].props.onClick();
     return { control, tree: control.render(p), props: p };
   };
 
@@ -712,16 +715,34 @@ describe('the popover behaves like a popover', () => {
   test('it starts closed and toggles', () => {
     const control = mount(CONTROL);
     expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(0);
-    nodes(control.render(p)).find((n) => n.type === 'button').props.onClick();
+    byClass(control.render(p), 'fo-mlTrigger')[1].props.onClick();
     expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
   });
 
-  test('the trigger summarises mode and leverage in one line', () => {
+  test('mode and leverage are two triggers, each showing only its own value', () => {
+    // They used to be one summary button reading "Isolated · 10x". The
+    // owner asked for the arrangement every derivatives terminal uses, so
+    // each value now has its own control — and neither repeats the other's.
     const control = mount(CONTROL);
-    const tree = control.render(p);
-    const trigger = byClass(tree, 'fo-mlTrigger')[0];
-    expect(text(trigger)).toContain('futures.isolated');
-    expect(text(trigger)).toContain('10x');
+    const [mode, lev] = byClass(control.render(p), 'fo-mlTrigger');
+    expect(text(mode)).toContain('futures.isolated');
+    expect(text(mode)).not.toContain('10');
+    expect(text(lev)).toContain('10.00x');
+    expect(text(lev)).not.toContain('futures.isolated');
+  });
+
+  test('each trigger opens its OWN popover, and never both at once', () => {
+    const control = mount(CONTROL);
+    const openTrigger = (i: number) => byClass(control.render(p), 'fo-mlTrigger')[i].props.onClick();
+    openTrigger(0);
+    expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
+    expect(byClass(control.render(p), 'fo-mlMode').length).toBeGreaterThan(0);
+    expect(byClass(control.render(p), 'fo-mlChip')).toHaveLength(0);
+
+    openTrigger(1);
+    expect(byClass(control.render(p), 'fo-mlPopover')).toHaveLength(1);
+    expect(byClass(control.render(p), 'fo-mlChip').length).toBeGreaterThan(0);
+    expect(byClass(control.render(p), 'fo-mlMode')).toHaveLength(0);
   });
 
   test('it marks high leverage without changing the threshold', () => {
@@ -734,11 +755,18 @@ describe('the popover behaves like a popover', () => {
 
   test('it declares dialog semantics and an expanded state', () => {
     const control = mount(CONTROL);
-    const trigger = byClass(control.render(p), 'fo-mlTrigger')[0];
-    expect(trigger.props['aria-haspopup']).toBe('dialog');
-    expect(trigger.props['aria-expanded']).toBe(false);
-    trigger.props.onClick();
-    expect(byClass(control.render(p), 'fo-mlTrigger')[0].props['aria-expanded']).toBe(true);
+    // Both triggers declare it, and opening one must not mark the other
+    // expanded — a screen reader would otherwise announce two open dialogs.
+    for (const i of [0, 1]) {
+      const fresh = mount(CONTROL);
+      const trigger = byClass(fresh.render(p), 'fo-mlTrigger')[i];
+      expect(trigger.props['aria-haspopup']).toBe('dialog');
+      expect(trigger.props['aria-expanded']).toBe(false);
+      trigger.props.onClick();
+      const after = byClass(fresh.render(p), 'fo-mlTrigger');
+      expect(after[i].props['aria-expanded']).toBe(true);
+      expect(after[1 - i].props['aria-expanded']).toBe(false);
+    }
   });
 
   test('outside-click and Escape handling is registered while open only', () => {

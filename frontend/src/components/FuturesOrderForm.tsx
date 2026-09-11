@@ -31,7 +31,7 @@ export function FuturesOrderForm({
 }) {
   const { t } = useLanguage();
   const toast = useToast();
-  const [, quoteAsset] = symbol.split('/');
+  const [baseAsset, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
   const [price, setPrice] = useState('');
@@ -363,18 +363,26 @@ export function FuturesOrderForm({
               {t('futures.availableMargin')}: {availableMargin === null ? '—' : availableMargin.toFixed(2)} {quoteAsset}
             </span>
           </span>
-          <input
-            className="mono fo-input"
-            type="number"
-            step="any"
-            required
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(e.target.value);
-              setPercent(0);
-            }}
-            placeholder="0.00000"
-          />
+          {/* The unit sits INSIDE the field, as on every derivatives panel.
+              It is a label, not a selector: this form trades one contract,
+              the one the page is on, so a dropdown here would offer a
+              choice that does not exist. Changing the pair is the pair
+              list's job. */}
+          <div className="fo-qtyInputRow">
+            <input
+              className="mono fo-input"
+              type="number"
+              step="any"
+              required
+              value={quantity}
+              onChange={(e) => {
+                setQuantity(e.target.value);
+                setPercent(0);
+              }}
+              placeholder="0.00000"
+            />
+            <span className="fo-unit">{baseAsset}</span>
+          </div>
         </label>
 
         {/* The ONLY persistent slider in this panel. */}

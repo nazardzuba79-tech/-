@@ -34,6 +34,14 @@ describe('Futures UI-only reconciliation',()=>{
 test.each([
   [
     "components/FuturesOrderForm.tsx",
+    // Re-taken a second time, for the quantity field's unit. The ONLY
+    // difference from the previous fingerprint: the input is wrapped in a
+    // `fo-qtyInputRow` div carrying a `fo-unit` span that prints
+    // `baseAsset`, and `symbol.split('/')` now names that base instead of
+    // discarding it. The input's own props — value, onChange, required,
+    // step, placeholder — are byte-identical, and the unit is a label, not
+    // a selector: this form trades the one contract the page is on.
+    //
     // Re-taken for the direction control. What differs, exactly, and
     // nothing else:
     //   * the `fo-sideTabs` block is GONE. The side was a mode entered
@@ -137,7 +145,7 @@ test.each([
     // bounds and the order payload are byte-unchanged — which
     // futuresOrderPanel's 40 behavioural tests assert directly and still
     // pass unmodified.
-    "a6b3c19d31c33b604d64c6a508f35adabc4fb0a9e763fa6b8b57fbdddfab24b7"
+    "2ce858fcdc2a5cf40bf93e16fd00925cc98173c2fc7ec01cbf38413154d33bf7"
   ],
   [
     "components/FuturesAccountSummary.tsx",
