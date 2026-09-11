@@ -240,5 +240,6 @@
     "One- and three-minute local soaks are not a 15-minute deployed staging soak.",
     "Native POSIX SIGTERM was not delivered on Windows; installed handler exercised through IPC.",
     "Stable candidate and pristine main were both tested with production frontend bundles built and identical installed dependencies."
-  ]
+  ],
+  "implementationCommit": "6ddf250c1c192032d9e540ef5fbfb8e934204bb5"
 }
