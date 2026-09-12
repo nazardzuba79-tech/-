@@ -7,6 +7,7 @@ import { requireAdmin } from '../middleware/admin';
 import type { PrismaClient } from '@prisma/client';
 import type { Availability } from '../../services/marketData/types';
 import type { AssetSortKey } from '../../services/marketData/AssetRegistry';
+import { marketLiveRouter } from './marketLive';
 
 /**
  * The gateway's own HTTP surface.
@@ -49,6 +50,7 @@ export function marketDataRouter(
   universe: MarketUniverse | null = null
 ): Router {
   const router = Router();
+  router.use(marketLiveRouter(gateway.liveReference ?? null));
 
   /**
    * Tracked-venue derivatives statistics for ONE asset.

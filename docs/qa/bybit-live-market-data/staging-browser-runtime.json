@@ -1,0 +1,236 @@
+{
+  "at": "2026-09-11T15:31:06.156Z",
+  "environment": "Local Windows; public Bybit; exact compiled standalone entrypoint; real API connector/SSE. Not Docker or deployed Frankfurt.",
+  "docker": "NOT RUN",
+  "nativePosixSigterm": "NOT RUN",
+  "verifier": {
+    "ok": true,
+    "checks": [
+      {
+        "name": "collector health",
+        "status": "PASS"
+      },
+      {
+        "name": "snapshot missing token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "snapshot invalid token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "diagnostics missing token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "diagnostics invalid token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS missing token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS invalid token rejected",
+        "status": "PASS"
+      },
+      {
+        "name": "authenticated HTTP snapshot",
+        "status": "PASS"
+      },
+      {
+        "name": "authenticated diagnostics",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS observation",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE observation",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS observation",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE observation",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS observation",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE observation",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS snapshots and incremental updates",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS populated spot and linear universe",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS continuity and bounded frames",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS null observations",
+        "status": "PASS"
+      },
+      {
+        "name": "internal WS natural numeric zero preserved",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE snapshots and incremental updates",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE populated spot and linear universe",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE continuity and bounded frames",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE null observations",
+        "status": "PASS"
+      },
+      {
+        "name": "public SSE natural numeric zero preserved",
+        "status": "PASS"
+      },
+      {
+        "name": "collector to API normalized identity",
+        "status": "PASS"
+      },
+      {
+        "name": "spot derivative nulls preserved across transports",
+        "status": "PASS"
+      }
+    ],
+    "internal": {
+      "frames": 765,
+      "snapshots": 3,
+      "deltas": 751,
+      "states": 11,
+      "reconnects": 2,
+      "revisionGaps": 0,
+      "rejectedFrames": 0,
+      "minTickers": 1407,
+      "maxTickers": 1407,
+      "maxStaleRows": 17,
+      "largestFrameBytes": 893134,
+      "deltaRows": 270717,
+      "maxSilenceMs": 401,
+      "nullObservations": 526690,
+      "zeroObservations": 59802,
+      "tickers": 1407,
+      "assets": 869,
+      "spot": 538,
+      "linear": 869,
+      "stale": 11,
+      "averageDeltaRows": 360.47536617842877
+    },
+    "public": {
+      "frames": 777,
+      "snapshots": 3,
+      "deltas": 751,
+      "states": 23,
+      "reconnects": 2,
+      "revisionGaps": 0,
+      "rejectedFrames": 0,
+      "minTickers": 1407,
+      "maxTickers": 1407,
+      "maxStaleRows": 17,
+      "largestFrameBytes": 893134,
+      "deltaRows": 270717,
+      "maxSilenceMs": 386,
+      "nullObservations": 526690,
+      "zeroObservations": 59802,
+      "tickers": 1407,
+      "assets": 869,
+      "spot": 538,
+      "linear": 869,
+      "stale": 11,
+      "averageDeltaRows": 360.47536617842877
+    },
+    "diagnosticsBefore": {
+      "activeInstruments": 1407,
+      "activeAssets": 869,
+      "tickerCount": 1407,
+      "restRequests": 4,
+      "reconnects": 0,
+      "malformed": 0,
+      "rejectedTimestamp": 1001,
+      "rejectedSequence": 0,
+      "lastProviderActivityAt": 1789140670500,
+      "lastTickerActivityAt": 1789140670500,
+      "listeners": 1,
+      "status": "live",
+      "memory": {
+        "rss": 106844160,
+        "heapUsed": 24570752,
+        "heapTotal": 39116800,
+        "external": 6484213,
+        "arrayBuffers": 2385634
+      },
+      "connections": [
+        {
+          "category": "spot",
+          "state": "live",
+          "topics": 538
+        },
+        {
+          "category": "linear",
+          "state": "live",
+          "topics": 869
+        }
+      ]
+    },
+    "diagnosticsAfter": {
+      "activeInstruments": 1407,
+      "activeAssets": 869,
+      "tickerCount": 1407,
+      "restRequests": 23,
+      "reconnects": 0,
+      "malformed": 0,
+      "rejectedTimestamp": 1001,
+      "rejectedSequence": 0,
+      "lastProviderActivityAt": 1789140858758,
+      "lastTickerActivityAt": 1789140858758,
+      "listeners": 1,
+      "status": "live",
+      "memory": {
+        "rss": 207486976,
+        "heapUsed": 20548256,
+        "heapTotal": 156323840,
+        "external": 4827504,
+        "arrayBuffers": 737037
+      },
+      "connections": [
+        {
+          "category": "spot",
+          "state": "live",
+          "topics": 538
+        },
+        {
+          "category": "linear",
+          "state": "live",
+          "topics": 869
+        }
+      ]
+    }
+  },
+  "collectorRuntime": "PASS",
+  "sigtermHandler": "PASS",
+  "logTokenLeak": false,
+  "collectorLogBytes": 32,
+  "backendConnections": 1
+}

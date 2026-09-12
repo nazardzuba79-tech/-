@@ -6,3 +6,4 @@ uploads/
 *.tsbuildinfo
 outputs/
 .qa-copy/
+.qa-live/

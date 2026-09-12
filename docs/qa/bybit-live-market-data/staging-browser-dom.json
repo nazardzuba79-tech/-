@@ -1,0 +1,30 @@
+{
+  "before": {
+    "at": 1789140758673,
+    "images": 0,
+    "rows": [
+      "—BBTCBTCBTC78,783.00 USDT+2.14%—581.68M USDTData only",
+      "—EETHBTCETHBTCETHBTC0.0332 USDT+5.00%—1.03M USDTData only",
+      "—WWBTCWBTCWBTC78,522.90 USDT+1.61%—72.36K USDTData only"
+    ],
+    "tradeButtons": [
+      "Asset",
+      "Name",
+      "Price",
+      "24h %",
+      "Market cap",
+      "Volume (24h)"
+    ]
+  },
+  "after": {
+    "at": 1789140774275,
+    "overflow": false,
+    "rowButtons": 0,
+    "rows": [
+      "—BBTCBTCBTC78,787.60 USDT+2.14%—581.84M USDTData only",
+      "—EETHBTCETHBTCETHBTC0.0332 USDT+5.00%—1.03M USDTData only",
+      "—WWBTCWBTCWBTC78,522.90 USDT+1.61%—72.36K USDTData only"
+    ],
+    "width": 390
+  }
+}

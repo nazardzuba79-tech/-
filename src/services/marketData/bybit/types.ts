@@ -108,4 +108,24 @@ export interface NormalizedTicker {
   markPrice: number | null;
   fundingRate: number | null;
   openInterest: number | null;
+  openInterestValue?: number | null;
+  fundingIntervalMinutes?: number | null;
+  providerEventAt?: number | null;
+}
+
+/** Reference only. This is intentionally not the execution MarketTicker. */
+export interface LiveTicker extends NormalizedTicker {
+  id: string;
+  pair: string;
+  provider: 'bybit';
+  baseAsset: string;
+  quoteAsset: string;
+  settleAsset: string | null;
+  openInterestValue: number | null;
+  fundingIntervalMinutes: number | null;
+  providerEventAt: number | null;
+  sequence: number | null;
+  receivedAt: number;
+  fetchedAt: number;
+  stale: boolean;
 }

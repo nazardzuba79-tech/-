@@ -27,6 +27,7 @@ import type {
 import type { CoinGeckoService, GlobalMarketData } from '../CoinGeckoService';
 import type { FearGreedService } from '../FearGreedService';
 import type { CfdMarketDataService, CfdTicker } from '../CfdMarketDataService';
+import type { LiveSource } from './live/contract';
 
 /**
  * The VOLTEX Market Data Gateway.
@@ -140,7 +141,8 @@ export class MarketDataGateway {
     private readonly coinGecko: CoinGeckoService,
     private readonly fearGreed: FearGreedService,
     private readonly cfd: CfdMarketDataService | null,
-    registry?: AssetRegistry
+    registry?: AssetRegistry,
+    readonly liveReference: LiveSource | null = null
   ) {
     this.registry = registry ?? new AssetRegistry(coinGecko, kraken);
   }
