@@ -99,4 +99,3 @@ test.each([false, true])('real AdminLayout gate allows only administrator=%s', a
   expect(host.textContent!.includes('Public home')).toBe(!allowed);
   expect(host.querySelector('[href="/admin/products"]')).toBeNull();
 });
-
