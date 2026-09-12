@@ -55,6 +55,8 @@ test('table has both rails sharing an address, editor gives scope, confirmation 
   await mountWallets();
   expect(host.querySelectorAll('tbody tr')).toHaveLength(2);
   expect(host.querySelectorAll('tbody input')).toHaveLength(0);
+  expect(host.querySelector('thead')!.textContent).not.toContain('Источник');
+  expect(host.querySelector('tbody')!.textContent).toContain(wallets[0].address);
   await act(async () => { (host.querySelector('button[aria-label="Изменить USDT · Ethereum (ERC-20)"]') as HTMLButtonElement).click(); });
   expect(host.querySelector('dialog')!.textContent).toContain('ETH · Ethereum (Native)');
   expect(host.querySelector('dialog')!.textContent).toContain('USDT · Ethereum (ERC-20)');
@@ -76,7 +78,7 @@ test('reset confirmation shows real default and calls the same network endpoint 
   expect(host.querySelector('dialog')!.textContent).toContain(wallets[0].defaultAddress);
   await click('Подтвердить');
   expect(api.resetAdminWallet).toHaveBeenCalledWith('ethereum');
-  expect(host.textContent).toContain('По умолчанию');
+  expect(host.querySelector('tbody')!.textContent).toContain(wallets[0].defaultAddress);
 });
 test('save failure keeps editor and exposes retry, cancelled editing never mutates', async () => {
   api.setAdminWalletAddress.mockRejectedValue(new Error('failed'));

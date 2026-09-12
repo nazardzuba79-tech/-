@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { styles } from './adminStyles';
 import { railDisplay } from './depositRails';
 
-export function CopyValue({ value, label = 'Значение' }: { value: string | null | undefined; label?: string }) {
+export function CopyValue({ value, label = 'Значение', full = false }: { value: string | null | undefined; label?: string; full?: boolean }) {
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   if (!value) return <span>—</span>;
-  return <span className="admin-copy-value">
-    <span className="mono admin-ellipsis" title={value}>{value.length > 24 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value}</span>
+  return <span className={`admin-copy-value${full ? ' admin-copy-value-full' : ''}`}>
+    <span className={`mono ${full ? 'admin-full-value' : 'admin-ellipsis'}`} title={value}>{!full && value.length > 24 ? `${value.slice(0, 10)}…${value.slice(-8)}` : value}</span>
     <button type="button" className="admin-copy" title={`${label}: ${value}`} aria-label={`Копировать ${label}`} onClick={async () => {
       try { await navigator.clipboard.writeText(value); setCopied(true); setFailed(false); }
       catch { setFailed(true); }

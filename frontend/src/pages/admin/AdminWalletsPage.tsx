@@ -48,12 +48,11 @@ export function AdminWalletsPage() {
       <button style={styles.neutralBtn} onClick={() => { setError(null); reload().catch(() => setError('Не удалось загрузить адреса.')); }}>Обновить</button>
     </div>
     <div className="admin-data-wrap"><table className="admin-data-table admin-address-table">
-      <thead><tr>{['Актив', 'Сеть', 'Стандарт', 'Адрес пополнения', 'Статус', 'Источник', 'Изменён', 'Действие'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+      <thead><tr>{['Актив', 'Сеть', 'Стандарт', 'Адрес пополнения', 'Статус', 'Изменён', 'Действие'].map(h => <th key={h}>{h}</th>)}</tr></thead>
       <tbody>{filtered.map(r => <tr key={r.key}>
         <td><strong className="admin-asset">{r.asset}</strong></td><td>{r.network}</td><td><span className="admin-standard">{r.standard}</span></td>
-        <td><CopyValue value={r.wallet.address} label={`адрес ${r.label}`} />{r.shared && <small className="admin-shared" title="Все настроенные активы этой сети используют этот адрес">Общий адрес сети</small>}</td>
+        <td><CopyValue full value={r.wallet.address} label={`адрес ${r.label}`} />{r.shared && <small className="admin-shared" title="Все настроенные активы этой сети используют этот адрес">Общий адрес сети</small>}</td>
         <td><span className={`admin-chip ${r.wallet.address ? 'positive' : 'warning'}`}>{r.wallet.address ? 'Адрес задан' : 'Нет адреса'}</span></td>
-        <td>{r.wallet.isOverridden ? 'Администратор' : 'По умолчанию'}</td>
         <td title={r.wallet.updatedByAdminId ?? undefined}>{r.wallet.updatedAt ? new Date(r.wallet.updatedAt).toLocaleDateString('ru-RU') : '—'}</td>
         <td><button style={styles.neutralBtn} aria-label={`Изменить ${r.label}`} onClick={() => { setSelected(r); setDraft(r.wallet.address ?? ''); setError(null); setConfirmation(null); }}>Изменить</button></td>
       </tr>)}</tbody>

@@ -342,28 +342,21 @@
         {
           "tag": "TH",
           "className": "",
-          "right": 520.796875,
+          "right": 675.484375,
           "text": "Адрес пополнения",
           "overflow": "visible"
         },
         {
           "tag": "TH",
           "className": "",
-          "right": 625.390625,
+          "right": 773.1875,
           "text": "Статус",
           "overflow": "visible"
         },
         {
           "tag": "TH",
           "className": "",
-          "right": 759.203125,
-          "text": "Источник",
-          "overflow": "visible"
-        },
-        {
-          "tag": "TH",
-          "className": "",
-          "right": 854.546875,
+          "right": 862.25,
           "text": "Изменён",
           "overflow": "visible"
         },
@@ -372,6 +365,13 @@
           "className": "",
           "right": 971,
           "text": "Действие",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TBODY",
+          "className": "",
+          "right": 971,
+          "text": "BNBBNB Smart ChainNative0x22222222222222",
           "overflow": "visible"
         }
       ],
