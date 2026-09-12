@@ -1,0 +1,87 @@
+{
+  "layouts": [
+    {
+      "width": 1920,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 652,
+      "copyRight": 672,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 1600,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 540,
+      "copyRight": 560,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 378.234375,
+      "copyRight": 399.359375,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 15,
+      "copyRight": 768,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 15,
+      "copyRight": 390,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    }
+  ],
+  "errors": [],
+  "calls": {
+    "/api/v1/market/external/tickers": 1,
+    "/api/v1/cfd/tickers": 1,
+    "/api/v1/market/external/rankings": 1,
+    "/api/v1/market/global": 1,
+    "/api/v1/futures/config": 1,
+    "/api/v1/market/assets/icons": 1,
+    "/api/v1/market/external/orderbook/BTC-USDT": 1,
+    "/api/v1/market/external/candles/BTC-USDT": 1,
+    "/api/v1/market/external/trades/BTC-USDT": 1
+  },
+  "rangeScroll": 500
+}

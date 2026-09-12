@@ -23,6 +23,7 @@ import './home-trading-sessions.css';
 import './home-heatmap.css';
 // Perspective display geometry must win over the shared compact preview rules.
 import './hero-reference.css';
+import './home-sapphire.css';
 
 /**
  * The VOLTEX homepage, in the approved section order:
@@ -42,7 +43,7 @@ export function HomePage() {
   const market = useHomeMarket();
 
   return (
-    <div className="vx-home vx-reference-home">
+    <div className="vx-home vx-reference-home vx-sapphire-home">
       <HomeHeader />
       <main className="flex flex-col gap-5 pb-7">
         <HomeHero market={market} />
