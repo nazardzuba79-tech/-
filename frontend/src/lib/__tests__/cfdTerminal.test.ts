@@ -426,7 +426,7 @@ test('all CSS selectors are scoped and chart stays on the unchanged real Trading
   // added to that list is the retry counter — which is what lets Retry
   // re-run the same load path instead of needing a second one. Pinned by
   // name so the dependency list cannot grow silently.
-  expect(chart).toContain('[symbol, locale, interval, study, volume, attempt]');
+  expect(chart).toContain('[symbol, locale, attempt]');
   const executable = ts.createPrinter({ removeComments: true }).printFile(ts.createSourceFile('chart.tsx', chart, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
   expect(executable).not.toMatch(/api\.|candles|orderBook|funding|openInterest/);
 });

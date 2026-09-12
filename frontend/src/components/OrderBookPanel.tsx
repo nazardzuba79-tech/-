@@ -1,4 +1,4 @@
-import { formatBookAmount } from '../lib/terminalPresentation';
+import { formatBookAmount, formatBookTotal } from '../lib/terminalPresentation';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice } from '../lib/formatNumber';
@@ -276,7 +276,7 @@ const Row = memo(function Row({
   const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
   const priceText = spotStep === undefined ? level.price.toFixed(decimals) : spotLevelPrice(level.price, spotStep);
   const quantityText = formatBookAmount(level.quantity);
-  const totalText = formatBookAmount(level.price * level.quantity);
+  const totalText = formatBookTotal(level.price * level.quantity);
   const pick = () => onPick?.(spotStep === undefined ? level.price.toFixed(2) : priceText);
 
   return (

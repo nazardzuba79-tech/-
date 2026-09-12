@@ -9,7 +9,6 @@ interface TradingViewAdvancedChartProps {
   chrome?: 'default' | 'terminal';
   drawingTools?: boolean;
 }
-export const CHART_INTERVALS = [['1', '1m'], ['5', '5m'], ['15', '15m'], ['60', '1h'], ['240', '4h'], ['D', '1D']] as const;
 const TV_LOCALE: Record<string, string> = { en: 'en', ru: 'ru', zh: 'zh_CN', es: 'es', ja: 'ja', ko: 'ko', hi: 'en' };
 // Verified CFD mappings. Unmapped instruments have no substitute chart.
 const CFD_SYMBOLS: Record<string, string> = {
@@ -41,8 +40,8 @@ function ChartUnavailable({ retry }: { retry?: () => void }) {
     {retry && <button type="button" onClick={retry}>{t('trade.cfdChartRetry')}</button>}
   </div>;
 }
-function TradingViewEmbed({ symbol, locale, interval, volume }: {
-  symbol: string; locale: string; interval: string; volume: boolean;
+function TradingViewEmbed({ symbol, locale }: {
+  symbol: string; locale: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -63,10 +62,10 @@ function TradingViewEmbed({ symbol, locale, interval, volume }: {
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.dataset.voltexTradingview = 'advanced-chart';
     script.text = JSON.stringify({
-      autosize: true, symbol, interval, timezone: 'Etc/UTC', theme: 'dark',
-      backgroundColor: '#101720', gridColor: 'rgba(132, 142, 156, 0.07)', style: '1', locale,
+      autosize: true, symbol, interval: '15', timezone: 'Etc/UTC', theme: 'dark',
+      backgroundColor: '#0d141d', gridColor: '#0e151e', style: '1', locale,
       hide_side_toolbar: false, hide_top_toolbar: false, hide_legend: true,
-      hide_volume: !volume, allow_symbol_change: false, withdateranges: true,
+      hide_volume: false, allow_symbol_change: false, withdateranges: true,
       save_image: false, calendar: false, details: false, hotlist: false,
       watchlist: [], compareSymbols: [], studies: [],
       show_popup_button: false, support_host: 'https://www.tradingview.com',
@@ -85,7 +84,7 @@ function TradingViewEmbed({ symbol, locale, interval, volume }: {
       owned.replaceChildren();
       owned.remove();
     };
-  }, [symbol, locale, interval, volume, attempt]);
+  }, [symbol, locale, attempt]);
   return <div className="voltex-tradingview-chart__plot">
     <div className="voltex-tradingview-chart__embed" ref={hostRef} />
     {failed && <ChartUnavailable retry={() => setAttempt(n => n + 1)} />}
@@ -93,21 +92,13 @@ function TradingViewEmbed({ symbol, locale, interval, volume }: {
 }
 function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdvancedChartProps) {
   const { lang } = useLanguage();
-  const [interval, setInterval] = useState('15');
-  const [volume, setVolume] = useState(true);
   const symbol = useMemo(() => toTradingViewSymbol(pair, market), [pair, market]);
   const locale = TV_LOCALE[lang] ?? 'en';
   const ticker = market === 'cfd' ? pair.toUpperCase().replace(/^([A-Z]{3})([A-Z]{3})$/, '$1/$2') : pair.toUpperCase();
-  const intervalLabel = CHART_INTERVALS.find(item => item[0] === interval)?.[1];
   return <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
-    <div className="terminal-chart-controls">
-      <strong className="terminal-chart-identity">{ticker} · {intervalLabel}</strong>
-      <div className="terminal-chart-intervals" role="group" aria-label="Chart timeframe">
-        {CHART_INTERVALS.map(([value, label]) => <button key={value} type="button" aria-pressed={interval === value} onClick={() => setInterval(value)}>{label}</button>)}
-      </div>
-      <button type="button" aria-label="Chart volume" aria-pressed={volume} onClick={() => setVolume(value => !value)}>VOL</button>
-    </div>
-    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} interval={interval} volume={volume} />
+    {/* Timeframe, indicators and drawings belong to the native widget.
+        Its cross-origin state cannot be mirrored honestly in a parent label. */}
+    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} />
       : <div className="voltex-tradingview-chart__plot"><ChartUnavailable /></div>}
     <div className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
       <a href={symbol ? `https://www.tradingview.com/symbols/${encodeURIComponent(symbol.replace(':', '-'))}/` : 'https://www.tradingview.com/'} rel="noopener nofollow" target="_blank">{ticker} chart</a>

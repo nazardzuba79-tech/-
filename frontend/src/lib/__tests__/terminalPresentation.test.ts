@@ -1,4 +1,4 @@
-import { formatBookAmount, livePerpetualTurnover } from '../terminalPresentation';
+import { formatBookAmount, formatBookTotal, livePerpetualTurnover } from '../terminalPresentation';
 import type { LiveQuote, LiveState } from '../liveMarketTypes';
 
 const now = 1_800_000_000_000;
@@ -15,3 +15,7 @@ test('formatting never modifies source values or aggregates', () => { const leve
 test('exact live perpetual turnover and real zero are available', () => { expect(livePerpetualTurnover(state(),'BTC/USDT',now)).toBe(123456789); expect(livePerpetualTurnover(state({quoteVolume24h:0}),'BTC/USDT',now)).toBe(0); });
 test.each([{marketType:'spot'}, {marketType:'linear_futures'}, {marketType:'inverse_perpetual'}, {pair:'ETH/USDT'}, {quoteAsset:'USD'}, {settleAsset:'BTC'}, {turnoverAsset:'BTC'}, {stale:true}, {fetchedAt:now-30001}, {receivedAt:now-30001}, {fetchedAt:NaN}, {fetchedAt:now+6000}, {quoteVolume24h:null}, {quoteVolume24h:NaN}, {quoteVolume24h:-1}, {providerSymbol:'ETHUSDT'}] as Partial<LiveQuote>[])('reject mismatched, expired or malformed turnover %j', patch => expect(livePerpetualTurnover(state(patch),'BTC/USDT',now)).toBeNull());
 test.each(['disabled','connecting','stale'] as const)('non-live stream gives no turnover: %s', status => expect(livePerpetualTurnover(state({},status),'BTC/USDT',now)).toBeNull());
+
+test.each([[0.980439,'0.980439'],[0.084363,'0.084363'],[0.002583,'0.002583'],[0.000001234567,'0.000001235']])('quantity uses meaningful decimals without ordinary scientific notation: %s', (value,text)=>{expect(formatBookAmount(Number(value))).toBe(text);});
+test.each([[75787.932123,'75,787.93'],[6518.434123,'6,518.43'],[100603.2,'100,603.20'],[0,'0'],[NaN,'—'],[Infinity,'—'],[-1,'—']])('totals display cents, zero and unknown correctly: %s',(value,text)=>{expect(formatBookTotal(Number(value))).toBe(text);});
+test('tiny nonzero totals retain meaningful precision',()=>{expect(Number(formatBookTotal(0.000002583))).toBeGreaterThan(0);});

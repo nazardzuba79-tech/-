@@ -119,7 +119,7 @@ test('Spot tiny-price rows keep unchanged full numeric labels and narrowly scope
   expect(html).toContain(`class="cell bid-price" title="${expectedPrice}">${expectedPrice}</span>`);
   expect(html).toContain(`class="cell" title="${quantity}">${terminalPresentation.formatBookAmount(quantity)}</span>`);
   const rawTotal = Number(expectedPrice) * quantity;
-  const total = terminalPresentation.formatBookAmount(rawTotal);
+  const total = terminalPresentation.formatBookTotal(rawTotal);
   expect(html).toContain(`class="cell" title="${rawTotal}">${total}</span>`);
   const css = readFileSync(resolve(frontend, 'src/components/SpotMarketControls.css'), 'utf8');
   expect(css).toMatch(/\.ob-row\.ob-row--spot\s*\{\s*gap:\s*6px;/);

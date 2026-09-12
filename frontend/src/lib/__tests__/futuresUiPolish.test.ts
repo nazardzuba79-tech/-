@@ -5,9 +5,9 @@ const ts=require('typescript'),crypto=require('node:crypto');
 function restoreBookPresentation(source) {
  // Only display amount strings and their tooltips changed. Restore those exact
  // statements before checking the frozen aggregation/click-selection fingerprint.
- return source.replace(/import \{ formatBookAmount \} from '..\/lib\/terminalPresentation';\r?\n/, '')
+ return source.replace(/import \{ formatBookAmount, formatBookTotal \} from '..\/lib\/terminalPresentation';\r?\n/, '')
   .replace('const quantityText = formatBookAmount(level.quantity);', 'const quantityText = spotStep === undefined ? level.quantity.toFixed(5) : formatSpotBookNumber(level.quantity);')
-  .replace('const totalText = formatBookAmount(level.price * level.quantity);', 'const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);')
+  .replace('const totalText = formatBookTotal(level.price * level.quantity);', 'const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);')
   .replace('title={String(level.quantity)}','title={spotStep !== undefined ? quantityText : undefined}')
   .replace('title={String(level.price * level.quantity)}','title={spotStep !== undefined ? totalText : undefined}');
 }

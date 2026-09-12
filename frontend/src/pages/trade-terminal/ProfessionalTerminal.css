@@ -1,6 +1,6 @@
 /* Shared presentation layer. Order payloads, account/risk calculations and feeds
    remain owned by their existing market components. */
-.trade-terminal.trade-terminal { --workspace-bg:#101720; --chart-bg:#101720; --toolbar-bg:#101720; --panel-alt:#19232f; --bg-tertiary:#19232f; --border-color:#293440; --panel-border:#26303c; --accent:var(--accent-yellow); }
+.trade-terminal.trade-terminal { --workspace-bg:#151e29; --chart-bg:#0d141d; --toolbar-bg:#151e28; --grid-bg:#0e151e; --panel-alt:#19232f; --bg-tertiary:#19232f; --border-color:#293440; --panel-border:#26303c; --accent:var(--accent-yellow); }
 .trade-terminal.trade-terminal .ticker-bar, .trade-terminal.trade-terminal .cfd-ticker-bar { gap:12px; padding:8px 16px; min-height:62px; justify-content:space-between; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item, .trade-terminal.trade-terminal .cfd-ticker-metric { flex:1 1 auto; min-width:0; gap:4px; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item .label, .trade-terminal.trade-terminal .cfd-ticker-metric > :first-child { font-size:10px; white-space:normal; }
@@ -37,8 +37,8 @@
 .trade-terminal.trade-terminal .slider-labels { display:none; }
 .trade-terminal.trade-terminal .cfd-percentBtn { padding:3px 0; border:0; background:transparent; }
 .trade-terminal.trade-terminal .cfd-hint { padding:8px 0; font-size:11px; line-height:1.5; }
-.trade-terminal.trade-terminal .ob-row { height:23px; font-size:11px; font-variant-numeric:tabular-nums; }
-.trade-terminal.trade-terminal .ob-depth-bar { opacity:.08; }
+.trade-terminal.trade-terminal .ob-row { height:20px; flex:0 0 20px; font-size:11.5px; font-variant-numeric:tabular-nums; }
+.trade-terminal.trade-terminal .ob-depth-bar { opacity:.045; }
 .trade-terminal.trade-terminal .orderbook-col-headers { font-size:10px; padding-inline:10px; }
 .trade-terminal.trade-terminal .orderbook-header { padding-inline:10px; }
 .trade-terminal.trade-terminal .ob-row .cell { padding-inline:4px; }
@@ -53,16 +53,16 @@
 .trade-terminal.trade-terminal .cfd-tab { padding:10px 0; }
 .trade-terminal.trade-terminal .cfd-empty { padding:24px 12px; }
 @media(min-width:1025px) {
-  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,224px) minmax(0,1fr) 220px 264px; }
-  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:224px minmax(0,1fr) 220px 264px; }
-  .trade-terminal.trade-terminal .main-grid.market-panel-collapsed { grid-template-columns:0 minmax(0,1fr) 220px 264px; }
+  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,224px) minmax(0,1fr) 250px 264px; }
+  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:224px minmax(0,1fr) 250px 264px; }
+  .trade-terminal.trade-terminal .main-grid.market-panel-collapsed { grid-template-columns:0 minmax(0,1fr) 250px 264px; }
   .trade-terminal.trade-terminal .main-grid.orderbook-collapsed { grid-template-columns:var(--market-panel-width,224px) minmax(0,1fr) 0 264px; }
   .trade-terminal.trade-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 264px; }
   .trade-terminal.trade-terminal.cfd-terminal .cfd-workspace { grid-template-columns:224px minmax(0,1fr) 264px; }
 }
 @media(min-width:1700px) {
-  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,240px) minmax(0,1fr) 220px 280px; }
-  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:240px minmax(0,1fr) 220px 280px; }
+  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,240px) minmax(0,1fr) 250px 280px; }
+  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:240px minmax(0,1fr) 250px 280px; }
   .trade-terminal.trade-terminal.cfd-terminal .cfd-workspace { grid-template-columns:240px minmax(0,1fr) 280px; }
 }
 @media(max-width:1024px) {
@@ -77,7 +77,6 @@
   .trade-terminal.trade-terminal .chart-area { min-height:420px; }
   .trade-terminal.trade-terminal .cfd-chart-area { height:460px; min-height:460px; }
   .trade-terminal.trade-terminal .orderbook-area { max-height:440px; overflow:auto; }
-  .trade-terminal.trade-terminal .terminal-chart-controls button { min-height:30px; }
 }
 
 .trade-terminal.trade-terminal button, .trade-terminal.trade-terminal input, .trade-terminal.trade-terminal select { font-family:var(--font-family); }
@@ -96,3 +95,18 @@
 .trade-terminal.trade-terminal.futures-terminal .p-name { display:flex; flex-direction:column; align-items:flex-start; line-height:13px; }
 .trade-terminal.trade-terminal.futures-terminal .pair-row { min-height:35px; }
 .trade-terminal.trade-terminal.futures-terminal .pairs-col-headers { grid-template-columns:minmax(0,1fr) 62px 52px; }
+
+/* Stable numeric tracks shared by Spot and Futures. The nearest ask/bid
+   stays at the spread; shorter viewports clip only the distant levels. */
+.trade-terminal.trade-terminal .orderbook-area { min-height:0; }
+.trade-terminal.trade-terminal .ob-row, .trade-terminal.trade-terminal .orderbook-col-headers { display:grid; grid-template-columns:minmax(0,30fr) minmax(0,32fr) minmax(0,38fr); gap:5px; padding-inline:8px; align-items:center; }
+.trade-terminal.trade-terminal .ob-row .cell, .trade-terminal.trade-terminal .orderbook-col-headers .ob-col { min-width:0; max-width:none; padding-inline:0; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.trade-terminal.trade-terminal .ob-row .cell:first-of-type, .trade-terminal.trade-terminal .orderbook-col-headers .ob-col:first-child { text-align:left; }
+.trade-terminal.trade-terminal .orderbook-header, .trade-terminal.trade-terminal .orderbook-col-headers, .trade-terminal.trade-terminal .orderbook-spread { flex-shrink:0; }
+.trade-terminal.trade-terminal .orderbook-asks, .trade-terminal.trade-terminal .orderbook-bids { display:flex; flex:1 1 0; min-height:0; overflow:hidden; }
+.trade-terminal.trade-terminal .orderbook-asks { flex-direction:column-reverse; }
+.trade-terminal.trade-terminal .orderbook-bids { flex-direction:column; }
+/* The legacy Spot flex rule capped prices to 55% of the row. In a grid that
+   becomes 55% of a single track and truncates prices during group reset. */
+.trade-terminal.trade-terminal .ob-row.ob-row--spot .cell.bid-price,
+.trade-terminal.trade-terminal .ob-row.ob-row--spot .cell.ask-price { max-width:none; }
