@@ -63,7 +63,7 @@ export function HomeHeroAssets({ market, englishLabels = false }: { market: Home
     { key: 'gold', title: 'GOLD', price: commodity.gold?.price ?? null, change: null, Icon: GoldIcon, points: [],
       note: commodity.gold ? `${copy.quote} · ${commodity.gold.label}` : copy.unavailable, source: commodity.gold ? 'Gold API' : null },
     { key: 'oil', title: 'OIL', price: commodity.oil?.price ?? null, change: null, Icon: OilIcon, points: [],
-      note: commodity.oil ? `${copy.quote} · ${commodity.oil.label}` : copy.unavailable, source: commodity.oil ? 'Croncopia' : null },
+      note: commodity.oil ? `${copy.quote} · ${commodity.oil.label}` : copy.unavailable, source: commodity.oil ? 'EIA' : null },
   ];
   return <div className="vx-global-assets">
     {rows.map(({ key, title, price, change, Icon, points, note, source }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
