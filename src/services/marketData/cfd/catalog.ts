@@ -36,6 +36,10 @@ export class CfdCreditBudget {
     if (last && Math.floor(last.at/1000) === Math.floor(now/1000)) { last.cost += cost; last.at = now; }
     else this.spent.push({at:now,cost});
   }
+  available(): number {
+    const d = this.diagnostics();
+    return Math.max(0, Math.min(d.perMinute-d.minuteUsed, d.perDay-d.dayUsed));
+  }
   diagnostics() {
     const now = this.now();
     return { perMinute:this.perMinute, perDay:this.perDay, minuteUsed:this.spent.filter(r=>now-r.at<60_000).reduce((n,r)=>n+r.cost,0),
