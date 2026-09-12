@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
-import { PriceChart } from '../components/PriceChart';
+import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
@@ -165,14 +165,6 @@ export function FuturesPage() {
           </div>
 
           <div className="chart-area">
-            {/* This exchange has no dedicated perpetual OHLC feed — the
-                candles below are the same live Kraken-mirrored spot/
-                reference price history the Trade terminal shows for this
-                base/quote pair, not futures-specific trade prints. Mark
-                price, funding and liquidation all read the real futures
-                index/mark price service (see FuturesTickerBar); only the
-                chart's history is the shared reference feed, and it is
-                never presented as anything else. */}
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
