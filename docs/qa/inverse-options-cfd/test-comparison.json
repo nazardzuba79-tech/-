@@ -1,59 +1,59 @@
 {
-  "at": "2026-09-12T14:37:37.569Z",
-  "mainSha": "ab564ae46dcbad3b2e6f4ea8bed874eb4115961b",
+  "at": "2026-09-12T15:20:15.271Z",
+  "mainSha": "1b431c74e1c6d4a371aa5f2c5f198b4ff6974de8",
   "branch": "codex/inverse-options-cfd-data",
-  "scope": "PR #35 follow-up: separate new-position approval from fresh entitled risk quotes",
+  "scope": "PR #35 ordinary merge of exact current main with admin PRs #36 and #37 preserved",
   "command": "node node_modules/jest/bin/jest.js --runInBand --json --outputFile=<report.json>",
   "candidate": {
     "suites": {
-      "total": 178,
-      "passed": 163,
+      "total": 181,
+      "passed": 166,
       "failed": 14,
       "skipped": 1,
       "runtimeErrors": 0
     },
     "tests": {
-      "total": 2780,
-      "passed": 2718,
+      "total": 2801,
+      "passed": 2739,
       "failed": 45,
       "skipped": 17,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:33:57.333Z"
+    "startTime": "2026-09-12T15:14:36.244Z"
   },
   "baseline": {
     "suites": {
-      "total": 173,
-      "passed": 158,
+      "total": 176,
+      "passed": 161,
       "failed": 14,
       "skipped": 1,
       "runtimeErrors": 0
     },
     "tests": {
-      "total": 2652,
-      "passed": 2590,
+      "total": 2673,
+      "passed": 2611,
       "failed": 45,
       "skipped": 17,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:33:46.291Z"
+    "startTime": "2026-09-12T15:14:37.129Z"
   },
   "focused": {
     "suites": {
-      "total": 16,
-      "passed": 16,
+      "total": 27,
+      "passed": 27,
       "failed": 0,
       "skipped": 0,
       "runtimeErrors": 0
     },
     "tests": {
-      "total": 346,
-      "passed": 346,
+      "total": 450,
+      "passed": 450,
       "failed": 0,
       "skipped": 0,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:33:33.001Z"
+    "startTime": "2026-09-12T15:13:35.201Z"
   },
   "exactNewFailures": 0,
   "exactResolvedFailures": 0,
@@ -424,15 +424,24 @@
     }
   ],
   "reportSha256": {
-    "candidate": "a208f10bf0076dd5c9c4b2114cd4c42c076bc1d586c39c434e56604cdc6e7374",
-    "baseline": "ff31c8775d8e56ed233ed2156a2bbf225a842a3b59a0a0d902cbb34bb82826d5",
-    "focused": "a135c3503f01d3a0dc61165dd3d608a83664016467d2bc316dfd87a08e4cd9c8"
+    "candidate": "fe818bcd2a3e7f030f39ab3814a93af8f5c77c3667c93792b156485238b7171c",
+    "baseline": "0e6364e0241f60c8ae7a3548611458ad67cd2196342c08b06ead50464ae368db",
+    "focused": "8fd354dbd070a58dcc54bbb97676dddbbd0a283135fd552e26850c97d9064417"
   },
   "notes": [
-    "Same complete lockfile dependencies and unchanged built frontend as prior validation. Frontend source unchanged by this follow-up.",
+    "Identical lockfile dependencies. Production frontend builds rerun for candidate and exact pristine baseline; both passed with the same existing WASM build runner.",
     "All skipped PostgreSQL integration tests still require an isolated database.",
-    "New rollback tests use a stateful transactional double to verify service rejection and discarded staged writes, not an actual PostgreSQL connection."
+    "Initial focused run had one LiveTransport startup timeout while builds ran concurrently; complete focused rerun passed without source or assertion changes."
   ],
-  "implementationCommit": "314533adc24c03925c116973a970adb2fd43ee51",
-  "verdict": "NEW FAILURES VS CURRENT MAIN = 0"
+  "mergeCommit": "ce279dc6997361d96691e0b0b996eed0452cabfe",
+  "oldPrHead": "384a43a1c7a07d751a9eed098cf872c5f68d49ac",
+  "verdict": "NEW FAILURES VS CURRENT MAIN = 0",
+  "initialFocused": {
+    "passed": 449,
+    "failed": 1,
+    "failure": "collector internal transport and public fanout one backend connector restores a fresh snapshot after reconnect; 100 downstream readers do not add sockets",
+    "error": "Timed out",
+    "rerun": "450/450 passed with no code/test changes",
+    "reportSha256": "ad7cf8ac273bab82f1efafd2089868e3348017ac2318059fdb868770abd04156"
+  }
 }

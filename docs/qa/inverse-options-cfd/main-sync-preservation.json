@@ -1,0 +1,502 @@
+{
+  "mainSha": "1b431c74e1c6d4a371aa5f2c5f198b4ff6974de8",
+  "oldPrHead": "384a43a1c7a07d751a9eed098cf872c5f68d49ac",
+  "mergeCommit": "ce279dc6997361d96691e0b0b996eed0452cabfe",
+  "checkedAgainstExactMain": {
+    "admin": [
+      {
+        "file": "frontend/src/pages/admin/AdminAuditLogPage.tsx",
+        "sha256": "5694828d231da457dcbcf3129b7664ec544d4157f814617a2d56e9a9dfc57430"
+      },
+      {
+        "file": "frontend/src/pages/admin/adminConsole.css",
+        "sha256": "826f2388fb09fcc8c848e26fda1e298d3d82fd780be4480317f1271636505d3f"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminDepositsPage.tsx",
+        "sha256": "c74d8828bd7c77e5abe39a06431ec6da87b78dbb431044e87ff6aef779212221"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminIcons.tsx",
+        "sha256": "1f1f625a39459254cb95722ab47475d5cbf3266ad76c06eb13907338cab790d1"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminKycPage.tsx",
+        "sha256": "abbee749d940793f030395d4daf08cab10a0eaeeb5a4f3e502ed5ce21b278e3d"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminLayout.tsx",
+        "sha256": "be4cdbf31651e31953c0adbef1d23277cded8fdab6008189539825ca3d10b9ed"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminOverviewPage.tsx",
+        "sha256": "f4d7ce78a5f700574d7db7a80fffeb32b5fd9e05a231d8953b8abaeffd3209e1"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminPagination.tsx",
+        "sha256": "43f8d81022ea668613f0becb40f4bec0189786bc924f0724cec10e931244dd55"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminPrimitives.tsx",
+        "sha256": "ebe881b967982f30b09e4ed94f579797e2649b3bef01c3a815e364d9c51f4887"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminStatCard.tsx",
+        "sha256": "89b2c76e286a1ae38f01289763e402a8162e87f2ddb0343d846e7ccbf2b30760"
+      },
+      {
+        "file": "frontend/src/pages/admin/adminStyles.ts",
+        "sha256": "709077c83cfddde2ff542cab57cb2501660896ff22ddbad8116914fa989ba165"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminToast.tsx",
+        "sha256": "038c97181799ab6dc88a7de8d7edd3811e664567a32aa03e827f1c5f3fd26794"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminUserDetailPage.tsx",
+        "sha256": "4d20ede170c748544020295b70aacede47de7be1af6fe7b4c05ccd54daa8dffb"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminUsersPage.tsx",
+        "sha256": "f83eeb8ec670e0f9eb7abe323a182d96e2d67ae2536bb6b3b309ac6d0de25d3f"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminWalletsPage.tsx",
+        "sha256": "7fabba73e0676e2a55a39662a417a23ce7ff89a2a3b163c000bd329bb93089e1"
+      },
+      {
+        "file": "frontend/src/pages/admin/AdminWithdrawalsPage.tsx",
+        "sha256": "dd33a572129c5a9242ec5ff17be9bb4d5494cbb4eb41a9db6a0028f92f1779a6"
+      },
+      {
+        "file": "frontend/src/pages/admin/depositRails.ts",
+        "sha256": "69b0ca2b41b07a189339c9f68d9b1396d176cfd6e81f7265efdaad307eadd91d"
+      },
+      {
+        "file": "frontend/src/App.tsx",
+        "sha256": "c784a917355b40374ed0a0eedb2a7fee0231afa266dc556c4db9e8a809f9a68a"
+      },
+      {
+        "file": "src/api/routes/admin.ts",
+        "sha256": "15e839f42f9b84dcee09a15b1280f60ed6a25128199eea3ce0d00f63ad2f8c0d"
+      },
+      {
+        "file": "src/api/routes/adminWallets.ts",
+        "sha256": "c980481d9d6d53a0b42c9daf9684f05266cd3ac97d1f209bf126e726ef743eac"
+      }
+    ],
+    "financial": [
+      {
+        "file": "src/futures/auditActiveOrders.ts",
+        "sha256": "3fc0051b9a02dd08bf962637d601cc069ea3eda1f756b87aa805f4e3bef019d4"
+      },
+      {
+        "file": "src/futures/exposureRisk.ts",
+        "sha256": "bd54436f155bbcc6e98df81416478a8fa30e7351ef99c1a098d3696bd986dece"
+      },
+      {
+        "file": "src/futures/FundingRateService.ts",
+        "sha256": "24bc1ce11cb1a7ada56f9c9e1dbb0bdee6f514a9da33e48319bc2c30f6a5c7f6"
+      },
+      {
+        "file": "src/futures/FuturesBookTransaction.ts",
+        "sha256": "67442c26d2d784effc34a2fe560ddea385f28517e66ee68b687145e15148caf4"
+      },
+      {
+        "file": "src/futures/FuturesMarketExecution.ts",
+        "sha256": "737b06ddee11e021cb9fcdc3bfc1ea7ed068e9378e46677313366fbbc74a9eac"
+      },
+      {
+        "file": "src/futures/FuturesMarketRegistry.ts",
+        "sha256": "b70a10fa03c898ba9364362271bf2220dedc6d16b568e34f7fefce3d8b52f3e9"
+      },
+      {
+        "file": "src/futures/FuturesOrderBookRecovery.ts",
+        "sha256": "d1e75e738aef9704417a9aeacb60a2c80ad44bb45e2e41277cf49fefb55d1265"
+      },
+      {
+        "file": "src/futures/FuturesPositionService.ts",
+        "sha256": "2a14fd6934fb1f8eac6c6b58b6876451639ebe0d43a80588c985715a12f84714"
+      },
+      {
+        "file": "src/futures/FuturesProtectionService.ts",
+        "sha256": "ebf7c33af1a6c405f7fb70a93a95b056a3b0833e8cabe1c5ea199bfd1136f3b5"
+      },
+      {
+        "file": "src/futures/InsuranceFundService.ts",
+        "sha256": "9a2ff7d857ff61c93a80d7d3e90ac59492ee17e26431043342cf7d56647179ef"
+      },
+      {
+        "file": "src/futures/LiquidationEngine.ts",
+        "sha256": "e3693fbf34ceeadde47c33ef205218d12297eebe600656b8c0ac684e3df32396"
+      },
+      {
+        "file": "src/futures/marginMath.ts",
+        "sha256": "46948515b7b7d0d4b72f1eef05862c859a0dd160f26605ef290ce0b70aa417e7"
+      },
+      {
+        "file": "src/futures/MarkPriceService.ts",
+        "sha256": "926b00aa3bec7fc5bb38cd5ac0735a043a74ff0af9544ff20e50b1c82bb5d810"
+      },
+      {
+        "file": "src/futures/__tests__/FundingRateService.test.ts",
+        "sha256": "95e921e30c6c1e2bd794f91d22eaa1b0a9179be0b3a328b6d58a51e3e31603d8"
+      },
+      {
+        "file": "src/futures/__tests__/futuresBookLock.pg.test.ts",
+        "sha256": "439a92ec75c50276c419425f8b49662762b85d1cc02e9de46758c738ca677990"
+      },
+      {
+        "file": "src/futures/__tests__/FuturesMarketRegistry.test.ts",
+        "sha256": "16b15c505f5f53e4d5b1bb487df84e663921cdcf731852aab6096f59383fcdcb"
+      },
+      {
+        "file": "src/futures/__tests__/FuturesPositionService.test.ts",
+        "sha256": "f8775c62f5ed4c3cb53f04294ef0caaaccbff6c45f009d73b22a2580ad57d151"
+      },
+      {
+        "file": "src/futures/__tests__/FuturesProtectionService.test.ts",
+        "sha256": "767e0e3dbd2351b8e31d8b64255d6787ffbf17d20387ea8c3b755690f1096e01"
+      },
+      {
+        "file": "src/futures/__tests__/LiquidationEngine.test.ts",
+        "sha256": "7f59bf1ac079520f6c1040243e1385ba1151fdafa09bcf9dfa27fc520ab9d25a"
+      },
+      {
+        "file": "src/futures/__tests__/marginMath.test.ts",
+        "sha256": "decf6c42a8864e6c5ef4a8f3460506ea4cb3321fa268de768e53488d5995f91e"
+      },
+      {
+        "file": "src/futures/__tests__/MarkPriceService.test.ts",
+        "sha256": "550458d3f30f2e4d9136e691bc8b12f742587c6651a8ac4cc2b36aca36db4d44"
+      },
+      {
+        "file": "src/services/copyTrading/analytics.ts",
+        "sha256": "529401797055b3c5cad0157e8ce0e67230d4047f9832ae0b1ac602e627834772"
+      },
+      {
+        "file": "src/services/copyTrading/approvedPerformanceSeeds.ts",
+        "sha256": "3ab15c7f1083c7e82f6345af92634e3e2d4c87fb8fe4ba1b0b4c575e7a30cbe2"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/analytics.ts",
+        "sha256": "b7a22ece17b65f07cf3bf1bb194e0e38b2069060d14e5bfbeb32cc30bcd4713f"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/fixtures/kseniaPublishedSeed.json",
+        "sha256": "9723ece13f9677f7d8d3328eb3ed4327a2a1b449d3500ad694f5a3b0fc5fce97"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/kseniaReview.ts",
+        "sha256": "4c59579e22f46d684fe314c315a82f553313dbc13f254ac7b3765efe709b8700"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewEconomics.ts",
+        "sha256": "458b90d1286aa6cbf81e9f7f977827721f604fba5d50d00a4e9deffb425ebcd4"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewEconomicsConfig.ts",
+        "sha256": "37846d9618ef7a7852aac675dfd34a22af3017fee1a32f2ef5b713b4acf40ee0"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewEconomicsTypes.ts",
+        "sha256": "86dd4440a81e7efb7fbd59c88c6c6c27fbfb1eda5b3a9c7f889fcde08d453a5a"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewFollowerLedger.ts",
+        "sha256": "b2254870bf1bf57f9c9539ae2c155d441185f585ba527c680581ca0c0bd96b0a"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewMasterLedger.ts",
+        "sha256": "7027ced62f9ba777563d812c0781f62f876a179a8b2f0be5dab0a919694a598f"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewPerformanceV8.ts",
+        "sha256": "a856d3acb0dbd5586fadf13efef1807bc3126d11855347cceda40e2a5e1274ac"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewPerformanceV8Config.ts",
+        "sha256": "786299d67ac12ba8ab2a43b3c08b9ef965199aaa7fb575f18085f7bad2572202"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewReconciliationReport.ts",
+        "sha256": "ab66d2a32d2972c984caf77d6db42edccb7be445f06c2310306e732e83a1bfad"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/reviewSyntheticHistory.ts",
+        "sha256": "2bf46db76aee844b5d4d3330591415a54216e9a25e3378fceeaced90b527f308"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/syntheticConfig.ts",
+        "sha256": "414f5a30dd0509c057d728b9ff6f57800b6be89efb7b8909a368e68165015c1a"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/SyntheticCopyTradingEngine.ts",
+        "sha256": "b7a0696a5aa01719c02ed45566caa2e8492298d1932eb190be8219c73068acc9"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/types.ts",
+        "sha256": "e48b5e8ba45f953dc71d50fdf47929a39ab83f608c0d5f53e7a81c5e29bf2785"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/canonicalSourceHashes.json",
+        "sha256": "d92b789f04f5f3cc50f39228b2a2ca4f168dea3cb571809398735f8540bac904"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+        "sha256": "908fecb6c369a06aa54b1ef5cf97d4c448f056de909896790031810afae6fcac"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/kseniaReview.test.ts",
+        "sha256": "4f8374b32892bbefa8a5b759a013b2f1a7fb4a1179d84d9c33ca719b5ebf45a3"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/ReviewFollowerLedgerV8.test.ts",
+        "sha256": "c75ec8247cde09b3fe1f20a254d13676dc0b41a1da20f690e1808e71708dbe9a"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/ReviewPerformanceAnalyticsV8.test.ts",
+        "sha256": "6c6b2066746e79bb5b582bcc7fcdbfbeee970c65a864c0ed9263d11721c940f5"
+      },
+      {
+        "file": "src/services/copyTrading/canonical/__tests__/ReviewPerformanceV8Master.test.ts",
+        "sha256": "6e991ee5eec505821826f87f81d9107afaee2991b29fa660b348ea15c8439a08"
+      },
+      {
+        "file": "src/services/copyTrading/CopyPerformanceService.ts",
+        "sha256": "2c4e6f41ad141a9ab4cfeae3c5055257974176e4ea91ea70c0db03acd17f50a5"
+      },
+      {
+        "file": "src/services/copyTrading/marketplaceSummary.ts",
+        "sha256": "635f70875df3fe23a0a03222e70ee8c71d33bb8c614fa55e04871587ec9355e8"
+      },
+      {
+        "file": "src/services/copyTrading/nazarPresentation.ts",
+        "sha256": "3bb3749393719c0376540832435618e52c2ce542afc9c0806e36ff4c5a9974b2"
+      },
+      {
+        "file": "src/services/copyTrading/PrismaSyntheticStateStore.ts",
+        "sha256": "4baa443fd2605dfadf226f3207ea7d68ebb78429e05cf25cd56c476bb7a394f3"
+      },
+      {
+        "file": "src/services/copyTrading/publishedPerformanceSeedBytes.ts",
+        "sha256": "b67ec4e07128bf9b49de3203db31f47ab0ed77860b62fbce1d1f2af21a9f9bb2"
+      },
+      {
+        "file": "src/services/copyTrading/publishedQuantityCompatibility.ts",
+        "sha256": "2388cb61cf025f69b5820bc72ff40c575c201055efb31a7cd0d5dd363b08f36c"
+      },
+      {
+        "file": "src/services/copyTrading/strategyOwner.ts",
+        "sha256": "406251619bcbf90ad547cb39d8840037c6a117667f65b3d4056277418e0a7c3b"
+      },
+      {
+        "file": "src/services/copyTrading/syntheticConfig.ts",
+        "sha256": "43cd20df7053a7cd93ae3a3a4b9c1483384bbb315569b504e95b4487856dc935"
+      },
+      {
+        "file": "src/services/copyTrading/SyntheticCopyTradingEngine.ts",
+        "sha256": "23c797fca724f77b1bf659cde36a1f8d221d2c2c0372c683fcaddcee52b3319f"
+      },
+      {
+        "file": "src/services/copyTrading/SyntheticCopyTradingService.ts",
+        "sha256": "dd104061586c971ab12fb2d9ddd72910c80f859b0e2128d9341849c66f5ae292"
+      },
+      {
+        "file": "src/services/copyTrading/types.ts",
+        "sha256": "af1548562c9556deb627975d061c75494c75cc8a00483615645a6a51710f24c1"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/ApprovedPerformanceSeed.test.ts",
+        "sha256": "e8171cba770f16c1ed06833227cd5b71ce8951270be89818fd326349b5eba154"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/CopyPerformanceIsolation.test.ts",
+        "sha256": "0dbc3dca348990626cb82b54bba0ff03b3beacb68fc7b90b27bc390af98e7cb9"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/CopyPerformancePromotion.test.ts",
+        "sha256": "8a24960bf580304af5502f5e67d7aca0f50021d7b1057d3177e7a71e689a5101"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/marketplaceSummary.test.ts",
+        "sha256": "00bbda463666984b66d80a6473abdde1d84000004fa571d2ded981cd5cd3a421"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/NazarPresentation.test.ts",
+        "sha256": "9202df9c530c068714b26e6f032f3914b740470c180bc2562e20a33ccb26a495"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/PublishedQuantityCompatibility.test.ts",
+        "sha256": "9e47559b55a7c1edbaa3b7a5ffcfe62ff2a5533dd67c400be83836146c31c8b4"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/SyntheticCopyTradingEngine.test.ts",
+        "sha256": "e51607656283096bafecc5d1921635508ab6731b1f9956d3559006a83aed90e5"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/SyntheticDailyPnlDistribution.test.ts",
+        "sha256": "bb21917406979c993a1e3e853e91528581759d9d63b2f986cb66800a842759f0"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/SyntheticInceptionHistory.test.ts",
+        "sha256": "17310583d5671dc846c0cdba05f783fac89a7adce92eeca9788e5664957b097e"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/SyntheticProfilePeriods.test.ts",
+        "sha256": "1a68d07d1a1e558574400764d24a26454cacc2f89ca94b8f07466563e4372c49"
+      },
+      {
+        "file": "src/services/copyTrading/__tests__/SyntheticWinRateCalibration.test.ts",
+        "sha256": "0b2d037e0effa3914bedd8a4be07dce01eb7098b64dcea2e29ca34b4bd75042a"
+      },
+      {
+        "file": "prisma/migrations/20260101000000_init/migration.sql",
+        "sha256": "a2e27118e806512163568142d15003bfe62cb87e987319773cd736010236ad74"
+      },
+      {
+        "file": "prisma/migrations/20260822000000_add_2fa_backup_codes/migration.sql",
+        "sha256": "49256f8fc1c66ddbc974c7aa5ff2a1d83e7cea02b7f51668ea404ae1cba32fd7"
+      },
+      {
+        "file": "prisma/migrations/20260822154926_add_futures_trading/migration.sql",
+        "sha256": "abd086c18631018f6da17d9512c3a65378e5bb033e9b3a36e110efde957fa93c"
+      },
+      {
+        "file": "prisma/migrations/20260822155336_add_futures_order/migration.sql",
+        "sha256": "5e0da8a8a350fa74339ef827c5e708aab1a94775f676b2d4b46a583e659aeb25"
+      },
+      {
+        "file": "prisma/migrations/20260822155812_add_futures_order_leverage_margin_type/migration.sql",
+        "sha256": "80193c875493aed5429e290f84d438547e18fc118ce0b011e9417735aeda41a7"
+      },
+      {
+        "file": "prisma/migrations/20260822180024_add_conditional_orders/migration.sql",
+        "sha256": "f9d5d7fedf74da302c116e3d6118d35a261aa8164791146c0ddedf3a1b8adce6"
+      },
+      {
+        "file": "prisma/migrations/20260822180213_add_order_locked_amount/migration.sql",
+        "sha256": "450ebe29e38ef56f15855c3fa1a295792a06e4c52e1079c061f89988b4bd8047"
+      },
+      {
+        "file": "prisma/migrations/20260823053507_add_support_chat/migration.sql",
+        "sha256": "d42ec0ae7360bb55c361adaf5e2b994f7622b4f443077523365faed5b995fc90"
+      },
+      {
+        "file": "prisma/migrations/20260823101628_redesign_withdrawal_for_manual_flow/migration.sql",
+        "sha256": "c26bba276a3ce34305e96d37717fbb3d9686cae75c4ef16cf15590168950400b"
+      },
+      {
+        "file": "prisma/migrations/20260823110000_add_role_treasury_wallet_withdrawal_txhash/migration.sql",
+        "sha256": "6c0e166d6101a27e632171d096ac0a253332885058c21d3adae9d5b270eda616"
+      },
+      {
+        "file": "prisma/migrations/20260823121653_drop_kyc_document_number/migration.sql",
+        "sha256": "8b4c618d020ef79fe1a4c08323733477740e904180af8e23171b470a69309c1f"
+      },
+      {
+        "file": "prisma/migrations/20260823185902_add_ignored_incoming_transfer/migration.sql",
+        "sha256": "7d6de1d5b590889a62f67a18529e247e42b3294ecfa25c42431f2c6b469f05bd"
+      },
+      {
+        "file": "prisma/migrations/20260824000000_add_user_block/migration.sql",
+        "sha256": "0b64f9ed1c01ae238250c4fcbf95709778efcd8cf56292b2e903b82a93d5c772"
+      },
+      {
+        "file": "prisma/migrations/20260824070000_add_user_display_name/migration.sql",
+        "sha256": "825b9b479e3b05170aa732a8e2052bb8b36f5b3819522e68a2d03e25803ddb17"
+      },
+      {
+        "file": "prisma/migrations/20260824070100_add_demo_trading/migration.sql",
+        "sha256": "a1f51336c9df16f9c44cc0dc7b00171f167d59baff79f3cd03bb3804207f17dc"
+      },
+      {
+        "file": "prisma/migrations/20260824090000_add_portfolio_snapshot/migration.sql",
+        "sha256": "0af5ac6d900dcb80e279e305e33915933d8acffa24b35dcb5c1f42b4f93f7aca"
+      },
+      {
+        "file": "prisma/migrations/20260825133000_add_referral_system/migration.sql",
+        "sha256": "5033f60c9fafa1859e56f9f4d2ca032c0e26fd116fb9df8efaf08a073043525d"
+      },
+      {
+        "file": "prisma/migrations/20260826120000_add_cfd_positions/migration.sql",
+        "sha256": "3c96c3cecfedca34a442b713e46b41cdb89b8f352247bc79a73352420fd2a749"
+      },
+      {
+        "file": "prisma/migrations/20260827060954_add_user_phone_country/migration.sql",
+        "sha256": "15350b8725a757ef79d49fd3241f419ef19ae91f064de41d120cbe2d9f68130d"
+      },
+      {
+        "file": "prisma/migrations/20260827173409_add_sessions/migration.sql",
+        "sha256": "693a9285f7e726232e2031b232848533dc31edde74b9b1d458a34d2ddcf0ca94"
+      },
+      {
+        "file": "prisma/migrations/20260901094828_add_user_avatar/migration.sql",
+        "sha256": "122cfd98a90416f45c83ba81862222d3bdfe67032995440e8c414b271868f226"
+      },
+      {
+        "file": "prisma/migrations/20260902120000_add_synthetic_copy_trading_state/migration.sql",
+        "sha256": "1dbcf00ffda8f090fabc442e054e5c9a9a27176edafd54e4e927e1d9afe18eed"
+      },
+      {
+        "file": "prisma/migrations/20260903170000_add_email_verification/migration.sql",
+        "sha256": "886031c7159176eb2776bc7ad5d4241f71f98f15982f5561848575c1a8b4302b"
+      },
+      {
+        "file": "prisma/migrations/20260905193000_card_applications/migration.sql",
+        "sha256": "a603fba761025a2990621fde8fe0868f1d7fb9bbaaf6f1a61184ba07927ef222"
+      },
+      {
+        "file": "prisma/migrations/20260906190000_copy_performance_promotion/migration.sql",
+        "sha256": "df04c2be60d9f5edb89af1be25c36663948683306adc86a983b1962c903ade83"
+      },
+      {
+        "file": "prisma/migrations/20260910120000_futures_position_protection/migration.sql",
+        "sha256": "24172d1d8d12ceb29a6997dda458c63d9a5b016b754400b41731f6ef6758b724"
+      },
+      {
+        "file": "prisma/migrations/migration_lock.toml",
+        "sha256": "693566b52c49db47a2b0901d12400aa3d710d13a49f4a2a154b80c0505ed737c"
+      },
+      {
+        "file": "prisma/schema.prisma",
+        "sha256": "9d5deb8ecf4842798678341535d7bd906199fd499e8daa562337960d975b4498"
+      },
+      {
+        "file": "src/config/futuresConfig.ts",
+        "sha256": "2820d46a28550e6f59e865db5eb598bf662322be58f1161fdce041f402809d18"
+      },
+      {
+        "file": "src/wallets/WalletService.ts",
+        "sha256": "9b02012ff5662f642d1aa645293eca166f5edd239303309c99bd4a35b0e6e8d0"
+      },
+      {
+        "file": "src/matching-engine/MatchingEngine.ts",
+        "sha256": "d46ae91a3876384fe85799d9c51f18a0d52629e66e3e432fd17e21287e44c701"
+      },
+      {
+        "file": "src/matching-engine/OrderBook.ts",
+        "sha256": "05828fdad3f31c6969b90d9817d93156c6e575a627a90f05b4f8e838e6b31e2b"
+      },
+      {
+        "file": "src/matching-engine/types.ts",
+        "sha256": "543263f1eabe2d1e76f8083f716d4f37ce480117709c78dda89172f6bf58790e"
+      },
+      {
+        "file": "src/matching-engine/__tests__/MatchingEngine.test.ts",
+        "sha256": "38ca6506b20ff1ed845ad86e24ee2b34e12249f8c191e44b7286a77a15b23eb9"
+      },
+      {
+        "file": "src/services/TreasuryWalletService.ts",
+        "sha256": "b45befb2b1a4b03abd6083801b043540786b8ec296aaa5a885c1d9f0f445d8fb"
+      }
+    ]
+  },
+  "frontendApi": "Exact main after normalizing only the PR35 CFD ticker read-response type; all admin methods preserved.",
+  "overview": true,
+  "productsAbsent": true,
+  "fullAddressMarkup": true,
+  "addressWrapping": true,
+  "marketData": "git diff against old PR head is empty for src/services/marketData, src/cfd, CfdMarketDataService, cfd/options routes and index wiring.",
+  "limitations": "Source equality and existing DOM/service focused tests; no production data writes or browser QA claimed for this merge."
+}

@@ -19,5 +19,17 @@
   "merge": false,
   "deployment": false,
   "productionEnvironmentChanged": false,
-  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6"
+  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6",
+  "mainSync": {
+    "at": "2026-09-12T15:21:29.633Z",
+    "mainSha": "1b431c74e1c6d4a371aa5f2c5f198b4ff6974de8",
+    "mergeCommit": "ce279dc6997361d96691e0b0b996eed0452cabfe",
+    "backendTypeScript": "PASS: node node_modules/typescript/bin/tsc",
+    "collectorBuild": "PASS: node node_modules/typescript/bin/tsc -p tsconfig.collector.json",
+    "frontendTypeScript": "PASS: node frontend/node_modules/typescript/bin/tsc -b frontend",
+    "frontendProductionBuild": "PASS: same existing in-process esbuild WASM/Vite runner",
+    "baselineFrontendProductionBuild": "PASS: same runner, exact pristine main",
+    "candidateBuildLogSha256": "5aa5b80f08009d79ab574e7efb5659ac34fdf0c9b186396af99d918b8667c02e",
+    "baselineBuildLogSha256": "7f0229231d022484aac4c7ba10182d89984749a3ae5955092311b2bd770c47fb"
+  }
 }

@@ -1,8 +1,28 @@
 # Inverse, options and CFD data — review implementation
 
-Base: GitHub main `ab564ae46dcbad3b2e6f4ea8bed874eb4115961b`.
+Base: GitHub main `1b431c74e1c6d4a371aa5f2c5f198b4ff6974de8`.
+Original implementation base: `ab564ae46dcbad3b2e6f4ea8bed874eb4115961b`.
+Ordinary main-to-review merge: `ce279dc6997361d96691e0b0b996eed0452cabfe`.
 Branch: the existing `codex/inverse-options-cfd-data`.
-Review only: no merge, deployment, production configuration or secret changes.
+Review branch only: no PR merge, deployment, production configuration or secret changes.
+
+## Sync with admin PRs #36 and #37
+
+Current main was merged into the existing PR branch without rebase or force push.
+Only `docs/AI_HANDOFF.md` conflicted: both complete appended histories were kept.
+`frontend/src/lib/api.ts` auto-merged the current-main admin methods with the CFD
+ticker response type. The Futures header preservation test auto-merged the
+reviewed main API fingerprint with the PR-specific CFD type normalization.
+No assertions were removed or relaxed during sync.
+
+Admin pages/styles, App routes and admin backend routes match exact current main.
+Overview, grouped compact navigation, full wrapping/copyable deposit addresses,
+removed Source column, save/reset confirmation and removed Products admin route
+are preserved. Market-data/CFD sources match pre-sync PR head
+`384a43a1c7a07d751a9eed098cf872c5f68d49ac`. See
+[`main-sync-preservation.json`](qa/inverse-options-cfd/main-sync-preservation.json)
+for exact source checks. No live provider counts were re-measured for this sync;
+the dated observations below retain their original provenance.
 
 ## What changed
 
@@ -210,8 +230,8 @@ the configured minute budget. Alternative providers implement `CfdQuoteSource`.
 
 See [`qa/inverse-options-cfd/test-comparison.json`](qa/inverse-options-cfd/test-comparison.json)
 for exact candidate/baseline counts and failure-name comparison. Final result:
-346/346 focused tests passed (16 suites); candidate 2,718 passed / 45 failed / 17 skipped;
-pristine main 2,590 passed / 45 failed / 17 skipped. All 45 failure names match:
+450/450 focused tests passed (27 suites); candidate 2,739 passed / 45 failed / 17 skipped;
+pristine current main 2,611 passed / 45 failed / 17 skipped. All 45 failure names match:
 **zero new failures**. The 17 database tests remain explicitly skipped without
 an isolated PostgreSQL fixture; these are not claimed as passes. See also
 [`qa/inverse-options-cfd/changed-files.txt`](qa/inverse-options-cfd/changed-files.txt)
@@ -221,8 +241,12 @@ precision, null bid/ask, quota denial, and no CFD writes on invalid quotes.
 The PR #35 follow-up adds 40 passing cases covering operation-specific gates,
 opening-disabled Gold/WTI through the real adapter, API close/mark/PnL behavior,
 expiry after staged balance writes, and continuation of the liquidation loop.
-Backend TypeScript and collector build were rerun successfully for this fix;
-frontend source and its previously validated build remain unchanged.
+After the main sync, backend TypeScript, collector build, frontend TypeScript and
+production Vite build all passed. The exact pristine baseline also received a
+fresh production frontend build with identical lockfile dependencies and the
+same existing in-process WASM runner. Initial focused testing under concurrent
+build load had one LiveTransport timeout; the complete focused rerun passed
+without any source/assertion change. The full comparison also has no new failures.
 
 Before staging: review the diff; choose the Frankfurt collector/Oregon backend
 staging pair; configure existing collector auth only in staging; inspect actual

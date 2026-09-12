@@ -10,6 +10,7 @@ docs/qa/inverse-options-cfd/changed-files.txt
 docs/qa/inverse-options-cfd/load-model.json
 docs/qa/inverse-options-cfd/local-options-probe.json
 docs/qa/inverse-options-cfd/local-public-collector-probe.json
+docs/qa/inverse-options-cfd/main-sync-preservation.json
 docs/qa/inverse-options-cfd/provider-observation.json
 docs/qa/inverse-options-cfd/test-comparison.json
 docs/qa/inverse-options-cfd/validation.json
