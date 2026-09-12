@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { assertCfdExecutionQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, assertCfdOpenQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeInitialMargin, computeLiquidationPrice, computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, getLeverageTier } from '../config/futuresConfig';
 import { NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS } from '../config/cfdConfig';
@@ -40,8 +40,8 @@ export class CfdPositionService {
       throw new Error('Quantity must be greater than zero');
     }
 
-    const quote = await this.cfdMarketData.getExecutionQuote(params.symbol);
-    const validateQuote = () => assertCfdExecutionQuote(quote,params.symbol,this.cfdMarketData.maxQuoteAgeMs);
+    const quote = await this.cfdMarketData.getFreshQuote(params.symbol);
+    const validateQuote = () => assertCfdOpenQuote(quote,params.symbol,this.cfdMarketData.maxQuoteAgeMs);
     const price = new BigNumber(validateQuote());
     const direction: PositionSide = params.side === 'BUY' ? 'LONG' : 'SHORT';
     const notional = params.quantity.times(price);
@@ -128,8 +128,8 @@ export class CfdPositionService {
       if (!position || position.userId !== params.userId) throw new Error('Position not found');
       if (position.status !== 'OPEN') throw new Error('Position is not open');
 
-      const quote = await this.cfdMarketData.getExecutionQuote(position.symbol);
-      const validateQuote = () => assertCfdExecutionQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
+      const quote = await this.cfdMarketData.getFreshQuote(position.symbol);
+      const validateQuote = () => assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
       const price = new BigNumber(validateQuote());
       const side = position.side as PositionSide;
       const size = new BigNumber(position.size.toString());

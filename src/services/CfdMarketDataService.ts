@@ -4,7 +4,7 @@
  * This provider publishes close, not an executable bid/ask spread. */
 import { ProviderCache, type CachedValue } from './marketData/ProviderCache';
 import { CFD_REFERENCE_CATALOG, CfdCreditBudget } from './marketData/cfd/catalog';
-import { assertCfdExecutionQuote, DEFAULT_MAX_QUOTE_AGE_MS, quoteAgeLimit, type CfdQuote, type CfdQuoteSource } from './marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, DEFAULT_MAX_QUOTE_AGE_MS, quoteAgeLimit, type CfdQuote, type CfdQuoteSource } from './marketData/cfd/CfdQuote';
 import { finite } from './marketData/numbers';
 import {
   HttpProviderClient,
@@ -52,6 +52,7 @@ export interface CfdDataOptions {
   maxQuoteAgeMs?: number;
   /** Operator-verified real-time entitlement, independent of execution approval. */
   entitledSymbols?: string[];
+  /** Approval for new positions only; does not disable quotes for existing risk. */
   executionSymbols?: string[];
   creditsPerMinute?: number;
   creditsPerDay?: number;
@@ -192,23 +193,25 @@ export class CfdMarketDataService implements CfdQuoteSource {
         lastDecimal:ticker.price,
         ...(finite(ticker.changePercent24h) === null ? {} : {changePercent24h:ticker.changePercent24h}),
         providerTimestamp:at,fetchedAt:observation.fetchedAt,stale:old,status,
+        entitlementVerified:this.entitled.has(i.symbol),
         executionAllowed:this.executable.has(i.symbol) && this.entitled.has(i.symbol) };
     });
   }
   private missing(symbol:string): CfdQuote {
     const i = CFD_REFERENCE_CATALOG.find(i=>i.symbol===symbol)!;
     return {provider:'twelvedata',symbol,providerSymbol:i.providerSymbol,bid:null,ask:null,last:null,mid:null,providerTimestamp:null,fetchedAt:null,
+      entitlementVerified:this.entitled.has(symbol),
       stale:false,status:this.entitled.has(symbol) ? 'unavailable' : 'entitlement_required',
       executionAllowed:this.entitled.has(symbol) && this.executable.has(symbol)};
   }
-  async getExecutionQuote(symbol:string): Promise<CfdQuote> {
-    if (!this.entitled.has(symbol) || !this.executable.has(symbol)) {
-      assertCfdExecutionQuote(undefined,symbol,this.maxQuoteAgeMs,this.now());
+  async getFreshQuote(symbol:string): Promise<CfdQuote> {
+    if (!this.entitled.has(symbol)) {
+      assertCfdFreshQuote(undefined,symbol,this.maxQuoteAgeMs,this.now());
     }
     const cached = this.tickersCache.peek('quotes');
     if (cached && this.now()-cached.fetchedAt>this.maxQuoteAgeMs) this.tickersCache.invalidate('quotes');
     const quote = (await this.getQuotes()).find(q=>q.symbol===symbol);
-    assertCfdExecutionQuote(quote,symbol,this.maxQuoteAgeMs,this.now());
+    assertCfdFreshQuote(quote,symbol,this.maxQuoteAgeMs,this.now());
     return quote!;
   }
   catalog() { return CFD_REFERENCE_CATALOG.map(i=>({...i,entitlement:this.entitled.has(i.symbol) ? 'verified' : 'entitlement_required',

@@ -1,24 +1,25 @@
 {
-  "at": "2026-09-12T14:12:15.671Z",
+  "at": "2026-09-12T14:37:37.569Z",
   "mainSha": "ab564ae46dcbad3b2e6f4ea8bed874eb4115961b",
   "branch": "codex/inverse-options-cfd-data",
+  "scope": "PR #35 follow-up: separate new-position approval from fresh entitled risk quotes",
   "command": "node node_modules/jest/bin/jest.js --runInBand --json --outputFile=<report.json>",
   "candidate": {
     "suites": {
-      "total": 177,
-      "passed": 162,
+      "total": 178,
+      "passed": 163,
       "failed": 14,
       "skipped": 1,
       "runtimeErrors": 0
     },
     "tests": {
-      "total": 2740,
-      "passed": 2678,
+      "total": 2780,
+      "passed": 2718,
       "failed": 45,
       "skipped": 17,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:03:16.627Z"
+    "startTime": "2026-09-12T14:33:57.333Z"
   },
   "baseline": {
     "suites": {
@@ -35,215 +36,401 @@
       "skipped": 17,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:03:17.181Z"
+    "startTime": "2026-09-12T14:33:46.291Z"
   },
   "focused": {
     "suites": {
-      "total": 15,
-      "passed": 15,
+      "total": 16,
+      "passed": 16,
       "failed": 0,
       "skipped": 0,
       "runtimeErrors": 0
     },
     "tests": {
-      "total": 306,
-      "passed": 306,
+      "total": 346,
+      "passed": 346,
       "failed": 0,
       "skipped": 0,
       "todo": 0
     },
-    "startTime": "2026-09-12T14:02:35.764Z"
+    "startTime": "2026-09-12T14:33:33.001Z"
   },
+  "exactNewFailures": 0,
+  "exactResolvedFailures": 0,
   "newFailures": [],
   "resolvedFailures": [],
-  "existingFailures": [
+  "candidateFailures": [
     {
-      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
-      "test": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
-      "test": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly"
+      "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "name": "actual onError removes broken image, retains geometry and retries changed owner URL"
     },
     {
       "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
-      "test": "actual onError removes broken image, retains geometry and retries changed owner URL"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
-      "test": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "CopyButton remains byte-equivalent to approved V8"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "MetricsPanel remains byte-equivalent to approved V8"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "ProfilePerformanceChart remains byte-equivalent to approved V8"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "MiniPerformanceChart remains byte-equivalent to approved V8"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
-      "test": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles"
-    },
-    {
-      "file": "src/services/__tests__/DepositService.test.ts",
-      "test": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "7D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "30D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "90D keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "ALL keeps lifetime statistics separate from the selected chart period"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=true only inline with its heading"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=false only inline with its heading"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "actual profile shows identityVerified=undefined only inline with its heading"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
-      "test": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
+      "name": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
     },
     {
       "file": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
-      "test": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
-      "test": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
-      "test": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
-      "test": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
-      "test": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
-    },
-    {
-      "file": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
-      "test": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
+      "name": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift"
     },
     {
       "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
-      "test": "normal API paths replace review-only sources without altering token or request behavior"
+      "name": "normal API paths replace review-only sources without altering token or request behavior"
     },
     {
       "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
-      "test": "Copy preserves its approved source except exact labels and click-only deposit requirement UX"
+      "name": "Copy preserves its approved source except exact labels and click-only deposit requirement UX"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "name": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "name": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "CopyButton remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "MetricsPanel remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "MiniPerformanceChart remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "ProfilePerformanceChart remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "30D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "7D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "90D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=false only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=true only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=undefined only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "ALL keeps lifetime statistics separate from the selected chart period"
     },
     {
       "file": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
-      "test": "customer-facing components render no provider branding has no provider name in any executable line"
+      "name": "customer-facing components render no provider branding has no provider name in any executable line"
     },
     {
       "file": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
-      "test": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
+      "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "name": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "name": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly"
+    },
+    {
+      "file": "src/services/__tests__/DepositService.test.ts",
+      "name": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000"
     },
     {
       "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
-      "test": "TronDepositVerifier credits a matching Transfer event and computes confirmations from the current block"
+      "name": "TronDepositVerifier credits a matching Transfer event and computes confirmations from the current block"
     },
     {
       "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
-      "test": "TronDepositVerifier throws when the transaction has no events at all"
+      "name": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token"
     },
     {
       "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
-      "test": "TronDepositVerifier sends the TRON-PRO-API-KEY header when configured"
+      "name": "TronDepositVerifier sends the TRON-PRO-API-KEY header when configured"
     },
     {
       "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
-      "test": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token"
+      "name": "TronDepositVerifier throws when the transaction has no events at all"
+    }
+  ],
+  "baselineFailures": [
+    {
+      "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "name": "actual onError removes broken image, retains geometry and retries changed owner URL"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "name": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+      "name": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "name": "normal API paths replace review-only sources without altering token or request behavior"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "name": "Copy preserves its approved source except exact labels and click-only deposit requirement UX"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "name": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
     },
     {
       "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
-      "test": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
+      "name": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not"
     },
     {
       "file": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
-      "test": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
+      "name": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "CopyButton remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "MetricsPanel remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "MiniPerformanceChart remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "name": "ProfilePerformanceChart remains byte-equivalent to approved V8"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "30D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "7D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "90D keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=false only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=true only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "actual profile shows identityVerified=undefined only inline with its heading"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "name": "ALL keeps lifetime statistics separate from the selected chart period"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "name": "customer-facing components render no provider branding has no provider name in any executable line"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "name": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "name": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "name": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly"
+    },
+    {
+      "file": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "name": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly"
+    },
+    {
+      "file": "src/services/__tests__/DepositService.test.ts",
+      "name": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000"
+    },
+    {
+      "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "name": "TronDepositVerifier credits a matching Transfer event and computes confirmations from the current block"
+    },
+    {
+      "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "name": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token"
+    },
+    {
+      "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "name": "TronDepositVerifier sends the TRON-PRO-API-KEY header when configured"
+    },
+    {
+      "file": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "name": "TronDepositVerifier throws when the transaction has no events at all"
     }
   ],
   "reportSha256": {
-    "candidate-final": "ac3c18efed4149e6e5a72ecd02d52f261d6d599b1bb9db2cec9934962beed7c2",
-    "baseline-final": "e2c5aca07bcd6297beb03278affccdc8a02594310bf175cf9ca7d2639f77cc3b",
-    "focused": "dfeeb80691a16695399b165eade5dbd87397387b5b251777c055470befb6ad43"
+    "candidate": "a208f10bf0076dd5c9c4b2114cd4c42c076bc1d586c39c434e56604cdc6e7374",
+    "baseline": "ff31c8775d8e56ed233ed2156a2bbf225a842a3b59a0a0d902cbb34bb82826d5",
+    "focused": "a135c3503f01d3a0dc61165dd3d608a83664016467d2bc316dfd87a08e4cd9c8"
   },
-  "newFailureCount": 0,
-  "verdict": "ZERO_NEW_FAILURES",
-  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6"
+  "notes": [
+    "Same complete lockfile dependencies and unchanged built frontend as prior validation. Frontend source unchanged by this follow-up.",
+    "All skipped PostgreSQL integration tests still require an isolated database.",
+    "New rollback tests use a stateful transactional double to verify service rejection and discarded staged writes, not an actual PostgreSQL connection."
+  ]
 }

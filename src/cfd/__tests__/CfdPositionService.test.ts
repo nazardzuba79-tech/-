@@ -55,9 +55,9 @@ function makeFakePrisma(opts?: { balances?: Record<string, { available: string; 
 
 function mockCfdMarketData(prices: Record<string, string> | null): CfdMarketDataService {
   const quote = (symbol: string) => ({ provider:'test', symbol, providerSymbol:symbol, last: prices?.[symbol] === undefined ? null : Number(prices[symbol]),
-    bid:null, ask:null, mid:null, providerTimestamp:Date.now(), fetchedAt:Date.now(), stale:false, status:'live', executionAllowed:true });
+    bid:null, ask:null, mid:null, providerTimestamp:Date.now(), fetchedAt:Date.now(), stale:false, status:'live', entitlementVerified:true, executionAllowed:true });
   return { isConfigured:()=>prices !== null, maxQuoteAgeMs:5000,
-    getExecutionQuote:jest.fn(async (symbol:string)=>quote(symbol)),
+    getFreshQuote:jest.fn(async (symbol:string)=>quote(symbol)),
     getQuotes:jest.fn(async ()=>Object.keys(prices ?? {}).map(quote)) } as unknown as CfdMarketDataService;
 }
 

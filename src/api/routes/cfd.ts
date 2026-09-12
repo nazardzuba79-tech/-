@@ -4,7 +4,7 @@ import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
 import { CFD_REFERENCE_CATALOG } from '../../services/marketData/cfd/catalog';
-import { assertCfdExecutionQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
@@ -92,7 +92,7 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     try {
       const quotes = await cfdDataService.getQuotes();
       tickers = quotes.flatMap(q => {
-        try { return [{symbol:q.symbol,price:String(assertCfdExecutionQuote(q,q.symbol,cfdDataService.maxQuoteAgeMs))}]; }
+        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,cfdDataService.maxQuoteAgeMs))}]; }
         catch { return []; }
       });
     } catch {

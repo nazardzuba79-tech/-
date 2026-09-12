@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { assertCfdExecutionQuote, type CfdQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
 
@@ -38,7 +38,7 @@ export class CfdLiquidationEngine {
     for (const position of positions) {
       const quote = quoteBySymbol.get(position.symbol);
       let markPrice: BigNumber;
-      try { markPrice = new BigNumber(assertCfdExecutionQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs)); }
+      try { markPrice = new BigNumber(assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs)); }
       catch { continue; }
 
       const liquidationPrice = new BigNumber(position.liquidationPrice.toString());
@@ -47,8 +47,14 @@ export class CfdLiquidationEngine {
         side === 'LONG' ? markPrice.isLessThanOrEqualTo(liquidationPrice) : markPrice.isGreaterThanOrEqualTo(liquidationPrice);
       if (!triggered) continue;
 
-      const liquidated = await this.liquidatePosition(position.id, quote!);
-      if (liquidated) liquidatedCount++;
+      try {
+        const liquidated = await this.liquidatePosition(position.id, quote!);
+        if (liquidated) liquidatedCount++;
+      } catch (err) {
+        // Expiry inside the transaction must roll back its writes before we
+        // skip this position. Other positions can still have safe fresh quotes.
+        if (!(err instanceof CfdQuoteUnavailable)) throw err;
+      }
     }
     return liquidatedCount;
   }
@@ -57,7 +63,7 @@ export class CfdLiquidationEngine {
     return this.prisma.$transaction(async (tx: TxClient) => {
       const position = await tx.cfdPosition.findUnique({ where: { id: positionId } });
       if (!position || position.status !== 'OPEN') return false;
-      const validateQuote = () => assertCfdExecutionQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
+      const validateQuote = () => assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
       let markPrice: BigNumber;
       try { markPrice = new BigNumber(validateQuote()); } catch { return false; }
       const threshold = new BigNumber(position.liquidationPrice.toString());

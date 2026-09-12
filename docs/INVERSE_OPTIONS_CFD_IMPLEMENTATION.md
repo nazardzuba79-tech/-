@@ -32,8 +32,9 @@ silently shrinking a supposedly complete universe. Missing quote fields remain
 null; actual zero and negative Greeks are retained.
 
 CFD consumers now depend on `CfdQuoteSource`, not Twelve Data. Every leveraged
-open/close/liquidation requires explicit execution approval, live availability,
-and both a fresh provider timestamp and fresh receipt timestamp. The default
+open/close/liquidation requires verified provider entitlement, live availability,
+and both a fresh provider timestamp and fresh receipt timestamp. Only OPEN also
+requires explicit new-position execution approval. The default
 maximum age is 5,000 ms; configuration accepts only 250–10,000 ms. Checks repeat
 inside the transaction before financial writes and after intervening balance
 awaits. Expiry, missing metadata, outages and malformed prices fail closed.
@@ -41,6 +42,23 @@ Open/close expose HTTP 503 with `cfd_quote_temporarily_unavailable`; liquidation
 skips invalid prices. The provider's exact decimal close survives into BigNumber
 accounting. Twelve Data close is a single reference price: bid/ask/mid stay null,
 and no spread is manufactured.
+
+`assertCfdFreshQuote` is the shared risk gate: matching instrument identity,
+explicit `entitlementVerified: true`, live/not-stale status, both timestamps and
+a valid positive provider price. `getFreshQuote` does not consult the opening
+whitelist; `assertCfdOpenQuote` adds `executionAllowed: true` only for OPEN,
+including increases to an existing position. CLOSE, LIQUIDATION and existing
+position mark/PnL use the risk gate alone. Removing a symbol from
+`CFD_EXECUTION_SYMBOLS` must not remove it from `CFD_VERIFIED_LIVE_SYMBOLS` if its
+verified provider entitlement still exists and open risk needs quotes. Entitled
+symbols remain in provider batches and keep the short server cache TTL even
+when their new openings are disabled.
+
+If a quote expires after a balance write but before the position write, the
+transaction rejects and rolls back. The liquidation loop catches only quote
+unavailability outside that transaction and proceeds to the next position;
+unrelated database errors still propagate. Stateful transactional test doubles
+exercise this rollback signalling; they do not replace PostgreSQL integration QA.
 
 The original CFD margin, leverage, weighted-entry, PnL, negative-balance protection
 and liquidation-forfeiture formulas remain. No changes to spot accounting,
@@ -137,7 +155,8 @@ report `entitlement_required`. Returned but unverified quotes are reference-only
 Official Basic limits are 8 credits/minute and 800/day; commodity real-time access
 requires an appropriate paid entitlement. A paid plan name alone still does not
 activate symbols. `CFD_VERIFIED_LIVE_SYMBOLS` and `CFD_EXECUTION_SYMBOLS` are separate
-explicit operator gates. Quote freshness is then checked dynamically. Existing
+explicit operator gates; the latter controls NEW openings only. Quote freshness
+is then checked dynamically. Existing
 open CFD positions also need a verified fresh source for close/liquidation; never
 roll this gate out before evaluating that operational impact.
 
@@ -191,7 +210,7 @@ the configured minute budget. Alternative providers implement `CfdQuoteSource`.
 
 See [`qa/inverse-options-cfd/test-comparison.json`](qa/inverse-options-cfd/test-comparison.json)
 for exact candidate/baseline counts and failure-name comparison. Final result:
-306/306 focused tests passed; candidate 2,678 passed / 45 failed / 17 skipped;
+346/346 focused tests passed (16 suites); candidate 2,718 passed / 45 failed / 17 skipped;
 pristine main 2,590 passed / 45 failed / 17 skipped. All 45 failure names match:
 **zero new failures**. The 17 database tests remain explicitly skipped without
 an isolated PostgreSQL fixture; these are not claimed as passes. See also
@@ -199,6 +218,11 @@ an isolated PostgreSQL fixture; these are not claimed as passes. See also
 for the complete file manifest. Focused tests cover parser truth, pagination,
 inverse bootstrap/delta/reconnect/rollback, auth/proxy/public API, quote freshness,
 precision, null bid/ask, quota denial, and no CFD writes on invalid quotes.
+The PR #35 follow-up adds 40 passing cases covering operation-specific gates,
+opening-disabled Gold/WTI through the real adapter, API close/mark/PnL behavior,
+expiry after staged balance writes, and continuation of the liquidation loop.
+Backend TypeScript and collector build were rerun successfully for this fix;
+frontend source and its previously validated build remain unchanged.
 
 Before staging: review the diff; choose the Frankfurt collector/Oregon backend
 staging pair; configure existing collector auth only in staging; inspect actual
