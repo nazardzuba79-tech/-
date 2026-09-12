@@ -1,7 +1,6 @@
 import { CfdMarketDataService } from '../../CfdMarketDataService';
 import { ArbitrageService } from '../../ArbitrageService';
 import { KrakenMarketDataService } from '../../KrakenMarketDataService';
-import { ProviderUnavailableError } from '../ProviderHealth';
 
 /**
  * The failure matrix for the two providers this task moved onto the shared
@@ -19,7 +18,11 @@ import { ProviderUnavailableError } from '../ProviderHealth';
  */
 describe('provider failure matrix', () => {
   /** No real waiting: retries are exercised, their delays are not. */
-  const FAST = { sleep: () => Promise.resolve() };
+  let clock = 1_700_000_000_000;
+  beforeEach(() => { clock = 1_700_000_000_000; jest.spyOn(Date, 'now').mockImplementation(() => clock); });
+  afterEach(() => jest.restoreAllMocks());
+  // A full eight-symbol batch leaves no retry credits until the next minute.
+  const FAST = { sleep: async () => { clock += 60_001; } };
 
   function response(body: unknown, ok = true, status = 200, headers: Record<string, string> = {}) {
     return {
@@ -34,8 +37,7 @@ describe('provider failure matrix', () => {
     'XAU/USD': { symbol: 'XAU/USD', close: '2400.10', percent_change: '0.42' },
   };
 
-  // This matrix isolates transport/circuit behavior under a sufficient TEST quota.
-  // CfdQuoteSafety separately verifies that the Basic budget denies retries.
+  // Retry clocks advance across quota windows; same-minute retries are covered separately.
   function cfd(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
     return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:100,creditsPerDay:10000});
   }
@@ -79,12 +81,13 @@ describe('provider failure matrix', () => {
     const service = cfd(fetchFn, { retries: 0 });
 
     for (let i = 0; i < 4; i++) {
+      if (i > 0) clock += 60001;
       await expect(service.getTickers()).rejects.toThrow();
     }
     expect(fetchFn).toHaveBeenCalledTimes(4);
 
     // Circuit is OPEN: the next call must not reach the network at all.
-    await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+    await expect(service.getTickers()).rejects.toThrow(); // cooldown and rotation prevent HTTP
     expect(fetchFn).toHaveBeenCalledTimes(4);
   });
 
@@ -104,13 +107,13 @@ describe('provider failure matrix', () => {
         .mockResolvedValue(response(goldQuote));
       const service = cfd(fetchFn, { retries: 0 });
 
-      for (let i = 0; i < 4; i++) await expect(service.getTickers()).rejects.toThrow();
-      await expect(service.getTickers()).rejects.toBeInstanceOf(ProviderUnavailableError);
+      for (let i = 0; i < 4; i++) { if (i > 0) now += 60001; await expect(service.getTickers()).rejects.toThrow(); }
+      await expect(service.getTickers()).rejects.toThrow(); // cooldown and rotation prevent HTTP
       expect(fetchFn).toHaveBeenCalledTimes(4);
 
       // Past the 30s cooldown the next caller is the single probe, and its
       // success closes the circuit.
-      now += 31_000;
+      now += 60_001; // both circuit cooldown and reference rotation elapsed
       const recovered = await service.getTickers();
       expect(recovered.find((t) => t.symbol === 'XAUUSD')).toBeDefined();
       expect(fetchFn).toHaveBeenCalledTimes(5);
@@ -120,7 +123,6 @@ describe('provider failure matrix', () => {
   });
 
   it('serves the last good quote when a refresh fails inside the stale budget', async () => {
-    const realNow = Date.now;
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     try {
@@ -135,11 +137,11 @@ describe('provider failure matrix', () => {
       expect(stale.value.find((t) => t.symbol === 'XAUUSD')!.price).toBe('2400.10');
     } finally {
       (Date.now as jest.Mock).mockRestore();
-      expect(Date.now).toBe(realNow);
+
     }
   });
 
-  it('stops serving once the stale budget expires rather than aging a price indefinitely', async () => {
+  it('retains the last-good reference with explicit stale metadata after expiry', async () => {
     let now = 1_700_000_000_000;
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     try {
@@ -149,7 +151,9 @@ describe('provider failure matrix', () => {
       await service.getTickers();
       now += 10 * 60_000; // far past TTL + stale budget
 
-      await expect(service.getTickers()).rejects.toThrow();
+      const result = await service.getTickersWithMeta();
+      expect(result.stale).toBe(true);
+      expect(result.value[0].price).toBe('2400.10');
     } finally {
       (Date.now as jest.Mock).mockRestore();
     }

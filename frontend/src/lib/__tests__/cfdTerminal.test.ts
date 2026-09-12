@@ -44,7 +44,7 @@ function mount(file: string, options: any = {}) {
     if (name.endsWith('/toast')) return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name.endsWith('/cfdPresentation')) return presentation;
     if (name.endsWith('/futuresMath')) return math;
-    if (name.endsWith('/priceChange')) return { parseChangePercent: Number };
+    if (name.endsWith('/priceChange')) return { parseChangePercent: Number, parseChangePercentOrNull: (v: any) => v == null ? null : Number(v) };
     if (name.endsWith('/useCfdTickers')) return { useCfdTickers: () => options.feed };
     if (name.endsWith('/krakenSocket')) return { krakenSocket: { subscribeBook: () => () => {} } };
     if (name.endsWith('/tradingMode')) return { rememberTradingMode: jest.fn() };
@@ -60,6 +60,38 @@ function mount(file: string, options: any = {}) {
 }
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
+test('all 13 identities render and remain selectable before the first API response', () => {
+  const hook = mount('lib/useCfdTickers.ts', {api:{getCfdTickers:pending}});
+  const initial = hook.render();
+  expect(initial.tickers).toHaveLength(13);
+  const onChange = jest.fn(), list = mount('components/CfdInstrumentList.tsx');
+  const tree = list.render({...initial,symbol:'XAUUSD',onChange,onRetry:jest.fn()});
+  const buttons = nodes(tree).filter(n=>n.type==='button' && n.props?.className?.startsWith('cfd-option'));
+  expect(buttons).toHaveLength(13);
+  for(const [index, instrument] of presentation.CFD_DISPLAY_CATALOG.entries()) {
+    expect(text(buttons[index])).toContain(instrument.symbol);
+    buttons[index].props.onClick(); expect(onChange).toHaveBeenLastCalledWith(instrument.symbol);
+    expect(presentation.resolveCfdSymbol(instrument.symbol,initial.tickers)).toBe(instrument.symbol);
+    expect(presentation.resolveCfdSymbol(instrument.symbol,[])).toBe(instrument.symbol);
+    expect(presentation.formatCfdPrice('1.23456',instrument.symbol).split('.')[1]).toHaveLength(instrument.decimals);
+    expect(instrument.icon).toBeTruthy();
+    const page = mount('pages/TradePage.tsx',{params:new URLSearchParams(`?market=cfd&symbol=${instrument.symbol}`),feed:initial});
+    const charts = nodes(page.render()).filter(n=>n.type===page.components.CfdChart);
+    expect(charts).toHaveLength(1);expect(charts[0].props.symbol).toBe(instrument.symbol);
+    expect(presentation.canExecuteCfdQuote(initial.tickers[index])).toBe(false);
+  }
+  expect(initial.tickers.every((t:any)=>t.price===null)).toBe(true);
+});
+
+test('reference status is visible independently of execution entitlement', () => {
+  const list = mount('components/CfdInstrumentList.tsx');
+  for(const [referenceStatus,label] of [['available',''],['stale','trade.cfdReferenceStale'],['unavailable','trade.cfdReferenceUnavailable'],['market_closed','trade.cfdMarketClosed']]) {
+    const tree = list.render({symbol:'XAGUSD',tickers:[{symbol:'XAGUSD',name:'Silver',price:referenceStatus==='unavailable'?null:'30.125',referenceStatus,status:'reference_only',executionAllowed:false}],configured:true,loadError:false,onChange:jest.fn(),onRetry:jest.fn()});
+    if(label) expect(text(tree)).toContain(label);
+    else expect(text(tree)).not.toMatch(/trade.cfdReferenceUnavailable|trade.cfdUnavailable/);
+  }
+});
 
 test.each([
   ['XAUUSD', '2400.12', '2,400.12'], ['EURUSD', '1.12345', '1.12345'], ['GBPUSD', '1.30123', '1.30123'],
@@ -102,19 +134,18 @@ test('provider subset and unloaded feed both have a safe instrument fallback', (
 });
 test('instrument loading, unconfigured and error/retry remain distinct; no fabricated instrument rows', () => {
   const list = mount('components/CfdInstrumentList.tsx'), retry = jest.fn();
-  const props = { symbol: 'XAUUSD', tickers: [], configured: true, loadError: false, onRetry: retry, onChange: jest.fn() };
-  expect(nodes(list.render(props)).filter(n => n.type === list.components.SkeletonRow)).toHaveLength(7);
-  expect(nodes(list.render(props)).filter(n => n.type === 'button')).toHaveLength(0); // no manufactured prices
+  const props = { symbol: 'XAUUSD', tickers: presentation.completeCfdRows([]), configured: true, loadError: false, onRetry: retry, onChange: jest.fn() };
+  expect(nodes(list.render(props)).filter(n => n.type === 'button')).toHaveLength(13); // identities with null prices, never manufactured quotes
   expect(text(list.render({ ...props, configured: false }))).toContain('trade.cfdUnavailable');
   const failed = list.render({ ...props, loadError: true });
-  nodes(failed).find(n => n.type === 'button').props.onClick(); expect(retry).toHaveBeenCalledTimes(1);
+  nodes(failed).find(n => n.props?.className === 'cfd-retryButton').props.onClick(); expect(retry).toHaveBeenCalledTimes(1);
   expect(text(failed)).toContain('trade.loadPairsError');
 });
 test('real ticker hook keeps 60s polling and exposes retry without replacing its data source', async () => {
   const getCfdTickers = jest.fn().mockRejectedValueOnce(new Error('provider')).mockResolvedValue({ configured: false, tickers: [] });
   const hook = mount('lib/useCfdTickers.ts', { api: { getCfdTickers } });
   hook.render(); await tick(); expect(hook.render().loadError).toBe(true);
-  hook.render().reload(); await tick(); expect(hook.render()).toMatchObject({ configured: false, loadError: false, tickers: [] });
+  hook.render().reload(); await tick(); expect(hook.render()).toMatchObject({ configured: false, loadError: false, tickers: presentation.completeCfdRows([]) });
   jest.advanceTimersByTime(60000); expect(getCfdTickers).toHaveBeenCalledTimes(3);
 });
 /**
@@ -145,7 +176,8 @@ test.each([
   const state = await feedFor(payload);
   // Always an array, so resolveCfdSymbol and the list can never throw.
   expect(Array.isArray(state.tickers)).toBe(true);
-  expect(state.tickers).toEqual([]);
+  expect(state.tickers).toHaveLength(13);
+  expect(state.tickers.every((t: any) => t.price === null && !t.executionAllowed)).toBe(true);
   expect(state.loadError).toBe(true);
   // Not an assertion that CFD is unconfigured — that would be a claim this
   // response does not support.
@@ -161,19 +193,20 @@ test('a malformed refresh keeps the last good instrument rows on screen', async 
     .mockResolvedValue({ configured: true, tickers: undefined });
   const hook = mount('lib/useCfdTickers.ts', { api: { getCfdTickers } });
   hook.render(); await tick();
-  expect(hook.render().tickers.map((t: any) => t.symbol)).toEqual(rows.map(r => r.symbol));
+  expect(hook.render().tickers.map((t: any) => t.symbol)).toEqual(presentation.CFD_DISPLAY_CATALOG.map(r => r.symbol));
 
   hook.render().reload(); await tick();
   const state = hook.render();
   // Last good data preserved, not blanked and not replaced with nonsense.
-  expect(state.tickers.map((t: any) => t.symbol)).toEqual(rows.map(r => r.symbol));
+  expect(state.tickers.map((t: any) => t.symbol)).toEqual(presentation.CFD_DISPLAY_CATALOG.map(r => r.symbol));
   expect(state.tickers[0].price).toBe('2400.125');
   expect(state.loadError).toBe(true);
 });
 
 test('a well-formed empty list is truth, not an error', async () => {
   const state = await feedFor({ configured: false, tickers: [] });
-  expect(state.tickers).toEqual([]);
+  expect(state.tickers).toHaveLength(13);
+  expect(state.tickers.every((t: any) => t.price === null && !t.executionAllowed)).toBe(true);
   expect(state.loadError).toBe(false);
   expect(state.configured).toBe(false);
 });
@@ -189,8 +222,8 @@ test('unusable rows are dropped and a listed unavailable price stays null', asyn
       null,
     ],
   });
-  expect(state.tickers).toHaveLength(2);
-  expect(state.tickers[1]).toMatchObject({symbol:'EURUSD',price:null,executionAllowed:false,status:'unavailable'});
+  expect(state.tickers).toHaveLength(13);
+  expect(state.tickers.find((t: any) => t.symbol === 'EURUSD')).toMatchObject({symbol:'EURUSD',price:null,executionAllowed:false,status:'unavailable'});
   expect(state.tickers[0]).toMatchObject({ symbol: 'XAUUSD', name: 'Gold', price: '2400.125', changePercent24h: '0.23' });
   // The dropped rows are absent, not present with a manufactured 0.
   expect(JSON.stringify(state.tickers)).not.toContain('"price":"0"');
@@ -209,13 +242,13 @@ test('a real zero and a numeric price survive; an unknown 24h change stays absen
   expect(state.tickers[0]).toMatchObject({ symbol: 'XAUUSD', name: 'Gold', price: '0', changePercent24h: '0' });
   // Unknown change is ABSENT — the contract that makes it render as a dash
   // rather than as 0.00%.
-  expect(state.tickers[1]).toMatchObject({ symbol: 'EURUSD', name: 'Euro', price: '1.12345' });
-  expect('changePercent24h' in state.tickers[1]).toBe(false);
+  expect(state.tickers.find((t: any) => t.symbol === 'EURUSD')).toMatchObject({ symbol: 'EURUSD', name: 'Euro', price: '1.12345' });
+  expect('changePercent24h' in state.tickers.find((t: any) => t.symbol === 'EURUSD')).toBe(false);
 });
 
 test('a row without a name falls back to its symbol rather than an empty label', async () => {
   const state = await feedFor({ configured: true, tickers: [{ symbol: 'USDJPY', price: '155.25' }] });
-  expect(state.tickers[0]).toMatchObject({ symbol: 'USDJPY', name: 'USDJPY', price: '155.25' });
+  expect(state.tickers.find((t: any) => t.symbol === 'USDJPY')).toMatchObject({ symbol: 'USDJPY', name: 'USDJPY', price: '155.25' });
 });
 
 test('MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact open payload', async () => {
