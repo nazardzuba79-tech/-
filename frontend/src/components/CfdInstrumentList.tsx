@@ -7,7 +7,13 @@ import { parseChangePercentOrNull } from '../lib/priceChange';
 export interface CfdTickerRow {
   symbol: string;
   name: string;
-  price: string;
+  price: string | null;
+  status?: string;
+  stale?: boolean;
+  executionAllowed?: boolean;
+  providerTimestamp?: number | null;
+  fetchedAt?: number | null;
+  maxQuoteAgeMs?: number;
   /** ABSENT when the reference feed reported a price but no 24h change.
    *  Unknown is not the same as flat, so it renders as a dash rather than
    *  as 0.00%. */
@@ -77,9 +83,10 @@ export function CfdInstrumentList({
                     {tk.symbol}
                   </span>
                   <span className="cfd-optionName">{tk.name}</span>
+                  {tk.status !== 'live' && <span className="cfd-optionName">{t('trade.cfdUnavailable')}</span>}
                 </span>
               </span>
-              <PriceCell value={parseFloat(tk.price)} className="mono cfd-price" format={(value) => formatCfdPrice(value, tk.symbol)} />
+              {tk.price === null ? <span className="mono cfd-price">—</span> : <PriceCell value={parseFloat(tk.price)} className="mono cfd-price" format={(value) => formatCfdPrice(value, tk.symbol)} />}
               <span className={`mono cfd-change ${change === null ? '' : positive ? 'text-buy' : 'text-sell'}`} >
                 {change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`}
               </span>

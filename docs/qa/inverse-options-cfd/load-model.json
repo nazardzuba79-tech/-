@@ -1,0 +1,44 @@
+{
+  "at": "2026-09-12T13:32:43.277Z",
+  "subscriptions": [
+    {
+      "category": "spot",
+      "topics": 538,
+      "argsChars": 10033,
+      "subscriptionRequests": 54
+    },
+    {
+      "category": "linear",
+      "topics": 869,
+      "argsChars": 16889,
+      "subscriptionRequests": 1
+    },
+    {
+      "category": "inverse",
+      "topics": 28,
+      "argsChars": 500,
+      "subscriptionRequests": 1
+    }
+  ],
+  "options": {
+    "contracts": 3358,
+    "normalized": 3358,
+    "rejected": 0,
+    "byBase": {
+      "ETH": 664,
+      "BTC": 738,
+      "HYPE": 360,
+      "XRP": 302,
+      "MNT": 320,
+      "DOGE": 274,
+      "XAUT": 372,
+      "SOL": 328
+    },
+    "universePages": 4,
+    "globalWsTopics": 0,
+    "requestsPerActiveBasePerMinute": 12
+  },
+  "totalTopics": 1435,
+  "wsConnections": 3,
+  "subscriptionRequests": 56
+}

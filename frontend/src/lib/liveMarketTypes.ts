@@ -1,7 +1,9 @@
 /** Public normalized reference contract. No trading/account fields. */
 export interface LiveQuote {
   id: string; pair: string; symbol: string; providerSymbol: string; provider: 'bybit';
-  marketType: 'spot' | 'linear_perpetual' | 'linear_futures' | 'inverse';
+  marketType: 'spot' | 'linear_perpetual' | 'linear_futures' | 'inverse' | 'inverse_perpetual' | 'inverse_futures';
+  volumeAsset?: string;
+  turnoverAsset?: string;
   baseAsset: string; quoteAsset: string; settleAsset: string | null;
   lastPrice: number | null; bidPrice: number | null; askPrice: number | null;
   high24h: number | null; low24h: number | null; volume24h: number | null;

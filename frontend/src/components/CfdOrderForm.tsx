@@ -2,7 +2,7 @@ import { useState, useEffect, FormEvent } from 'react';
 import { api, ApiError } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { formatCfdPrice } from '../lib/cfdPresentation';
+import { formatCfdPrice, canExecuteCfdQuote } from '../lib/cfdPresentation';
 import { LeverageSlider } from './LeverageSlider';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 import type { CfdTickerRow } from './CfdInstrumentList';
@@ -36,6 +36,9 @@ export function CfdOrderForm({
   const [config, setConfig] = useState<Awaited<ReturnType<typeof api.getCfdConfig>> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 500); return () => clearInterval(timer); }, []);
+  const tradable = configured && canExecuteCfdQuote(ticker, now);
 
   useEffect(() => {
     api.getCfdConfig().then(setConfig).catch(() => {});
@@ -51,7 +54,7 @@ export function CfdOrderForm({
       .catch(() => {});
   }, [side]);
 
-  const price = ticker ? parseFloat(ticker.price) : 0;
+  const price = ticker?.price != null ? parseFloat(ticker.price) : 0;
   const notional = price && quantity ? price * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
 
@@ -77,6 +80,7 @@ export function CfdOrderForm({
   }
 
   async function submitOrder() {
+    if (!configured || !canExecuteCfdQuote(ticker)) { setError(t('trade.cfdUnavailable')); return; }
     setError(null);
     setSubmitting(true);
     try {
@@ -181,10 +185,11 @@ export function CfdOrderForm({
         </div>
 
         {error && <div className="cfd-error" role="alert">{error}</div>}
+        {!tradable && <p className="cfd-hint" role="status">{t('trade.cfdUnavailable')}</p>}
 
         <button
           type="submit"
-          disabled={submitting || !ticker}
+          disabled={submitting || !tradable}
           className={`cfd-submit ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}

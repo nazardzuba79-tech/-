@@ -150,7 +150,13 @@ test.each([
   // and every spot method. The protection routes are new paths under
   // /futures/positions and reach none of them.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
-  expect(hash(read(path))).toBe(expected);
+  // Only the CFD read-response TYPE changes: nullable price + quote metadata.
+  // Restore that exact line for this fingerprint of all existing API behavior.
+  const source = path === 'frontend/src/lib/api.ts' ? read(path).replace(
+    "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
+    'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
+  ) : read(path);
+  expect(hash(source)).toBe(expected);
 });
 
 function mount(overrides: Record<string, any> = {}, countdown = false) {

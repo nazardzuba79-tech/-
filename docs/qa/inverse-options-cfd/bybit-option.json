@@ -1,0 +1,397 @@
+{
+  "at": "2026-09-12T13:32:43.277Z",
+  "pages": [
+    {
+      "url": "https://api.bybit.com/v5/market/instruments-info?category=option&limit=1000&baseCoin=All",
+      "count": 1000,
+      "providerTime": 1789219965664
+    },
+    {
+      "url": "https://api.bybit.com/v5/market/instruments-info?category=option&limit=1000&baseCoin=All&cursor=0%252C1000",
+      "count": 1000,
+      "providerTime": 1789219966043
+    },
+    {
+      "url": "https://api.bybit.com/v5/market/instruments-info?category=option&limit=1000&baseCoin=All&cursor=1000%252C2000",
+      "count": 1000,
+      "providerTime": 1789219966249
+    },
+    {
+      "url": "https://api.bybit.com/v5/market/instruments-info?category=option&limit=1000&baseCoin=All&cursor=2000%252C3000",
+      "count": 358,
+      "providerTime": 1789219966449
+    }
+  ],
+  "count": 3358,
+  "fullObservationSha256": "71f3f6e2b11534133c38d45b7b5195e6539929b359059d689e6f75d1d2cdf25a",
+  "sampleInstruments": [
+    {
+      "symbolId": 388683,
+      "symbol": "ETH-13SEP26-2200-P-USDT",
+      "status": "Trading",
+      "baseCoin": "ETH",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.00015",
+      "priceFilter": {
+        "minPrice": "0.1",
+        "maxPrice": "41000",
+        "tickSize": "0.1"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "5000",
+        "minOrderQty": "0.1",
+        "qtyStep": "0.1"
+      },
+      "displayName": "ETHUSDT-13SEP26-2200-P"
+    },
+    {
+      "symbolId": 388682,
+      "symbol": "ETH-13SEP26-2200-C-USDT",
+      "status": "Trading",
+      "baseCoin": "ETH",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.00015",
+      "priceFilter": {
+        "minPrice": "0.1",
+        "maxPrice": "41000",
+        "tickSize": "0.1"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "5000",
+        "minOrderQty": "0.1",
+        "qtyStep": "0.1"
+      },
+      "displayName": "ETHUSDT-13SEP26-2200-C"
+    },
+    {
+      "symbolId": 388615,
+      "symbol": "BTC-13SEP26-72000-P-USDT",
+      "status": "Trading",
+      "baseCoin": "BTC",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.00015",
+      "priceFilter": {
+        "minPrice": "5",
+        "maxPrice": "1110000",
+        "tickSize": "5"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "500",
+        "minOrderQty": "0.01",
+        "qtyStep": "0.01"
+      },
+      "displayName": "BTCUSDT-13SEP26-72000-P"
+    },
+    {
+      "symbolId": 388614,
+      "symbol": "BTC-13SEP26-72000-C-USDT",
+      "status": "Trading",
+      "baseCoin": "BTC",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.00015",
+      "priceFilter": {
+        "minPrice": "5",
+        "maxPrice": "1110000",
+        "tickSize": "5"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "500",
+        "minOrderQty": "0.01",
+        "qtyStep": "0.01"
+      },
+      "displayName": "BTCUSDT-13SEP26-72000-C"
+    },
+    {
+      "symbolId": 389109,
+      "symbol": "HYPE-13SEP26-72-P-USDT",
+      "status": "Trading",
+      "baseCoin": "HYPE",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.01",
+        "maxPrice": "2500",
+        "tickSize": "0.01"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "100000",
+        "minOrderQty": "1",
+        "qtyStep": "1"
+      },
+      "displayName": "HYPEUSDT-13SEP26-72-P"
+    },
+    {
+      "symbolId": 389108,
+      "symbol": "HYPE-13SEP26-72-C-USDT",
+      "status": "Trading",
+      "baseCoin": "HYPE",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.01",
+        "maxPrice": "2500",
+        "tickSize": "0.01"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "100000",
+        "minOrderQty": "1",
+        "qtyStep": "1"
+      },
+      "displayName": "HYPEUSDT-13SEP26-72-C"
+    },
+    {
+      "symbolId": 388827,
+      "symbol": "XRP-13SEP26-1-P-USDT",
+      "status": "Trading",
+      "baseCoin": "XRP",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.0001",
+        "maxPrice": "100",
+        "tickSize": "0.0001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "400000",
+        "minOrderQty": "10",
+        "qtyStep": "10"
+      },
+      "displayName": "XRPUSDT-13SEP26-1-P"
+    },
+    {
+      "symbolId": 388826,
+      "symbol": "XRP-13SEP26-1-C-USDT",
+      "status": "Trading",
+      "baseCoin": "XRP",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.0001",
+        "maxPrice": "100",
+        "tickSize": "0.0001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "400000",
+        "minOrderQty": "10",
+        "qtyStep": "10"
+      },
+      "displayName": "XRPUSDT-13SEP26-1-C"
+    },
+    {
+      "symbolId": 388895,
+      "symbol": "MNT-13SEP26-0.5-P-USDT",
+      "status": "Trading",
+      "baseCoin": "MNT",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.0001",
+        "maxPrice": "100",
+        "tickSize": "0.0001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "400000",
+        "minOrderQty": "10",
+        "qtyStep": "10"
+      },
+      "displayName": "MNTUSDT-13SEP26-0.5-P"
+    },
+    {
+      "symbolId": 388894,
+      "symbol": "MNT-13SEP26-0.5-C-USDT",
+      "status": "Trading",
+      "baseCoin": "MNT",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.0001",
+        "maxPrice": "100",
+        "tickSize": "0.0001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "400000",
+        "minOrderQty": "10",
+        "qtyStep": "10"
+      },
+      "displayName": "MNTUSDT-13SEP26-0.5-C"
+    },
+    {
+      "symbolId": 388957,
+      "symbol": "DOGE-13SEP26-0.06-P-USDT",
+      "status": "Trading",
+      "baseCoin": "DOGE",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.00001",
+        "maxPrice": "10",
+        "tickSize": "0.00001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "4000000",
+        "minOrderQty": "100",
+        "qtyStep": "100"
+      },
+      "displayName": "DOGEUSDT-13SEP26-0.06-P"
+    },
+    {
+      "symbolId": 388956,
+      "symbol": "DOGE-13SEP26-0.06-C-USDT",
+      "status": "Trading",
+      "baseCoin": "DOGE",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.00001",
+        "maxPrice": "10",
+        "tickSize": "0.00001"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "4000000",
+        "minOrderQty": "100",
+        "qtyStep": "100"
+      },
+      "displayName": "DOGEUSDT-13SEP26-0.06-C"
+    },
+    {
+      "symbolId": 389027,
+      "symbol": "XAUT-13SEP26-4225-P-USDT",
+      "status": "Trading",
+      "baseCoin": "XAUT",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.1",
+        "maxPrice": "500000",
+        "tickSize": "0.1"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "5000",
+        "minOrderQty": "0.1",
+        "qtyStep": "0.1"
+      },
+      "displayName": "XAUTUSDT-13SEP26-4225-P"
+    },
+    {
+      "symbolId": 389026,
+      "symbol": "XAUT-13SEP26-4225-C-USDT",
+      "status": "Trading",
+      "baseCoin": "XAUT",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.1",
+        "maxPrice": "500000",
+        "tickSize": "0.1"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "5000",
+        "minOrderQty": "0.1",
+        "qtyStep": "0.1"
+      },
+      "displayName": "XAUTUSDT-13SEP26-4225-C"
+    },
+    {
+      "symbolId": 388763,
+      "symbol": "SOL-13SEP26-88-P-USDT",
+      "status": "Trading",
+      "baseCoin": "SOL",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Put",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.01",
+        "maxPrice": "3000",
+        "tickSize": "0.01"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "100000",
+        "minOrderQty": "1",
+        "qtyStep": "1"
+      },
+      "displayName": "SOLUSDT-13SEP26-88-P"
+    },
+    {
+      "symbolId": 388762,
+      "symbol": "SOL-13SEP26-88-C-USDT",
+      "status": "Trading",
+      "baseCoin": "SOL",
+      "quoteCoin": "USDT",
+      "settleCoin": "USDT",
+      "optionsType": "Call",
+      "launchTime": "1789027200000",
+      "deliveryTime": "1789286400000",
+      "deliveryFeeRate": "0.0002",
+      "priceFilter": {
+        "minPrice": "0.01",
+        "maxPrice": "3000",
+        "tickSize": "0.01"
+      },
+      "lotSizeFilter": {
+        "maxOrderQty": "100000",
+        "minOrderQty": "1",
+        "qtyStep": "1"
+      },
+      "displayName": "SOLUSDT-13SEP26-88-C"
+    }
+  ]
+}

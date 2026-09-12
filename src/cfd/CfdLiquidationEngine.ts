@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { CfdMarketDataService } from '../services/CfdMarketDataService';
+import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { LIQUIDATION_CHECK_INTERVAL_MS } from '../config/futuresConfig';
 
@@ -18,7 +18,7 @@ const MARGIN_ASSET = 'USDT';
 export class CfdLiquidationEngine {
   private timer?: NodeJS.Timeout;
 
-  constructor(private prisma: PrismaClient, private cfdMarketData: CfdMarketDataService) {}
+  constructor(private prisma: PrismaClient, private cfdMarketData: CfdQuoteSource) {}
 
   async checkAndLiquidate(): Promise<number> {
     if (!this.cfdMarketData.isConfigured()) return 0;
@@ -27,17 +27,19 @@ export class CfdLiquidationEngine {
 
     let tickers;
     try {
-      tickers = await this.cfdMarketData.getTickers();
+      tickers = await this.cfdMarketData.getQuotes();
     } catch (err) {
       console.error('[CfdLiquidationEngine] Failed to fetch CFD prices:', err);
       return 0;
     }
-    const priceBySymbol = new Map(tickers.map((t) => [t.symbol, new BigNumber(t.price)]));
+    const quoteBySymbol = new Map(tickers.map((t) => [t.symbol, t]));
 
     let liquidatedCount = 0;
     for (const position of positions) {
-      const markPrice = priceBySymbol.get(position.symbol);
-      if (!markPrice || !markPrice.isFinite() || markPrice.isLessThanOrEqualTo(0)) continue; // honest skip, no fabricated price
+      const quote = quoteBySymbol.get(position.symbol);
+      let markPrice: BigNumber;
+      try { markPrice = new BigNumber(assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs)); }
+      catch { continue; }
 
       const liquidationPrice = new BigNumber(position.liquidationPrice.toString());
       const side = position.side as PositionSide;
@@ -45,16 +47,27 @@ export class CfdLiquidationEngine {
         side === 'LONG' ? markPrice.isLessThanOrEqualTo(liquidationPrice) : markPrice.isGreaterThanOrEqualTo(liquidationPrice);
       if (!triggered) continue;
 
-      const liquidated = await this.liquidatePosition(position.id, markPrice);
-      if (liquidated) liquidatedCount++;
+      try {
+        const liquidated = await this.liquidatePosition(position.id, quote!);
+        if (liquidated) liquidatedCount++;
+      } catch (err) {
+        // Expiry inside the transaction must roll back its writes before we
+        // skip this position. Other positions can still have safe fresh quotes.
+        if (!(err instanceof CfdQuoteUnavailable)) throw err;
+      }
     }
     return liquidatedCount;
   }
 
-  async liquidatePosition(positionId: string, markPrice: BigNumber): Promise<boolean> {
+  async liquidatePosition(positionId: string, quote: CfdQuote): Promise<boolean> {
     return this.prisma.$transaction(async (tx: TxClient) => {
       const position = await tx.cfdPosition.findUnique({ where: { id: positionId } });
       if (!position || position.status !== 'OPEN') return false;
+      const validateQuote = () => assertCfdFreshQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
+      let markPrice: BigNumber;
+      try { markPrice = new BigNumber(validateQuote()); } catch { return false; }
+      const threshold = new BigNumber(position.liquidationPrice.toString());
+      if (position.side === 'LONG' ? markPrice.isGreaterThan(threshold) : markPrice.isLessThan(threshold)) return false;
 
       const side = position.side as PositionSide;
       const size = new BigNumber(position.size.toString());
@@ -67,11 +80,13 @@ export class CfdLiquidationEngine {
       // protection still applies: the loss stops at the margin locked.
       const balance = await tx.futuresBalance.findUnique({ where: { userId_asset: { userId: position.userId, asset: MARGIN_ASSET } } });
       const lockedNow = new BigNumber(balance?.locked.toString() ?? '0');
+      validateQuote();
       await tx.futuresBalance.update({
         where: { userId_asset: { userId: position.userId, asset: MARGIN_ASSET } },
         data: { locked: BigNumber.max(lockedNow.minus(initialMargin), 0).toString() },
       });
 
+      validateQuote();
       await tx.cfdPosition.update({
         where: { id: position.id },
         data: { status: 'LIQUIDATED', closedAt: new Date(), realizedPnl: realizedPnl.toString() },

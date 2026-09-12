@@ -34,8 +34,10 @@ describe('provider failure matrix', () => {
     'XAU/USD': { symbol: 'XAU/USD', close: '2400.10', percent_change: '0.42' },
   };
 
+  // This matrix isolates transport/circuit behavior under a sufficient TEST quota.
+  // CfdQuoteSafety separately verifies that the Basic budget denies retries.
   function cfd(fetchFn: jest.Mock, policy: Record<string, unknown> = FAST) {
-    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy);
+    return new CfdMarketDataService('test-key', fetchFn as unknown as typeof fetch, 'https://td.test', policy, {creditsPerMinute:100,creditsPerDay:10000});
   }
 
   // ── Twelve Data / CFD ───────────────────────────────────────────────

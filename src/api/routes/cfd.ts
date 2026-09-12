@@ -2,14 +2,18 @@ import { Router } from 'express';
 import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
-import { CfdMarketDataService, ExternalCfdDataError, CFD_INSTRUMENTS } from '../../services/CfdMarketDataService';
+import { CfdMarketDataService } from '../../services/CfdMarketDataService';
+import { CFD_REFERENCE_CATALOG } from '../../services/marketData/cfd/catalog';
+import { assertCfdFreshQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
 import { NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS } from '../../config/cfdConfig';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
+import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/admin';
 
-const CFD_SYMBOLS = CFD_INSTRUMENTS.map((i) => i.symbol) as [string, ...string[]];
+const CFD_SYMBOLS = CFD_REFERENCE_CATALOG.map((i) => i.symbol) as [string, ...string[]];
 
 const openSchema = z.object({
   symbol: z.enum(CFD_SYMBOLS),
@@ -18,21 +22,23 @@ const openSchema = z.object({
   leverage: z.number().int().min(MIN_LEVERAGE).max(MAX_LEVERAGE),
 });
 
-/**
- * Read-only CFD reference prices — see CfdMarketDataService's doc comment.
- * `configured: false` (empty tickers, still a 200) means no
- * TWELVE_DATA_API_KEY is set yet, distinct from a genuine upstream failure
- * (502) — the frontend uses that to show an honest "not set up yet" state
- * instead of an error banner. Position endpoints mirror futures.ts's
- * conventions (same auth middleware, same error shape) — see
- * CfdPositionService's doc comment for the dealer-model trading itself.
- */
+/** Public reference catalog/quotes plus the existing authenticated dealer model.
+ * Unconfigured or unavailable sources retain catalog identities with null prices.
+ * Quote errors on financial operations have an explicit retryable 503 contract. */
 export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService): Router {
   const router = Router();
+
+  router.get('/admin/cfd/diagnostics', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try { res.json(await cfdDataService.diagnostics()); }
+    catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
+  });
 
   router.get('/cfd/config', (_req, res) => {
     res.json({
       symbols: CFD_SYMBOLS,
+      catalog: cfdDataService.catalog(),
+      maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs,
       minLeverage: MIN_LEVERAGE,
       maxLeverage: MAX_LEVERAGE,
       newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
@@ -42,15 +48,19 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     });
   });
 
+  router.get('/cfd/catalog', (_req, res) => res.json({ instruments: cfdDataService.catalog() }));
+
   router.get('/cfd/tickers', async (_req, res) => {
     try {
       const configured = cfdDataService.isConfigured();
-      const tickers = configured ? await cfdDataService.getTickers() : [];
+      const quotes = await cfdDataService.getQuotes();
+      const catalog = cfdDataService.catalog();
+      const tickers = quotes.map(q => ({ ...q, name: catalog.find(i => i.symbol === q.symbol)?.name ?? q.symbol,
+        price: q.last === null ? null : q.lastDecimal ?? String(q.last),
+        maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs }));
+      res.setHeader('Cache-Control', 'no-store');
       res.json({ source: 'twelvedata', configured, tickers });
     } catch (err) {
-      if (err instanceof ExternalCfdDataError) {
-        return res.status(502).json({ error: err.message });
-      }
       console.error(err);
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -71,6 +81,7 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
       });
       res.json({ position: serializePosition(position) });
     } catch (err: any) {
+      if (err instanceof CfdQuoteUnavailable) return res.status(503).json({ error: err.message, code: err.code });
       res.status(400).json({ error: err.message });
     }
   });
@@ -79,7 +90,11 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     const positions = await positionService.listOpen(req.userId!);
     let tickers: { symbol: string; price: string }[] = [];
     try {
-      tickers = await cfdDataService.getTickers();
+      const quotes = await cfdDataService.getQuotes();
+      tickers = quotes.flatMap(q => {
+        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,cfdDataService.maxQuoteAgeMs))}]; }
+        catch { return []; }
+      });
     } catch {
       // Honest fallback below (null markPrice/unrealizedPnl) beats a 500
       // for what's otherwise a perfectly good position list.
@@ -114,6 +129,7 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
       const position = await positionService.close({ userId: req.userId!, positionId: req.params.positionId });
       res.json({ position: serializePosition(position) });
     } catch (err: any) {
+      if (err instanceof CfdQuoteUnavailable) return res.status(503).json({ error: err.message, code: err.code });
       res.status(400).json({ error: err.message });
     }
   });

@@ -1,13 +1,11 @@
 import type { CachedValue } from '../ProviderCache';
 import type { LiveTicker, NormalizedInstrument, NormalizedTicker } from './types';
 import type { BybitCategory } from './BybitMarketDataService';
+import { finite } from '../numbers';
+export { finite } from '../numbers';
 
 export const instrumentKey = (i: Pick<NormalizedInstrument, 'marketType' | 'providerSymbol'>) => `${i.marketType}:${i.providerSymbol}`;
-export const categoryOf = (i: Pick<NormalizedInstrument, 'marketType'>): BybitCategory => i.marketType === 'spot' ? 'spot' : 'linear';
-export function finite(value: unknown): number | null {
-  if ((typeof value !== 'string' && typeof value !== 'number') || String(value).trim() === '') return null;
-  const n = Number(value); return Number.isFinite(n) ? n : null;
-}
+export const categoryOf = (i: Pick<NormalizedInstrument, 'marketType'>): BybitCategory => i.marketType === 'spot' ? 'spot' : i.marketType.startsWith('inverse') ? 'inverse' : 'linear';
 const fields = {
   lastPrice: 'lastPrice', bid1Price: 'bidPrice', ask1Price: 'askPrice', highPrice24h: 'high24h',
   lowPrice24h: 'low24h', volume24h: 'volume24h', turnover24h: 'quoteVolume24h', price24hPcnt: 'changePercent24h',
@@ -38,7 +36,7 @@ export class BybitTickerBook {
       // A cached REST bootstrap cannot rewind a newer WS quote.
       const eventAt = ticker.providerEventAt ?? null;
       const restAt = eventAt ?? data.fetchedAt;
-      if (old && restAt < (old.providerEventAt ?? old.fetchedAt)) {
+      if (old && restAt <= (old.providerEventAt ?? old.fetchedAt)) {
         // A WS tick can arrive while REST is in flight. Spot bid/ask are
         // REST-only, so update them independently without rolling back the
         // newer WS price, timestamp, sequence or freshness. Cached/older REST

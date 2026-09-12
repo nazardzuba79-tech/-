@@ -67,6 +67,7 @@ import { OkxDerivativesService } from './services/marketData/derivatives/OkxDeri
 import { ExternalDerivativesService } from './services/marketData/derivatives/ExternalDerivativesService';
 import { DerivedAnalyticsService } from './services/analytics/DerivedAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
+import { marketOptionsRouter } from './api/routes/marketOptions';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -79,7 +80,13 @@ const coinGeckoService = new CoinGeckoService(
 );
 const fearGreedService = new FearGreedService(process.env.FEAR_GREED_API_BASE_URL || 'https://api.alternative.me');
 const arbitrageService = new ArbitrageService(marketDataService);
-const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY);
+const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY, undefined, undefined, {}, {
+  maxQuoteAgeMs: Number(process.env.CFD_MAX_QUOTE_AGE_MS ?? 5000),
+  entitledSymbols: (process.env.CFD_VERIFIED_LIVE_SYMBOLS ?? '').split(',').map(s=>s.trim()).filter(Boolean),
+  executionSymbols: (process.env.CFD_EXECUTION_SYMBOLS ?? '').split(',').map(s=>s.trim()).filter(Boolean),
+  creditsPerMinute: Number(process.env.CFD_CREDITS_PER_MINUTE ?? 8),
+  creditsPerDay: Number(process.env.CFD_CREDITS_PER_DAY ?? 800),
+});
 const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
 // Wallet valuation + portfolio performance. Reads the ledger, never writes
 // it; see WalletPortfolioService and AdminPortfolioProfile.
@@ -243,6 +250,7 @@ app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
 // Additive: every pre-existing /market/* route above keeps its shape.
 app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService, marketUniverse));
+app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));
 
 // Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

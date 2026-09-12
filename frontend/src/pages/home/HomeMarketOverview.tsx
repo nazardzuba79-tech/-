@@ -243,7 +243,7 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
           <>
             <ul className="space-y-[10px]">
               {market.cfd.tickers.slice(0, 5).map((a) => {
-                const chg = parseFloat(a.changePercent24h);
+                const chg = parseFloat(a.changePercent24h ?? '');
                 return (
                   <li key={a.symbol} className="flex items-center gap-2">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#2f6fd0]/30 text-[9px] font-bold text-[#9fc4ff]">

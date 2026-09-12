@@ -159,7 +159,7 @@ export const HI: Record<Key, string> = {
   'trade.spotTab': 'स्पॉट',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': 'इंस्ट्रूमेंट',
-  'trade.cfdUnavailable': 'CFD कीमतें जल्द ही उपलब्ध होंगी।',
+  'trade.cfdUnavailable': 'CFD ट्रेडिंग अस्थायी रूप से अनुपलब्ध है।',
   'trade.cfdPriceDisclaimer': 'संदर्भ मूल्य, हर 60 सेकंड में अपडेट होता है।',
   'trade.cfdChartUnavailable': 'चार्ट अस्थायी रूप से अनुपलब्ध',
   'trade.cfdChartUnavailableHint': 'TradingView लोड नहीं हो सका। पुनः प्रयास करें।',

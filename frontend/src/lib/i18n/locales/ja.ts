@@ -159,7 +159,7 @@ export const JA: Record<Key, string> = {
   'trade.spotTab': '現物',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': '銘柄',
-  'trade.cfdUnavailable': 'CFD価格は近日公開予定です。',
+  'trade.cfdUnavailable': 'CFD取引は一時的に利用できません。',
   'trade.cfdPriceDisclaimer': '参考価格、60秒ごとに更新されます。',
   'trade.cfdChartUnavailable': 'チャートは一時的に利用できません',
   'trade.cfdChartUnavailableHint': 'TradingView を読み込めませんでした。もう一度お試しください。',

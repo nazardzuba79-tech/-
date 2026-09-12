@@ -1,0 +1,35 @@
+{
+  "at": "2026-09-12T14:06:25.243Z",
+  "main": "ab564ae46dcbad3b2e6f4ea8bed874eb4115961b",
+  "branch": "codex/inverse-options-cfd-data",
+  "node": "v24.19.0",
+  "backendTypescript": "passed",
+  "collectorBuild": "passed",
+  "frontendTypescript": "passed",
+  "frontendProductionBuild": "passed",
+  "baselineFrontendProductionBuild": "passed",
+  "buildRuntime": "Vite/React with in-process esbuild WASM for restricted Windows; no source build-config edits",
+  "esbuild": "0.21.5",
+  "wasm": "0.21.5",
+  "lockfiles": {
+    "backend": "0f19145a5366add7bd39d309fa4298acfb7cfacc2e311022485baea1cc4c1186",
+    "frontend": "e062a1d12270b674725c06166d171f4ba14c2f0deb7d7261996a1147ab7dc043"
+  },
+  "databaseIntegration": "Existing PostgreSQL tests require an isolated database; no production database connection or migration used",
+  "merge": false,
+  "deployment": false,
+  "productionEnvironmentChanged": false,
+  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6",
+  "mainSync": {
+    "at": "2026-09-12T15:21:29.633Z",
+    "mainSha": "1b431c74e1c6d4a371aa5f2c5f198b4ff6974de8",
+    "mergeCommit": "ce279dc6997361d96691e0b0b996eed0452cabfe",
+    "backendTypeScript": "PASS: node node_modules/typescript/bin/tsc",
+    "collectorBuild": "PASS: node node_modules/typescript/bin/tsc -p tsconfig.collector.json",
+    "frontendTypeScript": "PASS: node frontend/node_modules/typescript/bin/tsc -b frontend",
+    "frontendProductionBuild": "PASS: same existing in-process esbuild WASM/Vite runner",
+    "baselineFrontendProductionBuild": "PASS: same runner, exact pristine main",
+    "candidateBuildLogSha256": "5aa5b80f08009d79ab574e7efb5659ac34fdf0c9b186396af99d918b8667c02e",
+    "baselineBuildLogSha256": "7f0229231d022484aac4c7ba10182d89984749a3ae5955092311b2bd770c47fb"
+  }
+}

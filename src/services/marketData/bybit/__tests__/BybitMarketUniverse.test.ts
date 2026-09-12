@@ -159,10 +159,10 @@ describe('linear cursor pagination', () => {
     expect(calls).toHaveLength(1);
   });
 
-  it('terminates on an empty page even when a cursor is still returned', async () => {
+  it('rejects an empty page with continuation instead of accepting an incomplete universe', async () => {
     let n = 0;
     const { svc, calls } = service(() => (n++ === 0 ? ok([perp('BTCUSDT')], 'c1') : ok([], 'c2')));
-    expect((await svc.listLinearInstruments()).value).toHaveLength(1);
+    await expect(svc.listLinearInstruments()).rejects.toThrow('Empty Bybit page');
     expect(calls).toHaveLength(2);
   });
 
@@ -203,7 +203,7 @@ describe('deduplication', () => {
 describe('executable-perpetual eligibility', () => {
   const build = (over: Record<string, unknown>) => {
     const { svc } = service(() => ok([perp('XUSDT', over)]));
-    return svc.listLinearInstruments().then((r) => r.value[0]);
+    return (String(over.contractType).startsWith('Inverse') ? svc.listInverseInstruments() : svc.listLinearInstruments()).then((r) => r.value[0]);
   };
 
   it('admits a Trading USDT-settled LinearPerpetual', async () => {

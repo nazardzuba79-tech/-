@@ -159,7 +159,7 @@ export const ES: Record<Key, string> = {
   'trade.spotTab': 'Spot',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': 'Instrumento',
-  'trade.cfdUnavailable': 'Los precios de CFD estarán disponibles pronto.',
+  'trade.cfdUnavailable': 'La negociación de CFD no está disponible temporalmente.',
   'trade.cfdPriceDisclaimer': 'Precio de referencia, actualizado cada 60 segundos.',
   'trade.cfdChartUnavailable': 'Gráfico no disponible temporalmente',
   'trade.cfdChartUnavailableHint': 'No se pudo cargar TradingView. Inténtalo de nuevo.',

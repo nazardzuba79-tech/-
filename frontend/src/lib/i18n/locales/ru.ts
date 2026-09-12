@@ -164,7 +164,7 @@ export const RU = {
   'trade.spotTab': 'Спот',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': 'Инструмент',
-  'trade.cfdUnavailable': 'Цены CFD скоро появятся.',
+  'trade.cfdUnavailable': 'Торговля CFD временно недоступна.',
   'trade.cfdPriceDisclaimer': 'Справочная цена, обновляется раз в 60 секунд.',
   'trade.cfdChartUnavailable': 'График временно недоступен',
   'trade.cfdChartUnavailableHint': 'Не удалось загрузить TradingView. Попробуйте ещё раз.',
