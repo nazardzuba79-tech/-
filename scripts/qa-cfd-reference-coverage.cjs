@@ -66,4 +66,3 @@ app.get('*',(_,res)=>res.sendFile(path.join(dist,'index.html')));
     console.log(JSON.stringify(report));
   } finally {await browser?.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});
-

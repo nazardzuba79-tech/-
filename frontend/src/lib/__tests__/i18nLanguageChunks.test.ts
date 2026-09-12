@@ -37,6 +37,7 @@ const restoredEcosystemKeys = [
   'title', 'subtitle', 'pause', 'resume', 'nasdaq', 'nyse', 'cme',
   'jpmorgan', 'goldman', 'morganstanley',
 ].map(key => `home.ecosystem.${key}`);
+const cfdReferenceKeys = ['trade.cfdReferenceStale','trade.cfdMarketClosed','trade.cfdReferenceUnavailable'];
 
 // ── Integrity ───────────────────────────────────────────────────────
 
@@ -106,13 +107,25 @@ describe('translation integrity', () => {
     for (const code of LOCALES) {
       const source = readLocale(code).split('\n').filter(line => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
-        return !key || !restoredEcosystemKeys.includes(key);
+        // Only the three new reference-state labels are removed; every old
+        // translation still has to match the original byte fingerprint.
+        return !key || (!restoredEcosystemKeys.includes(key) && !cfdReferenceKeys.includes(key));
       }).join('\n');
       expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
       const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'");
       const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
+    }
+  });
+
+  it('adds all three reference states once per locale with distinct translations', () => {
+    for (const key of cfdReferenceKeys) {
+      for (const code of LOCALES) {
+        expect(readLocale(code).split('\n').filter(line=>line.includes(`'${key}':`))).toHaveLength(1);
+        expect(dicts[code][key].trim()).not.toBe('');
+      }
+      expect(new Set(LOCALES.map(code=>dicts[code][key])).size).toBe(7);
     }
   });
 
