@@ -6,14 +6,26 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #0b0e11;
+  position: relative;
+  background: #0d141d;
 }
 
-.voltex-tradingview-chart__widget {
+.voltex-tradingview-chart__embed {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: #0d141d;
+}
+
+.voltex-tradingview-chart__widget {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: #0d141d;
 }
 
 .voltex-tradingview-chart__widget > div,
@@ -22,6 +34,28 @@
   height: 100% !important;
 }
 
+/* TradingView's own legend is hidden. This is the only chart identity VOLTEX
+   adds back: the selected ticker, without provider/exchange branding. */
+.voltex-tradingview-chart__ticker {
+  position: absolute;
+  z-index: 4;
+  top: 47px;
+  left: 58px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  background: rgba(13, 20, 29, 0.78);
+  color: #dce4e9;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* TradingView requires its attribution to stay visible. Keep it outside the
+   plotting area, but blend the strip into the surrounding VOLTEX workspace
+   instead of leaving a near-black footer under the chart. */
 .voltex-tradingview-chart__copyright {
   flex: 0 0 22px;
   min-height: 22px;
@@ -30,8 +64,8 @@
   justify-content: flex-end;
   gap: 3px;
   padding: 0 8px;
-  border-top: 1px solid #1f2a35;
-  background: #0b0e11;
+  border-top: 1px solid #212c38;
+  background: #151e29;
   color: #697386;
   font-size: 10px;
   line-height: 1;
@@ -39,10 +73,17 @@
 }
 
 .voltex-tradingview-chart__copyright a {
-  color: #5b9cff;
+  color: #6f8fb8;
   text-decoration: none;
 }
 
 .voltex-tradingview-chart__copyright a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .voltex-tradingview-chart__ticker {
+    top: 45px;
+    left: 54px;
+  }
 }

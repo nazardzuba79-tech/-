@@ -34,21 +34,22 @@ export function toTradingViewSymbol(pair: string, market: TerminalMarket = 'spot
   return `BYBIT:${compact}${market === 'futures' ? '.P' : ''}`;
 }
 
-function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdvancedChartProps) {
-  const { lang } = useLanguage();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<HTMLDivElement>(null);
-  const symbol = useMemo(() => toTradingViewSymbol(pair, market), [pair, market]);
-  const locale = TV_LOCALE[lang] ?? 'en';
-  const symbolPath = symbol.replace(/^BYBIT:/, '');
+function TradingViewEmbed({ symbol, locale }: { symbol: string; locale: string }) {
+  const hostRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const container = containerRef.current;
-    const widgetHost = widgetRef.current;
-    if (!container || !widgetHost) return;
+    const host = hostRef.current;
+    if (!host) return;
 
-    widgetHost.replaceChildren();
-    for (const old of container.querySelectorAll('script[data-voltex-tradingview]')) old.remove();
+    // The official embed script is async. Reusing the same DOM host while
+    // rapidly changing symbols can let an older script finish late and append
+    // another iframe next to the current one. This child is keyed by
+    // symbol+locale, so every change gets a fresh host; any late old script
+    // can only render into a detached node and can never stack charts onscreen.
+    host.replaceChildren();
+
+    const widget = document.createElement('div');
+    widget.className = 'tradingview-widget-container__widget voltex-tradingview-chart__widget';
 
     const script = document.createElement('script');
     script.type = 'text/javascript';
@@ -61,13 +62,16 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
       interval: '15',
       timezone: 'Etc/UTC',
       theme: 'dark',
-      backgroundColor: '#0b0e11',
-      gridColor: 'rgba(42, 46, 57, 0.35)',
+      backgroundColor: '#0d141d',
+      gridColor: 'rgba(132, 142, 156, 0.10)',
       style: '1',
       locale,
       hide_side_toolbar: false,
       hide_top_toolbar: false,
-      hide_legend: false,
+      // Hide TradingView's symbol/exchange/OHLC legend. VOLTEX renders only
+      // the selected ticker above the plot so the chart stays clean and does
+      // not expose the upstream venue in the visible header.
+      hide_legend: true,
       hide_volume: false,
       allow_symbol_change: false,
       withdateranges: true,
@@ -81,17 +85,28 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
       show_popup_button: false,
       support_host: 'https://www.tradingview.com',
     });
-    container.appendChild(script);
+
+    host.append(widget, script);
 
     return () => {
-      script.remove();
-      widgetHost.replaceChildren();
+      host.replaceChildren();
     };
   }, [symbol, locale]);
 
+  return <div className="tradingview-widget-container voltex-tradingview-chart__embed" ref={hostRef} />;
+}
+
+function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdvancedChartProps) {
+  const { lang } = useLanguage();
+  const symbol = useMemo(() => toTradingViewSymbol(pair, market), [pair, market]);
+  const locale = TV_LOCALE[lang] ?? 'en';
+  const symbolPath = symbol.replace(/^BYBIT:/, '');
+  const ticker = pair.toUpperCase();
+
   return (
-    <div className="tradingview-widget-container voltex-tradingview-chart" ref={containerRef} data-market={market} data-symbol={symbol}>
-      <div className="tradingview-widget-container__widget voltex-tradingview-chart__widget" ref={widgetRef} />
+    <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
+      <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} />
+      <div className="voltex-tradingview-chart__ticker" aria-hidden="true">{ticker}</div>
       <div className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
         <a
           href={`https://www.tradingview.com/symbols/${encodeURIComponent(symbolPath)}/?exchange=BYBIT`}
