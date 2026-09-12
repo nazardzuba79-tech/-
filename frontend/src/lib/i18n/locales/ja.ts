@@ -1073,4 +1073,19 @@ export const JA: Record<Key, string> = {
 
   // --- Email verification (six-digit code) ---
   'register.error.tooManyAttempts': '試行回数が多すぎます。しばらくしてからお試しください。',
+  'home.ecosystem.label': "グローバル市場インフラ",
+  'home.ecosystem.globalMarkets': "グローバル市場",
+  'home.ecosystem.equities': "株式",
+  'home.ecosystem.derivatives': "デリバティブ",
+  'home.ecosystem.capitalMarkets': "資本市場",
+  'home.ecosystem.title': "グローバルな金融エコシステム",
+  'home.ecosystem.subtitle': "VOLTEXは、世界有数の取引所や金融機関の基準を参考に、グローバル市場へのアクセスを支えるインフラを構築しています。",
+  'home.ecosystem.pause': "動きを停止",
+  'home.ecosystem.resume': "動きを再開",
+  'home.ecosystem.nasdaq': "グローバルな電子取引市場",
+  'home.ecosystem.nyse': "グローバルな株式市場",
+  'home.ecosystem.cme': "グローバルなデリバティブ市場",
+  'home.ecosystem.jpmorgan': "グローバルな銀行業務と市場",
+  'home.ecosystem.goldman': "グローバルな銀行業務と市場",
+  'home.ecosystem.morganstanley': "機関投資家向け証券業務と資産管理",
 };

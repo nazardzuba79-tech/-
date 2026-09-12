@@ -1,0 +1,30 @@
+{
+  "normalA": {
+    "asset": "matrix(0.999391, 0.0348995, -0.0348995, 0.999391, 0, -2.16831)",
+    "at": 1789139029289,
+    "motion": "vx-motion-stage vx-reference-motion vx-hero-stage vx-motion-active",
+    "price": "BTC/USDT78,657.20",
+    "route": "-587.878px",
+    "routeState": "running",
+    "stream": "Kraken · поток",
+    "tape": "matrix(1, 0, 0, 1, -368.044, 0)",
+    "trade": "18:03:44BTC/USDTКупить78,640.200.000236"
+  },
+  "normalB": {
+    "asset": "matrix(0.999391, 0.0348995, -0.0348995, 0.999391, 0, -3.98837)",
+    "at": 1789139063154,
+    "price": "BTC/USDT78,690.00",
+    "route": "-126.892px",
+    "tape": "matrix(1, 0, 0, 1, -1752, 0)",
+    "trade": "18:04:09BTC/USDTКупить78,690.000.003933"
+  },
+  "offscreen": {
+    "active": false,
+    "heroBottom": -1296,
+    "routeState": "paused",
+    "scrollY": 2376,
+    "stream": "Рыночные данные",
+    "tapeOffscreen": "true",
+    "tapeState": "paused"
+  }
+}

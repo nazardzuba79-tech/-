@@ -1,0 +1,110 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { createRequire } from 'module';
+import ts from 'typescript';
+
+const frontend = resolve(__dirname, '../../..');
+const req = createRequire(resolve(frontend, 'package.json'));
+const React = req('react');
+const { renderToStaticMarkup } = req('react-dom/server');
+function evaluate(file: string, overrides: Record<string, unknown> = {}) {
+  const compiled = ts.transpileModule(readFileSync(resolve(frontend, 'src', file), 'utf8'), {
+    compilerOptions: { jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const output: any = {};
+  new Function('require', 'exports', compiled)((name: string) => overrides[name] ?? req(name), output);
+  return output;
+}
+const priceChange = evaluate('lib/priceChange.ts');
+const marketModule = evaluate('pages/home/useHomeMarket.ts', {
+  '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
+  '../../lib/futuresConfigStore': { futuresConfigStore: {} },
+});
+const liveValue = evaluate('pages/home/LiveValue.tsx', { './useHomeMarket': marketModule });
+const copy = evaluate('pages/home/homeLiveCopy.ts');
+const globalCopy = evaluate('pages/home/globalHeroCopy.ts');
+const shared = {
+  './useHomeMarket': marketModule, './LiveValue': liveValue, './homeLiveCopy': copy,
+  './globalHeroCopy': globalCopy,
+  '../../lib/i18n': { useLanguage: () => ({ lang: 'en', t: (key: string) => key }), localeOf: () => 'en-US' },
+  '../../components/CryptoIcon': { CryptoIcon: () => null },
+};
+const { TerminalPreview } = evaluate('pages/home/TerminalPreview.tsx', {
+  ...shared, '../../components/Logo': { LogoMark: () => null },
+});
+const { HomeHeroAssets } = evaluate('pages/home/HomeHeroAssets.tsx', {
+  ...shared, '../../components/Sparkline': evaluate('components/Sparkline.tsx'),
+});
+const { HomeTicker } = evaluate('pages/home/HomeTicker.tsx', {
+  ...shared,
+  'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
+});
+const quote = (pair = 'BTC/USDT', price = 64123.45, quoteVolume = 81573125) => ({
+  pair, base: pair.split('/')[0], quote: 'USDT', price, change: -1.27, quoteVolume, high: 66000, low: 63000,
+});
+const market = (overrides: any = {}) => ({
+  tickers: [quote()], tickersStatus: 'ok', tickersStale: false, tickerUpdatedAt: 1_700_000_000_000,
+  tickerSource: 'kraken', priceHistory: {}, rankings: [], rankingsStatus: 'ok', global: null, fearGreed: null,
+  globalStatus: 'error', cfd: { configured: false, tickers: [] }, cfdStatus: 'ok',
+  futuresSymbols: ['BTC/USDT'], futuresStatus: 'ok', logoOf: () => undefined,
+  hero: { pair: 'BTC/USDT', book: null, candles: [], trades: [], bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: true },
+  ...overrides,
+});
+const render = (component: any, value: any) => renderToStaticMarkup(React.createElement(component, { market: value }));
+
+test('missing hero sources render explicit unavailable states with no invented candles, depth, or executions', () => {
+  const html = render(TerminalPreview, market());
+  expect(html).toContain('64,123.45');
+  expect(html).toContain('home.dataUnavailable');
+  expect(html).not.toMatch(/vx-real-candles|class="vx-book-row|vx-trade-received/);
+  expect(html).not.toContain('14:02');
+  expect(html).not.toContain('0.4200');
+});
+
+test('the selected feed keeps its pair even when it leaves the watchlist or loses its current quote', () => {
+  const others = Array.from({ length: 11 }, (_, i) => quote(`COIN${i}/USDT`, 1000 + i, 1e9 - i));
+  const withQuote = render(TerminalPreview, market({ tickers: [...others, quote()] }));
+  expect(withQuote).toMatch(/vx-terminal-pair[\s\S]*?<strong>BTC\/USDT<\/strong>[\s\S]*?64,123\.45/);
+  const withoutQuote = render(TerminalPreview, market({ tickers: others }));
+  expect(withoutQuote).toMatch(/vx-terminal-pair[\s\S]*?<strong>BTC\/USDT<\/strong>[\s\S]*?—/);
+});
+
+test('hero asset pills keep unavailable Oil honest and zero Gold distinct from missing data', () => {
+  const initial = render(HomeHeroAssets, market({ tickers:[],cfd:null }));
+  expect(initial).not.toContain('<polyline');
+  expect(initial.match(/Data unavailable/g)?.length).toBeGreaterThanOrEqual(2);
+  const zero = render(HomeHeroAssets,market({cfd:{configured:true,tickers:[{symbol:'XAUUSD',price:'0',changePercent24h:'0'}]}}));
+  expect(zero).toContain('>0</span>'); expect(zero).toContain('+0.00%');
+  expect(zero).toContain('Reference quote');
+  const oil=zero.slice(zero.indexOf('vx-asset-oil'));
+  expect(oil).toContain('—'); expect(oil).toContain('Data unavailable'); expect(oil).not.toContain('<polyline');
+});
+
+test('a failed ticker refresh preserves the last real quote with visible stale disclosure on both BTC and tape', () => {
+  const previousQuote = market({ tickersStale: true });
+  const assets = render(HomeHeroAssets, previousQuote);
+  const btc = assets.slice(assets.indexOf('vx-asset-btc'), assets.indexOf('vx-asset-gold'));
+  expect(btc).toContain('data-stale="true"');
+  expect(btc).toContain('64,123.45');
+  expect(btc).toContain('-1.27%');
+  expect(btc).toContain('class="vx-asset-source vx-asset-stale">analytics.stale</span>');
+  const tape = render(HomeTicker, previousQuote);
+  expect(tape).toContain('data-stale="true"');
+  expect(tape).toContain('64,123.45');
+  expect(tape).toContain('analytics.stale');
+  const css = readFileSync(resolve(frontend, 'src/pages/home/hero-reference.css'), 'utf8');
+  expect(css).toMatch(/\.vx-market-tape\[data-stale="true"\] \.vx-tape-label\{display:flex/);
+
+  const refreshed = render(HomeHeroAssets, market());
+  expect(refreshed).not.toContain('vx-asset-stale');
+  expect(refreshed).not.toContain('data-stale="true"');
+});
+
+test('the tape Pause rule freezes its current animation frame and keeps both visual copies', () => {
+  const css = readFileSync(resolve(frontend, 'src/pages/home/home-live-market.css'), 'utf8');
+  const pausedRules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(match => match[1].includes('[data-paused="true"]'));
+  expect(pausedRules.some(match => /animation-play-state\s*:\s*paused/.test(match[2]))).toBe(true);
+  for (const rule of pausedRules) expect(rule[2]).not.toMatch(/(?:^|;)\s*(?:animation|transform)\s*:|display\s*:\s*none/);
+  // Keyboard navigation still has a stable, non-duplicated link list.
+  expect(css).toMatch(/:focus-within \.vx-tape-track\s*\{ animation:none; transform:none \}/);
+});

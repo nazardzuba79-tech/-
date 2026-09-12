@@ -1,0 +1,41 @@
+.vx-home .vx-travel-card{container-type:inline-size;max-width:1460px;width:calc(100% - 48px);margin:0 auto;background:#05090e;border:1px solid #ffffff0d;border-radius:12px;overflow:hidden;scroll-margin-top:75px}
+.vx-home .vx-travel-main{position:relative;isolation:isolate;aspect-ratio:1672/664;min-height:0}
+.vx-home .vx-travel-visual{position:absolute;inset:0;z-index:-2}
+.vx-home .vx-travel-image{width:100%;height:100%;object-fit:cover;display:block}
+.vx-home .vx-travel-main:before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(2,8,13,.77),rgba(2,8,13,.55) 27%,transparent 42%);pointer-events:none}
+.vx-home .vx-travel-copy{position:relative;width:34%;margin-left:5.74%;padding:3.3cqw 0 3cqw}
+.vx-home .vx-travel-label{color:#f0bc59;font-size:.91cqw;font-weight:600;letter-spacing:.18em;text-transform:uppercase}
+.vx-home .vx-travel-label:after{content:"";position:absolute;top:7.6cqw;left:0;width:3.4cqw;height:1px;background:#e9b955}
+.vx-home .vx-travel-copy h2{font-size:3.95cqw;font-weight:700;line-height:1.05;letter-spacing:-.035em;color:#fafcfd;margin:4.7cqw 0 0}
+.vx-home .vx-travel-copy h2 span{color:#efc47b}
+.vx-home .vx-travel-copy>p{font-size:1.30cqw;line-height:1.43;color:#c0ccda;margin:1.5cqw 0 0;max-width:94%}
+.vx-home .vx-travel-actions{display:flex;align-items:center;flex-wrap:wrap;gap:1.15cqw;margin-top:1.85cqw}
+.vx-home .vx-travel-actions a{display:inline-flex;align-items:center;justify-content:center;gap:.7cqw;font-size:1.03cqw;font-weight:600;min-height:3.2cqw;padding:.72cqw 1.6cqw;border-radius:.45cqw;transition:background .2s,border-color .2s}
+.vx-home .vx-travel-primary{color:#171108;background:linear-gradient(110deg,#e9ab39,#f6c15c);border:1px solid #eeb64d}
+.vx-home .vx-travel-primary:hover{background:#ffd17b}
+.vx-home .vx-travel-secondary{color:#f3f5f7;background:#06101ab3;border:1px solid #6c82934d}
+.vx-home .vx-travel-secondary:hover{border-color:#c9d6e299;background:#101b25}
+.vx-home .vx-travel-actions a:focus-visible{outline:2px solid #edc47c;outline-offset:4px}
+.vx-home .vx-travel-stats{display:flex;gap:1.5cqw;margin-top:1.65cqw;color:#b9c9db}
+.vx-home .vx-travel-stats>div{display:flex;flex-direction:column;gap:.32cqw;padding-right:1.5cqw;border-right:1px solid #7797b23d;font-size:1.08cqw;line-height:1.35}
+.vx-home .vx-travel-stats>div:last-child{border:0;padding-right:0}
+.vx-home .vx-travel-stats strong{font-size:1.12cqw;font-weight:600;color:#f4f5f7}
+.vx-home .vx-travel-routes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.vx-home .vx-travel-destinations{position:absolute;inset:0;pointer-events:none}
+.vx-home .vx-travel-city{position:absolute;left:var(--city-x);top:var(--city-y);display:flex;align-items:center;gap:.48cqw;font-size:.98cqw;line-height:1;padding:.65cqw .9cqw;white-space:nowrap;color:#e8e4dd;background:linear-gradient(120deg,#292b2cc4,#08121ac4);border:1px solid #dfcbb137;border-top-color:#dfcbb159;border-radius:.55cqw;box-shadow:0 .4cqw 1.1cqw #0003;backdrop-filter:blur(8px);animation:vx-travel-float 10s ease-in-out infinite;animation-delay:var(--city-delay);animation-play-state:paused}
+.vx-home .vx-travel-city i{width:.32cqw;height:.32cqw;border:1px solid #d8b985;border-radius:50%}
+.vx-home .vx-travel-moving-light{opacity:.55;animation:vx-travel-route 17s linear infinite;animation-play-state:paused}
+.vx-home .vx-travel-cool-light{animation-duration:23s;animation-delay:-9s;opacity:.4}
+.vx-home .vx-motion-active .vx-travel-city,.vx-home .vx-motion-active .vx-travel-moving-light{animation-play-state:running}
+.vx-home .vx-travel-benefits{position:relative;z-index:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1.45cqw;margin:0 3.8% 2.2%;padding:1.5cqw 1.65cqw;list-style:none;border:1px solid #a4b9cb29;border-radius:1.6cqw;background:linear-gradient(135deg,#0c151ee6,#040d15e6)}
+.vx-home .vx-travel-benefits li{display:flex;gap:1cqw;min-width:0;align-items:flex-start}
+.vx-home .vx-travel-benefits .vx-home-card-benefit-icon{color:var(--benefit-color);flex-shrink:0;width:3.1cqw;height:3.1cqw;border-color:color-mix(in srgb,var(--benefit-color) 25%,transparent);box-shadow:0 0 12px color-mix(in srgb,var(--benefit-color) 8%,transparent)}
+.vx-home .vx-travel-benefits .vx-home-card-benefit-icon svg{color:var(--benefit-color);width:1.8cqw;height:1.8cqw}
+.vx-home .vx-travel-benefits h3{font-size:max(11px,.90cqw);line-height:1.35;font-weight:600;margin:.12cqw 0 .45cqw;color:#f0f3f7}
+.vx-home .vx-travel-benefits p{font-size:max(10px,.76cqw);line-height:1.5;margin:0;color:#b6c4d4}
+@keyframes vx-travel-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-.18cqw)}}
+@keyframes vx-travel-route{from{stroke-dashoffset:1000}to{stroke-dashoffset:0}}
+@media(max-width:1250px) and (min-width:901px){.vx-home .vx-travel-benefits{grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.vx-home .vx-travel-benefits h3{font-size:12px}.vx-home .vx-travel-benefits p{font-size:11px}.vx-home .vx-travel-benefits .vx-home-card-benefit-icon{width:36px;height:36px}.vx-home .vx-travel-benefits .vx-home-card-benefit-icon svg{width:23px;height:23px}}
+@media(max-width:900px){.vx-home .vx-travel-card{width:calc(100% - 28px)}.vx-home .vx-travel-main{display:flex;flex-direction:column;aspect-ratio:auto}.vx-home .vx-travel-copy{width:auto;margin:0;padding:30px 24px 12px;order:0}.vx-home .vx-travel-label{font-size:11px}.vx-home .vx-travel-label:after{display:none}.vx-home .vx-travel-copy h2{font-size:clamp(32px,6vw,46px);margin-top:22px;max-width:560px}.vx-home .vx-travel-copy>p{font-size:15px;line-height:1.55;max-width:540px;margin-top:18px}.vx-home .vx-travel-actions{margin-top:22px;gap:10px}.vx-home .vx-travel-actions a{font-size:13px;min-height:43px;padding:10px 17px;gap:10px;border-radius:6px}.vx-home .vx-travel-stats{gap:18px;margin-top:23px}.vx-home .vx-travel-stats>div{font-size:12px;gap:5px;padding-right:18px}.vx-home .vx-travel-stats strong{font-size:14px}.vx-home .vx-travel-visual{position:relative;order:1;z-index:0}.vx-home .vx-travel-image{height:clamp(340px,64vw,520px);object-fit:cover;object-position:right center;mask-image:linear-gradient(transparent,#000 9%,#000 95%,transparent)}.vx-home .vx-travel-main:before{display:none}.vx-home .vx-travel-routes{display:none}.vx-home .vx-travel-destinations{position:relative;display:flex;flex-wrap:wrap;justify-content:center;gap:7px;padding:10px 12px 20px}.vx-home .vx-travel-city{position:static;font-size:11px;padding:8px 10px;gap:7px;border-radius:6px;animation:none}.vx-home .vx-travel-city i{width:4px;height:4px}.vx-home .vx-travel-benefits{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 16px 18px;padding:18px;gap:21px 18px;border-radius:18px}.vx-home .vx-travel-benefits li{gap:12px}.vx-home .vx-travel-benefits .vx-home-card-benefit-icon{width:37px;height:37px}.vx-home .vx-travel-benefits .vx-home-card-benefit-icon svg{width:24px;height:24px}.vx-home .vx-travel-benefits h3{font-size:13px;margin:1px 0 5px}.vx-home .vx-travel-benefits p{font-size:12px}}
+@media(max-width:520px){.vx-home .vx-travel-benefits{grid-template-columns:1fr}.vx-home .vx-travel-copy{padding-left:20px;padding-right:20px}.vx-home .vx-travel-copy h2{font-size:32px}.vx-home .vx-travel-stats{gap:15px}.vx-home .vx-travel-stats>div{padding-right:15px}}
+@media(prefers-reduced-motion:reduce){.vx-home .vx-travel-city,.vx-home .vx-travel-moving-light{animation:none}.vx-home .vx-travel-actions a{transition:none}}

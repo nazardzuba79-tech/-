@@ -1,0 +1,66 @@
+vite v5.4.21 building for production...
+transforming...
+✓ 5709 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                 3.84 kB │ gzip:   1.47 kB
+dist/assets/WalletPage-DFGo1xNo.css             2.50 kB │ gzip:   0.78 kB
+dist/assets/AnalyticsPage-BHE33qJR.css          9.68 kB │ gzip:   1.93 kB
+dist/assets/TradePage-DthB3N9E.css             11.87 kB │ gzip:   2.67 kB
+dist/assets/FuturesPage-ClkTw6zD.css           12.46 kB │ gzip:   2.63 kB
+dist/assets/CardPage-DUIPzJt3.css              30.20 kB │ gzip:   5.62 kB
+dist/assets/MarketsPage-C4sgPPrz.css           32.35 kB │ gzip:   5.74 kB
+dist/assets/SettingsPage-ZNBhTzHQ.css          39.58 kB │ gzip:   7.58 kB
+dist/assets/TradeTerminal-B2xl_T-D.css         41.98 kB │ gzip:   7.91 kB
+dist/assets/CopyTradingPage-BKhYNa6i.css      107.52 kB │ gzip:  16.86 kB
+dist/assets/index-DzFGLWeP.css                161.85 kB │ gzip:  32.96 kB
+dist/assets/Badge-S8fiUnUm.js                   0.17 kB │ gzip:   0.16 kB
+dist/assets/check-CpjYk-8A.js                   0.29 kB │ gzip:   0.24 kB
+dist/assets/ReferralRedirectPage-N83FTre7.js    0.30 kB │ gzip:   0.25 kB
+dist/assets/arrow-left-CmAzgdbX.js              0.34 kB │ gzip:   0.27 kB
+dist/assets/search-C98_lkLr.js                  0.34 kB │ gzip:   0.27 kB
+dist/assets/copy-DWimFUEx.js                    0.40 kB │ gzip:   0.31 kB
+dist/assets/Skeleton-Dewqcl-I.js                0.43 kB │ gzip:   0.30 kB
+dist/assets/arrow-up-hfqIM04T.js                0.62 kB │ gzip:   0.32 kB
+dist/assets/star-BVbUI_0g.js                    0.64 kB │ gzip:   0.40 kB
+dist/assets/fingerprint-pattern-DiSpG6Bc.js     0.78 kB │ gzip:   0.46 kB
+dist/assets/crown-BmpLOh9L.js                   0.83 kB │ gzip:   0.43 kB
+dist/assets/useAdminAlerts-XkKPD-m2.js          1.30 kB │ gzip:   0.71 kB
+dist/assets/OtcPage-BptCb-46.js                 1.33 kB │ gzip:   0.68 kB
+dist/assets/BottomNav-DOW-Qy34.js               2.36 kB │ gzip:   1.12 kB
+dist/assets/AdminAuditLogPage-D7eUQr1q.js       2.51 kB │ gzip:   1.00 kB
+dist/assets/Footer-Bmp56tRg.js                  2.65 kB │ gzip:   1.14 kB
+dist/assets/AdminProductsPage-BcVjkSd0.js       3.13 kB │ gzip:   1.36 kB
+dist/assets/useCfdTickers-DM09kxfI.js           3.66 kB │ gzip:   1.63 kB
+dist/assets/AdminWalletsPage-DemHTlDJ.js        3.69 kB │ gzip:   1.79 kB
+dist/assets/AdminIcons-7f0XiUQl.js              3.89 kB │ gzip:   0.99 kB
+dist/assets/useFuturesAccount-DFgf1pz9.js       4.04 kB │ gzip:   1.45 kB
+dist/assets/RegisterPage-BslYoG64.js            4.52 kB │ gzip:   1.94 kB
+dist/assets/AdminWithdrawalsPage-CTSgrIDz.js    4.75 kB │ gzip:   1.61 kB
+dist/assets/ArbitragePage-B9MzdHFA.js           4.79 kB │ gzip:   1.65 kB
+dist/assets/AdminLayout-CGBLfqzN.js             5.34 kB │ gzip:   2.13 kB
+dist/assets/AdminKycPage-CgZU1gbX.js            5.51 kB │ gzip:   2.22 kB
+dist/assets/AdminDepositsPage-ucxzcpHJ.js       6.06 kB │ gzip:   2.14 kB
+dist/assets/adminStyles-BgvdV69s.js             6.90 kB │ gzip:   1.72 kB
+dist/assets/AdminUserDetailPage-BRteCQD1.js     9.45 kB │ gzip:   3.26 kB
+dist/assets/AdminUsersPage-BNNrhp_w.js         11.68 kB │ gzip:   4.18 kB
+dist/assets/AnalyticsPage-bV-_9po3.js          16.55 kB │ gzip:   4.53 kB
+dist/assets/Nav-Cu6fgWUf.js                    20.46 kB │ gzip:   7.14 kB
+dist/assets/MarketsPage-DA-39onK.js            32.37 kB │ gzip:   9.94 kB
+dist/assets/index-CgjnW-t0.js                  35.62 kB │ gzip:  10.13 kB
+dist/assets/zh-6Pf8jXm-.js                     36.54 kB │ gzip:  17.33 kB
+dist/assets/ja-CEpHwP7Y.js                     40.58 kB │ gzip:  18.68 kB
+dist/assets/ko-OS28MC98.js                     40.61 kB │ gzip:  17.84 kB
+dist/assets/FuturesPage-CscUjcjY.js            44.54 kB │ gzip:  12.31 kB
+dist/assets/TradePage-C8dQvGIC.js              45.69 kB │ gzip:  13.08 kB
+dist/assets/LegalPage-qeEbO4Vz.js              46.81 kB │ gzip:  26.25 kB
+dist/assets/en-8uSTA6cQ.js                     51.91 kB │ gzip:  15.79 kB
+dist/assets/WalletPage-D6uaV2rP.js             52.52 kB │ gzip:  13.80 kB
+dist/assets/hi-C8Sf4aPQ.js                     52.64 kB │ gzip:  20.11 kB
+dist/assets/es-DUly1eTy.js                     56.01 kB │ gzip:  17.23 kB
+dist/assets/SettingsPage-LDAKZFq6.js           80.25 kB │ gzip:  21.48 kB
+dist/assets/CopyTradingPage-BY4CjnE0.js        88.21 kB │ gzip:  28.40 kB
+dist/assets/CardPage-CoSiV1Ot.js              174.95 kB │ gzip:  54.24 kB
+dist/assets/TradeTerminal-VLWU3TEX.js         237.72 kB │ gzip:  76.42 kB
+dist/assets/index-NcV8V2x_.js                 453.71 kB │ gzip: 159.38 kB
+✓ built in 9.97s

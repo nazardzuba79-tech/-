@@ -1,0 +1,17 @@
+PASS frontend/src/lib/__tests__/homeLiveMarket.test.ts
+PASS frontend/src/lib/__tests__/heroReferenceTerminal.test.ts
+PASS frontend/src/lib/__tests__/homeLiveRendering.test.ts
+PASS frontend/src/lib/__tests__/homeHeroStream.test.ts
+PASS frontend/src/lib/__tests__/homeHeroCopy.test.ts
+PASS frontend/src/lib/__tests__/homeHeroVisibility.test.ts
+PASS frontend/src/lib/__tests__/homeSessionsRendering.test.ts
+PASS frontend/src/lib/__tests__/i18nLanguageChunks.test.ts
+PASS frontend/src/lib/__tests__/homeTradingSessions.test.ts
+PASS frontend/src/lib/__tests__/homeHeatmapLayout.test.ts
+PASS frontend/src/lib/__tests__/homeApprovedAssembly.test.ts
+
+Test Suites: 11 passed, 11 total
+Tests:       106 passed, 106 total
+Snapshots:   0 total
+Time:        8.02 s
+Ran all test suites within paths "frontend/src/lib/__tests__/homeSessionsRendering.test.ts", "frontend/src/lib/__tests__/homeTradingSessions.test.ts", "frontend/src/lib/__tests__/homeApprovedAssembly.test.ts", "frontend/src/lib/__tests__/homeHeatmapLayout.test.ts", "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts", "frontend/src/lib/__tests__/heroReferenceTerminal.test.ts", "frontend/src/lib/__tests__/homeHeroStream.test.ts", "frontend/src/lib/__tests__/homeHeroVisibility.test.ts", "frontend/src/lib/__tests__/homeLiveMarket.test.ts", "frontend/src/lib/__tests__/homeLiveRendering.test.ts", "frontend/src/lib/__tests__/homeHeroCopy.test.ts".

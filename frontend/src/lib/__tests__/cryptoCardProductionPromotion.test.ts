@@ -77,16 +77,21 @@ const preservedMainSources: Record<string, string> = {
   "frontend/src/pages/home/HomeFaq.tsx": "8b16cfc5f4eaae8336485e3c91b61a5e554d8c139066fa6e06270498da05b676",
   "frontend/src/pages/home/HomeFooter.tsx": "c8c6058ce73c64e25ce799abfaa2e856142973acf3d346949f9a2e11f8493730",
   "frontend/src/pages/home/HomeHeader.tsx": "a2fc2a02f60dd7e3ae19fd27d8d6caf225bbdd37eaeb2a182572592303a619f7",
-  // Owner-approved hero copy hierarchy; CTA/preview behavior covered by homeHeroCopy.
-  "frontend/src/pages/home/HomeHero.tsx": "a2f346b9feb47998b3f741a1e84c44be94fbee42553875dd02c39912e58879e0",
+  // Owner-requested homepage reference hero advances only HomeHero, HomePage,
+  // HomeTicker, TerminalPreview and useHomeMarket. Exact copy/CTA and received
+  // data semantics are covered by homeHeroCopy and the hero behavioral suites.
+  "frontend/src/pages/home/HomeHero.tsx": "12e58bacc771a3e6a80b0a57bda804af93391ece0f728cf96613de743d4f5011",
   "frontend/src/pages/home/HomeMarketOverview.tsx": "e4e78ef28478c4e498cdec0cf72c39f05ada80c31dbd3ac66461b746d4af414e",
   "frontend/src/pages/home/HomeMarkets.tsx": "39c868803bd823dc362c3a4585c8948cd0ed28132fdd7d9b8c2f23dfe2a22d47",
-  "frontend/src/pages/home/HomePage.tsx": "5a2d3507b9c090410e65eaaf3a205039c0513ba252ceafa8098e8fafa3a07910",
-  "frontend/src/pages/home/HomeTicker.tsx": "bf3196e341c7baf711645a3e728f3c482b91eb386abe3e84e428cc4220b09200",
+  // Owner-requested assembly restores approved travel hand A, heatmap and
+  // institutions, then mounts sessions immediately after Card. No Hero edit.
+  // Actual DOM order and exact restored Card sources are tested separately.
+  "frontend/src/pages/home/HomePage.tsx": "6924f26cea2f71378d362e0c309b688de29c0822249791ce0da77a8b5ed232a8",
+  "frontend/src/pages/home/HomeTicker.tsx": "07c91f993f4428f1ad5d79096b392071690726cbc5f5e9f9148f2775938c1d4d",
   "frontend/src/pages/home/PhonePreview.tsx": "919ebb21bbdae8eaf2588ba510ad36cc9d8cd75c66f6c2c802d73ec0771327d6",
   "frontend/src/pages/home/Reveal.tsx": "a5f24c251d116ee8b12de0887853a8d019ba53dc3a75e9523b527bc295888317",
-  "frontend/src/pages/home/TerminalPreview.tsx": "278010a479c9102267599c93e9f4b712a313088bb6b115786ee3ee0a4b2c3ceb",
-  "frontend/src/pages/home/useHomeMarket.ts": "28d77b6950b9a944cf80d12f9ede522f598a32471fc62309b69e64518a58880e",
+  "frontend/src/pages/home/TerminalPreview.tsx": "56d2d97d8698a23a26ba538673404bd469c0f2e7d1e193cc47d50dd5dac4d8a2",
+  "frontend/src/pages/home/useHomeMarket.ts": "6a0b2e1b8ba3382a64208b6555d6da2f28f8623458b13ce5446e7f7f254ce08d",
   // Re-taken for the owner-requested copy-trading deposit gate change
   // ($20,000 -> $10,000). COMMENT ONLY, +1/-1: the doc comment quoted the
   // old figure, and a comment that states the wrong threshold is the

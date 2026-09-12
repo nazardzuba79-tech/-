@@ -1,0 +1,269 @@
+PASS frontend/src/lib/__tests__/cryptoCardVisualConsistency.test.ts
+FAIL frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts
+  ● Copy preserves its approved source except exact labels and click-only deposit requirement UX
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 1
+    Received array:  ["import { lazy, Suspense, useEffect } from 'react';
+    import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+    import { AuthPage } from './pages/AuthPage';
+    import { HomePage } from './pages/home/HomePage';
+    import { RouteShell } from './RouteShell';
+    import { defaultTradingPath } from './lib/tradingMode';
+    import { loginPathFor, readNext } from './lib/returnTo';
+    import { getToken } from './lib/api';
+    import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';·
+    /**
+     * Route-level code splitting.
+     *
+     * Every page in this app used to ship in one JavaScript file. Opening the
+     * wallet downloaded the futures terminal, the charting library, the Copy
+     * Trading marketplace and all eight admin screens; a signed-out visitor
+     * reading the homepage downloaded the same. One bundle, paid for in full
+     * on the very first paint, by everyone.
+     *
+     * Two pages stay EAGER on purpose:
+     *
+     *   HomePage — the first thing a signed-out visitor sees. Lazy-loading it
+     *   would put a second network round trip in front of the first pixel,
+     *   which is the opposite of the goal.
+     *
+     *   AuthPage — reached from the homepage in one click, and small.
+     *
+     * Everything else is fetched when its route is actually entered. Nothing
+     * here is split finer than a route: a dozen micro-chunks would trade one
+     * big download for a dozen round trips.
+     */
+    const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+    const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
+    const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
+    const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
+    const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+    const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
+    const OtcPage = lazy(() => import('./pages/OtcPage').then((m) => ({ default: m.OtcPage })));
+    const WalletPage = lazy(() => import('./pages/WalletPage').then((m) => ({ default: m.WalletPage })));
+    const CopyTradingPage = lazy(() => {
+      // Also cover SPA navigation without hover (mobile, deep links, keyboard).
+      // Direct entry and nav intent join the same session's in-flight request.
+      prefetchCopyMarketplace();
+      return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
+    });
+    const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
+    const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
+    const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
+    const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
+    const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+    const AdminWalletsPage = lazy(() => import('./pages/admin/AdminWalletsPage').then((m) => ({ default: m.AdminWalletsPage })));
+    const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })));
+    const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })));
+    const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
+    const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
+    const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
+    const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage })));
+    const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));·
+    /**
+     * Warms the chunk a signed-in user is most likely to open next, once the
+     * browser is idle and the current page has already painted.
+     *
+     * Without this, splitting would make the first navigation SLOWER than the
+     * single bundle was: the chunk would only start downloading on the click.
+     * With it, the chunk is usually already in the HTTP cache by then, so the
+     * click stays instant and the first paint is still small.
+     *
+     * Idle-only and failure-tolerant on purpose — this is a nicety, and it
+     * must never compete with the current page's own requests.
+     */
+    function usePrefetchLikelyRoutes() {
+      useEffect(() => {
+        if (!getToken()) return;
+        const warm = () => {
+          const terminal = defaultTradingPath();
+          void (terminal === '/futures' ? import('./pages/FuturesPage') : import('./pages/TradePage')).catch(() => {});
+          void import('./pages/WalletPage').catch(() => {});
+        };
+        const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
+          .requestIdleCallback;
+        if (idle) {
+          const handle = idle(warm, { timeout: 3000 });
+          return () => (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback?.(handle);
+        }
+        const timer = setTimeout(warm, 1500);
+        return () => clearTimeout(timer);
+      }, []);
+    }·
+    function RequireAuth({ children }: { children: JSX.Element }) {
+      const location = useLocation();
+      // Not \"/\" — see lib/returnTo. Sending a signed-out visitor back to the
+      // homepage made every product link on it look broken; they go to the
+      // login screen, which then returns them here.
+      return getToken() ? children : <Navigate to={loginPathFor(location)} replace />;
+    }·
+    /** A page only a signed-out visitor should see (login, registration). Once
+     *  signed in they go on to whatever they were originally after. */
+    function RedirectIfAuthed({ children }: { children: JSX.Element }) {
+      const location = useLocation();
+      if (!getToken()) return children;
+      return <Navigate to={readNext(location.search) ?? defaultTradingPath()} replace />;
+    }·
+    export function App() {
+      usePrefetchLikelyRoutes();
+      return (
+        <BrowserRouter>
+          {/* One boundary around the whole route table rather than one per
+              route: the fallback is a background hold, so a single boundary
+              produces exactly the same pixels with far less machinery. */}
+          <Suspense fallback={<RouteShell />}>
+          <Routes>
+            {/* These two, and AuthPage's post-sign-in redirect, are the only
+                places the app picks a terminal without the user naming one, so
+                they are the only places the trading-mode preference applies —
+                see lib/tradingMode. A direct /trade or /futures URL is its own
+                route and is never rewritten. */}
+            <Route path=\"/\" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
+            <Route path=\"/login\" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
+            {/* Registration is its own screen (the approved two-column design)
+                rather than a mode of the login form. Both entry points point
+                straight here: the homepage header's primary CTA and the login
+                card's own Регистрация tab. AuthPage keeps its /login behaviour
+                untouched. */}
+            <Route path=\"/register\" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
+            <Route
+              path=\"/trade\"
+              element={
+                <RequireAuth>
+                  <TradePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/futures\"
+              element={
+                <RequireAuth>
+                  <FuturesPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/markets\"
+              element={
+                <RequireAuth>
+                  <MarketsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/settings\"
+              element={
+                <RequireAuth>
+                  <SettingsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/card\"
+              element={
+                <RequireAuth>
+                  <CardPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/wallet\"
+              element={
+                <RequireAuth>
+                  <WalletPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/otc\"
+              element={
+                <RequireAuth>
+                  <OtcPage />
+                </RequireAuth>
+              }
+            />
+            {/* Dashboard folded into Wallet (see WalletPage's doc comment) —
+                redirect rather than a hard 404 for anything that still links
+                to the old path. */}
+            <Route path=\"/dashboard\" element={<Navigate to=\"/wallet\" replace />} />
+            <Route
+              path=\"/copy-trading\"
+              element={
+                <RequireAuth>
+                  <CopyTradingPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path=\"/arbitrage\"
+              element={
+                <RequireAuth>
+                  <ArbitragePage />
+                </RequireAuth>
+              }
+            />
+            {/* A normal exchange feature, available to any signed-in user —
+                RequireAuth is the whole client-side boundary, and the server
+                re-checks auth on every request. Operational provider health is
+                NOT here: it lives behind /analytics/diagnostics and
+                /market/status, both still admin-gated. */}
+            <Route
+              path=\"/analytics\"
+              element={
+                <RequireAuth>
+                  <AnalyticsPage />
+                </RequireAuth>
+              }
+            />
+            {/* Public — reachable both signed-in (footer link) and from the
+                login screen, without requiring auth like every other page. */}
+            <Route path=\"/legal/:doc\" element={<LegalPage />} />
+            {/* A referral link (see Settings' Referral tab) — public, no auth,
+                since it has to work for someone who's never signed up yet. Bare
+                /:code (no \"/r/\" prefix) since the code itself already reads as
+                a referral code; react-router ranks every static route above
+                this dynamic one, so it never shadows /trade, /wallet, etc. */}
+            <Route path=\"/:code\" element={<ReferralRedirectPage />} />·
+            {/* Admin panel — deliberately not linked from anywhere in the
+                normal UI, reachable only by a direct visit. AdminLayout is a
+                UX-only gate; every request underneath is independently
+                re-checked for role ADMIN on the server (see requireAdmin). */}
+            <Route path=\"/admin\" element={<AdminLayout />}>
+              <Route index element={<Navigate to=\"users\" replace />} />
+              <Route path=\"wallets\" element={<AdminWalletsPage />} />
+              <Route path=\"users\" element={<AdminUsersPage />} />
+              <Route path=\"users/:id\" element={<AdminUserDetailPage />} />
+              <Route path=\"kyc\" element={<AdminKycPage />} />
+              <Route path=\"withdrawals\" element={<AdminWithdrawalsPage />} />
+              <Route path=\"deposits\" element={<AdminDepositsPage />} />
+              <Route path=\"products\" element={<AdminProductsPage />} />
+              <Route path=\"audit-log\" element={<AdminAuditLogPage />} />
+            </Route>
+          </Routes>
+          </Suspense>
+        </BrowserRouter>
+      );
+    }
+    "]
+
+      191 |       expect(text).not.toMatch(/PrelaunchApplication|PrelaunchNotice|CopyTradingNotice/);
+      192 |       const importAnchor = "import { AdminAuditLogPage } from './pages/admin/AdminAuditLogPage';\n";
+    > 193 |       expect(text.split(importAnchor)).toHaveLength(2);
+          |                                        ^
+      194 |       expect(text.split('    <BrowserRouter>\n')).toHaveLength(2);
+      195 |       expect(text.split('      </Routes>\n')).toHaveLength(2);
+      196 |       // Reverse only the three owner-approved removed lines. Every route,
+
+      at Object.<anonymous> (frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts:193:40)
+
+PASS frontend/src/lib/__tests__/cryptoCardPresentation.test.ts
+PASS frontend/src/lib/__tests__/cryptoCardTranslations.test.ts
+
+Test Suites: 1 failed, 3 passed, 4 total
+Tests:       1 failed, 55 passed, 56 total
+Snapshots:   0 total
+Time:        5.354 s
+Ran all test suites within paths "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts", "frontend/src/lib/__tests__/cryptoCardVisualConsistency.test.ts", "frontend/src/lib/__tests__/cryptoCardTranslations.test.ts", "frontend/src/lib/__tests__/cryptoCardPresentation.test.ts".
