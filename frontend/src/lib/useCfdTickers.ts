@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from './api';
+import { completeCfdRows } from './cfdPresentation';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
-// Reference-only mode polls once per minute. Approved execution quotes
-// use a bounded shorter cadence, while the server owns upstream credit limits.
+// Reference display polls once per minute, independently of execution approval.
+// The server owns the upstream quota and separate financial freshness checks.
 const POLL_MS = 60_000;
 
 /**
@@ -63,6 +64,7 @@ function parseTickerPayload(value: unknown): CfdTickerRow[] | null {
       symbol,
       name: typeof raw.name === 'string' && raw.name.trim() !== '' ? raw.name : symbol,
       price,
+      referenceStatus: typeof raw.referenceStatus === 'string' ? raw.referenceStatus : 'unavailable',
       status: typeof raw.status === 'string' ? raw.status : 'unavailable',
       stale: raw.stale !== false,
       executionAllowed: raw.executionAllowed === true,
@@ -84,7 +86,7 @@ function parseTickerPayload(value: unknown): CfdTickerRow[] | null {
 /** Shared poll so the instrument list and the price panel don't each open
  * their own interval against the same endpoint. */
 export function useCfdTickers() {
-  const [tickers, setTickers] = useState<CfdTickerRow[]>([]);
+  const [tickers, setTickers] = useState<CfdTickerRow[]>(() => completeCfdRows([]));
   const [configured, setConfigured] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -108,14 +110,15 @@ export function useCfdTickers() {
           // could not read. With nothing good to keep, the instrument
           // list's existing error state and retry button show.
           setLoadError(true);
-          setTickers(old => old.map(t => ({...t, stale:true, executionAllowed:false})));
+          setTickers(old => old.map(t => ({...t, stale:true, referenceStatus:t.price === null ? 'unavailable' : 'stale', executionAllowed:false})));
           return;
         }
         if (typeof res.configured === 'boolean') setConfigured(res.configured);
-        cadence.current = rows.some(t => t.executionAllowed) ? 2500 : POLL_MS;
-        setTickers(rows);
+        // Reference polling is independent of execution eligibility.
+        cadence.current = POLL_MS;
+        setTickers(completeCfdRows(rows));
       })
-      .catch(() => { setLoadError(true); setTickers(old => old.map(t => ({...t, stale:true, executionAllowed:false}))); })
+      .catch(() => { setLoadError(true); setTickers(old => old.map(t => ({...t, stale:true, referenceStatus:t.price === null ? 'unavailable' : 'stale', executionAllowed:false}))); })
       .finally(() => { inFlight.current = false; });
   }
 

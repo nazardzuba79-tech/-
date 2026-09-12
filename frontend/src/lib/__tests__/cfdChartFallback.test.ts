@@ -133,9 +133,33 @@ function mount(options: { lang?: string; tradingView?: any; hasContainer?: boole
 }
 
 const fallbackOf = (tree: any) => nodes(tree).find((n) => n?.props?.className === 'cfd-chart-fallback');
-const canvasOf = (tree: any) => nodes(tree).find((n) => n?.props?.className === 'cfd-chart-canvas');
+const canvasOf = (tree: any) => nodes(tree).find((n) => n?.props?.className === 'cfd-chart-canvas' && !n.props.hidden);
 const disclaimerOf = (tree: any) => nodes(tree).find((n) => n?.props?.className === 'cfd-disclaimer');
 const retryOf = (tree: any) => nodes(tree).find((n) => n?.props?.className === 'cfd-chart-retry');
+
+test('all 13 mappings switch with exactly one active widget and cleanup on unmount', async () => {
+  let active = 0, maximum = 0;
+  const seen: string[] = [];
+  const c = mount({tradingView:{widget:function(this:any, config:any) {
+    active++; maximum=Math.max(maximum,active); seen.push(config.symbol);
+    this.remove = () => { active--; };
+  }}});
+  const mappings = {
+    XAUUSD:'OANDA:XAUUSD', XAGUSD:'OANDA:XAGUSD', XPTUSD:'OANDA:XPTUSD', XPDUSD:'OANDA:XPDUSD',
+    WTIUSD:'OANDA:WTICOUSD', XBRUSD:'OANDA:BCOUSD', EURUSD:'FX:EURUSD', GBPUSD:'FX:GBPUSD',
+    USDJPY:'FX:USDJPY', AUDUSD:'FX:AUDUSD', USDCAD:'FX:USDCAD', USDCHF:'FX:USDCHF', NZDUSD:'FX:NZDUSD',
+  };
+  for(const [symbol,mapping] of Object.entries(mappings)) {
+    c.render({symbol}); await flush();
+    expect(active).toBe(1); expect(seen.at(-1)).toBe(mapping);
+    expect(fallbackOf(c.render({symbol}))).toBeUndefined();
+  }
+  expect(maximum).toBe(1);
+  c.render({symbol:'UNVERIFIED'}); await flush();
+  expect(active).toBe(0); expect(fallbackOf(c.render({symbol:'UNVERIFIED'}))).toBeDefined();
+  c.render({symbol:'XAGUSD'}); await flush(); expect(active).toBe(1);
+  c.unmount();expect(active).toBe(0);
+});
 
 test('A. a successful load initialises the chart and shows no fallback', async () => {
   const c = mount();

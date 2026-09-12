@@ -1,0 +1,24 @@
+{
+  "environment": "local built app; synthetic API and TradingView test double",
+  "displayedCount": 13,
+  "selected": [
+    "XAUUSD",
+    "XAGUSD",
+    "XPTUSD",
+    "XPDUSD",
+    "WTIUSD",
+    "XBRUSD",
+    "EURUSD",
+    "GBPUSD",
+    "USDJPY",
+    "AUDUSD",
+    "USDCAD",
+    "USDCHF",
+    "NZDUSD"
+  ],
+  "maxCharts": 1,
+  "quoteRequests": 1,
+  "pageErrors": [],
+  "financialWrites": 0,
+  "providerRequests": 0
+}

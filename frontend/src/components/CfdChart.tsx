@@ -5,6 +5,13 @@ import { useLanguage } from '../lib/i18n';
 // providers (OANDA/FX), not something we proxy or pay for.
 const TV_SYMBOL_BY_CFD: Record<string, string> = {
   XAUUSD: 'OANDA:XAUUSD',
+  XAGUSD: 'OANDA:XAGUSD',
+  XPTUSD: 'OANDA:XPTUSD',
+  XPDUSD: 'OANDA:XPDUSD',
+  WTIUSD: 'OANDA:WTICOUSD',
+  XBRUSD: 'OANDA:BCOUSD',
+  USDCHF: 'FX:USDCHF',
+  NZDUSD: 'FX:NZDUSD',
   EURUSD: 'FX:EURUSD',
   GBPUSD: 'FX:GBPUSD',
   USDJPY: 'FX:USDJPY',
@@ -107,7 +114,8 @@ export function CfdChart({ symbol }: { symbol: string }) {
   useEffect(() => {
     let cancelled = false;
     const tvSymbol = TV_SYMBOL_BY_CFD[symbol];
-    if (!tvSymbol) return;
+    if (!tvSymbol) { setStatus('error'); return; }
+    setStatus('loading');
 
     loadTradingViewScript()
       .then(() => {
@@ -146,6 +154,10 @@ export function CfdChart({ symbol }: { symbol: string }) {
 
     return () => {
       cancelled = true;
+      try { widgetRef.current?.remove?.(); } catch { /* Already detached by provider. */ }
+      widgetRef.current = null;
+      const container = document.getElementById(containerId);
+      if (container) container.innerHTML = '';
     };
   }, [symbol, lang, containerId, attempt]);
 
@@ -154,7 +166,7 @@ export function CfdChart({ symbol }: { symbol: string }) {
       {/* No loading state is painted: on the normal path TradingView draws
           into this container itself, and covering it first would change what
           a working chart looks like. Only the failure has something to say. */}
-      {status === 'error' ? (
+      {(status === 'error' || !TV_SYMBOL_BY_CFD[symbol]) ? (
         <div className="cfd-chart-fallback" role="status">
           <strong className="cfd-chart-fallback-title">{t('trade.cfdChartUnavailable')}</strong>
           <p className="cfd-chart-fallback-text">{t('trade.cfdChartUnavailableHint')}</p>
@@ -162,9 +174,8 @@ export function CfdChart({ symbol }: { symbol: string }) {
             {t('trade.cfdChartRetry')}
           </button>
         </div>
-      ) : (
-        <div className="cfd-chart-canvas" id={containerId} />
-      )}
+      ) : null}
+      <div className="cfd-chart-canvas" id={containerId} hidden={status === 'error' || !TV_SYMBOL_BY_CFD[symbol]} />
 
       <p className="cfd-disclaimer">{t('trade.cfdPriceDisclaimer')}</p>
     </div>

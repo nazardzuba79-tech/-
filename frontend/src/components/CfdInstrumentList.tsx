@@ -1,6 +1,5 @@
 import { useLanguage } from '../lib/i18n';
-import { SkeletonRow } from './Skeleton';
-import { formatCfdPrice } from '../lib/cfdPresentation';
+import { formatCfdPrice, CFD_DISPLAY_CATALOG } from '../lib/cfdPresentation';
 import { PriceCell } from './PriceCell';
 import { parseChangePercentOrNull } from '../lib/priceChange';
 
@@ -9,6 +8,7 @@ export interface CfdTickerRow {
   name: string;
   price: string | null;
   status?: string;
+  referenceStatus?: string;
   stale?: boolean;
   executionAllowed?: boolean;
   providerTimestamp?: number | null;
@@ -20,18 +20,7 @@ export interface CfdTickerRow {
   changePercent24h?: string;
 }
 
-// Fixed emoji badge per instrument — same spirit as PairListSidebar's
-// CryptoIcon, just without needing per-symbol artwork for a short list.
-// Kept in sync with CfdMarketDataService's CFD_INSTRUMENTS — see that
-// file's doc comment for why the list is gold + major forex only.
-export const CFD_ICON_BY_SYMBOL: Record<string, string> = {
-  XAUUSD: '🥇',
-  EURUSD: '💶',
-  GBPUSD: '💷',
-  USDJPY: '💴',
-  AUDUSD: '🇦🇺',
-  USDCAD: '🇨🇦',
-};
+export const CFD_ICON_BY_SYMBOL: Record<string, string> = Object.fromEntries(CFD_DISPLAY_CATALOG.map(i => [i.symbol,i.icon]));
 
 /**
  * Live CFD reference prices (gold + major forex pairs) from Twelve Data —
@@ -83,7 +72,7 @@ export function CfdInstrumentList({
                     {tk.symbol}
                   </span>
                   <span className="cfd-optionName">{tk.name}</span>
-                  {tk.status !== 'live' && <span className="cfd-optionName">{t('trade.cfdUnavailable')}</span>}
+                  {tk.referenceStatus !== 'available' && <span className="cfd-optionName">{t(tk.referenceStatus === 'stale' ? 'trade.cfdReferenceStale' : tk.referenceStatus === 'market_closed' ? 'trade.cfdMarketClosed' : 'trade.cfdReferenceUnavailable')}</span>}
                 </span>
               </span>
               {tk.price === null ? <span className="mono cfd-price">—</span> : <PriceCell value={parseFloat(tk.price)} className="mono cfd-price" format={(value) => formatCfdPrice(value, tk.symbol)} />}
@@ -94,9 +83,8 @@ export function CfdInstrumentList({
           );
         })}
 
-        {tickers.length === 0 && !configured && !loadError && <p className="cfd-hint">{t('trade.cfdUnavailable')}</p>}
-        {tickers.length === 0 && configured && !loadError && Array.from({ length: 7 }).map((_, i) => <SkeletonRow key={i} columns={[3, 1, 1]} />)}
-        {tickers.length === 0 && loadError && (
+        {!configured && !loadError && <p className="cfd-hint">{t('trade.cfdUnavailable')}</p>}
+        {loadError && (
           <button onClick={onRetry} className="cfd-retryButton">
             {t('trade.loadPairsError')}
           </button>
