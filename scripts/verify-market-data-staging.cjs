@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const { randomBytes } = require('node:crypto');
 const MAX_BYTES = 16_000_000, MAX_ROWS = 20_000;
 const COLLECTOR_STAGES = new Set([
-  'collector_health','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
+  'collector_health','collector_warmup_timeout','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
   'diagnostics_invalid_token','ws_missing_token','ws_invalid_token','authenticated_snapshot_fetch',
   'authenticated_snapshot_parse','authenticated_diagnostics_fetch','authenticated_diagnostics_parse',
   'request_timeout','secret_leak_check',
@@ -17,6 +17,7 @@ const SSE_REASONS = new Set([
   'reconnect_failed',
 ]);
 const SSE_RECONNECT_GRACE_MS = 10_000;
+const COLLECTOR_WARMUP_DEADLINE_MS = 90_000, COLLECTOR_REQUEST_TIMEOUT_MS = 10_000;
 const NUMBERS = ['lastPrice','bidPrice','askPrice','high24h','low24h','volume24h','quoteVolume24h',
   'changePercent24h','indexPrice','markPrice','fundingRate','fundingIntervalMinutes','openInterest','openInterestValue'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -74,6 +75,29 @@ async function requestCollector(config,path,auth,fetchFn=fetch,timeoutMs=10000) 
   }catch(error){if(timeout.aborted)throw new SafeDiagnosticError('request_timeout');throw error;}
   let leaked=false;try{leaked=secretIn(text,config.token);}catch{throw new SafeDiagnosticError('secret_leak_check');}
   if(leaked)throw new SafeDiagnosticError('secret_leak_check');return {status:response.status,text};
+}
+async function waitForCollectorHealth(config,dependencies={}) {
+  const now=dependencies.now??Date.now,sleepFn=dependencies.sleepFn??sleep;
+  const totalMs=dependencies.totalMs??COLLECTOR_WARMUP_DEADLINE_MS;
+  const requestTimeoutMs=dependencies.requestTimeoutMs??COLLECTOR_REQUEST_TIMEOUT_MS;
+  const requestFn=dependencies.requestFn??(timeoutMs=>requestCollector(config,'/health',undefined,fetch,timeoutMs));
+  const deadline=now()+totalMs;let attempt=0;
+  while(now()<deadline) {
+    attempt++;
+    try {
+      const response=await requestFn(Math.min(requestTimeoutMs,Math.max(1,deadline-now())));
+      if(response.status===200&&now()<=deadline) {
+        try{if(JSON.parse(response.text)?.ok===true)return {attempts:attempt};}catch{}
+      }
+    } catch(error) {
+      // A leaked secret is never a cold-start symptom and must remain a hard fail.
+      if(error instanceof SafeDiagnosticError&&error.stage==='secret_leak_check')throw error;
+    }
+    const remaining=deadline-now();if(remaining<=0)break;
+    const retryMs=Math.min(2_000,500*2**Math.min(attempt-1,2));
+    await sleepFn(Math.min(retryMs,remaining));
+  }
+  throw new SafeDiagnosticError('collector_warmup_timeout');
 }
 function parseFrame(text) {
   if (Buffer.byteLength(text)>MAX_BYTES) throw new Error('Payload limit');
@@ -256,8 +280,7 @@ async function verify(env=process.env, log=console.log, signal) {
   const request=(path,auth)=>requestCollector(config,path,auth);
   let diagnostics=null,diagnosticsLast=null;
   try {
-    const health=await collectorStage('collector_health',async()=>{const response=await request('/health');return {response,json:JSON.parse(response.text)};});
-    check('collector health',health.response.status===200&&health.json.ok===true);
+    await waitForCollectorHealth(config);check('collector health',true);
     const deniedHttp=[
       ['snapshot_missing_token','/internal/v1/snapshot',undefined,'snapshot missing token rejected'],
       ['snapshot_invalid_token','/internal/v1/snapshot',randomBytes(24).toString('hex'),'snapshot invalid token rejected'],
@@ -304,7 +327,7 @@ async function verify(env=process.env, log=console.log, signal) {
   const ok=checks.every(c=>c.status!=='FAIL');log(`${ok?'PASS':'FAIL'} staging verification (read-only; not production readiness)`);
   return {ok,checks,internal:internal.report(),public:publicStream.report(),diagnosticsBefore:diagnostics,diagnosticsAfter:diagnosticsLast};
 }
-module.exports={settings,secretIn,bodyText,requestCollector,parseFrame,Tracker,SSEParser,safeDiagnostics,collectorStage,collectorDiagnostic,observeSSE,verify};
+module.exports={settings,secretIn,bodyText,requestCollector,waitForCollectorHealth,parseFrame,Tracker,SSEParser,safeDiagnostics,collectorStage,collectorDiagnostic,observeSSE,verify};
 if(require.main===module){
   const abort=new AbortController();for(const sig of ['SIGINT','SIGTERM'])process.once(sig,()=>abort.abort());
   verify(process.env,console.log,abort.signal).then(result=>{process.exitCode=result.ok?0:1;}).catch(()=>{console.error('FAIL staging verifier');process.exitCode=1;});

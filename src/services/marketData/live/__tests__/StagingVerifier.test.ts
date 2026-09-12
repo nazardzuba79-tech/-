@@ -1,7 +1,7 @@
 import { randomBytes } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-const {settings,Tracker,SSEParser,parseFrame,secretIn,safeDiagnostics,requestCollector,collectorStage,collectorDiagnostic,observeSSE,verify}=require('../../../../../scripts/verify-market-data-staging.cjs');
+const {settings,Tracker,SSEParser,parseFrame,secretIn,safeDiagnostics,requestCollector,waitForCollectorHealth,collectorStage,collectorDiagnostic,observeSSE,verify}=require('../../../../../scripts/verify-market-data-staging.cjs');
 const token=randomBytes(24).toString('hex');
 const row=(overrides:any={})=>({id:'spot:BTCUSDT',pair:'BTC/USDT',symbol:'BTC/USDT',provider:'bybit',providerSymbol:'BTCUSDT',marketType:'spot',baseAsset:'BTC',quoteAsset:'USDT',settleAsset:null,lastPrice:1,bidPrice:null,askPrice:null,high24h:null,low24h:null,volume24h:0,quoteVolume24h:0,changePercent24h:0,indexPrice:null,markPrice:null,fundingRate:null,fundingIntervalMinutes:null,openInterest:null,openInterestValue:null,providerEventAt:10,sequence:1,receivedAt:10,fetchedAt:10,stale:false,...overrides});
 const frame=(type='snapshot',revision=1,rows=[row()],epoch='a')=>JSON.stringify({version:1,type,rows,epoch,revision,status:'live',sentAt:Date.now()});
@@ -46,7 +46,7 @@ describe('read-only staging verifier',()=>{
     expect(JSON.stringify(d)).not.toContain(token);expect(d.memory.rss).toBe(100);
   });
   test.each([
-    'collector_health','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
+    'collector_health','collector_warmup_timeout','snapshot_missing_token','snapshot_invalid_token','diagnostics_missing_token',
     'diagnostics_invalid_token','ws_missing_token','ws_invalid_token','authenticated_snapshot_fetch',
     'authenticated_snapshot_parse','authenticated_diagnostics_fetch','authenticated_diagnostics_parse',
   ])('collector exception is attributed to safe stage %s without exposing the original error',async(stage:string)=>{
@@ -68,6 +68,50 @@ describe('read-only staging verifier',()=>{
     try{await collectorStage('collector_health',()=>requestCollector(config,'/health',undefined,async()=>new Response(token)));}catch(error){leak=error;}
     expect(collectorDiagnostic(leak)).toEqual({stage:'secret_leak_check',operation:'collector_health'});
     expect(JSON.stringify([collectorDiagnostic(timeout),collectorDiagnostic(leak)])).not.toContain(token);
+  });
+  test('collector health warm-up passes immediately when health is ready',async()=>{
+    const requestFn=jest.fn(async()=>({status:200,text:'{"ok":true}'}));
+    await expect(waitForCollectorHealth({collector:'https://collector.invalid',token},{requestFn,now:()=>0,sleepFn:async()=>{}}))
+      .resolves.toEqual({attempts:1});
+    expect(requestFn).toHaveBeenCalledWith(10_000);
+  });
+  test.each([2,3])('collector health warm-up retries request timeouts and succeeds on attempt %i',async(successAttempt:number)=>{
+    let attempts=0,clock=0;
+    const requestFn=async()=>{attempts++;if(attempts<successAttempt){const error:any=new Error(`timeout body=${token}`);error.stage='request_timeout';throw error;}return {status:200,text:'{"ok":true}'};};
+    const result=await waitForCollectorHealth({collector:'https://collector.invalid',token},{requestFn,now:()=>clock,sleepFn:async(ms:number)=>{clock+=ms;}});
+    expect(result).toEqual({attempts:successAttempt});expect(clock).toBeGreaterThan(0);
+  });
+  test('collector health warm-up tolerates connection failures before health succeeds',async()=>{
+    let attempts=0,clock=0;
+    const requestFn=async()=>{attempts++;if(attempts<4)throw new Error(`socket body=${token}`);return {status:200,text:'{"ok":true}'};};
+    await expect(waitForCollectorHealth({collector:'https://collector.invalid',token},{requestFn,now:()=>clock,sleepFn:async(ms:number)=>{clock+=ms;}}))
+      .resolves.toEqual({attempts:4});
+  });
+  test('collector health warm-up retries HTTP 200 with ok false',async()=>{
+    let attempts=0,clock=0;
+    const requestFn=async()=>({status:200,text:JSON.stringify({ok:++attempts>1})});
+    await expect(waitForCollectorHealth({collector:'https://collector.invalid',token},{requestFn,now:()=>clock,sleepFn:async(ms:number)=>{clock+=ms;}}))
+      .resolves.toEqual({attempts:2});
+  });
+  test('collector health warm-up has a bounded deadline and a distinct safe diagnostic',async()=>{
+    let clock=0;
+    const requestFn=async(timeoutMs:number)=>{clock+=timeoutMs;throw new Error(`Authorization: Bearer ${token}; body=${token}`);};
+    let failure:any;
+    try{await waitForCollectorHealth({collector:'https://collector.invalid',token},{totalMs:90_000,requestTimeoutMs:10_000,requestFn,now:()=>clock,sleepFn:async(ms:number)=>{clock+=ms;}});}catch(error){failure=error;}
+    expect(collectorDiagnostic(failure)).toEqual({stage:'collector_warmup_timeout'});expect(clock).toBe(90_000);
+    expect(JSON.stringify(collectorDiagnostic(failure))).not.toContain(token);
+  });
+  test('normal authenticated request timeout remains a request_timeout after warm-up',async()=>{
+    const config={collector:'https://collector.invalid',token};
+    await waitForCollectorHealth(config,{requestFn:async()=>({status:200,text:'{"ok":true}'}),now:()=>0,sleepFn:async()=>{}});
+    const hangingFetch=jest.fn((_url:string,options:any)=>new Promise((_resolve,reject)=>{
+      const fail=()=>reject(new Error(`cookie=${token}; body=${token}`));
+      if(options.signal.aborted)fail();else options.signal.addEventListener('abort',fail,{once:true});
+    }));
+    let failure:any;
+    try{await collectorStage('authenticated_snapshot_fetch',()=>requestCollector(config,'/internal/v1/snapshot',token,hangingFetch,5));}catch(error){failure=error;}
+    expect(collectorDiagnostic(failure)).toEqual({stage:'request_timeout',operation:'authenticated_snapshot_fetch'});
+    expect(JSON.stringify(collectorDiagnostic(failure))).not.toContain(token);
   });
   test.each([
     ['http_non_200',()=>({ok:false,status:503,headers:new Headers(),body:null})],
