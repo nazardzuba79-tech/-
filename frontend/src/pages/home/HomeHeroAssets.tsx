@@ -44,9 +44,9 @@ function OilIcon({ size = 24 }: { size?: number; strokeWidth?: number }) {
   </svg>;
 }
 
-export function HomeHeroAssets({ market }: { market: HomeMarket }) {
+export function HomeHeroAssets({ market, englishLabels = false }: { market: HomeMarket; englishLabels?: boolean }) {
   const { lang, t } = useLanguage();
-  const copy = globalHeroCopy[lang];
+  const copy = globalHeroCopy[englishLabels ? 'en' : lang];
   const btc = market.tickers.find(row => row.pair === 'BTC/USDT');
   const gold = market.cfd?.configured ? market.cfd.tickers.find(row => row.symbol === 'XAUUSD') : undefined;
   const rows = [

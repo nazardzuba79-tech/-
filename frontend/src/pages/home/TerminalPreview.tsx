@@ -26,7 +26,7 @@ function OrderBookRows({ rows, side, maximum }: {
 }
 
 /** A tiny SVG renderer for received OHLC values, without a chart framework. */
-function PreviewCandles({ candles, label, livePrice }: { candles: HomeCandle[]; label: string; livePrice?: number }) {
+export function PreviewCandles({ candles, label, livePrice }: { candles: HomeCandle[]; label: string; livePrice?: number }) {
   const min = Math.min(...candles.map(candle => candle.low), livePrice ?? Infinity);
   const max = Math.max(...candles.map(candle => candle.high), livePrice ?? -Infinity);
   const padding = Math.max((max - min) * 0.12, max * 0.00001, 1e-8);

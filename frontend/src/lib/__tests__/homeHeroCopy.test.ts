@@ -40,17 +40,22 @@ test('Crypto Card product naming stays English throughout every supported UI lan
 
 test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline and separate supporting copy without changing CTA targets or terminal previews', lang => {
   const index = ['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'].indexOf(lang);
-  const code = ts.transpileModule(read('src/pages/home/HomeHero.tsx'), { compilerOptions: {
+  const code = ts.transpileModule(read('src/pages/home/HomeSapphireHero.tsx'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   }}).outputText;
   const output: Record<string, any> = {};
   const overrides: Record<string, unknown> = {
+    '../../components/CryptoIcon': { CryptoIcon: () => null },
+    '../../components/Logo': { LogoMark: () => null },
+    './LiveValue': { LiveValue: () => React.createElement('span', {}, '—') },
+    './TerminalPreview': { PreviewCandles: () => null },
+    './useHomeMarket': { byVolume: () => [], formatPriceValue: String },
     '../../lib/i18n': { useLanguage: () => ({ lang, t: (key: string) => rows(key)[index] }) },
     // The requested laptop/globe replaces the old phone overlay. Keep the
     // existing copy/CTA guarantees while isolating this renderer from streams.
     './HeroReferenceScene': { HeroReferenceScene: () => React.createElement('div', { 'data-preview': 'terminal' }) },
     './HomeHeroAssets': { HomeHeroAssets: () => React.createElement('div', { 'data-preview': 'assets' }) },
-    './HomeTicker': { HomeTicker: () => React.createElement('div', { 'data-preview': 'tape' }) },
+    './HomeSapphireTape': { HomeSapphireTape: () => React.createElement('div', { 'data-preview': 'tape' }) },
     './useHeroStream': { useHeroStream: (market: unknown) => market },
     './HomeMotion': { MotionStage: ({ children }: any) => React.createElement('div', {}, children) },
     './globalHeroCopy': { globalHeroCopy: { [lang]: { pause: 'Pause', resume: 'Resume', globe: 'Global markets' } } },
@@ -58,7 +63,7 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
     'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
   };
   new Function('require', 'exports', code)((name: string) => overrides[name] ?? req(name), output);
-  const html = renderToStaticMarkup(React.createElement(output.HomeHero, { market: {} }));
+  const html = renderToStaticMarkup(React.createElement(output.HomeSapphireHero, { market: { tickers: [], hero: { candles: [], trades: [] } } }));
   const heading = html.match(/<h1[^>]*>(.*?)<\/h1>/)?.[1].replace(/<[^>]+>/g, '');
   expect(heading).toBe('OWN YOUR FUTURE.');
   expect(html).toContain(rows('home.hero.subtitle')[index]);
@@ -66,7 +71,7 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
   expect(html).not.toContain('<span class="block text-gold-500"></span>');
   expect(html).toContain('href="/trade"');
   expect(html).toContain('href="/markets"');
-  expect(html.match(/data-preview="terminal"/g)).toHaveLength(1);
+  expect(html.match(/id="home-live-terminal"/g)).toHaveLength(1);
   expect(html.match(/data-preview="assets"/g)).toHaveLength(1);
   expect(html.match(/data-preview="tape"/g)).toHaveLength(1);
   expect(html).not.toContain('data-preview="phone"');
