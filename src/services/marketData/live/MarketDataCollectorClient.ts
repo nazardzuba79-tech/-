@@ -1,12 +1,50 @@
 import WebSocket from 'ws';
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
 import { HttpProviderClient, ProviderHealth, providerHealthRegistry } from '../ProviderHealth';
+import type { CachedValue } from '../ProviderCache';
+import { BybitMarketDataService } from '../bybit/BybitMarketDataService';
+import type { MarketUniverseSnapshot } from '../bybit/MarketUniverse';
+import type { NormalizedInstrument } from '../bybit/types';
 import { LiveFeed, reconnectDelay, type LiveFrame } from './contract';
 import { parseLiveFrame } from './validation';
 import { optionQuerySchema, optionInstrumentPageSchema, optionTickerPageSchema, OptionsRequestError, type OptionQuery } from '../bybit/BybitOptions';
 
-/** One connector per backend process. This object is never injected into
- * an execution service, and never calls the provider from the API region. */
+const finiteNullable = z.number().finite().nullable();
+const nonEmpty = z.string().min(1).max(160);
+const instrumentSchema = z.object({
+  symbol: nonEmpty,
+  providerSymbol: nonEmpty,
+  provider: z.literal('bybit'),
+  marketType: z.enum(['spot','linear_perpetual','linear_futures','inverse','inverse_perpetual','inverse_futures']),
+  baseAsset: nonEmpty,
+  quoteAsset: nonEmpty,
+  settleAsset: nonEmpty.nullable(),
+  status: z.enum(['Trading','PreLaunch','Delivering','Closed','Settling','Unknown']),
+  launchTime: finiteNullable,
+  deliveryTime: finiteNullable,
+  filters: z.object({
+    tickSize: finiteNullable,
+    qtyStep: finiteNullable,
+    minOrderQty: finiteNullable,
+    maxOrderQty: finiteNullable,
+    minNotional: finiteNullable,
+    maxNotional: finiteNullable,
+    pricePrecision: finiteNullable,
+    qtyPrecision: finiteNullable,
+  }),
+  providerMaxLeverage: finiteNullable,
+  fundingIntervalMinutes: finiteNullable,
+});
+const universeSnapshotSchema = z.object({
+  instruments: z.array(instrumentSchema).max(20_000),
+  refreshedAt: finiteNullable,
+  stale: z.boolean(),
+  loaded: z.boolean(),
+});
+
+/** One connector per backend process. This object never calls the provider
+ * from the API region. All Bybit reads are made by the configured collector. */
 export class MarketDataCollectorClient {
   readonly feed = new LiveFeed(randomUUID());
   readonly counters = { connections: 0, reconnects: 0, frames: 0, rejected: 0, propagationMs: 0 };
@@ -21,6 +59,8 @@ export class MarketDataCollectorClient {
   private epoch: string | null = null;
   private revision = -1;
   private readonly http: HttpProviderClient;
+  private universeCache: { value: MarketUniverseSnapshot; cachedAt: number } | null = null;
+  private universeInFlight: Promise<MarketUniverseSnapshot> | null = null;
   constructor(private url: string, private token: string, private fetchFn: typeof fetch = fetch) {
     const parsed = new URL(url);
     if (!['https:','http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/') throw new Error('Invalid collector URL');
@@ -42,6 +82,22 @@ export class MarketDataCollectorClient {
     if (!response.ok) throw new Error('Options collector unavailable');
     const body = await response.json();
     return kind === 'instruments' ? optionInstrumentPageSchema.parse(body) : optionTickerPageSchema.parse(body);
+  }
+  async universeSnapshot(): Promise<MarketUniverseSnapshot> {
+    const now = Date.now();
+    if (this.universeCache && now - this.universeCache.cachedAt <= 1_000) return this.universeCache.value;
+    if (this.universeInFlight) return this.universeInFlight;
+    const load = (async () => {
+      const response = await this.fetchFn(`${this.url}/internal/v1/universe`, {
+        headers:{Authorization:`Bearer ${this.token}`}, redirect:'error', signal:AbortSignal.timeout(10_000),
+      });
+      if (!response.ok) throw new Error('Collector universe unavailable');
+      const value = universeSnapshotSchema.parse(await response.json()) as MarketUniverseSnapshot;
+      this.universeCache = { value, cachedAt: Date.now() };
+      return value;
+    })().finally(() => { this.universeInFlight = null; });
+    this.universeInFlight = load;
+    return load;
   }
   start(): void { if (!this.running) { this.running = true; this.generation++; void this.connect(); } }
   private async connect(): Promise<void> {
@@ -111,6 +167,33 @@ export class MarketDataCollectorClient {
     this.running = false; this.generation++; this.abort?.abort();
     if (this.timer) clearTimeout(this.timer); this.timer = null; this.disconnect();
   }
+}
+
+/** MarketUniverse-compatible provider backed only by the remote collector.
+ * The superclass transport is intentionally disabled, so constructing this
+ * adapter in Oregon cannot fall back to a direct Bybit request. */
+export class CollectorUniverseProvider extends BybitMarketDataService {
+  constructor(private readonly collector: Pick<MarketDataCollectorClient,'universeSnapshot'>) {
+    super({
+      baseUrl: 'http://127.0.0.1',
+      fetchFn: async () => { throw new Error('Direct Bybit access disabled in API region'); },
+    });
+  }
+  private async instruments(kind: 'spot' | 'linear' | 'inverse'): Promise<CachedValue<NormalizedInstrument[]>> {
+    const snapshot = await this.collector.universeSnapshot();
+    if (!snapshot.loaded || snapshot.refreshedAt === null) throw new Error('Collector universe unavailable');
+    const value = snapshot.instruments.filter((instrument) =>
+      kind === 'spot'
+        ? instrument.marketType === 'spot'
+        : kind === 'linear'
+          ? instrument.marketType.startsWith('linear_')
+          : instrument.marketType === 'inverse' || instrument.marketType.startsWith('inverse_')
+    );
+    return { value, fetchedAt: snapshot.refreshedAt, stale: snapshot.stale };
+  }
+  override listSpotInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('spot'); }
+  override listLinearInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('linear'); }
+  override listInverseInstruments(): Promise<CachedValue<NormalizedInstrument[]>> { return this.instruments('inverse'); }
 }
 
 export function collectorFromEnv(env: NodeJS.ProcessEnv = process.env): MarketDataCollectorClient | null {

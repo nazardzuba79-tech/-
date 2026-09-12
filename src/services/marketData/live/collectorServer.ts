@@ -3,9 +3,16 @@ import { createServer } from 'http';
 import { timingSafeEqual } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { LiveSource, LiveFrame } from './contract';
+import type { MarketUniverseSnapshot } from '../bybit/MarketUniverse';
 import { BybitOptions, OptionsRequestError, optionQuerySchema } from '../bybit/BybitOptions';
 
-export function collectorServer(source: LiveSource, token: string, diagnostics: () => unknown, options?: BybitOptions) {
+export function collectorServer(
+  source: LiveSource,
+  token: string,
+  diagnostics: () => unknown,
+  options?: BybitOptions,
+  universe?: () => MarketUniverseSnapshot
+) {
   if (!token.trim()) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
   const authorized = (header?: string) => {
     const actual = Buffer.from(header ?? ''), expected = Buffer.from(`Bearer ${token}`);
@@ -20,6 +27,10 @@ export function collectorServer(source: LiveSource, token: string, diagnostics: 
   });
   app.get('/internal/v1/snapshot', (_req,res) => res.json(source.snapshot()));
   app.get('/internal/v1/diagnostics', (_req,res) => res.json(diagnostics()));
+  app.get('/internal/v1/universe', (_req,res) => {
+    if (!universe) { res.status(503).json({ error:'universe_unavailable' }); return; }
+    res.json(universe());
+  });
   for (const kind of ['instruments','tickers'] as const) app.get(`/internal/v1/options/${kind}`, async (req,res) => {
     const query = optionQuerySchema.safeParse(req.query);
     if (!query.success) { res.status(400).json({ error:'invalid_options_query' }); return; }

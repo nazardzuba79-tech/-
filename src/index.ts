@@ -61,7 +61,7 @@ import { copyPerformanceRouter } from './api/routes/copyPerformance';
 import { analyticsRouter } from './api/routes/analytics';
 import { AnalyticsDataService } from './services/AnalyticsDataService';
 import { MarketDataGateway } from './services/marketData/MarketDataGateway';
-import { collectorFromEnv } from './services/marketData/live/MarketDataCollectorClient';
+import { collectorFromEnv, CollectorUniverseProvider } from './services/marketData/live/MarketDataCollectorClient';
 import { BinanceDerivativesService } from './services/marketData/derivatives/BinanceDerivativesService';
 import { OkxDerivativesService } from './services/marketData/derivatives/OkxDerivativesService';
 import { ExternalDerivativesService } from './services/marketData/derivatives/ExternalDerivativesService';
@@ -106,14 +106,16 @@ const futuresPositionService = new FuturesPositionService(prisma, futuresEngine,
 /**
  * The DISCOVERABLE venue universe — every real instrument that exists.
  *
- * Public endpoints only, no API key. Bybit refuses public traffic from
- * some server regions and nothing here works around that: if the region
- * is refused the universe simply never loads, the registry below skips its
- * restriction clause, and the exchange keeps working exactly as it did
- * before this existed.
+ * When the Frankfurt collector is configured, the API region reads the
+ * collector's authenticated universe snapshot and never contacts Bybit
+ * directly. The direct provider remains only as a local/dev fallback when
+ * no collector is configured.
  */
-const bybitMarketDataService = new BybitMarketDataService();
-const marketUniverse = new MarketUniverse(bybitMarketDataService);
+const liveReferenceCollector = collectorFromEnv();
+const venueUniverseSource = liveReferenceCollector
+  ? new CollectorUniverseProvider(liveReferenceCollector)
+  : new BybitMarketDataService();
+const marketUniverse = new MarketUniverse(venueUniverseSource, { includeInverse: true });
 marketUniverse.start();
 
 // The EXECUTABLE futures set. The universe is passed as a restriction, not
@@ -153,7 +155,6 @@ const demoTradingService = new DemoTradingService(prisma, demoEngine);
 // It reads reference data only. Nothing here touches VOLTEX financial
 // state: mark price, funding settlement, open interest, positions, margin
 // and liquidation stay with the futures services and are unchanged.
-const liveReferenceCollector = collectorFromEnv();
 const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService, undefined, liveReferenceCollector?.feed ?? null);
 
 // External derivatives reference data (Binance + OKX public futures
@@ -290,6 +291,7 @@ start().catch((err) => {
 
 process.on('SIGTERM', async () => {
   liveReferenceCollector?.stop();
+  marketUniverse.stop();
   futuresMarketRegistry.stop();
   fundingRateService.stopScheduler();
   liquidationEngine.stopScheduler();

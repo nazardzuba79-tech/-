@@ -11,7 +11,13 @@ const collector = new BybitLiveTickerCollector(new BybitMarketDataService({ base
   inverseUrl: process.env.BYBIT_INVERSE_WS_URL,
 });
 const options = new BybitOptions(collector.rest);
-const runtime = collectorServer(collector.feed, token, () => ({ ...collector.diagnostics(), options:options.diagnostics() }), options);
+const runtime = collectorServer(
+  collector.feed,
+  token,
+  () => ({ ...collector.diagnostics(), options:options.diagnostics() }),
+  options,
+  () => collector.universe.snapshot()
+);
 runtime.server.listen(Number(process.env.PORT || 10000), '0.0.0.0', () => {
   console.log('Market data collector listening'); collector.start();
 });
