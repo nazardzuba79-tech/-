@@ -1,0 +1,98 @@
+/* Shared presentation layer. Order payloads, account/risk calculations and feeds
+   remain owned by their existing market components. */
+.trade-terminal.trade-terminal { --workspace-bg:#101720; --chart-bg:#101720; --toolbar-bg:#101720; --panel-alt:#19232f; --bg-tertiary:#19232f; --border-color:#293440; --panel-border:#26303c; --accent:var(--accent-yellow); }
+.trade-terminal.trade-terminal .ticker-bar, .trade-terminal.trade-terminal .cfd-ticker-bar { gap:12px; padding:8px 16px; min-height:62px; justify-content:space-between; }
+.trade-terminal.trade-terminal .ticker-bar .ticker-item, .trade-terminal.trade-terminal .cfd-ticker-metric { flex:1 1 auto; min-width:0; gap:4px; }
+.trade-terminal.trade-terminal .ticker-bar .ticker-item .label, .trade-terminal.trade-terminal .cfd-ticker-metric > :first-child { font-size:10px; white-space:normal; }
+.trade-terminal.trade-terminal .ticker-bar .ticker-item .value { font-size:12px; }
+.trade-terminal.trade-terminal .ticker-bar .ticker-item .value.price { font-size:19px; }
+.trade-terminal.trade-terminal .pair-selector { padding-right:12px; margin-right:0; }
+.trade-terminal.trade-terminal .pair-name, .trade-terminal.trade-terminal .cfd-symbol { font-size:17px; }
+.trade-terminal.trade-terminal .order-form-content, .trade-terminal.trade-terminal .fo-form, .trade-terminal.trade-terminal .cfd-form { padding:10px 12px 12px; gap:9px; }
+.trade-terminal.trade-terminal .order-form-tabs, .trade-terminal.trade-terminal .cfd-sideTabs { margin:8px 12px 0; min-height:34px; border-radius:4px; }
+.trade-terminal.trade-terminal .order-form-tab, .trade-terminal.trade-terminal .cfd-sideTab { padding:6px 2px; font-size:12px; border-radius:3px; }
+.trade-terminal.trade-terminal .order-type-tabs, .trade-terminal.trade-terminal .fo-typeTabs, .trade-terminal.trade-terminal .cfd-product-terms { min-height:38px; height:auto; padding:0 12px; gap:10px; border-bottom:1px solid var(--border-color); }
+.trade-terminal.trade-terminal .order-type-tab, .trade-terminal.trade-terminal .fo-typeTab { height:auto; padding:10px 0 8px; font-size:11px; }
+.trade-terminal.trade-terminal .cfd-product-terms { padding-block:10px; }
+.trade-terminal.trade-terminal .form-label, .trade-terminal.trade-terminal .fo-label, .trade-terminal.trade-terminal .cfd-label { font-size:11px; gap:5px; }
+.trade-terminal.trade-terminal .input-group, .trade-terminal.trade-terminal .fo-input, .trade-terminal.trade-terminal .cfd-input { border:1px solid transparent; border-radius:4px; background:#19232f; }
+.trade-terminal.trade-terminal .input-group:hover, .trade-terminal.trade-terminal .fo-input:hover, .trade-terminal.trade-terminal .cfd-input:hover { border-color:#3c4a5b; }
+.trade-terminal.trade-terminal .input-group:focus-within, .trade-terminal.trade-terminal .fo-input:focus, .trade-terminal.trade-terminal .cfd-input:focus { border-color:var(--accent-yellow); }
+.trade-terminal.trade-terminal .input-group input, .trade-terminal.trade-terminal .fo-input, .trade-terminal.trade-terminal .cfd-input { padding:8px 10px; font-size:13px; line-height:20px; min-height:36px; }
+.trade-terminal.trade-terminal .input-suffix { padding:0 10px; border:0; font-size:11px; }
+.trade-terminal.trade-terminal .fo-mlTrigger { padding:7px 9px; border-radius:4px; font-size:12px; }
+.trade-terminal.trade-terminal .fo-infoBox, .trade-terminal.trade-terminal .cfd-infoBox, .trade-terminal.trade-terminal .order-summary { background:transparent; border:0; padding:4px 0; gap:7px; border-radius:0; }
+.trade-terminal.trade-terminal .fo-infoRow, .trade-terminal.trade-terminal .cfd-infoRow, .trade-terminal.trade-terminal .available-balance { font-size:11px; line-height:17px; }
+.trade-terminal.trade-terminal .fo-infoRow > *, .trade-terminal.trade-terminal .cfd-infoRow > * { min-width:0; }
+.trade-terminal.trade-terminal .submit-btn, .trade-terminal.trade-terminal .cfd-submit { border:0; border-radius:4px; min-height:38px; padding:10px 5px; font-size:12px; box-shadow:none; }
+.trade-terminal.trade-terminal .info-section { padding:10px 0; border-top:1px solid var(--border-color); background:transparent; }
+.trade-terminal.trade-terminal .info-heading { margin-bottom:8px; font-size:11px; }
+.trade-terminal.trade-terminal .info-row { padding:3px 0; font-size:11px; }
+.trade-terminal.trade-terminal .terminal-size-range { width:100%; accent-color:var(--accent-yellow); height:16px; margin:1px 0 3px; cursor:pointer; }
+.trade-terminal.trade-terminal .slider-track { gap:5px; }
+.trade-terminal.trade-terminal .slider-step { height:20px; background:transparent; }
+.trade-terminal.trade-terminal .slider-step::before { display:none; }
+.trade-terminal.trade-terminal .slider-step::after { content:attr(data-label); position:static; color:#9ba9ba; font-size:10px; }
+.trade-terminal.trade-terminal .slider-step.active::after { color:var(--accent-yellow); }
+.trade-terminal.trade-terminal .slider-labels { display:none; }
+.trade-terminal.trade-terminal .cfd-percentBtn { padding:3px 0; border:0; background:transparent; }
+.trade-terminal.trade-terminal .cfd-hint { padding:8px 0; font-size:11px; line-height:1.5; }
+.trade-terminal.trade-terminal .ob-row { height:23px; font-size:11px; font-variant-numeric:tabular-nums; }
+.trade-terminal.trade-terminal .ob-depth-bar { opacity:.08; }
+.trade-terminal.trade-terminal .orderbook-col-headers { font-size:10px; padding-inline:10px; }
+.trade-terminal.trade-terminal .orderbook-header { padding-inline:10px; }
+.trade-terminal.trade-terminal .ob-row .cell { padding-inline:4px; }
+.trade-terminal.trade-terminal .pair-row { min-height:32px; grid-template-columns:14px 18px minmax(42px,1fr) 62px 43px; gap:4px; padding-inline:8px; }
+.trade-terminal.trade-terminal .pair-row .p-base, .trade-terminal.trade-terminal .pair-row .p-price, .trade-terminal.trade-terminal .pair-row .p-change { font-size:11px; }
+.trade-terminal.trade-terminal .pairs-col-headers { grid-template-columns:minmax(0,1fr) 62px 43px; font-size:10px; }
+.trade-terminal.trade-terminal .cfd-option { min-height:46px; }
+.trade-terminal.trade-terminal .cfd-chart > .voltex-tradingview-chart { flex:1; height:auto; }
+.trade-terminal.trade-terminal .cfd-disclaimer { margin:0; padding:5px 10px; font-size:9px; }
+.trade-terminal.trade-terminal .bottom-panel, .trade-terminal.trade-terminal .cfd-bottom-panel { flex-basis:155px; }
+.trade-terminal.trade-terminal .bottom-tabs, .trade-terminal.trade-terminal .cfd-tabs { min-height:36px; }
+.trade-terminal.trade-terminal .cfd-tab { padding:10px 0; }
+.trade-terminal.trade-terminal .cfd-empty { padding:24px 12px; }
+@media(min-width:1025px) {
+  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,224px) minmax(0,1fr) 220px 264px; }
+  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:224px minmax(0,1fr) 220px 264px; }
+  .trade-terminal.trade-terminal .main-grid.market-panel-collapsed { grid-template-columns:0 minmax(0,1fr) 220px 264px; }
+  .trade-terminal.trade-terminal .main-grid.orderbook-collapsed { grid-template-columns:var(--market-panel-width,224px) minmax(0,1fr) 0 264px; }
+  .trade-terminal.trade-terminal .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 264px; }
+  .trade-terminal.trade-terminal.cfd-terminal .cfd-workspace { grid-template-columns:224px minmax(0,1fr) 264px; }
+}
+@media(min-width:1700px) {
+  .trade-terminal.trade-terminal .main-grid { grid-template-columns:var(--market-panel-width,240px) minmax(0,1fr) 220px 280px; }
+  .trade-terminal.trade-terminal.futures-terminal .main-grid { grid-template-columns:240px minmax(0,1fr) 220px 280px; }
+  .trade-terminal.trade-terminal.cfd-terminal .cfd-workspace { grid-template-columns:240px minmax(0,1fr) 280px; }
+}
+@media(max-width:1024px) {
+  .trade-terminal.trade-terminal .ticker-bar, .trade-terminal.trade-terminal .cfd-ticker-bar { flex-wrap:wrap; gap:12px; }
+  .trade-terminal.trade-terminal .ticker-bar .ticker-item { flex:1 1 90px; }
+  .trade-terminal.trade-terminal .bottom-panel, .trade-terminal.trade-terminal .cfd-bottom-panel { flex-basis:auto; }
+}
+@media(max-width:600px) {
+  .trade-terminal.trade-terminal .ticker-bar, .trade-terminal.trade-terminal .cfd-ticker-bar { padding:10px 12px; }
+  .trade-terminal.trade-terminal .ticker-bar .ticker-item { flex:1 1 85px; }
+  .trade-terminal.trade-terminal .fo-form, .trade-terminal.trade-terminal .cfd-form, .trade-terminal.trade-terminal .order-form-content { padding:12px 14px; }
+  .trade-terminal.trade-terminal .chart-area { min-height:420px; }
+  .trade-terminal.trade-terminal .cfd-chart-area { height:460px; min-height:460px; }
+  .trade-terminal.trade-terminal .orderbook-area { max-height:440px; overflow:auto; }
+  .trade-terminal.trade-terminal .terminal-chart-controls button { min-height:30px; }
+}
+
+.trade-terminal.trade-terminal button, .trade-terminal.trade-terminal input, .trade-terminal.trade-terminal select { font-family:var(--font-family); }
+.trade-terminal.trade-terminal .ob-row.ob-row--spot { padding-inline:8px; gap:5px; }
+.trade-terminal.trade-terminal .ob-row.ob-row--spot .cell { padding-inline:0; }
+.trade-terminal.trade-terminal .slider-step.active { background:transparent; }
+
+.trade-terminal.trade-terminal .submit-btn, .trade-terminal.trade-terminal .cfd-submit { height:38px; }
+.trade-terminal.trade-terminal .terminal-size-range { appearance:none; background:transparent; border:0; padding:0; }
+.trade-terminal.trade-terminal .terminal-size-range::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:#40505f; }
+.trade-terminal.trade-terminal .terminal-size-range::-webkit-slider-thumb { appearance:none; width:12px; height:12px; margin-top:-4.5px; border:2px solid var(--accent-yellow); border-radius:50%; background:#101720; }
+.trade-terminal.trade-terminal .terminal-size-range::-moz-range-track { height:3px; background:#40505f; }
+.trade-terminal.trade-terminal .terminal-size-range::-moz-range-thumb { width:9px; height:9px; border:2px solid var(--accent-yellow); border-radius:50%; background:#101720; }
+.trade-terminal.trade-terminal .terminal-size-range:disabled { opacity:.4; cursor:not-allowed; }
+.trade-terminal.trade-terminal .cfd-columns, .trade-terminal.trade-terminal .cfd-option { grid-template-columns:minmax(0,1fr) 68px 48px; gap:4px; padding:8px 6px; }
+.trade-terminal.trade-terminal.futures-terminal .p-name { display:flex; flex-direction:column; align-items:flex-start; line-height:13px; }
+.trade-terminal.trade-terminal.futures-terminal .pair-row { min-height:35px; }
+.trade-terminal.trade-terminal.futures-terminal .pairs-col-headers { grid-template-columns:minmax(0,1fr) 62px 52px; }

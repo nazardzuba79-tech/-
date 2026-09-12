@@ -24,6 +24,7 @@ import { useCfdTickers } from '../lib/useCfdTickers';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
+import './trade-terminal/ProfessionalTerminal.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet

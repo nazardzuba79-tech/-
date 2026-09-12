@@ -154,6 +154,7 @@ export function CfdOrderForm({
           />
         </label>
 
+        <input className="terminal-size-range" type="range" min="0" max="100" step="25" aria-label={t('trade.quantity')} value={percent} onChange={event => applyPercent(Number(event.target.value))} />
         <div className="cfd-percentRow">
           {PERCENT_STOPS.map((pct) => (
             <button

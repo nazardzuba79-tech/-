@@ -2,6 +2,15 @@
 import {readFileSync} from 'fs';
 import {resolve} from 'path';
 const ts=require('typescript'),crypto=require('node:crypto');
+function restoreBookPresentation(source) {
+ // Only display amount strings and their tooltips changed. Restore those exact
+ // statements before checking the frozen aggregation/click-selection fingerprint.
+ return source.replace(/import \{ formatBookAmount \} from '..\/lib\/terminalPresentation';\r?\n/, '')
+  .replace('const quantityText = formatBookAmount(level.quantity);', 'const quantityText = spotStep === undefined ? level.quantity.toFixed(5) : formatSpotBookNumber(level.quantity);')
+  .replace('const totalText = formatBookAmount(level.price * level.quantity);', 'const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);')
+  .replace('title={String(level.quantity)}','title={spotStep !== undefined ? quantityText : undefined}')
+  .replace('title={String(level.price * level.quantity)}','title={spotStep !== undefined ? totalText : undefined}');
+}
 function semantic(source){
  const sf=ts.createSourceFile('component.tsx',source.replace(/\r\n/g,'\n'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
  const transformed=ts.transform(sf,[context=>root=>{
@@ -235,7 +244,7 @@ test.each([
     "lib/futuresMath.ts",
     "886f8e135f998bf2bd7a0f9379bfe173eddcc1f7d898362c737b97ab5cf2a026"
   ]
-])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
+])('%s preserves non-visual semantics',(name,hash)=>expect(semantic(name === 'components/OrderBookPanel.tsx' ? restoreBookPresentation(read(name)) : name === 'components/FuturesOrderForm.tsx' ? restoreFormPresentation(read(name)) : read(name))).toBe(hash));
 test('every new stylesheet selector is Futures-scoped',()=>{
  const css=read('pages/trade-terminal/FuturesTerminal.css');
  const selectors=[]; require('postcss').parse(css).walkRules(rule=>selectors.push(...rule.selectors));

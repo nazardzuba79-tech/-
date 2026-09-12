@@ -431,6 +431,7 @@ export function OrderForm({
         </div>
 
         <div className="slider-container">
+          <input className="terminal-size-range" type="range" min="0" max="100" step="25" aria-label={t('trade.quantity')} value={percent} disabled={!balanceReady || balanceError} onChange={event => applyPercent(Number(event.target.value))} />
           <div className="slider-track">
             {SLIDER_STEPS.map((step, idx) => (
               <button

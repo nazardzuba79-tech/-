@@ -1,3 +1,4 @@
+import { FuturesTurnover } from './FuturesTurnover';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import type { FuturesMarketStats, GatewaySection } from '../lib/api';
@@ -218,9 +219,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
             USDT-margined perpetuals and the upstream figure is the
             quote-currency turnover, never a converted one. */}
         <span className="label">{`${t('futures.headerTurnover24h')} (${quoteAsset})`}</span>
-        <span className={`value${derivatives?.available && derivatives.stale ? ' is-stale' : ''}`}>
-          {stats24h && stats24h.turnover24hUsd !== null ? formatCompact(stats24h.turnover24hUsd) : '—'}
-        </span>
+        <FuturesTurnover pair={symbol} aggregate={stats24h?.turnover24hUsd ?? null} stale={Boolean(derivatives?.available && derivatives.stale)} />
       </div>
       <div className="ticker-item">
         {/* Derivatives-market open interest, in base units when the

@@ -1,124 +1,114 @@
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import './TradingViewAdvancedChart.css';
 
-type TerminalMarket = 'spot' | 'futures';
-
+type TerminalMarket = 'spot' | 'futures' | 'cfd';
 interface TradingViewAdvancedChartProps {
   pair: string;
   market?: TerminalMarket;
-  // Kept for drop-in compatibility with the existing PriceChart call sites.
   chrome?: 'default' | 'terminal';
   drawingTools?: boolean;
 }
-
-const TV_LOCALE: Record<string, string> = {
-  en: 'en',
-  ru: 'ru',
-  zh: 'zh_CN',
-  es: 'es',
-  ja: 'ja',
-  ko: 'ko',
-  hi: 'en',
+export const CHART_INTERVALS = [['1', '1m'], ['5', '5m'], ['15', '15m'], ['60', '1h'], ['240', '4h'], ['D', '1D']] as const;
+const TV_LOCALE: Record<string, string> = { en: 'en', ru: 'ru', zh: 'zh_CN', es: 'es', ja: 'ja', ko: 'ko', hi: 'en' };
+// Preserve the verified CFD mappings. Unmapped instruments have no substitute chart.
+const CFD_SYMBOLS: Record<string, string> = {
+  XAUUSD: 'OANDA:XAUUSD', EURUSD: 'FX:EURUSD', GBPUSD: 'FX:GBPUSD',
+  USDJPY: 'FX:USDJPY', AUDUSD: 'FX:AUDUSD', USDCAD: 'FX:USDCAD',
 };
-
-/**
- * TradingView's Bybit symbols are BYBIT:BTCUSDT for spot and
- * BYBIT:BTCUSDT.P for USDT perpetuals. Keep the mapping deterministic and
- * provider-explicit; unknown punctuation is rejected rather than forwarded
- * into the third-party embed configuration.
- */
-export function toTradingViewSymbol(pair: string, market: TerminalMarket = 'spot'): string {
-  const compact = pair.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  if (!compact) return 'BYBIT:BTCUSDT';
+export function toTradingViewSymbol(pair: string, market: TerminalMarket = 'spot'): string | null {
+  const compact = pair.toUpperCase().replace(/\//g, '');
+  if (!/^[A-Z0-9]+$/.test(compact)) return null;
+  if (market === 'cfd') return CFD_SYMBOLS[compact] ?? null;
   return `BYBIT:${compact}${market === 'futures' ? '.P' : ''}`;
 }
-
-function TradingViewEmbed({ symbol, locale }: { symbol: string; locale: string }) {
+function ChartUnavailable({ retry }: { retry?: () => void }) {
+  const { t } = useLanguage();
+  return <div className="terminal-chart-unavailable" role="status">
+    <strong>{t('trade.cfdChartUnavailable')}</strong>
+    <p>{t('trade.cfdChartUnavailableHint')}</p>
+    {retry && <button type="button" onClick={retry}>{t('trade.cfdChartRetry')}</button>}
+  </div>;
+}
+function TradingViewEmbed({ symbol, locale, interval, study, volume }: {
+  symbol: string; locale: string; interval: string; study: string; volume: boolean;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
-
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-
-    // The official embed script is async. Reusing the same DOM host while
-    // rapidly changing symbols can let an older script finish late and append
-    // another iframe next to the current one. This child is keyed by
-    // symbol+locale, so every change gets a fresh host; any late old script
-    // can only render into a detached node and can never stack charts onscreen.
-    host.replaceChildren();
-
+    let active = true;
+    setFailed(false);
+    // Fresh ownership even during StrictMode effect replay. A late async script
+    // can only append to its detached subtree, never to the next chart's host.
+    const owned = document.createElement('div');
+    owned.className = 'tradingview-widget-container voltex-tradingview-chart__owned';
     const widget = document.createElement('div');
     widget.className = 'tradingview-widget-container__widget voltex-tradingview-chart__widget';
-
     const script = document.createElement('script');
-    script.type = 'text/javascript';
     script.async = true;
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.dataset.voltexTradingview = 'advanced-chart';
     script.text = JSON.stringify({
-      autosize: true,
-      symbol,
-      interval: '15',
-      timezone: 'Etc/UTC',
-      theme: 'dark',
-      backgroundColor: '#0d141d',
-      gridColor: 'rgba(132, 142, 156, 0.10)',
-      style: '1',
-      locale,
-      hide_side_toolbar: false,
-      hide_top_toolbar: false,
-      // Hide TradingView's symbol/exchange/OHLC legend. VOLTEX renders only
-      // the selected ticker above the plot so the chart stays clean and does
-      // not expose the upstream venue in the visible header.
-      hide_legend: true,
-      hide_volume: false,
-      allow_symbol_change: false,
-      withdateranges: true,
-      save_image: false,
-      calendar: false,
-      details: false,
-      hotlist: false,
-      watchlist: [],
-      compareSymbols: [],
-      studies: [],
-      show_popup_button: false,
-      support_host: 'https://www.tradingview.com',
+      autosize: true, symbol, interval, timezone: 'Etc/UTC', theme: 'dark',
+      backgroundColor: '#101720', gridColor: 'rgba(132, 142, 156, 0.07)', style: '1', locale,
+      hide_side_toolbar: false, hide_top_toolbar: true, hide_legend: true,
+      hide_volume: !volume, allow_symbol_change: false, withdateranges: false,
+      save_image: false, calendar: false, details: false, hotlist: false,
+      watchlist: [], compareSymbols: [], studies: study ? [study] : [],
+      show_popup_button: false, support_host: 'https://www.tradingview.com',
     });
-
-    host.append(widget, script);
-
+    script.onerror = () => { if (active) setFailed(true); };
+    owned.append(widget, script);
+    host.replaceChildren(owned);
+    const timeout = window.setTimeout(() => {
+      if (active && !owned.querySelector('iframe')) setFailed(true);
+    }, 15000);
     return () => {
-      host.replaceChildren();
+      active = false;
+      window.clearTimeout(timeout);
+      script.onerror = null;
+      owned.querySelectorAll('iframe').forEach(frame => { frame.src = 'about:blank'; frame.remove(); });
+      owned.replaceChildren();
+      owned.remove();
     };
-  }, [symbol, locale]);
-
-  return <div className="tradingview-widget-container voltex-tradingview-chart__embed" ref={hostRef} />;
+  }, [symbol, locale, interval, study, volume, attempt]);
+  return <div className="voltex-tradingview-chart__plot">
+    <div className="voltex-tradingview-chart__embed" ref={hostRef} />
+    {failed && <ChartUnavailable retry={() => setAttempt(n => n + 1)} />}
+  </div>;
 }
-
 function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdvancedChartProps) {
   const { lang } = useLanguage();
+  const [interval, setInterval] = useState('15');
+  const [study, setStudy] = useState('');
+  const [volume, setVolume] = useState(true);
   const symbol = useMemo(() => toTradingViewSymbol(pair, market), [pair, market]);
   const locale = TV_LOCALE[lang] ?? 'en';
-  const symbolPath = symbol.replace(/^BYBIT:/, '');
-  const ticker = pair.toUpperCase();
-
-  return (
-    <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
-      <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} />
-      <div className="voltex-tradingview-chart__ticker" aria-hidden="true">{ticker}</div>
-      <div className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
-        <a
-          href={`https://www.tradingview.com/symbols/${encodeURIComponent(symbolPath)}/?exchange=BYBIT`}
-          rel="noopener nofollow"
-          target="_blank"
-        >
-          <span className="blue-text">{pair} chart</span>
-        </a>
-        <span className="trademark"> by TradingView</span>
+  const ticker = market === 'cfd' ? pair.toUpperCase().replace(/^([A-Z]{3})([A-Z]{3})$/, '$1/$2') : pair.toUpperCase();
+  const intervalLabel = CHART_INTERVALS.find(item => item[0] === interval)?.[1];
+  return <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
+    <div className="terminal-chart-controls">
+      <strong className="terminal-chart-identity">{ticker} · {intervalLabel}</strong>
+      <div className="terminal-chart-intervals" role="group" aria-label="Chart timeframe">
+        {CHART_INTERVALS.map(([value, label]) => <button key={value} type="button" aria-pressed={interval === value} onClick={() => setInterval(value)}>{label}</button>)}
       </div>
+      <select aria-label="Chart indicator" value={study} onChange={event => setStudy(event.target.value)}>
+        <option value="">Indicators</option>
+        <option value="MASimple@tv-basicstudies">SMA</option>
+        <option value="StochasticRSI@tv-basicstudies">Stoch RSI</option>
+        <option value="ROC@tv-basicstudies">ROC</option>
+      </select>
+      <button type="button" aria-label="Chart volume" aria-pressed={volume} onClick={() => setVolume(value => !value)}>VOL</button>
+      <span className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
+        <a href={symbol ? `https://www.tradingview.com/symbols/${encodeURIComponent(symbol.replace(':', '-'))}/` : 'https://www.tradingview.com/'} rel="noopener nofollow" target="_blank">{ticker} chart</a>
+        <span> by TradingView</span>
+      </span>
     </div>
-  );
+    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} interval={interval} study={study} volume={volume} />
+      : <div className="voltex-tradingview-chart__plot"><ChartUnavailable /></div>}
+  </div>;
 }
-
 export const TradingViewAdvancedChart = memo(TradingViewAdvancedChartImpl);
