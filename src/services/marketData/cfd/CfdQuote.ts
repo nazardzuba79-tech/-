@@ -8,6 +8,8 @@ export interface CfdQuote {
   lastDecimal?: string;
   providerTimestamp: number | null; fetchedAt: number | null;
   stale: boolean; status: CfdAvailability;
+  /** Display freshness is independent of the strict execution age gate. */
+  referenceStatus?: 'available' | 'stale' | 'unavailable' | 'market_closed';
   /** Verified provider entitlement, required independently of reported status. */
   entitlementVerified: boolean;
   /** Approval for NEW positions only; never gates closing or risk management. */
