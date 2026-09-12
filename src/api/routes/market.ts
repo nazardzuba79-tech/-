@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { KrakenMarketDataService, ExternalMarketDataError } from '../../services/KrakenMarketDataService';
 import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
 import { FearGreedService } from '../../services/FearGreedService';
+import { HomeCommodityReferenceService } from '../../services/HomeCommodityReferenceService';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -19,7 +20,8 @@ export function marketRouter(
   marketDataService: KrakenMarketDataService,
   coinGeckoService: CoinGeckoService,
   fearGreedService: FearGreedService,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  homeCommodityService = new HomeCommodityReferenceService()
 ): Router {
   const router = Router();
 
@@ -46,6 +48,17 @@ export function marketRouter(
       console.error(err);
       res.json({ avatarUrl: null });
     }
+  });
+
+  // Homepage-only reference prices. These sources never enter CFD execution,
+  // balances, margin, liquidation or order math. GOLD is a real-time XAU/USD
+  // reference from Gold API. OIL is the latest published EIA Brent spot
+  // observation delivered through FRED's public CSV download. Each source
+  // fails independently and unknown/stale data remains null rather than zero.
+  router.get('/market/home-commodities', async (_req, res) => {
+    const references = await homeCommodityService.getReferences();
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.json(references);
   });
 
   // Market-WIDE headline figures for the Markets page: total 24h volume
