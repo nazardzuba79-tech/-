@@ -1,0 +1,141 @@
+1м
+30м
+1ч
+15м
+Индикаторы
+1Д
+5Д
+1М
+3М
+6М
+YTD
+1Г
+5Л
+Все
+19:43:13 UTC
+Индикаторы, показатели и стратегии
+/
+Индикаторы
+Закрыть меню
+ИМЯ СКРИПТА
+24-hour Volume
+Accumulation/Distribution
+Advance Decline Line
+Advance Decline Ratio
+Advance/Decline Ratio (Bars)
+Arnaud Legoux Moving Average
+Aroon
+Aroon Oscillator
+Average Daily Range
+Average Directional Index
+Average True Range
+Awesome Oscillator
+Balance of Power
+BBTrend
+Bollinger Bands
+Bollinger Bands %b
+Bollinger BandWidth
+Bollinger Bars
+Bull Bear Power
+Chaikin Money Flow
+Chaikin Oscillator
+Chande Kroll Stop
+Chande Momentum Oscillator
+Chandelier Exit
+Chop Zone
+Choppiness Index
+Commodity Channel Index
+Connors RSI
+Coppock Curve
+Correlation Coefficient
+Cumulative Volume Delta
+Cumulative Volume Index
+Detrended Price Oscillator
+Directional Movement Index
+Donchian Channels
+Double EMA
+Ease of Movement
+Elder Force Index
+Envelope
+Fisher Transform
+Gaps
+Historical Volatility
+Hull Moving Average
+Ichimoku Cloud
+Kaufman's Adaptive Moving Average
+Keltner Channels
+Klinger Oscillator
+Know Sure Thing
+Least Squares Moving Average
+Linear Regression Channel
+MA Cross
+Mass Index
+McGinley Dynamic
+Median
+Momentum
+Money Flow Index
+Moon Phases
+Moving Average Convergence Divergence
+Moving Average Exponential
+Moving Average Ribbon
+Moving Average Weighted
+Multi-Time Period Charts
+Negative Volume Index
+Net Volume
+On Balance Volume
+Open Interest
+Parabolic SAR
+Percentage Price Oscillator
+Percentage Volume Oscillator
+Performance
+Pivot Points High Low
+Pivot Points Standard
+Positive Volume Index
+Price Momentum Oscillator
+Price Target
+Price Volume Trend
+Pring's Special K
+Rank Correlation Index
+Rate Of Change
+RCI Ribbon
+Relative Strength Index
+Relative Vigor Index
+Relative Volatility Index
+Relative Volume at Time
+Rob Booker - Ziv Ghost Pivots
+RSI Divergence Indicator
+Seasonality
+Simple Moving Average
+SMI Ergodic Indicator
+SMI Ergodic Oscillator
+Smoothed Moving Average
+Stochastic
+Stochastic Momentum Index
+Stochastic RSI
+Supertrend
+Technical Ratings
+Time Weighted Average Price
+Trading Sessions
+Trend Strength Index
+Triple EMA
+TRIX
+True Strength Index
+Ulcer Index
+Ultimate Oscillator
+Up/Down Volume
+Visible Average Price
+Volatility Stop
+Volume Delta
+Volume Weighted Average Price
+Volume Weighted Moving Average
+Vortex Indicator
+Williams Alligator
+Williams Fractals
+Williams Percent Range
+Woodies CCI
+Zig Zag
+Объём
+Роб Букер — Внутридневные точки разворота
+Роб Букер — Отклонение Ноксвилла
+Роб Букер — Пропущенные точки разворота
+Роб Букер — Разворот

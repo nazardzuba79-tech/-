@@ -1,0 +1,1181 @@
+[
+  {
+    "i": 0,
+    "plot": 1161,
+    "frame": 1161,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 1161,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 1162,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1920,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 1,
+    "plot": 697,
+    "frame": 697,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 697,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 698,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1440,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 2,
+    "plot": 623,
+    "frame": 623,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 623,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 624,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1366,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1366,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 3,
+    "plot": 390,
+    "frame": 390,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 390,
+        "height": 356.0625,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 390,
+        "height": 356.0625,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 390,
+        "height": 356.0625,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 390,
+        "height": 356.0625,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 390,
+        "height": 439,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 390,
+        "height": 440,
+        "display": "flex",
+        "flex": "0 0 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 390,
+        "height": 2016.03125,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 390,
+        "height": 2341.421875,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 390,
+        "height": 2491.421875,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 390,
+        "height": 844,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 390,
+        "height": 844,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 390,
+        "height": 844,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 4,
+    "plot": 697,
+    "frame": 697,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 697,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 698,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1440,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 5,
+    "plot": 1161,
+    "frame": 1161,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 1161,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 1162,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1920,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 6,
+    "plot": 623,
+    "frame": 623,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 623,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 623,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 624,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1366,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1366,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1366,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 7,
+    "plot": 697,
+    "frame": 697,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 697,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 697,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 698,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1440,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1440,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  },
+  {
+    "i": 8,
+    "plot": 1161,
+    "frame": 1161,
+    "frames": 1,
+    "chain": [
+      {
+        "tag": "IFRAME",
+        "cls": "",
+        "inline": "user-select: none; box-sizing: border-box; display: block; height: 100%; width: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "tradingview-widget-container voltex-tradingview-chart__owned",
+        "inline": "width: 100%; height: 100%;",
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__embed",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart__plot",
+        "inline": null,
+        "width": 1161,
+        "height": 677,
+        "display": "block",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "voltex-tradingview-chart",
+        "inline": null,
+        "width": 1161,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "chart-area",
+        "inline": null,
+        "width": 1162,
+        "height": 748,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "main-grid",
+        "inline": "--market-panel-width: 258px;",
+        "width": 1920,
+        "height": 748,
+        "display": "grid",
+        "flex": "1 1 0%",
+        "dir": "row"
+      },
+      {
+        "tag": "DIV",
+        "cls": "terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 982,
+        "display": "flex",
+        "flex": "1 1 0%",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "trade-terminal spot-terminal",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "flex",
+        "flex": "0 1 auto",
+        "dir": "column"
+      },
+      {
+        "tag": "DIV",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "BODY",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      },
+      {
+        "tag": "HTML",
+        "cls": "",
+        "inline": null,
+        "width": 1920,
+        "height": 1080,
+        "display": "block",
+        "flex": "0 1 auto",
+        "dir": "row"
+      }
+    ],
+    "styles": [
+      "\n\t.tradingview-widget-copyright {\n\t\tfont-size: 13px !important;\n\t\tline-height: 32px !important;\n\t\ttext-align: center !important;\n\t\tvertical-align: middle !important;\n\t\t/* @mixin sf-pro-display-font; */\n\t\tfont-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\n\t.tradingview-widget-copyright a {\n\t\ttext-decoration: none !important;\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited {\n\t\tcolor: #B2B5BE !important;\n\t}\n\n\t.tradingview-widget-copyright a:hover .blue-text {\n\t\tcolor: #1E53E5 !important;\n\t}\n\n\t.tradingview-widget-copyright a:active .blue-text {\n\t\tcolor: #1848CC !important;\n\t}\n\n\t.tradingview-widget-copyright a:visited .blue-text {\n\t\tcolor: #2962FF !important;\n\t}\n\t"
+    ]
+  }
+]

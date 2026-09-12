@@ -1,0 +1,19 @@
+{
+  "base": "b9853ccb716bbf698af0cf39bf3a87090d5b47b2",
+  "baseline": {
+    "passed": 227,
+    "failed": 2,
+    "failures": [
+      "all CSS selectors are scoped and chart stays on the unchanged real TradingView mapping",
+      "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics"
+    ]
+  },
+  "candidate": {
+    "passed": 241,
+    "failed": 1,
+    "failures": [
+      "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics"
+    ]
+  },
+  "newFailures": []
+}
