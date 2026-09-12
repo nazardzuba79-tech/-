@@ -34,10 +34,11 @@ function makeFakePrisma(positions: any[], balances: Record<string, { available: 
 }
 
 function mockCfdMarketData(prices: Record<string, string> | null): CfdMarketDataService {
-  return {
-    isConfigured: () => prices !== null,
-    getTickers: jest.fn().mockResolvedValue(prices ? Object.entries(prices).map(([symbol, price]) => ({ symbol, name: symbol, price, changePercent24h: '0' })) : []),
-  } as unknown as CfdMarketDataService;
+  const quote = (symbol: string) => ({ provider:'test', symbol, providerSymbol:symbol, last: prices?.[symbol] === undefined ? null : Number(prices[symbol]),
+    bid:null, ask:null, mid:null, providerTimestamp:Date.now(), fetchedAt:Date.now(), stale:false, status:'live', executionAllowed:true });
+  return { isConfigured:()=>prices !== null, maxQuoteAgeMs:5000,
+    getExecutionQuote:jest.fn(async (symbol:string)=>quote(symbol)),
+    getQuotes:jest.fn(async ()=>Object.keys(prices ?? {}).map(quote)) } as unknown as CfdMarketDataService;
 }
 
 describe('CfdLiquidationEngine', () => {

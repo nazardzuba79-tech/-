@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { HttpProviderClient, ProviderHealth, providerHealthRegistry } from '../ProviderHealth';
 import { LiveFeed, reconnectDelay, type LiveFrame } from './contract';
 import { parseLiveFrame } from './validation';
+import { optionQuerySchema, optionInstrumentPageSchema, optionTickerPageSchema, OptionsRequestError, type OptionQuery } from '../bybit/BybitOptions';
 
 /** One connector per backend process. This object is never injected into
  * an execution service, and never calls the provider from the API region. */
@@ -20,7 +21,7 @@ export class MarketDataCollectorClient {
   private epoch: string | null = null;
   private revision = -1;
   private readonly http: HttpProviderClient;
-  constructor(private url: string, private token: string, fetchFn?: typeof fetch) {
+  constructor(private url: string, private token: string, private fetchFn: typeof fetch = fetch) {
     const parsed = new URL(url);
     if (!['https:','http:'].includes(parsed.protocol) || parsed.username || parsed.password || parsed.search || parsed.hash || parsed.pathname !== '/') throw new Error('Invalid collector URL');
     if (parsed.protocol === 'http:' && !['127.0.0.1','localhost','[::1]'].includes(parsed.hostname)) throw new Error('Collector requires TLS outside loopback');
@@ -28,6 +29,19 @@ export class MarketDataCollectorClient {
     this.http = new HttpProviderClient('market-data-collector', { fetchFn,
       health: providerHealthRegistry.register(new ProviderHealth('market-data-collector')), retries: 0,
       wrapError: () => new Error('Collector unavailable') });
+  }
+  async optionsSnapshot(kind: 'instruments' | 'tickers', input: OptionQuery) {
+    const query = optionQuerySchema.parse(input);
+    const params = new URLSearchParams(Object.entries(query).filter(([,v]) => v !== undefined).map(([k,v]): [string,string] => [k,String(v)]));
+    // Only the configured collector receives this credential. Redirects are
+    // forbidden, and upstream bodies/errors cannot leak into the public API.
+    const response = await this.fetchFn(`${this.url}/internal/v1/options/${kind}?${params}`, {
+      headers:{Authorization:`Bearer ${this.token}`}, redirect:'error', signal:AbortSignal.timeout(10_000),
+    });
+    if ([400,409].includes(response.status)) throw new OptionsRequestError(response.status, response.status === 409 ? 'snapshot_changed' : 'invalid_options_query');
+    if (!response.ok) throw new Error('Options collector unavailable');
+    const body = await response.json();
+    return kind === 'instruments' ? optionInstrumentPageSchema.parse(body) : optionTickerPageSchema.parse(body);
   }
   start(): void { if (!this.running) { this.running = true; this.generation++; void this.connect(); } }
   private async connect(): Promise<void> {

@@ -161,7 +161,7 @@ export const ZH: Record<Key, string> = {
   'trade.spotTab': '现货',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': '品种',
-  'trade.cfdUnavailable': 'CFD 价格即将上线。',
+  'trade.cfdUnavailable': 'CFD 交易暂不可用。',
   'trade.cfdPriceDisclaimer': '参考价格，每 60 秒更新一次。',
   'trade.cfdChartUnavailable': '图表暂时不可用',
   'trade.cfdChartUnavailableHint': '无法加载 TradingView，请重试。',

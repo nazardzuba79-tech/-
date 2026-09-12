@@ -161,7 +161,7 @@ export const EN: Record<Key, string> = {
   'trade.spotTab': 'Spot',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': 'Instrument',
-  'trade.cfdUnavailable': 'CFD prices are coming soon.',
+  'trade.cfdUnavailable': 'CFD trading temporarily unavailable.',
   'trade.cfdPriceDisclaimer': 'Reference price, refreshed every 60 seconds.',
   'trade.cfdChartUnavailable': 'Chart temporarily unavailable',
   'trade.cfdChartUnavailableHint': 'TradingView could not be loaded. Try again.',

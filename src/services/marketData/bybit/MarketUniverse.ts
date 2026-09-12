@@ -42,6 +42,7 @@ export interface UniverseRefreshResult {
   ok: boolean;
   spotCount: number;
   linearCount: number;
+  inverseCount?: number;
   /** Whether the universe now held is stale-last-good rather than fresh. */
   stale: boolean;
   /** Set only when the refresh failed. The previous universe was kept. */
@@ -126,7 +127,7 @@ export class MarketUniverse {
     /** `now` is accepted so a test can drive one clock through the whole
      *  stack. This class no longer dates anything itself — freshness comes
      *  from the provider cache — so it is not read here. */
-    private readonly options: { refreshMs?: number; now?: () => number } = {}
+    private readonly options: { refreshMs?: number; now?: () => number; includeInverse?: boolean } = {}
   ) {}
 
   snapshot(): MarketUniverseSnapshot {
@@ -169,7 +170,8 @@ export class MarketUniverse {
     return {
       ok: false,
       spotCount: this.instruments.filter((i) => i.marketType === 'spot').length,
-      linearCount: this.instruments.filter((i) => i.marketType !== 'spot').length,
+      linearCount: this.instruments.filter((i) => i.marketType.startsWith('linear_')).length,
+      ...(this.options.includeInverse ? { inverseCount: this.instruments.filter(i => i.marketType.startsWith('inverse')).length } : {}),
       stale: this.stale,
       error,
     };
@@ -178,10 +180,12 @@ export class MarketUniverse {
   async refresh(): Promise<UniverseRefreshResult> {
     let spot: CachedValue<NormalizedInstrument[]>;
     let linear: CachedValue<NormalizedInstrument[]>;
+    let inverse: CachedValue<NormalizedInstrument[]> | null;
     try {
-      [spot, linear] = await Promise.all([
+      [spot, linear, inverse] = await Promise.all([
         this.bybit.listSpotInstruments(),
         this.bybit.listLinearInstruments(),
+        this.options.includeInverse ? this.bybit.listInverseInstruments() : Promise.resolve(null),
       ]);
     } catch (err) {
       // The previous universe survives untouched. This is the single most
@@ -201,21 +205,22 @@ export class MarketUniverse {
     // delist everything at once, so this is far likelier to be an upstream
     // fault that happened to return 200. What we keep is not confirmed
     // current either, so it is marked stale for the same reason as above.
-    if (spot.value.length === 0 && linear.value.length === 0 && this.loaded) {
+    if (this.loaded && ((spot.value.length === 0 && linear.value.length === 0) ||
+      (inverse?.value.length === 0 && this.instruments.some(i => i.marketType.startsWith('inverse_'))))) {
       console.error('[MarketUniverse] Provider returned an empty universe, keeping previous listing');
       this.stale = true;
       return this.held('empty_universe');
     }
 
-    this.instruments = [...spot.value, ...linear.value];
+    this.instruments = [...spot.value, ...linear.value, ...(inverse?.value ?? [])];
     // The provider's OWN fetch time, and the OLDER of the two halves: a
     // combination is only as fresh as its stalest constituent, and a
     // stale-last-good serve must not be re-dated to now.
-    this.refreshedAt = Math.min(spot.fetchedAt, linear.fetchedAt);
+    this.refreshedAt = Math.min(spot.fetchedAt, linear.fetchedAt, inverse?.fetchedAt ?? Infinity);
     // One stale half makes the whole snapshot stale.
-    this.stale = spot.stale || linear.stale;
+    this.stale = spot.stale || linear.stale || !!inverse?.stale;
     this.loaded = true;
-    return { ok: true, spotCount: spot.value.length, linearCount: linear.value.length, stale: this.stale };
+    return { ok: true, spotCount: spot.value.length, linearCount: linear.value.length, ...(inverse ? { inverseCount: inverse.value.length } : {}), stale: this.stale };
   }
 
   start(): void {

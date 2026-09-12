@@ -21,6 +21,7 @@ function fixture(count = 650, now = () => 1_000_000) {
         else { list = list.slice(0,350); nextPageCursor = 'next'; }
       }
     }
+    if (u.searchParams.get('category') === 'inverse') { list = []; nextPageCursor = ''; }
     return { ok: true, status: 200, json: async () => ({ retCode: 0, time: now(), result: { list, nextPageCursor } }) } as Response;
   });
   return { calls, rest: new BybitMarketDataService({ fetchFn, now, sleep: async () => {} }) };
@@ -36,12 +37,12 @@ const settle = async () => { await jest.advanceTimersByTimeAsync(0); };
 
 describe('Bybit live collector', () => {
   afterEach(() => jest.useRealTimers());
-  test('1300 active instruments / 650 assets bootstrap in five bulk REST calls and two sockets', async () => {
+  test('1300 active instruments / 650 assets bootstrap in seven bulk REST calls and two sockets', async () => {
     jest.useFakeTimers(); const f = fixture(); const sockets: Socket[] = [];
     const c = new BybitLiveTickerCollector(f.rest, { now: () => 1_000_000, socket: () => { const s = new Socket(); sockets.push(s); return s as any; } });
     c.start(); c.start(); await settle(); sockets.forEach(s => s.open()); c.flush();
     expect(c.book.instruments.size).toBe(1300); expect(c.book.rows.size).toBe(1300);
-    expect(f.calls).toHaveLength(5); expect(f.calls.every(u => !new URL(u).searchParams.has('symbol'))).toBe(true);
+    expect(f.calls).toHaveLength(7); expect(f.calls.every(u => !new URL(u).searchParams.has('symbol'))).toBe(true);
     expect(f.calls.filter(u => u.includes('category=linear') && u.includes('instruments')).every(u => u.includes('limit=1000'))).toBe(true);
     expect(sockets).toHaveLength(2); expect(c.counters.subscriptions).toBe(66);
     const spot = sockets[0].frames.filter(f => f.op === 'subscribe');
@@ -51,7 +52,7 @@ describe('Bybit live collector', () => {
     expect(sockets).toHaveLength(2); unsubscribers.forEach(unsub => unsub());
     expect(c.feed.status).toBe('live'); c.stop(); expect(jest.getTimerCount()).toBe(0);
   });
-  test.each(['spot','linear'] as const)('%s packs actual encoded topics below the total connection limit', category => {
+  test.each(['spot','linear','inverse'] as const)('%s packs actual encoded topics below the total connection limit', category => {
     const symbols = Array.from({length:1800},(_,i) => `LONG${'X'.repeat(i%50)}${i}USDT`);
     const plans = planSubscriptions(category,symbols);
     expect(plans.length).toBeLessThan(8);
@@ -107,7 +108,7 @@ describe('Bybit live collector', () => {
     now += 6000; await jest.advanceTimersByTimeAsync(800); await settle();
     expect(sockets).toHaveLength(3); sockets[2].open(); c.flush();
     expect(sockets[2].frames.filter(f=>f.op==='subscribe')).toHaveLength(1);
-    expect(f.calls).toHaveLength(6); expect(c.counters.reconnects).toBe(1);
+    expect(f.calls).toHaveLength(8); expect(c.counters.reconnects).toBe(1);
     c.stop(); await jest.advanceTimersByTimeAsync(60_000); expect(sockets).toHaveLength(3);
     expect(jest.getTimerCount()).toBe(0);
   });

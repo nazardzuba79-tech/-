@@ -178,7 +178,7 @@ test('a well-formed empty list is truth, not an error', async () => {
   expect(state.configured).toBe(false);
 });
 
-test('unusable rows are dropped without fabricating a price for them', async () => {
+test('unusable rows are dropped and a listed unavailable price stays null', async () => {
   const state = await feedFor({
     configured: true,
     tickers: [
@@ -189,8 +189,9 @@ test('unusable rows are dropped without fabricating a price for them', async () 
       null,
     ],
   });
-  expect(state.tickers).toHaveLength(1);
-  expect(state.tickers[0]).toEqual({ symbol: 'XAUUSD', name: 'Gold', price: '2400.125', changePercent24h: '0.23' });
+  expect(state.tickers).toHaveLength(2);
+  expect(state.tickers[1]).toMatchObject({symbol:'EURUSD',price:null,executionAllowed:false,status:'unavailable'});
+  expect(state.tickers[0]).toMatchObject({ symbol: 'XAUUSD', name: 'Gold', price: '2400.125', changePercent24h: '0.23' });
   // The dropped rows are absent, not present with a manufactured 0.
   expect(JSON.stringify(state.tickers)).not.toContain('"price":"0"');
   expect(state.loadError).toBe(false);
@@ -205,23 +206,23 @@ test('a real zero and a numeric price survive; an unknown 24h change stays absen
     ],
   });
   // Zero is a fact the server is entitled to report.
-  expect(state.tickers[0]).toEqual({ symbol: 'XAUUSD', name: 'Gold', price: '0', changePercent24h: '0' });
+  expect(state.tickers[0]).toMatchObject({ symbol: 'XAUUSD', name: 'Gold', price: '0', changePercent24h: '0' });
   // Unknown change is ABSENT — the contract that makes it render as a dash
   // rather than as 0.00%.
-  expect(state.tickers[1]).toEqual({ symbol: 'EURUSD', name: 'Euro', price: '1.12345' });
+  expect(state.tickers[1]).toMatchObject({ symbol: 'EURUSD', name: 'Euro', price: '1.12345' });
   expect('changePercent24h' in state.tickers[1]).toBe(false);
 });
 
 test('a row without a name falls back to its symbol rather than an empty label', async () => {
   const state = await feedFor({ configured: true, tickers: [{ symbol: 'USDJPY', price: '155.25' }] });
-  expect(state.tickers[0]).toEqual({ symbol: 'USDJPY', name: 'USDJPY', price: '155.25' });
+  expect(state.tickers[0]).toMatchObject({ symbol: 'USDJPY', name: 'USDJPY', price: '155.25' });
 });
 
 test('MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact open payload', async () => {
   const config = { minLeverage: 1, maxLeverage: 100, highLeverageWarningThreshold: 20, leverageTiers: [{ notionalCap: 50000, maxLeverage: 100, maintenanceMarginRate: .004 }] };
   const openCfdPosition = jest.fn().mockResolvedValue({}), getFuturesBalances = jest.fn().mockResolvedValue([{ asset: 'USDT', available: '100' }]);
   const form = mount('components/CfdOrderForm.tsx', { api: { getCfdConfig: async () => config, getFuturesBalances, openCfdPosition } });
-  const onPlaced = jest.fn(), props = { symbol: 'EURUSD', ticker: rows[1], onPlaced };
+  const onPlaced = jest.fn(), props = { symbol: 'EURUSD', ticker: {...rows[1],status:'live',stale:false,executionAllowed:true,providerTimestamp:Date.now(),fetchedAt:Date.now(),maxQuoteAgeMs:5000}, onPlaced };
   form.render(props); await tick(); let tree = form.render(props);
   expect(text(tree)).toContain('trade.market'); expect(text(tree)).toContain('futures.isolated');
   expect(text(tree)).not.toMatch(/trade.limit|futures.cross|reduceOnly/);
@@ -241,7 +242,7 @@ test('MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact
 });
 test('order error and unavailable-price submission state remain visible', async () => {
   const form = mount('components/CfdOrderForm.tsx', { api: { openCfdPosition: async () => { throw new Error('New account leverage restriction'); } } });
-  const props = { symbol: 'XAUUSD', ticker: rows[0], onPlaced: jest.fn() };
+  const props = { symbol: 'XAUUSD', ticker: {...rows[0],status:'live',stale:false,executionAllowed:true,providerTimestamp:Date.now(),fetchedAt:Date.now(),maxQuoteAgeMs:5000}, onPlaced: jest.fn() };
   nodes(form.render(props)).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(nodes(form.render(props)).find(n => n.props?.role === 'alert').props.children).toBe('New account leverage restriction');
   expect(nodes(form.render({ ...props, ticker: undefined })).find(n => n.props?.type === 'submit').props.disabled).toBe(true);
@@ -385,7 +386,9 @@ test('positions/history preserve polling, close API, closing state, error and li
   expect(text(panel.render({ refreshKey: 0 }))).toContain('close rejected');
 });
 test.each([
-  ['components/CfdOrderForm.tsx', '7ea457d76586624fac990ed610747461b3817fd4295a7cbe1a0bbb4a1f759b46'],
+  // Re-taken for the explicit quote-age/entitlement guard and expiry timer.
+  // Sizing/payload assertions above and freshness assertions below cover behavior.
+  ['components/CfdOrderForm.tsx', '2fef35a6ec6a506b392a01c3665f32f38f27e05670aeae874fae51db7d7344df'],
   // Re-taken for the malformed-positions-payload fix. Exactly two
   // statements differ, both in the READ path: the added `loadFailed`
   // state, and the load effect's two .then handlers now validating the
@@ -431,4 +434,15 @@ test('CFD reference-price disclaimer matches the unchanged 60-second poll in eve
   expect(disclaimers).toHaveLength(7);
   expect(disclaimers.every(line => line.includes('60') && !line.includes('30'))).toBe(true);
   expect(read('lib/useCfdTickers.ts')).toContain('const POLL_MS = 60_000');
+});
+
+test('CFD order form expires a quote and refuses programmatic submission', async()=>{
+  const openCfdPosition=jest.fn();const form=mount('components/CfdOrderForm.tsx',{api:{openCfdPosition}});
+  const props={symbol:'XAUUSD',ticker:{...rows[0],status:'live',stale:false,executionAllowed:true,providerTimestamp:Date.now(),fetchedAt:Date.now(),maxQuoteAgeMs:5000},onPlaced:jest.fn()};
+  expect(nodes(form.render(props)).find(n=>n.props?.type==='submit').props.disabled).toBe(false);
+  jest.advanceTimersByTime(6000);const tree=form.render(props);expect(nodes(tree).find(n=>n.props?.type==='submit').props.disabled).toBe(true);
+  nodes(tree).find(n=>n.type==='form').props.onSubmit({preventDefault:jest.fn()});await tick();expect(openCfdPosition).not.toHaveBeenCalled();
+});
+test.each([undefined,{status:'live',executionAllowed:false},{status:'stale',executionAllowed:true},{price:null}])('CFD execution UI fails closed for incomplete metadata %p', patch=>{
+  expect(presentation.canExecuteCfdQuote(patch ? {...rows[0],...patch} as any : undefined)).toBe(false);
 });

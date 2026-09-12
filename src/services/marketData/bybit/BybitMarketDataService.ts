@@ -1,4 +1,5 @@
 import { ProviderCache, type CachedValue } from '../ProviderCache';
+import { finite } from '../numbers';
 import {
   HttpProviderClient,
   ProviderHealth,
@@ -47,7 +48,7 @@ const PAGE_LIMIT = 1000;
 const MAX_PAGES = 40;
 
 /** Bybit `category` values this adapter reads. */
-export type BybitCategory = 'spot' | 'linear';
+export type BybitCategory = 'spot' | 'linear' | 'inverse';
 
 interface BybitEnvelope {
   time?: unknown;
@@ -58,9 +59,7 @@ interface BybitEnvelope {
 
 /** A finite number, or null. Never 0 as a stand-in for "absent". */
 function num(value: unknown): number | null {
-  if (value === null || value === undefined || value === '') return null;
-  const parsed = typeof value === 'number' ? value : Number(String(value));
-  return Number.isFinite(parsed) ? parsed : null;
+  return finite(value);
 }
 
 /** A non-empty trimmed string, or null. */
@@ -106,8 +105,8 @@ function statusOf(value: unknown): InstrumentStatus {
 const CONTRACT_TYPE: Record<string, MarketType> = {
   LinearPerpetual: 'linear_perpetual',
   LinearFutures: 'linear_futures',
-  InversePerpetual: 'inverse',
-  InverseFutures: 'inverse',
+  InversePerpetual: 'inverse_perpetual',
+  InverseFutures: 'inverse_futures',
 };
 
 export interface BybitMarketDataOptions {
@@ -144,6 +143,7 @@ export class BybitMarketDataService {
   /** Upstream HTTP requests this process has made. Used by the tests that
    *  prove the universe is not built one-request-per-instrument. */
   private requestCount = 0;
+  private requestTimes: number[] = [];
 
   constructor(options: BybitMarketDataOptions = {}) {
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, '');
@@ -153,6 +153,10 @@ export class BybitMarketDataService {
     this.http = new HttpProviderClient('bybit', {
       health: this.health,
       fetchFn: async (url, init) => {
+        const now = (options.now ?? Date.now)();
+        this.requestTimes = this.requestTimes.filter(t => now - t < 5_000);
+        if (this.requestTimes.length >= 120) throw new BybitMarketDataError('Bybit local request budget exhausted');
+        this.requestTimes.push(now);
         this.requestCount += 1;
         return (options.fetchFn ?? fetch)(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(10_000) });
       },
@@ -307,7 +311,8 @@ export class BybitMarketDataService {
    * is NOT the universe. This follows `nextPageCursor` to exhaustion, with
    * three independent stops so a misbehaving upstream cannot spin:
    *
-   *   - no cursor, or an empty page      -> done, normally
+   *   - no cursor                       -> complete
+   *   - empty page with a cursor        -> reject incomplete snapshot
    *   - a cursor already seen            -> stop; the upstream is looping
    *   - MAX_PAGES reached                -> stop; something is wrong
    *
@@ -316,25 +321,34 @@ export class BybitMarketDataService {
    * keeping the previous good set.
    */
   async listLinearInstruments(): Promise<CachedValue<NormalizedInstrument[]>> {
-    return this.instrumentsCache.fetch('instruments:linear', async () => {
+    return this.listDerivativeInstruments('linear');
+  }
+
+  async listInverseInstruments(): Promise<CachedValue<NormalizedInstrument[]>> {
+    return this.listDerivativeInstruments('inverse');
+  }
+
+  private async listDerivativeInstruments(category: 'linear' | 'inverse'): Promise<CachedValue<NormalizedInstrument[]>> {
+    return this.instrumentsCache.fetch(`instruments:${category}`, async () => {
       const collected: NormalizedInstrument[] = [];
       const seenCursors = new Set<string>();
       let cursor: string | null = null;
       let pages = 0;
 
       for (;;) {
-        const query = `category=linear&limit=${PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
+        const query = `category=${category}&limit=${PAGE_LIMIT}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
         const page: { list: unknown[]; nextPageCursor: string | null } =
           await this.call(`/v5/market/instruments-info?${query}`);
         pages += 1;
 
         for (const row of page.list) {
-          const instrument = this.normalizeInstrument(row, 'linear');
-          if (instrument) collected.push(instrument);
+          const instrument = this.normalizeInstrument(row, category);
+          if (instrument && instrument.marketType.startsWith(`${category}_`)) collected.push(instrument);
         }
 
         const next = page.nextPageCursor;
-        if (!next || page.list.length === 0) break;
+        if (!next) break;
+        if (page.list.length === 0) throw new BybitMarketDataError('Empty Bybit page with continuation cursor');
         if (seenCursors.has(next)) {
           throw new BybitMarketDataError('Bybit returned a repeating pagination cursor');
         }
@@ -362,7 +376,7 @@ export class BybitMarketDataService {
     return {
       symbol: providerSymbol,
       providerSymbol,
-      marketType: category === 'spot' ? 'spot' : 'linear_perpetual',
+      marketType: category === 'spot' ? 'spot' : category === 'inverse' ? 'inverse_perpetual' : 'linear_perpetual',
       lastPrice: num(row.lastPrice),
       bidPrice: num(row.bid1Price),
       askPrice: num(row.ask1Price),
@@ -389,11 +403,25 @@ export class BybitMarketDataService {
    */
   async getTickers(category: BybitCategory): Promise<CachedValue<NormalizedTicker[]>> {
     return this.tickersCache.fetch(`tickers:${category}`, async () => {
+      const inverse = category === 'inverse' ? await this.listInverseInstruments() : null;
       const { list, eventAt } = await this.call(`/v5/market/tickers?category=${category}`);
       return list
         .map((row) => this.normalizeTicker(row, category))
         .filter((x): x is NormalizedTicker => x !== null)
-        .map(row => ({ ...row, providerEventAt: eventAt }));
+        .filter(row => !inverse || inverse.value.some(i => i.providerSymbol === row.providerSymbol))
+        .map(row => {
+          const i = inverse?.value.find(i => i.providerSymbol === row.providerSymbol);
+          return { ...row, marketType: i?.marketType ?? row.marketType, providerEventAt: eventAt,
+            ...(i ? {volumeAsset:i.quoteAsset,turnoverAsset:i.baseAsset} : {}) };
+        });
     });
+  }
+
+  /** Collector-only option batches. Filters are validated before reaching here. */
+  optionInstrumentsPage(cursor?: string) {
+    return this.call(`/v5/market/instruments-info?category=option&baseCoin=All&limit=1000${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`);
+  }
+  optionTickerBatch(baseCoin: string) {
+    return this.call(`/v5/market/tickers?category=option&baseCoin=${encodeURIComponent(baseCoin)}`);
   }
 }

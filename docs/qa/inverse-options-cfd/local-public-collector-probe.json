@@ -1,0 +1,67 @@
+{
+  "startedAt": "2026-09-12T13:46:03.660Z",
+  "finishedAt": "2026-09-12T13:46:23.700Z",
+  "diagnostics": {
+    "messages": 19736,
+    "batches": 71,
+    "changedRows": 16052,
+    "connectionsOpened": 3,
+    "subscriptions": 56,
+    "reconnects": 0,
+    "malformed": 0,
+    "activeInstruments": 1435,
+    "tickerCount": 1435,
+    "inversePerpetuals": 22,
+    "inverseFutures": 6,
+    "activeAssets": 869,
+    "restRequests": 8,
+    "status": "live",
+    "connections": [
+      {
+        "category": "spot",
+        "topics": 538,
+        "argsChars": 10033,
+        "state": "live",
+        "lastActivityAt": 1789220783582
+      },
+      {
+        "category": "linear",
+        "topics": 869,
+        "argsChars": 16889,
+        "state": "live",
+        "lastActivityAt": 1789220783697
+      },
+      {
+        "category": "inverse",
+        "topics": 28,
+        "argsChars": 500,
+        "state": "live",
+        "lastActivityAt": 1789220783697
+      }
+    ],
+    "lastProviderActivityAt": 1789220783697,
+    "lastTickerActivityAt": 1789220783697,
+    "memory": {
+      "rss": 106315776,
+      "heapTotal": 52203520,
+      "heapUsed": 17132648,
+      "external": 4776128,
+      "arrayBuffers": 849834
+    },
+    "listeners": 0,
+    "rejectedUpdates": 748,
+    "rejectedTimestamp": 748,
+    "rejectedSequence": 0,
+    "serializedBookBytes": 910682,
+    "providerHealth": {
+      "provider": "bybit",
+      "state": "CLOSED",
+      "healthy": true,
+      "consecutiveFailures": 0,
+      "lastSuccessAt": 1789220780300,
+      "lastFailureAt": null,
+      "cooldownUntil": null,
+      "rateLimitHits": 0
+    }
+  }
+}

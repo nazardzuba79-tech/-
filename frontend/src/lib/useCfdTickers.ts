@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { api } from './api';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
-// Matches CfdMarketDataService's server-side cache TTL — polling faster
-// than that just wastes requests without ever seeing fresher data (see
-// CFD_INSTRUMENTS' doc comment there for the Twelve Data credit budget
-// this is paced against).
+// Reference-only mode polls once per minute. Approved execution quotes
+// use a bounded shorter cadence, while the server owns upstream credit limits.
 const POLL_MS = 60_000;
 
 /**
@@ -37,17 +35,9 @@ function numericString(value: unknown): string | null {
  * Returns `null` for a payload that cannot be trusted, so the caller can
  * keep the last good data instead of replacing it with nonsense.
  *
- * A row is admissible only if it carries a usable symbol AND a usable
- * price:
- *
- *   - `symbol` is the identity everything keys on — the React key, the
- *     icon lookup, the selection match in `resolveCfdSymbol`. A row
- *     without one is not an instrument.
- *   - `price` gates the order form. A listed row is clickable and drives
- *     `CfdOrderForm`, whose submit button is enabled by the row's mere
- *     existence; a row you can click into an order form against a price
- *     that is not a number is worse than an absent row. The instrument
- *     list has an honest empty/error state for that case.
+ * Listed instruments may carry a null price and remain visible. Trading requires
+ * explicit approval, status and both timestamps; merely having a row cannot
+ * enable the form. Malformed non-null prices are rejected.
  *
  * `name` falls back to the symbol — a label, not a market value.
  * `changePercent24h` is passed through when present and omitted when it is
@@ -66,13 +56,19 @@ function parseTickerPayload(value: unknown): CfdTickerRow[] | null {
     if (symbol === '') continue;
 
     const price = numericString(raw.price);
-    if (price === null) continue;
+    if (price === null && raw.price !== null) continue;
 
     const change = numericString(raw.changePercent24h);
     rows.push({
       symbol,
       name: typeof raw.name === 'string' && raw.name.trim() !== '' ? raw.name : symbol,
       price,
+      status: typeof raw.status === 'string' ? raw.status : 'unavailable',
+      stale: raw.stale !== false,
+      executionAllowed: raw.executionAllowed === true,
+      providerTimestamp: typeof raw.providerTimestamp === 'number' ? raw.providerTimestamp : null,
+      fetchedAt: typeof raw.fetchedAt === 'number' ? raw.fetchedAt : null,
+      maxQuoteAgeMs: typeof raw.maxQuoteAgeMs === 'number' ? raw.maxQuoteAgeMs : undefined,
       ...(change === null ? {} : { changePercent24h: change }),
     });
   }
@@ -92,7 +88,13 @@ export function useCfdTickers() {
   const [configured, setConfigured] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
+  const cadence = useRef(POLL_MS);
+  const startedAt = useRef(-Infinity);
+  const inFlight = useRef(false);
+
   function load() {
+    if (inFlight.current) return;
+    inFlight.current = true; startedAt.current = Date.now();
     setLoadError(false);
     api
       .getCfdTickers()
@@ -106,17 +108,20 @@ export function useCfdTickers() {
           // could not read. With nothing good to keep, the instrument
           // list's existing error state and retry button show.
           setLoadError(true);
+          setTickers(old => old.map(t => ({...t, stale:true, executionAllowed:false})));
           return;
         }
         if (typeof res.configured === 'boolean') setConfigured(res.configured);
+        cadence.current = rows.some(t => t.executionAllowed) ? 2500 : POLL_MS;
         setTickers(rows);
       })
-      .catch(() => setLoadError(true));
+      .catch(() => { setLoadError(true); setTickers(old => old.map(t => ({...t, stale:true, executionAllowed:false}))); })
+      .finally(() => { inFlight.current = false; });
   }
 
   useEffect(() => {
     load();
-    const interval = window.setInterval(load, POLL_MS);
+    const interval = window.setInterval(() => { if (Date.now()-startedAt.current >= cadence.current) load(); }, 2500);
     return () => clearInterval(interval);
   }, []);
 

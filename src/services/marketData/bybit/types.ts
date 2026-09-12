@@ -23,7 +23,9 @@ export type MarketType =
   | 'linear_futures'
   /** Coin-margined. VOLTEX has no inverse engine; carried for completeness
    *  so an inverse contract can never be silently read as a linear one. */
-  | 'inverse';
+  | 'inverse' // Legacy wire compatibility only; new adapters emit explicit types.
+  | 'inverse_perpetual'
+  | 'inverse_futures';
 
 /** Whether the venue is currently matching orders on the instrument.
  *  `PreLaunch` in particular is NOT tradable and must never be admitted. */
@@ -98,10 +100,12 @@ export interface NormalizedTicker {
   askPrice: number | null;
   high24h: number | null;
   low24h: number | null;
-  /** Base-asset volume. */
+  /** Provider volume; inverse is quote-asset contracts, not base-asset volume. */
   volume24h: number | null;
-  /** Quote-asset turnover. */
+  /** Historical field name; inverse turnover is denominated in the base asset. */
   quoteVolume24h: number | null;
+  volumeAsset?: string;
+  turnoverAsset?: string;
   changePercent24h: number | null;
   /** Derivatives only; null on spot, where they do not exist. */
   indexPrice: number | null;

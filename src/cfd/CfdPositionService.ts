@@ -1,6 +1,6 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import BigNumber from 'bignumber.js';
-import { CfdMarketDataService, CFD_INSTRUMENTS } from '../services/CfdMarketDataService';
+import { assertCfdExecutionQuote, type CfdQuoteSource } from '../services/marketData/cfd/CfdQuote';
 import { computeInitialMargin, computeLiquidationPrice, computeUnrealizedPnl, PositionSide } from '../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, getLeverageTier } from '../config/futuresConfig';
 import { NEW_ACCOUNT_MAX_LEVERAGE, NEW_ACCOUNT_PERIOD_DAYS } from '../config/cfdConfig';
@@ -30,18 +30,7 @@ const MARGIN_ASSET = 'USDT';
  * doesn't apply here anyway.
  */
 export class CfdPositionService {
-  constructor(private prisma: PrismaClient, private cfdMarketData: CfdMarketDataService) {}
-
-  private async getLivePrice(symbol: string): Promise<BigNumber> {
-    const instrument = CFD_INSTRUMENTS.find((i) => i.symbol === symbol);
-    if (!instrument) throw new Error(`Unknown CFD instrument: ${symbol}`);
-    const tickers = await this.cfdMarketData.getTickers();
-    const ticker = tickers.find((t) => t.symbol === symbol);
-    if (!ticker) throw new Error(`No live price available for ${symbol} right now`);
-    const price = new BigNumber(ticker.price);
-    if (!price.isFinite() || price.isLessThanOrEqualTo(0)) throw new Error(`No live price available for ${symbol} right now`);
-    return price;
-  }
+  constructor(private prisma: PrismaClient, private cfdMarketData: CfdQuoteSource) {}
 
   async open(params: { userId: string; symbol: string; side: 'BUY' | 'SELL'; quantity: BigNumber; leverage: number }) {
     if (!Number.isInteger(params.leverage) || params.leverage < MIN_LEVERAGE || params.leverage > MAX_LEVERAGE) {
@@ -51,7 +40,9 @@ export class CfdPositionService {
       throw new Error('Quantity must be greater than zero');
     }
 
-    const price = await this.getLivePrice(params.symbol);
+    const quote = await this.cfdMarketData.getExecutionQuote(params.symbol);
+    const validateQuote = () => assertCfdExecutionQuote(quote,params.symbol,this.cfdMarketData.maxQuoteAgeMs);
+    const price = new BigNumber(validateQuote());
     const direction: PositionSide = params.side === 'BUY' ? 'LONG' : 'SHORT';
     const notional = params.quantity.times(price);
 
@@ -81,6 +72,7 @@ export class CfdPositionService {
       if (available.isLessThan(addedMargin)) {
         throw new Error(`Insufficient ${MARGIN_ASSET} margin balance`);
       }
+      validateQuote();
       await tx.futuresBalance.upsert({
         where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } },
         create: { userId: params.userId, asset: MARGIN_ASSET, available: available.minus(addedMargin).toString(), locked: addedMargin.toString() },
@@ -90,6 +82,7 @@ export class CfdPositionService {
         },
       });
 
+      validateQuote();
       if (existing) {
         const existingSize = new BigNumber(existing.size.toString());
         const existingEntry = new BigNumber(existing.entryPrice.toString());
@@ -135,7 +128,9 @@ export class CfdPositionService {
       if (!position || position.userId !== params.userId) throw new Error('Position not found');
       if (position.status !== 'OPEN') throw new Error('Position is not open');
 
-      const price = await this.getLivePrice(position.symbol);
+      const quote = await this.cfdMarketData.getExecutionQuote(position.symbol);
+      const validateQuote = () => assertCfdExecutionQuote(quote,position.symbol,this.cfdMarketData.maxQuoteAgeMs);
+      const price = new BigNumber(validateQuote());
       const side = position.side as PositionSide;
       const size = new BigNumber(position.size.toString());
       const entryPrice = new BigNumber(position.entryPrice.toString());
@@ -149,6 +144,7 @@ export class CfdPositionService {
       const balance = await tx.futuresBalance.findUnique({ where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } } });
       const lockedNow = new BigNumber(balance?.locked.toString() ?? '0');
       const availableNow = new BigNumber(balance?.available.toString() ?? '0');
+      validateQuote();
       await tx.futuresBalance.update({
         where: { userId_asset: { userId: params.userId, asset: MARGIN_ASSET } },
         data: {
@@ -157,6 +153,7 @@ export class CfdPositionService {
         },
       });
 
+      validateQuote();
       return tx.cfdPosition.update({
         where: { id: position.id },
         data: {

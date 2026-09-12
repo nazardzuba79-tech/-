@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-12T14:06:25.243Z",
+  "main": "ab564ae46dcbad3b2e6f4ea8bed874eb4115961b",
+  "branch": "codex/inverse-options-cfd-data",
+  "node": "v24.19.0",
+  "backendTypescript": "passed",
+  "collectorBuild": "passed",
+  "frontendTypescript": "passed",
+  "frontendProductionBuild": "passed",
+  "baselineFrontendProductionBuild": "passed",
+  "buildRuntime": "Vite/React with in-process esbuild WASM for restricted Windows; no source build-config edits",
+  "esbuild": "0.21.5",
+  "wasm": "0.21.5",
+  "lockfiles": {
+    "backend": "0f19145a5366add7bd39d309fa4298acfb7cfacc2e311022485baea1cc4c1186",
+    "frontend": "e062a1d12270b674725c06166d171f4ba14c2f0deb7d7261996a1147ab7dc043"
+  },
+  "databaseIntegration": "Existing PostgreSQL tests require an isolated database; no production database connection or migration used",
+  "merge": false,
+  "deployment": false,
+  "productionEnvironmentChanged": false
+}

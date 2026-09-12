@@ -159,7 +159,7 @@ export const KO: Record<Key, string> = {
   'trade.spotTab': '현물',
   'trade.cfdTab': 'CFD',
   'trade.cfdInstrument': '상품',
-  'trade.cfdUnavailable': 'CFD 가격은 곧 제공될 예정입니다.',
+  'trade.cfdUnavailable': 'CFD 거래를 일시적으로 이용할 수 없습니다.',
   'trade.cfdPriceDisclaimer': '참고 가격이며 60초마다 갱신됩니다.',
   'trade.cfdChartUnavailable': '차트를 일시적으로 사용할 수 없습니다',
   'trade.cfdChartUnavailableHint': 'TradingView를 불러오지 못했습니다. 다시 시도해 주세요.',

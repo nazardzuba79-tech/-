@@ -15,7 +15,11 @@ test('live ticker implementation is unreachable from financial services',()=>{
   for(const path of outside)expect(code(path)).not.toMatch(/BybitLiveTickerCollector|BybitTickerBook|MarketDataCollectorClient|LiveFeed|liveReferenceCollector|liveReference/);
   const index=code('src/index.ts');
   const injection=index.split('\n').filter(line=>line.includes('liveReferenceCollector'));
-  expect(injection).toHaveLength(4);
+  expect(injection).toHaveLength(5);
+  expect(injection.filter(line=>line.includes('marketOptionsRouter'))).toEqual([
+    "app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));"
+  ]);
+  expect(code('src/api/routes/marketOptions.ts')).not.toMatch(/router\.(post|put|delete|patch)\(|PositionService|Balance/);
   expect(injection.find(line=>line.includes('new MarketDataGateway'))).toBeDefined();
   expect(code('src/services/marketData/MarketDataGateway.ts')).toContain("this.kraken.getTickersWithMeta()");
 });

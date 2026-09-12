@@ -27,7 +27,7 @@ interface Connection {
   openedAt: number; topicSet: Set<string>; lastActivityAt: number | null;
 }
 export interface CollectorOptions {
-  spotUrl?: string; linearUrl?: string; batchMs?: number; staleMs?: number;
+  spotUrl?: string; linearUrl?: string; inverseUrl?: string; batchMs?: number; staleMs?: number;
   now?: () => number; random?: () => number;
   socket?: (url: string) => WebSocket;
 }
@@ -48,12 +48,13 @@ export class BybitLiveTickerCollector {
   private refreshing = false;
   private lastProviderActivityAt: number | null = null;
   private lastTickerActivityAt: number | null = null;
+  private connectionAttempts: number[] = [];
   private now: () => number;
   constructor(readonly rest: BybitMarketDataService, private options: CollectorOptions = {}) {
     this.now = options.now ?? Date.now;
     this.book = new BybitTickerBook(this.now);
     this.feed = new LiveFeed(randomUUID(), this.now);
-    this.universe = new MarketUniverse(rest);
+    this.universe = new MarketUniverse(rest, { includeInverse: true });
   }
   start(): void {
     if (this.running) return;
@@ -66,17 +67,18 @@ export class BybitLiveTickerCollector {
     try {
       const result = await this.universe.refresh();
       if (!result.ok || !this.universe.snapshot().instruments.length) throw new Error('Universe unavailable');
-      const [spot, linear] = await Promise.all([this.rest.getTickers('spot'), this.rest.getTickers('linear')]);
+      const [spot, linear, inverse] = await Promise.all([this.rest.getTickers('spot'), this.rest.getTickers('linear'), this.rest.getTickers('inverse')]);
       if (!this.running || generation !== this.generation) return;
       this.book.setUniverse(this.universe.snapshot().instruments);
-      this.book.bootstrap('spot', spot); this.book.bootstrap('linear', linear);
+      this.book.bootstrap('spot', spot); this.book.bootstrap('linear', linear); this.book.bootstrap('inverse', inverse);
       this.feed.publish('snapshot', [...this.book.rows.values()]); this.book.drain();
-      for (const category of ['spot','linear'] as const) {
-        for (const plan of planSubscriptions(category, [...this.book.instruments.values()].filter(i => categoryOf(i) === category).map(i => i.providerSymbol))) {
+      const plans = (['spot','linear','inverse'] as const).flatMap(category => planSubscriptions(category,
+        [...this.book.instruments.values()].filter(i => categoryOf(i) === category).map(i => i.providerSymbol)));
+      if (plans.length > 16) throw new Error('Collector connection cap exceeded');
+      for (const plan of plans) {
           const connection: Connection = { plan, ws: null, timer: null, heartbeat: null, attempt: 0, stopped: false, state: 'connecting', pending: new Set(), pongAt: 0, openedAt: 0, topicSet: new Set(plan.topics), lastActivityAt: null };
           this.connections.push(connection); void this.connect(connection, false);
         }
-      }
       this.refreshTimer = setInterval(() => void this.refreshUniverse(), 60_000);
       // Spot ticker WS does not supply bid/ask. One category snapshot keeps
       // these real quotes current without a per-symbol orderbook fan-out.
@@ -124,7 +126,11 @@ export class BybitLiveTickerCollector {
         this.book.bootstrap(c.plan.category, data);
       }
       if (c.stopped || !this.running || generation !== this.generation) return;
-      const url = c.plan.category === 'spot' ? this.options.spotUrl ?? 'wss://stream.bybit.com/v5/public/spot' : this.options.linearUrl ?? 'wss://stream.bybit.com/v5/public/linear';
+      const urls = { spot: this.options.spotUrl, linear: this.options.linearUrl, inverse: this.options.inverseUrl };
+      const url = urls[c.plan.category] ?? `wss://stream.bybit.com/v5/public/${c.plan.category}`;
+      this.connectionAttempts = this.connectionAttempts.filter(t => this.now()-t < 300_000);
+      if (this.connectionAttempts.length >= 200) throw new Error('Collector connection attempt budget exhausted');
+      this.connectionAttempts.push(this.now());
       const ws = this.options.socket?.(url) ?? new WebSocket(url, { handshakeTimeout: 10_000, maxPayload: 1_048_576 });
       c.ws = ws; this.counters.connectionsOpened++;
       const fail = () => this.disconnected(c, ws);
@@ -182,6 +188,8 @@ export class BybitLiveTickerCollector {
   }
   diagnostics() {
     return { ...this.counters, activeInstruments: this.book.instruments.size, tickerCount: this.book.rows.size,
+      inversePerpetuals: [...this.book.instruments.values()].filter(i => i.marketType === 'inverse_perpetual').length,
+      inverseFutures: [...this.book.instruments.values()].filter(i => i.marketType === 'inverse_futures').length,
       activeAssets: new Set([...this.book.instruments.values()].map(i => i.baseAsset)).size,
       restRequests: this.rest.upstreamRequestCount, status: this.feed.status,
       connections: this.connections.map(c => ({ category: c.plan.category, topics: c.plan.topics.length, argsChars: JSON.stringify(c.plan.topics).length, state: c.state, lastActivityAt: c.lastActivityAt })),

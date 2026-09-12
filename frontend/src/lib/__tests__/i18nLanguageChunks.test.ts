@@ -29,6 +29,9 @@ const dicts = readDictionaries();
 // Restored verbatim from the owner-approved institutional prestige scene.
 // Only these named additions are excluded from the older body fingerprint;
 // the separate assertion below rejects any missing, duplicate or extra key.
+// Only reverse this exact, tested wording correction for the older fingerprint.
+const cfdCopyBefore: Record<string,string> = {"en":"CFD prices are coming soon.","ru":"Цены CFD скоро появятся.","es":"Los precios de CFD estarán disponibles pronto.","hi":"CFD कीमतें जल्द ही उपलब्ध होंगी।","ja":"CFD価格は近日公開予定です。","ko":"CFD 가격은 곧 제공될 예정입니다.","zh":"CFD 价格即将上线。"};
+const cfdCopyAfter: Record<string,string> = {"en":"CFD trading temporarily unavailable.","ru":"Торговля CFD временно недоступна.","es":"La negociación de CFD no está disponible temporalmente.","hi":"CFD ट्रेडिंग अस्थायी रूप से अनुपलब्ध है।","ja":"CFD取引は一時的に利用できません。","ko":"CFD 거래를 일시적으로 이용할 수 없습니다.","zh":"CFD 交易暂不可用。"};
 const restoredEcosystemKeys = [
   'label', 'globalMarkets', 'equities', 'derivatives', 'capitalMarkets',
   'title', 'subtitle', 'pause', 'resume', 'nasdaq', 'nyse', 'cme',
@@ -105,7 +108,9 @@ describe('translation integrity', () => {
         const key = line.match(/^\s*'([^']+)':/)?.[1];
         return !key || !restoredEcosystemKeys.includes(key);
       }).join('\n');
-      const body = source.slice(source.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
+      expect(dicts[code]['trade.cfdUnavailable']).toBe(cfdCopyAfter[code]);
+      const restored = source.replace("'trade.cfdUnavailable': '" + cfdCopyAfter[code] + "'", "'trade.cfdUnavailable': '" + cfdCopyBefore[code] + "'");
+      const body = restored.slice(restored.indexOf('= {') + 2).replace(/\s*as const;\s*$/, '').replace(/;\s*$/, '');
       expect({ code, digest: createHash('sha256').update(body).digest('hex').slice(0, 16) })
         .toEqual({ code, digest: digests[code] });
     }

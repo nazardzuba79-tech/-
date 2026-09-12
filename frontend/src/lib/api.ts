@@ -890,7 +890,7 @@ export const api = {
     request<{
       source: string;
       configured: boolean;
-      tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];
+      tickers: import('../components/CfdInstrumentList').CfdTickerRow[];
     }>('/cfd/tickers'),
 
   getCfdConfig: () =>

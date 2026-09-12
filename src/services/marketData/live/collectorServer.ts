@@ -3,8 +3,9 @@ import { createServer } from 'http';
 import { timingSafeEqual } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import type { LiveSource, LiveFrame } from './contract';
+import { BybitOptions, OptionsRequestError, optionQuerySchema } from '../bybit/BybitOptions';
 
-export function collectorServer(source: LiveSource, token: string, diagnostics: () => unknown) {
+export function collectorServer(source: LiveSource, token: string, diagnostics: () => unknown, options?: BybitOptions) {
   if (!token.trim()) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
   const authorized = (header?: string) => {
     const actual = Buffer.from(header ?? ''), expected = Buffer.from(`Bearer ${token}`);
@@ -19,6 +20,13 @@ export function collectorServer(source: LiveSource, token: string, diagnostics: 
   });
   app.get('/internal/v1/snapshot', (_req,res) => res.json(source.snapshot()));
   app.get('/internal/v1/diagnostics', (_req,res) => res.json(diagnostics()));
+  for (const kind of ['instruments','tickers'] as const) app.get(`/internal/v1/options/${kind}`, async (req,res) => {
+    const query = optionQuerySchema.safeParse(req.query);
+    if (!query.success) { res.status(400).json({ error:'invalid_options_query' }); return; }
+    if (!options) { res.status(503).json({ error:'options_unavailable' }); return; }
+    try { res.json(await (kind === 'instruments' ? options.instruments(query.data) : options.quotes(query.data))); }
+    catch (error) { res.status(error instanceof OptionsRequestError ? error.status : 503).json({ error:error instanceof OptionsRequestError ? error.code : 'options_unavailable' }); }
+  });
   const server = createServer(app);
   const wss = new WebSocketServer({ noServer: true, maxPayload: 1024, perMessageDeflate: false });
   server.on('upgrade', (req,socket,head) => {
