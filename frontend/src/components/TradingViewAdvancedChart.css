@@ -1,16 +1,10 @@
-.voltex-tradingview-chart { width:100%; height:100%; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; position:relative; background:#101720; }
-.terminal-chart-controls { display:flex; flex-wrap:wrap; align-items:center; gap:4px 10px; padding:5px 10px; min-height:38px; flex-shrink:0; border-bottom:1px solid #26303b; color:#aab5c5; font-size:11px; }
-.terminal-chart-identity { color:#e3e9f0; white-space:nowrap; font-size:11px; font-weight:600; }
-.terminal-chart-intervals { display:flex; gap:2px; }
-.terminal-chart-controls button, .terminal-chart-controls select { padding:4px 5px; background:transparent; border:0; border-radius:3px; color:#9daabc; font:inherit; cursor:pointer; min-height:26px; }
-.terminal-chart-controls button:hover, .terminal-chart-controls button[aria-pressed=true] { background:#24303e; color:#f4c75c; }
-.terminal-chart-controls select { max-width:90px; background:#101720; }
-.voltex-tradingview-chart__copyright { flex-shrink:0; min-height:18px; display:flex; align-items:center; justify-content:flex-end; gap:2px; padding:0 8px; border-top:1px solid #1f2935; background:#101720; font-size:9px; line-height:18px; white-space:nowrap; color:#748196; }
+.voltex-tradingview-chart { width:100%; height:100%; min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden; position:relative; background:#0d141d; }
+.voltex-tradingview-chart .voltex-tradingview-chart__copyright { flex-shrink:0; min-height:16px; display:flex; align-items:center; justify-content:flex-end; gap:2px; padding:0 8px; border:0; background:#0d141d; font-size:10px !important; line-height:16px !important; white-space:nowrap; color:#748196; }
 .voltex-tradingview-chart__copyright a { color:#8398b3; text-decoration:none; }
 .voltex-tradingview-chart__copyright a:hover { text-decoration:underline; }
 .voltex-tradingview-chart__plot { flex:1; position:relative; min-height:0; min-width:0; }
-.voltex-tradingview-chart__embed, .voltex-tradingview-chart__owned, .voltex-tradingview-chart__widget { width:100%; height:100%; min-width:0; min-height:0; background:#101720; }
+.voltex-tradingview-chart__embed, .voltex-tradingview-chart__owned, .voltex-tradingview-chart__widget { width:100%; height:100%; min-width:0; min-height:0; background:#0d141d; }
 .voltex-tradingview-chart__widget > div, .voltex-tradingview-chart__widget iframe { width:100% !important; height:100% !important; }
-.terminal-chart-unavailable { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; gap:10px; text-align:center; color:#9daabc; background:#101720; font-size:12px; }
+
+.terminal-chart-unavailable { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; gap:10px; text-align:center; color:#9daabc; background:#0d141d; font-size:12px; }
 .terminal-chart-unavailable button { border:1px solid #475365; background:#1c2735; color:#e3e9f0; padding:8px 16px; border-radius:4px; cursor:pointer; }
-@media(max-width:600px) { .terminal-chart-controls { gap:3px 6px; padding:5px 7px; } .terminal-chart-identity { width:100%; } .voltex-tradingview-chart__copyright { font-size:8px; min-height:16px; line-height:16px; } }

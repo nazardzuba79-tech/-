@@ -4,7 +4,18 @@ import type { LiveState } from './liveMarketTypes';
 export function formatBookAmount(value: number): string {
   if (!Number.isFinite(value) || value < 0) return '—';
   if (value === 0) return '0';
-  return value.toLocaleString('en-US', { maximumSignificantDigits: 7, notation: value >= 1e9 || value < 1e-7 ? 'scientific' : 'standard' });
+  // Six quantity decimals for normal sizes; retain small nonzero levels.
+  if (value >= 1e9 || value < 1e-7) return value.toExponential(4).replace(/\.?0+e/, 'e');
+  const decimals = value < 0.001 ? Math.min(10, Math.ceil(-Math.log10(value)) + 3) : value < 1 ? 6 : value < 1000 ? 4 : 2;
+  return value.toLocaleString('en-US', { maximumFractionDigits: decimals });
+}
+
+/** Quote-currency totals use cents for ordinary values; tiny totals stay nonzero. */
+export function formatBookTotal(value: number): string {
+  if (!Number.isFinite(value) || value < 0) return '—';
+  if (value === 0) return '0';
+  if (value < 1 || value >= 1e9) return formatBookAmount(value);
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /** Reference-only fallback, never spot volume, dated contracts or converted units. */
