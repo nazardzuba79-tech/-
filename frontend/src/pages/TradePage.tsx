@@ -7,7 +7,7 @@ import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
-import { PriceChart } from '../components/PriceChart';
+import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
