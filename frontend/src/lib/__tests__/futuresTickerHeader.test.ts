@@ -71,7 +71,10 @@ test('funding countdown implementation is unchanged', () => {
     .toBe('304d4757ab9cc6874c85026ca77405d7074d066934ea856e5d6133756b5f5032');
 });
 test.each([
-  ['frontend/src/lib/api.ts', 'db231c6149eeddced615c050fcc3f86819fe40f259041cc21832bffe5831df3b'],
+  // Admin console only: add overview/config response fields and remove unused
+  // admin Product methods. Prefix before admin methods and support suffix are
+  // byte-identical to main ab564ae; all Futures/Spot/request/auth code is intact.
+  ['frontend/src/lib/api.ts', '3454afc56ed400c3b97dbed268e5851330e34ffca1e37726f1354d2c9df0cef4'],
   ['src/api/routes/futures.ts', '57f05eb3cb0aad13eec2ef6658c93311cb179133f6907e9952f8b16560cfd831'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —

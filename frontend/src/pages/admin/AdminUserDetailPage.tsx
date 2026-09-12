@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
+import { railDisplay } from './depositRails';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
 import { Skeleton } from '../../components/Skeleton';
@@ -167,7 +168,7 @@ export function AdminUserDetailPage() {
       </Link>
       <h1 style={styles.title}>{detail.email}</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="admin-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <Section title="Профиль">
           <Row label="Email" value={detail.email} />
           <Row label="Роль" value={detail.isAdmin ? 'Администратор' : 'Пользователь'} />
@@ -228,7 +229,7 @@ export function AdminUserDetailPage() {
         <p style={styles.hint}>
           Меняет только доступный баланс. Требует причину — она сохраняется в журнале действий.
         </p>
-        <form onSubmit={handleAdjust} style={{ ...styles.form, display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, alignItems: 'end' }}>
+        <form className="admin-detail-form" onSubmit={handleAdjust} style={{ ...styles.form, display: 'grid', gridTemplateColumns: '1fr 1fr 2fr auto', gap: 10, alignItems: 'end' }}>
           <label style={styles.label}>
             Актив
             <input style={styles.input} value={asset} onChange={(e) => setAsset(e.target.value)} placeholder="USDT" required />
@@ -308,7 +309,7 @@ export function AdminUserDetailPage() {
         {detail.deposits.map((d) => (
           <Row
             key={d.id}
-            label={`${d.asset} / ${d.chain}`}
+            label={railDisplay(d.asset, d.chain).label}
             value={<span className="mono">{d.amount} · {d.status} · {new Date(d.createdAt).toLocaleDateString('ru-RU')}</span>}
           />
         ))}
@@ -321,7 +322,7 @@ export function AdminUserDetailPage() {
         {detail.withdrawals.map((w) => (
           <Row
             key={w.id}
-            label={`${w.asset} / ${w.network}`}
+            label={railDisplay(w.asset, w.network).label}
             value={<span className="mono">{w.amount} · {w.status} · {new Date(w.createdAt).toLocaleDateString('ru-RU')}</span>}
           />
         ))}

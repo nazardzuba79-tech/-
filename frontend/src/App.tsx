@@ -54,7 +54,7 @@ const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage
 const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
-const AdminProductsPage = lazy(() => import('./pages/admin/AdminProductsPage').then((m) => ({ default: m.AdminProductsPage })));
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 
 /**
@@ -230,14 +230,13 @@ export function App() {
             UX-only gate; every request underneath is independently
             re-checked for role ADMIN on the server (see requireAdmin). */}
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<Navigate to="users" replace />} />
+          <Route index element={<AdminOverviewPage />} />
           <Route path="wallets" element={<AdminWalletsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
           <Route path="kyc" element={<AdminKycPage />} />
           <Route path="withdrawals" element={<AdminWithdrawalsPage />} />
           <Route path="deposits" element={<AdminDepositsPage />} />
-          <Route path="products" element={<AdminProductsPage />} />
           <Route path="audit-log" element={<AdminAuditLogPage />} />
         </Route>
       </Routes>

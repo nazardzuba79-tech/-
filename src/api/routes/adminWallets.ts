@@ -30,6 +30,7 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
       let envConfigured = true;
       let defaultAddress: string | null = null;
       let nativeAsset: string | null = null;
+      let nativeDepositsSupported = false;
       let tokens: string[] = [];
       try {
         const config = loadChainConfig(chain);
@@ -42,7 +43,8 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
         // this deployment at all" state.
         defaultAddress = config.treasuryAddress || null;
         nativeAsset = config.nativeAsset;
-        tokens = Object.keys(config.tokens);
+        nativeDepositsSupported = config.type !== 'tron';
+        tokens = config.type === 'bitcoin' ? [] : Object.keys(config.tokens);
       } catch {
         envConfigured = false;
       }
@@ -50,7 +52,9 @@ export function adminWalletsRouter(prisma: PrismaClient): Router {
       return {
         chain,
         nativeAsset,
+        nativeDepositsSupported,
         tokens,
+        defaultAddress,
         address: override?.address ?? defaultAddress,
         isOverridden: Boolean(override),
         envConfigured,
