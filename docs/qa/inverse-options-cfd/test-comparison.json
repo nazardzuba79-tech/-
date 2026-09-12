@@ -432,5 +432,7 @@
     "Same complete lockfile dependencies and unchanged built frontend as prior validation. Frontend source unchanged by this follow-up.",
     "All skipped PostgreSQL integration tests still require an isolated database.",
     "New rollback tests use a stateful transactional double to verify service rejection and discarded staged writes, not an actual PostgreSQL connection."
-  ]
+  ],
+  "implementationCommit": "314533adc24c03925c116973a970adb2fd43ee51",
+  "verdict": "NEW FAILURES VS CURRENT MAIN = 0"
 }
