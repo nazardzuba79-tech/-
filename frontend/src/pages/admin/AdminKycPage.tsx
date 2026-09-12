@@ -76,7 +76,7 @@ export function AdminKycPage() {
         Показать все заявки, не только ожидающие проверки
       </label>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start' }}>
+      <div className="admin-kyc-grid">
         <div style={{ ...styles.table, maxHeight: 640, overflowY: 'auto' }}>
           {queue.map((c) => (
             <button

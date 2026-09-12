@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { isAdminAlertSoundEnabled, setAdminAlertSoundEnabled } from '../../lib/useAdminAlerts';
 import { useAdminGate } from '../../lib/useAdminGate';
 import { LogoMark } from '../../components/Logo';
 import { styles } from './adminStyles';
+import './adminConsole.css';
 import {
   WalletIcon,
   UsersIcon,
   ShieldCheckIcon,
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
-  BoxesIcon,
+  LayoutDashboardIcon,
   ScrollTextIcon,
   BellIcon,
   MenuIcon,
@@ -19,13 +20,13 @@ import {
 } from './AdminIcons';
 
 const SECTIONS = [
-  { to: '/admin/users', label: 'Пользователи', icon: UsersIcon },
-  { to: '/admin/wallets', label: 'Кошельки', icon: WalletIcon },
-  { to: '/admin/kyc', label: 'Верификация', icon: ShieldCheckIcon },
-  { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon },
-  { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon },
-  { to: '/admin/products', label: 'Товары', icon: BoxesIcon },
-  { to: '/admin/audit-log', label: 'Журнал действий', icon: ScrollTextIcon },
+  { to: '/admin', label: 'Обзор', icon: LayoutDashboardIcon, group: 'Обзор' },
+  { to: '/admin/users', label: 'Пользователи', icon: UsersIcon, group: 'Управление' },
+  { to: '/admin/wallets', label: 'Адреса пополнения', icon: WalletIcon, group: 'Средства' },
+  { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
+  { to: '/admin/withdrawals', label: 'Выводы', icon: ArrowUpCircleIcon, group: 'Средства' },
+  { to: '/admin/kyc', label: 'Верификация · KYC', icon: ShieldCheckIcon, group: 'Комплаенс' },
+  { to: '/admin/audit-log', label: 'Журнал действий', icon: ScrollTextIcon, group: 'Система' },
 ];
 
 /**
@@ -43,7 +44,7 @@ export function AdminLayout() {
   if (status === 'loading') return <div style={styles.loadingScreen} />;
   if (status === 'denied') return <Navigate to="/" replace />;
 
-  const activeSection = SECTIONS.find((s) => location.pathname.startsWith(s.to));
+  const activeSection = SECTIONS.find((s) => (s.to === '/admin' ? location.pathname === s.to : location.pathname.startsWith(s.to)));
   const identity = me?.displayName || me?.email?.split('@')[0] || 'Admin';
   const initials = identity
     .split(/[\s._-]+/)
@@ -67,7 +68,7 @@ export function AdminLayout() {
           <LogoMark size={26} />
           <div>
             <div style={styles.sidebarTitle}>VOLTEX</div>
-            <div style={styles.sidebarSubtitle}>Admin Panel</div>
+            <div style={styles.sidebarSubtitle}>Operations</div>
           </div>
           <button
             onClick={() => setMobileOpen(false)}
@@ -83,11 +84,13 @@ export function AdminLayout() {
           ← На биржу
         </Link>
         <nav style={styles.nav}>
-          {SECTIONS.map((s) => {
+          {SECTIONS.map((s, i) => {
             const Icon = s.icon;
             return (
+              <Fragment key={s.to}>
+              {(i === 0 || SECTIONS[i - 1].group !== s.group) && <div className="admin-nav-group">{s.group}</div>}
               <NavLink
-                key={s.to}
+                end={s.to === '/admin'}
                 to={s.to}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `admin-nav-link${isActive ? ' active' : ''}`}
@@ -95,8 +98,8 @@ export function AdminLayout() {
               >
                 <Icon size={17} />
                 <span>{s.label}</span>
-                {location.pathname.startsWith(s.to) && <span style={styles.navItemPip} />}
-              </NavLink>
+                {activeSection === s && <span style={styles.navItemPip} />}
+              </NavLink></Fragment>
             );
           })}
         </nav>
@@ -123,7 +126,8 @@ export function AdminLayout() {
             display: 'flex',
             alignItems: 'center',
             gap: 14,
-            marginBottom: 24,
+            marginBottom: 16,
+            minHeight: 44,
           }}
         >
           <button

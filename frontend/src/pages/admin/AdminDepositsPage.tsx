@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
+import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
 
 type Incoming = Awaited<ReturnType<typeof api.getAdminIncomingDeposits>>[number];
@@ -39,7 +40,7 @@ export function AdminDepositsPage() {
 
   useEffect(() => {
     reloadIncoming();
-    api.getAdminDeposits().then(setHistory);
+    api.getAdminDeposits().then(setHistory).catch(() => setError('Не удалось загрузить историю пополнений.'));
     api.getAllClients().then(setClients).catch(() => {});
   }, []);
 
@@ -93,14 +94,14 @@ export function AdminDepositsPage() {
       <h1 style={styles.title}>Пополнения</h1>
       {error && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
 
+      <p style={styles.hint}>Лента недавних переводов: недоступные провайдеры и старые транзакции могут не отображаться. Зачисление повторно проверяется backend.</p>
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Непривязанные входящие переводы</h3>
-      <div style={{ ...styles.table, marginBottom: 32 }}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: '1.1fr 0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1140 }}>
+      <div style={{ ...styles.table, marginBottom: 20 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 90px 105px', minWidth: 920 }}>
           <span>Дата поступления</span>
-          <span>Сеть</span>
-          <span>Актив</span>
+          <span>Актив / сеть</span>
           <span style={{ textAlign: 'right' }}>Сумма</span>
-          <span style={{ textAlign: 'right' }}>Подтверждения</span>
+          <span style={{ textAlign: 'right' }}>Подтв.</span>
           <span>Txid</span>
           <span>Зачислить пользователю</span>
           <span />
@@ -109,17 +110,14 @@ export function AdminDepositsPage() {
         {incoming.map((tr) => {
           const key = `${tr.chain}:${tr.txHash}`;
           return (
-            <div key={key} style={{ ...styles.tableRow, gridTemplateColumns: '1.1fr 0.8fr 0.7fr 1fr 1fr 1.2fr 1.6fr 1fr 1fr', minWidth: 1140 }}>
+            <div key={key} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 90px 105px', minWidth: 920 }}>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {tr.timestamp ? new Date(tr.timestamp).toLocaleString('ru-RU') : '—'}
               </span>
-              <span>{tr.chain}</span>
-              <span className="mono">{tr.asset}</span>
+              <RailLabel asset={tr.asset} chain={tr.chain} />
               <span className="mono" style={{ textAlign: 'right' }}>{tr.amount}</span>
               <span className="mono" style={{ textAlign: 'right' }}>{tr.confirmations}</span>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={tr.txHash}>
-                {tr.txHash.slice(0, 10)}…
-              </span>
+              <CopyValue value={tr.txHash} label="txid" />
               <select value={pickedUser[key] ?? ''} onChange={(e) => setPickedUser((prev) => ({ ...prev, [key]: e.target.value }))} style={styles.input}>
                 <option value="">Выберите пользователя</option>
                 {clients.map((c) => (
@@ -136,7 +134,7 @@ export function AdminDepositsPage() {
           );
         })}
         {incomingLoaded && !incomingError && incoming.length === 0 && (
-          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Нет непривязанных переводов.</p>
+          <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>В доступной ленте нет непривязанных переводов.</p>
         )}
         {incomingError && <p style={{ padding: 14, color: 'var(--sell)', fontSize: 12 }}>Не удалось загрузить входящие переводы.</p>}
         {!incomingLoaded && <Skeleton height={80} />}
@@ -159,25 +157,23 @@ export function AdminDepositsPage() {
       </div>
 
       <div style={styles.table}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 0.8fr 1fr 1fr 1.4fr', minWidth: 900 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: '110px 1.3fr 170px 0.8fr 100px 1fr', minWidth: 780 }}>
           <span>Дата</span>
           <span>Пользователь</span>
-          <span>Актив</span>
-          <span>Сеть</span>
+          <span>Актив / сеть</span>
           <span style={{ textAlign: 'right' }}>Сумма</span>
           <span>Статус</span>
           <span>Txid</span>
         </div>
         {history === null && <Skeleton height={80} />}
         {filtered.map((d) => (
-          <div key={d.id} style={{ ...styles.tableRow, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 0.8fr 1fr 1fr 1.4fr', minWidth: 900 }}>
+          <div key={d.id} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: '110px 1.3fr 170px 0.8fr 100px 1fr', minWidth: 780 }}>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(d.createdAt).toLocaleString('ru-RU')}</span>
             <span style={{ fontSize: 12 }}>{d.userEmail}</span>
-            <span className="mono">{d.asset}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{d.chain}</span>
+            <RailLabel asset={d.asset} chain={d.chain} />
             <span className="mono" style={{ textAlign: 'right' }}>{d.amount}</span>
             <span style={{ fontSize: 12 }}>{d.status}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={d.txHash}>{d.txHash.slice(0, 10)}…</span>
+            <CopyValue value={d.txHash} label="txid" />
           </div>
         ))}
         {history && filtered.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Ничего не найдено.</p>}

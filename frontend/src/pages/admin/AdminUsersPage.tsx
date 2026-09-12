@@ -80,6 +80,9 @@ function initials(email: string): string {
 export function AdminUsersPage() {
   const [users, setUsers] = useState<User[] | null>(null);
   const [recentDeposits, setRecentDeposits] = useState<Map<string, { amount: string; asset: string; createdAt: string }>>(new Map());
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('');
+  const [loadError, setLoadError] = useState(false);
   const [page, setPage] = useState(1);
   const { toasts, push, dismiss } = useAdminToasts();
   const navigate = useNavigate();
@@ -88,7 +91,7 @@ export function AdminUsersPage() {
     api
       .getAdminUsers()
       .then(setUsers)
-      .catch(() => setUsers([]));
+      .catch(() => setLoadError(true));
     // Already sorted newest-first by the API — first hit per userId is
     // that user's most recent deposit, which is all the highlight needs.
     api
@@ -106,7 +109,7 @@ export function AdminUsersPage() {
       .catch(() => {});
   }, []);
 
-  const list = users ?? [];
+  const list = (users ?? []).filter(u => u.email.toLowerCase().includes(search.toLowerCase()) && (!filter || (filter === 'blocked' ? u.isBlocked : u.kycStatus === filter)));
   const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = list.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
@@ -143,13 +146,15 @@ export function AdminUsersPage() {
       <p style={styles.subtitle}>Управление и мониторинг всех зарегистрированных пользователей биржи.</p>
 
       {stats && (
-        <div style={styles.statGrid}>
+        <div style={styles.statGrid} className="admin-user-stats">
           <AdminStatCard label="Всего пользователей" value={stats.total.toLocaleString('ru-RU')} sub="Зарегистрировано" icon={UsersIcon} accent="brand" />
           <AdminStatCard label="Активные" value={stats.active.toLocaleString('ru-RU')} sub={`${pct(stats.active, stats.total)}% пользователей`} icon={ActivityIcon} accent="brand" />
           <AdminStatCard label="Ожидают верификации" value={stats.pending.toLocaleString('ru-RU')} sub="Требуют внимания" icon={ClockIcon} accent="warning" />
         </div>
       )}
 
+      <div className="admin-toolbar"><input aria-label="Поиск пользователей" style={styles.input} placeholder="Email пользователя" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} /><select aria-label="Фильтр пользователей" style={styles.input} value={filter} onChange={e => { setFilter(e.target.value); setPage(1); }}><option value="">Все пользователи</option><option value="PENDING">KYC на проверке</option><option value="blocked">Заблокированные</option></select></div>
+      {loadError && <p role="alert" style={styles.errorBox}>Не удалось загрузить пользователей. Обновите страницу.</p>}
       <div style={styles.table} className="admin-table-desktop">
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 900 }}>
           <span>Email</span>

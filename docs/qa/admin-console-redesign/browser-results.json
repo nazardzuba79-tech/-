@@ -1,0 +1,611 @@
+{
+  "scope": "Local production bundle, synthetic API fixtures. Not deployed or production data.",
+  "layouts": [
+    {
+      "slug": "overview",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "users",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "wallets",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 10,
+      "railRowHeight": 48.5
+    },
+    {
+      "slug": "deposits",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "withdrawals",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "kyc",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "audit-log",
+      "width": 1440,
+      "height": 900,
+      "overflow": false,
+      "documentWidth": 1440,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "overview",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "users",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "wallets",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 10,
+      "railRowHeight": 48.5
+    },
+    {
+      "slug": "deposits",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "withdrawals",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "kyc",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "audit-log",
+      "width": 1920,
+      "height": 1080,
+      "overflow": false,
+      "documentWidth": 1920,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "overview",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "users",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "wallets",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 10,
+      "railRowHeight": 48.5
+    },
+    {
+      "slug": "deposits",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "withdrawals",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "kyc",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "audit-log",
+      "width": 1366,
+      "height": 768,
+      "overflow": false,
+      "documentWidth": 1366,
+      "overflowElements": [],
+      "sidebarWidth": 216,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "overview",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "users",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [
+        {
+          "tag": "DIV",
+          "className": "",
+          "right": 921,
+          "text": "EmailРегистрацияПосл. входВерификацияБал",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 391.546875,
+          "text": "Регистрация",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 542.375,
+          "text": "Посл. вход",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 667.21875,
+          "text": "Верификация",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 857,
+          "text": "Баланс",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 909,
+          "text": "",
+          "overflow": "visible"
+        },
+        {
+          "tag": "DIV",
+          "className": "row-hover",
+          "right": 921,
+          "text": "OPoperator.test.1@example.invalidADMIN12",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 391.546875,
+          "text": "12.09.2026",
+          "overflow": "visible"
+        }
+      ],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "wallets",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [
+        {
+          "tag": "TABLE",
+          "className": "admin-data-table admin-address-table",
+          "right": 971,
+          "text": "АктивСетьСтандартАдрес пополненияСтатусИ",
+          "overflow": "visible"
+        },
+        {
+          "tag": "THEAD",
+          "className": "",
+          "right": 971,
+          "text": "АктивСетьСтандартАдрес пополненияСтатусИ",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TR",
+          "className": "",
+          "right": 971,
+          "text": "АктивСетьСтандартАдрес пополненияСтатусИ",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TH",
+          "className": "",
+          "right": 520.796875,
+          "text": "Адрес пополнения",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TH",
+          "className": "",
+          "right": 625.390625,
+          "text": "Статус",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TH",
+          "className": "",
+          "right": 759.203125,
+          "text": "Источник",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TH",
+          "className": "",
+          "right": 854.546875,
+          "text": "Изменён",
+          "overflow": "visible"
+        },
+        {
+          "tag": "TH",
+          "className": "",
+          "right": 971,
+          "text": "Действие",
+          "overflow": "visible"
+        }
+      ],
+      "sidebarWidth": 260,
+      "visibleRails": 10,
+      "railRowHeight": 48.5
+    },
+    {
+      "slug": "deposits",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [
+        {
+          "tag": "DIV",
+          "className": "",
+          "right": 941,
+          "text": "Дата поступленияАктив / сетьСуммаПодтв.T",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 396.65625,
+          "text": "Сумма",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 474.65625,
+          "text": "Подтв.",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 586,
+          "text": "Txid",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 718,
+          "text": "Зачислить пользователю",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 816,
+          "text": "",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 929,
+          "text": "",
+          "overflow": "visible"
+        },
+        {
+          "tag": "DIV",
+          "className": "row-hover admin-history-grid",
+          "right": 941,
+          "text": "12.09.2026, 15:00:00USDTTRON (TRC-20)300",
+          "overflow": "visible"
+        }
+      ],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "withdrawals",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [
+        {
+          "tag": "DIV",
+          "className": "",
+          "right": 971,
+          "text": "ПользовательАктив / сетьАдресСуммаСтатус",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 468.75,
+          "text": "Адрес",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 565,
+          "text": "Сумма",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 663,
+          "text": "Статус",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 771,
+          "text": "Создана",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 959,
+          "text": "Действие",
+          "overflow": "visible"
+        },
+        {
+          "tag": "DIV",
+          "className": "row-hover admin-history-grid",
+          "right": 971,
+          "text": "operator.test.1@example.invalidUSDTTRON ",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "admin-copy-value",
+          "right": 468.75,
+          "text": "Taaaaaaaaa…aaaaaaaa⧉",
+          "overflow": "hidden"
+        }
+      ],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "kyc",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    },
+    {
+      "slug": "audit-log",
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "documentWidth": 390,
+      "overflowElements": [
+        {
+          "tag": "DIV",
+          "className": "",
+          "right": 921,
+          "text": "ДатаДействиеПользовательВыполнилДетали",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 493.203125,
+          "text": "Пользователь",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 678.890625,
+          "text": "Выполнил",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 909,
+          "text": "Детали",
+          "overflow": "visible"
+        },
+        {
+          "tag": "DIV",
+          "className": "row-hover admin-history-grid",
+          "right": 921,
+          "text": "12.09.2026, 15:00:00KYC_APPROVEDoperator",
+          "overflow": "visible"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 493.203125,
+          "text": "operator.test.1@example.invalid",
+          "overflow": "hidden"
+        },
+        {
+          "tag": "SPAN",
+          "className": "",
+          "right": 678.890625,
+          "text": "qa-operator@example.invalid",
+          "overflow": "hidden"
+        },
+        {
+          "tag": "SPAN",
+          "className": "mono",
+          "right": 909,
+          "text": "{\"chain\":\"ethereum\",\"address\":\"0x1111111",
+          "overflow": "hidden"
+        }
+      ],
+      "sidebarWidth": 260,
+      "visibleRails": 0,
+      "railRowHeight": null
+    }
+  ],
+  "interactions": {
+    "affectedNative": 1,
+    "writesBeforeConfirm": 0,
+    "writes": [
+      {
+        "method": "PUT",
+        "chain": "ethereum"
+      }
+    ],
+    "updatedRows": 2,
+    "mobileDrawer": true
+  },
+  "errors": []
+}

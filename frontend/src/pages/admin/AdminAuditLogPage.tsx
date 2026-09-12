@@ -12,17 +12,22 @@ const GRID = '1.2fr 1.4fr 1.4fr 1.6fr 2fr';
  * (верификация, выводы, кошельки, корректировки баланса). */
 export function AdminAuditLogPage() {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
+  const [search, setSearch] = useState('');
+  const [error, setError] = useState(false);
   const [actionFilter, setActionFilter] = useState('');
 
   useEffect(() => {
-    api.getAdminAuditLog(actionFilter ? { action: actionFilter } : undefined).then(setEntries);
+    let active = true;
+    setError(false); setEntries(null);
+    api.getAdminAuditLog(actionFilter ? { action: actionFilter } : undefined).then(rows => { if (active) setEntries(rows); }).catch(() => { if (active) setError(true); });
+    return () => { active = false; };
   }, [actionFilter]);
 
   return (
     <div>
       <h1 style={styles.title}>Журнал действий</h1>
 
-      <select style={{ ...styles.input, width: 260, marginBottom: 16 }} value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+      <div className="admin-toolbar"><input style={styles.input} aria-label="Поиск в журнале" placeholder="Пользователь, действие, детали" value={search} onChange={e => setSearch(e.target.value)} /><select style={{ ...styles.input, width: 260, marginBottom: 16 }} value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
         <option value="">Все действия</option>
         <option value="KYC_APPROVED">KYC_APPROVED</option>
         <option value="KYC_REJECTED">KYC_REJECTED</option>
@@ -36,7 +41,8 @@ export function AdminAuditLogPage() {
         <option value="USER_BLOCKED">USER_BLOCKED</option>
         <option value="USER_UNBLOCKED">USER_UNBLOCKED</option>
         <option value="USER_DELETED">USER_DELETED</option>
-      </select>
+      </select></div>
+      {error && <p role="alert" style={styles.errorBox}>Не удалось загрузить журнал.</p>}
 
       <div style={styles.table}>
         <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 900 }}>
@@ -47,13 +53,13 @@ export function AdminAuditLogPage() {
           <span>Детали</span>
         </div>
         {entries === null && <Skeleton height={80} />}
-        {entries?.map((e) => (
-          <div key={e.id} style={{ ...styles.tableRow, gridTemplateColumns: GRID, minWidth: 900 }}>
+        {entries?.filter(e => `${e.action} ${e.userEmail} ${e.performedByAdminEmail} ${JSON.stringify(e.metadata)}`.toLowerCase().includes(search.toLowerCase())).map((e) => (
+          <div key={e.id} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: GRID, minWidth: 900 }}>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(e.createdAt).toLocaleString('ru-RU')}</span>
             <span className="mono" style={{ fontSize: 12 }}>{e.action}</span>
             <span style={{ fontSize: 12 }}>{e.userEmail ?? '—'}</span>
             <span style={{ fontSize: 12 }}>{e.performedByAdminEmail ?? '—'}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={JSON.stringify(e.metadata)}>
+            <span className="mono" style={{ fontSize: 11, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }} title={JSON.stringify(e.metadata)}>
               {JSON.stringify(e.metadata)}
             </span>
           </div>
