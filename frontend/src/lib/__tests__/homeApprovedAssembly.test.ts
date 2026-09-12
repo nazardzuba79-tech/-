@@ -8,16 +8,16 @@ const digest = (file: string, text = false) => {
   return createHash('sha256').update(text ? bytes.toString('utf8').replace(/\r\n/g, '\n') : bytes).digest('hex');
 };
 
-// These values identify the owner's selected travel hand A, not the unrelated
-// legacy ?cardVariant=A layout. Restoring an earlier/rejected hand must fail.
-test('the approved travel hand A and its product-protection mask remain byte-exact', () => {
+// Keep historical source artwork intact alongside the newly approved Titanium asset.
+test('the previous travel artwork remains intact and the approved Titanium image is exact', () => {
+  expect(digest('public/cards/travel/voltex-titanium-soft.png')).toBe('1baa20c61dc1a36844468c576b3f415fa60ee9814ade2c3148422783fb94da43');
   expect(digest('public/cards/travel/scene-A.png')).toBe('0d9acee58b04df5f5af2d65cc339d680a727287c39d795e926cad7216da706d4');
   expect(digest('public/cards/travel/center-mask.png')).toBe('985850585f266db712ae6dc1fd0a3b9cb432ae4cf78a7f00714b153511b92294');
 });
 
 test('assembly preserves the accepted Card text, CTAs, product framing and colored benefits', () => {
-  expect(digest('src/pages/home/HomeCardTravel.tsx', true)).toBe('acc9dc7c890ed3a5d644e77b847196c62aa76e3fe099262f209747d582936a0f');
-  expect(digest('src/pages/home/home-card-travel.css', true)).toBe('4e7508fe132919937505a3b4f8443a17b40da6c6a87058d255d1d218c993c56a');
+  expect(digest('src/pages/home/HomeCardTravel.tsx', true)).toBe('7c92fbbbaed39d8c608920e3b364fdf4c45a238a205f21728dce7bd1ef5b56c9');
+  expect(digest('src/pages/home/home-card-travel.css', true)).toBe('bfea2f0a434c37d9e49acd3912e054c98b5dc9bff4c89bafe916bc151dfc128d');
 });
 
 test('the approved institutional scene and original logo artwork are restored without redesign', () => {

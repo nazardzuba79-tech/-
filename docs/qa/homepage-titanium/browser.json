@@ -1,0 +1,94 @@
+{
+  "results": [
+    {
+      "width": 1600,
+      "overflow": false,
+      "image": "/cards/travel/voltex-titanium-soft.png",
+      "benefits": 5,
+      "links": [
+        {
+          "href": "/card",
+          "pointer": "auto"
+        },
+        {
+          "href": "/card",
+          "pointer": "auto"
+        }
+      ],
+      "colors": [
+        "rgb(217, 160, 181)",
+        "rgb(255, 255, 255)",
+        "rgb(145, 182, 213)",
+        "rgb(145, 190, 166)"
+      ]
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "image": "/cards/travel/voltex-titanium-soft.png",
+      "benefits": 5,
+      "links": [
+        {
+          "href": "/card",
+          "pointer": "auto"
+        },
+        {
+          "href": "/card",
+          "pointer": "auto"
+        }
+      ],
+      "colors": [
+        "rgb(217, 160, 181)",
+        "rgb(255, 255, 255)",
+        "rgb(145, 182, 213)",
+        "rgb(145, 190, 166)"
+      ]
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "image": "/cards/travel/voltex-titanium-soft.png",
+      "benefits": 5,
+      "links": [
+        {
+          "href": "/card",
+          "pointer": "auto"
+        },
+        {
+          "href": "/card",
+          "pointer": "auto"
+        }
+      ],
+      "colors": [
+        "rgb(217, 160, 181)",
+        "rgb(255, 255, 255)",
+        "rgb(145, 182, 213)",
+        "rgb(145, 190, 166)"
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "image": "/cards/travel/voltex-titanium-soft.png",
+      "benefits": 5,
+      "links": [
+        {
+          "href": "/card",
+          "pointer": "auto"
+        },
+        {
+          "href": "/card",
+          "pointer": "auto"
+        }
+      ],
+      "colors": [
+        "rgb(217, 160, 181)",
+        "rgb(255, 255, 255)",
+        "rgb(145, 182, 213)",
+        "rgb(145, 190, 166)"
+      ]
+    }
+  ],
+  "errors": [],
+  "navigation": "/card"
+}

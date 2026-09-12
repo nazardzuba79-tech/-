@@ -1,9 +1,9 @@
 import { SiOpenai } from '@icons-pack/react-simple-icons';
-import { BanknoteArrowDown, Globe2, ShieldCheck } from 'lucide-react';
+import { BanknoteArrowDown, ShoppingBag, FingerprintPattern } from 'lucide-react';
 
 export type CardBenefit = 'world' | 'apple' | 'ai' | 'atm' | 'privacy';
 
-const PICTOGRAMS = { world: Globe2, atm: BanknoteArrowDown, privacy: ShieldCheck };
+const PICTOGRAMS = { world: ShoppingBag, atm: BanknoteArrowDown, privacy: FingerprintPattern };
 
 /** One optical frame and consistent line weight; official brand marks stay intact. */
 export function CardBenefitIcon({ kind }: { kind: CardBenefit }) {

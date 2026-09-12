@@ -45,15 +45,15 @@ function modules(lang = 'ru') {
   return load;
 }
 
-test('production homepage DOM mounts approved hand A before the immediately following trading sessions section', () => {
+test('production homepage DOM mounts approved Titanium before the immediately following trading sessions section', () => {
   const { HomePage } = modules()('pages/home/HomePage.tsx');
   const html = renderToStaticMarkup(React.createElement(StaticRouter, { location: '/' }, React.createElement(HomePage)));
   const sections = [...html.matchAll(/<section\b[^>]*>/g)].map(match => match[0]);
   expect(sections).toHaveLength(2);
   expect(sections[0]).toContain('id="card"');
-  expect(sections[0]).toContain('data-hand-variant="A"');
+  expect(sections[0]).toContain('data-hand-variant="titanium-soft"');
   expect(sections[1]).toContain('id="trading-sessions"');
-  expect(html).toContain('/cards/travel/scene-A.png');
+  expect(html).toContain('/cards/travel/voltex-titanium-soft.png');
   expect(html).not.toContain('Один мир. Разные часовые пояса.');
 });
 
