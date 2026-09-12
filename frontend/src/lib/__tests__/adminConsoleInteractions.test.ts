@@ -99,3 +99,46 @@ test.each([false, true])('real AdminLayout gate allows only administrator=%s', a
   expect(host.textContent!.includes('Public home')).toBe(!allowed);
   expect(host.querySelector('[href="/admin/products"]')).toBeNull();
 });
+
+async function mountOverview() {
+  const { AdminOverviewPage } = load(resolve(frontend, 'src/pages/admin/AdminOverviewPage'));
+  const { MemoryRouter } = req('react-router-dom');
+  await act(async () => { root.render(React.createElement(MemoryRouter, null, React.createElement(AdminOverviewPage))); await flush(); });
+}
+function overviewApi() {
+  api.getAdminOverview = jest.fn(async () => ({ totalUsers: 2, pendingKyc: 1, pendingWithdrawals: 0, creditedDepositsToday: 0, asOf: '2026-09-12T12:00:00Z' }));
+  api.getAllClients = jest.fn(async () => [
+    { id: 'old', email: 'old@example.invalid', createdAt: '2026-09-10T10:00:00Z', latestKyc: { status: 'APPROVED', createdAt: '2026-09-10T10:00:00Z' } },
+    { id: 'new', email: 'new@example.invalid', createdAt: '2026-09-12T10:00:00Z', latestKyc: { status: 'PENDING', createdAt: '2026-09-12T10:01:00Z' } },
+  ]);
+  api.getAdminIncomingDeposits = jest.fn(async () => [{ chain: 'tron', txHash: 'tx-1', asset: 'USDT', amount: '1200', timestamp: '2026-09-12T11:00:00Z' }]);
+}
+test('overview immediately lists newest users, actual incoming and only pending KYC with review links', async () => {
+  overviewApi(); await mountOverview();
+  const users = host.querySelector('[aria-label="Новые пользователи"]')!;
+  expect(users.querySelector('.admin-queue-row')!.getAttribute('href')).toBe('/admin/users/new');
+  const kyc = host.querySelector('[aria-label="Верификации на проверке"]')!;
+  expect(kyc.querySelectorAll('.admin-queue-row')).toHaveLength(1);
+  expect(kyc.querySelector('.admin-queue-row')!.getAttribute('href')).toBe('/admin/kyc?user=new');
+  expect(host.querySelector('[href="/admin/deposits#tron%3Atx-1"]')).not.toBeNull();
+  expect(host.textContent).toContain('1200');
+  expect(api.getAllClients).toHaveBeenCalledTimes(1);
+  expect(api.getAdminIncomingDeposits).toHaveBeenCalledTimes(1);
+  expect(api.setAdminWalletAddress).not.toHaveBeenCalled();
+});
+test('slow incoming feed does not delay users or pending KYC', async () => {
+  overviewApi(); let finish!: (rows: any[]) => void;
+  api.getAdminIncomingDeposits.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  await mountOverview();
+  expect(host.querySelector('[href="/admin/users/new"]')).not.toBeNull();
+  expect(host.querySelector('[href="/admin/kyc?user=new"]')).not.toBeNull();
+  expect(host.textContent).toContain('Загрузка переводов');
+  await act(async () => { finish([]); await flush(); });
+});
+test('failed incoming feed is unavailable, not reported as no new transfers', async () => {
+  overviewApi(); api.getAdminIncomingDeposits.mockRejectedValue(new Error('unavailable'));
+  await mountOverview();
+  expect(host.textContent).toContain('Лента недоступна');
+  expect(host.textContent).not.toContain('новых переводов нет');
+  expect(host.querySelector('[href="/admin/users/new"]')).not.toBeNull();
+});

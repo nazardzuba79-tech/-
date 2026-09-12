@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
 import { Badge } from '../../components/Badge';
+import { useSearchParams } from 'react-router-dom';
 
 type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
 
@@ -14,9 +15,10 @@ const DOC_TYPE_LABEL: Record<string, string> = {
 /** Верификация (KYC) — очередь заявок на проверку: кто подал, когда,
  * документы прямо в админке, одобрить/отклонить с причиной. */
 export function AdminKycPage() {
+  const [searchParams] = useSearchParams();
   const [clients, setClients] = useState<Client[]>([]);
   const [showAll, setShowAll] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => searchParams.get('user'));
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [documentIsPdf, setDocumentIsPdf] = useState(false);
   const [documentError, setDocumentError] = useState(false);

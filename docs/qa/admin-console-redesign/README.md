@@ -81,3 +81,11 @@ Complete material file list: [changed-files.txt](changed-files.txt).
 - Verify KYC document rendering with authorized staging fixtures, real-world very long identifiers and keyboard/clipboard behavior in the team's browsers.
 - Confirm overview aggregate performance on staging data volume. No production DB query or benchmark was performed.
 - Incoming-provider completeness remains an existing limitation, explicitly disclosed in the interface.
+
+## Local start-page follow-up (after published head a4416eb)
+
+The first screen now shows up to five newest registrations, available incoming transfers, and pending KYC before the KPI totals. Users/KYC load independently of the provider feed. Links open the user detail, select the matching KYC user and highlight/scroll to the selected deposit in the existing queue. No financial action is performed by these links.
+
+Follow-up validation: 39/39 focused tests; frontend TypeScript and Vite build; all 28 local browser layouts and user/KYC/deposit navigation checks PASS. Screenshots/browser-results reflect this follow-up. Full regression-results.json above remains evidence for the earlier published candidate; the full suite was not rerun for this local UI change. The update is local for owner preview, with no push/deployment.
+
+Deployment preparation: the owner subsequently approved publication of this local follow-up. Final focused suite now passes 118/118 across 12 suites, and backend TypeScript passes. Runtime changes are the reviewed start-page follow-up only. No merge/deployment is implied by this preparation entry.

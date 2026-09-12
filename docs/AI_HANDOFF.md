@@ -1772,3 +1772,16 @@ withdrawal was placed.
 - Validation: 95/95 admin/rail/routing tests plus 20/20 Futures header tests PASS. Backend/frontend TypeScript, production Vite build, script syntax and diff checks PASS. Full candidate: 2603 passed / 50 failed / 17 skipped; pristine exact-main: 2585 / the identical 50 / 17. Zero new failures; exact names recorded in regression-results.json.
 - Real local Edge QA: seven admin pages at 1440/1920/1366/390 widths, 28 layouts with no page overflow/errors. Ten configured fixture rails visible on desktop, 216px sidebar; native confirmation makes zero writes before confirmation, then one Ethereum PUT and two updated asset rows. Screenshots use visibly labelled synthetic local fixtures, not production data.
 - Next: review PR/screenshots. Separately authorize staging deployment before verifying actual configured rails, DB audit records, KYC documents and aggregate query performance. No production reads, credentials, DB changes or financial operations were performed in this task.
+
+## 2026-09-12 — Codex — local preview follow-up: actionable admin start page
+
+- Branch `codex/admin-console-redesign`; commit base `a4416eb4f8b52e7d2fc19e220fe5585790ba6015`. This follow-up remains uncommitted locally for visual review; no push, merge or deployment.
+- Changed AdminOverviewPage, AdminDepositsPage, AdminKycPage and scoped adminConsole.css to show the five latest registered users, available incoming transfers and pending KYC on entry. Existing read APIs load independently; provider delays/errors do not hide users/KYC. Review links open user detail, select the KYC user and scroll/highlight the transfer in the existing crediting queue. All approval/credit/auth/backend behavior remains unchanged.
+- Extended adminConsoleInteractions tests and existing local QA fixture/harness for those links; refreshed screenshots/browser-results. Focused tests PASS 39/39; frontend TypeScript/Vite, script syntax and diff checks PASS. Local Edge QA PASS all 28 layouts plus the three real navigation checks. Full suite was not rerun for this local UI follow-up; earlier full-suite evidence pertains to the published base candidate.
+- Preview remains at http://127.0.0.1:4190/admin with synthetic data. Next: owner visually reviews the start-page queues. No real accounts or transactions were accessed.
+
+## 2026-09-12 — Codex — prepare approved admin preview for deployment
+
+- Owner approved the local queue-first overview and requested deployment. Previously local follow-up is being committed/pushed on `codex/admin-console-redesign`; production/main base freshly verified at `ab564ae46dcbad3b2e6f4ea8bed874eb4115961b`.
+- Final focused validation: 118/118 tests across 12 suites PASS; backend TypeScript PASS. Frontend TypeScript/Vite and 28 local browser layouts plus exact review links passed in the preceding follow-up. No new runtime code was added during release preparation.
+- Production target confirmed in owner-approved Render workspace «Крипто Биржа»: exchange-api `srv-da467nn40ujc73cumjqg`, main, auto-deploy enabled. Deployment and merge have not yet been performed. Cloudflare login and resolution of the earlier explicit no-merge instruction are pending.

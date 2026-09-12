@@ -3,6 +3,7 @@ import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
 import { CopyValue, RailLabel } from './AdminPrimitives';
 import { Skeleton } from '../../components/Skeleton';
+import { useLocation } from 'react-router-dom';
 
 type Incoming = Awaited<ReturnType<typeof api.getAdminIncomingDeposits>>[number];
 type Deposit = Awaited<ReturnType<typeof api.getAdminDeposits>>[number];
@@ -12,6 +13,7 @@ type Client = Awaited<ReturnType<typeof api.getAllClients>>[number];
  * фильтрами, плюс лента непривязанных входящих переводов, которые можно
  * вручную сопоставить с пользователем и зачислить. */
 export function AdminDepositsPage() {
+  const { hash } = useLocation();
   const [incoming, setIncoming] = useState<Incoming[]>([]);
   const [incomingLoaded, setIncomingLoaded] = useState(false);
   const [incomingError, setIncomingError] = useState(false);
@@ -89,6 +91,12 @@ export function AdminDepositsPage() {
 
   const assets = useMemo(() => Array.from(new Set((history ?? []).map((d) => d.asset))).sort(), [history]);
 
+  useEffect(() => {
+    if (!hash) return;
+    try { document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ block: 'center' }); }
+    catch { /* A malformed fragment must not affect the deposit queue. */ }
+  }, [incoming, hash]);
+
   return (
     <div>
       <h1 style={styles.title}>Пополнения</h1>
@@ -110,7 +118,7 @@ export function AdminDepositsPage() {
         {incoming.map((tr) => {
           const key = `${tr.chain}:${tr.txHash}`;
           return (
-            <div key={key} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 90px 105px', minWidth: 920 }}>
+            <div key={key} id={key} className={`row-hover admin-history-grid${hash === `#${encodeURIComponent(key)}` ? ' admin-highlighted' : ''}`} style={{ ...styles.tableRow, gridTemplateColumns: '110px 155px 0.8fr 70px 1fr 1.2fr 90px 105px', minWidth: 920 }}>
               <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                 {tr.timestamp ? new Date(tr.timestamp).toLocaleString('ru-RU') : '—'}
               </span>

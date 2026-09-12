@@ -37,6 +37,13 @@ app.get('/api/v1/admin/wallets', (_, res) => res.json(wallets));
 app.put('/api/v1/admin/wallets/:chain', (req, res) => { writes.push({ method: 'PUT', chain: req.params.chain }); wallets = wallets.map(w => w.chain === req.params.chain ? { ...w, address: req.body.address, isOverridden: true } : w); res.json({ ok: true }); });
 app.delete('/api/v1/admin/wallets/:chain', (req, res) => { writes.push({ method: 'DELETE', chain: req.params.chain }); wallets = wallets.map(w => w.chain === req.params.chain ? { ...w, address: w.defaultAddress, isOverridden: false } : w); res.json({ ok: true }); });
 app.get('/api/v1/admin/users', (_, res) => res.json(users));
+app.get('/api/v1/admin/users/:id', (req, res) => {
+  const user = users.find(value => value.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'QA user not found' });
+  res.json({ ...user, demoBalances: [], deposits: deposits.filter(value => value.userId === user.id),
+    withdrawals: withdrawals.filter(value => value.userId === user.id), orders: [], purchases: [],
+    kycSubmissions: user.latestKyc ? [user.latestKyc] : [] });
+});
 app.get('/api/v1/admin/clients', (_, res) => res.json(users));
 app.get('/api/v1/admin/deposits/incoming', (_, res) => res.json(incoming));
 app.get('/api/v1/admin/deposits', (_, res) => res.json(deposits));
@@ -69,7 +76,10 @@ async function run() {
         if (slug === 'deposits') await page.getByText('300', { exact: true }).first().waitFor();
         if (slug === 'withdrawals') await page.getByText('350', { exact: true }).first().waitFor();
         if (slug === 'kyc') await page.getByText('QA Person 1', { exact: true }).waitFor();
-        if (!slug) await page.getByText('18', { exact: true }).waitFor();
+        if (!slug) {
+          await page.getByText('18', { exact: true }).waitFor();
+          for (const label of ['Новые пользователи', 'Входящие пополнения', 'Верификации на проверке']) await page.getByRole('region', { name: label, exact: true }).locator('.admin-queue-row').first().waitFor();
+        }
         if (slug === 'audit-log') await page.getByText('qa-operator@example.invalid', { exact: true }).first().waitFor();
         await page.screenshot({ path: path.join(output, `${slug || 'overview'}-${width}x${height}.png`) });
         report.layouts.push(await page.evaluate(({ slug, width, height }) => ({ slug: slug || 'overview', width, height, overflow: document.documentElement.scrollWidth > innerWidth,
@@ -82,6 +92,18 @@ async function run() {
       }
     }
     await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${origin}/admin`);
+    await page.getByRole('region', { name: 'Новые пользователи', exact: true }).locator('.admin-queue-row').first().click();
+    await page.getByRole('heading', { name: users[0].email, exact: true }).waitFor();
+    report.interactions.overviewUserLink = true;
+    await page.goto(`${origin}/admin`);
+    await page.getByRole('region', { name: 'Верификации на проверке', exact: true }).locator('.admin-queue-row').nth(2).click();
+    await page.getByText('QA Person 3', { exact: true }).waitFor();
+    report.interactions.overviewKycSelection = true;
+    await page.goto(`${origin}/admin`);
+    await page.getByRole('region', { name: 'Входящие пополнения', exact: true }).locator('.admin-queue-row').nth(1).click();
+    await page.locator('.admin-history-grid.admin-highlighted').waitFor();
+    report.interactions.overviewDepositTarget = true;
     await page.goto(`${origin}/admin/wallets`);
     await page.getByRole('button', { name: 'Изменить USDT · Ethereum (ERC-20)', exact: true }).click();
     await page.getByRole('dialog').waitFor();

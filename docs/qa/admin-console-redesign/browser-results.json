@@ -596,6 +596,9 @@
     }
   ],
   "interactions": {
+    "overviewUserLink": true,
+    "overviewKycSelection": true,
+    "overviewDepositTarget": true,
     "affectedNative": 1,
     "writesBeforeConfirm": 0,
     "writes": [
