@@ -14,7 +14,9 @@ const COLLECTOR_STAGES = new Set([
 const SSE_REASONS = new Set([
   'http_non_200','wrong_content_type','missing_body','unexpected_eof','body_read_error',
   'parser_error','tracker_validation','silence_watchdog','external_abort','intended_duration_complete',
+  'reconnect_failed',
 ]);
+const SSE_RECONNECT_GRACE_MS = 10_000;
 const NUMBERS = ['lastPrice','bidPrice','askPrice','high24h','low24h','volume24h','quoteVolume24h',
   'changePercent24h','indexPrice','markPrice','fundingRate','fundingIntervalMinutes','openInterest','openInterestValue'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -168,36 +170,66 @@ async function observeWS(config, tracker, duration, signal) {
 async function observeSSE(config,tracker,duration,signal,onDiagnostic=()=>{},dependencies={}) {
   const fetchFn=dependencies.fetchFn??fetch;
   const parserFactory=dependencies.parserFactory??(receive=>new SSEParser(receive));
+  const reconnectGraceMs=dependencies.reconnectGraceMs??SSE_RECONNECT_GRACE_MS;
   const startedAt=Date.now();
   const abort=new AbortController(),cancel=()=>abort.abort();signal?.addEventListener('abort',cancel,{once:true});
   if(signal?.aborted)abort.abort();
-  let expired=false,timedOut=false,reason='intended_duration_complete';
+  let expired=false,timedOut=false,reason='intended_duration_complete',reconnects=0,reconnecting=false;
   const timer=setTimeout(()=>{expired=true;abort.abort();},duration);
   const watchdog=setInterval(()=>{if(tracker.lastAt&&Date.now()-tracker.lastAt>40000){timedOut=true;abort.abort();}},1000);
-  let reader;
+  let reader,reconnectTimer=null,reconnectExpired=false;
+  const diagnostic=(event)=>{try{onDiagnostic({reason:event.reason,elapsedMs:Math.max(0,Date.now()-startedAt),...event.details});}catch{}};
   try {
-    let response;
-    try{response=await fetchFn(`${config.api}/api/v1/market/live`,{redirect:'error',signal:abort.signal,headers:{Accept:'text/event-stream'}});}
-    catch{throw new SafeDiagnosticError('body_read_error');}
-    if(!response.ok)throw new SafeDiagnosticError('http_non_200');
-    if(!response.headers.get('content-type')?.includes('text/event-stream'))throw new SafeDiagnosticError('wrong_content_type');
-    if(!response.body)throw new SafeDiagnosticError('missing_body');
-    reader=response.body.getReader();const decoder=new TextDecoder();const parser=parserFactory((text,event)=>tracker.receive(text,event));
-    while(true){
-      let chunk;
-      try{chunk=await reader.read();}catch{throw new SafeDiagnosticError('body_read_error');}
-      if(chunk.done)throw new SafeDiagnosticError('unexpected_eof');
-      try{parser.push(decoder.decode(chunk.value,{stream:true}));}
-      catch(error){throw new SafeDiagnosticError(error instanceof TrackerValidationError?'tracker_validation':'parser_error');}
+    while(true) {
+      const attemptAbort=new AbortController(),abortAttempt=()=>attemptAbort.abort();abort.signal.addEventListener('abort',abortAttempt,{once:true});
+      if(abort.signal.aborted)attemptAbort.abort();
+      reconnectExpired=false;
+      if(reconnecting)reconnectTimer=setTimeout(()=>{reconnectExpired=true;attemptAbort.abort();},reconnectGraceMs);
+      try {
+        let response;
+        try{response=await fetchFn(`${config.api}/api/v1/market/live`,{redirect:'error',signal:attemptAbort.signal,headers:{Accept:'text/event-stream'}});}
+        catch{throw new SafeDiagnosticError('body_read_error');}
+        if(!response.ok)throw new SafeDiagnosticError('http_non_200');
+        if(!response.headers.get('content-type')?.includes('text/event-stream'))throw new SafeDiagnosticError('wrong_content_type');
+        if(!response.body)throw new SafeDiagnosticError('missing_body');
+        reader=response.body.getReader();const decoder=new TextDecoder();
+        const parser=parserFactory((text,event)=>{
+          const parsed=tracker.receive(text,event);
+          if(reconnecting) {
+            // Tracker.reconnect() makes this necessarily an authoritative snapshot.
+            reconnecting=false;clearTimeout(reconnectTimer);reconnectTimer=null;
+            diagnostic({reason:'reconnect_succeeded',details:{reconnectCount:reconnects}});
+          }
+          return parsed;
+        });
+        while(true){
+          let chunk;
+          try{chunk=await reader.read();}catch{throw new SafeDiagnosticError('body_read_error');}
+          if(chunk.done)throw new SafeDiagnosticError('unexpected_eof');
+          try{parser.push(decoder.decode(chunk.value,{stream:true}));}
+          catch(error){throw new SafeDiagnosticError(error instanceof TrackerValidationError?'tracker_validation':'parser_error');}
+        }
+      } catch(error) {
+        const stage=timedOut?'silence_watchdog':signal?.aborted?'external_abort':expired||Date.now()-startedAt>=duration?'intended_duration_complete':
+          reconnectExpired?'reconnect_failed':error instanceof SafeDiagnosticError&&SSE_REASONS.has(error.stage)?error.stage:'body_read_error';
+        if(stage==='unexpected_eof'&&!reconnecting) {
+          reconnects++;diagnostic({reason:'unexpected_eof',details:{reconnectCount:reconnects}});
+          tracker.reconnect();reconnecting=true;
+        } else {
+          reason=reconnecting&&['http_non_200','wrong_content_type','missing_body','body_read_error','unexpected_eof'].includes(stage)
+            ?'reconnect_failed':stage;
+          break;
+        }
+      } finally {
+        clearTimeout(reconnectTimer);reconnectTimer=null;abort.signal.removeEventListener('abort',abortAttempt);
+        await reader?.cancel().catch(()=>{});reader=undefined;attemptAbort.abort();
+      }
     }
-  } catch(error) {
-    reason=timedOut?'silence_watchdog':signal?.aborted?'external_abort':expired?'intended_duration_complete':
-      error instanceof SafeDiagnosticError&&SSE_REASONS.has(error.stage)?error.stage:'body_read_error';
   }
-  finally {clearTimeout(timer);clearInterval(watchdog);signal?.removeEventListener('abort',cancel);await reader?.cancel().catch(()=>{});abort.abort();}
-  const diagnostic={reason,elapsedMs:Math.max(0,Date.now()-startedAt)};try{onDiagnostic(diagnostic);}catch{}
+  finally {clearTimeout(timer);clearTimeout(reconnectTimer);clearInterval(watchdog);signal?.removeEventListener('abort',cancel);await reader?.cancel().catch(()=>{});abort.abort();}
+  const result={reason,elapsedMs:Math.max(0,Date.now()-startedAt),reconnectCount:reconnects};diagnostic({reason,details:{reconnectCount:reconnects}});
   if(reason!=='intended_duration_complete'){const error=new Error(`Public SSE failed: ${reason}`);error.reason=reason;throw error;}
-  return diagnostic;
+  return result;
 }
 async function denyWS(config,token) {
   return new Promise(resolve=>{

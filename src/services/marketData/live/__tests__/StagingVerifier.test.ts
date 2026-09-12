@@ -73,7 +73,6 @@ describe('read-only staging verifier',()=>{
     ['http_non_200',()=>({ok:false,status:503,headers:new Headers(),body:null})],
     ['wrong_content_type',()=>({ok:true,status:200,headers:new Headers({'content-type':'application/json'}),body:null})],
     ['missing_body',()=>({ok:true,status:200,headers:new Headers({'content-type':'text/event-stream'}),body:null})],
-    ['unexpected_eof',()=>sseResponse({read:async()=>({done:true}),cancel:async()=>{}})],
     ['body_read_error',()=>sseResponse({read:async()=>{throw new Error(`cookie=${token}; body=${token}`);},cancel:async()=>{}})],
     ['parser_error',()=>sseResponse({read:async()=>({done:false,value:new TextEncoder().encode('data: x\n\n')}),cancel:async()=>{}}),{parserFactory:()=>({push:()=>{throw new Error(`body=${token}`);}})}],
     ['tracker_validation',()=>sseResponse({read:async()=>({done:false,value:new TextEncoder().encode('event: snapshot\ndata: {}\n\n')}),cancel:async()=>{}})],
@@ -82,6 +81,80 @@ describe('read-only staging verifier',()=>{
     await expect(observeSSE({api:'https://api.invalid'},new Tracker(token),10000,undefined,(event:any)=>diagnostics.push(event),
       {fetchFn:async()=>response(),...dependencies})).rejects.toMatchObject({reason});
     expect(diagnostics).toHaveLength(1);expect(diagnostics[0].reason).toBe(reason);expect(JSON.stringify(diagnostics)).not.toContain(token);
+  });
+  test('early EOF reconnects to the same endpoint, requires a snapshot, and continues with the same tracker',async()=>{
+    jest.useFakeTimers({now:0});
+    try{
+      const diagnostics:any[]=[],tracker=new Tracker(token);let calls=0;
+      const fetchFn=async(_url:string,options:any)=>{
+        calls++;
+        return calls===1
+          ?sseResponse(sequenceReader([chunk('snapshot',1),{done:true}],options.signal))
+          :sseResponse(sequenceReader([chunk('snapshot',2),chunk('delta',3)],options.signal));
+      };
+      const observation=observeSSE({api:'https://api.invalid'},tracker,20_000,undefined,(event:any)=>diagnostics.push(event),{fetchFn});
+      await flushPromises();
+      expect(calls).toBe(2);expect(tracker.report()).toMatchObject({snapshots:2,deltas:1,reconnects:1,revisionGaps:0,rejectedFrames:0});
+      await jest.advanceTimersByTimeAsync(20_000);
+      await expect(observation).resolves.toMatchObject({reason:'intended_duration_complete',reconnectCount:1});
+      expect(diagnostics.map(event=>event.reason)).toEqual(['unexpected_eof','reconnect_succeeded','intended_duration_complete']);
+      expect(JSON.stringify(diagnostics)).not.toContain(token);
+    }finally{jest.useRealTimers();}
+  });
+  test('early EOF fails when reconnect cannot be established within the bounded grace',async()=>{
+    jest.useFakeTimers({now:0});
+    try{
+      const diagnostics:any[]=[],tracker=new Tracker(token);let calls=0;
+      const fetchFn=async(_url:string,options:any)=>{
+        calls++;
+        return calls===1?sseResponse(sequenceReader([chunk('snapshot',1),{done:true}],options.signal))
+          :sseResponse(sequenceReader([],options.signal));
+      };
+      const observation=observeSSE({api:'https://api.invalid'},tracker,60_000,undefined,(event:any)=>diagnostics.push(event),{fetchFn,reconnectGraceMs:2_000});
+      const outcome=expect(observation).rejects.toMatchObject({reason:'reconnect_failed'});
+      await flushPromises();await jest.advanceTimersByTimeAsync(2_000);
+      await outcome;
+      expect(calls).toBe(2);expect(diagnostics.map(event=>event.reason)).toEqual(['unexpected_eof','reconnect_failed']);
+      expect(JSON.stringify(diagnostics)).not.toContain(token);
+    }finally{jest.useRealTimers();}
+  });
+  test('a delta before the authoritative reconnect snapshot remains a hard continuity failure',async()=>{
+    const tracker=new Tracker(token);let calls=0;
+    const fetchFn=async(_url:string,options:any)=>{
+      calls++;
+      return calls===1?sseResponse(sequenceReader([chunk('snapshot',5),{done:true}],options.signal))
+        :sseResponse(sequenceReader([chunk('delta',6)],options.signal));
+    };
+    await expect(observeSSE({api:'https://api.invalid'},tracker,10_000,undefined,()=>{},{fetchFn}))
+      .rejects.toMatchObject({reason:'tracker_validation'});
+    expect(tracker.report()).toMatchObject({reconnects:1,revisionGaps:1,rejectedFrames:1});
+  });
+  test('a skipped revision after a valid reconnect snapshot remains a hard continuity failure',async()=>{
+    const tracker=new Tracker(token);let calls=0;
+    const fetchFn=async(_url:string,options:any)=>{
+      calls++;
+      return calls===1?sseResponse(sequenceReader([chunk('snapshot',5),{done:true}],options.signal))
+        :sseResponse(sequenceReader([chunk('snapshot',6),chunk('delta',8)],options.signal));
+    };
+    await expect(observeSSE({api:'https://api.invalid'},tracker,10_000,undefined,()=>{},{fetchFn}))
+      .rejects.toMatchObject({reason:'tracker_validation'});
+    expect(tracker.report()).toMatchObject({snapshots:2,reconnects:1,revisionGaps:1,rejectedFrames:1});
+  });
+  test('EOF just before the 15-minute deadline reconnects until the intended deadline and passes',async()=>{
+    jest.useFakeTimers({now:0});
+    try{
+      let calls=0;const diagnostics:any[]=[];
+      const fetchFn=async(_url:string,options:any)=>{
+        calls++;
+        return calls===1?sseResponse(sequenceReader([chunk('snapshot',1),delayedDone(899_765)],options.signal))
+          :sseResponse(sequenceReader([],options.signal));
+      };
+      const observation=observeSSE({api:'https://api.invalid'},new Tracker(token),900_000,undefined,(event:any)=>diagnostics.push(event),{fetchFn});
+      await flushPromises();await jest.advanceTimersByTimeAsync(899_765);await flushPromises();
+      expect(calls).toBe(2);expect(diagnostics[0]).toMatchObject({reason:'unexpected_eof',reconnectCount:1});
+      await jest.advanceTimersByTimeAsync(235);
+      await expect(observation).resolves.toMatchObject({reason:'intended_duration_complete',reconnectCount:1});
+    }finally{jest.useRealTimers();}
   });
   test('intended duration is PASS while external abort and terminal silence remain distinct FAIL reasons',async()=>{
     const abortingFetch=async(_url:string,options:any)=>sseResponse({
@@ -106,6 +179,18 @@ describe('read-only staging verifier',()=>{
     }finally{jest.useRealTimers();}
     expect(JSON.stringify([completed,interrupted])).not.toContain(token);
   });
+  test('a normal 20-second observation retains the intended-duration PASS with no reconnect',async()=>{
+    jest.useFakeTimers({now:0});
+    try{
+      const diagnostics:any[]=[];
+      const observation=observeSSE({api:'https://api.invalid'},new Tracker(token),20_000,undefined,(event:any)=>diagnostics.push(event),{
+        fetchFn:async(_url:string,options:any)=>sseResponse(sequenceReader([chunk('snapshot',1),chunk('delta',2)],options.signal)),
+      });
+      await flushPromises();await jest.advanceTimersByTimeAsync(20_000);
+      await expect(observation).resolves.toMatchObject({reason:'intended_duration_complete',reconnectCount:0});
+      expect(diagnostics).toHaveLength(1);expect(diagnostics[0]).toMatchObject({reason:'intended_duration_complete',reconnectCount:0});
+    }finally{jest.useRealTimers();}
+  });
   test('CLI uses env only, no local storage, financial imports, mutation requests or secret-bearing URLs',()=>{
     const source=readFileSync(resolve(__dirname,'../../../../../scripts/verify-market-data-staging.cjs'),'utf8');
     expect(source).toContain('Authorization:`Bearer ${');expect(source).toContain("redirect:'error'");
@@ -117,3 +202,15 @@ describe('read-only staging verifier',()=>{
 function sseResponse(reader:any) {
   return {ok:true,status:200,headers:new Headers({'content-type':'text/event-stream'}),body:{getReader:()=>reader}};
 }
+const encoded=(text:string)=>new TextEncoder().encode(text);
+const chunk=(type:string,revision:number)=>({done:false,value:encoded(`event: ${type}\ndata: ${frame(type,revision)}\n\n`)});
+const delayedDone=(ms:number)=>({delay:ms,done:true});
+function sequenceReader(items:any[],signal:AbortSignal) {
+  let index=0;
+  return {read:()=>{
+    if(index<items.length){const item=items[index++];if(item.delay!==undefined)return new Promise(resolve=>setTimeout(()=>resolve({done:item.done}),item.delay));return Promise.resolve(item);}
+    return new Promise((_resolve,reject)=>{const fail=()=>reject(new Error(`transport=${token}`));
+      if(signal.aborted)fail();else signal.addEventListener('abort',fail,{once:true});});
+  },cancel:async()=>{}};
+}
+async function flushPromises(){for(let i=0;i<8;i++)await Promise.resolve();}
