@@ -1,181 +1,88 @@
+
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { styles } from './adminStyles';
-import { Skeleton } from '../../components/Skeleton';
+import { depositRails, addressAdvice, networkName } from './depositRails';
+import { AdminModal, CopyValue } from './AdminPrimitives';
 
 type Wallet = Awaited<ReturnType<typeof api.getAdminWallets>>[number];
+type Rail = ReturnType<typeof depositRails<Wallet>>[number];
 
-const CHAIN_LABEL: Record<string, string> = {
-  bitcoin: 'Bitcoin',
-  tron: 'Tron',
-  ethereum: 'Ethereum',
-  bsc: 'BNB Smart Chain',
-  solana: 'Solana',
-  ton: 'TON',
-};
-
-// The token-standard suffix shown after each NON-native asset, so
-// "USDT (ERC-20)" reads unambiguously as "USDT, on this network".
-const TOKEN_STANDARD_LABEL: Record<string, string> = {
-  ethereum: 'ERC-20',
-  bsc: 'BEP-20',
-  tron: 'TRC-20',
-  solana: 'SPL',
-  ton: 'Jetton',
-};
-
-// One row per asset this ONE address accepts, each tagged with what it
-// actually is — "монета сети" (native coin) vs "токен на этой сети"
-// (a token riding on the same network) — instead of a flat "ETH, USDT"
-// list that reads as two native coins on two different addresses. Tron
-// deposits only support TRC-20 tokens (USDT) — native TRX deposits aren't
-// implemented (see TronDepositVerifier), so its native asset is omitted.
-function supportedAssetRows(chain: string, nativeAsset: string, tokens: string[]): { label: string; note: string }[] {
-  const standard = TOKEN_STANDARD_LABEL[chain];
-  const tokenRows = tokens.map((token) => ({
-    label: standard ? `${token} (${standard})` : token,
-    note: `токен на этой же сети${standard ? `, стандарт ${standard}` : ''}`,
-  }));
-  if (chain === 'tron') return tokenRows;
-  return [{ label: nativeAsset, note: 'монета этой сети' }, ...tokenRows];
-}
-
-/** Кошельки для пополнения — один адрес приёма депозитов на каждую сеть.
- * Сохранение сразу применяется везде, где бэкенд отдаёт адрес пользователю
- * (см. TreasuryWalletService на бэкенде) — без передеплоя. */
 export function AdminWalletsPage() {
   const [wallets, setWallets] = useState<Wallet[] | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [busyChain, setBusyChain] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<Rail | null>(null);
+  const [draft, setDraft] = useState('');
+  const [confirmation, setConfirmation] = useState<'save' | 'reset' | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedChain, setSavedChain] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  const reload = async () => { const rows = await api.getAdminWallets(); setWallets(rows); };
+  useEffect(() => { reload().catch(() => setError('Не удалось загрузить адреса. Повторите загрузку.')); }, []);
+  const rails = depositRails(wallets ?? []);
+  const filtered = rails.filter(r => `${r.label} ${r.wallet.address ?? ''}`.toLowerCase().includes(search.toLowerCase()));
+  const affected = selected ? rails.filter(r => r.chain === selected.chain) : [];
+  const advice = addressAdvice(selected?.chain ?? '', draft);
 
-  function reload() {
-    api.getAdminWallets().then((rows) => {
-      setWallets(rows);
-      setDrafts(Object.fromEntries(rows.map((r) => [r.chain, r.address ?? ''])));
-    });
-  }
-
-  useEffect(reload, []);
-
-  async function handleSave(chain: string) {
-    setError(null);
-    setSavedChain(null);
-    setBusyChain(chain);
+  async function commitAddress() {
+    if (!selected || !confirmation || busy) return;
+    setBusy(true); setError(null);
     try {
-      await api.setAdminWalletAddress(chain, drafts[chain]?.trim() ?? '');
-      setSavedChain(chain);
-      reload();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось сохранить адрес.');
-    } finally {
-      setBusyChain(null);
-    }
+      if (confirmation === 'save') await api.setAdminWalletAddress(selected.chain, draft.trim());
+      else await api.resetAdminWallet(selected.chain);
+      setNotice(`Адрес сети ${selected.network} ${confirmation === 'save' ? 'сохранён' : 'сброшен к умолчанию'}.`);
+      setSelected(null); setConfirmation(null);
+      try { await reload(); } catch { setWallets(null); setError('Изменение сохранено, но список не обновлён. Повторите загрузку.'); }
+    } catch (err) { setError(err instanceof ApiError ? err.message : 'Не удалось изменить адрес.'); }
+    finally { setBusy(false); }
   }
 
-  async function handleReset(chain: string) {
-    setError(null);
-    setSavedChain(null);
-    setBusyChain(chain);
-    try {
-      await api.resetAdminWallet(chain);
-      reload();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Не удалось сбросить адрес.');
-    } finally {
-      setBusyChain(null);
-    }
-  }
-
-  return (
-    <div>
-      <h1 style={styles.title}>Кошельки для пополнения</h1>
-      {error && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
-
-      {!wallets && (
-        <div style={{ ...styles.card, gap: 20 }}>
-          <Skeleton height={80} />
-          <Skeleton height={80} />
-          <Skeleton height={80} />
-        </div>
-      )}
-
-      {wallets && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {wallets.map((w) => {
-            const assetRows = w.nativeAsset ? supportedAssetRows(w.chain, w.nativeAsset, w.tokens) : [];
-            return (
-            <div key={w.chain} style={styles.card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{CHAIN_LABEL[w.chain] ?? w.chain}</div>
-                  {!w.nativeAsset && <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Сеть не настроена на бэкенде</div>}
-                  {assetRows.length === 0 && w.nativeAsset && (
-                    <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>нет поддерживаемых активов</div>
-                  )}
-                  {assetRows.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
-                      {assetRows.length > 1 && (
-                        <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-                          Один и тот же адрес принимает {assetRows.length === 2 ? 'оба актива' : 'все активы'} ниже:
-                        </div>
-                      )}
-                      {assetRows.map((row) => (
-                        <div key={row.label} style={{ fontSize: 12.5 }}>
-                          <span className="mono" style={{ fontWeight: 700 }}>{row.label}</span>
-                          <span style={{ color: 'var(--text-tertiary)' }}> — {row.note}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {w.isOverridden ? (
-                  <span style={{ ...styles.badgeAccent, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>
-                    Изменён администратором
-                  </span>
-                ) : (
-                  <span style={{ ...styles.badgeDim, borderRadius: 20, padding: '4px 10px', fontSize: 11, fontWeight: 700 }}>
-                    Значение по умолчанию
-                  </span>
-                )}
-              </div>
-
-              <label style={styles.label}>
-                Адрес кошелька
-                <input
-                  type="text"
-                  style={{ ...styles.input, fontFamily: 'var(--font-mono)' }}
-                  value={drafts[w.chain] ?? ''}
-                  onChange={(e) => setDrafts((d) => ({ ...d, [w.chain]: e.target.value }))}
-                  placeholder="Адрес для приёма депозитов"
-                />
-              </label>
-
-              {w.isOverridden && w.updatedAt && (
-                <div style={styles.hint}>Изменено: {new Date(w.updatedAt).toLocaleString('ru-RU')}</div>
-              )}
-              {savedChain === w.chain && <div style={styles.successBox}>Адрес сохранён.</div>}
-
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  style={styles.primaryBtn}
-                  disabled={busyChain === w.chain || !drafts[w.chain]?.trim()}
-                  onClick={() => handleSave(w.chain)}
-                >
-                  Сохранить
-                </button>
-                {w.isOverridden && (
-                  <button style={styles.neutralBtn} disabled={busyChain === w.chain} onClick={() => handleReset(w.chain)}>
-                    Сбросить к значению по умолчанию
-                  </button>
-                )}
-              </div>
-            </div>
-            );
-          })}
-        </div>
-      )}
+  return <div>
+    <h1 style={styles.title}>Адреса пополнения</h1>
+    <p style={styles.subtitle}>Публичные адреса приёма · один адрес на сеть · изменения применяются сразу</p>
+    {error && !selected && <p role="alert" style={styles.errorBox}>{error}</p>}
+    {notice && <p role="status" style={styles.successBox}>{notice}</p>}
+    <div className="admin-toolbar">
+      <input style={styles.input} aria-label="Поиск адресов" placeholder="Актив, сеть или адрес" value={search} onChange={e => setSearch(e.target.value)} />
+      <span style={styles.hint}>{wallets ? `${rails.length} направлений · ${new Set(rails.map(r => r.chain)).size} сетей` : 'Загрузка конфигурации…'}</span>
+      <button style={styles.neutralBtn} onClick={() => { setError(null); reload().catch(() => setError('Не удалось загрузить адреса.')); }}>Обновить</button>
     </div>
-  );
+    <div className="admin-data-wrap"><table className="admin-data-table admin-address-table">
+      <thead><tr>{['Актив', 'Сеть', 'Стандарт', 'Адрес пополнения', 'Статус', 'Изменён', 'Действие'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+      <tbody>{filtered.map(r => <tr key={r.key}>
+        <td><strong className="admin-asset">{r.asset}</strong></td><td>{r.network}</td><td><span className="admin-standard">{r.standard}</span></td>
+        <td><CopyValue full value={r.wallet.address} label={`адрес ${r.label}`} />{r.shared && <small className="admin-shared" title="Все настроенные активы этой сети используют этот адрес">Общий адрес сети</small>}</td>
+        <td><span className={`admin-chip ${r.wallet.address ? 'positive' : 'warning'}`}>{r.wallet.address ? 'Адрес задан' : 'Нет адреса'}</span></td>
+        <td title={r.wallet.updatedByAdminId ?? undefined}>{r.wallet.updatedAt ? new Date(r.wallet.updatedAt).toLocaleDateString('ru-RU') : '—'}</td>
+        <td><button style={styles.neutralBtn} aria-label={`Изменить ${r.label}`} onClick={() => { setSelected(r); setDraft(r.wallet.address ?? ''); setError(null); setConfirmation(null); }}>Изменить</button></td>
+      </tr>)}</tbody>
+    </table>{(!wallets || filtered.length === 0) && <p className="admin-empty">{wallets ? 'Направления не найдены.' : error ? 'Данные недоступны.' : 'Загрузка…'}</p>}</div>
+    {(wallets ?? []).some(w => !w.envConfigured) && <p style={styles.hint}>Не настроены на backend: {wallets!.filter(w => !w.envConfigured).map(w => networkName(w.chain)).join(', ')}. Поддерживаемые активы для них не заявлены.</p>}
+    {selected && <AdminModal title={confirmation ? 'Подтвердить изменение адреса' : selected.label} busy={busy} onClose={() => { setSelected(null); setConfirmation(null); setError(null); }}>
+      <div className="admin-modal-body">
+        <dl className="admin-facts"><dt>Актив</dt><dd>{selected.asset}</dd><dt>Сеть</dt><dd>{selected.network}</dd><dt>Стандарт</dt><dd>{selected.standard}</dd><dt>Область изменения</dt><dd>Network treasury address</dd></dl>
+        <div className="admin-callout">Это treasury address сети {selected.network}. Изменение затрагивает все настроенные направления этой сети:
+          <ul>{affected.map(r => <li key={r.key}>{r.label}</li>)}</ul>
+        </div>
+        <label style={styles.label}>Текущий адрес<code className="admin-full-value">{selected.wallet.address ?? 'Не задан'}</code></label>
+        {confirmation ? <>
+          <label style={styles.label}>{confirmation === 'reset' ? 'Адрес по умолчанию после сброса' : 'Новый адрес'}<code className="admin-full-value">{confirmation === 'reset' ? selected.wallet.defaultAddress ?? 'Не задан — приём депозитов в этой сети станет недоступен' : draft.trim()}</code></label>
+          <p className="admin-callout">После сохранения пользователи сразу получат этот адрес для пополнений в данной сети.</p>
+        </> : <>
+          <label style={styles.label}>Новый публичный адрес<input autoComplete="off" spellCheck={false} style={styles.input} value={draft} onChange={e => setDraft(e.target.value)} /></label>
+          {draft && advice.error && <p role="alert" style={styles.errorBox}>{advice.error}</p>}
+          <p style={styles.hint}>{advice.warning} Только public receive address — не приватный ключ и не seed-фраза.</p>
+          <dl className="admin-facts"><dt>Источник</dt><dd>{selected.wallet.isOverridden ? 'Admin override' : 'Environment default'}</dd><dt>Изменён</dt><dd>{selected.wallet.updatedAt ? new Date(selected.wallet.updatedAt).toLocaleString('ru-RU') : '—'}</dd><dt>Admin ID</dt><dd className="admin-full-value">{selected.wallet.updatedByAdminId ?? '—'}</dd></dl>
+        </>}
+        {error && <p role="alert" style={styles.errorBox}>{error}</p>}
+      </div>
+      <footer>{confirmation ? <>
+        <button style={styles.neutralBtn} disabled={busy} onClick={() => setConfirmation(null)}>Назад</button>
+        <button style={confirmation === 'reset' ? styles.rejectBtn : styles.primaryBtn} disabled={busy} onClick={commitAddress}>{busy ? 'Сохранение…' : 'Подтвердить'}</button>
+      </> : <>
+        {selected.wallet.isOverridden && <button style={styles.rejectBtn} onClick={() => setConfirmation('reset')}>Сбросить к умолчанию</button>}
+        <button style={styles.primaryBtn} disabled={Boolean(advice.error) || draft.trim() === selected.wallet.address} onClick={() => setConfirmation('save')}>Сохранить адрес</button>
+      </>}</footer>
+    </AdminModal>}
+  </div>;
 }

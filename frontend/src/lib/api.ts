@@ -1385,11 +1385,18 @@ export const api = {
   // the server on every request (see requireAdmin middleware); nothing
   // here is trusted client-side. ---
 
+  getAdminOverview: () => request<{
+    totalUsers: number; pendingKyc: number; pendingWithdrawals: number; creditedDepositsToday: number;
+    unmatchedIncoming: null; unmatchedIncomingReason: 'live_provider_feed'; dayStart: string; asOf: string;
+  }>('/admin/overview'),
+
   getAdminWallets: () =>
     request<
       {
         chain: string;
         nativeAsset: string | null;
+        nativeDepositsSupported: boolean;
+        defaultAddress: string | null;
         tokens: string[];
         address: string | null;
         isOverridden: boolean;
@@ -1521,27 +1528,6 @@ export const api = {
     >(`/admin/audit-log${suffix}`);
   },
 
-  getAdminProducts: () =>
-    request<
-      { id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean; createdAt: string }[]
-    >('/admin/products'),
-
-  createProduct: (params: { name: string; description: string; priceAmount: string; priceAsset: string }) =>
-    request<{ id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>(
-      '/products',
-      { method: 'POST', body: JSON.stringify(params) }
-    ),
-
-  updateProduct: (
-    id: string,
-    patch: Partial<{ name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>
-  ) =>
-    request<{ id: string; name: string; description: string; priceAmount: string; priceAsset: string; active: boolean }>(
-      `/products/${id}`,
-      { method: 'PATCH', body: JSON.stringify(patch) }
-    ),
-
-  deleteProduct: (id: string) => request<void>(`/products/${id}`, { method: 'DELETE' }),
 };
 
 export type SupportSubject = 'TECHNICAL' | 'KYC' | 'CARD' | 'OTHER';

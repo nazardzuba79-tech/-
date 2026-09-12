@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { CopyValue, RailLabel } from './AdminPrimitives';
 import { styles } from './adminStyles';
 
 type Withdrawal = Awaited<ReturnType<typeof api.getAdminWithdrawals>>[number];
@@ -18,7 +19,7 @@ function statusBadge(status: string) {
   return STATUS_LABEL[status] ?? { text: status, color: 'var(--text-secondary)', bg: 'var(--neutral-dim)' };
 }
 
-const GRID = '1.6fr 0.8fr 0.8fr 1.6fr 1fr 0.9fr 1.6fr';
+const GRID = '1.1fr 155px 1fr 0.7fr 90px 100px 180px';
 
 /** Вывод криптовалюты — очередь заявок: одобрить, затем отметить
  * отправленным с txid, либо отклонить с причиной. История всех обработанных
@@ -26,10 +27,12 @@ const GRID = '1.6fr 0.8fr 0.8fr 1.6fr 1fr 0.9fr 1.6fr';
 export function AdminWithdrawalsPage() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   function reload() {
-    api.getAdminWithdrawals().then(setWithdrawals);
+    api.getAdminWithdrawals().then(setWithdrawals).catch(() => setError('Не удалось загрузить выводы.'));
   }
 
   useEffect(reload, []);
@@ -76,30 +79,32 @@ export function AdminWithdrawalsPage() {
     }
   }
 
-  const pending = (withdrawals ?? []).filter((w) => w.status === 'PENDING' || w.status === 'APPROVED');
+  const visible = (withdrawals ?? []).filter(w => (!status || w.status === status) && `${w.userEmail} ${w.asset} ${w.network} ${w.toAddress}`.toLowerCase().includes(search.toLowerCase()));
+  const pending = visible.filter((w) => w.status === 'PENDING' || w.status === 'APPROVED');
 
   return (
     <div>
       <h1 style={styles.title}>Вывод криптовалюты</h1>
       {error && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
 
+      <div className="admin-toolbar"><input style={styles.input} aria-label="Поиск выводов" placeholder="Пользователь, актив, адрес" value={search} onChange={e => setSearch(e.target.value)} /><select aria-label="Статус вывода" style={styles.input} value={status} onChange={e => setStatus(e.target.value)}><option value="">Все статусы</option>{Object.entries(STATUS_LABEL).map(([key, label]) => <option key={key} value={key}>{label.text} ({key})</option>)}</select></div>
+      {!withdrawals && !error && <p style={styles.hint}>Загрузка выводов…</p>}
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>Активные заявки</h3>
-      <div style={{ ...styles.table, marginBottom: 32 }}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 980 }}>
+      <div style={{ ...styles.table, marginBottom: 20 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: GRID, minWidth: 950 }}>
           <span>Пользователь</span>
-          <span>Актив</span>
-          <span>Сеть</span>
+          <span>Актив / сеть</span>
           <span>Адрес</span>
           <span style={{ textAlign: 'right' }}>Сумма</span>
           <span>Статус</span>
-          <span />
+          <span>Создана</span>
+          <span>Действие</span>
         </div>
         {pending.map((w) => (
-          <div key={w.id} style={{ ...styles.tableRow, gridTemplateColumns: GRID, minWidth: 980 }}>
+          <div key={w.id} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: GRID, minWidth: 950 }}>
             <span style={{ fontSize: 12 }}>{w.userEmail}</span>
-            <span className="mono">{w.asset}</span>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{w.network}</span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={w.toAddress}>{w.toAddress}</span>
+            <RailLabel asset={w.asset} chain={w.network} />
+            <CopyValue value={w.toAddress} label="адрес назначения" />
             <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
             <span>
               {(() => {
@@ -107,6 +112,7 @@ export function AdminWithdrawalsPage() {
                 return <span style={{ color: b.color, background: b.bg, borderRadius: 20, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>{b.text}</span>;
               })()}
             </span>
+            <span style={{ fontSize: 11 }}>{new Date(w.createdAt).toLocaleString('ru-RU')}</span>
             <div style={{ display: 'flex', gap: 6 }}>
               {w.status === 'PENDING' && (
                 <button disabled={busyId === w.id} onClick={() => handleApprove(w.id)} style={styles.approveBtn}>
@@ -131,7 +137,7 @@ export function AdminWithdrawalsPage() {
 
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 10px' }}>История обработанных выводов</h3>
       <div style={styles.table}>
-        <div style={{ ...styles.tableHeader, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr 1fr 1.6fr', minWidth: 900 }}>
+        <div style={{ ...styles.tableHeader, gridTemplateColumns: '110px 1.2fr 170px 0.8fr 100px 1fr', minWidth: 900 }}>
           <span>Дата</span>
           <span>Пользователь</span>
           <span>Актив</span>
@@ -139,11 +145,11 @@ export function AdminWithdrawalsPage() {
           <span>Статус</span>
           <span>Txid / причина</span>
         </div>
-        {withdrawals?.map((w) => (
-          <div key={w.id} style={{ ...styles.tableRow, gridTemplateColumns: '1.2fr 1.6fr 0.8fr 1fr 1fr 1.6fr', minWidth: 900 }}>
+        {visible.filter(w => w.status !== 'PENDING' && w.status !== 'APPROVED').map((w) => (
+          <div key={w.id} className="row-hover admin-history-grid" style={{ ...styles.tableRow, gridTemplateColumns: '110px 1.2fr 170px 0.8fr 100px 1fr', minWidth: 900 }}>
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(w.createdAt).toLocaleString('ru-RU')}</span>
             <span style={{ fontSize: 12 }}>{w.userEmail}</span>
-            <span className="mono">{w.asset}</span>
+            <RailLabel asset={w.asset} chain={w.network} />
             <span className="mono" style={{ textAlign: 'right' }}>{w.amount}</span>
             <span>
               {(() => {
@@ -151,9 +157,7 @@ export function AdminWithdrawalsPage() {
                 return <span style={{ color: b.color, background: b.bg, borderRadius: 20, padding: '3px 8px', fontSize: 11, fontWeight: 700 }}>{b.text}</span>;
               })()}
             </span>
-            <span className="mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }} title={w.txHash ?? w.rejectionReason ?? undefined}>
-              {w.txHash ?? w.rejectionReason ?? '—'}
-            </span>
+            <CopyValue value={w.txHash ?? w.rejectionReason} label="txid / причина" />
           </div>
         ))}
         {withdrawals?.length === 0 && <p style={{ padding: 14, color: 'var(--text-tertiary)', fontSize: 12 }}>Заявок ещё не было.</p>}
