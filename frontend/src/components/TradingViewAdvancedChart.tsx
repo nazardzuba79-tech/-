@@ -61,13 +61,17 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
       interval: '15',
       timezone: 'Etc/UTC',
       theme: 'dark',
-      backgroundColor: '#0b0e11',
-      gridColor: 'rgba(42, 46, 57, 0.35)',
+      // Match VOLTEX's existing chart surface instead of TradingView's
+      // near-black default so the embed reads as one terminal panel.
+      backgroundColor: '#0d141d',
+      gridColor: 'rgba(132, 142, 156, 0.10)',
       style: '1',
       locale,
       hide_side_toolbar: false,
       hide_top_toolbar: false,
-      hide_legend: false,
+      // Keep the plot clean by default. Users can still turn chart details
+      // back on from TradingView's own settings if they want them.
+      hide_legend: true,
       hide_volume: false,
       allow_symbol_change: false,
       withdateranges: true,
