@@ -18,5 +18,6 @@
   "databaseIntegration": "Existing PostgreSQL tests require an isolated database; no production database connection or migration used",
   "merge": false,
   "deployment": false,
-  "productionEnvironmentChanged": false
+  "productionEnvironmentChanged": false,
+  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6"
 }

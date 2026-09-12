@@ -244,5 +244,6 @@
     "focused": "dfeeb80691a16695399b165eade5dbd87397387b5b251777c055470befb6ad43"
   },
   "newFailureCount": 0,
-  "verdict": "ZERO_NEW_FAILURES"
+  "verdict": "ZERO_NEW_FAILURES",
+  "implementationCommit": "051347f9bfb6553d13ddaff525767d8d1793e8c6"
 }
