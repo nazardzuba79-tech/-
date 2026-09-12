@@ -104,3 +104,12 @@ test('REST and socket trades deduplicate by execution identity even with differe
   const merged = combineHeroFeed({...base,trades:[same]},live());
   expect(merged.trades).toHaveLength(1);
 });
+
+test('existing book subscription retains ten real levels per side for the richer hero', () => {
+  const s = session();
+  const bids = Array.from({length:12},(_,i)=>({price:String(100-i),quantity:'2'}));
+  const asks = Array.from({length:12},(_,i)=>({price:String(101+i),quantity:'1'}));
+  s.listeners.book({bids,asks});s.advance(1000);
+  expect(s.publish.mock.calls[0][0].book).toEqual({bids:bids.slice(0,10),asks:asks.slice(0,10)});
+  s.stop();
+});

@@ -48,8 +48,8 @@ export function startHeroStream(stream: Stream, pair: string, publish: (value: H
     stream.subscribeBook(pair, incoming => {
       if (stopped) return;
       const valid = (rows: BookSnapshot['bids']) => rows.filter(row => positive(row.price) && positive(row.quantity));
-      const bids = valid(incoming.bids).sort((a, b) => Number(b.price) - Number(a.price)).slice(0, 6);
-      const asks = valid(incoming.asks).sort((a, b) => Number(a.price) - Number(b.price)).slice(0, 6);
+      const bids = valid(incoming.bids).sort((a, b) => Number(b.price) - Number(a.price)).slice(0, 10);
+      const asks = valid(incoming.asks).sort((a, b) => Number(a.price) - Number(b.price)).slice(0, 10);
       if (!bids.length || !asks.length || Number(bids[0].price) >= Number(asks[0].price)) return;
       book = { bids, asks }; bookReceivedAt = clock.now(); changed();
     }),

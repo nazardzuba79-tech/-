@@ -24,6 +24,7 @@ import './home-heatmap.css';
 // Perspective display geometry must win over the shared compact preview rules.
 import './hero-reference.css';
 import './home-sapphire.css';
+import './sapphire-terminal-detail.css';
 
 /**
  * The VOLTEX homepage, in the approved section order:
