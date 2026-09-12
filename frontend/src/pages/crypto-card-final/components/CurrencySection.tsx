@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { cryptoCurrencies, fiatCurrencies } from '../data/currencies';
 import type { CurrencyItem } from '../data/currencies';
+import { cardBalanceYieldCopy } from '../data/cardBalanceYield';
 import { CurrencyMark } from './CurrencyMarks';
 import { VoltexCard } from './VoltexCard';
 import { useCardCopy } from '../useCardCopy';
@@ -29,12 +30,21 @@ const fiatArc = buildArc(fiatCurrencies, 'left');
 const cryptoArc = buildArc(cryptoCurrencies, 'right');
 
 export function CurrencySection() {
-  const { c } = useCardCopy();
+  const { c, lang } = useCardCopy();
+  const yieldCopy = cardBalanceYieldCopy[lang];
   return (
     <section className="voltex-grid vc-relative vc-overflow-hidden vc-bg-voltex-black vc-px-5 vc-py-24 vc-text-white sm:vc-px-8 lg:vc-px-12 lg:vc-py-36">
       <div className="vc-mx-auto vc-max-w-[1344px]">
         <div className="vc-grid vc-gap-8 lg:vc-grid-cols-[1fr_0.4fr] lg:vc-items-end">
           <h2 className="vc-max-w-5xl vc-text-[clamp(3.1rem,6vw,6.9rem)] vc-font-medium vc-leading-[0.94] vc-tracking-[-0.065em]">{c.currencyTitle}</h2>
+          <div className="vc-border-l vc-border-voltex-gold/35 vc-pl-5 lg:vc-pl-7">
+            <p className="vc-text-[11px] vc-font-semibold vc-uppercase vc-tracking-wide3 vc-text-voltex-goldLight">{yieldCopy.title}</p>
+            <div className="vc-mt-4 vc-flex vc-flex-wrap vc-items-baseline vc-gap-x-5 vc-gap-y-2">
+              <span className="vc-text-3xl vc-font-semibold vc-tracking-[-0.04em]">12% <span className="vc-text-sm vc-font-medium vc-text-voltex-muted">USDT</span></span>
+              <span className="vc-text-3xl vc-font-semibold vc-tracking-[-0.04em]">9% <span className="vc-text-sm vc-font-medium vc-text-voltex-muted">EUR</span></span>
+            </div>
+            <p className="vc-mt-3 vc-max-w-sm vc-text-sm vc-leading-6 vc-text-voltex-muted">{yieldCopy.text}</p>
+          </div>
         </div>
 
         <div className="vc-relative vc-mt-16 vc-hidden vc-min-h-[720px] vc-border-y vc-border-white/10 sm:vc-block lg:vc-min-h-[860px]">
