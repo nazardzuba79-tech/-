@@ -4,6 +4,7 @@ import { useLanguage } from '../../lib/i18n';
 import { LiveValue } from './LiveValue';
 import type { HomeMarket } from './useHomeMarket';
 import { globalHeroCopy } from './globalHeroCopy';
+import { useHomeCommodityReferences } from './useHomeCommodityReferences';
 
 export const finiteQuote = (value: unknown) => typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value))
   ? Number(value) : typeof value === 'number' && Number.isFinite(value) ? value : null;
@@ -33,32 +34,39 @@ function GoldIcon({ size = 24 }: { size?: number; strokeWidth?: number }) {
 function OilIcon({ size = 24 }: { size?: number; strokeWidth?: number }) {
   return <svg width={size + 5} height={size + 10} viewBox="0 0 40 48" fill="none" aria-hidden="true" focusable="false">
     <defs>
-      <linearGradient id="vx-hero-oil-metal" x1="6" y1="19" x2="35" y2="35" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#f1f6fc"/><stop offset=".18" stopColor="#a0b4c9"/><stop offset=".36" stopColor="#28394c"/>
-        <stop offset=".65" stopColor="#03080e"/><stop offset="1" stopColor="#314a61"/>
+      <linearGradient id="vx-hero-oil-metal" x1="6" y1="24" x2="34" y2="24" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#132333"/><stop offset=".24" stopColor="#668097"/><stop offset=".43" stopColor="#344d63"/>
+        <stop offset=".78" stopColor="#142638"/><stop offset="1" stopColor="#08131e"/>
+      </linearGradient>
+      <linearGradient id="vx-hero-oil-rim" x1="5" y1="0" x2="35" y2="0" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#8c672c"/><stop offset=".3" stopColor="#ffe1a1"/><stop offset=".64" stopColor="#c49950"/><stop offset="1" stopColor="#725124"/>
       </linearGradient>
     </defs>
-    <path d="M20 2C19 12 6 21 6 32a14 14 0 0 0 28 0C34 21 23 12 20 2Z" fill="url(#vx-hero-oil-metal)" stroke="#bdcddd" strokeWidth=".7"/>
-    <path d="M16 14C12 21 9 27 9 32c0 5 3 9 7 10" fill="none" stroke="#e6f2ff" strokeWidth="1.1" strokeLinecap="round" opacity=".78"/>
-    <path d="M14 43c7 3 14-1 16-7" fill="none" stroke="#7190ad" strokeWidth=".8" strokeLinecap="round" opacity=".6"/>
+    <path d="M6 8v32c0 3 6 5 14 5s14-2 14-5V8Z" fill="url(#vx-hero-oil-metal)" stroke="#8ba1b4" strokeWidth=".8"/>
+    <ellipse cx="20" cy="8" rx="14" ry="5" fill="#354b5e" stroke="url(#vx-hero-oil-rim)" strokeWidth="1.6"/>
+    <ellipse cx="20" cy="8" rx="10.5" ry="3" fill="#192c3c" stroke="#718594" strokeWidth=".6"/>
+    <ellipse cx="25" cy="7.5" rx="2.2" ry="1" fill="#07131e" stroke="#b4c0c9" strokeWidth=".6"/>
+    <path d="M5.5 16c0 3 6.5 5 14.5 5s14.5-2 14.5-5M5.5 32c0 3 6.5 5 14.5 5s14.5-2 14.5-5M6 40c0 3 6 5 14 5s14-2 14-5" stroke="url(#vx-hero-oil-rim)" strokeWidth="1.8" strokeLinecap="round"/>
+    <path d="M10 13v25" stroke="#dceaf3" strokeOpacity=".25" strokeWidth="1"/>
+    <path d="M20 23c-1.1 2.5-3.5 4.5-3.5 6.5a3.5 3.5 0 0 0 7 0c0-2-2.4-4-3.5-6.5Z" fill="#e4bd76"/>
   </svg>;
 }
 
 export function HomeHeroAssets({ market, englishLabels = false }: { market: HomeMarket; englishLabels?: boolean }) {
   const { lang, t } = useLanguage();
   const copy = globalHeroCopy[englishLabels ? 'en' : lang];
+  const commodity = useHomeCommodityReferences();
   const btc = market.tickers.find(row => row.pair === 'BTC/USDT');
-  const gold = market.cfd?.configured ? market.cfd.tickers.find(row => row.symbol === 'XAUUSD') : undefined;
   const rows = [
     { key: 'btc', title: 'BTC / USDT', price: market.hero.pair === 'BTC/USDT' ? market.hero.livePrice ?? btc?.price : btc?.price,
-      change: btc?.change, Icon: Bitcoin, points: market.priceHistory['BTC/USDT'] ?? [], note: market.tickersStale ? copy.quote : 'BTC / USDT' },
-    { key: 'gold', title: copy.gold, price: finiteQuote(gold?.price), change: finiteQuote(gold?.changePercent24h), Icon: GoldIcon, points: gold ? market.cfdPriceHistory?.XAUUSD ?? [] : [], note: gold ? `${copy.quote} · XAU/USD` : copy.unavailable },
-    // No oil instrument exists in the current CFD catalog. Do not substitute
-    // another asset or imply an unlisted trading route to fill the design.
-    { key: 'oil', title: copy.oil, price: null, change: null, Icon: OilIcon, points: [], note: copy.unavailable },
+      change: btc?.change, Icon: Bitcoin, points: market.priceHistory['BTC/USDT'] ?? [], note: market.tickersStale ? copy.quote : 'BTC / USDT', source: null as string | null },
+    { key: 'gold', title: 'GOLD', price: commodity.gold?.price ?? null, change: null, Icon: GoldIcon, points: [],
+      note: commodity.gold ? `${copy.quote} · ${commodity.gold.label}` : copy.unavailable, source: commodity.gold ? 'Gold API' : null },
+    { key: 'oil', title: 'OIL', price: commodity.oil?.price ?? null, change: null, Icon: OilIcon, points: [],
+      note: commodity.oil ? `${copy.quote} · ${commodity.oil.label}` : copy.unavailable, source: commodity.oil ? 'EIA' : null },
   ];
   return <div className="vx-global-assets">
-    {rows.map(({ key, title, price, change, Icon, points, note }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
+    {rows.map(({ key, title, price, change, Icon, points, note, source }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
       data-stale={key === 'btc' && market.tickersStale || undefined} style={{ animationDelay: `${-index*3}s` }}>
       <span className="vx-asset-symbol"><Icon size={24} strokeWidth={1.5}/></span>
       <div className="vx-asset-copy"><span>{title}</span><LiveValue value={price}/>
@@ -67,7 +75,7 @@ export function HomeHeroAssets({ market, englishLabels = false }: { market: Home
           : <small>{note}</small>}
       </div>
       {points.length > 1 && <span className="vx-asset-spark" aria-hidden="true"><Sparkline points={points} width={54} height={25}/></span>}
-      {key === 'gold' && gold && <span className="vx-asset-source">{copy.quote}</span>}
+      {source && <span className="vx-asset-source">{source}</span>}
       {key === 'btc' && market.tickersStale && <span className="vx-asset-source vx-asset-stale">{t('analytics.stale')}</span>}
     </div>)}
   </div>;
