@@ -1,0 +1,539 @@
+{
+  "capturedAt": "2026-09-12T17:40:32.029Z",
+  "environment": "Local build; fixture identity only, real anonymous public market reads, all writes blocked, private account requests unavailable",
+  "viewports": [
+    {
+      "market": "spot",
+      "width": 1920,
+      "height": 1080,
+      "viewport": 1920,
+      "body": 1920,
+      "document": 1920,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 258,
+          "y": 160,
+          "width": 1162,
+          "height": 748
+        },
+        {
+          "class": "orderbook-area",
+          "x": 1420,
+          "y": 160,
+          "width": 220,
+          "height": 748
+        },
+        {
+          "class": "order-form-area",
+          "x": 1640,
+          "y": 160,
+          "width": 280,
+          "height": 748
+        }
+      ]
+    },
+    {
+      "market": "spot",
+      "width": 1440,
+      "height": 900,
+      "viewport": 1440,
+      "body": 1440,
+      "document": 1440,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 258,
+          "y": 160,
+          "width": 698,
+          "height": 568
+        },
+        {
+          "class": "orderbook-area",
+          "x": 956,
+          "y": 160,
+          "width": 220,
+          "height": 568
+        },
+        {
+          "class": "order-form-area",
+          "x": 1176,
+          "y": 160,
+          "width": 264,
+          "height": 568
+        }
+      ]
+    },
+    {
+      "market": "spot",
+      "width": 1366,
+      "height": 768,
+      "viewport": 1366,
+      "body": 1366,
+      "document": 1366,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 258,
+          "y": 160,
+          "width": 624,
+          "height": 436
+        },
+        {
+          "class": "orderbook-area",
+          "x": 882,
+          "y": 160,
+          "width": 220,
+          "height": 436
+        },
+        {
+          "class": "order-form-area",
+          "x": 1102,
+          "y": 160,
+          "width": 264,
+          "height": 436
+        }
+      ]
+    },
+    {
+      "market": "spot",
+      "width": 390,
+      "height": 844,
+      "viewport": 390,
+      "body": 390,
+      "document": 390,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 0,
+          "y": 239.390625,
+          "width": 390,
+          "height": 440
+        },
+        {
+          "class": "orderbook-area",
+          "x": 0,
+          "y": 1835.421875,
+          "width": 390,
+          "height": 420
+        },
+        {
+          "class": "order-form-area",
+          "x": 0,
+          "y": 679.390625,
+          "width": 390,
+          "height": 776.03125
+        }
+      ]
+    },
+    {
+      "market": "futures",
+      "width": 1920,
+      "height": 1080,
+      "viewport": 1920,
+      "body": 1920,
+      "document": 1920,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 240,
+          "y": 160,
+          "width": 1180,
+          "height": 765
+        },
+        {
+          "class": "orderbook-area",
+          "x": 1420,
+          "y": 160,
+          "width": 220,
+          "height": 765
+        },
+        {
+          "class": "order-form-area",
+          "x": 1640,
+          "y": 160,
+          "width": 280,
+          "height": 765
+        }
+      ]
+    },
+    {
+      "market": "futures",
+      "width": 1440,
+      "height": 900,
+      "viewport": 1440,
+      "body": 1440,
+      "document": 1440,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 224,
+          "y": 160,
+          "width": 732,
+          "height": 585
+        },
+        {
+          "class": "orderbook-area",
+          "x": 956,
+          "y": 160,
+          "width": 220,
+          "height": 585
+        },
+        {
+          "class": "order-form-area",
+          "x": 1176,
+          "y": 160,
+          "width": 264,
+          "height": 585
+        }
+      ]
+    },
+    {
+      "market": "futures",
+      "width": 1366,
+      "height": 768,
+      "viewport": 1366,
+      "body": 1366,
+      "document": 1366,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 224,
+          "y": 160,
+          "width": 658,
+          "height": 453
+        },
+        {
+          "class": "orderbook-area",
+          "x": 882,
+          "y": 160,
+          "width": 220,
+          "height": 453
+        },
+        {
+          "class": "order-form-area",
+          "x": 1102,
+          "y": 160,
+          "width": 264,
+          "height": 453
+        }
+      ]
+    },
+    {
+      "market": "futures",
+      "width": 390,
+      "height": 844,
+      "viewport": 390,
+      "body": 390,
+      "document": 390,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "chart-area",
+          "x": 0,
+          "y": 242.59375,
+          "width": 390,
+          "height": 420
+        },
+        {
+          "class": "orderbook-area",
+          "x": 0,
+          "y": 1775.265625,
+          "width": 390,
+          "height": 420
+        },
+        {
+          "class": "order-form-area",
+          "x": 0,
+          "y": 662.59375,
+          "width": 390,
+          "height": 732.671875
+        }
+      ]
+    },
+    {
+      "market": "cfd",
+      "width": 1920,
+      "height": 1080,
+      "viewport": 1920,
+      "body": 1920,
+      "document": 1920,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "cfd-chart-area",
+          "x": 241,
+          "y": 161.046875,
+          "width": 1398,
+          "height": 763.953125
+        },
+        {
+          "class": "cfd-form-area",
+          "x": 1640,
+          "y": 161.046875,
+          "width": 280,
+          "height": 763.953125
+        }
+      ]
+    },
+    {
+      "market": "cfd",
+      "width": 1440,
+      "height": 900,
+      "viewport": 1440,
+      "body": 1440,
+      "document": 1440,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "cfd-chart-area",
+          "x": 225,
+          "y": 161.046875,
+          "width": 950,
+          "height": 583.953125
+        },
+        {
+          "class": "cfd-form-area",
+          "x": 1176,
+          "y": 161.046875,
+          "width": 264,
+          "height": 583.953125
+        }
+      ]
+    },
+    {
+      "market": "cfd",
+      "width": 1366,
+      "height": 768,
+      "viewport": 1366,
+      "body": 1366,
+      "document": 1366,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "cfd-chart-area",
+          "x": 225,
+          "y": 161.046875,
+          "width": 876,
+          "height": 451.953125
+        },
+        {
+          "class": "cfd-form-area",
+          "x": 1102,
+          "y": 161.046875,
+          "width": 264,
+          "height": 451.953125
+        }
+      ]
+    },
+    {
+      "market": "cfd",
+      "width": 390,
+      "height": 844,
+      "viewport": 390,
+      "body": 390,
+      "document": 390,
+      "charts": 1,
+      "panels": [
+        {
+          "class": "cfd-chart-area",
+          "x": 0,
+          "y": 388.625,
+          "width": 390,
+          "height": 460
+        },
+        {
+          "class": "cfd-form-area",
+          "x": 0,
+          "y": 849.625,
+          "width": 390,
+          "height": 579.109375
+        }
+      ]
+    }
+  ],
+  "switches": [
+    {
+      "market": "spot",
+      "available": 665,
+      "steps": [
+        {
+          "label": "BTC\n/USDT\n77,211.00\n▲ +0.00%",
+          "identity": "BTC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "ETH\n/USDT\n2,524.73\n▲ +0.34%",
+          "identity": "ETH/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "XRP\n/USDT\n1.3669\n▲ +0.80%",
+          "identity": "XRP/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "SOL\n/USDT\n102.00\n▼ -0.43%",
+          "identity": "SOL/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "ZEC\n/USDT\n1,138.42\n▼ -2.23%",
+          "identity": "ZEC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "USDC\n/USDT\n0.9998\n▼ -0.01%",
+          "identity": "USDC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "EUR\n/USDT\n1.1590\n▼ -0.05%",
+          "identity": "EUR/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "HYPE\n/USDT\n80.66\n▲ +1.50%",
+          "identity": "HYPE/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "LAPTOP\n/USDT\n0.3515\n▼ -13.02%",
+          "identity": "LAPTOP/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "NEAR\n/USDT\n2.3861\n▲ +1.02%",
+          "identity": "NEAR/USDT · 15m",
+          "charts": 1
+        }
+      ],
+      "finalCharts": 1,
+      "maxCharts": 1
+    },
+    {
+      "market": "futures",
+      "available": 30,
+      "steps": [
+        {
+          "label": "BTC\n/USDT\n77,210.10\n▲ +0.00%",
+          "identity": "BTC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "ETH\n/USDT\n2,524.75\n▲ +0.34%",
+          "identity": "ETH/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "XRP\n/USDT\n1.3671\n▲ +0.81%",
+          "identity": "XRP/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "SOL\n/USDT\n102.01\n▼ -0.42%",
+          "identity": "SOL/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "ZEC\n/USDT\n1,138.02\n▼ -2.27%",
+          "identity": "ZEC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "USDC\n/USDT\n0.9999\n▲ +0.00%",
+          "identity": "USDC/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "HYPE\n/USDT\n80.67\n▲ +1.51%",
+          "identity": "HYPE/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "NEAR\n/USDT\n2.3866\n▲ +1.04%",
+          "identity": "NEAR/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "DOGE\n/USDT\n0.084915\n▲ +0.76%",
+          "identity": "DOGE/USDT · 15m",
+          "charts": 1
+        },
+        {
+          "label": "ADA\n/USDT\n0.207435\n▲ +0.55%",
+          "identity": "ADA/USDT · 15m",
+          "charts": 1
+        }
+      ],
+      "finalCharts": 1,
+      "maxCharts": 1
+    },
+    {
+      "market": "cfd",
+      "available": 13,
+      "steps": [
+        {
+          "label": "🥇\nXAUUSD\nGold Spot\nТорговля CFD временно недоступна.\n4,348.45\n-0.01%",
+          "identity": "XAU/USD · 15m",
+          "charts": 1
+        },
+        {
+          "label": "◆\nXAGUSD\nSilver Spot\nТорговля CFD временно недоступна.\n—\n—",
+          "identity": "XAG/USD · 15m",
+          "charts": 0
+        },
+        {
+          "label": "◆\nXPTUSD\nPlatinum Spot\nТорговля CFD временно недоступна.\n—\n—",
+          "identity": "XPT/USD · 15m",
+          "charts": 0
+        },
+        {
+          "label": "◆\nXPDUSD\nPalladium Spot\nТорговля CFD временно недоступна.\n—\n—",
+          "identity": "XPD/USD · 15m",
+          "charts": 0
+        },
+        {
+          "label": "◆\nWTIUSD\nCrude Oil WTI Spot\nТорговля CFD временно недоступна.\n—\n—",
+          "identity": "WTI/USD · 15m",
+          "charts": 0
+        },
+        {
+          "label": "◆\nXBRUSD\nBrent Spot\nТорговля CFD временно недоступна.\n—\n—",
+          "identity": "XBR/USD · 15m",
+          "charts": 0
+        },
+        {
+          "label": "💶\nEURUSD\nEuro vs US Dollar\nТорговля CFD временно недоступна.\n1.15981\n-0.01%",
+          "identity": "EUR/USD · 15m",
+          "charts": 1
+        },
+        {
+          "label": "💷\nGBPUSD\nBritish Pound vs US Dollar\nТорговля CFD временно недоступна.\n1.35282\n+0.02%",
+          "identity": "GBP/USD · 15m",
+          "charts": 1
+        },
+        {
+          "label": "💴\nUSDJPY\nUS Dollar vs Japanese Yen\nТорговля CFD временно недоступна.\n153.567\n+0.03%",
+          "identity": "USD/JPY · 15m",
+          "charts": 1
+        },
+        {
+          "label": "🇦🇺\nAUDUSD\nAustralian Dollar vs US Dollar\nТорговля CFD временно недоступна.\n0.71710\n-0.00%",
+          "identity": "AUD/USD · 15m",
+          "charts": 1
+        }
+      ],
+      "finalCharts": 1,
+      "maxCharts": 1
+    }
+  ],
+  "errors": []
+}

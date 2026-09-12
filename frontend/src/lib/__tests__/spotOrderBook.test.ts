@@ -1,3 +1,4 @@
+import * as terminalPresentation from '../terminalPresentation';
 import { aggregateSpotBook, defaultSpotGroupStep, formatSpotBookNumber, formatSpotSpreadPercent,
   spotBookMetrics, spotGroupSteps, spotLevelPrice } from '../spotOrderBook';
 import { readFileSync } from 'fs';
@@ -81,6 +82,7 @@ const compiled = ts.transpileModule(source, { compilerOptions: {
 } }).outputText;
 const output: Record<string, any> = {};
 new Function('require', 'exports', compiled)((name: string) => {
+  if (name === '../lib/terminalPresentation') return terminalPresentation;
   if (name === '../lib/spotOrderBook') return helpers;
   if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
   if (name === '../lib/formatNumber') return { formatPrice: (price: number) => `legacy:${price}` };
@@ -104,7 +106,7 @@ test('shared/default Futures path retains legacy options/formatting and no Spot 
   expect([...html.matchAll(/<option value="([^"]+)"/g)].map(match => match[1])).toEqual(['0.1', '1', '10', '50']);
   expect(html).not.toContain('role="button"');
   expect(html).not.toContain('ob-row--spot');
-  expect(html).not.toContain('class="cell" title=');
+  expect(html).toContain('class="cell" title="1">1</span>');
 });
 
 test('Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells', () => {
@@ -115,9 +117,10 @@ test('Spot tiny-price rows keep unchanged full numeric labels and narrowly scope
   expect(html).toContain('ob-row--spot');
   const expectedPrice = spotLevelPrice(Number(price), defaultSpotGroupStep(0.00000010915));
   expect(html).toContain(`class="cell bid-price" title="${expectedPrice}">${expectedPrice}</span>`);
-  expect(html).toContain(`class="cell" title="${formatSpotBookNumber(quantity)}">${formatSpotBookNumber(quantity)}</span>`);
-  const total = formatSpotBookNumber(Number(expectedPrice) * quantity);
-  expect(html).toContain(`class="cell" title="${total}">${total}</span>`);
+  expect(html).toContain(`class="cell" title="${quantity}">${terminalPresentation.formatBookAmount(quantity)}</span>`);
+  const rawTotal = Number(expectedPrice) * quantity;
+  const total = terminalPresentation.formatBookAmount(rawTotal);
+  expect(html).toContain(`class="cell" title="${rawTotal}">${total}</span>`);
   const css = readFileSync(resolve(frontend, 'src/components/SpotMarketControls.css'), 'utf8');
   expect(css).toMatch(/\.ob-row\.ob-row--spot\s*\{\s*gap:\s*6px;/);
   expect(css).toMatch(/\.ob-row\.ob-row--spot \.cell\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/);
@@ -138,6 +141,7 @@ test('actual row handlers select exact small price by click, Enter and Space onl
     if (name === '../lib/spotOrderBook') return helpers;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/formatNumber') return { formatPrice: String };
+    if (name === '../lib/terminalPresentation') return terminalPresentation;
     return requireFrontend(name);
   }, bindings);
   const picked: string[] = [];

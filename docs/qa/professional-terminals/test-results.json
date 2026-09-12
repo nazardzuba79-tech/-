@@ -1,0 +1,3165 @@
+{
+  "branchBase": "39bd779df864b9e1ac3c654e82dad5210462c79e",
+  "latestMainAtPublication": "cd1d646bd0dbe9b42d6cb21e4445430ce43934a1",
+  "candidate": {
+    "passed": 384,
+    "failed": 2,
+    "suites": [
+      {
+        "file": "futuresUiPolish.test.ts",
+        "status": "failed",
+        "tests": [
+          {
+            "name": "Futures UI-only reconciliation components/FuturesOrderForm.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/FuturesAccountSummary.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/LeverageSlider.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/MarginTypeToggle.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics",
+            "status": "failed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/FuturesPairList.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/OrderBookPanel.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation lib/futuresMath.ts preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation every new stylesheet selector is Futures-scoped",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation form uses styled real inputs and accessible selected-side/type state",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresConfigDedup.test.ts",
+        "status": "failed",
+        "tests": [
+          {
+            "name": "the store coalesces every consumer onto one request three consumers mounting together produce ONE fetch",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request a consumer arriving mid-flight joins it rather than racing it",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request a consumer arriving later is served from memory, with no network at all",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request every field reaches the consumers exactly as the server sent it",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request keeps object identity when a re-read returns the same payload",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request adopts a genuinely changed payload",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook A. two awaited loads inside the window make exactly ONE request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook B. load() after a hook-loaded value returns the cache, with no request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook C. the real route sequence — /futures, then the homepage — costs one request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook D. refresh() still performs a real re-read of a perfectly fresh value",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook D2. refresh() joins an in-flight request rather than duplicating it",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook E. once the window has passed, load() reads again",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook F. a cached load resolves with the very same object",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook and a cache hit emits nothing, so no consumer re-renders for it",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure never substitutes a default config",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure rejects for every joined caller, not just the first",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure retries on the next mount, and not before",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure keeps the last good answer when a later read fails, flagged stale",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure G. a failed read never poisons the cache, and load() still retries",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure G2. a failed REFRESH leaves the last good value servable, and the window intact",
+            "status": "passed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller",
+            "status": "failed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store the three /futures consumers read it through the shared hook",
+            "status": "passed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store and the store schedules nothing — no timer, no polling loop",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "cfdChartFallback.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "one chart across ten rapid switches, detached late work cannot stack: spot",
+            "status": "passed"
+          },
+          {
+            "name": "one chart across ten rapid switches, detached late work cannot stack: futures",
+            "status": "passed"
+          },
+          {
+            "name": "one chart across ten rapid switches, detached late work cannot stack: cfd",
+            "status": "passed"
+          },
+          {
+            "name": "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+            "status": "passed"
+          },
+          {
+            "name": "supported indicators and volume pass into the sole chart",
+            "status": "passed"
+          },
+          {
+            "name": "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+            "status": "passed"
+          },
+          {
+            "name": "loaded script without a widget times out and can retry, no poisoned global promise",
+            "status": "passed"
+          },
+          {
+            "name": "unmount pending script cancels callbacks and removes all owned nodes",
+            "status": "passed"
+          },
+          {
+            "name": "locale switch remounts cleanly: ru",
+            "status": "passed"
+          },
+          {
+            "name": "locale switch remounts cleanly: en",
+            "status": "passed"
+          },
+          {
+            "name": "locale switch remounts cleanly: zh",
+            "status": "passed"
+          },
+          {
+            "name": "locale switch remounts cleanly: es",
+            "status": "passed"
+          },
+          {
+            "name": "locale switch remounts cleanly: ja",
+            "status": "passed"
+          },
+          {
+            "name": "unknown CFD mapping and malformed symbols never substitute another instrument",
+            "status": "passed"
+          },
+          {
+            "name": "verified CFD mapping and compact visible attribution are preserved",
+            "status": "passed"
+          },
+          {
+            "name": "fallback translations remain available in all seven locales",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresFinalPolish.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "BTC/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "ETH/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "XRP/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "DOGE/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "Futures wires dynamic precision, rejects prior-pair REST and preserves repeated selection events",
+            "status": "passed"
+          },
+          {
+            "name": "only the translated leverage table is collapsed; repeat picks retain exact form price and select Limit",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 1x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 5x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 10x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 20x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 50x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 100x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 50000 USDT notional at 100x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 50000.01 USDT notional at 50x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 250000 USDT notional at 50x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 250000.01 USDT notional at 20x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 1000000 USDT notional at 20x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 1000000.01 USDT notional at 10x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 5000000 USDT notional at 10x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 5000000.01 USDT notional at 5x",
+            "status": "passed"
+          },
+          {
+            "name": "frontend projection includes positions and pending increases, but only the remainder of a flip",
+            "status": "passed"
+          },
+          {
+            "name": "form leverage ceiling reflects the expected aggregate tier while reductions remain unclamped",
+            "status": "passed"
+          },
+          {
+            "name": "high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact",
+            "status": "passed"
+          },
+          {
+            "name": "Futures Assets uses only Futures balances; compact Spot keeps its original API",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "cfdTerminal.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "XAUUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "EURUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "GBPUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "USDJPY retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "AUDUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "USDCAD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "invalid/missing reference prices are not fabricated",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=XAUUSD renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=EURUSD renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=USDJPY renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=INVALID renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "manual instruments survive ticker polls; URL, Spot/CFD and back/forward update without remount",
+            "status": "passed"
+          },
+          {
+            "name": "provider subset and unloaded feed both have a safe instrument fallback",
+            "status": "passed"
+          },
+          {
+            "name": "instrument loading, unconfigured and error/retry remain distinct; no fabricated instrument rows",
+            "status": "passed"
+          },
+          {
+            "name": "real ticker hook keeps 60s polling and exposes retry without replacing its data source",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers missing entirely) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers null) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers an object) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers a string) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (whole body null) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (whole body a string) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (rows present but none usable) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "a malformed refresh keeps the last good instrument rows on screen",
+            "status": "passed"
+          },
+          {
+            "name": "a well-formed empty list is truth, not an error",
+            "status": "passed"
+          },
+          {
+            "name": "unusable rows are dropped and a listed unavailable price stays null",
+            "status": "passed"
+          },
+          {
+            "name": "a real zero and a numeric price survive; an unknown 24h change stays absent",
+            "status": "passed"
+          },
+          {
+            "name": "a row without a name falls back to its symbol rather than an empty label",
+            "status": "passed"
+          },
+          {
+            "name": "MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact open payload",
+            "status": "passed"
+          },
+          {
+            "name": "order error and unavailable-price submission state remain visible",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (not an array (object)) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (not an array (string)) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (missing entirely) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (null) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (array holding null) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (array holding a primitive) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row missing its id) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with an empty id) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with an unrecognised side) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with a non-numeric leverage) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row missing its entry price) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "a malformed refresh keeps the last good positions on screen",
+            "status": "passed"
+          },
+          {
+            "name": "a legitimate empty list is still a legitimate empty list",
+            "status": "passed"
+          },
+          {
+            "name": "a valid payload renders unchanged, real zeros included",
+            "status": "passed"
+          },
+          {
+            "name": "absent optional figures render as a dash, never as NaN or zero",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (not an array) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (array holding null) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (row with an unparseable realized PnL) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (row missing its status) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "a valid history payload still renders, with a real zero realized PnL",
+            "status": "passed"
+          },
+          {
+            "name": "positions/history preserve polling, close API, closing state, error and liquidation status",
+            "status": "passed"
+          },
+          {
+            "name": "components/CfdOrderForm.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "components/CfdPositionsPanel.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "pages/TradePage.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "all CSS selectors are scoped and chart stays on the unchanged real TradingView mapping",
+            "status": "passed"
+          },
+          {
+            "name": "CFD reference-price disclaimer matches the unchanged 60-second poll in every language",
+            "status": "passed"
+          },
+          {
+            "name": "CFD order form expires a quote and refuses programmatic submission",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata undefined",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"executionAllowed\": false, \"status\": \"live\"}",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"executionAllowed\": true, \"status\": \"stale\"}",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"price\": null}",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresOrderPanel.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the leverage slider is gone from the futures panel",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider only the position-size control renders a slider",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the margin/leverage control renders no slider of its own",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the size presets are 10 / 25 / 50 / 75 / 100",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before no preset above the effective ceiling is offered",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the ceiling itself is always offered, even when it is not a round preset",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before presets below the minimum are not offered",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the stepper cannot leave [min, max]",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before an unknown ceiling disables the control rather than guessing one",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the form feeds it config.minLeverage, effectiveMaxLeverage and the warning threshold",
+            "status": "passed"
+          },
+          {
+            "name": "C. leverage selection does not change any calculation required margin stays notional / leverage across selections",
+            "status": "passed"
+          },
+          {
+            "name": "C. leverage selection does not change any calculation order value is the untouched notional",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was E. LIMIT / BUY / ISOLATED default",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was F. MARKET sends no price and keeps the mark-price behaviour",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was G. CROSS and SHORT travel unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was H. Reduce Only travels unchanged, and still works without exposure data",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was the high-leverage confirmation still gates submission",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated I. an unknown balance shows a dash and sizes nothing",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated J. unknown exposure yields no leverage ceiling, not an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated K. there is NO fee row — VOLTEX charges nothing, in either terminal",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated order value and required margin dash out when the price is unknown",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated a REAL empty account still yields a real ceiling and a real zero exposure",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 1. a known account state leaves the button enabled",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 2. an unknown leverage ceiling disables the button, matching the guard",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 2b. unknown ORDERS disables it for the same reason",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 3. REDUCE ONLY stays enabled with unknown exposure — it does not need it",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses a fresh form sends SHORT when SHORT is pressed — no tab, no prior click",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses a fresh form sends LONG when LONG is pressed",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses reversing sends the NEW direction, not the one pressed before it",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses both buttons answer to one guard",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses neither button is type=submit — the form must not pick a side by itself",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 4. while submitting, the button is disabled",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 4b. a second submit while one is in flight sends nothing extra",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 5. the payload is unchanged by this gating",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses the high-leverage confirmation is a prompt, not a precondition",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses button and guard read one expression, not two copies",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery no spot trigger endpoint is referenced",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery no TP/SL controls were invented on top of a contract that has none",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery the account store from PR #14 is still the only source of account data",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it starts closed and toggles",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover mode and leverage are two triggers, each showing only its own value",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover each trigger opens its OWN popover, and never both at once",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it marks high leverage without changing the threshold",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it declares dialog semantics and an expanded state",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover outside-click and Escape handling is registered while open only",
+            "status": "passed"
+          },
+          {
+            "name": "every new selector is scoped to the futures terminal",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderBook.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "group default is a real selectable step for null",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 80000",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 3200",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 125",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 0.51",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 1e-14",
+            "status": "passed"
+          },
+          {
+            "name": "bid floors, ask ceils, exact grid boundaries and cumulative quantity conserve the real book",
+            "status": "passed"
+          },
+          {
+            "name": "tiny coin rows remain nonzero and selectable with exact displayed decimal precision",
+            "status": "passed"
+          },
+          {
+            "name": "spread derives from best valid ungrouped prices even when input is unsorted",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "locked book has real zero spread, not unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "aggregation excludes invalid/nonpositive rows, preserves valid quantity and rejects bad steps",
+            "status": "passed"
+          },
+          {
+            "name": "display formatting does not zero small positive spreads or append a false USD unit",
+            "status": "passed"
+          },
+          {
+            "name": "actual Spot component shows real tiny prices, accessible rows and no false EUR dollar approximation",
+            "status": "passed"
+          },
+          {
+            "name": "shared/default Futures path retains legacy options/formatting and no Spot keyboard behavior",
+            "status": "passed"
+          },
+          {
+            "name": "Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells",
+            "status": "passed"
+          },
+          {
+            "name": "exact Spot selection text is shared by click and keyboard, not toFixed(2)",
+            "status": "passed"
+          },
+          {
+            "name": "actual row handlers select exact small price by click, Enter and Space only",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresTickerHeader.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "VOLTEX derivatives reads (mark, index, funding) stay on the futures services",
+            "status": "passed"
+          },
+          {
+            "name": "market-data reads, including index price, are unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "funding countdown implementation is unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "src/api/routes/futures.ts remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "frontend/src/components/TickerBar.tsx remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "visible metrics follow price, market, derivatives order without index or base volume",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 0, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 1, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 2, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 3, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "unavailable data stays unavailable rather than becoming fake zero",
+            "status": "passed"
+          },
+          {
+            "name": "the header names no upstream venue, in any state",
+            "status": "passed"
+          },
+          {
+            "name": "a provider read that throws leaves the cells empty, never zeroed",
+            "status": "passed"
+          },
+          {
+            "name": "countdown uses actual clock, ticks and rolls over at the existing UTC boundary",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval null has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval 0 has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval -1 has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "symbol selector keyboard behavior is preserved",
+            "status": "passed"
+          },
+          {
+            "name": "professional RU terminology is additive and does not reuse Spot volume labels",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresAccountUnknownState.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "position history is loaded, never polled the history tab asks the store for NO history cadence",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled opening the history tab triggers exactly ONE explicit history load",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled 60 seconds on the history tab causes ZERO further history loads",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled the open-positions tab keeps its 4s shared cadence and wants no history",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled closing a position explicitly refreshes history (and positions and balances)",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel A. a failed positions request does NOT claim there are no open positions",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel A2. a not-yet-loaded positions request does NOT claim there are no open positions",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel B. a successful empty response DOES render the real empty state",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel C. a failed history request does NOT claim the history is empty",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel D. a successful empty history DOES render the real empty history state",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel last-good rows survive a failed refresh rather than being blanked",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state A. positions unknown + orders known: no exposure-derived leverage preview",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state B. positions known + orders unknown: no exposure-derived leverage preview",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state B2. a failed request is unknown too, not an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state C. both known and empty: a REAL zero existing exposure, preview valid",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state D. both known WITH a position and a working order: identical to the formula",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state a reduce-only order does NOT need the account state — risk-reducing orders stay available",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state nothing typed yet does not need the account state either",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state E. the order payload is unchanged when the account state IS known",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state E2. submit is refused, and no order sent, while exposure inputs are unknown",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrdersPresentation.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 0.00001234 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1e-8 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1.25e3 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 9007199254740993.12345678 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 0.00000000 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 12.34000000 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value null without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value NaN without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1e999999 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation derives exact display totals and fills from only the real decimal inputs",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation distinguishes real market/limit conditional types and OCO without relabeling unknown types",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation renders all real columns, precise price/trigger/fill/status, and does not mutate the row",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation keeps a compact intentional empty state below the real header",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation never mistakes loading or a failed GET for a confirmed empty account",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation retains last known rows on transient failure and blocks repeat cancel while pending",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation history exposes pair, type, fill and actual terminal status without a cancel action",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation compact assets totals derive from existing balances and do not hide small nonzero holdings",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation a GET slower than three 4-second polls still publishes, without overlapping requests",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation after cancellation, forced refresh rejects stale rows and awaits one immediate fresh GET",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation refreshKey cleanup/restart queues fresh data and ignores a late pre-refresh error",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation an unmount discards queued work and never updates state from a late response",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation a synchronous request failure clears the single-flight slot so Retry can recover",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation continues real sequential cancellations after a failure and reports the actual outcome",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation Cancel All sends only one real DELETE per OCO group and preserves every standalone order",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation OCO grouping does not hide a genuine API rejection or merge independent groups",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves existing GET filters, 4-second polling, selected-pair filtering and per-order cancel endpoint",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation keeps the complete shared Futures stylesheet intact and scopes every new override to Spot",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderFeedback.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone empty MARKET SELL cancellation is not a successful placement",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized OPEN remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized PARTIALLY_FILLED remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized PENDING_TRIGGER remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized FILLED remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone partially filled, then cancelled market order reports exact real filled/remainder",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success (undefined)",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"UNKNOWN\"}})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"0.3\",\"remainingQuantity\":\"0.1\"},\"trades\":[{\"quantity\":\"0.1\"}]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"0\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"NaN\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"1\",\"remainingQuantity\":\"2\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"1e9999\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone response is never changed",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler 201/CANCELLED with no fill shows non-success, preserves input and refreshes persisted state",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler partial cancellation is informative with real quantities, never a full-success toast",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler accepted order retains existing positive feedback",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler unknown response is explicitly unconfirmed, not success",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler conditional Limit/Market controls expose their actual pressed state",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler all seven supported languages have each new outcome message and partial quantities",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderEntry.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "rejects nonpositive/nonfinite input null",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input ",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input   ",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input 0",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input -3",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 79000",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 2.5",
+            "status": "passed"
+          },
+          {
+            "name": "LIMIT/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "STOP/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "TAKE_PROFIT/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "MARKET/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "STOP/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "TAKE_PROFIT/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "OCO/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "OCO/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "unavailable funding data cannot generate an affordable market quantity",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.57",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 1.15",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.0000049",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 123.45678912345679",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price 0",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent -Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "percentage boundaries and SELL base-quantity mode are deterministic",
+            "status": "passed"
+          },
+          {
+            "name": "100% tiny-token quantity does not overspend by a floating-point tail",
+            "status": "passed"
+          },
+          {
+            "name": "fractional slider always stays within selected funding share across realistic prices",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 100 at 100% and price 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1000 at 100% and price 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 0.12345678 at 12.345% and price 1.1526",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1e-7 at 75% and price 1e-8",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1e+21 at 100% and price 1e-7",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 5e-324 at 100% and price 1",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1 at 100% and price 1.7976931348623157e+308",
+            "status": "passed"
+          },
+          {
+            "name": "parent wiring keeps plain matching APIs, pair-keyed reset and genuine funding separate from KYC",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresMarketStats.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "the header no longer sources market stats from the wrong market does not render Kraken spot quote volume as the 24h turnover",
+            "status": "passed"
+          },
+          {
+            "name": "the header no longer sources market stats from the wrong market does not render VOLTEX internal open interest as the market figure",
+            "status": "passed"
+          },
+          {
+            "name": "the header no longer sources market stats from the wrong market reads the dedicated lightweight endpoint, not the whole Analytics snapshot",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched still reads mark price, index and the settled funding rate from the futures services",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched never substitutes an external venue figure for a VOLTEX one",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched keeps /futures/open-interest intact for internal risk and Analytics",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding labels the unit it is actually showing, and never mixes the two",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding names no upstream venue anywhere in the customer-facing header",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding keeps the contributor lists in the API contract, out of the UI",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding clears the previous symbol's stats immediately on a switch",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding dims a stale figure rather than presenting it as live",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/MarkPriceService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/FundingRateService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/LiquidationEngine.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/FuturesPositionService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/marginMath.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/matching-engine/MatchingEngine.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic the new endpoint is read-only market reference data",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "terminalPresentation.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "book display stays compact and finite: 0",
+            "status": "passed"
+          },
+          {
+            "name": "book display stays compact and finite: 4.5123456e-11",
+            "status": "passed"
+          },
+          {
+            "name": "book display stays compact and finite: 0.00123456789",
+            "status": "passed"
+          },
+          {
+            "name": "book display stays compact and finite: 1.23456789",
+            "status": "passed"
+          },
+          {
+            "name": "book display stays compact and finite: 12345.123456789",
+            "status": "passed"
+          },
+          {
+            "name": "book display stays compact and finite: 123456789123",
+            "status": "passed"
+          },
+          {
+            "name": "malformed display is unavailable: NaN",
+            "status": "passed"
+          },
+          {
+            "name": "malformed display is unavailable: Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "malformed display is unavailable: -1",
+            "status": "passed"
+          },
+          {
+            "name": "formatting never modifies source values or aggregates",
+            "status": "passed"
+          },
+          {
+            "name": "exact live perpetual turnover and real zero are available",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"marketType\":\"spot\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"marketType\":\"linear_futures\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"marketType\":\"inverse_perpetual\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"pair\":\"ETH/USDT\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"quoteAsset\":\"USD\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"settleAsset\":\"BTC\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"turnoverAsset\":\"BTC\"}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"stale\":true}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"fetchedAt\":1799999969999}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"receivedAt\":1799999969999}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"fetchedAt\":null}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"fetchedAt\":1800000006000}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"quoteVolume24h\":null}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"quoteVolume24h\":null}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"quoteVolume24h\":-1}",
+            "status": "passed"
+          },
+          {
+            "name": "reject mismatched, expired or malformed turnover {\"providerSymbol\":\"ETHUSDT\"}",
+            "status": "passed"
+          },
+          {
+            "name": "non-live stream gives no turnover: disabled",
+            "status": "passed"
+          },
+          {
+            "name": "non-live stream gives no turnover: connecting",
+            "status": "passed"
+          },
+          {
+            "name": "non-live stream gives no turnover: stale",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "pristineCurrentMain": {
+    "sha": "cd1d646bd0dbe9b42d6cb21e4445430ce43934a1",
+    "passed": 355,
+    "failed": 2,
+    "suites": [
+      {
+        "file": "futuresConfigDedup.test.ts",
+        "status": "failed",
+        "tests": [
+          {
+            "name": "the store coalesces every consumer onto one request three consumers mounting together produce ONE fetch",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request a consumer arriving mid-flight joins it rather than racing it",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request a consumer arriving later is served from memory, with no network at all",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request every field reaches the consumers exactly as the server sent it",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request keeps object identity when a re-read returns the same payload",
+            "status": "passed"
+          },
+          {
+            "name": "the store coalesces every consumer onto one request adopts a genuinely changed payload",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook A. two awaited loads inside the window make exactly ONE request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook B. load() after a hook-loaded value returns the cache, with no request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook C. the real route sequence — /futures, then the homepage — costs one request",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook D. refresh() still performs a real re-read of a perfectly fresh value",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook D2. refresh() joins an in-flight request rather than duplicating it",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook E. once the window has passed, load() reads again",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook F. a cached load resolves with the very same object",
+            "status": "passed"
+          },
+          {
+            "name": "the imperative read is cached on the same terms as the hook and a cache hit emits nothing, so no consumer re-renders for it",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure never substitutes a default config",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure rejects for every joined caller, not just the first",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure retries on the next mount, and not before",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure keeps the last good answer when a later read fails, flagged stale",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure G. a failed read never poisons the cache, and load() still retries",
+            "status": "passed"
+          },
+          {
+            "name": "a failure stays a failure G2. a failed REFRESH leaves the last good value servable, and the window intact",
+            "status": "passed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller",
+            "status": "failed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store the three /futures consumers read it through the shared hook",
+            "status": "passed"
+          },
+          {
+            "name": "nobody fetches /futures/config except the store and the store schedules nothing — no timer, no polling loop",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresUiPolish.test.ts",
+        "status": "failed",
+        "tests": [
+          {
+            "name": "Futures UI-only reconciliation components/FuturesOrderForm.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/FuturesAccountSummary.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/LeverageSlider.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/MarginTypeToggle.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics",
+            "status": "failed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/FuturesPairList.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation components/OrderBookPanel.tsx preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation lib/futuresMath.ts preserves non-visual semantics",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation every new stylesheet selector is Futures-scoped",
+            "status": "passed"
+          },
+          {
+            "name": "Futures UI-only reconciliation form uses styled real inputs and accessible selected-side/type state",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresOrderPanel.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the leverage slider is gone from the futures panel",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider only the position-size control renders a slider",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the margin/leverage control renders no slider of its own",
+            "status": "passed"
+          },
+          {
+            "name": "A. the panel keeps exactly ONE persistent slider the size presets are 10 / 25 / 50 / 75 / 100",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before no preset above the effective ceiling is offered",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the ceiling itself is always offered, even when it is not a round preset",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before presets below the minimum are not offered",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the stepper cannot leave [min, max]",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before an unknown ceiling disables the control rather than guessing one",
+            "status": "passed"
+          },
+          {
+            "name": "B. leverage bounds come from the same values as before the form feeds it config.minLeverage, effectiveMaxLeverage and the warning threshold",
+            "status": "passed"
+          },
+          {
+            "name": "C. leverage selection does not change any calculation required margin stays notional / leverage across selections",
+            "status": "passed"
+          },
+          {
+            "name": "C. leverage selection does not change any calculation order value is the untouched notional",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was E. LIMIT / BUY / ISOLATED default",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was F. MARKET sends no price and keeps the mark-price behaviour",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was G. CROSS and SHORT travel unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was H. Reduce Only travels unchanged, and still works without exposure data",
+            "status": "passed"
+          },
+          {
+            "name": "the placeFuturesOrder payload is byte-for-byte what it was the high-leverage confirmation still gates submission",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated I. an unknown balance shows a dash and sizes nothing",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated J. unknown exposure yields no leverage ceiling, not an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated K. there is NO fee row — VOLTEX charges nothing, in either terminal",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated order value and required margin dash out when the price is unknown",
+            "status": "passed"
+          },
+          {
+            "name": "unknown data is never fabricated a REAL empty account still yields a real ceiling and a real zero exposure",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 1. a known account state leaves the button enabled",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 2. an unknown leverage ceiling disables the button, matching the guard",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 2b. unknown ORDERS disables it for the same reason",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 3. REDUCE ONLY stays enabled with unknown exposure — it does not need it",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses a fresh form sends SHORT when SHORT is pressed — no tab, no prior click",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses a fresh form sends LONG when LONG is pressed",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses reversing sends the NEW direction, not the one pressed before it",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses both buttons answer to one guard",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses neither button is type=submit — the form must not pick a side by itself",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 4. while submitting, the button is disabled",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 4b. a second submit while one is in flight sends nothing extra",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses 5. the payload is unchanged by this gating",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses the high-leverage confirmation is a prompt, not a precondition",
+            "status": "passed"
+          },
+          {
+            "name": "the submit button reflects the SAME guard handleSubmit uses button and guard read one expression, not two copies",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery no spot trigger endpoint is referenced",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery no TP/SL controls were invented on top of a contract that has none",
+            "status": "passed"
+          },
+          {
+            "name": "L. the panel references no spot conditional-order machinery the account store from PR #14 is still the only source of account data",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it starts closed and toggles",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover mode and leverage are two triggers, each showing only its own value",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover each trigger opens its OWN popover, and never both at once",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it marks high leverage without changing the threshold",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover it declares dialog semantics and an expanded state",
+            "status": "passed"
+          },
+          {
+            "name": "the popover behaves like a popover outside-click and Escape handling is registered while open only",
+            "status": "passed"
+          },
+          {
+            "name": "every new selector is scoped to the futures terminal",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "cfdTerminal.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "XAUUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "EURUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "GBPUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "USDJPY retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "AUDUSD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "USDCAD retains appropriate displayed precision",
+            "status": "passed"
+          },
+          {
+            "name": "invalid/missing reference prices are not fabricated",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=XAUUSD renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=EURUSD renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=USDJPY renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "TradePage ?market=cfd&symbol=INVALID renders only the real CFD three-column terminal",
+            "status": "passed"
+          },
+          {
+            "name": "manual instruments survive ticker polls; URL, Spot/CFD and back/forward update without remount",
+            "status": "passed"
+          },
+          {
+            "name": "provider subset and unloaded feed both have a safe instrument fallback",
+            "status": "passed"
+          },
+          {
+            "name": "instrument loading, unconfigured and error/retry remain distinct; no fabricated instrument rows",
+            "status": "passed"
+          },
+          {
+            "name": "real ticker hook keeps 60s polling and exposes retry without replacing its data source",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers missing entirely) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers null) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers an object) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (tickers a string) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (whole body null) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (whole body a string) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "malformed response (rows present but none usable) surfaces the error state instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "a malformed refresh keeps the last good instrument rows on screen",
+            "status": "passed"
+          },
+          {
+            "name": "a well-formed empty list is truth, not an error",
+            "status": "passed"
+          },
+          {
+            "name": "unusable rows are dropped and a listed unavailable price stays null",
+            "status": "passed"
+          },
+          {
+            "name": "a real zero and a numeric price survive; an unknown 24h change stays absent",
+            "status": "passed"
+          },
+          {
+            "name": "a row without a name falls back to its symbol rather than an empty label",
+            "status": "passed"
+          },
+          {
+            "name": "MARKET/ISOLATED form uses original sizing, leverage, USDT margin and exact open payload",
+            "status": "passed"
+          },
+          {
+            "name": "order error and unavailable-price submission state remain visible",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (not an array (object)) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (not an array (string)) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (missing entirely) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (null) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (array holding null) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (array holding a primitive) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row missing its id) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with an empty id) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with an unrecognised side) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row with a non-numeric leverage) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "malformed positions payload (row missing its entry price) never crashes and never reads as an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "a malformed refresh keeps the last good positions on screen",
+            "status": "passed"
+          },
+          {
+            "name": "a legitimate empty list is still a legitimate empty list",
+            "status": "passed"
+          },
+          {
+            "name": "a valid payload renders unchanged, real zeros included",
+            "status": "passed"
+          },
+          {
+            "name": "absent optional figures render as a dash, never as NaN or zero",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (not an array) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (array holding null) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (row with an unparseable realized PnL) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "malformed history payload (row missing its status) is caught by the same contract",
+            "status": "passed"
+          },
+          {
+            "name": "a valid history payload still renders, with a real zero realized PnL",
+            "status": "passed"
+          },
+          {
+            "name": "positions/history preserve polling, close API, closing state, error and liquidation status",
+            "status": "passed"
+          },
+          {
+            "name": "components/CfdOrderForm.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "components/CfdPositionsPanel.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "pages/TradePage.tsx preserves original financial callbacks/hooks or complete Spot JSX from bfaf522",
+            "status": "passed"
+          },
+          {
+            "name": "all CSS selectors are scoped and chart stays on the unchanged real TradingView mapping",
+            "status": "passed"
+          },
+          {
+            "name": "CFD reference-price disclaimer matches the unchanged 60-second poll in every language",
+            "status": "passed"
+          },
+          {
+            "name": "CFD order form expires a quote and refuses programmatic submission",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata undefined",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"executionAllowed\": false, \"status\": \"live\"}",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"executionAllowed\": true, \"status\": \"stale\"}",
+            "status": "passed"
+          },
+          {
+            "name": "CFD execution UI fails closed for incomplete metadata {\"price\": null}",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresFinalPolish.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "BTC/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "ETH/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "XRP/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "DOGE/USDT uses dynamic selectable grouping and exact row-to-Limit prices",
+            "status": "passed"
+          },
+          {
+            "name": "Futures wires dynamic precision, rejects prior-pair REST and preserves repeated selection events",
+            "status": "passed"
+          },
+          {
+            "name": "only the translated leverage table is collapsed; repeat picks retain exact form price and select Limit",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 1x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 5x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 10x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 20x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 50x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "real form + leverage control select 100x and pass it unchanged to the order API",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 50000 USDT notional at 100x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 50000.01 USDT notional at 50x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 250000 USDT notional at 50x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 250000.01 USDT notional at 20x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 1000000 USDT notional at 20x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 1000000.01 USDT notional at 10x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 5000000 USDT notional at 10x",
+            "status": "passed"
+          },
+          {
+            "name": "form caps a 5000000.01 USDT notional at 5x",
+            "status": "passed"
+          },
+          {
+            "name": "frontend projection includes positions and pending increases, but only the remainder of a flip",
+            "status": "passed"
+          },
+          {
+            "name": "form leverage ceiling reflects the expected aggregate tier while reductions remain unclamped",
+            "status": "passed"
+          },
+          {
+            "name": "high-leverage cancellation does not send an order; Market/Short/Cross/Reduce Only payload stays intact",
+            "status": "passed"
+          },
+          {
+            "name": "Futures Assets uses only Futures balances; compact Spot keeps its original API",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresAccountUnknownState.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "position history is loaded, never polled the history tab asks the store for NO history cadence",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled opening the history tab triggers exactly ONE explicit history load",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled 60 seconds on the history tab causes ZERO further history loads",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled the open-positions tab keeps its 4s shared cadence and wants no history",
+            "status": "passed"
+          },
+          {
+            "name": "position history is loaded, never polled closing a position explicitly refreshes history (and positions and balances)",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel A. a failed positions request does NOT claim there are no open positions",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel A2. a not-yet-loaded positions request does NOT claim there are no open positions",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel B. a successful empty response DOES render the real empty state",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel C. a failed history request does NOT claim the history is empty",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel D. a successful empty history DOES render the real empty history state",
+            "status": "passed"
+          },
+          {
+            "name": "unknown is not empty in the positions panel last-good rows survive a failed refresh rather than being blanked",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state A. positions unknown + orders known: no exposure-derived leverage preview",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state B. positions known + orders unknown: no exposure-derived leverage preview",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state B2. a failed request is unknown too, not an empty account",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state C. both known and empty: a REAL zero existing exposure, preview valid",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state D. both known WITH a position and a working order: identical to the formula",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state a reduce-only order does NOT need the account state — risk-reducing orders stay available",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state nothing typed yet does not need the account state either",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state E. the order payload is unchanged when the account state IS known",
+            "status": "passed"
+          },
+          {
+            "name": "exposure preview refuses unknown account state E2. submit is refused, and no order sent, while exposure inputs are unknown",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresTickerHeader.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "VOLTEX derivatives reads (mark, index, funding) stay on the futures services",
+            "status": "passed"
+          },
+          {
+            "name": "market-data reads, including index price, are unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "funding countdown implementation is unchanged",
+            "status": "passed"
+          },
+          {
+            "name": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "src/api/routes/futures.ts remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "frontend/src/components/TickerBar.tsx remains intact (index API, internal OI, Spot)",
+            "status": "passed"
+          },
+          {
+            "name": "visible metrics follow price, market, derivatives order without index or base volume",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 0, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 1, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 2, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "open interest renders the market figure 3, in its own unit and with no venue named",
+            "status": "passed"
+          },
+          {
+            "name": "unavailable data stays unavailable rather than becoming fake zero",
+            "status": "passed"
+          },
+          {
+            "name": "the header names no upstream venue, in any state",
+            "status": "passed"
+          },
+          {
+            "name": "a provider read that throws leaves the cells empty, never zeroed",
+            "status": "passed"
+          },
+          {
+            "name": "countdown uses actual clock, ticks and rolls over at the existing UTC boundary",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval null has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval 0 has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "invalid funding interval -1 has no invented countdown",
+            "status": "passed"
+          },
+          {
+            "name": "symbol selector keyboard behavior is preserved",
+            "status": "passed"
+          },
+          {
+            "name": "professional RU terminology is additive and does not reuse Spot volume labels",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "cfdChartFallback.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "A. a successful load initialises the chart and shows no fallback",
+            "status": "passed"
+          },
+          {
+            "name": "B. a failed script shows the fallback, keeps the disclaimer, and rejects nothing",
+            "status": "passed"
+          },
+          {
+            "name": "C. the rejected promise is not kept: Retry issues a NEW request and recovers",
+            "status": "passed"
+          },
+          {
+            "name": "D. repeated Retry while a request is in flight still makes only ONE request",
+            "status": "passed"
+          },
+          {
+            "name": "E. an already-present window.TradingView inserts no script at all",
+            "status": "passed"
+          },
+          {
+            "name": "F. unmounting while the load is pending creates no widget and sets no state",
+            "status": "passed"
+          },
+          {
+            "name": "G. a symbol change keeps using the correct TradingView symbol",
+            "status": "passed"
+          },
+          {
+            "name": "H. language ru maps to the TradingView locale ru",
+            "status": "passed"
+          },
+          {
+            "name": "H. language en maps to the TradingView locale en",
+            "status": "passed"
+          },
+          {
+            "name": "H. language zh maps to the TradingView locale zh_CN",
+            "status": "passed"
+          },
+          {
+            "name": "H. language es maps to the TradingView locale en",
+            "status": "passed"
+          },
+          {
+            "name": "H. language ja maps to the TradingView locale en",
+            "status": "passed"
+          },
+          {
+            "name": "I. a throwing widget constructor shows the fallback instead of crashing",
+            "status": "passed"
+          },
+          {
+            "name": "J. a script that loads WITHOUT publishing window.TradingView is not retained either",
+            "status": "passed"
+          },
+          {
+            "name": "the failure path invents nothing, and says so in every language no candle, quote or alternate provider appears in the component",
+            "status": "passed"
+          },
+          {
+            "name": "the failure path invents nothing, and says so in every language the useless promise is cleared before the rejection is delivered",
+            "status": "passed"
+          },
+          {
+            "name": "the failure path invents nothing, and says so in every language all three strings exist in all seven locales, none of them Russian by default",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderFeedback.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone empty MARKET SELL cancellation is not a successful placement",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized OPEN remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized PARTIALLY_FILLED remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized PENDING_TRIGGER remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone recognized FILLED remains an accepted order",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone partially filled, then cancelled market order reports exact real filled/remainder",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success (undefined)",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"UNKNOWN\"}})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"0.3\",\"remainingQuantity\":\"0.1\"},\"trades\":[{\"quantity\":\"0.1\"}]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"0\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"NaN\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"1\",\"remainingQuantity\":\"2\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone unknown/inconsistent response never announces success ({\"order\":{\"status\":\"CANCELLED\",\"originalQuantity\":\"1e9999\",\"remainingQuantity\":\"0\"},\"trades\":[]})",
+            "status": "passed"
+          },
+          {
+            "name": "feedback follows actual order outcome rather than HTTP 201 alone response is never changed",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler 201/CANCELLED with no fill shows non-success, preserves input and refreshes persisted state",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler partial cancellation is informative with real quantities, never a full-success toast",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler accepted order retains existing positive feedback",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler unknown response is explicitly unconfirmed, not success",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler conditional Limit/Market controls expose their actual pressed state",
+            "status": "passed"
+          },
+          {
+            "name": "actual OrderForm submit handler all seven supported languages have each new outcome message and partial quantities",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrdersPresentation.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 0.00001234 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1e-8 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1.25e3 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 9007199254740993.12345678 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 0.00000000 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 12.34000000 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value null without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value NaN without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves decimal value 1e999999 without zeroing small assets",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation derives exact display totals and fills from only the real decimal inputs",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation distinguishes real market/limit conditional types and OCO without relabeling unknown types",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation renders all real columns, precise price/trigger/fill/status, and does not mutate the row",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation keeps a compact intentional empty state below the real header",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation never mistakes loading or a failed GET for a confirmed empty account",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation retains last known rows on transient failure and blocks repeat cancel while pending",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation history exposes pair, type, fill and actual terminal status without a cancel action",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation compact assets totals derive from existing balances and do not hide small nonzero holdings",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation a GET slower than three 4-second polls still publishes, without overlapping requests",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation after cancellation, forced refresh rejects stale rows and awaits one immediate fresh GET",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation refreshKey cleanup/restart queues fresh data and ignores a late pre-refresh error",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation an unmount discards queued work and never updates state from a late response",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation a synchronous request failure clears the single-flight slot so Retry can recover",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation continues real sequential cancellations after a failure and reports the actual outcome",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation Cancel All sends only one real DELETE per OCO group and preserves every standalone order",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation OCO grouping does not hide a genuine API rejection or merge independent groups",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation preserves existing GET filters, 4-second polling, selected-pair filtering and per-order cancel endpoint",
+            "status": "passed"
+          },
+          {
+            "name": "Spot orders truthful dense presentation keeps the complete shared Futures stylesheet intact and scopes every new override to Spot",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderBook.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "group default is a real selectable step for null",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 80000",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 3200",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 125",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 0.51",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "group default is a real selectable step for 1e-14",
+            "status": "passed"
+          },
+          {
+            "name": "bid floors, ask ceils, exact grid boundaries and cumulative quantity conserve the real book",
+            "status": "passed"
+          },
+          {
+            "name": "tiny coin rows remain nonzero and selectable with exact displayed decimal precision",
+            "status": "passed"
+          },
+          {
+            "name": "spread derives from best valid ungrouped prices even when input is unsorted",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "missing/invalid/crossed book never invents a spread",
+            "status": "passed"
+          },
+          {
+            "name": "locked book has real zero spread, not unavailable",
+            "status": "passed"
+          },
+          {
+            "name": "aggregation excludes invalid/nonpositive rows, preserves valid quantity and rejects bad steps",
+            "status": "passed"
+          },
+          {
+            "name": "display formatting does not zero small positive spreads or append a false USD unit",
+            "status": "passed"
+          },
+          {
+            "name": "actual Spot component shows real tiny prices, accessible rows and no false EUR dollar approximation",
+            "status": "passed"
+          },
+          {
+            "name": "shared/default Futures path retains legacy options/formatting and no Spot keyboard behavior",
+            "status": "passed"
+          },
+          {
+            "name": "Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells",
+            "status": "passed"
+          },
+          {
+            "name": "exact Spot selection text is shared by click and keyboard, not toFixed(2)",
+            "status": "passed"
+          },
+          {
+            "name": "actual row handlers select exact small price by click, Enter and Space only",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "spotOrderEntry.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "rejects nonpositive/nonfinite input null",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input ",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input   ",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input 0",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonpositive/nonfinite input -3",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 79000",
+            "status": "passed"
+          },
+          {
+            "name": "accepts actual positive numeric input 2.5",
+            "status": "passed"
+          },
+          {
+            "name": "LIMIT/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "STOP/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "TAKE_PROFIT/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "MARKET/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "STOP/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "TAKE_PROFIT/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "OCO/MARKET uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "OCO/LIMIT uses the backend-compatible funding family, not a fake fee",
+            "status": "passed"
+          },
+          {
+            "name": "unavailable funding data cannot generate an affordable market quantity",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.57",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 1.15",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.0000049",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "conditional market BUY reserves the true decimal 2% at trigger 123.45678912345679",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid balance Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price 0",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price -1",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects invalid funding price Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent NaN",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "rejects nonfinite slider percent -Infinity",
+            "status": "passed"
+          },
+          {
+            "name": "percentage boundaries and SELL base-quantity mode are deterministic",
+            "status": "passed"
+          },
+          {
+            "name": "100% tiny-token quantity does not overspend by a floating-point tail",
+            "status": "passed"
+          },
+          {
+            "name": "fractional slider always stays within selected funding share across realistic prices",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 100 at 100% and price 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1000 at 100% and price 0.0000081",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 0.12345678 at 12.345% and price 1.1526",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1e-7 at 75% and price 1e-8",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1e+21 at 100% and price 1e-7",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 5e-324 at 100% and price 1",
+            "status": "passed"
+          },
+          {
+            "name": "floors exactly, without an arbitrary safety deduction: 1 at 100% and price 1.7976931348623157e+308",
+            "status": "passed"
+          },
+          {
+            "name": "parent wiring keeps plain matching APIs, pair-keyed reset and genuine funding separate from KYC",
+            "status": "passed"
+          }
+        ]
+      },
+      {
+        "file": "futuresMarketStats.test.ts",
+        "status": "passed",
+        "tests": [
+          {
+            "name": "the header no longer sources market stats from the wrong market does not render Kraken spot quote volume as the 24h turnover",
+            "status": "passed"
+          },
+          {
+            "name": "the header no longer sources market stats from the wrong market does not render VOLTEX internal open interest as the market figure",
+            "status": "passed"
+          },
+          {
+            "name": "the header no longer sources market stats from the wrong market reads the dedicated lightweight endpoint, not the whole Analytics snapshot",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched still reads mark price, index and the settled funding rate from the futures services",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched never substitutes an external venue figure for a VOLTEX one",
+            "status": "passed"
+          },
+          {
+            "name": "VOLTEX financial values in the header are untouched keeps /futures/open-interest intact for internal risk and Analytics",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding labels the unit it is actually showing, and never mixes the two",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding names no upstream venue anywhere in the customer-facing header",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding keeps the contributor lists in the API contract, out of the UI",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding clears the previous symbol's stats immediately on a switch",
+            "status": "passed"
+          },
+          {
+            "name": "units, and no provider branding dims a stale figure rather than presenting it as live",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/MarkPriceService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/FundingRateService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/LiquidationEngine.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/FuturesPositionService.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/futures/marginMath.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic src/matching-engine/MatchingEngine.ts never reads tracked-venue statistics",
+            "status": "passed"
+          },
+          {
+            "name": "external stats stay out of financial logic the new endpoint is read-only market reference data",
+            "status": "passed"
+          }
+        ]
+      }
+    ]
+  },
+  "newFailures": [],
+  "existingFailures": [
+    {
+      "file": "futuresConfigDedup.test.ts",
+      "name": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller"
+    },
+    {
+      "file": "futuresUiPolish.test.ts",
+      "name": "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics"
+    }
+  ],
+  "typescript": "PASS: node frontend/node_modules/typescript/bin/tsc -b frontend",
+  "productionBuild": "PASS: Vite 5.4.2, same-version esbuild WASM environment runner (Windows child-pipe restriction), no source build configuration changes",
+  "backendFullSuiteRun": false
+}

@@ -1,3 +1,4 @@
+import { formatBookAmount } from '../lib/terminalPresentation';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice } from '../lib/formatNumber';
@@ -274,8 +275,8 @@ const Row = memo(function Row({
   const flashing = useRowFlash(level.quantity);
   const flashClass = flashing ? (side === 'BUY' ? 'book-row-flash-up' : 'book-row-flash-down') : '';
   const priceText = spotStep === undefined ? level.price.toFixed(decimals) : spotLevelPrice(level.price, spotStep);
-  const quantityText = spotStep === undefined ? level.quantity.toFixed(5) : formatSpotBookNumber(level.quantity);
-  const totalText = spotStep === undefined ? (level.price * level.quantity).toFixed(2) : formatSpotBookNumber(level.price * level.quantity);
+  const quantityText = formatBookAmount(level.quantity);
+  const totalText = formatBookAmount(level.price * level.quantity);
   const pick = () => onPick?.(spotStep === undefined ? level.price.toFixed(2) : priceText);
 
   return (
@@ -285,8 +286,8 @@ const Row = memo(function Row({
       onKeyDown={event => { if (spotStep !== undefined && onPick && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); pick(); } }}>
       <div className={`ob-depth-bar ${side === 'BUY' ? 'bid' : 'ask'}`} style={{ width: `${pct}%` }} />
       <span className={`cell ${side === 'BUY' ? 'bid-price' : 'ask-price'}`} title={spotStep !== undefined ? priceText : undefined}>{priceText}</span>
-      <span className="cell" title={spotStep !== undefined ? quantityText : undefined}>{quantityText}</span>
-      <span className="cell" title={spotStep !== undefined ? totalText : undefined}>{totalText}</span>
+      <span className="cell" title={String(level.quantity)}>{quantityText}</span>
+      <span className="cell" title={String(level.price * level.quantity)}>{totalText}</span>
     </div>
   );
 });

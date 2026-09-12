@@ -1,0 +1,83 @@
+[
+  {
+    "market": "spot",
+    "oneHour": {
+      "label": "BTC/USDT · 1h",
+      "iframe": true,
+      "interval": "60"
+    },
+    "oneDay": {
+      "label": "BTC/USDT · 1D",
+      "interval": "D"
+    },
+    "buttonAt1366": {
+      "x": 1114,
+      "y": 399.65625,
+      "width": 240,
+      "height": 38
+    },
+    "formAt1366": {
+      "x": 1102,
+      "y": 160,
+      "width": 264,
+      "height": 436
+    },
+    "buttonReachable": true,
+    "charts": 1,
+    "noHorizontalOverflow": true
+  },
+  {
+    "market": "futures",
+    "oneHour": {
+      "label": "BTC/USDT · 1h",
+      "iframe": true,
+      "interval": "60"
+    },
+    "oneDay": {
+      "label": "BTC/USDT · 1D",
+      "interval": "D"
+    },
+    "buttonAt1366": {
+      "x": 1238,
+      "y": 567.171875,
+      "width": 116,
+      "height": 42
+    },
+    "formAt1366": {
+      "x": 1102,
+      "y": 160,
+      "width": 264,
+      "height": 453
+    },
+    "buttonReachable": true,
+    "charts": 1,
+    "noHorizontalOverflow": true
+  },
+  {
+    "market": "cfd",
+    "oneHour": {
+      "label": "XAU/USD · 1h",
+      "iframe": true,
+      "interval": "60"
+    },
+    "oneDay": {
+      "label": "XAU/USD · 1D",
+      "interval": "D"
+    },
+    "buttonAt1366": {
+      "x": 1114,
+      "y": 575,
+      "width": 240,
+      "height": 38
+    },
+    "formAt1366": {
+      "x": 1102,
+      "y": 161.046875,
+      "width": 264,
+      "height": 451.953125
+    },
+    "buttonReachable": true,
+    "charts": 1,
+    "noHorizontalOverflow": true
+  }
+]

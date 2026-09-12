@@ -17,6 +17,7 @@ import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
+import './trade-terminal/ProfessionalTerminal.css';
 
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 

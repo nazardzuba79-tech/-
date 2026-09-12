@@ -227,6 +227,18 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   new Function('require', 'exports', compiled)((name: string) => {
+    if (name === './FuturesTurnover') {
+      const child: any = {};
+      const childCode = ts.transpileModule(readFileSync(resolve(root, 'frontend/src/components/FuturesTurnover.tsx'), 'utf8'), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+      new Function('require','exports','window',childCode)((dependency: string) => {
+        if (dependency === 'react') return react;
+        if (dependency.endsWith('/useLiveMarket')) return { useLiveMarket: () => ({status:'disabled',rows:new Map(),revision:0}) };
+        if (dependency.endsWith('/terminalPresentation')) return require('../terminalPresentation');
+        if (dependency.endsWith('/formatNumber')) return numbers;
+        return req(dependency);
+      }, child, {setInterval,clearInterval});
+      return child;
+    }
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
@@ -257,6 +269,7 @@ function nodes(tree: any): any[] {
 function text(tree: any): string {
   if (Array.isArray(tree)) return tree.map(text).join('');
   if (tree == null || typeof tree === 'boolean') return '';
+  if (tree.type?.name === 'FuturesTurnover') return text(tree.type(tree.props));
   return typeof tree === 'object' ? text(tree.props?.children) : String(tree);
 }
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); };

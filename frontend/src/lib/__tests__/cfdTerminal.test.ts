@@ -416,16 +416,19 @@ test.each([
 test('all CSS selectors are scoped and chart stays on the unchanged real TradingView mapping', () => {
   const selectors: string[] = []; req('postcss').parse(read('pages/trade-terminal/CfdTerminal.css')).walkRules((rule: any) => selectors.push(...rule.selectors));
   expect(selectors.every(s => s.startsWith('.cfd-terminal ') || s.startsWith('.trade-terminal.cfd-terminal'))).toBe(true);
-  const chart = read('components/CfdChart.tsx');
+  const wrapper = read('components/CfdChart.tsx');
+  expect(wrapper).toContain('market="cfd"');
+  expect(wrapper).toContain('trade.cfdPriceDisclaimer');
+  const chart = read('components/TradingViewAdvancedChart.tsx');
   for (const symbol of rows.map(r => r.symbol)) expect(chart).toContain(`${symbol}: '${symbol === 'XAUUSD' ? 'OANDA' : 'FX'}:${symbol}'`);
-  expect(chart).toContain('https://s3.tradingview.com/tv.js'); expect(chart).toContain('autosize: true');
+  expect(chart).toContain('https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js'); expect(chart).toContain('autosize: true');
   // Symbol and language still drive re-initialisation, and the ONLY thing
   // added to that list is the retry counter — which is what lets Retry
   // re-run the same load path instead of needing a second one. Pinned by
   // name so the dependency list cannot grow silently.
-  expect(chart).toContain('[symbol, lang, containerId, attempt]');
+  expect(chart).toContain('[symbol, locale, interval, study, volume, attempt]');
   const executable = ts.createPrinter({ removeComments: true }).printFile(ts.createSourceFile('chart.tsx', chart, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX));
-  expect(executable).not.toMatch(/candles|orderBook|volume|funding|openInterest/);
+  expect(executable).not.toMatch(/api\.|candles|orderBook|funding|openInterest/);
 });
 test('CFD reference-price disclaimer matches the unchanged 60-second poll in every language', () => {
   // One line per language, now across the seven locale files rather than

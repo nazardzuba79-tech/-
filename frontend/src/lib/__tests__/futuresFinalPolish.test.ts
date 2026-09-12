@@ -1,3 +1,4 @@
+import * as terminalPresentation from '../terminalPresentation';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -129,7 +130,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, params?: any) => params ? `${key}:${JSON.stringify(params)}` : key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
-    if (name === '../lib/spotOrderBook') return bookMath;
+    if (name === '../lib/terminalPresentation') return terminalPresentation;
+  if (name === '../lib/spotOrderBook') return bookMath;
     if (name === '../lib/formatNumber') return { formatPrice: String };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return assetReads;
