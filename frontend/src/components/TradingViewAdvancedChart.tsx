@@ -11,10 +11,21 @@ interface TradingViewAdvancedChartProps {
 }
 export const CHART_INTERVALS = [['1', '1m'], ['5', '5m'], ['15', '15m'], ['60', '1h'], ['240', '4h'], ['D', '1D']] as const;
 const TV_LOCALE: Record<string, string> = { en: 'en', ru: 'ru', zh: 'zh_CN', es: 'es', ja: 'ja', ko: 'ko', hi: 'en' };
-// Preserve the verified CFD mappings. Unmapped instruments have no substitute chart.
+// Verified CFD mappings. Unmapped instruments have no substitute chart.
 const CFD_SYMBOLS: Record<string, string> = {
-  XAUUSD: 'OANDA:XAUUSD', EURUSD: 'FX:EURUSD', GBPUSD: 'FX:GBPUSD',
-  USDJPY: 'FX:USDJPY', AUDUSD: 'FX:AUDUSD', USDCAD: 'FX:USDCAD',
+  XAUUSD: 'OANDA:XAUUSD',
+  XAGUSD: 'OANDA:XAGUSD',
+  XPTUSD: 'OANDA:XPTUSD',
+  XPDUSD: 'OANDA:XPDUSD',
+  WTIUSD: 'OANDA:WTICOUSD',
+  XBRUSD: 'OANDA:BCOUSD',
+  EURUSD: 'FX:EURUSD',
+  GBPUSD: 'FX:GBPUSD',
+  USDJPY: 'FX:USDJPY',
+  AUDUSD: 'FX:AUDUSD',
+  USDCAD: 'FX:USDCAD',
+  USDCHF: 'FX:USDCHF',
+  NZDUSD: 'FX:NZDUSD',
 };
 export function toTradingViewSymbol(pair: string, market: TerminalMarket = 'spot'): string | null {
   const compact = pair.toUpperCase().replace(/\//g, '');
