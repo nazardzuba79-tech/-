@@ -20,6 +20,9 @@
 .admin-chip.positive { color: var(--buy); background: var(--buy-dim); }
 .admin-chip.warning { color: var(--accent); background: var(--accent-dim); }
 .admin-copy-value { position: relative; display: inline-flex; align-items: center; max-width: 100%; gap: 6px; line-height: 18px; }
+.admin-address-table td:nth-child(4) { width: 40%; min-width: 280px; }
+.admin-copy-value-full { width: 100%; align-items: flex-start; }
+.admin-copy-value-full .admin-full-value { min-width: 0; white-space: normal; font-size: 12px; }
 .admin-ellipsis { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .admin-copy { border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; padding: 2px; font-size: 16px; flex: none; }
 .admin-copy:hover { color: var(--admin-brand); }
