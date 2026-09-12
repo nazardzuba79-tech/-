@@ -45,6 +45,7 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
   }}).outputText;
   const output: Record<string, any> = {};
   const overrides: Record<string, unknown> = {
+    './SapphireTerminal': { SapphireTerminal: () => React.createElement('div', { id: 'home-live-terminal' }) },
     '../../components/CryptoIcon': { CryptoIcon: () => null },
     '../../components/Logo': { LogoMark: () => null },
     './LiveValue': { LiveValue: () => React.createElement('span', {}, '—') },

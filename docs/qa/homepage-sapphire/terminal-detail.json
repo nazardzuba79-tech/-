@@ -1,0 +1,126 @@
+{
+  "observationSeconds": 45,
+  "liveChanges": {
+    "price": true,
+    "book": true,
+    "trades": true,
+    "receipt": true,
+    "chart": true
+  },
+  "watchRows": 12,
+  "asks": 10,
+  "bids": 10,
+  "tradeRows": 6,
+  "panels": [
+    {
+      "class": "pairs",
+      "client": 354,
+      "scroll": 354
+    },
+    {
+      "class": "ts-center",
+      "client": 354,
+      "scroll": 354
+    },
+    {
+      "class": "ts-book",
+      "client": 354,
+      "scroll": 354
+    },
+    {
+      "class": "ts-order",
+      "client": 354,
+      "scroll": 354
+    },
+    {
+      "class": "hs-recent-trades",
+      "client": 135,
+      "scroll": 135
+    }
+  ],
+  "stream": "Streaming",
+  "layouts": [
+    {
+      "width": 1920,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 652,
+      "copyRight": 672,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 1600,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 540,
+      "copyRight": 560,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 378.234375,
+      "copyRight": 399.359375,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 15,
+      "copyRight": 768,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "cards": 3,
+      "headline": "OWN YOUR FUTURE.",
+      "assetsLeft": 15,
+      "copyRight": 390,
+      "tapeOverflow": true,
+      "chart": 1,
+      "links": [
+        "/trade",
+        "/markets"
+      ]
+    }
+  ],
+  "errors": [],
+  "publicRequestCounts": {
+    "/api/v1/market/external/tickers": 3,
+    "/api/v1/cfd/tickers": 1,
+    "/api/v1/market/external/rankings": 1,
+    "/api/v1/market/global": 1,
+    "/api/v1/futures/config": 1,
+    "/api/v1/market/assets/icons": 3,
+    "/api/v1/market/external/orderbook/BTC-USDT": 3,
+    "/api/v1/market/external/candles/BTC-USDT": 3,
+    "/api/v1/market/external/trades/BTC-USDT": 3
+  }
+}
