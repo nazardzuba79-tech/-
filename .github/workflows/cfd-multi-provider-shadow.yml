@@ -24,6 +24,8 @@ jobs:
           node-version: '22'
       - name: Install backend dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build bcrypt native binding required by existing service tests
+        run: npm rebuild bcrypt --build-from-source
       - name: Generate Prisma client (no DB connection or migrations)
         run: npx prisma generate
       - name: Backend build
@@ -31,7 +33,7 @@ jobs:
       - name: Deterministic reference routing tests
         run: node --test scripts/test-cfd-reference-router.cjs
       - name: Existing CFD regression tests
-        run: npm test -- --runInBand --testPathPattern='Cfd|cfd' --passWithNoTests
+        run: npm test -- --runInBand --testPathPattern='Cfd|cfd'
       - name: Frontend dependency install and build
         working-directory: frontend
         run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
