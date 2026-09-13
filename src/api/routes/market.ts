@@ -23,7 +23,10 @@ export function marketRouter(
   prisma: PrismaClient
 ): Router {
   const router = Router();
-  const futuresChartCandles = new FuturesChartCandles();
+  const futuresChartCandles = new FuturesChartCandles(fetch,Date.now,{
+    url:process.env.MARKET_DATA_COLLECTOR_URL?.trim()??'',
+    token:process.env.MARKET_DATA_COLLECTOR_TOKEN?.trim()??'',
+  });
   router.get('/market/futures/candles/:pair', async (req,res) => {
     try {
       res.json(await futuresChartCandles.get(req.params.pair, String(req.query.interval ?? '15m'), Number(req.query.limit ?? 520)));
