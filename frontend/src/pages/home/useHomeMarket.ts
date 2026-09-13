@@ -70,6 +70,7 @@ export interface HomeMarket {
 // One 15-second display clock for visible market surfaces. Child components
 // receive these values and never open a second upstream market-data loop.
 const TICKER_POLL_MS = 15_000;
+const DEFAULT_HERO_PAIR = 'BTC/USDT';
 const receivedNumber = (value: unknown): number => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '')
   && Number.isFinite(Number(value)) ? Number(value) : NaN;
 
@@ -78,8 +79,12 @@ export function useHomeMarket(): HomeMarket {
   const [tickerUpdatedAt, setTickerUpdatedAt] = useState<number | null>(null);
   const [tickerSource, setTickerSource] = useState('');
   const [tickersStale, setTickersStale] = useState(false);
+  // The hero is intentionally pinned to BTC/USDT at first paint. Waiting for
+  // the full multi-pair ticker walk before deciding this pair made the laptop
+  // screen sit on "Loading market data" even though its three BTC feeds could
+  // have been requested immediately and independently.
   const [hero, setHero] = useState<HomeHeroFeed>({
-    pair: null, book: null, candles: [], trades: [],
+    pair: DEFAULT_HERO_PAIR, book: null, candles: [], trades: [],
     bookStatus: 'loading', candlesStatus: 'loading', tradesStatus: 'loading',
     stale: false, updatedAt: null,
   });
@@ -102,11 +107,25 @@ export function useHomeMarket(): HomeMarket {
     let hasTickers = false;
     let heroInFlight = false;
     let heroVisible = true;
-    let heroPair: string | null = null;
+    let heroPair: string | null = DEFAULT_HERO_PAIR;
     let tickerStartedAt = -Infinity;
     let heroStartedAt = -Infinity;
     let cfdStartedAt = -Infinity;
     let cfdInFlight = false;
+
+    const positive = (value: string | number) => Number.isFinite(Number(value)) && Number(value) > 0;
+    const updateHero = (pair: string, patch: Partial<HomeHeroFeed>) => {
+      if (cancelled || pair !== heroPair) return;
+      setHero(previous => {
+        const next: HomeHeroFeed = { ...previous, pair, ...patch };
+        return {
+          ...next,
+          stale: (next.bookStatus === 'error' && !!next.book)
+            || (next.candlesStatus === 'error' && next.candles.length > 0)
+            || (next.tradesStatus === 'error' && next.trades.length > 0),
+        };
+      });
+    };
 
     async function loadCfd() {
       if (cancelled || document.hidden || !heroVisible || cfdInFlight || Date.now() - cfdStartedAt < TICKER_POLL_MS) return;
@@ -139,44 +158,51 @@ export function useHomeMarket(): HomeMarket {
       heroInFlight = true;
       heroStartedAt = Date.now();
       const pair = heroPair;
-      const [book, candles, trades] = await Promise.allSettled([
-        api.getExternalOrderBook(pair, 12),
-        api.getExternalCandles(pair, '15m', 48),
-        api.getExternalTrades(pair, 8),
-      ]);
+
+      // Start all three reads together, but publish each one as soon as it
+      // completes. The old Promise.allSettled barrier meant one slow Kraken
+      // endpoint held the chart, book and tape hostage even when the other
+      // two were already available.
+      const bookTask = api.getExternalOrderBook(pair, 12).then(value => {
+        const validBook = value.pair === pair && positive(value.timestamp)
+          ? { ...value,
+            bids: value.bids.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
+            asks: value.asks.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
+          } : null;
+        const ok = !!validBook && validBook.bids.length > 0 && validBook.asks.length > 0;
+        updateHero(pair, { book: ok ? validBook : undefined as never, bookStatus: ok ? 'ok' : 'error' });
+      }).catch(() => updateHero(pair, { bookStatus: 'error' }));
+
+      const candleTask = api.getExternalCandles(pair, '15m', 48).then(value => {
+        const validCandles = value.pair === pair
+          ? value.candles.filter(c => [c.time, c.open, c.high, c.low, c.close].every(Number.isFinite)
+            && Math.min(c.time, c.open, c.high, c.low, c.close) > 0
+            && c.low <= Math.min(c.open, c.close) && c.high >= Math.max(c.open, c.close))
+            .sort((a, b) => a.time - b.time).slice(-48) : [];
+        if (validCandles.length > 0) updateHero(pair, {
+          candles: validCandles,
+          candlesUpdatedAt: Date.now(),
+          candlesStatus: 'ok',
+        });
+        else updateHero(pair, { candlesStatus: 'error' });
+      }).catch(() => updateHero(pair, { candlesStatus: 'error' }));
+
+      const tradeTask = api.getExternalTrades(pair, 8).then(value => {
+        const validTrades = value.pair === pair
+          ? value.trades.filter(row => positive(row.price) && positive(row.quantity)
+            && Number.isFinite(row.time) && row.time > 0 && (row.side === 'BUY' || row.side === 'SELL'))
+            .sort((a, b) => b.time - a.time).slice(0, 6) : [];
+        if (validTrades.length > 0) updateHero(pair, { trades: validTrades, tradesStatus: 'ok' });
+        else updateHero(pair, { tradesStatus: 'error' });
+      }).catch(() => updateHero(pair, { tradesStatus: 'error' }));
+
+      await Promise.allSettled([bookTask, candleTask, tradeTask]);
       heroInFlight = false;
       if (cancelled || pair !== heroPair) return;
-      const positive = (value: string | number) => Number.isFinite(Number(value)) && Number(value) > 0;
-      const validBook = book.status === 'fulfilled' && book.value.pair === pair && positive(book.value.timestamp)
-        ? { ...book.value,
-          bids: book.value.bids.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
-          asks: book.value.asks.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
-        } : null;
-      const validCandles = candles.status === 'fulfilled' && candles.value.pair === pair
-        ? candles.value.candles.filter(c => [c.time, c.open, c.high, c.low, c.close].every(Number.isFinite)
-          && Math.min(c.time, c.open, c.high, c.low, c.close) > 0
-          && c.low <= Math.min(c.open, c.close) && c.high >= Math.max(c.open, c.close))
-          .sort((a, b) => a.time - b.time).slice(-48) : [];
-      const validTrades = trades.status === 'fulfilled' && trades.value.pair === pair
-        ? trades.value.trades.filter(row => positive(row.price) && positive(row.quantity)
-          && Number.isFinite(row.time) && row.time > 0 && (row.side === 'BUY' || row.side === 'SELL'))
-          .sort((a, b) => b.time - a.time).slice(0, 6) : [];
-      const bookOk = !!validBook && validBook.bids.length > 0 && validBook.asks.length > 0;
-      const candlesOk = validCandles.length > 0;
-      const tradesOk = validTrades.length > 0;
-      setHero(previous => ({
-        pair,
-        book: bookOk ? validBook : previous.book,
-        candles: candlesOk ? validCandles : previous.candles,
-        candlesUpdatedAt: candlesOk ? Date.now() : previous.candlesUpdatedAt,
-        trades: tradesOk ? validTrades : previous.trades,
-        bookStatus: bookOk ? 'ok' : 'error',
-        candlesStatus: candlesOk ? 'ok' : 'error',
-        tradesStatus: tradesOk ? 'ok' : 'error',
-        stale: (!bookOk && !!previous.book) || (!candlesOk && previous.candles.length > 0)
-          || (!tradesOk && previous.trades.length > 0),
-        updatedAt: bookOk && candlesOk && tradesOk ? Date.now() : previous.updatedAt,
-      }));
+      setHero(previous => previous.pair === pair
+        && previous.bookStatus === 'ok' && previous.candlesStatus === 'ok' && previous.tradesStatus === 'ok'
+        ? { ...previous, stale: false, updatedAt: Date.now() }
+        : previous);
     }
 
     function loadTickers() {
@@ -197,12 +223,9 @@ export function useHomeMarket(): HomeMarket {
         hasTickers = true; setTickers(rows); setTickerUpdatedAt(Date.now()); setTickerSource(res.source); setTickersStale(false);
         setPriceHistory(previous => { const next: Record<string, number[]> = {};
           byVolume(rows,60).forEach(row => { if(Number.isFinite(row.price)&&row.price>=0) next[row.pair]=[...(previous[row.pair]??[]),row.price].slice(-24); }); return next; });
-        if (!heroPair) { heroPair=rows.find(row=>row.pair==='BTC/USDT')?.pair??byVolume(rows,1)[0]?.pair??null;
-          setHero(previous=>({...previous,pair:heroPair,bookStatus:heroPair?'loading':'error',candlesStatus:heroPair?'loading':'error',tradesStatus:heroPair?'loading':'error'})); }
-        void loadHero(); setTickersStatus('ok');
+        setTickersStatus('ok');
       }).catch(() => {
         if (cancelled) return; setTickersStale(hasTickers);
-        if (!heroPair) setHero(previous=>({...previous,bookStatus:'error',candlesStatus:'error',tradesStatus:'error',stale:false}));
         setTickersStatus(prev=>prev==='ok'?'ok':'error');
       }).finally(()=>{tickerInFlight=false;});
     }
