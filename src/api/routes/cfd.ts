@@ -3,6 +3,8 @@ import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
+import { PublicReferenceFeed } from '../../services/marketData/cfd/PublicReferenceFeed';
+import { publicReferenceDisplay, waitForReferenceWork } from '../../services/marketData/cfd/PublicReferenceDisplay';
 import { CFD_REFERENCE_CATALOG } from '../../services/marketData/cfd/catalog';
 import { assertCfdFreshQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
@@ -14,6 +16,9 @@ import { requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 
 const CFD_SYMBOLS = CFD_REFERENCE_CATALOG.map((i) => i.symbol) as [string, ...string[]];
+// Process-wide display collector, not one collector per browser/request.
+// Default OFF: rollout is a separate operator decision. No HTTP on import.
+const publicReferences = new PublicReferenceFeed({ enabled: process.env.CFD_PUBLIC_REFERENCES_ENABLED === 'true' });
 
 const openSchema = z.object({
   symbol: z.enum(CFD_SYMBOLS),
@@ -23,14 +28,15 @@ const openSchema = z.object({
 });
 
 /** Public reference catalog/quotes plus the existing authenticated dealer model.
- * Unconfigured or unavailable sources retain catalog identities with null prices.
- * Quote errors on financial operations have an explicit retryable 503 contract. */
-export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService): Router {
+ * Public benchmarks are serialized ONLY on /cfd/tickers. Positions, risk and
+ * financial operations retain the original strictly gated CfdQuoteSource. */
+export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService,
+  references: PublicReferenceFeed = publicReferences): Router {
   const router = Router();
 
   router.get('/admin/cfd/diagnostics', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    try { res.json(await cfdDataService.diagnostics()); }
+    try { res.json({ ...await cfdDataService.diagnostics(), publicReferences: { enabled: references.isEnabled(), refreshing: references.isRefreshing(), sources: references.diagnostics() } }); }
     catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
   });
 
@@ -52,16 +58,20 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
 
   router.get('/cfd/tickers', async (_req, res) => {
     try {
-      const configured = cfdDataService.isConfigured();
+      const work = references.refreshDue();
       const quotes = await cfdDataService.getQuotes();
+      if (references.isEnabled()) await waitForReferenceWork(work);
+      const fallback = new Map(references.snapshot().map(q => [q.symbol, q]));
+      const configured = cfdDataService.isConfigured() || references.isEnabled();
       const catalog = cfdDataService.catalog();
-      const tickers = quotes.map(q => ({ ...q, name: catalog.find(i => i.symbol === q.symbol)?.name ?? q.symbol,
-        price: q.last === null ? null : q.lastDecimal ?? String(q.last),
-        maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs }));
+      const tickers = quotes.map(q => {
+        const name = catalog.find(i => i.symbol === q.symbol)?.name ?? q.symbol;
+        return references.isEnabled() ? publicReferenceDisplay(q, name, fallback.get(q.symbol), cfdDataService.maxQuoteAgeMs)
+          : { ...q, name, price: q.last === null ? null : q.lastDecimal ?? String(q.last), maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs };
+      });
       res.setHeader('Cache-Control', 'no-store');
-      res.json({ source: 'twelvedata', configured, tickers });
-    } catch (err) {
-      console.error(err);
+      res.json({ source: references.isEnabled() ? 'multi-reference' : 'twelvedata', configured, tickers });
+    } catch {
       res.status(500).json({ error: 'Internal server error' });
     }
   });

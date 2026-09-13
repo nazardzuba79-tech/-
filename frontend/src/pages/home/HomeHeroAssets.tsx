@@ -49,25 +49,28 @@ export function HomeHeroAssets({ market, englishLabels = false }: { market: Home
   const copy = globalHeroCopy[englishLabels ? 'en' : lang];
   const btc = market.tickers.find(row => row.pair === 'BTC/USDT');
   const gold = market.cfd?.configured ? market.cfd.tickers.find(row => row.symbol === 'XAUUSD') : undefined;
+  // Exact WTI only. Never use Brent, an ETF, tokenized gold, or invented price.
+  const oil = market.cfd?.configured ? market.cfd.tickers.find(row => row.symbol === 'WTIUSD') : undefined;
   const rows = [
     { key: 'btc', title: 'BTC / USDT', price: market.hero.pair === 'BTC/USDT' ? market.hero.livePrice ?? btc?.price : btc?.price,
-      change: btc?.change, Icon: Bitcoin, points: market.priceHistory['BTC/USDT'] ?? [], note: market.tickersStale ? copy.quote : 'BTC / USDT' },
-    { key: 'gold', title: copy.gold, price: finiteQuote(gold?.price), change: finiteQuote(gold?.changePercent24h), Icon: GoldIcon, points: gold ? market.cfdPriceHistory?.XAUUSD ?? [] : [], note: gold ? `${copy.quote} · XAU/USD` : copy.unavailable },
-    // No oil instrument exists in the current CFD catalog. Do not substitute
-    // another asset or imply an unlisted trading route to fill the design.
-    { key: 'oil', title: copy.oil, price: null, change: null, Icon: OilIcon, points: [], note: copy.unavailable },
+      change: btc?.change, Icon: Bitcoin, points: market.priceHistory['BTC/USDT'] ?? [], note: market.tickersStale ? copy.quote : 'BTC / USDT', stale: market.tickersStale },
+    { key: 'gold', title: 'GOLD', price: finiteQuote(gold?.price), change: gold?.displayOnly ? null : finiteQuote(gold?.changePercent24h), Icon: GoldIcon,
+      points: gold && !gold.displayOnly && !gold.stale ? market.cfdPriceHistory?.XAUUSD ?? [] : [],
+      note: gold?.referenceLabel ?? (gold ? `${copy.quote} · XAU/USD` : copy.unavailable), stale: gold?.stale },
+    { key: 'oil', title: 'OIL', price: finiteQuote(oil?.price), change: oil?.displayOnly ? null : finiteQuote(oil?.changePercent24h), Icon: OilIcon,
+      points: [], note: oil?.referenceLabel ?? (oil ? `${copy.quote} · WTI/USD` : copy.unavailable), stale: oil?.stale },
   ];
   return <div className="vx-global-assets">
-    {rows.map(({ key, title, price, change, Icon, points, note }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
-      data-stale={key === 'btc' && market.tickersStale || undefined} style={{ animationDelay: `${-index*3}s` }}>
+    {rows.map(({ key, title, price, change, Icon, points, note, stale }, index) => <div className={`vx-asset-pill vx-asset-${key}`} key={key}
+      data-stale={stale || undefined} style={{ animationDelay: `${-index*3}s` }}>
       <span className="vx-asset-symbol"><Icon size={24} strokeWidth={1.5}/></span>
       <div className="vx-asset-copy"><span>{title}</span><LiveValue value={price}/>
         {typeof change === 'number' && Number.isFinite(change)
           ? <LiveValue value={change} className={change >= 0 ? 'text-up' : 'text-down'} format={v => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`}/>
-          : <small>{note}</small>}
+          : <small title={note}>{note}</small>}
       </div>
       {points.length > 1 && <span className="vx-asset-spark" aria-hidden="true"><Sparkline points={points} width={54} height={25}/></span>}
-      {key === 'gold' && gold && <span className="vx-asset-source">{copy.quote}</span>}
+      {key === 'gold' && gold && !gold.displayOnly && <span className="vx-asset-source">{copy.quote}</span>}
       {key === 'btc' && market.tickersStale && <span className="vx-asset-source vx-asset-stale">{t('analytics.stale')}</span>}
     </div>)}
   </div>;
