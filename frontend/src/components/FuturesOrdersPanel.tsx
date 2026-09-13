@@ -31,7 +31,7 @@ export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: 
   if (!history) headers.push('trade.action');
   return <div className="futures-orders-panel" aria-busy={resource.loading}>
     <div className="futures-orders-caption">{t('futures.latestOrders')}</div>
-    {(resource.failed || cancelFailed) && <div role="alert" className="futures-orders-error">
+    {((resource.failed && resource.data !== null) || cancelFailed) && <div role="alert" className="futures-orders-error">
       {t(cancelFailed ? 'trade.cancelOrderError' : 'trade.loadOrdersError')}
       <button type="button" onClick={() => { setCancelFailed(false); refreshFuturesAccount([key]); }}>{t('trade.retry')}</button>
     </div>}
@@ -54,7 +54,11 @@ export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: 
           </button></td>}
         </tr>;
       }) : <tr><td colSpan={headers.length} className="futures-orders-empty" role="status">
-        {t(resource.failed ? 'trade.loadOrdersError' : resource.data === null ? 'trade.loading' : history ? 'futures.noOrderHistory' : 'futures.noOpenOrders')}
+        <div className="futures-order-state">
+          <span>{t(resource.failed && resource.data === null ? 'trade.loadOrdersError' : resource.data === null ? 'trade.loading' : history ? 'futures.noOrderHistory' : 'futures.noOpenOrders')}</span>
+          {resource.failed && resource.data === null && <button type="button" disabled={resource.loading || resource.refreshing}
+            onClick={() => refreshFuturesAccount([key])}>{t('trade.retry')}</button>}
+        </div>
       </td></tr>}</tbody>
     </table>
   </div>;

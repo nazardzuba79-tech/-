@@ -76,8 +76,27 @@ export function FuturesPositionsPanel({
     }
   }
 
+  function renderState(message: string, failed = false) {
+    const resource = tab === 'open' ? account.positions : account.positionHistory;
+    const columns = tab === 'open'
+      ? ['trade.market', 'futures.side', 'futures.size', 'futures.entryPrice', 'futures.markPrice', 'futures.liqPrice', 'futures.unrealizedPnl', 'futures.roe', 'futures.tpsl'] as const
+      : ['trade.market', 'futures.side', 'futures.entryPrice', 'futures.realizedPnl', 'trade.status'] as const;
+    return <>
+    <div className="futures-state-columns" tabIndex={0}>
+      <table style={styles.table}><thead><tr>{columns.map(key => <th key={key} style={styles.th}>{t(key)}</th>)}</tr></thead></table>
+    </div>
+    <div className="futures-position-state" style={styles.empty} role="status" aria-busy={resource.loading || resource.refreshing}>
+      <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.3">
+        <rect x="7" y="4" width="18" height="24" rx="3" /><path d="M12 11h8M12 16h8M12 21h5" />
+      </svg>
+      <span>{message}</span>
+      {failed && <button type="button" disabled={resource.loading || resource.refreshing}
+        onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
+    </div></>;
+  }
+
   return (
-    <div style={styles.wrap}>
+    <div className="futures-positions-panel" style={styles.wrap}>
       {controlledTab === undefined && <div style={styles.tabs}>
         <button
           onClick={() => setTab('open')}
@@ -99,11 +118,9 @@ export function FuturesPositionsPanel({
         positions === null ? (
           // Unknown, not empty. Same distinction CfdPositionsPanel already
           // makes, with the same two existing strings.
-          <div style={styles.empty}>
-            {account.positions.failed ? t('futures.loadPositionsError') : t('trade.loading')}
-          </div>
+          renderState(account.positions.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positions.failed)
         ) : positions.length === 0 ? (
-          <div style={styles.empty}>{t('futures.noPositions')}</div>
+          renderState(t('futures.noPositions'))
         ) : (
           <div style={styles.tableWrap}>
             <table style={styles.table}>
@@ -169,11 +186,9 @@ export function FuturesPositionsPanel({
           </div>
         )
       ) : history === null ? (
-        <div style={styles.empty}>
-          {account.positionHistory.failed ? t('futures.loadPositionsError') : t('trade.loading')}
-        </div>
+        renderState(account.positionHistory.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positionHistory.failed)
       ) : history.length === 0 ? (
-        <div style={styles.empty}>{t('futures.noPositionHistory')}</div>
+        renderState(t('futures.noPositionHistory'))
       ) : (
         <div style={styles.tableWrap}>
           <table style={styles.table}>
@@ -231,17 +246,17 @@ const styles: Record<string, React.CSSProperties> = {
   tab: { background: 'transparent', border: 'none', padding: '12px 6px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)' },
   tabActive: { color: 'var(--text-primary)', boxShadow: 'inset 0 -2px 0 var(--accent)' },
   empty: { padding: 24, textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 12 },
-  error: { margin: 10, background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 11 },
+  error: { margin: 10, background: 'var(--sell-dim)', color: 'var(--sell)', padding: '6px 10px', borderRadius: 6, fontSize: 13 },
   tableWrap: { flex: 1, overflow: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 12 },
-  th: { textAlign: 'left', padding: '8px 14px', color: 'var(--text-tertiary)', fontWeight: 600, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.03em' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  th: { textAlign: 'left', padding: '10px 14px', color: 'var(--text-secondary)', fontWeight: 400, fontSize: 12 },
   td: { padding: '8px 14px', color: 'var(--text-primary)', borderTop: '1px solid var(--border)' },
   closeBtn: {
     background: 'transparent',
     border: '1px solid var(--border)',
     borderRadius: 6,
     padding: '4px 10px',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 600,
     color: 'var(--text-secondary)',
   },

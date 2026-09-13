@@ -1,0 +1,32 @@
+{
+  "base": "0f7ab66f9af6e5e1a33ff0356182a2174b804c66",
+  "focusedCandidate": {
+    "passed": 166,
+    "failed": 4
+  },
+  "focusedBaseline": {
+    "passed": 162,
+    "failed": 4
+  },
+  "accountProtection": {
+    "passed": 52,
+    "failed": 0
+  },
+  "newFailures": [],
+  "existingFailures": [
+    "Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells",
+    "native TradingView indicators toolbar is enabled and volume remains controllable",
+    "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+    "verified CFD mapping and compact visible attribution are preserved"
+  ],
+  "followup": {
+    "passed": 219,
+    "failed": 4,
+    "total": 223
+  },
+  "finalAcceptance": {
+    "passed": 221,
+    "failed": 4,
+    "total": 225
+  }
+}

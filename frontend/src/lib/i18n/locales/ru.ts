@@ -15,6 +15,7 @@
  * Extracted verbatim from lib/i18n.tsx. Not one string was retyped.
  */
 export const RU = {
+  'futures.chart': 'График',
   'nav.trade': 'Торговля',
   'nav.tradeSpotDesc': 'Спотовая торговля криптовалютой',
   'nav.tradeCfdDesc': 'Золото, нефть, индексы с плечом',

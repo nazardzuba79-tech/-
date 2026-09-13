@@ -72,56 +72,57 @@ export function FuturesAccountSummary({
     value === null ? '—' : mask(format(value));
 
   return (
-    <div style={styles.wrap}>
-      <div style={styles.headerRow}>
+    <div className="futures-account-summary" style={styles.wrap}>
+      <div className="futures-account-heading" style={styles.headerRow}>
         <span style={styles.title}>{t('futures.accountTitle')}</span>
-        <div style={styles.headerRight}>
-          <button type="button" onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
-            {showBalance ? <EyeIcon /> : <EyeOffIcon />}
-          </button>
-          <span
-            className="mono"
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
-            }}
-          >
-            {t('futures.unrealizedPnl')} {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
-          </span>
-        </div>
+        <button type="button" aria-label={t(showBalance ? 'wallet.hideBalance' : 'wallet.showBalance')} onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
+          {showBalance ? <EyeIcon /> : <EyeOffIcon />}
+        </button>
+      </div>
+      <div className="futures-account-pnl" style={styles.headerRight}>
+        <span>{t('futures.unrealizedPnl')}</span>
+        <span
+          className="mono"
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
+          }}
+        >
+          {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
+        </span>
       </div>
 
-      <div style={styles.barRow}>
+      <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.initialMarginPct')}</span>
           <span className="mono">{initialMarginPct === null ? '—' : `${initialMarginPct.toFixed(2)}%`}</span>
         </div>
-        <div style={styles.barTrack}>
+        <div className="futures-account-track" style={styles.barTrack}>
           <div style={{ ...styles.barFill, width: `${Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
         </div>
       </div>
 
-      <div style={styles.barRow}>
+      <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.maintenanceMarginPct')}</span>
           <span className="mono">{maintenanceMarginPct === null ? '—' : `${maintenanceMarginPct.toFixed(2)}%`}</span>
         </div>
-        <div style={styles.barTrack}>
+        <div className="futures-account-track" style={styles.barTrack}>
           <div style={{ ...styles.barFill, width: `${Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
         </div>
       </div>
 
-      <div style={styles.statRow}>
+      <div className="futures-account-stat futures-account-balance" style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginBalance')}</span>
         <span className="mono">{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
-      <div style={styles.statRow}>
+      <div className="futures-account-stat" style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.availableMargin')}</span>
         <span className="mono">{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
 
-      <div style={styles.actionsRow}>
+      <div className="futures-account-actions" style={styles.actionsRow}>
         <button type="button" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>
           {t('futures.depositAction')}
         </button>
@@ -166,14 +167,14 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 10,
   },
   headerRow: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
-  title: { fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' },
+  title: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' },
   headerRight: { display: 'flex', alignItems: 'center', gap: 8 },
   eyeBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', display: 'flex' },
   barRow: { display: 'flex', flexDirection: 'column', gap: 4 },
-  barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-tertiary)' },
+  barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' },
   barTrack: { height: 4, borderRadius: 999, background: 'var(--panel)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999 },
-  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12 },
+  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13 },
   actionsRow: { display: 'flex', gap: 8, marginTop: 2 },
   actionBtn: {
     flex: 1,

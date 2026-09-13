@@ -1,0 +1,16 @@
+{
+  "candidatePassed": 248,
+  "candidateFailed": 8,
+  "existingFailureNames": [
+    "Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells",
+    "native TradingView indicators toolbar is enabled and volume remains controllable",
+    "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+    "verified CFD mapping and compact visible attribution are preserved",
+    "finds the page-root resets this repo actually ships",
+    "and none of them shifts a box without excluding the header",
+    "and no route stylesheet declares a rule whose subject is a header class",
+    "and the shared burger is index.css's alone, at every width"
+  ],
+  "newFailures": [],
+  "base": "0f7ab66f9af6e5e1a33ff0356182a2174b804c66"
+}

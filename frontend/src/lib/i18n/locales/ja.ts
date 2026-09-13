@@ -12,6 +12,7 @@
 import type { Key } from './keys';
 
 export const JA: Record<Key, string> = {
+  'futures.chart': 'チャート',
   'nav.trade': '取引',
   'nav.tradeSpotDesc': '暗号資産の現物取引',
   'nav.tradeCfdDesc': 'レバレッジ付きの金・原油・株価指数',

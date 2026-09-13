@@ -6,7 +6,7 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
-import { OrderBookPanel } from '../components/OrderBookPanel';
+import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
@@ -21,6 +21,7 @@ import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
+import './trade-terminal/ReferenceFuturesTerminal.css';
 
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
@@ -70,6 +71,18 @@ export function FuturesPage() {
   const [pickedPrice, setPickedPrice] = useState<{ value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
+  const marketDialogRef = useRef<HTMLDialogElement>(null);
+  const [desktopMarkets, setDesktopMarkets] = useState(() => window.matchMedia('(min-width: 1025px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1025px)');
+    const update = () => setDesktopMarkets(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  function openMarkets() {
+    if (!desktopMarkets) marketDialogRef.current?.showModal();
+    pairListRef.current?.focusSearch();
+  }
 
   // One shared read of /futures/config for the whole tab — this page, the
   // order form and the ticker bar used to fetch it independently on mount,
@@ -142,7 +155,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="trade-terminal futures-terminal">
+    <div className="trade-terminal futures-terminal futures-reference">
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market
@@ -161,25 +174,22 @@ export function FuturesPage() {
       <ConnectionBanner />
 
       <div className="terminal">
-        <FuturesTickerBar symbol={symbol} onSelectSymbol={() => pairListRef.current?.focusSearch()} />
+        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
-          <div className="left-panel">
+          {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
-          </div>
-
-          <div className="chart-area">
+          </aside>}
+          <div className="chart-area" role="region" aria-label={t('futures.chart')}>
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
           <div className="orderbook-area">
-            <OrderBookPanel
+            <FuturesReferenceBook
               key={symbol}
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
-              // Reuse Spot's proven display precision without changing Spot or the feed.
-              spotPrecision
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
                 setPickedPrice({ value, seq: pickedSeq.current });
@@ -188,6 +198,7 @@ export function FuturesPage() {
           </div>
 
           <div className="order-form-area">
+            <h2 className="reference-order-heading">{t('nav.trade')}</h2>
             <FuturesOrderForm
               symbol={symbol}
               onPlaced={handleOrderPlaced}
@@ -207,8 +218,8 @@ export function FuturesPage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'positions' && <span className="badge">{account.positions.data?.length ?? '—'}</span>}
-                {tab.id === 'orders' && <span className="badge">{account.orders.data?.length ?? '—'}</span>}
+                {tab.id === 'positions' && <span className="reference-tab-count">({account.positions.data?.length ?? '—'})</span>}
+                {tab.id === 'orders' && <span className="reference-tab-count">({account.orders.data?.length ?? '—'})</span>}
               </button>
             ))}
           </div>
@@ -225,6 +236,15 @@ export function FuturesPage() {
         </div>
       </div>
 
+      {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
+        onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+        <div className="reference-market-heading"><strong>{t('nav.markets')}</strong>
+          <button type="button" aria-label={t('deposit.close')} onClick={() => marketDialogRef.current?.close()}>×</button>
+        </div>
+        <div className="left-panel">
+          <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
+        </div>
+      </dialog>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );

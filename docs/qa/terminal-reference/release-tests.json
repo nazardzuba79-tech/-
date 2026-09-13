@@ -1,0 +1,16 @@
+{
+  "failures": [
+    "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+    "native TradingView indicators toolbar is enabled and volume remains controllable",
+    "verified CFD mapping and compact visible attribution are preserved",
+    "Spot tiny-price rows keep unchanged full numeric labels and narrowly scoped non-overlapping cells",
+    "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+    "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header",
+    "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class",
+    "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width"
+  ],
+  "newFailures": [],
+  "failed": 8,
+  "total": 285,
+  "passed": 277
+}

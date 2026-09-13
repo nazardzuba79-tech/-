@@ -1,0 +1,142 @@
+[
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 150,
+        "w": 150
+      },
+      {
+        "s": 150,
+        "w": 150
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 1080,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 1920,
+    "width": 1920
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 118,
+        "w": 118
+      },
+      {
+        "s": 118,
+        "w": 118
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 900,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 1440,
+    "width": 1440
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 118,
+        "w": 118
+      },
+      {
+        "s": 118,
+        "w": 118
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 768,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 1366,
+    "width": 1366
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 118,
+        "w": 118
+      },
+      {
+        "s": 118,
+        "w": 118
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 900,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 1280,
+    "width": 1280
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 234,
+        "w": 234
+      },
+      {
+        "s": 234,
+        "w": 234
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 900,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 1024,
+    "width": 1024
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 170,
+        "w": 170
+      },
+      {
+        "s": 170,
+        "w": 170
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 1024,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 768,
+    "width": 768
+  },
+  {
+    "bookClipping": 0,
+    "buttons": [
+      {
+        "s": 173,
+        "w": 173
+      },
+      {
+        "s": 173,
+        "w": 173
+      }
+    ],
+    "fonts": true,
+    "frames": 1,
+    "height": 844,
+    "percentClipping": 0,
+    "priceWeight": "600",
+    "scrollWidth": 390,
+    "width": 390
+  }
+]

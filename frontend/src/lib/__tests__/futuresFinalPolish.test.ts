@@ -146,7 +146,9 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { [label]: component };
     }
     return req(name);
-  }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false) });
+  }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
+    matchMedia: overrides.matchMedia ?? (() => ({ matches: true, addEventListener() {}, removeEventListener() {} })),
+  });
   return {
     components,
     render(props: any = {}) {
@@ -213,6 +215,28 @@ test.each([
   expect(JSON.stringify(raw)).toBe(original);
 });
 
+test('Futures moves one market list between desktop sidebar and mobile dialog without losing the selected contract', () => {
+  let changed = () => {};
+  const media = { matches: true, addEventListener: (_: string, cb: () => void) => { changed = cb; }, removeEventListener() {} };
+  const page = mount('pages/FuturesPage.tsx', { params: new URLSearchParams(), matchMedia: () => media,
+    socket: { subscribeBook: () => () => {} } });
+  let tree = page.render();
+  const lists = () => nodes(tree).filter(n => n.type === page.components.FuturesPairList);
+  expect(lists()).toHaveLength(1);
+  expect(nodes(tree).some(n => n.type === 'aside')).toBe(true);
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
+  lists()[0].props.onChange('ETH/USDT');
+  media.matches = false; changed(); tree = page.render();
+  expect(lists()).toHaveLength(1);
+  expect(lists()[0].props.symbol).toBe('ETH/USDT');
+  expect(nodes(tree).some(n => n.type === 'aside')).toBe(false);
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(true);
+  media.matches = true; changed(); tree = page.render();
+  expect(lists()).toHaveLength(1);
+  expect(lists()[0].props.symbol).toBe('ETH/USDT');
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
+});
+
 test('Futures wires dynamic precision, rejects prior-pair REST and preserves repeated selection events', async () => {
   const requests: { symbol: string; resolve: (value: any) => void }[] = [];
   const listeners: { symbol: string; callback: (value: any) => void }[] = [];
@@ -227,25 +251,25 @@ test('Futures wires dynamic precision, rejects prior-pair REST and preserves rep
   const btc = { bids: [level('79000.1')], asks: [level('79000.2')] };
   listeners[0].callback(btc);
   tree = page.render();
-  expect(part(tree, 'OrderBookPanel').props.spotPrecision).toBe(true);
-  expect(part(tree, 'OrderBookPanel').props.bids).toEqual(btc.bids);
+  expect(readFileSync(resolve(frontend, 'src/components/FuturesReferenceBook.tsx'), 'utf8')).toContain('aggregateSpotBook(bids, step,');
+  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(btc.bids);
   part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
   tree = page.render();
-  expect(part(tree, 'OrderBookPanel').props.bids).toEqual([]);
-  expect(part(tree, 'OrderBookPanel').key).toBe('DOGE/USDT');
+  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
+  expect(part(tree, 'FuturesReferenceBook').key).toBe('DOGE/USDT');
   requests[0].resolve(btc); await tick();
   tree = page.render();
-  expect(part(tree, 'OrderBookPanel').props.bids).toEqual([]);
+  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
   const doge = { bids: [level('0.094321')], asks: [level('0.094322')] };
   listeners[1].callback(doge);
   requests[1].resolve(btc); await tick(); // Delayed REST cannot overwrite newer WS.
   tree = page.render();
-  expect(part(tree, 'OrderBookPanel').props.bids).toEqual(doge.bids);
-  part(tree, 'OrderBookPanel').props.onPickPrice('0.09432');
+  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(doge.bids);
+  part(tree, 'FuturesReferenceBook').props.onPickPrice('0.09432');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBe('0.09432');
   expect(part(tree, 'FuturesOrderForm').props.pickedPriceSequence).toBe(1);
-  part(tree, 'OrderBookPanel').props.onPickPrice('0.09432');
+  part(tree, 'FuturesReferenceBook').props.onPickPrice('0.09432');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPriceSequence).toBe(2);
 });

@@ -12,6 +12,7 @@
 import type { Key } from './keys';
 
 export const ES: Record<Key, string> = {
+  'futures.chart': 'Gráfico',
   'nav.trade': 'Operar',
   'nav.tradeSpotDesc': 'Trading spot de criptomonedas',
   'nav.tradeCfdDesc': 'Oro, petróleo, índices con apalancamiento',
