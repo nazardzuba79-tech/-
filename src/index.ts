@@ -69,6 +69,7 @@ import { DerivedAnalyticsService } from './services/analytics/DerivedAnalyticsSe
 import { DeribitAnalyticsService } from './services/analytics/DeribitAnalyticsService';
 import { LiquidationStreamService } from './services/analytics/LiquidationStreamService';
 import { HistoricalOpenInterestService } from './services/analytics/HistoricalOpenInterestService';
+import { CoinGlassAnalyticsService } from './services/analytics/CoinGlassAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 
@@ -132,8 +133,8 @@ const okxDerivativesService = new OkxDerivativesService(process.env.OKX_API_BASE
 const externalDerivativesService = new ExternalDerivativesService(binanceDerivativesService, okxDerivativesService);
 const derivedAnalyticsService = new DerivedAnalyticsService(marketDataGateway);
 
-// Public/free analytics providers. These are read-only reference feeds and
-// never participate in matching, balances, margin, liquidation or funding.
+// Read-only analytics feeds. None of these values can enter matching,
+// balances, margin, liquidation or funding settlement.
 const deribitAnalyticsService = new DeribitAnalyticsService(
   process.env.DERIBIT_API_BASE_URL || 'https://www.deribit.com/api/v2'
 );
@@ -143,6 +144,13 @@ const liquidationStreamService = new LiquidationStreamService(
 const historicalOpenInterestService = new HistoricalOpenInterestService(
   process.env.BINANCE_FUTURES_API_BASE_URL || 'https://fapi.binance.com'
 );
+const coinGlassApiKey = process.env.COINGLASS_API_KEY?.trim();
+const licensedAnalyticsService = coinGlassApiKey
+  ? new CoinGlassAnalyticsService(
+      coinGlassApiKey,
+      process.env.COINGLASS_API_BASE_URL || 'https://open-api-v4.coinglass.com'
+    )
+  : null;
 
 const analyticsDataService = new AnalyticsDataService(
   prisma,
@@ -154,7 +162,8 @@ const analyticsDataService = new AnalyticsDataService(
   coinGeckoService,
   deribitAnalyticsService,
   liquidationStreamService,
-  historicalOpenInterestService
+  historicalOpenInterestService,
+  licensedAnalyticsService
 );
 
 app.set('trust proxy', 1);
@@ -176,7 +185,7 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));
-app.use('/api/v1', adminDepositsRouter(prisma, marketDataService));
+app.use('/api/v1', adminDepositsRouter(prisma));
 app.use('/api/v1', adminWalletsRouter(prisma));
 app.use('/api/v1', withdrawalsRouter(prisma));
 app.use('/api/v1', adminWithdrawalsRouter(prisma));
@@ -193,7 +202,7 @@ app.use('/api/v1', kycRouter(prisma, kycEmailService));
 app.use('/api/v1', adminRouter(prisma));
 app.use('/api/v1', adminUsersRouter(prisma, demoTradingService));
 app.use('/api/v1', adminAuditLogRouter(prisma));
-app.use('/api/v1', cardRouter(prisma, walletPortfolioService));
+app.use('/api/v1', cardRouter(prisma));
 app.use('/api/v1', apiKeysRouter(prisma));
 app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
