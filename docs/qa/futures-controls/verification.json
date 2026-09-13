@@ -1,0 +1,39 @@
+{
+  "environment": "Loopback synthetic Futures account; no real orders",
+  "slider": {
+    "keyboard": [
+      1,
+      2
+    ],
+    "pointer": 37,
+    "quantityRecalculated": true,
+    "step": 1
+  },
+  "leverage": {
+    "verticalMenuWidth": 138,
+    "selection": 25,
+    "selectionClosesMenu": true,
+    "focusReturnsToTrigger": true,
+    "liveCeilingPreserved": true
+  },
+  "responsive": {
+    "widths": [
+      1920,
+      1440,
+      1280,
+      1100,
+      863,
+      390
+    ],
+    "pageOverflow": false,
+    "formOverflow": false,
+    "navOverflow": false,
+    "chartCount": 1,
+    "drawerLinksAccessible": true
+  },
+  "tests": {
+    "focusedPassed": 139,
+    "suites": 5
+  },
+  "remaining": "Initial public quote/mark-price latency remains a server-side follow-up; no mark/index cache or financial semantics changed."
+}
