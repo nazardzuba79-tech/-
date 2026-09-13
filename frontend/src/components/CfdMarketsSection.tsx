@@ -12,13 +12,6 @@ const TICKER_STRIP_PAIRS = [...OVERVIEW_PAIRS];
 
 type Ticker = Awaited<ReturnType<typeof api.getExternalTickers>>['tickers'][number];
 
-/** Live ticker strip + "trending / CFD / popular markets" dashboard —
- * a pixel-faithful port of the "TradingDashboard" block from the Bolt
- * reference the owner supplied (colors, spacing, badge, tab-underline,
- * background grid texture all copied from its CSS), wired to our own real
- * ticker/CFD data instead of the reference's hardcoded example numbers.
- * Extracted as its own component so both the marketing homepage and the
- * auth page can mount it without duplicating the fetch/state logic. */
 export function CfdMarketsSection({ id }: { id?: string }) {
   const { t, lang } = useLanguage();
   const [tickers, setTickers] = useState<Map<string, Ticker>>(new Map());
@@ -42,9 +35,6 @@ export function CfdMarketsSection({ id }: { id?: string }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Lightweight in-browser price trail for the sparkline — no dedicated
-  // history endpoint for this; sampling the live ticker every few seconds
-  // is enough to draw a real (if short) recent trend instead of a static line.
   useEffect(() => {
     const interval = setInterval(() => {
       setHistory((prev) => {
@@ -64,9 +54,6 @@ export function CfdMarketsSection({ id }: { id?: string }) {
   const fmt = (n: number) => n.toLocaleString(localeOf(lang), { maximumFractionDigits: n < 1 ? 6 : 2 });
   const fmtCompact = (n: number) => n.toLocaleString(localeOf(lang), { notation: 'compact', maximumFractionDigits: 2 });
 
-  // Biggest 24h mover among the pairs already on screen — for the "trending"
-  // card. Real data, just picked rather than fetched separately (no
-  // dedicated "top movers" endpoint).
   const trendingPair = OVERVIEW_PAIRS.reduce<{ pair: string; change: number } | null>((best, pair) => {
     const tk = tickers.get(pair);
     if (!tk) return best;
@@ -75,11 +62,6 @@ export function CfdMarketsSection({ id }: { id?: string }) {
     return best;
   }, null);
 
-  // The reference's trending card has a 5-month axis strip under the
-  // sparkline. It's a decorative chart caption, not a claim about the data
-  // (our sparkline only spans a short live sample) — so instead of copying
-  // its 5 literal month strings we compute the real last 5 calendar months,
-  // which keeps the same layout without asserting anything untrue.
   const monthLabels = Array.from({ length: 5 }, (_, i) => {
     const d = new Date();
     d.setDate(1);
@@ -107,14 +89,12 @@ export function CfdMarketsSection({ id }: { id?: string }) {
             );
           })}
           {cfdTickers.slice(0, 4).map((tk) => {
-            // CFD feed only: an unreported 24h change is unknown, not 0%,
-            // so it renders as a dash rather than as a flat green +0.00%.
             const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
             return (
               <div key={tk.symbol} style={styles.tickerStripItem}>
                 <span style={{ fontWeight: 700 }}>{CFD_ICON_BY_SYMBOL[tk.symbol] ?? '◆'} {tk.symbol}</span>
                 <span className="mono" style={{ color: 'var(--text-secondary)' }}>
-                  {tk.price}
+                  {tk.price ?? '—'}
                 </span>
                 <span className={change === null ? '' : change >= 0 ? 'text-buy' : 'text-sell'}>
                   {change === null ? '—' : `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`}
@@ -146,7 +126,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                   const points = sampledPoints.length >= 5 ? sampledPoints : summaryPoints;
                   const positive = change >= 0;
                   return (
-                    <Link to="/login" className="market-dashboard__featured-link">
+                    <Link to={`/trade?pair=${encodeURIComponent(trendingPair.pair)}`} className="market-dashboard__featured-link">
                       <div className="market-dashboard__featured-asset">
                         <CryptoIcon symbol={trendingPair.pair.split('/')[0]} size={50} />
                         <strong>{trendingPair.pair}</strong>
@@ -172,22 +152,18 @@ export function CfdMarketsSection({ id }: { id?: string }) {
               <span className="market-dashboard__cfd-badge">CFD</span>
               <div className="market-dashboard__cfd-list">
                 {cfdTickers.slice(0, 3).map((tk) => {
-                  // CFD feed only: an unreported 24h change is unknown, not
-                  // 0%. `changeText` renders a dash for it; `positive` only
-                  // drives colour, where an unknown value is neutral.
                   const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
                   const positive = (change ?? 0) >= 0;
-                  const changeText =
-                    change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
+                  const changeText = change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
-                    <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__cfd-row">
+                    <Link key={tk.symbol} to={`/trade?market=cfd&symbol=${encodeURIComponent(tk.symbol)}`} className="market-dashboard__row market-dashboard__cfd-row">
                       <CfdMark symbol={tk.symbol} />
                       <span className="market-dashboard__row-label">
                         <strong>{tk.symbol}</strong>
                         <small>{tk.name}</small>
                       </span>
                       <span className="market-dashboard__cfd-value">
-                        <strong className="mono">{tk.price}</strong>
+                        <strong className="mono">{tk.price ?? '—'}</strong>
                         <small className={change === null ? '' : positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
                           {changeText}
                         </small>
@@ -214,7 +190,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
               >
                 {t('marketing.popularDerivatives')}
               </button>
-              <Link to="/login" className="market-dashboard__view-all">
+              <Link to="/markets" className="market-dashboard__view-all">
                 {t('marketing.viewAllMarkets')}
               </Link>
             </div>
@@ -227,7 +203,7 @@ export function CfdMarketsSection({ id }: { id?: string }) {
                   const base = pair.split('/')[0];
                   const positive = change >= 0;
                   return (
-                    <Link key={pair} to="/login" className="market-dashboard__row market-dashboard__popular-row">
+                    <Link key={pair} to={`/trade?pair=${encodeURIComponent(pair)}`} className="market-dashboard__row market-dashboard__popular-row">
                       <CryptoIcon symbol={base} size={40} />
                       <span className="market-dashboard__row-label market-dashboard__popular-label">
                         <strong>{pair.replace('/', '')}</strong>
@@ -245,22 +221,18 @@ export function CfdMarketsSection({ id }: { id?: string }) {
 
               {popularTab === 'cfd' &&
                 cfdTickers.slice(0, 4).map((tk) => {
-                  // CFD feed only: an unreported 24h change is unknown, not
-                  // 0%. `changeText` renders a dash for it; `positive` only
-                  // drives colour, where an unknown value is neutral.
                   const change = parseChangePercentOrNull(tk.changePercent24h, tk.symbol);
                   const positive = (change ?? 0) >= 0;
-                  const changeText =
-                    change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
+                  const changeText = change === null ? '—' : `${positive ? '+' : ''}${change.toFixed(2)}%`;
                   return (
-                    <Link key={tk.symbol} to="/trade" className="market-dashboard__row market-dashboard__popular-row">
+                    <Link key={tk.symbol} to={`/trade?market=cfd&symbol=${encodeURIComponent(tk.symbol)}`} className="market-dashboard__row market-dashboard__popular-row">
                       <CfdMark symbol={tk.symbol} />
                       <span className="market-dashboard__row-label market-dashboard__popular-label">
                         <strong>{tk.symbol}</strong>
                         <small>{tk.name}</small>
                       </span>
                       <span className="mono market-dashboard__row-price">
-                        {tk.price}
+                        {tk.price ?? '—'}
                       </span>
                       <span className={change === null ? '' : positive ? 'market-dashboard__positive' : 'market-dashboard__negative'}>
                         {changeText}

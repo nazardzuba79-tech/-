@@ -1,6 +1,6 @@
 import { useLanguage } from '../lib/i18n';
 import { SkeletonRow } from './Skeleton';
-import { cfdDisplayState,cfdMarketCopy,formatCfdPrice } from '../lib/cfdPresentation';
+import { cfdMarketCopy,formatCfdPrice } from '../lib/cfdPresentation';
 import { PriceCell } from './PriceCell';
 import { parseChangePercentOrNull } from '../lib/priceChange';
 import { useMemo, useRef, useState } from 'react';
@@ -35,10 +35,10 @@ export function CfdInstrumentList({symbol,onChange,tickers,configured,loadError,
     <div className="pairs-search"><input aria-label={t('trade.cfdInstrument')} placeholder={t('trade.cfdInstrument')} value={search} onChange={event=>setSearch(event.target.value)}/></div>
     <div className="cfd-columns"><span>{t('trade.cfdInstrument')}</span><button type="button" className="cfd-align-right" aria-pressed={sort?.field==='price'} onClick={()=>toggleSort('price')}>{t('markets.price')} <span aria-hidden>{arrow('price')}</span></button><button type="button" className="cfd-align-right" aria-pressed={sort?.field==='change'} onClick={()=>toggleSort('change')}>{t('markets.change24h')} <span aria-hidden>{arrow('change')}</span></button></div>
     <div className="cfd-list" ref={listRef}>
-      {rows.map(tk=>{const change=parseChangePercentOrNull(tk.changePercent24h,tk.symbol),positive=(change??0)>=0,state=cfdDisplayState(tk,lang);
+      {rows.map(tk=>{const change=parseChangePercentOrNull(tk.changePercent24h,tk.symbol),positive=(change??0)>=0;
         return <button key={tk.symbol} onClick={()=>onChange(tk.symbol)} className={`cfd-option${tk.symbol===symbol?' active':''}`} aria-pressed={tk.symbol===symbol}>
           <span className="cfd-optionLeft"><span className={`cfd-icon cfd-icon-${tk.symbol}`}>{CFD_ICON_BY_SYMBOL[tk.symbol]??'•'}</span><span className="cfd-optionTitle">
-            <span className="mono cfd-optionSymbol">{tk.symbol}</span><span className="cfd-optionName">{tk.name}</span><span className={`cfd-optionState cfd-state-${state.tone}`}>{state.label}</span>
+            <span className="mono cfd-optionSymbol">{tk.symbol}</span><span className="cfd-optionName">{tk.name}</span>
           </span></span>
           {tk.price===null?<span className="mono cfd-price">—</span>:<PriceCell value={Number(tk.price)} className="mono cfd-price" format={value=>formatCfdPrice(value,tk.symbol)}/>}<span className={`mono cfd-change ${change===null?'':positive?'text-buy':'text-sell'}`}>{change===null?'—':`${positive?'+':''}${change.toFixed(2)}%`}</span>
         </button>;})}
