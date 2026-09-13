@@ -19,6 +19,10 @@ export interface ResilientCfdOptions {
   comparableWindowMs?: number;
   failbackSamples?: number;
   failbackHoldMs?: number;
+  /** New positions need this many independently admitted/configured lineages.
+   * Risk quotes (close/liquidation) may still use one healthy source so a
+   * provider outage never traps an already-open position. */
+  minExecutionLineages?: number;
 }
 interface Candidate { admission: CfdProviderAdmission; quote: CfdQuote; }
 interface Selected { provider: string; selectedAt: number; }
@@ -34,7 +38,9 @@ function priceOf(q: CfdQuote): number { return Number(q.lastDecimal ?? q.last); 
  * - every quote still has to pass the shared execution/risk freshness gate;
  * - independent fresh providers that materially disagree quarantine the symbol;
  * - provider failure switches immediately, while return to a higher-priority
- *   source requires distinct healthy samples plus a hold time.
+ *   source requires distinct healthy samples plus a hold time;
+ * - losing redundancy blocks NEW positions, but one admitted fresh source may
+ *   still safely mark/close/liquidate existing positions.
  */
 export class ResilientCfdQuoteSource implements CfdQuoteSource {
   readonly maxQuoteAgeMs: number;
@@ -45,6 +51,7 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
   private readonly comparableWindowMs: number;
   private readonly failbackSamples: number;
   private readonly failbackHoldMs: number;
+  private readonly minExecutionLineages: number;
   private readonly selected = new Map<string, Selected>();
   private readonly recovery = new Map<string, Recovery>();
   private readonly failures = new Map<string, { count: number; lastAt: number | null; lastReason: string | null }>();
@@ -64,14 +71,18 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
     this.comparableWindowMs = options.comparableWindowMs ?? 5_000;
     this.failbackSamples = options.failbackSamples ?? 3;
     this.failbackHoldMs = options.failbackHoldMs ?? 30_000;
+    this.minExecutionLineages = options.minExecutionLineages ?? 2;
     if (!Number.isFinite(this.divergence) || this.divergence < 0 || !positiveInt(this.failbackSamples)
       || !Number.isSafeInteger(this.comparableWindowMs) || this.comparableWindowMs < 0
-      || !Number.isSafeInteger(this.failbackHoldMs) || this.failbackHoldMs < 0) throw new Error('Invalid CFD routing policy');
+      || !Number.isSafeInteger(this.failbackHoldMs) || this.failbackHoldMs < 0
+      || !positiveInt(this.minExecutionLineages) || this.minExecutionLineages > admissions.length) throw new Error('Invalid CFD routing policy');
   }
 
   private active(): CfdProviderAdmission[] {
     return this.providers.filter(p => p.enabled && p.admissionEvidence.length > 0 && p.source.isConfigured());
   }
+  private admittedLineages(active = this.active()): number { return new Set(active.map(p => p.lineage)).size; }
+  private executionRedundancy(active = this.active()): boolean { return this.admittedLineages(active) >= this.minExecutionLineages; }
   isConfigured(): boolean { return this.active().length > 0; }
 
   private async bounded<T>(p: Promise<T>): Promise<T | null> {
@@ -107,16 +118,12 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
     return false;
   }
 
-  private choose(symbol: string, candidates: Candidate[], throwOnConflict: boolean): CfdQuote {
+  private choose(symbol: string, candidates: Candidate[], active: CfdProviderAdmission[]): CfdQuote {
     if (!candidates.length) throw new CfdQuoteUnavailable('all_providers_unavailable');
     if (this.conflict(candidates)) {
       for (const c of candidates) this.noteFailure(c.admission.id, symbol, 'provider_conflict');
-      if (throwOnConflict) throw new CfdQuoteUnavailable('provider_conflict');
       throw new CfdQuoteUnavailable('provider_conflict');
     }
-    // Prefer a provider that is approved for new positions when one exists;
-    // risk/close can still consume it, while OPEN does not get needlessly
-    // blocked behind a reference-only incumbent.
     candidates.sort((a, b) => Number(b.quote.executionAllowed) - Number(a.quote.executionAllowed)
       || a.admission.priority - b.admission.priority || a.admission.id.localeCompare(b.admission.id));
     let winner = candidates[0];
@@ -133,7 +140,7 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
       this.selected.set(symbol, { provider: winner.admission.id, selectedAt: this.now() });
       for (const key of [...this.recovery.keys()]) if (key.endsWith(`:${symbol}`)) this.recovery.delete(key);
     }
-    return { ...winner.quote };
+    return { ...winner.quote, executionAllowed: winner.quote.executionAllowed && this.executionRedundancy(active) };
   }
 
   async getFreshQuote(symbol: string): Promise<CfdQuote> {
@@ -145,12 +152,12 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
       if (!valid) this.noteFailure(admission.id, symbol, quote ? 'invalid_or_stale' : 'unavailable_or_timeout');
       return valid;
     }));
-    return this.choose(symbol, rows.filter((x): x is Candidate => x !== null), true);
+    return this.choose(symbol, rows.filter((x): x is Candidate => x !== null), active);
   }
 
   async getQuotes(): Promise<CfdQuote[]> {
     const active = this.active();
-    if (!active.length) return CFD_REFERENCE_CATALOG.map(i => this.missing(i.symbol, 'no_admitted_provider'));
+    if (!active.length) return CFD_REFERENCE_CATALOG.map(i => this.missing(i.symbol));
     const batches = await Promise.all(active.map(async admission => ({ admission, quotes: await this.bounded(admission.source.getQuotes()) })));
     return CFD_REFERENCE_CATALOG.map(i => {
       const candidates: Candidate[] = [];
@@ -159,43 +166,43 @@ export class ResilientCfdQuoteSource implements CfdQuoteSource {
         const valid = this.valid(batch.admission, quote, i.symbol);
         if (valid) candidates.push(valid);
       }
-      try { return this.choose(i.symbol, candidates, false); }
-      catch (error) { return this.missing(i.symbol, error instanceof CfdQuoteUnavailable ? error.reason : 'unavailable'); }
+      try { return this.choose(i.symbol, candidates, active); }
+      catch { return this.missing(i.symbol); }
     });
   }
 
-  private missing(symbol: string, reason: string): CfdQuote {
+  private missing(symbol: string): CfdQuote {
     const catalog = CFD_REFERENCE_CATALOG.find(i => i.symbol === symbol)!;
     return { provider: 'multi-provider', symbol, providerSymbol: catalog.providerSymbol, bid: null, ask: null, mid: null, last: null,
       providerTimestamp: null, fetchedAt: null, stale: false, status: 'unavailable', referenceStatus: 'unavailable',
-      entitlementVerified: false, executionAllowed: false, changePercent24h: undefined,
-      // reason is intentionally only visible through diagnostics, not quote schema/client.
-    };
+      entitlementVerified: false, executionAllowed: false, changePercent24h: undefined };
   }
 
   catalog() {
-    const active = this.active();
+    const active = this.active(), redundant = this.executionRedundancy(active);
     return CFD_REFERENCE_CATALOG.map(row => {
       const providerRows = active.flatMap(p => {
         const source: any = p.source as any;
         if (typeof source.catalog !== 'function') return [];
         const item = source.catalog().find((x: any) => x.symbol === row.symbol);
-        return item ? [{ provider: p.id, entitlement: item.entitlement, executionAllowed: item.executionAllowed === true }] : [];
+        return item ? [{ provider: p.id, lineage: p.lineage, entitlement: item.entitlement, executionAllowed: item.executionAllowed === true }] : [];
       });
       return { ...row, providers: providerRows, entitlement: providerRows.some(p => p.entitlement === 'verified') ? 'verified' : 'entitlement_required',
-        executionAllowed: providerRows.some(p => p.executionAllowed) };
+        executionAllowed: redundant && providerRows.some(p => p.executionAllowed) };
     });
   }
 
   async diagnostics() {
+    const active = this.active();
     const providerDiagnostics = await Promise.all(this.providers.map(async p => {
       const source: any = p.source as any;
       let details: unknown = null;
       if (typeof source.diagnostics === 'function') { try { details = await source.diagnostics(); } catch { details = { unavailable: true }; } }
       return { id: p.id, priority: p.priority, lineage: p.lineage, enabled: p.enabled, admissionEvidenceConfigured: Boolean(p.admissionEvidence),
-        sourceConfigured: p.source.isConfigured(), active: this.active().includes(p), details };
+        sourceConfigured: p.source.isConfigured(), active: active.includes(p), details };
     }));
     return { maxQuoteAgeMs: this.maxQuoteAgeMs, providerWaitMs: this.providerWaitMs, maxDivergenceBps: this.divergence,
+      minExecutionLineages: this.minExecutionLineages, admittedLineages: this.admittedLineages(active), executionRedundancyConfigured: this.executionRedundancy(active),
       selected: Object.fromEntries([...this.selected.entries()]), failures: Object.fromEntries([...this.failures.entries()]), providers: providerDiagnostics };
   }
 }
