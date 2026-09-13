@@ -1,0 +1,64 @@
+name: Deployed CFD reference review smoke
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cfd-render-review-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  deployed-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read only three public endpoints on the isolated test service
+        env:
+          EXPECTED_REVIEW_SHA: 5ab14039054153b2062659cb0614989df0cc8f93
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const assert=require('node:assert/strict');
+          const base='https://voltex-cfd-reference-staging.onrender.com';
+          const report={environment:'ISOLATED RENDER REFERENCE REVIEW, NOT PRODUCTION',startedAt:new Date().toISOString(),expectedDeployedRevision:process.env.EXPECTED_REVIEW_SHA,workflowRevision:process.env.GITHUB_SHA,requests:[],findings:[]};
+          async function read(path){
+            const started=performance.now();
+            const response=await fetch(base+path,{redirect:'error',signal:AbortSignal.timeout(30000),headers:{Accept:'application/json'}});
+            report.requests.push({path,status:response.status,durationMs:Math.round(performance.now()-started),cacheControl:response.headers.get('cache-control')});
+            if(!response.ok)throw Error('Public review endpoint unavailable: '+path);
+            const body=await response.json();
+            assert.equal(body.revision,report.expectedDeployedRevision,'Wrong deployed revision');
+            assert.equal(body.mode,'read-only-reference-review','Wrong environment');
+            return body;
+          }
+          (async()=>{
+            report.health=await read('/health');
+            assert.equal(report.health.databaseUsed,false);
+            assert.equal(report.health.executionAllowed,false);
+            report.quotes=await read('/api/v1/cfd/tickers');
+            report.diagnostics=await read('/diagnostics');
+            const rows=report.quotes.tickers;
+            assert.equal(rows.length,13);
+            assert.equal(new Set(rows.map(q=>q.symbol)).size,13);
+            assert.ok(rows.every(q=>q.executionAllowed===false&&q.last===null&&q.bid===null&&q.ask===null));
+            report.referenceObservationCount=rows.filter(q=>q.price!==null).length;
+            report.currentReferenceCount=rows.filter(q=>q.price!==null&&!q.stale).length;
+            report.lastKnownCount=rows.filter(q=>q.price!==null&&q.stale).length;
+            report.missingSymbols=rows.filter(q=>q.price===null).map(q=>q.symbol);
+            report.retainedSourceFailures=report.diagnostics.sources.filter(q=>q.failures>0);
+            if(report.referenceObservationCount!==13)report.findings.push('Incomplete reference observation coverage');
+            report.invariantChecksPassed=true;
+          })().catch(error=>{report.findings.push(error.message);report.invariantChecksPassed=false;}).finally(()=>{
+            report.completedAt=new Date().toISOString();
+            fs.writeFileSync('render-reference-smoke.json',JSON.stringify(report,null,2));
+            console.log('RENDER_REFERENCE_SMOKE '+JSON.stringify(report));
+            if(report.findings.length)process.exitCode=1;
+          });
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: cfd-render-reference-smoke
+          path: render-reference-smoke.json
+          retention-days: 7

@@ -3,8 +3,11 @@ import { z } from 'zod';
 import BigNumber from 'bignumber.js';
 import { PrismaClient } from '@prisma/client';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
+import { PublicReferenceFeed } from '../../services/marketData/cfd/PublicReferenceFeed';
+import { publicReferenceDisplay, waitForReferenceWork } from '../../services/marketData/cfd/PublicReferenceDisplay';
+import { CfdDisplayQuoteRouter } from '../../services/marketData/cfd/CfdDisplayQuoteRouter';
 import { CFD_REFERENCE_CATALOG } from '../../services/marketData/cfd/catalog';
-import { assertCfdFreshQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../../services/marketData/cfd/CfdQuote';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
@@ -14,6 +17,7 @@ import { requireAuth } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 
 const CFD_SYMBOLS = CFD_REFERENCE_CATALOG.map((i) => i.symbol) as [string, ...string[]];
+const publicReferences = new PublicReferenceFeed({ enabled: process.env.CFD_PUBLIC_REFERENCES_ENABLED === 'true' });
 
 const openSchema = z.object({
   symbol: z.enum(CFD_SYMBOLS),
@@ -22,23 +26,62 @@ const openSchema = z.object({
   leverage: z.number().int().min(MIN_LEVERAGE).max(MAX_LEVERAGE),
 });
 
-/** Public reference catalog/quotes plus the existing authenticated dealer model.
- * Unconfigured or unavailable sources retain catalog identities with null prices.
- * Quote errors on financial operations have an explicit retryable 503 contract. */
-export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService): Router {
+function blankQuote(symbol: string): CfdQuote {
+  const row = CFD_REFERENCE_CATALOG.find(i => i.symbol === symbol)!;
+  return { provider:'multi-provider', symbol, providerSymbol:row.providerSymbol, bid:null, ask:null, mid:null, last:null,
+    providerTimestamp:null, fetchedAt:null, stale:false, status:'unavailable', referenceStatus:'unavailable',
+    entitlementVerified:false, executionAllowed:false };
+}
+
+async function boundedQuoteBatch(source: Pick<CfdQuoteSource,'getQuotes'>, maxWaitMs = 1300): Promise<CfdQuote[]> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      source.getQuotes().catch(() => []),
+      new Promise<CfdQuote[]>(resolve => { timer = setTimeout(() => resolve([]), maxWaitMs); }),
+    ]);
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+function sourceCatalog(cfdDataService: CfdMarketDataService, riskSource: CfdQuoteSource): any[] {
+  const source = riskSource as CfdQuoteSource & { catalog?: () => any[] };
+  try { return typeof source.catalog === 'function' ? source.catalog() : cfdDataService.catalog(); }
+  catch { return cfdDataService.catalog(); }
+}
+
+/** Public display resilience plus the authenticated dealer model.
+ * displaySource can only feed GET /cfd/tickers; it is structurally separate
+ * from riskSource, which remains the sole input to open/close/PnL/liquidation. */
+export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService,
+  references: PublicReferenceFeed = publicReferences, riskSource: CfdQuoteSource = cfdDataService,
+  shadowDiagnostics?: () => unknown | Promise<unknown>, displaySource?: CfdDisplayQuoteRouter): Router {
   const router = Router();
 
   router.get('/admin/cfd/diagnostics', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    try { res.json(await cfdDataService.diagnostics()); }
-    catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
+    try {
+      const routed = riskSource as CfdQuoteSource & { diagnostics?: () => unknown | Promise<unknown> };
+      let shadow: unknown = null;
+      if (shadowDiagnostics) {
+        try { shadow = await shadowDiagnostics(); }
+        catch { shadow = { unavailable:true }; }
+      }
+      res.json({
+        ...await cfdDataService.diagnostics(),
+        executionRouting: riskSource === cfdDataService ? { mode:'single-provider', provider:'twelvedata' }
+          : typeof routed.diagnostics === 'function' ? await routed.diagnostics() : { mode:'multi-provider', diagnostics:'unavailable' },
+        shadowProviders: shadow,
+        publicDisplayRouting: displaySource ? await displaySource.diagnostics() : { mode:'disabled' },
+        publicReferences: { enabled: references.isEnabled(), refreshing: references.isRefreshing(), sources: references.diagnostics() },
+      });
+    } catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
   });
 
   router.get('/cfd/config', (_req, res) => {
     res.json({
       symbols: CFD_SYMBOLS,
-      catalog: cfdDataService.catalog(),
-      maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs,
+      catalog: sourceCatalog(cfdDataService, riskSource),
+      maxQuoteAgeMs: riskSource.maxQuoteAgeMs,
       minLeverage: MIN_LEVERAGE,
       maxLeverage: MAX_LEVERAGE,
       newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
@@ -48,20 +91,36 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     });
   });
 
-  router.get('/cfd/catalog', (_req, res) => res.json({ instruments: cfdDataService.catalog() }));
+  router.get('/cfd/catalog', (_req, res) => res.json({ instruments: sourceCatalog(cfdDataService, riskSource) }));
 
   router.get('/cfd/tickers', async (_req, res) => {
     try {
-      const configured = cfdDataService.isConfigured();
-      const quotes = await cfdDataService.getQuotes();
-      const catalog = cfdDataService.catalog();
-      const tickers = quotes.map(q => ({ ...q, name: catalog.find(i => i.symbol === q.symbol)?.name ?? q.symbol,
-        price: q.last === null ? null : q.lastDecimal ?? String(q.last),
-        maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs }));
+      const referenceWork = references.refreshDue();
+      const [liveQuotes, publicDisplayQuotes] = await Promise.all([
+        boundedQuoteBatch(riskSource),
+        displaySource ? boundedQuoteBatch(displaySource) : Promise.resolve([]),
+        references.isEnabled() ? waitForReferenceWork(referenceWork, 1300) : Promise.resolve(),
+      ]);
+      const fallback = new Map(references.snapshot().map(q => [q.symbol, q]));
+      const catalog = sourceCatalog(cfdDataService, riskSource);
+      const liveBySymbol = new Map(liveQuotes.map(q => [q.symbol, q]));
+      const displayBySymbol = new Map(publicDisplayQuotes.map(q => [q.symbol, q]));
+      const usePublicSerializer = references.isEnabled() || Boolean(displaySource);
+      const tickers = CFD_REFERENCE_CATALOG.map(base => {
+        const financial = liveBySymbol.get(base.symbol) ?? blankQuote(base.symbol);
+        const q = displaySource ? displaySource.choose(financial, displayBySymbol.get(base.symbol)) : financial;
+        const name = catalog.find(i => i.symbol === base.symbol)?.name ?? base.name;
+        return usePublicSerializer ? publicReferenceDisplay(q, name, fallback.get(base.symbol), riskSource.maxQuoteAgeMs)
+          : { ...q, name, price: q.last === null ? null : q.lastDecimal ?? String(q.last), maxQuoteAgeMs: riskSource.maxQuoteAgeMs };
+      });
       res.setHeader('Cache-Control', 'no-store');
-      res.json({ source: 'twelvedata', configured, tickers });
-    } catch (err) {
-      console.error(err);
+      const financialMode = riskSource === cfdDataService ? 'twelvedata' : 'multi-provider';
+      res.json({
+        source: `${financialMode}${displaySource ? '+public-display' : ''}${references.isEnabled() ? '+public-reference' : ''}`,
+        configured: riskSource.isConfigured() || cfdDataService.isConfigured() || Boolean(displaySource) || references.isEnabled(),
+        tickers,
+      });
+    } catch {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
@@ -90,14 +149,13 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     const positions = await positionService.listOpen(req.userId!);
     let tickers: { symbol: string; price: string }[] = [];
     try {
-      const quotes = await cfdDataService.getQuotes();
+      const quotes = await boundedQuoteBatch(riskSource);
       tickers = quotes.flatMap(q => {
-        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,cfdDataService.maxQuoteAgeMs))}]; }
+        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,riskSource.maxQuoteAgeMs))}]; }
         catch { return []; }
       });
     } catch {
-      // Honest fallback below (null markPrice/unrealizedPnl) beats a 500
-      // for what's otherwise a perfectly good position list.
+      // Public display quotes are intentionally NOT used for financial marks.
     }
     const priceBySymbol = new Map(tickers.map((t) => [t.symbol, new BigNumber(t.price)]));
 

@@ -1,0 +1,51 @@
+name: CFD free-display staging smoke
+on:
+  pull_request:
+    paths:
+      - 'src/services/marketData/cfd/**'
+      - 'src/api/routes/cfd.ts'
+      - 'scripts/cfd-free-display-review.cjs'
+      - '.github/workflows/cfd-free-display-staging-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for deployed isolated review service
+        run: |
+          node <<'NODE'
+          const base='https://voltex-cfd-free-display-staging.onrender.com';
+          const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+          async function get(path){
+            for(let i=0;i<12;i++){
+              try{const r=await fetch(base+path,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(r.ok)return r.json();}
+              catch{}
+              await sleep(5000);
+            }
+            throw new Error(`staging unavailable: ${path}`);
+          }
+          (async()=>{
+            const health=await get('/health');
+            if(health.status!=='ok'||health.service!=='voltex-cfd-free-display-review')throw new Error('wrong health identity');
+            const body=await get('/api/v1/cfd/tickers');
+            if(body.source!=='free-public-display-review'||body.executionAllowed!==false||!Array.isArray(body.tickers)||body.tickers.length!==13)throw new Error('bad ticker envelope');
+            const required=['XAUUSD','XAGUSD','XPTUSD','XPDUSD','WTIUSD','XBRUSD','EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD'];
+            const by=new Map(body.tickers.map(q=>[q.symbol,q]));
+            for(const symbol of required){
+              const q=by.get(symbol);if(!q)throw new Error(`missing ${symbol}`);
+              if(q.executionAllowed!==false||q.entitlementVerified!==false||q.displayOnly!==true)throw new Error(`financial permission leak ${symbol}`);
+              if(q.price!==null&&(!Number.isFinite(Number(q.price))||Number(q.price)<=0))throw new Error(`invalid price ${symbol}`);
+            }
+            if(by.get('WTIUSD').providerSymbol!=='USOIL'||by.get('XBRUSD').providerSymbol!=='UKOIL')throw new Error('oil identity mismatch');
+            const diag=await get('/diagnostics');if(diag.executionAllowed!==false)throw new Error('diagnostics permission leak');
+            const r=await fetch(base+'/api/v1/cfd/positions',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});
+            if(r.status!==405)throw new Error(`financial endpoint exposed: ${r.status}`);
+            console.log(JSON.stringify({health,tickers:body.tickers.map(q=>({symbol:q.symbol,provider:q.provider,providerSymbol:q.providerSymbol,price:q.price,status:q.status,stale:q.stale})),diagnostics:{executionAllowed:diag.executionAllowed}},null,2));
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE

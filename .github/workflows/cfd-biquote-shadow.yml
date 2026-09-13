@@ -1,0 +1,29 @@
+name: CFD biquote public shadow probe
+on:
+  pull_request:
+    paths:
+      - 'src/services/marketData/cfd/BiquoteCfdQuoteSource.ts'
+      - 'src/cfd/__tests__/BiquoteCfdQuoteSource.test.ts'
+      - 'scripts/probe-cfd-biquote-public.cjs'
+      - '.github/workflows/cfd-biquote-shadow.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Probe all 13 canonical symbols without credentials
+        run: node scripts/probe-cfd-biquote-public.cjs
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: cfd-biquote-public-probe
+          path: docs/qa/cfd-multi-provider/biquote-public-probe.json
+          retention-days: 7

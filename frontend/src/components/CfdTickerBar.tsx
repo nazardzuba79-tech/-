@@ -4,10 +4,10 @@ import { parseChangePercentOrNull } from '../lib/priceChange';
 import { PriceCell } from './PriceCell';
 import type { CfdTickerRow } from './CfdInstrumentList';
 
-/** Only the actual reference-feed fields: no volume, funding or depth. */
+/** Only actual reference-feed fields: no invented volume, funding or depth. */
 export function CfdTickerBar({ symbol, ticker }: { symbol: string; ticker?: CfdTickerRow }) {
   const { t } = useLanguage();
-  const change = ticker ? parseChangePercentOrNull(ticker.changePercent24h, symbol) : null;
+  const change = ticker && !ticker.displayOnly ? parseChangePercentOrNull(ticker.changePercent24h, symbol) : null;
   return (
     <header className="cfd-ticker-bar">
       <div className="cfd-selected-instrument">
@@ -15,8 +15,8 @@ export function CfdTickerBar({ symbol, ticker }: { symbol: string; ticker?: CfdT
         <span className="cfd-instrument-name">{ticker?.name ?? '—'}</span>
       </div>
       <div className="cfd-ticker-metric">
-        <span>{t('trade.cfdMarketPrice')}</span>
-        {ticker ? <PriceCell key={symbol} className="mono cfd-ticker-price" value={Number(ticker.price)} format={v => formatCfdPrice(v, symbol)} />
+        <span>{ticker?.referenceLabel ?? t('trade.cfdMarketPrice')}</span>
+        {ticker && ticker.price !== null ? <PriceCell key={symbol} className="mono cfd-ticker-price" value={Number(ticker.price)} format={v => formatCfdPrice(v, symbol, ticker.displayOnly)} />
           : <span className="mono cfd-ticker-price">—</span>}
       </div>
       <div className="cfd-ticker-metric">

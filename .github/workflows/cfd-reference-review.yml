@@ -1,0 +1,28 @@
+name: Isolated CFD reference review
+on:
+  pull_request:
+    paths:
+      - 'scripts/*cfd*'
+      - 'src/services/marketData/cfd/**'
+      - '.github/workflows/cfd-reference-review.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cfd-reference-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  isolated-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile only pure reference modules (no Prisma, DB or exchange bootstrap)
+        run: npx tsc --strict --skipLibCheck --target ES2020 --module commonjs --lib ES2022,DOM --outDir dist/services/marketData/cfd src/services/marketData/cfd/PublicReferenceFeed.ts src/services/marketData/cfd/PublicReferenceDisplay.ts src/services/marketData/cfd/catalog.ts
+      - name: Read-only server and transport diagnostic regression tests
+        run: node --test scripts/test-cfd-reference-review.cjs scripts/test-cfd-reference-labels.cjs scripts/test-cfd-public-references.cjs

@@ -1,0 +1,116 @@
+name: CFD multi-provider shadow validation
+on:
+  pull_request:
+    paths:
+      - 'src/services/marketData/cfd/**'
+      - 'src/api/routes/cfd.ts'
+      - 'src/cfd/__tests__/**'
+      - 'src/services/__tests__/CfdMarketDataService.test.ts'
+      - 'frontend/src/**'
+      - 'scripts/*cfd*'
+      - '.github/workflows/cfd-multi-provider-shadow.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cfd-shadow-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend dependencies before shared Jest tests
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build bcrypt native binding required by existing service tests
+        run: npm rebuild bcrypt --build-from-source
+      - name: Generate Prisma client (no DB connection or migrations)
+        run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Deterministic reference routing and adapter tests
+        if: success() || failure()
+        run: node --test scripts/test-cfd-reference-router.cjs scripts/test-cfd-public-references.cjs scripts/test-cfd-reference-labels.cjs
+      - name: Frontend build
+        if: success() || failure()
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+      - name: CFD and homepage regression tests
+        if: success() || failure()
+        run: npm test -- --runInBand --silent --testPathPattern='Cfd|cfd|homeLiveMarket' --json --outputFile=cfd-test-results.json
+      - name: Preserve complete test evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfd-test-results
+          path: cfd-test-results.json
+          retention-days: 7
+      - name: Install isolated browser QA tooling (no app dependency changes)
+        run: |
+          npm install --prefix /tmp/voltex-cfd-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-cfd-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Disposable loopback browser rollout validation (no accounts or DB)
+        env:
+          CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-qa/node_modules/playwright
+        run: |
+          node -e "const {randomBytes}=require('node:crypto'); process.env.JWT_SECRET=randomBytes(48).toString('hex'); process.env.API_KEY_ENCRYPTION_SECRET=randomBytes(32).toString('hex'); require('./scripts/qa-cfd-public-rollout.cjs');"
+      - name: Preserve screenshots and rollout findings
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfd-rollout-browser
+          path: docs/qa/cfd-multi-provider/browser/
+          retention-days: 7
+  public-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile real public reference adapters without DB or application boot
+        run: npx tsc --strict --skipLibCheck --target ES2020 --module commonjs --lib ES2022,DOM --outDir dist/services/marketData/cfd src/services/marketData/cfd/PublicReferenceFeed.ts
+      - name: Seven bounded real public requests through actual adapters
+        run: node scripts/probe-cfd-public-feed.cjs
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: cfd-public-feed-probe
+          path: docs/qa/cfd-multi-provider/public-feed.json
+          retention-days: 7
+  deriv-public-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile public Deriv adapter only
+        run: npx tsc --strict --skipLibCheck --target ES2021 --module commonjs --esModuleInterop --moduleResolution node --rootDir src --outDir dist src/services/marketData/cfd/DerivPublicStreamQuoteSource.ts
+      - name: Verify current unauthenticated Deriv coverage (11 symbols; WTI/Brent recorded as gaps)
+        run: node scripts/probe-cfd-deriv-public.cjs
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: cfd-deriv-public-probe
+          path: docs/qa/cfd-multi-provider/deriv-public-probe.json
+          retention-days: 7
