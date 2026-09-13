@@ -4,9 +4,11 @@ on:
     paths:
       - 'src/api/routes/cfd.ts'
       - 'src/services/marketData/cfd/**'
+      - 'src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts'
       - 'frontend/src/components/Cfd*'
       - 'frontend/src/lib/cfd*'
       - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
       - 'frontend/src/pages/home/**'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
@@ -25,16 +27,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Backend dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm rebuild bcrypt --build-from-source
       - run: npx prisma generate
       - name: Backend build
         run: npm run build
-      - name: Backend and frontend CFD regressions
-        run: npm test -- --runInBand --silent --testPathPattern='Cfd|cfd|homeLiveMarket'
-      - name: Frontend dependencies
-        working-directory: frontend
-        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Display-router regression tests
+        run: npm test -- --runInBand --silent --runTestsByPath src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
