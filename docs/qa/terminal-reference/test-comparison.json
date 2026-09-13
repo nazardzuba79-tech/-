@@ -18,5 +18,10 @@
     "native TradingView indicators toolbar is enabled and volume remains controllable",
     "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
     "verified CFD mapping and compact visible attribution are preserved"
-  ]
+  ],
+  "followup": {
+    "passed": 219,
+    "failed": 4,
+    "total": 223
+  }
 }

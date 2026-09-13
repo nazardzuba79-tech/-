@@ -5,9 +5,9 @@ Branch: `codex/terminal-reference-layout`. Review only; no merge/deployment.
 
 ## Presentation
 
-- Desktop chart/book/order rail replaces the permanent four-column market sidebar. At 1920px the chart is 1257.6px, book 316.8px and rail 345.6px. The right rail spans the instrument header and lower positions area.
-- Markets open from the instrument name in a native modal dialog. Existing search, sorting, favorites, virtualization and contract selection are retained. Search receives focus; Escape closes and restores focus.
-- Neutral charcoal surfaces, orange active accents, aligned book columns, compact input treatment and one integrated account rail. Margin/leverage are above Limit/Market; existing sizing and order controls remain functional. Count labels no longer inherit decorative shared badges.
+- Desktop has permanent left search and markets as requested in the owner's follow-up. At 1920px the sidebar is 240px, chart 1040.6px, book 293.8px and rail 345.6px. The book is 23px narrower than the first PR version (228px versus 240px at 1440). The right rail spans the instrument header and lower positions area.
+- Selecting the instrument name focuses the permanent desktop search. Tablet/mobile use a native modal dialog. Exactly one market list is mounted; the selected contract survives breakpoint changes. Search, sorting, favorites and virtualization remain. The sort selector has a full-width line instead of a clipped label.
+- Neutral charcoal surfaces, orange active accents, aligned book/chart headings, clearer secondary labels and one integrated account rail. Form gaps reduced from 18px to 13px, header values increased to 14px and form labels to 13px. Margin/leverage are above Limit/Market; existing sizing and order controls remain functional. Count labels no longer inherit decorative shared badges.
 - Market tape moves below the workspace. Tablet uses chart above book/form; mobile uses chart, form, book, positions. The existing mobile navigation remains fixed and content scrolls behind it.
 - Futures chart canvas uses the official TradingView background/grid options. Spot and CFD keep their original colors and symbol mappings. Native timeframe/indicator/drawing controls and attribution remain intact.
 
@@ -21,9 +21,9 @@ Same 1920×1080 viewport, same read-only local harness, current main versus cand
 | --- | --- |
 | ![Current main](before-main-1920.png) | ![Candidate](futures-1920.png) |
 
-[1440](futures-1440.png) · [1366](futures-1366.png) · [1024](futures-1024.png) · [768](futures-768.png) · [390 chart](futures-390-chart.png) · [390 order controls](futures-390-controls.png) · [Market selector](market-selector.png)
+[1440](futures-1440.png) · [1366](futures-1366.png) · [1280](futures-1280.png) · [1024](futures-1024.png) · [768](futures-768.png) · [390 chart](futures-390-chart.png) · [390 order controls](futures-390-controls.png) · [Market search](market-selector.png)
 
-`browser-results.json`: all six viewport widths have no page overflow, one native chart iframe matching the container width, and fitting action labels. Desktop rail and bottom panel end together; tablet book and form share a row. Twenty alternating BTC/ETH selections verified the matching BYBIT perpetual iframe without stacking. Search focus, Escape/focus restoration and mobile controls above the fixed navigation were checked. Screenshots use actual public data only; private account requests are intentionally unavailable and all writes are blocked by the QA harness. Missing ticker/mark/account values are visible as unknown, not filled with sample numbers. The first mobile full-page capture had a headless iframe paint artifact; viewport screenshots above verify the actual rendered chart.
+`browser-results.json`: all seven viewport widths have no page overflow, one native chart iframe matching the container width, and fitting action labels. Desktop rail and bottom panel end together; tablet book and form share a row. Twenty alternating BTC/ETH sidebar selections verified the matching BYBIT perpetual iframe without stacking. Desktop search focus, mobile dialog/Escape, responsive modal removal and mobile controls above the fixed navigation were checked. Screenshots use actual public data only; private account requests are intentionally unavailable and all writes are blocked by the QA harness. Missing ticker/mark/account values are visible as unknown, not filled with sample numbers. Mobile viewport screenshots verify the actual rendered chart.
 
 Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the running local QA server). This is not a deployed branch URL.
 
@@ -34,6 +34,7 @@ Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the r
 - Six focused suites (`futuresOrderPanel`, `futuresFinalPolish`, `futuresAccountUnknownState`, `cfdChartFallback`, `terminalPresentation`, `spotOrderBook`): **166 passed, 4 failed / 170**. Four new chart palette/ownership cases pass.
 - Same six suites in pristine worktree at exact base main: **162 passed, 4 failed / 166**.
 - Additional account-store and position-protection suites: **52 passed / 52**.
+- Follow-up rerun of all eight suites together: **219 passed, same 4 failed / 223**. One additional responsive-list test verifies one list and retained contract across desktop/mobile changes. Existing hook harness now supplies the browser's `matchMedia` API; no existing assertion removed or weakened.
 - **New failures versus main: 0.** Existing failing assertions were not weakened or rewritten:
   - `timeframe label is driven by the exact interval sent to the chart; controls cannot drift`
   - `native TradingView indicators toolbar is enabled and volume remains controllable`

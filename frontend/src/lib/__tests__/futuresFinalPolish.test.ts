@@ -146,7 +146,9 @@ function mount(file: string, overrides: Record<string, any> = {}) {
       return { [label]: component };
     }
     return req(name);
-  }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false) });
+  }, output, { setTimeout, clearTimeout, setInterval, clearInterval, confirm: overrides.confirm ?? jest.fn(() => false),
+    matchMedia: overrides.matchMedia ?? (() => ({ matches: true, addEventListener() {}, removeEventListener() {} })),
+  });
   return {
     components,
     render(props: any = {}) {
@@ -211,6 +213,28 @@ test.each([
     }
   }
   expect(JSON.stringify(raw)).toBe(original);
+});
+
+test('Futures moves one market list between desktop sidebar and mobile dialog without losing the selected contract', () => {
+  let changed = () => {};
+  const media = { matches: true, addEventListener: (_: string, cb: () => void) => { changed = cb; }, removeEventListener() {} };
+  const page = mount('pages/FuturesPage.tsx', { params: new URLSearchParams(), matchMedia: () => media,
+    socket: { subscribeBook: () => () => {} } });
+  let tree = page.render();
+  const lists = () => nodes(tree).filter(n => n.type === page.components.FuturesPairList);
+  expect(lists()).toHaveLength(1);
+  expect(nodes(tree).some(n => n.type === 'aside')).toBe(true);
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
+  lists()[0].props.onChange('ETH/USDT');
+  media.matches = false; changed(); tree = page.render();
+  expect(lists()).toHaveLength(1);
+  expect(lists()[0].props.symbol).toBe('ETH/USDT');
+  expect(nodes(tree).some(n => n.type === 'aside')).toBe(false);
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(true);
+  media.matches = true; changed(); tree = page.render();
+  expect(lists()).toHaveLength(1);
+  expect(lists()[0].props.symbol).toBe('ETH/USDT');
+  expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
 });
 
 test('Futures wires dynamic precision, rejects prior-pair REST and preserves repeated selection events', async () => {

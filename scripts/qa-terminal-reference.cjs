@@ -10,7 +10,7 @@ const out = 'docs/qa/terminal-reference';
   const browser = await chromium.launch({ executablePath: process.env.EDGE_PATH, headless: true });
   const result = [];
   try {
-    for (const [width, height] of [[1920,1080], [1440,900], [1366,768], [1024,900], [768,1024], [390,844]]) {
+    for (const [width, height] of [[1920,1080], [1440,900], [1366,768], [1280,900], [1024,900], [768,1024], [390,844]]) {
       const page = await browser.newPage({ viewport: { width, height } });
       try {
         await page.goto(`${origin}/__qa/start`);
@@ -30,6 +30,8 @@ const out = 'docs/qa/terminal-reference';
             frames:document.querySelectorAll('.voltex-tradingview-chart iframe').length,
             buttons:[...document.querySelectorAll('.fo-submitPair button')].map(n=>({width:n.clientWidth, scrollWidth:n.scrollWidth})),
             background:getComputedStyle(document.querySelector('.chart-area')).backgroundColor,
+            sidebar:document.querySelector('.reference-market-sidebar') ? rect('.reference-market-sidebar') : null,
+            marketLists:document.querySelectorAll('.pairs-list').length,
           };
         });
         assert.ok(geometry.scrollWidth <= width, `page overflow at ${width}: ${geometry.scrollWidth}`);
@@ -37,12 +39,20 @@ const out = 'docs/qa/terminal-reference';
         assert.ok(Math.abs(geometry.frame.width - geometry.canvas.width) <= 2, 'native frame fills chart');
         assert.ok(geometry.buttons.every(b => b.scrollWidth <= b.width + 1), 'action labels fit');
         if (width > 1024) {
-          assert.ok(Math.abs(geometry.chart.x) < 1, 'no permanent market sidebar');
+          assert.ok(geometry.sidebar.width >= 218, 'persistent left search and market list');
+          assert.equal(geometry.chart.x, geometry.sidebar.width, 'chart starts directly after sidebar');
           assert.ok(Math.abs(geometry.form.y + geometry.form.height - geometry.bottom.y - geometry.bottom.height) <= 1, `right rail spans lower panel: ${JSON.stringify(geometry)}`);
         }
         if (width > 600 && width <= 1024) assert.equal(geometry.book.y, geometry.form.y, 'tablet book and form share one row');
         await page.screenshot({ path:`${out}/futures-${width}.png`, fullPage:width > 600 && width <= 1024 });
         if (width === 390) {
+          const chooser = page.locator('.ticker-bar .pair-selector');
+          await chooser.click();
+          const dialog = page.locator('.reference-market-dialog');
+          await dialog.waitFor({state:'visible'});
+          assert.equal(await dialog.locator('input').evaluate(n => n === document.activeElement), true);
+          await page.keyboard.press('Escape');
+          assert.equal(await dialog.isVisible(), false);
           await page.locator('.chart-area').scrollIntoViewIfNeeded();
           await page.waitForTimeout(1500);
           await page.screenshot({path:`${out}/futures-390-chart.png`});
@@ -56,20 +66,15 @@ const out = 'docs/qa/terminal-reference';
         }
         if (width === 1440) {
           const chooser = page.locator('.ticker-bar .pair-selector');
-          const dialog = page.locator('.reference-market-dialog');
+          const sidebar = page.locator('.reference-market-sidebar');
           await chooser.click();
-          await dialog.waitFor({state:'visible'});
-          assert.equal(await dialog.locator('input').evaluate(n => n === document.activeElement), true);
+          assert.equal(await sidebar.locator('input').evaluate(n => n === document.activeElement), true);
+          assert.equal(await page.locator('dialog').count(), 0);
           await page.screenshot({path:`${out}/market-selector.png`});
-          await page.keyboard.press('Escape');
-          assert.equal(await dialog.isVisible(), false);
-          assert.equal(await chooser.evaluate(n => n === document.activeElement), true);
           for (let i=0; i<20; i++) {
             const base = i%2 ? 'BTC' : 'ETH';
-            await chooser.click();
-            await dialog.locator('input').fill(base);
-            await dialog.locator('.pair-row').filter({hasText:new RegExp(`\\b${base}\\b`)}).first().click();
-            assert.equal(await dialog.isVisible(), false);
+            await sidebar.locator('input').fill(base);
+            await sidebar.locator('.pair-row').filter({hasText:new RegExp(`\\b${base}\\b`)}).first().click();
             await page.waitForFunction(expected => {
               const frame=document.querySelector('.voltex-tradingview-chart iframe');
               if (!frame) return false;
@@ -77,7 +82,17 @@ const out = 'docs/qa/terminal-reference';
             }, `BYBIT:${base}USDT.P`);
             assert.equal(await page.locator('.voltex-tradingview-chart iframe').count(), 1);
           }
-          geometry.marketSelector = 'search focused; Escape restores focus; 20 alternating BTC/ETH selections; one matching iframe';
+          await sidebar.locator('input').fill('');
+          await page.setViewportSize({width:390,height:844});
+          await page.locator('.reference-market-sidebar').waitFor({state:'detached'});
+          await chooser.click();
+          await page.locator('.reference-market-dialog[open]').waitFor();
+          assert.equal(await page.locator('.pairs-list').count(), 1);
+          await page.setViewportSize({width:1440,height:900});
+          await sidebar.waitFor();
+          assert.equal(await page.locator('dialog').count(), 0);
+          assert.equal(await page.locator('.pairs-list').count(), 1);
+          geometry.marketSelector = 'persistent search; 20 BTC/ETH selections; one matching iframe; responsive transition keeps one list and removes modal';
         }
         result.push(geometry);
         console.log(JSON.stringify(geometry));

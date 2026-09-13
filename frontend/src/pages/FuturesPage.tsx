@@ -72,8 +72,15 @@ export function FuturesPage() {
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
   const marketDialogRef = useRef<HTMLDialogElement>(null);
+  const [desktopMarkets, setDesktopMarkets] = useState(() => window.matchMedia('(min-width: 1025px)').matches);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1025px)');
+    const update = () => setDesktopMarkets(media.matches);
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
   function openMarkets() {
-    marketDialogRef.current?.showModal();
+    if (!desktopMarkets) marketDialogRef.current?.showModal();
     pairListRef.current?.focusSearch();
   }
 
@@ -170,6 +177,9 @@ export function FuturesPage() {
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
+          {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
+            <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
+          </aside>}
           <div className="chart-area">
             <div className="reference-chart-heading"><span>{t('futures.chart')}</span><span className="reference-chart-provider">TradingView</span></div>
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
@@ -229,7 +239,7 @@ export function FuturesPage() {
         </div>
       </div>
 
-      <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
+      {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
         onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
         <div className="reference-market-heading"><strong>{t('nav.markets')}</strong>
           <button type="button" aria-label={t('deposit.close')} onClick={() => marketDialogRef.current?.close()}>×</button>
@@ -237,7 +247,7 @@ export function FuturesPage() {
         <div className="left-panel">
           <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
-      </dialog>
+      </dialog>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
