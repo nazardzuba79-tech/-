@@ -112,10 +112,6 @@ export function CfdOrderForm({
 
   return (
     <div className="cfd-order-panel">
-      <div className="cfd-practice-head" title={copy.practiceNote}>
-        <span className="cfd-practice-badge">{copy.practice}</span>
-      </div>
-
       <div className="cfd-sideTabs">
         <button type="button" onClick={() => setSide('BUY')} className={`cfd-sideTab${side === 'BUY' ? ' buy active' : ''}`} aria-pressed={side === 'BUY'}>
           {t('futures.buyLong')}
@@ -125,7 +121,10 @@ export function CfdOrderForm({
         </button>
       </div>
 
-      <div className="cfd-product-terms"><span>{t('trade.market')}</span><span>{t('futures.isolated')}</span></div>
+      <div className="cfd-product-terms">
+        <span>{t('trade.market')} <span className="cfd-practice-badge" title={copy.practiceNote}>{copy.practice}</span></span>
+        <span>{t('futures.isolated')}</span>
+      </div>
       <form onSubmit={handleSubmit} className="cfd-form">
         <LeverageSlider
           value={leverage}
