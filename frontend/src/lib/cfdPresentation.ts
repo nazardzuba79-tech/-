@@ -1,4 +1,6 @@
+import { cfdMarketCopy } from './cfdDisplayCopy';
 export { ageCfdTickerRows } from './cfdTickerFreshness';
+export { cfdMarketCopy } from './cfdDisplayCopy';
 
 const CFD_DECIMALS: Record<string, number> = {
   XAUUSD:2,XAGUSD:3,XPTUSD:2,XPDUSD:2,WTIUSD:3,XBRUSD:3,
@@ -18,12 +20,13 @@ export function formatCfdAsOf(value:number|null|undefined):string{
   return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'UTC'})+' UTC';
 }
 
-export function cfdDisplayState(q:{price:string|null;status?:string;stale?:boolean;asOf?:number|null}|undefined):{label:string;tone:'live'|'closed'|'stale'|'off'}{
-  if(!q||q.price===null)return{label:'Price unavailable',tone:'off'};
+export function cfdDisplayState(q:{price:string|null;status?:string;stale?:boolean;asOf?:number|null}|undefined,lang='en'):{label:string;tone:'live'|'closed'|'stale'|'off'}{
+  const copy=cfdMarketCopy(lang);
+  if(!q||q.price===null)return{label:copy.priceUnavailable,tone:'off'};
   const time=formatCfdAsOf(q.asOf);
-  if(q.status==='market_closed')return{label:`Market closed${time?` · ${time}`:''}`,tone:'closed'};
-  if(q.stale===true||q.status==='stale')return{label:`Last quote${time?` · ${time}`:''}`,tone:'stale'};
-  return{label:`Live${time?` · ${time}`:''}`,tone:'live'};
+  if(q.status==='market_closed')return{label:`${copy.marketClosed}${time?` · ${time}`:''}`,tone:'closed'};
+  if(q.stale===true||q.status==='stale')return{label:`${copy.lastQuote}${time?` · ${time}`:''}`,tone:'stale'};
+  return{label:`${copy.live}${time?` · ${time}`:''}`,tone:'live'};
 }
 
 /** Kept for old financial components, even though the visible CFD surface is read-only. */
