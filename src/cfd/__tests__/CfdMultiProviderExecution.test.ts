@@ -56,7 +56,7 @@ describe('Resilient CFD execution routing',()=>{
   });
   test('executable reserve is preferred over a non-opening primary',async()=>{
     const a=new FakeSource('twelvedata',quote('twelvedata','2000',START,false)),b=new FakeSource('tradermade',quote('tradermade','2000',START,true));
-    expect((await router(a,b).getFreshQuote('XAUUSD')).toMatchObject({provider:'tradermade',executionAllowed:true});
+    expect(await router(a,b).getFreshQuote('XAUUSD')).toMatchObject({provider:'tradermade',executionAllowed:true});
   });
 });
 
