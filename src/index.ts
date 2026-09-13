@@ -184,7 +184,7 @@ app.use(
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
-app.use('/api/v1', depositsRouter(prisma));
+app.use('/api/v1', depositsRouter(prisma, marketDataService));
 app.use('/api/v1', adminDepositsRouter(prisma, marketDataService));
 app.use('/api/v1', adminWalletsRouter(prisma));
 app.use('/api/v1', withdrawalsRouter(prisma));
