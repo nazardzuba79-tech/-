@@ -1,4 +1,4 @@
-export function CfdPositionsPanel({_refreshKey}:{refreshKey:number}){
+export function CfdPositionsPanel(_props:{refreshKey:number}){
   return <section className="cfd-data-coverage" aria-label="Market data coverage">
     <div className="cfd-data-coverage-title"><strong>Market data coverage</strong><span>13 instruments · multi-source</span></div>
     <div className="cfd-data-coverage-grid">
