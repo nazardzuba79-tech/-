@@ -234,14 +234,10 @@ describe('AnalyticsDataService', () => {
 
   it('never fabricates the metrics this system has no source for', async () => {
     const snapshot = await makeService().service.getSnapshot();
-    // Phase 2 implemented six of the modules that used to live here; what
-    // remains is what still has no legitimate free source. Each is a
-    // designed slot the UI renders as "no source connected".
+    // PR #69 added observed liquidations, IV and dated futures. Only the
+    // modules with no legitimate source remain in the unsupported map.
     for (const key of [
-      'liquidations',
       'liquidationHeatmap',
-      'impliedVolatility',
-      'futuresTermStructure',
       'etfFlows',
       'exchangeFlows',
       'whaleActivity',
@@ -251,6 +247,11 @@ describe('AnalyticsDataService', () => {
       expect(section).toMatchObject({ reason: 'unsupported_metric' });
       // No value-carrying keys at all — nothing a UI could plot as zero.
       expect(Object.keys(section).sort()).toEqual(['available', 'detail', 'reason']);
+    }
+    for (const key of ['liquidations', 'impliedVolatility', 'futuresTermStructure'] as const) {
+      expect(snapshot.unsupported[key]).toBeUndefined();
+      expect(snapshot.sections[key]).toMatchObject({ available: false, reason: 'provider_not_configured' });
+      expect(snapshot.sections[key]).not.toHaveProperty('value');
     }
   });
 
