@@ -40,6 +40,8 @@ import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { CfdMarketDataService } from './services/CfdMarketDataService';
 import { TraderMadeStreamQuoteSource } from './services/marketData/cfd/TraderMadeStreamQuoteSource';
 import { DerivPublicStreamQuoteSource } from './services/marketData/cfd/DerivPublicStreamQuoteSource';
+import { BiquoteCfdQuoteSource } from './services/marketData/cfd/BiquoteCfdQuoteSource';
+import { CfdDisplayQuoteRouter } from './services/marketData/cfd/CfdDisplayQuoteRouter';
 import { ResilientCfdQuoteSource } from './services/marketData/cfd/ResilientCfdQuoteSource';
 import { CfdPositionService } from './cfd/CfdPositionService';
 import { CfdLiquidationEngine } from './cfd/CfdLiquidationEngine';
@@ -96,28 +98,36 @@ const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY,
   creditsPerDay: Number(process.env.CFD_CREDITS_PER_DAY ?? 800),
 });
 
-// Execution-grade provider routing is an explicit rollout gate. Until it is
-// enabled, current Twelve Data semantics stay byte-for-byte compatible. Once
-// enabled, providers are admitted only with non-secret commercial-use evidence
-// IDs and per-symbol entitlement lists. Missing redundancy blocks NEW positions
-// but a remaining admitted fresh source can still close/mark/liquidate existing
-// positions. Deriv may run in shadow without any financial permission; shadow
-// observations are diagnostics only and cannot enter this router's active set.
+// Financial execution remains separately admitted. Public/no-key feeds may
+// keep the UI priced, but cannot become open/close/PnL/liquidation inputs.
 const cfdMultiProviderExecutionEnabled = process.env.CFD_MULTI_PROVIDER_EXECUTION_ENABLED === 'true';
+const cfdFreeDisplayEnabled = process.env.CFD_FREE_DISPLAY_ENABLED !== 'false';
 const traderMadeCfdDataService = new TraderMadeStreamQuoteSource(process.env.TRADERMADE_STREAM_API_KEY, {
   maxQuoteAgeMs: cfdMaxQuoteAgeMs,
   entitledSymbols: parseCfdSymbols(process.env.TRADERMADE_VERIFIED_LIVE_SYMBOLS),
   executionSymbols: parseCfdSymbols(process.env.TRADERMADE_EXECUTION_SYMBOLS),
   financialUseEvidence: process.env.TRADERMADE_FINANCIAL_USE_EVIDENCE,
 });
-const derivShadowEnabled = process.env.DERIV_CFD_SHADOW_ENABLED === 'true';
+const derivShadowEnabled = process.env.DERIV_CFD_SHADOW_ENABLED !== 'false';
 const derivCfdDataService = new DerivPublicStreamQuoteSource({
   maxQuoteAgeMs: cfdMaxQuoteAgeMs,
-  shadow: derivShadowEnabled,
+  shadow: derivShadowEnabled || cfdFreeDisplayEnabled,
   entitledSymbols: parseCfdSymbols(process.env.DERIV_CFD_VERIFIED_LIVE_SYMBOLS),
   executionSymbols: parseCfdSymbols(process.env.DERIV_CFD_EXECUTION_SYMBOLS),
   financialUseEvidence: process.env.DERIV_CFD_FINANCIAL_USE_EVIDENCE,
 });
+const biquoteCfdDisplayService = new BiquoteCfdQuoteSource({
+  maxQuoteAgeMs: cfdMaxQuoteAgeMs,
+  cacheMs: Number(process.env.BIQUOTE_CFD_CACHE_MS ?? 1000),
+});
+const cfdDisplaySource = cfdFreeDisplayEnabled ? new CfdDisplayQuoteRouter([
+  { id:'biquote', priority:10, source:biquoteCfdDisplayService },
+  { id:'deriv', priority:20, source:derivCfdDataService },
+], {
+  providerWaitMs:Number(process.env.CFD_DISPLAY_PROVIDER_WAIT_MS ?? 1300),
+  freshAgeMs:Number(process.env.CFD_DISPLAY_FRESH_AGE_MS ?? 120000),
+}) : undefined;
+
 const resilientCfdDataService = new ResilientCfdQuoteSource([
   {
     id: 'twelvedata', source: cfdDataService, priority: 10,
@@ -146,29 +156,15 @@ const resilientCfdDataService = new ResilientCfdQuoteSource([
 const cfdRiskSource = cfdMultiProviderExecutionEnabled ? resilientCfdDataService : cfdDataService;
 const cfdPositionService = new CfdPositionService(prisma, cfdRiskSource);
 // Wallet valuation + portfolio performance. Reads the ledger, never writes
-// it; see WalletPortfolioService and AdminPortfolioProfile. It intentionally
-// keeps its existing reference valuation path; execution/risk uses cfdRiskSource.
+// it; execution/risk uses the stricter cfdRiskSource defined above.
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
 const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdRiskSource);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 
-// Perpetual futures runs on its own matching engine and services,
-// deliberately never sharing state with the spot engine above (see
-// FuturesOrder/FuturesBalance's schema comments).
 const futuresEngine = new MatchingEngine();
 const markPriceService = new MarkPriceService(marketDataService);
 const futuresPositionService = new FuturesPositionService(prisma, futuresEngine, markPriceService);
-// Which contracts are listed is derived from live market data under the
-// listing rules in config/futuresConfig — see FuturesMarketRegistry.
-/**
- * The DISCOVERABLE venue universe — every real instrument that exists.
- *
- * When the Frankfurt collector is configured, the API region reads the
- * collector's authenticated universe snapshot and never contacts Bybit
- * directly. The direct provider remains only as a local/dev fallback when
- * no collector is configured.
- */
 const liveReferenceCollector = collectorFromEnv();
 const venueUniverseSource = liveReferenceCollector
   ? new CollectorUniverseProvider(liveReferenceCollector)
@@ -176,69 +172,21 @@ const venueUniverseSource = liveReferenceCollector
 const marketUniverse = new MarketUniverse(venueUniverseSource, { includeInverse: true });
 marketUniverse.start();
 
-// The EXECUTABLE futures set. The universe is passed as a restriction, not
-// as a source of markets: it can only ever remove a contract that is not a
-// real Trading USDT-settled perpetual. Pricing still comes from the
-// existing index feed, so a market VOLTEX cannot price is never listed.
 const futuresMarketRegistry = new FuturesMarketRegistry(marketDataService, prisma, marketUniverse);
 const fundingRateService = new FundingRateService(prisma, markPriceService, () => futuresMarketRegistry.list());
 const liquidationEngine = new LiquidationEngine(prisma, markPriceService);
-// Take Profit / Stop Loss. Its own sweep, deliberately NOT folded into the
-// liquidation engine: a stop loss exists to close a position before it ever
-// reaches liquidation, so the two run independently and neither can delay
-// the other. It executes only through futuresPositionService's ordinary
-// reduce-only path — no separate accounting.
 const futuresProtectionService = new FuturesProtectionService(prisma, futuresPositionService, markPriceService);
 
-// Shares the spot engine/prisma/priceSource with ordersRouter's own
-// OrderService instance — OrderService holds no in-process state beyond
-// those injected deps, so a second instance here is safe.
 const spotOrderService = new OrderService(prisma, engine, marketDataService);
 const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, marketDataService);
-
-// Admin-only sandbox for testing order-book/liquidity behavior with fake
-// funds — its own engine and its own DemoBalance/DemoOrder/DemoTrade
-// tables, never sharing state with the spot or futures engines above (see
-// DemoBalance's schema.prisma doc comment for why).
 const demoEngine = new MatchingEngine();
 const demoTradingService = new DemoTradingService(prisma, demoEngine);
 
-// The unified reference-market façade. It orchestrates the provider
-// services constructed above rather than replacing them — same Kraken
-// service, same CoinGecko service, same caches, same circuits — and adds
-// the canonical asset registry, provenance/freshness on every answer, and
-// capability routing. It is deliberately given the CFD reference service;
-// execution/risk uses the stricter cfdRiskSource defined above.
-//
-// It reads reference data only. Nothing here touches VOLTEX financial
-// state: mark price, funding settlement, open interest, positions, margin
-// and liquidation stay with the futures/CFD risk services.
 const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService, undefined, liveReferenceCollector?.feed ?? null);
-
-// External derivatives reference data (Binance + OKX public futures
-// endpoints). Public, unauthenticated, no key and no environment variable
-// — see each adapter's doc comment for the exact endpoint families. Each
-// venue gets its OWN circuit, registered under a name distinct from the
-// arbitrage circuits, so one venue rate-limiting cannot blind the other.
-//
-// Nothing produced here may enter mark price, index price, margin,
-// leverage, liquidation, funding settlement, PnL or matching. It is
-// reference data about other venues and it reaches exactly one consumer:
-// the read-only Analytics snapshot below.
 const binanceDerivativesService = new BinanceDerivativesService(process.env.BINANCE_FUTURES_API_BASE_URL);
 const okxDerivativesService = new OkxDerivativesService(process.env.OKX_API_BASE_URL);
 const externalDerivativesService = new ExternalDerivativesService(binanceDerivativesService, okxDerivativesService);
-
-// Realized volatility, correlations and sector performance, computed from
-// series the gateway already caches. No new provider and no new sweep.
 const derivedAnalyticsService = new DerivedAnalyticsService(marketDataGateway);
-
-// Read-only analytics aggregation. Market-wide figures and sentiment come
-// through the gateway above — the same cached reads /markets already
-// makes, so opening Analytics costs no extra upstream requests — and this
-// venue's own funding, open interest and mark/index prices come from the
-// futures services. The external sections are clearly labelled by venue
-// and are never mixed with VOLTEX's own book.
 const analyticsDataService = new AnalyticsDataService(
   prisma,
   marketDataGateway,
@@ -249,24 +197,11 @@ const analyticsDataService = new AnalyticsDataService(
   coinGeckoService
 );
 
-// Deployed behind Caddy (see api.ts's docker-compose comment) — without this,
-// req.ip is always the proxy's own address, which would both defeat the
-// per-IP login rate limiter below (every user looks like the same caller)
-// and make the account security log's IP column useless.
 app.set('trust proxy', 1);
-
 app.use(helmet());
 app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [] }));
-// A base64 profile photo does not fit in the app-wide limit below, and
-// raising that limit would lift the ceiling on every other endpoint too.
-// Mounted BEFORE the global parser on purpose: whichever runs first parses
-// the body, and the later one then skips it — so this order is what makes
-// the wider limit apply, and only on this path. The size the endpoint
-// itself accepts is capped separately (AVATAR_MAX_BYTES in account.ts).
 app.use('/api/v1/me/avatar', express.json({ limit: '1mb' }));
 app.use(express.json({ limit: '100kb' }));
-
-// Global rate limit; tighten further per-route (esp. auth, withdrawals) in production.
 app.use(
   rateLimit({
     windowMs: 60_000,
@@ -290,7 +225,8 @@ app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
-app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService, undefined, cfdRiskSource, () => derivCfdDataService.diagnostics()));
+app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService, undefined, cfdRiskSource,
+  () => ({ deriv:derivCfdDataService.diagnostics(), biquote:biquoteCfdDisplayService.diagnostics() }), cfdDisplaySource));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
@@ -307,11 +243,9 @@ app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
 app.use('/api/v1', analyticsRouter(prisma, analyticsDataService));
-// Additive: every pre-existing /market/* route above keeps its shape.
 app.use('/api/v1', marketDataRouter(prisma, marketDataGateway, externalDerivativesService, marketUniverse));
 app.use('/api/v1', marketOptionsRouter(liveReferenceCollector));
 
-// Centralized error handler — never leak stack traces to clients.
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
   res.status(500).json({ error: 'Internal server error' });
@@ -320,19 +254,13 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 const PORT = process.env.PORT ?? 3000;
 
 async function start() {
-  // MUST run before app.listen — otherwise a request could place/match an
-  // order against an incomplete book while old orders are still loading.
   const recoveredCount = await recoverOrderBook(prisma, engine);
-  if (recoveredCount > 0) {
-    console.log(`Recovered ${recoveredCount} resting order(s) into the matching engine`);
-  }
+  if (recoveredCount > 0) console.log(`Recovered ${recoveredCount} resting order(s) into the matching engine`);
   const recoveredFuturesCount = await recoverFuturesOrderBook(prisma, futuresEngine);
-  if (recoveredFuturesCount > 0) {
-    console.log(`Recovered ${recoveredFuturesCount} resting futures order(s) into the futures matching engine`);
-  }
+  if (recoveredFuturesCount > 0) console.log(`Recovered ${recoveredFuturesCount} resting futures order(s) into the futures matching engine`);
 
   if (cfdMultiProviderExecutionEnabled) traderMadeCfdDataService.start();
-  if (derivShadowEnabled || (cfdMultiProviderExecutionEnabled && derivCfdDataService.isConfigured())) derivCfdDataService.start();
+  if (cfdFreeDisplayEnabled || derivShadowEnabled || (cfdMultiProviderExecutionEnabled && derivCfdDataService.isConfigured())) derivCfdDataService.start();
   futuresMarketRegistry.start();
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
