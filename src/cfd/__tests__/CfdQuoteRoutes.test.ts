@@ -31,7 +31,7 @@ test('public fallback serves a sourced quote while the underlying financial sour
     const app=express().use(express.json()).use(cfdRouter({} as any,data,{open:unavailable,close:unavailable} as any,refs));
     const result=await request(app).get('/cfd/tickers').expect(200);
     const q=result.body.tickers.find((q:any)=>q.symbol==='XAUUSD');
-    expect(result.body).toMatchObject({source:'multi-reference',configured:true});expect(result.body.tickers).toHaveLength(13);
+    expect(result.body).toMatchObject({source:'twelvedata+public-reference',configured:true});expect(result.body.tickers).toHaveLength(13);
     expect(q).toMatchObject({price:'2000',last:null,bid:null,ask:null,displayOnly:true,executionAllowed:false,referenceKind:'indicative',provider:'gold-api'});
     expect(q.referenceLabel).toContain('Gold API');expect(()=>assertCfdFreshQuote(q,'XAUUSD',5000,at)).toThrow();
     expect((await data.getQuotes()).find(q=>q.symbol==='XAUUSD')?.last).toBeNull();
