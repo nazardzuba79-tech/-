@@ -259,7 +259,7 @@ test('Futures wires dynamic precision, isolates selected-contract depth and pres
   const btc = { bids: [level('79000.1')], asks: [level('79000.2')] };
   listeners[0].callback(btc);
   tree = page.render();
-  expect(part(tree, 'ConnectionBanner').props.connected).toBe(true);
+  expect(part(tree, 'ConnectionBanner')).toBeUndefined(); // main #71 removed the unrelated Spot banner.
   expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(btc.bids);
   part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
   tree = page.render();

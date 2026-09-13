@@ -38,7 +38,7 @@ describe('selected-contract depth lifecycle',()=>{
   afterEach(()=>{Object.assign(globalThis,{WebSocket:oldWs,document:oldDocument});jest.useRealTimers();});
   test('subscribes only to selected contract, coalesces updates, and ignores events after unsubscribe',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);const ws=sockets[0];ws.onopen();
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
     ws.onmessage({data:JSON.stringify(frame())});ws.onmessage({data:JSON.stringify(frame({u:3,seq:3,b:[['100','4']],a:[]},'delta'))});
     expect(listener).toHaveBeenCalledTimes(1);jest.advanceTimersByTime(300);expect(listener).toHaveBeenCalledTimes(2);
     expect(listener.mock.calls[1][0].bids[0].quantity).toBe('4');
@@ -59,12 +59,32 @@ describe('selected-contract depth lifecycle',()=>{
     hidden=true;handlers.get('visibilitychange')!();expect(trades).toHaveBeenLastCalledWith([]);
     stop();const count=trades.mock.calls.length;late({data:JSON.stringify(execution('stopped'))});jest.advanceTimersByTime(60000);expect(trades).toHaveBeenCalledTimes(count);
   });
+  test('switching contracts reuses the live socket instead of reconnecting and ignores old-topic frames',()=>{
+    const btc=jest.fn(), btcTrades=jest.fn(), ethTrades=jest.fn();const stopBtc=subscribeFuturesDepth('BTC/USDT',btc,btcTrades);const ws=sockets[0];ws.onopen();
+    ws.onmessage({data:JSON.stringify({topic:'publicTrade.BTCUSDT',data:[{s:'BTCUSDT',i:'pending-btc',S:'Buy',p:'100',v:'1',T:now}]})});
+    const oldHandler=ws.onmessage;
+    stopBtc();
+    const eth=jest.fn();const stopEth=subscribeFuturesDepth('ETH/USDT',eth,ethTrades);
+    expect(sockets).toHaveLength(1);
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.ETHUSDT','publicTrade.ETHUSDT']}));
+    oldHandler({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    expect(btc).toHaveBeenCalledTimes(1);expect(eth).toHaveBeenCalledTimes(1);
+    expect(btcTrades).not.toHaveBeenCalled();expect(ethTrades).not.toHaveBeenCalled();
+    ws.onmessage({data:JSON.stringify({topic:'publicTrade.ETHUSDT',data:[{s:'ETHUSDT',i:'eth-execution',S:'Sell',p:'200',v:'2',T:now}]})});
+    ws.onmessage({data:JSON.stringify(frame({s:'ETHUSDT',b:[['200','1']],a:[['201','2']]},'snapshot',{topic:'orderbook.200.ETHUSDT'}))});
+    jest.advanceTimersByTime(300);
+    expect(eth).toHaveBeenCalledTimes(2);expect(eth.mock.calls[1][0]).toEqual({bids:[{price:'200',quantity:'1'}],asks:[{price:'201',quantity:'2'}]});
+    expect(ethTrades).toHaveBeenCalledTimes(1);expect(ethTrades.mock.calls[0][0][0].id).toBe('eth-execution');
+    stopEth();jest.advanceTimersByTime(1000);expect(ws.close).toHaveBeenCalled();
+
+  });
   test('stale connection clears rows and reconnects; hidden tab stops transport until visible',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
     sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(32000);
     expect(listener).toHaveBeenLastCalledWith({bids:[],asks:[]});expect(sockets).toHaveLength(2);
     hidden=true;handlers.get('visibilitychange')!();jest.advanceTimersByTime(60000);expect(sockets).toHaveLength(2);
-    hidden=false;handlers.get('visibilitychange')!();expect(sockets).toHaveLength(3);stop();
+    hidden=false;handlers.get('visibilitychange')!();expect(sockets).toHaveLength(3);stop();jest.advanceTimersByTime(1000);
   });
 });
 

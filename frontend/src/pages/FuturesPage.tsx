@@ -13,8 +13,8 @@ import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
-import { ConnectionBanner } from '../components/ConnectionBanner';
 import { subscribeFuturesDepth, type FuturesTrade } from '../lib/futuresDepth';
+
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -28,7 +28,6 @@ import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/FuturesStudio.css';
 import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
-
 
 // Until /futures/config answers. Deliberately the same three contracts the
 // backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
@@ -168,7 +167,6 @@ export function FuturesPage() {
         tickerFitToWidth
         futuresReference={reference}
       />
-      <ConnectionBanner connected={book.symbol===symbol && book.bids.length>0 && book.asks.length>0} />
 
       <div className="terminal">
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
@@ -187,6 +185,7 @@ export function FuturesPage() {
               key={symbol}
               lastPrice={reference.get(symbol)?.lastPrice ?? null}
               trades={tape.symbol===symbol?tape.rows:[]}
+
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}

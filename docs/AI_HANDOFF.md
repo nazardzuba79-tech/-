@@ -1763,7 +1763,6 @@ withdrawal was placed.
 - Validation: 20 focused market-data suites passed 397/397; `LiveTransport` plus `StagingVerifier` passed 68/68. Backend, collector and frontend TypeScript, production Vite build, verifier syntax and diff checks passed. Full candidate suite: 2,585 passed / 50 failed / 17 skipped; pristine exact-main suite: 2,492 passed / the identical 50 failed / 17 skipped. The candidate adds 93 passing tests and no new failures.
 - Next: owner review after the updated branch is published. A staging redeploy and repeat of the existing cold-start verification are recommended before any merge because the deployed candidate predates this synchronized head. Production remains untouched.
 
-
 ## Codex — 2026-09-12: inverse/options reference data and CFD freshness
 
 - Owner-requested existing branch: codex/inverse-options-cfd-data; current main ab564ae46dcbad3b2e6f4ea8bed874eb4115961b. Implementation commit: 051347f9bfb6553d13ddaff525767d8d1793e8c6.
@@ -2032,7 +2031,6 @@ withdrawal was placed.
 - Material files: FuturesChartCandles, market router, collectorServer, adapter tests. No frontend/form, financial, margin, account or other agent changes. Backend and collector TypeScript PASS; candle/transport focused suites 34/34 PASS. Prior frontend build and exact failure-name baseline comparison remain applicable (frontend unchanged).
 - Release requires production API, collector and Cloudflare frontend on the merged revision. Deployment verification follows; this entry does not claim release success. Existing presentation-only order-family and documented product-readiness limitations remain.
 
-
 ## 2026-09-13 — Codex — Futures layout and active-stream repair
 
 - Owner requested continuing current git status/diff without reset, finishing Futures, tests/build/browser QA, then commit. Branch codex/terminal-layout-repair, base 9f65ee1461d6db0ac8cefb14b54a347e1d75067c. Implementation d818048acb97d819b92bbb96598eb21f4abd2773.
@@ -2042,14 +2040,12 @@ withdrawal was placed.
 - Browser: 1440/833/390 widths plus normal 1280 viewport, no horizontal overflow; 761 contracts, live book/trades, mode changes, OCO draft preserved after book/timeframe changes. Local QA blocks private account reads and financial writes, so account unavailable state is expected. No production-readiness assertion.
 - Committed locally only; no push/merge/deploy in this repair. Next: review repaired preview and existing 71 unrelated failures before release.
 
-
 ## 2026-09-13 — Codex — Futures graphite composition proposal
 
 - Implementation 2738128a81e09b231792a944d6d8e6a8aff8c79e, continuing codex/terminal-layout-repair. Material files: FuturesReferenceBook, referenceBook utility/test, TerminalPresentationPolish.css and futures-graphite QA note/screenshot.
 - Unified graphite surfaces/headings, compact form styling and 22px book rows tied to the shared row-budget constant. Preserved all preceding repairs, chart alternatives, all order forms/guards, data transport and financial behavior.
 - 105 focused tests pass; frontend TypeScript/build pass. Desktop 1440 visual QA passed; 390 DOM overflow check passed but screenshot capture inconsistent. Normal viewport restored. Full-suite prior known failures unchanged in scope; no new full run. Details: docs/qa/terminal-presentation-polish/futures-graphite.md.
 - User asked to see result; preview requested in Codex panel at http://127.0.0.1:4210/futures. No push/merge/deploy; production still displays earlier version.
-
 
 ## 2026-09-13 — Codex — independent Futures composition
 
@@ -2102,3 +2098,11 @@ withdrawal was placed.
 - Validation: 243 tests in 7 focused suites passed (referenceBook, chartDrawings, spotOrderBook, futuresFinalPolish, futuresOrderPanel, spotOrdersPresentation, cfdTerminal). Frontend TypeScript and production build pass; git diff --check pass. No full-suite claim.
 - Browser: Futures 1440/1077 and mobile390, Spot1440, CFD1440 checked. Futures center measured36px; narrow desktop zero clipped book-price cells, no horizontal page overflow. Russian ruler label and active tooltip verified. CFD retains all five forms. Normal viewport restored. Screenshot studio-compact-price-separator-1440.png. No financial writes; loopback QA still intentionally lacks private account data.
 - Local preview updated on4210; no push, merge or production deployment. Broader account-loading and registration-flow work remains separate from these interface refinements.
+
+## 2026-09-13 — Codex — approved Analytics design with real data
+
+- Fresh main base 05872e14ce191438527b699f32aed8def5083c61; approved visual reference analytics-mp at abae425895fba0d44f4e4addd2e4250ec4a9e91e. New branch codex/analytics-approved-live. Implementation a224dfe86cb9c1bd6cbd7c41d74f3b6f0be248b8; following documentation/whitespace commit records this handoff.
+- Material files: AnalyticsWorkspace, scoped analytics.css, SummaryStrips, LiquidationMap, DerivativesPanels, PriceOpenInterest, MarketContextPanels and shared presentation/data primitives; frontend API types and Analytics store; frontend tests, one corrected obsolete backend test expectation, focused CI and loopback-only QA harness. QA report and public response observations: docs/qa/analytics-approved-live.
+- Preserved all current main backend runtime, API/auth, Nav/Footer, Spot/Futures/CFD/Wallet, trading forms/charts, execution permissions and financial logic. Archive synthetic data and scoring code were not imported. No provider calls were added to the frontend. Real observed liquidation buckets never imply latent liquidity. Native and external metrics stay separate, with nulls as dashes and actual USD/base OI units.
+- Backend TypeScript and frontend TypeScript/Vite production build PASS. Eight focused suites, 136 tests PASS. Local browser checks at 1440x1000, 768x1024 and 390x844 PASS: BTC/ETH/SOL/XRP switching, real incoming public data/refreshes, observed liquidation windows, no page overflow and internal table scrolling. Native VOLTEX data verified by contract/rendering tests; authenticated production browser QA is not claimed because the available browser session redirected to login. No production DB/credentials were used. Additional labels currently support RU/EN with English fallback for other locales.
+- Remaining absent sources: latent liquidity heatmap, ETF/labelled on-chain flows, historical OI series. SOL/XRP IV/dated-futures stay unavailable. No merge/deploy; commits use the Cloudflare Pages skip marker. Review the local candidate and authenticated production data before any later release.

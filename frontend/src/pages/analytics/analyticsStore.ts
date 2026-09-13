@@ -112,18 +112,23 @@ class AnalyticsStore {
   /** Fetch once, shared. Concurrent callers join the in-flight promise. */
   refresh(): Promise<void> {
     if (this.inFlight) return this.inFlight;
+    const requestedAsset = this.asset;
     this.inFlight = api
       .getAnalyticsOverview(this.asset ?? undefined)
       .then((snapshot) => {
-        this.emit({ status: 'ready', snapshot, loaded: true, receivedAt: Date.now() });
+        if (requestedAsset === this.asset) {
+          this.emit({ status: 'ready', snapshot, loaded: true, receivedAt: Date.now() });
+        }
       })
       .catch(() => {
         // Keep whatever was last known good. The page shows its existing
         // figures with an error flag rather than emptying itself.
-        this.emit({ ...this.state, status: 'error', loaded: true });
+        if (requestedAsset === this.asset) this.emit({ ...this.state, status: 'error', loaded: true });
       })
       .finally(() => {
         this.inFlight = null;
+        // A selection made during a request must not wait for the next poll.
+        if (requestedAsset !== this.asset && this.listeners.size > 0) void this.refresh();
       });
     return this.inFlight;
   }

@@ -8,6 +8,22 @@ function makeMarketData(lastPrice: string | null) {
 }
 
 describe('MarkPriceService', () => {
+  it('uses the single-pair best bid/ask midpoint instead of the full ticker universe', async () => {
+    const marketData = {
+      getOrderBook: jest.fn().mockResolvedValue({
+        bids: [{ price: '49990', quantity: '1' }],
+        asks: [{ price: '50010', quantity: '1' }],
+      }),
+      getTicker: jest.fn().mockResolvedValue({ lastPrice: '12345' }),
+    } as any;
+    const svc = new MarkPriceService(marketData);
+
+    const index = await svc.getIndexPrice('BTC/USDT');
+    expect(index!.toNumber()).toBe(50000);
+    expect(marketData.getOrderBook).toHaveBeenCalledWith('BTC/USDT', 1);
+    expect(marketData.getTicker).not.toHaveBeenCalled();
+  });
+
   it('defaults mark price to the index price when the contract has never traded', async () => {
     const svc = new MarkPriceService(makeMarketData('50000'));
     const mark = await svc.getMarkPrice('BTC/USDT');
@@ -22,33 +38,26 @@ describe('MarkPriceService', () => {
 
   it('shifts mark price by a smoothed basis once the futures book has traded', async () => {
     const svc = new MarkPriceService(makeMarketData('50000'));
-    await svc.getIndexPrice('BTC/USDT'); // establish the index price used by recordFuturesTrade
-    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500)); // futures trading at a premium
+    await svc.getIndexPrice('BTC/USDT');
+    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500));
 
     const mark = await svc.getMarkPrice('BTC/USDT');
-    // EMA alpha 0.2 on a first sample = the full basis (no prior EMA to blend with).
     expect(mark!.toNumber()).toBeCloseTo(50500, 6);
   });
 
   it('smooths across multiple trades rather than jumping to the latest one', async () => {
     const svc = new MarkPriceService(makeMarketData('50000'));
     await svc.getIndexPrice('BTC/USDT');
-    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500)); // basis 500, ema -> 500
-    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500)); // basis 500, ema -> 500
-    svc.recordFuturesTrade('BTC/USDT', new BigNumber(60000)); // basis 10000 (a manipulative wick)
+    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500));
+    svc.recordFuturesTrade('BTC/USDT', new BigNumber(50500));
+    svc.recordFuturesTrade('BTC/USDT', new BigNumber(60000));
 
     const mark = await svc.getMarkPrice('BTC/USDT');
-    // ema = 500*0.8 + 10000*0.2 = 400 + 2000 = 2400 -> mark = 52400, nowhere
-    // near the manipulated 60000 print.
     expect(mark!.toNumber()).toBeCloseTo(52400, 2);
     expect(mark!.isLessThan(55000)).toBe(true);
   });
 
   it('returns null instead of throwing when the upstream market-data call fails', async () => {
-    // Regression test: getIndexPrice/getMarkPrice are awaited from
-    // background schedulers (LiquidationEngine, FundingRateService) with
-    // no try/catch at the call site — an uncaught rejection here used to
-    // crash the whole process the moment Kraken was unreachable.
     const marketData = { getTicker: jest.fn().mockRejectedValue(new Error('Kraken responded with HTTP 403')) } as any;
     const svc = new MarkPriceService(marketData);
 
