@@ -59,3 +59,10 @@
 .hs-root .tape-motion-toggle{position:absolute;right:5px;top:3px;z-index:2;display:grid;place-items:center;width:24px;height:22px;padding:0;border:1px solid #7896ad3d;border-radius:4px;background:#102d43;color:#9eb5c9}
 .hs-root .tape-motion-toggle:hover,.hs-root .tape-motion-toggle:focus-visible{color:#ffe0a0;border-color:#d6b877}
 @media(max-width:900px){.hs-root .hs-tape-continuous .tick{flex-basis:210px;padding:21px 16px}}
+
+.hs-root .product-shortcuts{gap:8px;margin-top:22px;flex-wrap:nowrap}
+.hs-root .product-shortcuts>a,.hs-root .product-shortcuts>a+a{display:flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:9px 11px;border:1px solid #90b8d42e;border-radius:8px;background:linear-gradient(125deg,#16324be6,#0b2033db);font-size:11px;font-weight:500;white-space:nowrap;color:#d4e4ef;box-shadow:inset 0 1px #ffffff05;transition:border-color .2s,background .2s,color .2s}
+.hs-root .product-shortcuts svg{flex-shrink:0;color:#e7bc70;stroke-width:1.7}
+.hs-root .product-shortcuts>a:hover{color:#fff1d4;border-color:#e7bc7080;background:#1a3750}
+@media(max-width:1400px){.hs-root .product-shortcuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-width:330px}.hs-root .product-shortcuts>a,.hs-root .product-shortcuts>a+a{justify-content:flex-start;padding-inline:14px;min-height:42px}}
+@media(prefers-reduced-motion:reduce){.hs-root .product-shortcuts>a{transition:none}}
