@@ -238,7 +238,6 @@
 .futures-reference .rb-tabs { display:flex; align-items:stretch; gap:18px; padding:0 12px; height:40px; flex:0 0 40px; border-bottom:1px solid #24242c; }
 .futures-reference .rb-tabs button { appearance:none; background:none; border:0; border-bottom:2px solid transparent; border-radius:0; padding:0; color:#92929e; font-size:14px; font-weight:500; cursor:pointer; }
 .futures-reference .rb-tabs button[aria-selected=true] { border-bottom-color:#f5a600; color:#f4f4f6; }
-.futures-reference .rb-source { align-self:center; margin-left:auto; font-size:10px; color:#858d9b; }
 .futures-reference .rb-controls { display:flex; align-items:center; justify-content:space-between; padding:4px 12px; flex:0 0 36px; box-sizing:border-box; }
 .futures-reference .rb-modes { display:flex; gap:8px; }
 .futures-reference .rb-modes button { appearance:none; display:grid; place-items:center; width:23px; height:26px; padding:0; border:0; border-radius:2px; background:transparent; color:#6b6b76; opacity:.5; cursor:pointer; }
@@ -277,7 +276,6 @@
 @media (min-width:1025px) and (max-width:1500px) {
   .futures-reference .rb-row { font-size:11px; column-gap:5px; padding-inline:9px; }
   .futures-reference .rb-columns { font-size:10px; column-gap:5px; padding-inline:9px; }
-  .futures-reference .rb-source { display:none; }
   .futures-reference .rb-center strong { font-size:17px; }
 }
 .futures-reference .rb-mid-label { color:#92929f; font-size:10px; border:1px solid #34343f; border-radius:2px; padding:0 3px; line-height:15px; }

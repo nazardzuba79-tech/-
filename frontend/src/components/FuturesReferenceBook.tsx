@@ -77,7 +77,6 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
     <div className="rb-tabs" role="tablist" aria-label={t('trade.orderBook')}>
       <button type="button" role="tab" aria-selected={tab === 'book'} onClick={() => setTab('book')}>{t('trade.orderBook')}</button>
       <button type="button" role="tab" aria-selected={tab === 'trades'} onClick={() => setTab('trades')}>{t('trade.trades')}</button>
-      <span className="rb-source" title="Kraken · external market reference">Kraken</span>
     </div>
     {tab === 'book' ? <>
       <div className="rb-controls">
