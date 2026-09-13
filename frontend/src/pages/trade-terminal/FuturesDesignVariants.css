@@ -44,6 +44,16 @@
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { grid-template-columns:288px minmax(0,1fr) 244px 304px; }
 }
 
+/* A: Studio palette with the same compact geometry as B, for a direct
+   palette comparison. Keep this scoped so Graphite and Focus remain intact. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=studio] .terminal { gap:3px; padding:4px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=studio] :is(.reference-market-sidebar,.orderbook-area,.order-form-area,.bottom-panel,.futures-ticker-bar,.chart-area) { border-radius:2px; box-shadow:none; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=studio] .pair-row { height:33px; min-height:33px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=studio] :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input,.fo-mlTrigger) { border-radius:3px; }
+@media(min-width:1280px) {
+  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=studio] .terminal { grid-template-columns:278px minmax(0,1fr) 212px 278px; grid-template-rows:70px minmax(0,1fr) 156px; }
+}
+
 /* B: dense graphite workstation. Shared plot surface stays unchanged so
    changing a skin never reconstructs the chart or loses its drawings. */
 .trade-terminal.futures-reference.futures-studio[data-terminal-design=graphite] { --studio-canvas:#090b0f; --studio-panel:#15191f; }
