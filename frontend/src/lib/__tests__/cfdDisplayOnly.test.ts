@@ -54,7 +54,7 @@ test('CFD chart has two real OHLC paths and no explanatory customer copy', () =>
   const chart=read('components/CfdChart.tsx');
   expect(chart).toContain('/cfd/candles/');
   expect(chart).toContain('https://biquote.io/api/');
-  expect(chart).toContain('Promise.any');
+  expect(chart).toContain('firstSuccess');
   expect(chart).toContain('CandlestickSeries');
   expect(chart).toContain('createChart');
   expect(chart).toContain('data-chart-status={status}');
