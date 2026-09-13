@@ -77,7 +77,7 @@ export function CfdChart({symbol}:{symbol:string}){
 
   useEffect(()=>{if(status!=='error')return;const timer=window.setTimeout(()=>setRetry(value=>value+1),5_000);return()=>window.clearTimeout(timer);},[status]);
 
-  return <div className="cfd-chart cfd-owned-chart">
+  return <div className="cfd-chart cfd-owned-chart" data-chart-status={status}>
     <div className="cfd-chart-toolbar"><strong>{symbol}</strong><div className="cfd-chart-intervals" role="group" aria-label="Chart interval">{INTERVALS.map(item=><button key={item} type="button" className={item===interval?'active':undefined} aria-pressed={item===interval} onClick={()=>setInterval(item)}>{item}</button>)}</div></div>
     <div className="cfd-owned-chart-canvas" ref={hostRef}/>
     {status==='loading'&&<div className="cfd-chart-overlay" aria-hidden="true"><span className="cfd-chart-loader"/></div>}
