@@ -55,17 +55,24 @@ function sourceCatalog(cfdDataService: CfdMarketDataService, riskSource: CfdQuot
  * financial operations use riskSource; display fallback can never become a
  * CfdQuoteSource and therefore cannot leak into money operations. */
 export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService,
-  references: PublicReferenceFeed = publicReferences, riskSource: CfdQuoteSource = cfdDataService): Router {
+  references: PublicReferenceFeed = publicReferences, riskSource: CfdQuoteSource = cfdDataService,
+  shadowDiagnostics?: () => unknown | Promise<unknown>): Router {
   const router = Router();
 
   router.get('/admin/cfd/diagnostics', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
       const routed = riskSource as CfdQuoteSource & { diagnostics?: () => unknown | Promise<unknown> };
+      let shadow: unknown = null;
+      if (shadowDiagnostics) {
+        try { shadow = await shadowDiagnostics(); }
+        catch { shadow = { unavailable:true }; }
+      }
       res.json({
         ...await cfdDataService.diagnostics(),
         executionRouting: riskSource === cfdDataService ? { mode:'single-provider', provider:'twelvedata' }
           : typeof routed.diagnostics === 'function' ? await routed.diagnostics() : { mode:'multi-provider', diagnostics:'unavailable' },
+        shadowProviders: shadow,
         publicReferences: { enabled: references.isEnabled(), refreshing: references.isRefreshing(), sources: references.diagnostics() },
       });
     } catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
