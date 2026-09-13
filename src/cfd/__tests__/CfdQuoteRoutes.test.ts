@@ -2,8 +2,9 @@ import express from 'express';
 import request from 'supertest';
 import { cfdRouter } from '../../api/routes/cfd';
 import { CfdMarketDataService } from '../../services/CfdMarketDataService';
-import { CfdQuoteUnavailable, assertCfdFreshQuote } from '../../services/marketData/cfd/CfdQuote';
+import { CfdQuoteUnavailable, assertCfdFreshQuote, type CfdQuote } from '../../services/marketData/cfd/CfdQuote';
 import { PublicReferenceFeed } from '../../services/marketData/cfd/PublicReferenceFeed';
+import { CfdDisplayQuoteRouter } from '../../services/marketData/cfd/CfdDisplayQuoteRouter';
 jest.mock('../../api/middleware/apiKeyAuth',()=>({requireAuthOrApiKey:()=> (req:any,_res:any,next:any)=>{req.userId='test-user';next();},requireTradePermission:(_req:any,_res:any,next:any)=>next()}));
 test('unconfigured public catalog keeps all verified instruments visible with null quotes and blocked execution',async()=>{
   const data=new CfdMarketDataService(undefined),app=express().use('/api/v1',cfdRouter({} as any,data,{} as any,new PublicReferenceFeed()));
@@ -38,5 +39,21 @@ test('public fallback serves a sourced quote while the underlying financial sour
     await request(app).post('/cfd/positions').send({symbol:'XAUUSD',side:'BUY',quantity:'1',leverage:10}).expect(503);
     await request(app).post('/cfd/positions/p/close').send({}).expect(503);
     await request(app).get('/cfd/tickers').expect(200);expect(fetchFn).toHaveBeenCalledTimes(7);
+  } finally {clock.mockRestore();}
+});
+test('free live display source can price the terminal while financial open/close remain fail-closed',async()=>{
+  const at=Date.parse('2026-09-13T12:00:00Z');const clock=jest.spyOn(Date,'now').mockReturnValue(at);
+  try {
+    const quote:CfdQuote={provider:'biquote',symbol:'WTIUSD',providerSymbol:'USOIL',bid:90,ask:90.2,mid:90.1,last:90.1,
+      providerTimestamp:at,fetchedAt:at,stale:false,status:'entitlement_required',referenceStatus:'available',entitlementVerified:false,executionAllowed:false};
+    const display=new CfdDisplayQuoteRouter([{id:'biquote',priority:10,source:{getQuotes:async()=>[quote]}}],{now:()=>at});
+    const data=new CfdMarketDataService(undefined);const unavailable=jest.fn(async()=>{await data.getFreshQuote('WTIUSD');});
+    const app=express().use(express.json()).use(cfdRouter({} as any,data,{open:unavailable,close:unavailable} as any,new PublicReferenceFeed(),data,undefined,display));
+    const result=await request(app).get('/cfd/tickers').expect(200),wti=result.body.tickers.find((q:any)=>q.symbol==='WTIUSD');
+    expect(result.body).toMatchObject({source:'twelvedata+public-display',configured:true});expect(result.body.tickers).toHaveLength(13);
+    expect(wti).toMatchObject({provider:'biquote',price:'90.1',displayOnly:true,executionAllowed:false,entitlementVerified:false,status:'reference_only'});
+    expect(wti.referenceLabel).toContain('BiQuote');expect(()=>assertCfdFreshQuote(wti,'WTIUSD',5000,at)).toThrow();
+    await request(app).post('/cfd/positions').send({symbol:'WTIUSD',side:'BUY',quantity:'1',leverage:10}).expect(503);
+    await request(app).post('/cfd/positions/p/close').send({}).expect(503);
   } finally {clock.mockRestore();}
 });
