@@ -170,7 +170,8 @@ export function useHomeMarket(): HomeMarket {
             asks: value.asks.filter(row => positive(row.price) && positive(row.quantity)).slice(0, 6),
           } : null;
         const ok = !!validBook && validBook.bids.length > 0 && validBook.asks.length > 0;
-        updateHero(pair, { book: ok ? validBook : undefined as never, bookStatus: ok ? 'ok' : 'error' });
+        if (ok) updateHero(pair, { book: validBook, bookStatus: 'ok' });
+        else updateHero(pair, { bookStatus: 'error' });
       }).catch(() => updateHero(pair, { bookStatus: 'error' }));
 
       const candleTask = api.getExternalCandles(pair, '15m', 48).then(value => {
