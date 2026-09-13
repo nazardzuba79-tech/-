@@ -68,6 +68,7 @@ import { ExternalDerivativesService } from './services/marketData/derivatives/Ex
 import { DerivedAnalyticsService } from './services/analytics/DerivedAnalyticsService';
 import { DeribitAnalyticsService } from './services/analytics/DeribitAnalyticsService';
 import { LiquidationStreamService } from './services/analytics/LiquidationStreamService';
+import { HistoricalOpenInterestService } from './services/analytics/HistoricalOpenInterestService';
 import { marketDataRouter } from './api/routes/marketData';
 import { marketOptionsRouter } from './api/routes/marketOptions';
 
@@ -139,6 +140,9 @@ const deribitAnalyticsService = new DeribitAnalyticsService(
 const liquidationStreamService = new LiquidationStreamService(
   process.env.BINANCE_LIQUIDATION_WS_URL || 'wss://fstream.binance.com/market/ws/!forceOrder@arr'
 );
+const historicalOpenInterestService = new HistoricalOpenInterestService(
+  process.env.BINANCE_FUTURES_API_BASE_URL || 'https://fapi.binance.com'
+);
 
 const analyticsDataService = new AnalyticsDataService(
   prisma,
@@ -149,7 +153,8 @@ const analyticsDataService = new AnalyticsDataService(
   derivedAnalyticsService,
   coinGeckoService,
   deribitAnalyticsService,
-  liquidationStreamService
+  liquidationStreamService,
+  historicalOpenInterestService
 );
 
 app.set('trust proxy', 1);

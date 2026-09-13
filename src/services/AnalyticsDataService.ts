@@ -28,6 +28,7 @@ import type {
   ImpliedVolatilityValue,
 } from './analytics/DeribitAnalyticsService';
 import type { LiquidationStreamService, LiquidationsValue } from './analytics/LiquidationStreamService';
+import type { HistoricalOpenInterestService, OpenInterestHistoryValue } from './analytics/HistoricalOpenInterestService';
 
 export interface MarketOverviewValue {
   totalMarketCapUsd: number;
@@ -94,7 +95,9 @@ export interface AnalyticsSnapshot {
     sectorRotation: Availability<SectorRotationValue>;
     /** Observed public Binance USD-M forced-liquidation snapshots. */
     liquidations: Availability<LiquidationsValue>;
-    /** Deribit volatility index. This is implied/forward-looking volatility, not realized vol. */
+    /** Real hourly public open-interest history for the selected tracked asset. */
+    openInterestHistory: Availability<OpenInterestHistoryValue>;
+    /** Provider-reported implied volatility; BTC/ETH use DVOL, SOL/XRP use real ATM option mark IV. */
     impliedVolatility: Availability<ImpliedVolatilityValue>;
     /** Real dated Deribit futures marks versus their reported reference price. */
     futuresTermStructure: Availability<FuturesTermStructureValue>;
@@ -116,7 +119,8 @@ export class AnalyticsDataService {
     private readonly derived: DerivedAnalyticsService | null = null,
     private readonly coinGecko: CoinGeckoService | null = null,
     private readonly deribit: DeribitAnalyticsService | null = null,
-    private readonly liquidationStream: LiquidationStreamService | null = null
+    private readonly liquidationStream: LiquidationStreamService | null = null,
+    private readonly historicalOpenInterest: HistoricalOpenInterestService | null = null
   ) {}
 
   async getSnapshot(asset?: string): Promise<AnalyticsSnapshot> {
@@ -136,6 +140,7 @@ export class AnalyticsDataService {
       realizedVolatility,
       cryptoCorrelations,
       sectorRotation,
+      openInterestHistory,
       impliedVolatility,
       futuresTermStructure,
     ] = await Promise.all([
@@ -149,6 +154,7 @@ export class AnalyticsDataService {
       this.volatility(selectedAsset),
       this.correlations(),
       this.sectors(),
+      this.openInterestHistory(selectedAsset),
       this.impliedVolatility(selectedAsset),
       this.futuresTermStructure(selectedAsset),
     ]);
@@ -176,6 +182,7 @@ export class AnalyticsDataService {
         cryptoCorrelations,
         sectorRotation,
         liquidations,
+        openInterestHistory,
         impliedVolatility,
         futuresTermStructure,
       },
@@ -227,6 +234,13 @@ export class AnalyticsDataService {
       return unavailable('provider_not_configured', 'Public liquidation stream is not wired in this environment.');
     }
     return this.liquidationStream.snapshot(asset);
+  }
+
+  private async openInterestHistory(asset: string | null): Promise<Availability<OpenInterestHistoryValue>> {
+    if (!this.historicalOpenInterest || asset === null) {
+      return unavailable('provider_not_configured', 'Historical open interest is not wired in this environment.');
+    }
+    return this.historicalOpenInterest.getHistory(asset);
   }
 
   private async impliedVolatility(asset: string | null): Promise<Availability<ImpliedVolatilityValue>> {

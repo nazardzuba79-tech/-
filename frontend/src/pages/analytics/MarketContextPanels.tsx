@@ -36,7 +36,7 @@ export function Sectors({ snapshot }: { snapshot: AnalyticsSnapshot | null }) {
 }
 export function ImpliedVolatility({ snapshot }: { snapshot: AnalyticsSnapshot | null }) {
   const { t } = useLanguage(), c = useCopy(), section = snapshot?.sections.impliedVolatility, data = valueOf(section);
-  return <Panel title={t('analytics.impliedVolatility')} subtitle={c.index} section={section}>
+  return <Panel title={t('analytics.impliedVolatility')} subtitle={data?.resolutionSeconds ? c.index : undefined} section={section}>
     <Metric label={c.volatility} value={formatPercent(data?.current)} emphasis />
     <StatRow label={c.change} value={formatSignedPercent(data?.change24hPercent)} />
     <StatRow label={c.high} value={formatPercent(data?.high24h)} />

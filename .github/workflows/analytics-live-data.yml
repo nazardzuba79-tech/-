@@ -7,6 +7,8 @@ on:
       - 'src/services/marketData/types.ts'
       - 'src/futures/MarkPriceService.ts'
       - 'src/futures/__tests__/MarkPriceService.test.ts'
+      - 'src/api/routes/analytics.ts'
+      - 'src/api/routes/__tests__/analytics*.test.ts'
       - 'src/index.ts'
       - 'frontend/src/pages/analytics/**'
       - 'frontend/src/lib/api.ts'
@@ -39,11 +41,11 @@ jobs:
       - name: Backend build
         run: npm run build
       - name: Analytics and Futures pricing regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/services/analytics/__tests__/LiquidationStreamService.test.ts src/services/analytics/__tests__/DeribitAnalyticsService.test.ts src/futures/__tests__/MarkPriceService.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/analytics/__tests__/LiquidationStreamService.test.ts src/services/analytics/__tests__/DeribitAnalyticsService.test.ts src/services/analytics/__tests__/HistoricalOpenInterestService.test.ts src/futures/__tests__/MarkPriceService.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
           VITE_API_URL: /api/v1
         run: npm run build
       - name: Analytics contract, rendering and gateway regressions
-        run: npm test -- --runInBand --silent frontend/src/lib/__tests__/analyticsLive.test.ts src/services/analytics/__tests__ src/services/__tests__/AnalyticsDataService.test.ts src/api/routes/__tests__/analytics.test.ts
+        run: npm test -- --runInBand --silent frontend/src/lib/__tests__/analyticsLive.test.ts src/services/analytics/__tests__ src/services/__tests__/AnalyticsDataService.test.ts src/api/routes/__tests__/analytics.test.ts src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts
