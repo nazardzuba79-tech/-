@@ -1,26 +1,30 @@
-name: CFD display-only prices
+name: CFD working terminal
 on:
   pull_request:
     paths:
       - 'src/api/routes/cfd.ts'
+      - 'src/marketDataCollector.ts'
       - 'src/services/marketData/cfd/**'
+      - 'src/services/marketData/live/**'
       - 'src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts'
       - 'frontend/src/components/Cfd*'
       - 'frontend/src/lib/cfd*'
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
+      - 'frontend/src/lib/__tests__/cfdTerminal.test.ts'
       - 'frontend/src/pages/home/**'
+      - 'frontend/src/pages/trade-terminal/CfdPractice.css'
       - 'scripts/qa-cfd-display-browser.cjs'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
   contents: read
 concurrency:
-  group: cfd-display-${{ github.event.pull_request.number }}
+  group: cfd-working-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,8 +41,10 @@ jobs:
       - run: npx prisma generate
       - name: Backend build
         run: npm run build
-      - name: Display-router regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts
+      - name: Market-data collector build
+        run: npx tsc -p tsconfig.collector.json
+      - name: CFD regression tests
+        run: npm test -- --runInBand --silent --runTestsByPath src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
@@ -48,7 +54,7 @@ jobs:
         run: |
           npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/voltex-cfd-display-qa/node_modules/playwright/cli.js install --with-deps chromium
-      - name: Browser QA — homepage and market terminal
+      - name: Browser QA — prices, owned chart and practice orders
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
         run: node scripts/qa-cfd-display-browser.cjs
@@ -56,12 +62,12 @@ jobs:
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
-          name: cfd-display-browser
+          name: cfd-working-terminal-browser
           path: docs/qa/cfd-display-browser/
           retention-days: 7
   public-sources:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,6 +81,11 @@ jobs:
           node <<'NODE'
           const map={XAUUSD:'XAUUSD',XAGUSD:'XAGUSD',XPTUSD:'XPTUSD',XPDUSD:'XPDUSD',WTIUSD:'USOIL',XBRUSD:'UKOIL',EURUSD:'EURUSD',GBPUSD:'GBPUSD',USDJPY:'USDJPY',AUDUSD:'AUDUSD',USDCAD:'USDCAD',USDCHF:'USDCHF',NZDUSD:'NZDUSD'};
           (async()=>{const u=new URL('https://biquote.io/api/latest');for(const s of Object.values(map))u.searchParams.append('symbols',s);const r=await fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`HTTP ${r.status}`);const body=await r.json();for(const [canonical,symbol] of Object.entries(map)){const q=body[symbol];if(!q||q.symbol!==symbol||!Number.isFinite(Number(q.mid))||Number(q.mid)<=0)throw Error(`missing/invalid ${canonical}/${symbol}`);}console.log(`BiQuote ${Object.keys(map).length}/13 identities OK`);})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: BiQuote OHLC supplies real chart bars
+        run: |
+          node <<'NODE'
+          (async()=>{for(const symbol of ['XAUUSD','USOIL']){const u=`https://biquote.io/api/${symbol}/ohlc?interval=15m&limit=40`;const r=await fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`${symbol} HTTP ${r.status}`);const b=await r.json();if(b.symbol!==symbol||b.interval!=='15m'||!Array.isArray(b.bars)||b.bars.length<2)throw Error(`${symbol} OHLC missing`);for(const x of b.bars.slice(-2))for(const k of ['open','high','low','close'])if(!Number.isFinite(Number(x[k]))||Number(x[k])<=0)throw Error(`${symbol} invalid ${k}`);}console.log('BiQuote OHLC XAUUSD + WTI OK');})().catch(e=>{console.error(e);process.exit(1)});
           NODE
       - name: Deriv public discovery covers metals and FX reserve set
         run: |
