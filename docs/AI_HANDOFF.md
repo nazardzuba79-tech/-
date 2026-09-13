@@ -2057,3 +2057,9 @@ withdrawal was placed.
 - Material files: FuturesStudio.css, FuturesPage.tsx, PriceChart.tsx, futuresFinalPolish test and futures-studio QA note/screenshots. Separate market and execution rails, central instrument overview, framed graph/book and positions area; scoped chart background inherits studio theme with original fallback.
 - Preserved prior fixes, all order-family forms and execution guards, exact contract streams, chart tools, TradingView alternative and financial logic. 193 focused tests pass; frontend TypeScript/build pass. Desktop 1440 and mobile 390 visually checked; search, contract change, OCO draft preservation and real trade feed checked. No financial writes. Normal viewport restored.
 - Not pushed/merged/deployed. User should review the new design before selecting it; production remains unchanged. Full details and local private-read limitation: docs/qa/terminal-presentation-polish/futures-studio.md.
+
+## 2026-09-13 — Codex — direct local studio review link
+
+- Implementation 75a5509 preserves terminalDesign=studio in the local QA entry route. Material file: scripts/qa-professional-terminals.cjs. Existing loopback-only binding/host validation, blocked writes/private account reads, and all terminal code preserved.
+- Restarted only the verified QA server on 4210. node --check and git diff --check passed. Browser entry /__qa/start?market=futures&terminalDesign=studio resolves to the studio Futures page: studio root and 15m control present, no login heading.
+- Previous head 9a7a39f was published to a Cloudflare branch preview (3e342fd3.voltex-exchange.pages.dev); it requires normal login and lacks API CORS permission. Local entry is the usable design-review link on this computer. No production changes or authentication changes. This fix not pushed/deployed.
