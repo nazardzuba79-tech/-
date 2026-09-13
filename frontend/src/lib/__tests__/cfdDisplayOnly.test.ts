@@ -63,13 +63,16 @@ test('CFD chart has two real OHLC paths and no explanatory customer copy', () =>
   expect(chart).not.toContain('chartNote');
 });
 
-test('customer CFD layout has no practice or technical helper badges', () => {
+test('customer CFD layout has no practice, technical or redundant market badges', () => {
   const order=read('components/CfdOrderForm.tsx');
   const positions=read('components/CfdPositionsPanel.tsx');
+  const ticker=read('components/CfdTickerBar.tsx');
   expect(order).not.toContain('cfd-practice-badge');
   expect(order).not.toContain('copy.practice');
   expect(positions).not.toContain('cfd-practice-mode');
   expect(positions).not.toContain('copy.practice');
+  expect(ticker).not.toContain('cfd-product-badge');
+  expect(ticker).not.toContain('>MARKET<');
 });
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
