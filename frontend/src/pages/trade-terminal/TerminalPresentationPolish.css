@@ -1,0 +1,89 @@
+/* Shared finishing layer. No sections, status messages or controls are hidden. */
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) {
+  --text-primary:#e8ebf0; --text-secondary:#a1a7b3; --text-tertiary:#8c94a2;
+  --workspace-bg:#15171c; --panel:#15171c; --panel-alt:#22252c;
+  --border:#2b2e36; --border-color:#2b2e36; --chart-bg:#101014;
+  font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(button,input,select) { font-family:inherit; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.ticker-bar,.cfd-ticker-bar) { gap:20px; padding:12px 16px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .label { color:var(--text-secondary); font-size:11px; line-height:17px; font-weight:400; white-space:nowrap; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .value { font-size:14px; line-height:21px; font-weight:600; letter-spacing:0; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .value.price { font-size:24px; line-height:30px; letter-spacing:-.5px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.bottom-tabs,.cfd-tabs) { min-height:44px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.bottom-tab,.cfd-tab) { font-size:12px; font-weight:500; line-height:18px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.info-heading,.reference-order-heading) { font-weight:600; letter-spacing:0; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) input[type=number] { appearance:textfield; -moz-appearance:textfield; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) input[type=number]::-webkit-inner-spin-button,
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) input[type=number]::-webkit-outer-spin-button { appearance:none; margin:0; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.input-group,.fo-priceInputRow,.fo-qtyInputRow,.cfd-input) { border:1px solid #30343e; background:#22252c; border-radius:6px; box-shadow:inset 0 1px #ffffff03; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.input-group,.fo-priceInputRow,.fo-qtyInputRow,.cfd-input):hover { border-color:#48505d; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.input-group,.fo-priceInputRow,.fo-qtyInputRow):focus-within,
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .cfd-input:focus { border-color:#f7a600; box-shadow:0 0 0 2px #f7a60012; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.fo-label,.form-label,.cfd-label) { font-size:12px; line-height:18px; color:var(--text-secondary); font-weight:400; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.fo-infoRow,.info-row,.cfd-infoRow) { font-size:12px; line-height:20px; gap:12px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.fo-infoBox,.order-summary,.cfd-infoBox) { background:#111318; border:1px solid #292d35; border-radius:6px; padding:12px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.submit-btn,.cfd-submit) { min-height:44px; border-radius:24px; font-size:14px; font-weight:600; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) button:focus-visible { outline:2px solid #f7a600; outline-offset:2px; }
+
+/* Spot keeps every order family visible even in a narrow ticket. */
+.trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tabs { gap:0 14px; flex-wrap:wrap; overflow:visible; padding:0 16px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tab { padding:10px 0; font-size:12px; line-height:18px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .order-form-content { padding:16px; gap:18px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .order-form-tabs { padding:14px 16px 8px; gap:6px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .order-form-tab { height:36px; font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .max-btn { border:0; background:transparent; color:#f7a600; font-size:11px; font-weight:500; padding:0; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .info-section { padding-top:16px; border-top:1px solid #292d35; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .input-group input { font-size:14px; min-height:44px; }
+
+/* Fixed whole rows with the same rhythm as Futures; exact values stay in tooltips. */
+.trade-terminal.trade-terminal.trade-terminal.market-reference .orderbook-header { min-height:44px; height:44px; flex-shrink:0; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .orderbook-col-headers { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:8px; padding:10px 12px; font-size:11px; flex-shrink:0; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .orderbook-col-headers .ob-col { text-align:right; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .orderbook-col-headers .ob-col:first-child { text-align:left; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference :is(.orderbook-asks,.orderbook-bids) { flex:1 1 0; min-height:0; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr); gap:8px; height:26px; min-height:26px; flex:0 0 26px; padding:0 12px; font-size:12px; line-height:26px; font-weight:400; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row .cell { min-width:0; white-space:nowrap; text-align:right; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row .cell:first-of-type { text-align:left; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row .cell:nth-child(2) { text-align:right; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row .cell:last-child { color:#d7dce5; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-depth-bar { opacity:.16; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .orderbook-spread { flex:0 0 auto; padding:12px; background:#17191f; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-spread-price { font-size:20px; line-height:26px; letter-spacing:-.3px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-spread-detail { font-size:11px; line-height:17px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-group-select { min-width:64px; height:28px; padding:0 8px; border:1px solid #30343e; }
+
+/* CFD: bring the newer chart and ticket into the same graphite palette. */
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row { font-size:11px; gap:6px; }
+.trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row .cell:is(.bid-price,.ask-price) { max-width:none; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-order-panel { background:var(--workspace-bg); }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-sideTabs { margin:14px 16px 6px; padding:3px; gap:4px; background:#101217; border-color:#30343e; border-radius:6px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-sideTab { min-height:36px; font-size:12px; font-weight:600; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-product-terms { padding:10px 16px; font-size:11px; letter-spacing:0; text-transform:none; gap:10px; flex-wrap:wrap; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-form { gap:18px; padding:16px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-input { font-size:14px; line-height:22px; min-height:44px; padding:10px 12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-referencePrice { padding-right:12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-order-state { position:static; display:block; max-width:none; transform:none; margin-top:6px; font-size:11px; line-height:16px; overflow:visible; white-space:normal; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-order-state { background:transparent; border:0; padding:0; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-chart-toolbar { background:#101014; border-color:#2b2e36; min-height:42px; padding:7px 12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-chart-toolbar strong { font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-chart-intervals button { font-size:11px; min-height:28px; padding:4px 9px; color:#a1a7b3; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-chart-intervals button.active { color:#eceef2; background:#292c34; border-color:#434854; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-tab { font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-th { font-size:11px; text-transform:none; letter-spacing:0; background:#15171c; color:#a1a7b3; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal :is(.cfd-td,.cfd-td strong,.cfd-closeBtn,.cfd-empty) { font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-closeBtn { border-color:#3b414d; background:#22252c; }
+.trade-terminal.trade-terminal.trade-terminal.cfd-terminal .terminal-practice-label { color:#b4bbc7; font-size:11px; border:1px solid #414753; border-radius:4px; padding:2px 6px; text-transform:none; letter-spacing:0; }
+@media(max-width:1024px) {
+  .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.ticker-bar,.cfd-ticker-bar) { gap:12px 20px; }
+  .trade-terminal.trade-terminal.trade-terminal.market-reference .ob-row { font-size:13px; }
+}
+@media(max-width:767px) {
+  .trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-order-panel { padding-top:16px; }
+  .trade-terminal.trade-terminal.trade-terminal.cfd-terminal .cfd-sideTab { min-height:40px; }
+  .trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tabs { gap:0 16px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.ob-row,.ob-depth-bar,.cfd-sideTab) { transition:none; }
+}

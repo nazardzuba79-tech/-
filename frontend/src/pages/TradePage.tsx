@@ -26,6 +26,7 @@ import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/MarketReferenceTerminal.css';
+import './trade-terminal/TerminalPresentationPolish.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet

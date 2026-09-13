@@ -119,6 +119,7 @@ export function CfdOrderForm({
 
       <div className="cfd-product-terms">
         <span>{t('trade.market')}</span>
+        <span className="terminal-practice-label" title={copy.practiceNote}>{copy.practice}</span>
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">

@@ -67,14 +67,14 @@ test('verified CFD mapping and compact visible attribution are preserved',async(
 test('fallback translations remain available in all seven locales',()=>{for(const key of ['trade.cfdChartUnavailable','trade.cfdChartUnavailableHint','trade.cfdChartRetry'])expect(readAllLocales().split('\n').filter(line=>line.includes(`'${key}':`))).toHaveLength(7);});
 
 test.each([
-  ['spot', 'BTC/USDT', 'BYBIT:BTCUSDT', '#0d141d'],
+  ['spot', 'BTC/USDT', 'BYBIT:BTCUSDT', '#101014'],
   ['futures', 'BTC/USDT', 'BYBIT:BTCUSDT.P', '#101014'],
-  ['cfd', 'XAUUSD', 'OANDA:XAUUSD', '#0d141d'],
+  ['cfd', 'XAUUSD', 'OANDA:XAUUSD', '#101014'],
 ])('market palette preserves official symbol and native controls: %s', async (market, pair, symbol, backgroundColor) => {
   await render(pair, market);
   expect(config()).toMatchObject({ symbol, backgroundColor, hide_top_toolbar: false, hide_side_toolbar: false, allow_symbol_change: false });
   expect(config().hide_legend).toBe(true);
-  expect(config().gridColor).toBe(market === 'futures' ? 'rgba(255, 255, 255, 0.035)' : '#0e151e');
+  expect(config().gridColor).toBe('rgba(255, 255, 255, 0.035)');
   expect(host.querySelectorAll('script')).toHaveLength(1);
 });
 

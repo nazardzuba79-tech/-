@@ -115,6 +115,21 @@ export function OrderBookPanel({
   spotPrecision?: boolean;
 }) {
   const { t } = useLanguage();
+  const asksViewport = useRef<HTMLDivElement>(null);
+  const [visibleLevels, setVisibleLevels] = useState(VISIBLE_LEVELS_PER_SIDE);
+  useEffect(() => {
+    const element = asksViewport.current;
+    if (!spotPrecision || !element || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      const row = element.querySelector('.ob-row');
+      const rowHeight = row?.getBoundingClientRect().height ?? 26;
+      if (element.clientHeight > 0 && rowHeight > 0) {
+        setVisibleLevels(Math.max(1, Math.min(VISIBLE_LEVELS_PER_SIDE, Math.floor(element.clientHeight / rowHeight))));
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [spotPrecision]);
 
   const bestAsk = asks[0] ? parseFloat(asks[0].price) : null;
   const bestBid = bids[0] ? parseFloat(bids[0].price) : null;
@@ -148,12 +163,12 @@ export function OrderBookPanel({
   const decimals = decimalsForStep(groupStep);
 
   const asksDepth = useMemo(
-    () => (spotPrecision ? aggregateSpotBook(asks, groupStep, 'SELL') : withDepth(aggregate(asks, groupStep, 1))).slice(0, VISIBLE_LEVELS_PER_SIDE),
-    [asks, groupStep, spotPrecision]
+    () => (spotPrecision ? aggregateSpotBook(asks, groupStep, 'SELL') : withDepth(aggregate(asks, groupStep, 1))).slice(0, visibleLevels),
+    [asks, groupStep, spotPrecision, visibleLevels]
   );
   const bidsDepth = useMemo(
-    () => (spotPrecision ? aggregateSpotBook(bids, groupStep, 'BUY') : withDepth(aggregate(bids, groupStep, -1))).slice(0, VISIBLE_LEVELS_PER_SIDE),
-    [bids, groupStep, spotPrecision]
+    () => (spotPrecision ? aggregateSpotBook(bids, groupStep, 'BUY') : withDepth(aggregate(bids, groupStep, -1))).slice(0, visibleLevels),
+    [bids, groupStep, spotPrecision, visibleLevels]
   );
 
   const maxDepth = Math.max(
@@ -200,7 +215,7 @@ export function OrderBookPanel({
         <span className="ob-col">{t('trade.sum')}</span>
       </div>
 
-      <div className="orderbook-asks">
+      <div className="orderbook-asks" ref={asksViewport}>
         {asksDepth.map((level) => (
           <Row key={spotPrecision ? spotLevelPrice(level.price, groupStep) : level.price.toFixed(decimals)} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}

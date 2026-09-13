@@ -22,6 +22,7 @@ import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
 import './trade-terminal/ReferenceFuturesTerminal.css';
+import './trade-terminal/TerminalPresentationPolish.css';
 
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
