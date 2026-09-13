@@ -1863,3 +1863,11 @@ withdrawal was placed.
 - Preserved PR #51 terminal refinements, real quote source/cadence, API subscriptions, all hero/laptop/card artwork and behavior, backend/auth/financial code and other timestamps.
 - Validation: frontend TypeScript/Vite build PASS; 68 existing focused tests across 10 suites PASS; diff checks PASS. Browser verified default movement, pause, seamless wrap, gentler reduced-motion movement, removed marked captions/date, 12 accessible rows and exact edge-to-edge layout at 1920/1600/1024/768/390 with no overflow/errors. Evidence: docs/qa/homepage-sapphire/tape-motion.json.
 - Production verification pending publication at entry time; no unrelated work included.
+
+## 2026-09-13 — Codex — homepage product shortcuts
+
+- Owner requested a clearer visual treatment for Spot / Futures / Copy Trading / Crypto Card during the ribbon release. Fresh main base: 6b055121d8438f99dc6e8a431defd4597496e751. Implementation commit: 874fcb0c10b53132d82bd5d63c9a629b8b45ddfe.
+- Added four distinct decorative Lucide icons and compact sapphire/gold link surfaces in HomeSapphireHero and scoped home-sapphire CSS. Wide desktop uses one row; narrower layouts use two balanced columns. English labels and all four original route destinations retained.
+- Preserved the just-merged full-width moving ribbon and date/caption cleanup, all real-data and terminal behavior, artwork and other homepage sections. No backend/auth/account/financial changes.
+- Validation: frontend TypeScript/Vite build and diff checks PASS; 11 focused copy/projection tests PASS. Browser checked six widths (1920/1600/1280/1024/768/390), four distinct icons and original destinations, no clipped buttons or page overflow/errors. Local visual test used honest unavailable data due localhost CORS; no provider availability claim. Earlier ribbon behavior has separate 68-test and live-data motion evidence. Evidence: docs/qa/homepage-sapphire/product-shortcuts.json.
+- Final production verification pending publication at entry time.
