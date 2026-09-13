@@ -2277,16 +2277,16 @@ a:hover > .nav-card-icon {
 }
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
-.futures-reference > .global-header { background:#1b1b23; border-bottom:1px solid #2b2b35; box-shadow:none; }
-.futures-reference > .global-header .deposit-button { box-shadow:none; }
+:is(.futures-reference,.market-reference) > .global-header { background:#1b1b23; border-bottom:1px solid #2b2b35; box-shadow:none; }
+:is(.futures-reference,.market-reference) > .global-header .deposit-button { box-shadow:none; }
 
 /* Measured Bybit typography; keep shell ownership here, not in a lazy route. */
-.futures-reference > .global-header { font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#181a20; }
-.futures-reference > .global-header::before { content:none; }
-.futures-reference > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:400; letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; }
-.futures-reference > .global-header .nav-active { color:#f7a600; background:transparent; }
-.futures-reference > .global-header .nav-active::after { bottom:0; height:2px; }
-.futures-reference > .global-header .header-icon,
-.futures-reference > .global-header .deposit-button { font-family:inherit; font-size:14px; font-weight:500; letter-spacing:0; }
-.futures-reference > .global-header .deposit-button { min-height:32px; height:32px; padding:0 16px; border-radius:6px; background:#f7a600; }
-@media(max-width:1024px) { .futures-reference > .global-header { height:56px; padding:0 16px; } }
+:is(.futures-reference,.market-reference) > .global-header { font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#181a20; }
+:is(.futures-reference,.market-reference) > .global-header::before { content:none; }
+:is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:400; letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; }
+:is(.futures-reference,.market-reference) > .global-header .nav-active { color:#f7a600; background:transparent; }
+:is(.futures-reference,.market-reference) > .global-header .nav-active::after { bottom:0; height:2px; }
+:is(.futures-reference,.market-reference) > .global-header .header-icon,
+:is(.futures-reference,.market-reference) > .global-header .deposit-button { font-family:inherit; font-size:14px; font-weight:500; letter-spacing:0; }
+:is(.futures-reference,.market-reference) > .global-header .deposit-button { min-height:32px; height:32px; padding:0 16px; border-radius:6px; background:#f7a600; }
+@media(max-width:1024px) { :is(.futures-reference,.market-reference) > .global-header { height:56px; padding:0 16px; } }

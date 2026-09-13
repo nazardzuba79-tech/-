@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as presentation from '../cfdPresentation';
+import * as columnSort from '../marketColumnSort';
 
 const root=resolve(__dirname,'../../..');
 const req=createRequire(resolve(root,'package.json'));
@@ -15,11 +16,11 @@ const text=(tree:any):string=>Array.isArray(tree)?tree.map(text).join(''):tree&&
 
 function mount(file:string,options:any={}){
   let index=0;const hooks:any[]=[],effects:(()=>void)[]=[],components:Record<string,any>={};
-  const react={...React,useState(initial:any){const at=index++;if(!(at in hooks))hooks[at]=typeof initial==='function'?initial():initial;return[hooks[at],(value:any)=>{hooks[at]=typeof value==='function'?value(hooks[at]):value;}];},useRef(initial:any){const at=index++;return hooks[at]??={current:initial};},useCallback(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i]))hooks[at]={fn,deps};return hooks[at].fn;},useEffect(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i])){hooks[at]={deps};effects.push(()=>{old?.cleanup?.();hooks[at].cleanup=fn();});}}};
+  const react={...React,useMemo:(fn:any)=>fn(),useState(initial:any){const at=index++;if(!(at in hooks))hooks[at]=typeof initial==='function'?initial():initial;return[hooks[at],(value:any)=>{hooks[at]=typeof value==='function'?value(hooks[at]):value;}];},useRef(initial:any){const at=index++;return hooks[at]??={current:initial};},useCallback(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i]))hooks[at]={fn,deps};return hooks[at].fn;},useEffect(fn:any,deps:any[]){const at=index++,old=hooks[at];if(!old||deps.some((d,i)=>d!==old.deps[i])){hooks[at]={deps};effects.push(()=>{old?.cleanup?.();hooks[at].cleanup=fn();});}}};
   const api=new Proxy(options.api??{},{get:(obj,key:string)=>obj[key]??(()=>new Promise(()=>{}))});
   const compiled=ts.transpileModule(read(file),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;const output:any={};
   new Function('require','exports','window',compiled)((name:string)=>{
-    if(name==='react')return react;if(name.endsWith('/api'))return{api,ApiError:Error};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
+    if(name==='react')return react;if(name.endsWith('/marketColumnSort'))return columnSort;if(name.endsWith('/api'))return{api,ApiError:Error};if(name.endsWith('/i18n'))return{useLanguage:()=>({t:(key:string)=>key,lang:'en'})};if(name.endsWith('/cfdPresentation'))return presentation;
     if(name.endsWith('/priceChange'))return{parseChangePercentOrNull:(v:any)=>v==null?null:Number(v),parseChangePercent:Number};if(name.endsWith('/useCfdTickers'))return{useCfdTickers:()=>options.feed};if(name.endsWith('/krakenSocket'))return{krakenSocket:{subscribeBook:()=>()=>{}}};if(name.endsWith('/tradingMode'))return{rememberTradingMode:jest.fn()};if(name==='react-router-dom')return{useSearchParams:()=>[options.params]};if(name.endsWith('.css'))return{};
     if(name==='./Skeleton'){components.SkeletonRow??=()=>null;return{SkeletonRow:components.SkeletonRow};}
     if(name.startsWith('./')||name.startsWith('../components/')){const label=name.split('/').pop()!;components[label]??=()=>null;return{[label]:components[label]};}
@@ -46,12 +47,12 @@ test('display states clearly distinguish live, closed, stale and unavailable',()
 
 test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD','?market=cfd&symbol=INVALID'])('TradePage %s renders read-only three-column market terminal',query=>{
  const options={params:new URLSearchParams(query),feed:{tickers:rows,configured:true,loadError:false,reload:jest.fn()}};const page=mount('pages/TradePage.tsx',options),tree=page.render(),all=nodes(tree);
- expect(tree.props.className).toBe('trade-terminal cfd-terminal');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
+ expect(tree.props.className).toBe('trade-terminal cfd-terminal market-reference');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
  for(const component of ['CfdChart','CfdOrderForm','CfdInstrumentList','CfdTickerBar'])expect(all.find(n=>n.type===page.components[component]).props.symbol).toBe(expected);
  expect(all.some(n=>n.type===page.components.OrderBookPanel)).toBe(false);
 });
 
-test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button')).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
+test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
 
 test('visible CFD right panel is read-only market overview, not an order form',()=>{const source=read('components/CfdOrderForm.tsx');expect(source).toContain('CfdMarketOverview');expect(source).not.toMatch(/openCfdPosition|getFuturesBalances|<form|type="submit"|LeverageSlider/);});
 
@@ -69,3 +70,25 @@ test('WTI and Brent identities stay distinct in visible data',()=>{const wti=row
 test('display rows can never enable old execution UI helpers',()=>{const row={...rows[0],executionAllowed:true,status:'live',stale:false};expect(presentation.canExecuteCfdQuote(row as any)).toBe(false);});
 
 test('CFD CSS remains scoped to the CFD terminal and includes responsive read-only panels',()=>{const css=read('pages/trade-terminal/CfdTerminal.css');expect(css).toContain('.cfd-market-overview');expect(css).toContain('.cfd-data-coverage');expect(css).toContain('@media(max-width:430px)');expect(css).not.toMatch(/^\.spot-terminal/m);});
+
+test.each([0,1])('CFD column %s sorts both ways, leaves missing data last and restores provider order without selecting',column=>{
+  const list=mount('components/CfdInstrumentList.tsx'),onChange=jest.fn();
+  const data=[{...rows[0],price:'100',changePercent24h:'-1'},{...rows[1],price:'200',changePercent24h:'0'},{...rows[2],price:null,changePercent24h:undefined}];
+  const props={symbol:'XAUUSD',tickers:data,configured:true,loadError:false,onRetry:jest.fn(),onChange};
+  const options=(tree:any)=>nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option')).map(n=>n.key);
+  let tree=list.render(props);expect(options(tree)).toEqual(['XAUUSD','XAGUSD','XPTUSD']);
+  const click=()=>{nodes(tree).filter(n=>n.type==='button'&&n.props.className==='cfd-align-right')[column].props.onClick();tree=list.render(props);};
+  click();expect(options(tree)).toEqual(['XAGUSD','XAUUSD','XPTUSD']);
+  click();expect(options(tree)).toEqual(['XAUUSD','XAGUSD','XPTUSD']);
+  click();expect(options(tree)).toEqual(['XAUUSD','XAGUSD','XPTUSD']);
+  expect(onChange).not.toHaveBeenCalled();expect(data[0].symbol).toBe('XAUUSD');
+});
+test('CFD search matches names and symbols and does not create instruments',()=>{
+  const list=mount('components/CfdInstrumentList.tsx');
+  const props={symbol:'XAUUSD',tickers:[{...rows[0],name:'Gold'},{...rows[4],name:'WTI Oil'}],configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()};
+  let tree=list.render(props);
+  nodes(tree).find(n=>n.type==='input').props.onChange({target:{value:'oil'}});tree=list.render(props);
+  expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option')).map(n=>n.key)).toEqual(['WTIUSD']);
+  nodes(tree).find(n=>n.type==='input').props.onChange({target:{value:'BTC'}});tree=list.render(props);
+  expect(text(tree)).toContain('trade.nothingFound');expect(text(tree)).not.toContain('BTCUSD');
+});
