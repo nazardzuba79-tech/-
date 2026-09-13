@@ -23,10 +23,10 @@ describe('Resilient CFD execution routing',()=>{
   const router=(a:FakeSource,b:FakeSource,over:any={})=>new ResilientCfdQuoteSource([
     {id:'twelvedata',source:a,priority:10,lineage:'twelve-delivery',enabled:true,admissionEvidence:'contract-a'},
     {id:'tradermade',source:b,priority:20,lineage:'tradermade-delivery',enabled:true,admissionEvidence:'contract-b'},
-  ],{now:()=>now,providerWaitMs:30,failbackSamples:2,failbackHoldMs:1000,maxDivergenceBps:100,...over});
+  ],{now:()=>now,providerWaitMs:30,failbackSamples:2,failbackHoldMs:1000,maxDivergenceBps:100,minExecutionLineages:2,...over});
   test('immediate failover to independent live reserve',async()=>{
     const a=new FakeSource('twelvedata',quote('twelvedata')),b=new FakeSource('tradermade',quote('tradermade','2000.5'));a.fail=true;
-    expect((await router(a,b).getFreshQuote('XAUUSD')).provider).toBe('tradermade');
+    expect(await router(a,b).getFreshQuote('XAUUSD')).toMatchObject({provider:'tradermade',executionAllowed:true});
   });
   test('provider timeout does not block a healthy stream reserve',async()=>{
     const a=new FakeSource('twelvedata',quote('twelvedata')),b=new FakeSource('tradermade',quote('tradermade'));a.delay=200;
@@ -50,9 +50,24 @@ describe('Resilient CFD execution routing',()=>{
     expect((await r.getFreshQuote('XAUUSD')).provider).toBe('twelvedata');
   });
   test('source without explicit admission evidence is invisible',async()=>{
-    const a=new FakeSource('twelvedata',quote('twelvedata')),b=new FakeSource('tradermade',quote('tradermade'));a.fail=true;
-    const r=new ResilientCfdQuoteSource([{id:'tradermade',source:b,priority:1,lineage:'tm',enabled:true,admissionEvidence:''}],{now:()=>now});
+    const b=new FakeSource('tradermade',quote('tradermade'));
+    const r=new ResilientCfdQuoteSource([{id:'tradermade',source:b,priority:1,lineage:'tm',enabled:true,admissionEvidence:''}],{now:()=>now,minExecutionLineages:1});
     await expect(r.getFreshQuote('XAUUSD')).rejects.toMatchObject({reason:'no_admitted_provider'});
+  });
+  test('one admitted lineage stays usable for risk but blocks new execution',async()=>{
+    const b=new FakeSource('tradermade',quote('tradermade'));
+    const unavailable=new FakeSource('twelvedata');unavailable.configured=false;
+    const r=router(unavailable,b);
+    const q=await r.getFreshQuote('XAUUSD');expect(q).toMatchObject({provider:'tradermade',status:'live',entitlementVerified:true,executionAllowed:false});
+    expect((await r.diagnostics())).toMatchObject({admittedLineages:1,executionRedundancyConfigured:false});
+  });
+  test('same lineage is not counted twice for opening redundancy',async()=>{
+    const a=new FakeSource('twelvedata',quote('twelvedata')),b=new FakeSource('tradermade',quote('tradermade'));
+    const r=new ResilientCfdQuoteSource([
+      {id:'twelvedata',source:a,priority:10,lineage:'same-upstream',enabled:true,admissionEvidence:'a'},
+      {id:'tradermade',source:b,priority:20,lineage:'same-upstream',enabled:true,admissionEvidence:'b'},
+    ],{now:()=>now,minExecutionLineages:2});
+    expect(await r.getFreshQuote('XAUUSD')).toMatchObject({executionAllowed:false});
   });
   test('executable reserve is preferred over a non-opening primary',async()=>{
     const a=new FakeSource('twelvedata',quote('twelvedata','2000',START,false)),b=new FakeSource('tradermade',quote('tradermade','2000',START,true));
