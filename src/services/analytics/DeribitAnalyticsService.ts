@@ -196,10 +196,10 @@ export class DeribitAnalyticsService {
       row.kind === 'option' && row.is_active && row.base_currency === asset && row.expiration_timestamp > now && finitePositive(row.strike)
     );
     if (instruments.length === 0) throw new Error(`No active options for ${asset}`);
-    const nearestExpiry = Math.min(...instruments.map((row) => row.expiration_timestamp));
+    const nearestExpiry = instruments.reduce((min, row) => Math.min(min, row.expiration_timestamp), Number.POSITIVE_INFINITY);
     const summaries = summariesRaw.filter((row) => row.base_currency === asset);
     const summaryByName = new Map(summaries.map((row) => [row.instrument_name, row]));
-    const underlying = firstPositive(...summaries.map((row) => row.underlying_price));
+    const underlying = firstPositiveFrom(summaries, (row) => row.underlying_price);
     if (underlying === null) throw new Error(`No option underlying price for ${asset}`);
 
     const candidates = instruments
@@ -252,8 +252,8 @@ export class DeribitAnalyticsService {
     const referencePrice = firstPositive(
       perpetual?.estimated_delivery_price,
       perpetual?.underlying_price,
-      ...summaries.map((row) => row.estimated_delivery_price),
-      ...summaries.map((row) => row.underlying_price)
+      firstPositiveFrom(summaries, (row) => row.estimated_delivery_price),
+      firstPositiveFrom(summaries, (row) => row.underlying_price)
     );
     if (referencePrice === null) throw new Error(`No reference price for ${asset}`);
 
@@ -318,6 +318,14 @@ function finiteNonNegative(value: unknown): boolean {
 function firstPositive(...values: unknown[]): number | null {
   for (const value of values) {
     const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return null;
+}
+
+function firstPositiveFrom<T>(rows: T[], select: (row: T) => unknown): number | null {
+  for (const row of rows) {
+    const n = Number(select(row));
     if (Number.isFinite(n) && n > 0) return n;
   }
   return null;
