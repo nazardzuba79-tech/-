@@ -16,6 +16,8 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
   return output;
 }
 const priceChange = evaluate('lib/priceChange.ts');
+const cfdFreshness = evaluate('lib/cfdTickerFreshness.ts');
+const cfdPresentation = evaluate('lib/cfdPresentation.ts', { './cfdTickerFreshness': cfdFreshness });
 const marketModule = evaluate('pages/home/useHomeMarket.ts', {
   '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
   '../../lib/futuresConfigStore': { futuresConfigStore: {} },
@@ -25,7 +27,7 @@ const copy = evaluate('pages/home/homeLiveCopy.ts');
 const globalCopy = evaluate('pages/home/globalHeroCopy.ts');
 const shared = {
   './useHomeMarket': marketModule, './LiveValue': liveValue, './homeLiveCopy': copy,
-  './globalHeroCopy': globalCopy,
+  './globalHeroCopy': globalCopy, '../../lib/cfdPresentation': cfdPresentation,
   '../../lib/i18n': { useLanguage: () => ({ lang: 'en', t: (key: string) => key }), localeOf: () => 'en-US' },
   '../../components/CryptoIcon': { CryptoIcon: () => null },
 };
@@ -45,7 +47,7 @@ const quote = (pair = 'BTC/USDT', price = 64123.45, quoteVolume = 81573125) => (
 const market = (overrides: any = {}) => ({
   tickers: [quote()], tickersStatus: 'ok', tickersStale: false, tickerUpdatedAt: 1_700_000_000_000,
   tickerSource: 'kraken', priceHistory: {}, rankings: [], rankingsStatus: 'ok', global: null, fearGreed: null,
-  globalStatus: 'error', cfd: { configured: false, tickers: [] }, cfdStatus: 'ok',
+  globalStatus: 'error', cfd: { configured: false, tickers: [] }, cfdStatus: 'ok', cfdPriceHistory:{},
   futuresSymbols: ['BTC/USDT'], futuresStatus: 'ok', logoOf: () => undefined,
   hero: { pair: 'BTC/USDT', book: null, candles: [], trades: [], bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: true },
   ...overrides,
@@ -69,15 +71,29 @@ test('the selected feed keeps its pair even when it leaves the watchlist or lose
   expect(withoutQuote).toMatch(/vx-terminal-pair[\s\S]*?<strong>BTC\/USDT<\/strong>[\s\S]*?—/);
 });
 
-test('hero asset pills keep unavailable Oil honest and zero Gold distinct from missing data', () => {
+test('hero GOLD and OIL use routed display prices; OIL is exact WTI, never Brent substitution', () => {
   const initial = render(HomeHeroAssets, market({ tickers:[],cfd:null }));
   expect(initial).not.toContain('<polyline');
-  expect(initial.match(/Data unavailable/g)?.length).toBeGreaterThanOrEqual(2);
-  const zero = render(HomeHeroAssets,market({cfd:{configured:true,tickers:[{symbol:'XAUUSD',price:'0',changePercent24h:'0'}]}}));
-  expect(zero).toContain('>0</span>'); expect(zero).toContain('+0.00%');
-  expect(zero).toContain('Reference quote');
-  const oil=zero.slice(zero.indexOf('vx-asset-oil'));
-  expect(oil).toContain('—'); expect(oil).toContain('Data unavailable'); expect(oil).not.toContain('<polyline');
+  expect(initial.match(/Price unavailable/g)?.length).toBeGreaterThanOrEqual(2);
+  const live = render(HomeHeroAssets, market({ cfd:{configured:true,tickers:[
+    {symbol:'XAUUSD',price:'4349.19',changePercent24h:'0.4',status:'live',stale:false,asOf:Date.now()},
+    {symbol:'WTIUSD',price:'96.607',changePercent24h:'1.2',status:'live',stale:false,providerSymbol:'USOIL',asOf:Date.now()},
+  ]}}));
+  const gold=live.slice(live.indexOf('vx-asset-gold'),live.indexOf('vx-asset-oil'));
+  const oil=live.slice(live.indexOf('vx-asset-oil'));
+  expect(gold).toContain('GOLD');expect(gold).toContain('4,349.19');expect(gold).toContain('+0.40%');
+  expect(oil).toContain('OIL');expect(oil).toContain('96.61');expect(oil).toContain('+1.20%');
+  const brentOnly=render(HomeHeroAssets,market({cfd:{configured:true,tickers:[{symbol:'XBRUSD',price:'999',status:'live',stale:false}]}}));
+  const oilOnly=brentOnly.slice(brentOnly.indexOf('vx-asset-oil'));
+  expect(oilOnly).not.toContain('999');expect(oilOnly).toContain('—');expect(oilOnly).toContain('Price unavailable');
+});
+
+test('closed/stale market rows stay visible with concise professional state rather than fake live change',()=>{
+  const html=render(HomeHeroAssets,market({cfd:{configured:true,tickers:[
+    {symbol:'XAUUSD',price:'4349.19',status:'market_closed',stale:false,asOf:Date.UTC(2026,8,12,21,0,0)},
+    {symbol:'WTIUSD',price:'96.607',status:'stale',stale:true,asOf:Date.UTC(2026,8,12,21,0,0)},
+  ]}}));
+  expect(html).toContain('Market closed');expect(html).toContain('Last quote');expect(html).not.toContain('+0.00%');
 });
 
 test('a failed ticker refresh preserves the last real quote with visible stale disclosure on both BTC and tape', () => {
@@ -94,7 +110,6 @@ test('a failed ticker refresh preserves the last real quote with visible stale d
   expect(tape).toContain('analytics.stale');
   const css = readFileSync(resolve(frontend, 'src/pages/home/hero-reference.css'), 'utf8');
   expect(css).toMatch(/\.vx-market-tape\[data-stale="true"\] \.vx-tape-label\{display:flex/);
-
   const refreshed = render(HomeHeroAssets, market());
   expect(refreshed).not.toContain('vx-asset-stale');
   expect(refreshed).not.toContain('data-stale="true"');
@@ -105,6 +120,5 @@ test('the tape Pause rule freezes its current animation frame and keeps both vis
   const pausedRules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(match => match[1].includes('[data-paused="true"]'));
   expect(pausedRules.some(match => /animation-play-state\s*:\s*paused/.test(match[2]))).toBe(true);
   for (const rule of pausedRules) expect(rule[2]).not.toMatch(/(?:^|;)\s*(?:animation|transform)\s*:|display\s*:\s*none/);
-  // Keyboard navigation still has a stable, non-duplicated link list.
   expect(css).toMatch(/:focus-within \.vx-tape-track\s*\{ animation:none; transform:none \}/);
 });
