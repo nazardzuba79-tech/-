@@ -1,0 +1,66 @@
+name: CFD display-only prices
+on:
+  pull_request:
+    paths:
+      - 'src/api/routes/cfd.ts'
+      - 'src/services/marketData/cfd/**'
+      - 'frontend/src/components/Cfd*'
+      - 'frontend/src/lib/cfd*'
+      - 'frontend/src/lib/useCfdTickers.ts'
+      - 'frontend/src/pages/home/**'
+      - '.github/workflows/cfd-display-only.yml'
+permissions:
+  contents: read
+concurrency:
+  group: cfd-display-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm rebuild bcrypt --build-from-source
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Backend and frontend CFD regressions
+        run: npm test -- --runInBand --silent --testPathPattern='Cfd|cfd|homeLiveMarket'
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend production build
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+  public-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: BiQuote public batch has all canonical display identities
+        run: |
+          node <<'NODE'
+          const map={XAUUSD:'XAUUSD',XAGUSD:'XAGUSD',XPTUSD:'XPTUSD',XPDUSD:'XPDUSD',WTIUSD:'USOIL',XBRUSD:'UKOIL',EURUSD:'EURUSD',GBPUSD:'GBPUSD',USDJPY:'USDJPY',AUDUSD:'AUDUSD',USDCAD:'USDCAD',USDCHF:'USDCHF',NZDUSD:'NZDUSD'};
+          (async()=>{const u=new URL('https://biquote.io/api/latest');for(const s of Object.values(map))u.searchParams.append('symbols',s);const r=await fetch(u,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});if(!r.ok)throw Error(`HTTP ${r.status}`);const body=await r.json();for(const [canonical,symbol] of Object.entries(map)){const q=body[symbol];if(!q||q.symbol!==symbol||!Number.isFinite(Number(q.mid))||Number(q.mid)<=0)throw Error(`missing/invalid ${canonical}/${symbol}`);}console.log(`BiQuote ${Object.keys(map).length}/13 identities OK`);})().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: Deriv public discovery covers metals and FX reserve set
+        run: |
+          node <<'NODE'
+          const WebSocket=require('ws');const expected=new Set(['frxXAUUSD','frxXAGUSD','frxXPTUSD','frxXPDUSD','frxEURUSD','frxGBPUSD','frxUSDJPY','frxAUDUSD','frxUSDCAD','frxUSDCHF','frxNZDUSD']);let done=false;
+          const ws=new WebSocket('wss://api.derivws.com/trading/v1/options/ws/public',{handshakeTimeout:8000});const finish=(ok,msg)=>{if(done)return;done=true;clearTimeout(timer);try{ws.close()}catch{};console.log(msg);if(!ok)process.exitCode=1};const timer=setTimeout(()=>finish(false,'Deriv timeout'),15000);
+          ws.on('open',()=>ws.send(JSON.stringify({active_symbols:'brief',req_id:1})));ws.on('error',()=>finish(false,'Deriv socket error'));ws.on('message',buf=>{let x;try{x=JSON.parse(buf.toString())}catch{return}if(x.msg_type!=='active_symbols')return;const ids=new Set((x.active_symbols||[]).map(r=>r.underlying_symbol||r.symbol));const missing=[...expected].filter(x=>!ids.has(x));finish(!missing.length,missing.length?`Deriv missing: ${missing.join(',')}`:'Deriv 11/11 reserve identities OK');});
+          NODE
