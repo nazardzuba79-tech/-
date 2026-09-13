@@ -3,12 +3,10 @@
 /**
  * Read-only production loading/data audit.
  *
- * - Public market-data GETs go to the real VOLTEX production API.
- * - Signed-in pages use a synthetic localStorage identity only so route chunks
- *   and public market surfaces can be inspected without production credentials.
- * - /me is fulfilled locally; all other protected API reads are answered 503
- *   by the QA harness and every non-GET/HEAD request is blocked.
- * - No production account values are fabricated and no production writes run.
+ * Public market-data GETs go to the live VOLTEX API. Protected pages use a
+ * synthetic local identity only to exercise route chunks and public market
+ * surfaces; protected account reads are fulfilled locally and all app writes
+ * are blocked. Cloudflare Browser Insights telemetry is ignored by design.
  */
 const fs = require('node:fs');
 const path = require('node:path');
@@ -44,6 +42,7 @@ const listOf = (v, keys) => {
   for (const key of keys) if (Array.isArray(v?.[key])) return v[key];
   return Array.isArray(v) ? v : [];
 };
+const isRum = (url) => url.origin === ORIGIN && url.pathname.startsWith('/cdn-cgi/rum');
 
 async function fetchJson(url, timeoutMs = 15000) {
   const started = Date.now();
@@ -87,7 +86,7 @@ function isPublicRead(pathname) {
   if (['/api/v1/market/tickers', '/api/v1/market/snapshot', '/api/v1/market/global', '/api/v1/market/assets/icons', '/api/v1/market/live'].includes(pathname)) return true;
   if (['/api/v1/cfd/config', '/api/v1/cfd/catalog', '/api/v1/cfd/tickers'].includes(pathname)) return true;
   if (pathname.startsWith('/api/v1/cfd/candles/')) return true;
-  if (['/api/v1/futures/config', '/api/v1/futures/markets'].includes(pathname)) return true;
+  if (pathname === '/api/v1/futures/config') return true;
   if (pathname.startsWith('/api/v1/futures/mark-price/')) return true;
   if (pathname.startsWith('/api/v1/futures/funding-rate/')) return true;
   if (pathname.startsWith('/api/v1/futures/open-interest/')) return true;
@@ -116,8 +115,10 @@ function attachMonitoring(page, labelRef) {
   });
   page.on('console', (message) => {
     if (message.type() !== 'error') return;
+    const text = message.text();
+    if (/Failed to load resource: the server responded with a status of 503/i.test(text)) return;
     const location = message.location();
-    const row = { label: labelRef.current, text: message.text().slice(0, 500), url: location.url || null };
+    const row = { label: labelRef.current, text: text.slice(0, 500), url: location.url || null };
     report.consoleErrors.push(row);
     if (!location.url || location.url.startsWith(ORIGIN) || location.url.startsWith(API_ORIGIN)) {
       warn(`Browser console error on ${labelRef.current}`, row.text);
@@ -127,6 +128,7 @@ function attachMonitoring(page, labelRef) {
     if (response.status() < 400) return;
     const request = response.request();
     const url = new URL(response.url());
+    if (isRum(url)) return;
     const qaStub = response.headers()['x-voltex-qa-stub'] === '1';
     if (qaStub) return;
     if (url.origin !== ORIGIN && url.origin !== API_ORIGIN) return;
@@ -136,6 +138,7 @@ function attachMonitoring(page, labelRef) {
   });
   page.on('requestfailed', (request) => {
     const url = new URL(request.url());
+    if (isRum(url)) return;
     if (url.origin !== ORIGIN && url.origin !== API_ORIGIN) return;
     if (url.pathname === '/api/v1/market/live') return;
     const type = request.resourceType();
@@ -157,6 +160,7 @@ async function configureAuthenticatedContext(context) {
     const request = route.request();
     const method = request.method();
     const url = new URL(request.url());
+    if (isRum(url)) return route.abort('blockedbyclient');
     if (!['GET', 'HEAD'].includes(method)) {
       report.blockedWrites.push({ method, url: request.url() });
       return route.abort('blockedbyclient');
@@ -181,15 +185,32 @@ async function configureAuthenticatedContext(context) {
   });
 }
 
-async function waitCondition(page, label, predicate, timeout = 20000) {
-  const started = Date.now();
+async function milestone(page, label, predicate, navigationStarted, timeout = 20000) {
   try {
     await page.waitForFunction(predicate, null, { timeout });
-    return Date.now() - started;
+    return Date.now() - navigationStarted;
   } catch {
     critical(`Homepage ${label} did not become ready`, `${timeout} ms`);
     return null;
   }
+}
+
+async function revealWholeHomepage(page) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  for (let y = 0; y < height; y += 650) {
+    await page.evaluate((top) => window.scrollTo(0, top), y);
+    await page.waitForTimeout(90);
+  }
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(650);
+  const reveal = await page.evaluate(() => ({
+    total: document.querySelectorAll('main .vx-reveal').length,
+    shown: document.querySelectorAll('main .vx-reveal.vx-shown').length,
+  }));
+  if (reveal.total && reveal.shown !== reveal.total) {
+    critical('Homepage below-fold sections did not reveal after scrolling', `${reveal.shown}/${reveal.total}`);
+  }
+  return reveal;
 }
 
 async function auditHomepage(browser, width) {
@@ -203,18 +224,21 @@ async function auditHomepage(browser, width) {
     if (!response || response.status() >= 400) critical(`Homepage navigation failed at ${width}px`, String(response?.status() ?? 'no response'));
     await page.waitForSelector('#home-live-terminal', { state: 'attached', timeout: 20000 });
 
-    const priceMs = await waitCondition(page, 'BTC price', () => {
-      const text = document.querySelector('.hs-summary-pair')?.textContent || '';
-      return /BTC\/USDT/.test(text) && /\d/.test(text) && !text.includes('—');
-    });
-    const bookMs = await waitCondition(page, 'order book', () => document.querySelectorAll('#home-live-terminal .book-row').length >= 2);
-    const chartMs = await waitCondition(page, 'candlestick chart', () => document.querySelectorAll('#home-live-terminal .hs-chart svg').length > 0);
-    const tradesMs = await waitCondition(page, 'recent trades', () => document.querySelectorAll('#home-live-terminal .hs-trade-row').length > 0);
-    const referencesMs = await waitCondition(page, 'GOLD/OIL references', () => ['.vx-asset-gold', '.vx-asset-oil'].every((selector) => {
-      const text = document.querySelector(selector)?.textContent || '';
-      return /\d/.test(text) && !text.includes('—');
-    }));
+    const [priceMs, bookMs, chartMs, tradesMs, referencesMs] = await Promise.all([
+      milestone(page, 'BTC price', () => {
+        const text = document.querySelector('.hs-summary-pair')?.textContent || '';
+        return /BTC\/USDT/.test(text) && /\d/.test(text) && !text.includes('—');
+      }, navigationStarted),
+      milestone(page, 'order book', () => document.querySelectorAll('#home-live-terminal .book-row').length >= 2, navigationStarted),
+      milestone(page, 'candlestick chart', () => document.querySelectorAll('#home-live-terminal .hs-chart svg').length > 0, navigationStarted),
+      milestone(page, 'recent trades', () => document.querySelectorAll('#home-live-terminal .hs-trade-row').length > 0, navigationStarted),
+      milestone(page, 'GOLD/OIL references', () => ['.vx-asset-gold', '.vx-asset-oil'].every((selector) => {
+        const text = document.querySelector(selector)?.textContent || '';
+        return /\d/.test(text) && !text.includes('—');
+      }), navigationStarted),
+    ]);
 
+    const reveal = await revealWholeHomepage(page);
     const snapshot = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth > window.innerWidth + 2,
       orderBookRows: document.querySelectorAll('#home-live-terminal .book-row').length,
@@ -222,18 +246,14 @@ async function auditHomepage(browser, width) {
       chartSvgs: document.querySelectorAll('#home-live-terminal .hs-chart svg').length,
       dataUnavailable: (document.querySelector('#home-live-terminal')?.textContent || '').includes('Data unavailable'),
       routeBusy: Boolean(document.querySelector('[aria-busy="true"]')),
+      mainTextLength: (document.querySelector('main')?.innerText || '').trim().length,
     }));
-    const timings = {
-      priceMs: priceMs === null ? null : Date.now() - navigationStarted,
-      bookMs: bookMs === null ? null : Date.now() - navigationStarted,
-      chartMs: chartMs === null ? null : Date.now() - navigationStarted,
-      tradesMs: tradesMs === null ? null : Date.now() - navigationStarted,
-      referencesMs: referencesMs === null ? null : Date.now() - navigationStarted,
-    };
-    report.home.push({ width, ...snapshot, ...timings });
+    const timings = { priceMs, bookMs, chartMs, tradesMs, referencesMs };
+    report.home.push({ width, ...snapshot, ...reveal, ...timings });
     if (snapshot.overflow) critical(`Homepage horizontal overflow at ${width}px`);
     if (snapshot.dataUnavailable) critical(`Homepage terminal shows unavailable market data at ${width}px`);
     if (snapshot.routeBusy) critical(`Homepage remained route-busy at ${width}px`);
+    if (snapshot.mainTextLength < 300) critical(`Homepage content is unexpectedly sparse at ${width}px`, `${snapshot.mainTextLength} chars`);
     for (const [name, ms] of Object.entries(timings)) if (ms !== null && ms > 8000) warn(`Homepage ${name} first data is slow at ${width}px`, `${ms} ms`);
     await page.screenshot({ path: path.join(OUT, `home-${width}.png`), fullPage: true });
   } catch (error) {
@@ -351,8 +371,7 @@ async function auditAuthenticatedRoutes(browser, width) {
   }, { timeoutMs: 20000, slowMs: 6000 });
   await probe('XAUUSD candles', '/cfd/candles/XAUUSD?interval=15m&limit=80', (body) => listOf(body, ['candles', 'bars', 'data']).length >= 20, { timeoutMs: 20000, slowMs: 6000 });
   await probe('WTIUSD candles', '/cfd/candles/WTIUSD?interval=15m&limit=80', (body) => listOf(body, ['candles', 'bars', 'data']).length >= 20, { timeoutMs: 20000, slowMs: 6000 });
-  await probe('futures config', '/futures/config', (body) => Boolean(body && typeof body === 'object'));
-  await probe('futures markets', '/futures/markets', (body) => listOf(body, ['markets', 'symbols']).length > 0 || Array.isArray(body));
+  await probe('futures config', '/futures/config', (body) => Array.isArray(body?.symbols) && body.symbols.length > 0);
   await probe('BTC futures mark/index', '/futures/mark-price/BTC-USDT', (body) => positive(body?.markPrice) && positive(body?.indexPrice));
   await probe('BTC futures funding', '/futures/funding-rate/BTC-USDT?limit=1', (body) => Array.isArray(body?.history));
   await probe('BTC futures open interest', '/futures/open-interest/BTC-USDT', (body) => body && Object.prototype.hasOwnProperty.call(body, 'openInterest'));
