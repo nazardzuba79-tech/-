@@ -63,8 +63,6 @@ jobs:
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-qa/node_modules/playwright
         run: |
-          # Fresh random values exist only in this local test process, never in
-          # production, outputs, artifacts, persisted environment or app config.
           node -e "const {randomBytes}=require('node:crypto'); process.env.JWT_SECRET=randomBytes(48).toString('hex'); process.env.API_KEY_ENCRYPTION_SECRET=randomBytes(32).toString('hex'); require('./scripts/qa-cfd-public-rollout.cjs');"
       - name: Preserve screenshots and rollout findings
         if: success() || failure()
@@ -108,7 +106,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Compile public Deriv adapter only
         run: npx tsc --strict --skipLibCheck --target ES2021 --module commonjs --esModuleInterop --moduleResolution node --rootDir src --outDir dist src/services/marketData/cfd/DerivPublicStreamQuoteSource.ts
-      - name: Verify unauthenticated Deriv coverage for all 13 canonical instruments
+      - name: Verify current unauthenticated Deriv coverage (11 symbols; WTI/Brent recorded as gaps)
         run: node scripts/probe-cfd-deriv-public.cjs
       - uses: actions/upload-artifact@v4
         if: success() || failure()
