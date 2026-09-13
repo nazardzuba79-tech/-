@@ -44,6 +44,7 @@ export type DataSource =
   | 'binance'
   | 'okx'
   | 'bybit'
+  | 'deribit'
   | 'voltex';
 
 /** Whether a source describes VOLTEX itself or an external venue. Used to
