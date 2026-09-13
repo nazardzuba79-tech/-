@@ -9,6 +9,7 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
 import { TopGainersTicker } from './TopGainersTicker';
+import type { LiveQuote } from '../lib/liveMarketTypes';
 import { prefetchCopyMarketplace } from '../lib/useCopyMarketplace';
 
 /**
@@ -27,6 +28,7 @@ export function Nav({
   staticTicker,
   tickerSymbols,
   tickerFitToWidth,
+  futuresReference,
 }: {
   active: string;
   middle?: ReactNode;
@@ -46,6 +48,7 @@ export function Nav({
   tickerSymbols?: string[];
   /** Shows only the instruments that fit the width, instead of scrolling. */
   tickerFitToWidth?: boolean;
+  futuresReference?: ReadonlyMap<string, LiveQuote>;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -320,6 +323,7 @@ export function Nav({
         staticStrip={staticTicker}
         symbols={tickerSymbols}
         fitToWidth={tickerFitToWidth}
+        futuresReference={futuresReference}
       />
     )}
     {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}

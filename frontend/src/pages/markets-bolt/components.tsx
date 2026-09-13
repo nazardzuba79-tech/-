@@ -38,7 +38,7 @@ type GlobalMarket = {
   ethDominancePercent: number | null;
   marketCapChangePercent24h: number | null;
 };
-type FearGreedReading = { value: number; classification: string; updatedAt: number };
+type FearGreedReading = { value: number; classification: string };
 
 // The three instrument types this exchange actually trades. "Options" used
 // to sit in this slot as a permanent coming-soon panel; CFD replaces it
@@ -155,11 +155,12 @@ export function MarketsBoltPage() {
   // `stale` is available on this hook for a view that wants to dim a
   // last-good figure; Markets renders it normally today, so it is not
   // destructured here rather than being read and ignored.
-  const { tickers: tickerMap, error: tickerError } = useMarketTickers(5000);
-  const { overview: sharedOverview, sentiment: sharedSentiment } = useMarketData(5000);
+  const { tickers: tickerMap, error: tickerError, loading: tickerLoading, stale: tickerStale } = useMarketTickers(5000);
+  const { overview: sharedOverview, sentiment: sharedSentiment, tickersMeta } = useMarketData(5000);
+  const hasTickerData = tickersMeta !== null;
 
   useEffect(() => {
-    if (tickerMap.size > 0) {
+    if (hasTickerData) {
       setTickers(Array.from(tickerMap.values()));
       setError(null);
       return;
@@ -167,13 +168,13 @@ export function MarketsBoltPage() {
     // Only surface the error state when nothing has ever loaded — a
     // transient failure must not wipe a table the user is reading.
     if (tickerError) setError('Не удалось загрузить рыночные данные');
-  }, [tickerMap, tickerError]);
+  }, [tickerMap, tickerError, hasTickerData]);
 
   useEffect(() => {
     // An unavailable section stays null, so the headline renders a dash
     // rather than a market cap of zero dollars.
-    if (sharedOverview) setGlobalMarket(sharedOverview);
-    if (sharedSentiment) setFearGreed({ ...sharedSentiment, updatedAt: Date.now() });
+    setGlobalMarket(sharedOverview);
+    setFearGreed(sharedSentiment);
   }, [sharedOverview, sharedSentiment]);
 
   useEffect(() => {
@@ -245,8 +246,10 @@ export function MarketsBoltPage() {
             <h1>Рынки</h1>
             <p className="intro-copy">Следите за пульсом крипторынка и находите новые возможности.</p>
           </div>
-          <div className="market-status">
-            <span className="status-dot" /> Рынки в реальном времени <span className="status-divider" /> Обновлено только что
+          <div className="market-status" role="status">
+            <span className="status-dot" style={tickerLoading || tickerError || tickerStale ? { background: '#9098a6', boxShadow: 'none' } : undefined} />
+            {tickerLoading ? 'Загрузка рынков' : tickerError || tickerStale ? 'Обновление данных' : 'Рыночные данные'}
+            {tickersMeta && <><span className="status-divider" />{new Date(tickersMeta.fetchedAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</>}
           </div>
         </div>
 
@@ -278,8 +281,8 @@ export function MarketsBoltPage() {
                 </div>
                 <div className="progress-track"><span style={{ width: `${fearGreed ? fearGreed.value : 0}%` }} /></div>
                 <div className="long-short">
-                  <span><i className="dot-green" /> Растут <b>{breadth.longPct}%</b></span>
-                  <span><i className="dot-red" /> Падают <b>{breadth.shortPct}%</b></span>
+                  <span><i className="dot-green" /> Растут <b>{hasTickerData ? `${breadth.longPct}%` : '—'}</b></span>
+                  <span><i className="dot-red" /> Падают <b>{hasTickerData ? `${breadth.shortPct}%` : '—'}</b></span>
                 </div>
               </div>
             </div>
@@ -364,19 +367,19 @@ export function MarketsBoltPage() {
         <section className="pulse-strip" aria-label="Пульс рынка">
           <div className="pulse-item">
             <span className="muted-label">Растут</span>
-            <strong className="positive">{breadth.advancing}</strong>
+            <strong className="positive">{hasTickerData ? breadth.advancing : '—'}</strong>
           </div>
           <div className="pulse-item">
             <span className="muted-label">Падают</span>
-            <strong className="negative">{breadth.declining}</strong>
+            <strong className="negative">{hasTickerData ? breadth.declining : '—'}</strong>
           </div>
           <div className="pulse-item">
             <span className="muted-label">Пар в обзоре</span>
-            <strong>{volumeSummary.pairCount}</strong>
+            <strong>{hasTickerData ? volumeSummary.pairCount : '—'}</strong>
           </div>
           <div className="pulse-item">
             <span className="muted-label">Объём по нашим парам</span>
-            <strong>{formatCompactUsd(volumeSummary.totalVolume)}</strong>
+            <strong>{hasTickerData ? formatCompactUsd(volumeSummary.totalVolume) : '—'}</strong>
           </div>
           <div className="pulse-bar" role="presentation">
             <span className="pulse-bar-up" style={{ width: `${breadth.longPct}%` }} />

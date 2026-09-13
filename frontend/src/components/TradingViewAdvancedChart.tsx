@@ -99,7 +99,7 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
     {market === 'futures' && <div className="voltex-chart-ticker">{ticker}</div>}
     {/* Timeframe, indicators and drawings belong to the native widget.
         Its cross-origin state cannot be mirrored honestly in a parent label. */}
-    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} backgroundColor={market === 'futures' ? '#101014' : '#0d141d'} />
+    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} backgroundColor="#101014" />
       : <div className="voltex-tradingview-chart__plot"><ChartUnavailable /></div>}
     <div className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
       <a href={symbol ? `https://www.tradingview.com/symbols/${encodeURIComponent(symbol.replace(':', '-'))}/` : 'https://www.tradingview.com/'} rel="noopener nofollow" target="_blank">{ticker} chart</a>

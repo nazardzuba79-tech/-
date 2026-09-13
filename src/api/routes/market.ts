@@ -3,6 +3,7 @@ import { KrakenMarketDataService, ExternalMarketDataError } from '../../services
 import { CoinGeckoService, ExternalRankingError } from '../../services/CoinGeckoService';
 import { FearGreedService } from '../../services/FearGreedService';
 import { PrismaClient } from '@prisma/client';
+import { FuturesChartCandles } from '../../services/FuturesChartCandles';
 
 /**
  * Read-only market data mirrored from Kraken — coin list, live price, order
@@ -22,6 +23,17 @@ export function marketRouter(
   prisma: PrismaClient
 ): Router {
   const router = Router();
+  const futuresChartCandles = new FuturesChartCandles(fetch,Date.now,{
+    url:process.env.MARKET_DATA_COLLECTOR_URL?.trim()??'',
+    token:process.env.MARKET_DATA_COLLECTOR_TOKEN?.trim()??'',
+  });
+  router.get('/market/futures/candles/:pair', async (req,res) => {
+    try {
+      res.json(await futuresChartCandles.get(req.params.pair, String(req.query.interval ?? '15m'), Number(req.query.limit ?? 520)));
+    } catch(error) {
+      res.status(error instanceof RangeError ? 400 : 503).json({error:'Candles unavailable'});
+    }
+  });
 
   // The photo shown for the platform's featured strategy leader on the
   // Copy Trading page. It is the operator's own profile photo, published

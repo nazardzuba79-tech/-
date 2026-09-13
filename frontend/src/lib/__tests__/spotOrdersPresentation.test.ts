@@ -238,7 +238,7 @@ describe('Spot orders truthful dense presentation', () => {
     }
     expect(open).toContain('await api.cancelOrder(orderId)');
     expect(open).toContain('cancelSpotOrders(spotOrderCancelIds(pairOrders)');
-    expect(open).toContain('onCount?.(pairOrders.length)');
+    expect(open).toContain('onCount?.(loading || failed ? null : pairOrders.length)');
     expect(open.match(/await load\(true\)/g)).toHaveLength(2);
     expect(source('AssetsPanel.tsx')).toContain('if (compact) return reader.current!.read(fresh)');
     expect(open).toContain("if (result.failed) toast.error(t('trade.cancelOrderError'))");

@@ -20,7 +20,7 @@ export interface OpenOrdersHandle {
  * action, which loops the same per-order endpoint rather than needing a new
  * one.
  */
-export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refreshKey: number; onCount?: (n: number) => void }>(
+export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refreshKey: number; onCount?: (n: number | null) => void }>(
   function OpenOrdersPanel({ pair, refreshKey, onCount }, ref) {
     const { t, lang } = useLanguage();
     const toast = useToast();
@@ -46,8 +46,8 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
     const pairOrders = orders.filter((o) => o.pair === pair);
 
     useEffect(() => {
-      onCount?.(pairOrders.length);
-    }, [pairOrders.length, onCount]);
+      onCount?.(loading || failed ? null : pairOrders.length);
+    }, [pairOrders.length, loading, failed, onCount]);
 
     async function handleCancel(orderId: string) {
       if (cancelInFlight.current) return;

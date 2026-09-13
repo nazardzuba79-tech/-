@@ -7,7 +7,7 @@ import { TickerBar } from '../components/TickerBar';
 import { PairListSidebar, PairListHandle } from '../components/PairListSidebar';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { OrderForm, PickedPrice } from '../components/OrderForm';
-import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
+import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
@@ -26,6 +26,7 @@ import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/MarketReferenceTerminal.css';
+import './trade-terminal/TerminalPresentationPolish.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -70,7 +71,7 @@ export function TradePage() {
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Reference chrome: the tab badge and the Cancel All action both need the
   // open-order count, which only the panel knows; the panel reports it up.
-  const [openOrderCount, setOpenOrderCount] = useState(0);
+  const [openOrderCount, setOpenOrderCount] = useState<number | null>(null);
   const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
@@ -317,11 +318,11 @@ export function TradePage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'open' && <span className="badge">{openOrderCount}</span>}
+                {tab.id === 'open' && <span className="badge">{openOrderCount ?? '—'}</span>}
               </button>
             ))}
 
-            {bottomTab === 'open' && openOrderCount > 0 && (
+            {bottomTab === 'open' && openOrderCount !== null && openOrderCount > 0 && (
               <div className="bottom-actions">
                 <button className="bottom-action-btn" onClick={() => openOrdersRef.current?.cancelAll()}>
                   {t('trade.cancelAll')}

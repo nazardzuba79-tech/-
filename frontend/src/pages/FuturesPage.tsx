@@ -5,8 +5,8 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
-import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
-import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
+import { TerminalChart as PriceChart } from '../components/TerminalChart';
+import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
@@ -14,16 +14,18 @@ import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
-import { krakenSocket } from '../lib/krakenSocket';
+import { subscribeFuturesDepth } from '../lib/futuresDepth';
+import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { discoverFuturesSymbols, type FuturesUniverse } from '../lib/futuresDiscovery';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
 import './trade-terminal/ReferenceFuturesTerminal.css';
+import './trade-terminal/TerminalPresentationPolish.css';
 
-const WS_FALLBACK_TIMEOUT_MS = 4000;
 
 // Until /futures/config answers. Deliberately the same three contracts the
 // backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
@@ -49,27 +51,26 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
  * instrument, not application, which is why this page no longer carries the
  * separate cyan/purple palette and rounded cards it used to.
  *
- * The order book mirrors the same live external depth the spot terminal
- * shows for this instrument, for the same reason and with the same caveat
- * documented there: our own engine's book is where orders actually match,
- * this is the market's depth, shown for reference.
+ * Public reference depth follows the selected linear perpetual. Our own
+ * matching engine remains the authority for order execution.
  */
 export function FuturesPage() {
   const { t } = useLanguage();
+  const reference = useFuturesReference();
   const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // The listed contracts come from the backend, which derives them from
-  // live market data (see FuturesMarketRegistry) — this page must not keep
-  // its own copy, which is exactly why it used to show only three markets.
+  // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
+  const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
-  const [pickedPrice, setPickedPrice] = useState<{ value: string; seq: number } | null>(null);
+  const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
+  useEffect(() => setPickedPrice(null), [symbol]);
   const pairListRef = useRef<FuturesPairListHandle>(null);
   const marketDialogRef = useRef<HTMLDialogElement>(null);
   const [desktopMarkets, setDesktopMarkets] = useState(() => window.matchMedia('(min-width: 1025px)').matches);
@@ -90,14 +91,21 @@ export function FuturesPage() {
   const { config: futuresConfig } = useFuturesConfig();
 
   useEffect(() => {
-    if (!futuresConfig || futuresConfig.symbols.length === 0) return;
-    const listed = futuresConfig.symbols;
+    let cancelled = false;
+    const refresh = () => api.getFuturesUniverse().then(result => {
+      if (!cancelled && result.available) setUniverse(result);
+    }).catch(() => {});
+    void refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  useEffect(() => {
+    const listed = discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe);
     setSymbols(listed);
-    // A deep link to a contract that is no longer listed falls back to
-    // the first listed one rather than leaving the terminal pointed at
-    // a market the order route would reject.
-    setSymbol((current) => (listed.includes(current) ? current : listed[0]));
-  }, [futuresConfig]);
+    // Only a successfully loaded catalogue can invalidate a discovery deep link.
+    if (universe?.available) setSymbol((current) => (listed.includes(current) ? current : listed[0]));
+  }, [futuresConfig, universe]);
 
   // Same reason as the spot terminal: this page is not remounted when only
   // the query string changes, so without this a second deep-link into
@@ -111,37 +119,7 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
-  useEffect(() => {
-    let cancelled = false;
-    let gotWsData = false;
-    let restInterval: number | null = null;
-    function refreshBook() {
-      api.getExternalOrderBook(symbol)
-        .then((res) => {
-          if (!cancelled && !gotWsData) setBook({ symbol, bids: res.bids, asks: res.asks });
-        })
-        .catch(() => {});
-    }
-    const unsubscribe = krakenSocket.subscribeBook(symbol, (snapshot) => {
-      if (cancelled) return;
-      gotWsData = true;
-      if (restInterval !== null) {
-        clearInterval(restInterval);
-        restInterval = null;
-      }
-      setBook({ symbol, ...snapshot });
-    });
-    refreshBook();
-    const fallbackTimer = window.setTimeout(() => {
-      if (!gotWsData) restInterval = window.setInterval(refreshBook, 2000);
-    }, WS_FALLBACK_TIMEOUT_MS);
-    return () => {
-      cancelled = true;
-      unsubscribe();
-      clearTimeout(fallbackTimer);
-      if (restInterval !== null) clearInterval(restInterval);
-    };
-  }, [symbol]);
+  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot })), [symbol]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
@@ -170,6 +148,7 @@ export function FuturesPage() {
         staticTicker
         tickerSymbols={symbols}
         tickerFitToWidth
+        futuresReference={reference}
       />
       <ConnectionBanner />
 
@@ -184,15 +163,16 @@ export function FuturesPage() {
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
-          <div className="orderbook-area">
-            <FuturesReferenceBook
+          <div className="orderbook-area legacy-futures-book">
+            <OrderBookPanel
               key={symbol}
+              spotPrecision
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
-                setPickedPrice({ value, seq: pickedSeq.current });
+                setPickedPrice({ symbol, value, seq: pickedSeq.current });
               }}
             />
           </div>
@@ -200,11 +180,13 @@ export function FuturesPage() {
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
             <FuturesOrderForm
+              key={symbol}
               symbol={symbol}
+              executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={() => setShowTransfer(true)}
-              pickedPrice={pickedPrice?.value}
-              pickedPriceSequence={pickedPrice?.seq}
+              pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
+              pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
             />
           </div>
         </div>

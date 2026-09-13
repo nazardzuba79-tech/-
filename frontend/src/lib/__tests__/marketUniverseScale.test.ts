@@ -92,7 +92,9 @@ describe('the futures market list scales', () => {
     // mount effect, because a cold /futures fetched that static endpoint
     // three times over. See lib/futuresConfigStore.
     expect(page).toContain('useFuturesConfig()');
-    expect(page).toContain('const listed = futuresConfig.symbols;');
+    expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
+    expect(page).toContain('api.getFuturesUniverse()');
+    expect(page).toContain('executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}');
     expect(page).toContain('setSymbols(listed)');
     // And it does not go back to fetching the endpoint itself.
     expect(page).not.toContain('getFuturesConfig');
@@ -156,16 +158,17 @@ describe('candles and order book are fetched for the selected symbol only', () =
 
   it('requests the order book for one symbol only', () => {
     const page = code(read('src/pages/FuturesPage.tsx'));
-    const calls = page.match(/getExternalOrderBook\(/g) ?? [];
+    const calls = page.match(/subscribeFuturesDepth\(/g) ?? [];
     expect(calls).toHaveLength(1);
-    expect(page).toContain('getExternalOrderBook(symbol)');
-    expect(page).not.toMatch(/symbols\.map\([^)]*getExternalOrderBook/);
+    expect(page).toContain('subscribeFuturesDepth(symbol,');
+    expect(page).not.toMatch(/getExternalOrderBook|krakenSocket|symbols\.map\([^)]*subscribeFuturesDepth/);
   });
 
   it('reads all list prices from the ONE shared snapshot, not per row', () => {
     // The pair list uses the shared store; there is no per-symbol ticker
     // request anywhere in it.
-    expect(pairList).toContain('useMarketTickers(4000)');
+    expect(pairList).toContain('useFuturesReference()');
+    expect(pairList).not.toContain('useMarketTickers');
     expect(pairList).not.toContain('getExternalTicker(');
     expect(pairList).not.toMatch(/\.map\([^)]*api\./);
   });

@@ -158,6 +158,11 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name.endsWith('.css')) return {};
+    if (name === './OrderFamilyPresentation') {
+      components.OrderFamilyTabs ??= () => null;
+      components.OrderFamilyFields ??= () => null;
+      return { OrderFamilyTabs: components.OrderFamilyTabs, OrderFamilyFields: components.OrderFamilyFields };
+    }
     // Child components are stubbed EXCEPT the margin/leverage control,
     // which is the thing under test — it is mounted for real below.
     if (name.startsWith('./') || name.startsWith('../components/')) {
@@ -215,9 +220,10 @@ async function orderForm(overrides: Record<string, any> = {}) {
       ...overrides.extraApi,
     },
   });
-  form.render(props);
+  const formProps = { ...props, ...overrides.props };
+  form.render(formProps);
   await tick();
-  const render = () => form.render(props);
+  const render = () => form.render(formProps);
   const change = (tree: any, placeholder: string, value: string) =>
     nodes(tree).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder)
       .props.onChange({ target: { value } });
@@ -234,6 +240,29 @@ async function pricedForm(overrides: Record<string, any> = {}) {
 
 const submit = (tree: any) =>
   nodes(tree).find((n) => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() });
+
+test('discovery-only contracts cannot submit through either side or Enter', async () => {
+  const f = await pricedForm({ props: { executionEnabled: false } });
+  const buttons = byClass(f.tree, 'submit-btn');
+  expect(buttons).toHaveLength(2);
+  expect(buttons.every(button => button.props.disabled)).toBe(true);
+  for (const button of buttons) button.props.onClick();
+  submit(f.tree);
+  await tick();
+  expect(f.placed).not.toHaveBeenCalled();
+});
+
+test.each(['STOP', 'TAKE_PROFIT', 'OCO'])('%s presentation cannot fall through to a live LIMIT/MARKET order', async family => {
+  const f = await pricedForm();
+  nodes(f.tree).find(n => n.type === f.form.components.OrderFamilyTabs).props.onChange(family);
+  const tree = f.render();
+  const buttons = byClass(tree, 'submit-btn');
+  expect(buttons.every(button => button.props.disabled)).toBe(true);
+  buttons.forEach(button => button.props.onClick());
+  submit(tree);
+  await tick();
+  expect(f.placed).not.toHaveBeenCalled();
+});
 
 // ── A. Exactly one persistent slider ─────────────────────────────────
 
@@ -406,8 +435,7 @@ describe('the placeFuturesOrder payload is byte-for-byte what it was', () => {
 
   test('F. MARKET sends no price and keeps the mark-price behaviour', async () => {
     const f = await orderForm();
-    const typeTab = byClass(f.tree, 'fo-typeTab').find((n) => n.props.children === 'trade.marketOrder');
-    typeTab.props.onClick();
+    nodes(f.tree).find(n => n.type === f.form.components.OrderFamilyTabs).props.onChange('MARKET');
     await tick();
     let tree = f.render();
     // No editable limit price is offered.
@@ -524,7 +552,7 @@ describe('unknown data is never fabricated', () => {
     // MARKET with no mark price: the old panel showed "0.00 USDT", which
     // reads as a free order rather than an unknown one.
     const f = await orderForm({ extraApi: { getFuturesMarkPrice: () => pending() } });
-    byClass(f.tree, 'fo-typeTab').find((n) => n.props.children === 'trade.marketOrder').props.onClick();
+    nodes(f.tree).find(n => n.type === f.form.components.OrderFamilyTabs).props.onChange('MARKET');
     await tick();
     let tree = f.render();
     f.change(tree, '0.00000', '1');
