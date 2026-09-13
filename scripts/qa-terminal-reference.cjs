@@ -41,6 +41,8 @@ const out = 'docs/qa/terminal-reference';
             clippedChanges:[...document.querySelectorAll('.reference-market-sidebar .p-change')].filter(n=>n.scrollWidth>n.clientWidth+1).length,
             panelBackground:getComputedStyle(document.querySelector('.orderbook-area')).backgroundColor,
             inputBackground:getComputedStyle(document.querySelector('.fo-input')).backgroundColor,
+            bookLabelSize:parseFloat(getComputedStyle(document.querySelector('.orderbook-col-headers')).fontSize),
+            support:rect('.support-launcher'),
           };
         });
         assert.ok(geometry.scrollWidth <= width, `page overflow at ${width}: ${geometry.scrollWidth}`);
@@ -51,7 +53,10 @@ const out = 'docs/qa/terminal-reference';
         assert.notEqual(geometry.panelBackground, geometry.inputBackground, 'fields have a distinct surface');
         assert.ok(Math.abs(geometry.frame.width - geometry.canvas.width) <= 2, 'native frame fills chart');
         assert.ok(geometry.buttons.every(b => b.scrollWidth <= b.width + 1), 'action labels fit');
+        assert.ok(geometry.bookLabelSize >= 12, 'order book labels remain readable');
         if (width > 1024) {
+          assert.ok(geometry.support.y >= geometry.form.y + geometry.form.height, 'support is docked below account controls');
+          assert.ok(geometry.bottom.height <= 194, 'compact lower panel gives space back to chart');
           assert.ok(geometry.sidebar.width >= 218, 'persistent left search and market list');
           assert.equal(geometry.chart.x, geometry.sidebar.width, 'chart starts directly after sidebar');
           assert.ok(Math.abs(geometry.form.y + geometry.form.height - geometry.bottom.y - geometry.bottom.height) <= 1, `right rail spans lower panel: ${JSON.stringify(geometry)}`);
@@ -99,6 +104,11 @@ const out = 'docs/qa/terminal-reference';
           await menu.locator('.fo-mlChip').filter({hasText:/^10x$/}).click();
           const failure = page.locator('.futures-position-state');
           await failure.locator('button').waitFor();
+          assert.equal(await page.locator('.futures-state-columns th').count(), 9, 'position columns remain present when account data is unavailable');
+          await page.locator('.support-launcher').click();
+          await page.locator('.support-panel').waitFor();
+          await page.locator('.support-launcher').click();
+          await page.locator('.support-panel').waitFor({state:'detached'});
           const retryRead = page.waitForRequest(r=>r.method()==='GET'&&r.url().includes('/futures/positions'));
           await failure.locator('button').click();
           await retryRead;

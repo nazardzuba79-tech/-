@@ -75,53 +75,54 @@ export function FuturesAccountSummary({
     <div className="futures-account-summary" style={styles.wrap}>
       <div className="futures-account-heading" style={styles.headerRow}>
         <span style={styles.title}>{t('futures.accountTitle')}</span>
-        <div className="futures-account-pnl" style={styles.headerRight}>
-          <button type="button" aria-label={t(showBalance ? 'wallet.hideBalance' : 'wallet.showBalance')} onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
-            {showBalance ? <EyeIcon /> : <EyeOffIcon />}
-          </button>
-          <span
-            className="mono"
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
-            }}
-          >
-            {t('futures.unrealizedPnl')} {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
-          </span>
-        </div>
+        <button type="button" aria-label={t(showBalance ? 'wallet.hideBalance' : 'wallet.showBalance')} onClick={() => setShowBalance((s) => !s)} style={styles.eyeBtn}>
+          {showBalance ? <EyeIcon /> : <EyeOffIcon />}
+        </button>
+      </div>
+      <div className="futures-account-pnl" style={styles.headerRight}>
+        <span>{t('futures.unrealizedPnl')}</span>
+        <span
+          className="mono"
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
+          }}
+        >
+          {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
+        </span>
       </div>
 
-      <div style={styles.barRow}>
+      <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.initialMarginPct')}</span>
           <span className="mono">{initialMarginPct === null ? '—' : `${initialMarginPct.toFixed(2)}%`}</span>
         </div>
-        <div style={styles.barTrack}>
+        <div className="futures-account-track" style={styles.barTrack}>
           <div style={{ ...styles.barFill, width: `${Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
         </div>
       </div>
 
-      <div style={styles.barRow}>
+      <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.maintenanceMarginPct')}</span>
           <span className="mono">{maintenanceMarginPct === null ? '—' : `${maintenanceMarginPct.toFixed(2)}%`}</span>
         </div>
-        <div style={styles.barTrack}>
+        <div className="futures-account-track" style={styles.barTrack}>
           <div style={{ ...styles.barFill, width: `${Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
         </div>
       </div>
 
-      <div style={styles.statRow}>
+      <div className="futures-account-stat futures-account-balance" style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginBalance')}</span>
         <span className="mono">{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
-      <div style={styles.statRow}>
+      <div className="futures-account-stat" style={styles.statRow}>
         <span style={{ color: 'var(--text-secondary)' }}>{t('futures.availableMargin')}</span>
         <span className="mono">{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
 
-      <div style={styles.actionsRow}>
+      <div className="futures-account-actions" style={styles.actionsRow}>
         <button type="button" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>
           {t('futures.depositAction')}
         </button>

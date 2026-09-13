@@ -174,6 +174,7 @@ export function SupportWidget() {
       <button
         type="button"
         onClick={handleToggle}
+        className="support-launcher"
         style={styles.launcher}
         aria-label={open ? t('support.close') : t('support.title')}
       >
@@ -188,7 +189,7 @@ export function SupportWidget() {
       </button>
 
       {open && (
-        <div style={styles.panel}>
+        <div className="support-panel" style={styles.panel}>
           <div style={styles.header}>
             <div>
               <div style={styles.headerTitle}>{t('support.title')}</div>

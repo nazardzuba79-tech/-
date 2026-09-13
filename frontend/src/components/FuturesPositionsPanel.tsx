@@ -78,14 +78,21 @@ export function FuturesPositionsPanel({
 
   function renderState(message: string, failed = false) {
     const resource = tab === 'open' ? account.positions : account.positionHistory;
-    return <div className="futures-position-state" style={styles.empty} role="status" aria-busy={resource.loading || resource.refreshing}>
+    const columns = tab === 'open'
+      ? ['trade.market', 'futures.side', 'futures.size', 'futures.entryPrice', 'futures.markPrice', 'futures.liqPrice', 'futures.unrealizedPnl', 'futures.roe', 'futures.tpsl'] as const
+      : ['trade.market', 'futures.side', 'futures.entryPrice', 'futures.realizedPnl', 'trade.status'] as const;
+    return <>
+    <div className="futures-state-columns" tabIndex={0}>
+      <table style={styles.table}><thead><tr>{columns.map(key => <th key={key} style={styles.th}>{t(key)}</th>)}</tr></thead></table>
+    </div>
+    <div className="futures-position-state" style={styles.empty} role="status" aria-busy={resource.loading || resource.refreshing}>
       <svg aria-hidden="true" width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="1.3">
         <rect x="7" y="4" width="18" height="24" rx="3" /><path d="M12 11h8M12 16h8M12 21h5" />
       </svg>
       <span>{message}</span>
       {failed && <button type="button" disabled={resource.loading || resource.refreshing}
         onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
-    </div>;
+    </div></>;
   }
 
   return (
