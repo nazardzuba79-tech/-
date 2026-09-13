@@ -27,6 +27,7 @@ import './trade-terminal/ReferenceFuturesTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/FuturesStudio.css';
 import './trade-terminal/FuturesDesignVariants.css';
+import './trade-terminal/TerminalStudio.css';
 
 
 // Until /futures/config answers. Deliberately the same three contracts the
@@ -63,7 +64,7 @@ export function FuturesPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
-  const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : null;
+  const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : 'studio';
   const studio = design !== null;
   // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
@@ -143,8 +144,8 @@ export function FuturesPage() {
   }
 
   return (
-    <div className={`trade-terminal futures-terminal futures-reference${studio ? ' futures-studio' : ''}`} data-terminal-design={design ?? undefined}>
-      {studio && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
+    <div className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-terminal-design={design ?? undefined}>
+      {requestedDesign && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
         {([['studio', 'A · Studio'], ['graphite', 'B · Graphite'], ['focus', 'C · Focus']] as const).map(([id, label]) =>
           <button key={id} type="button" aria-pressed={design === id} onClick={() => {
             const next = new URLSearchParams(searchParams); next.set('terminalDesign', id);

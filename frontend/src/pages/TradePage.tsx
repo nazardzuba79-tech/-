@@ -27,6 +27,7 @@ import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/MarketReferenceTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
+import './trade-terminal/TerminalStudio.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -221,7 +222,7 @@ export function TradePage() {
   // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
-      <div className="trade-terminal cfd-terminal market-reference">
+      <div className="trade-terminal cfd-terminal market-reference terminal-studio">
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
         <div className="terminal">
@@ -247,7 +248,7 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal spot-terminal market-reference">
+    <div className="trade-terminal spot-terminal market-reference terminal-studio">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 
@@ -283,7 +284,7 @@ export function TradePage() {
           </div>
 
           <div className="chart-area">
-            <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" />
+            <PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />
           </div>
 
           <div className="orderbook-area">

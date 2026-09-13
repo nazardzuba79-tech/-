@@ -462,7 +462,7 @@ describe('the rail is shared, and every button does something', () => {
 
   test('Futures opts into the SAME implementation Spot uses', () => {
     expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />');
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" />');
+    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);

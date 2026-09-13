@@ -203,7 +203,7 @@ test.each([
   const select = nodes(tree).find(n => n.type === 'select');
   const steps = nodes(select).filter(n => n.type === 'option').map(n => n.props.value);
   expect(steps).toEqual(bookMath.spotGroupSteps((Number(bid) + Number(ask)) / 2));
-  for (const step of [steps[0], steps[4], steps[5]]) {
+  for (const step of steps) {
     select.props.onChange({ target: { value: String(step) } });
     tree = component.render(props);
     const rows = nodes(tree).filter(n => typeof n.type === 'function' && n.props.spotStep !== undefined);
@@ -475,9 +475,9 @@ test('Futures Assets uses only Futures balances; compact Spot keeps its original
   expect(source('pages/TradePage.tsx')).toContain('<AssetsPanel compact refreshKey={ordersRefreshKey} />');
 });
 
-test('studio is an opt-in composition and preserves the selected contract and order component',()=>{
+test('studio is the default composition and review variants preserve contract and orders',()=>{
  const params=new URLSearchParams();const page=mount('pages/FuturesPage.tsx',{params,matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),socket:{subscribeBook:()=>()=>{}}});
- let tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(false);
+ let tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  nodes(tree).find(n=>n.type===page.components.FuturesPairList)!.props.onChange('ETH/USDT');params.set('terminalDesign','studio');tree=page.render();
  expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
@@ -487,6 +487,6 @@ test('studio is an opt-in composition and preserves the selected contract and or
    expect(nodes(tree).some(n=>n.props?.['data-terminal-design']===design)).toBe(true);
    expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
  }
- params.delete('terminalDesign');tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(false);
+ params.delete('terminalDesign');tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
 });

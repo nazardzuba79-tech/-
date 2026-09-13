@@ -254,7 +254,7 @@ export function PriceChart({
   const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const candlesRef = useRef<Candle[]>([]);
-  const [interval, setInterval_] = useState<Interval>('15m');
+  const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
   const [chartType, setChartType] = useState<ChartType>('candles');
   const [showMA, setShowMA] = useState(true);
@@ -1783,6 +1783,16 @@ function DrawToolbar({
 }) {
   const { t } = useLanguage();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [toolHint, setToolHint] = useState<{ label:string; left:number; top:number } | null>(null);
+  const showToolHint = (target: EventTarget | null) => {
+    if (!compactTools || !(target instanceof Element)) return;
+    const button = target.closest('button');
+    const label = button?.getAttribute('aria-label');
+    if (!button || !label) return;
+    const rect = button.getBoundingClientRect();
+    setToolHint({ label, left:Math.max(8, Math.min(window.innerWidth - 208, rect.right + 8)),
+      top:Math.max(8, Math.min(window.innerHeight - 42, rect.top)) });
+  };
   // Where to paint the flyout, in viewport coordinates. The rail has to
   // scroll on short screens, and an element that scrolls on one axis can
   // never let content overflow the other — `overflow-x: visible` computes
@@ -1888,7 +1898,11 @@ function DrawToolbar({
   );
 
   return (
-    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined} onScroll={drawingTools ? () => setOpenGroup(null) : undefined}>
+    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined}
+      onMouseOver={event => showToolHint(event.target)} onFocusCapture={event => showToolHint(event.target)}
+      onMouseLeave={() => setToolHint(null)} onBlurCapture={() => setToolHint(null)} onPointerDown={() => setToolHint(null)}
+      onKeyDown={event => { if (event.key === 'Escape') setToolHint(null); }}
+      onScroll={drawingTools ? () => { setOpenGroup(null); setToolHint(null); } : undefined}>
       {btn('cursor', t('draw.cursor'), <CursorIcon />, () => onSelect('cursor'), tool === 'cursor')}
 
       <div className="tool-divider" />
@@ -2001,6 +2015,8 @@ function DrawToolbar({
         ? btn('erase', t('draw.erase'), compactTools ? <TrashObjectIcon /> : <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
         : null}
       {!compactTools && btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
+      {toolHint && createPortal(<div className="terminal-tool-hint" role="tooltip"
+        style={{left:toolHint.left,top:toolHint.top}}>{toolHint.label}</div>, document.body)}
     </div>
   );
 }
@@ -2019,7 +2035,7 @@ const ICON_PROPS = {
 function CursorIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <path d="M4 4l7 16 2.5-6.5L20 11 4 4z" />
+      <path d="M5 3v17l4.5-4.5 3 6 3-1.5-3-6H19L5 3z" />
     </svg>
   );
 }
@@ -2065,18 +2081,17 @@ function RectangleIcon() {
 function FibIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="11" x2="21" y2="11" strokeDasharray="3 2" />
-      <line x1="3" y1="16" x2="21" y2="16" strokeDasharray="3 2" />
-      <line x1="3" y1="21" x2="21" y2="21" />
+      <path d="M4 4h16M4 10h16M4 14h16M4 20h16" />
+      <path d="M4 20 20 4" strokeDasharray="2 3" opacity=".7" />
+      <circle cx="4" cy="20" r="2" fill="currentColor" stroke="none" />
+      <circle cx="20" cy="4" r="2" fill="currentColor" stroke="none" />
     </svg>
   );
 }
 function BrushIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <path d="M4 20c2-5 3-8 8-13l3 3c-5 5-8 6-13 8z" />
-      <path d="M14 8l2-2a2 2 0 0 1 3 3l-2 2" />
+      <path d="m15 4 5 5M3 21l1-6L16 3a2 2 0 0 1 3 0l2 2a2 2 0 0 1 0 3L9 20l-6 1zM4 15l5 5" />
     </svg>
   );
 }

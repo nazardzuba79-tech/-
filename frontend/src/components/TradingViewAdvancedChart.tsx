@@ -62,7 +62,7 @@ function TradingViewEmbed({ symbol, locale, backgroundColor }: {
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
     script.dataset.voltexTradingview = 'advanced-chart';
     script.text = JSON.stringify({
-      autosize: true, symbol, interval: '15', timezone: 'Etc/UTC', theme: 'dark',
+      autosize: true, symbol, interval: '60', timezone: 'Etc/UTC', theme: 'dark',
       backgroundColor, gridColor: backgroundColor === '#101014' ? 'rgba(255, 255, 255, 0.035)' : '#0e151e', style: '1', locale,
       hide_side_toolbar: false, hide_top_toolbar: false, hide_legend: true,
       hide_volume: false, allow_symbol_change: false, withdateranges: true,

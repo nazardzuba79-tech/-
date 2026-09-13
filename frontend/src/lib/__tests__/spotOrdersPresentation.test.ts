@@ -265,8 +265,8 @@ describe('Spot orders truthful dense presentation', () => {
     expect(rules.length).toBeGreaterThan(20);
     expect(rules.every(selector => selector.startsWith('.trade-terminal.spot-terminal'))).toBe(true);
     expect(spot).toContain('.bottom-tab .badge::before { display: none; content: none; }');
-    expect(pageSource('TradePage.tsx')).toContain('className="trade-terminal spot-terminal market-reference"');
-    expect(pageSource('FuturesPage.tsx')).toContain('className="trade-terminal futures-terminal"');
+    expect(pageSource('TradePage.tsx')).toContain('className="trade-terminal spot-terminal market-reference terminal-studio"');
+    expect(pageSource('FuturesPage.tsx')).toContain('trade-terminal futures-terminal futures-reference terminal-studio');
     expect(pageSource('FuturesPage.tsx')).not.toContain('spot-terminal');
   });
 });
