@@ -35,6 +35,9 @@ Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the r
 
 ## Validation
 
+- Latest measured-reference pass: see [interface study](interface-research.md), [1920 screenshot](research-1920.jpg), [1440 screenshot](research-1440.jpg), [390 screenshot](research-390.jpg), and [browser checks](research-browser.json). Locally bundled Inter replaces mixed terminal fonts, navigation matches the observed 48px/14px/400 hierarchy, native Futures legend/grid use supported settings, and order controls share consistent states. Seven widths have no page overflow or clipped book/change values. Native Indicators verified using keyboard Enter; form controls checked without financial writes.
+- Latest expanded validation: frontend TypeScript/build PASS; **248 passed / 8 pre-existing failures / 256 tests across ten suites**. The four additional header ownership failures also reproduce in the two added suites on pristine main (27 passed / 4 failed); they are not new regressions. Earlier eight-suite comparison remains below. Exact current names and zero new failures are in [research-tests.json](research-tests.json). Palette assertions now additionally verify Futures legend/grid and unchanged Spot/CFD behavior.
+
 - Frontend TypeScript: PASS (`node frontend/node_modules/typescript/bin/tsc -b frontend`).
 - Chart integration follow-up: TypeScript/build rerun PASS; all seven browser widths rechecked, including opening/closing the native Indicators dialog through its own close button and visible attribution. The prior eight-suite counts below are from the preceding functional sidebar change; this follow-up only changes the outer chart presentation/accessible label.
 - Vite production build: PASS. Windows environment runner uses the same Vite/React configuration with in-process esbuild WASM because native Node pipe creation is restricted; no dependency or build configuration change committed.

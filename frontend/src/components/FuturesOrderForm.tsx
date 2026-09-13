@@ -328,8 +328,8 @@ export function FuturesOrderForm({
         />
 
         {type === 'LIMIT' ? (
-          <label className="fo-label">
-            {t('trade.price')}
+          <label className="fo-label fo-priceField">
+            <span className="fo-fieldCaption">{t('trade.price')}</span>
             <div className="fo-priceInputRow">
               <input
                 className="mono fo-input"
@@ -348,8 +348,8 @@ export function FuturesOrderForm({
             </div>
           </label>
         ) : (
-          <label className="fo-label">
-            {t('futures.markPrice')}
+          <label className="fo-label fo-priceField">
+            <span className="fo-fieldCaption">{t('futures.markPrice')}</span>
             <div className="mono fo-input fo-markPrice">
               {markPrice !== null ? `≈ ${markPrice}` : '—'} {quoteAsset}
             </div>
