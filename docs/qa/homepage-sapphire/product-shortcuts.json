@@ -1,0 +1,209 @@
+{
+  "layouts": [
+    {
+      "width": 1920,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    },
+    {
+      "width": 1600,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    },
+    {
+      "width": 1280,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "items": [
+        {
+          "text": "Spot",
+          "href": "/trade",
+          "icon": "lucide lucide-chart-candlestick",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Futures",
+          "href": "/futures",
+          "icon": "lucide lucide-trending-up",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Copy Trading",
+          "href": "/copy-trading",
+          "icon": "lucide lucide-copy",
+          "inside": true,
+          "clipped": false
+        },
+        {
+          "text": "Crypto Card",
+          "href": "/card",
+          "icon": "lucide lucide-credit-card",
+          "inside": true,
+          "clipped": false
+        }
+      ]
+    }
+  ],
+  "errors": []
+}

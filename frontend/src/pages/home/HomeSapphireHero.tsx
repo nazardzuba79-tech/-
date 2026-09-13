@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ChartCandlestick, TrendingUp, Copy, CreditCard } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
 import { HomeHeroAssets } from './HomeHeroAssets';
 import { HomeMarket } from './useHomeMarket';
@@ -31,7 +31,7 @@ export function HomeSapphireHero({market}:{market:HomeMarket}){
     <div className="hero" ref={hero}><img ref={art} className="art" src="/hero/sapphire-refined.png" width="1672" height="941" alt="" aria-hidden="true" fetchPriority="high"/>
       <div className="terminal-screen" ref={display} style={{visibility:aligned?'visible':'hidden'}}><SapphireTerminal market={live}/></div>
       <HomeHeroAssets market={live} englishLabels/>
-      <div className="shade" aria-hidden="true"/><div className="copy"><p className="eyebrow">GLOBAL MARKETS. REAL OPPORTUNITIES.</p><h1 id="hs-title">OWN YOUR{' '}<span>FUTURE<i>.</i></span></h1><p className="subtitle">{t('home.hero.subtitle')}</p><p className="description">{t('home.hero.description')}</p><div className="actions"><Link className="primary" to="/trade">{t('home.cta.openTerminal')}<ArrowRight size={19}/></Link><Link className="secondary" to="/markets">{t('home.cta.viewMarkets')}</Link></div><div className="product-links"><Link to="/trade">Spot</Link><Link to="/futures">Futures</Link><Link to="/copy-trading">Copy Trading</Link><Link to="/card">Crypto Card</Link></div></div>
+      <div className="shade" aria-hidden="true"/><div className="copy"><p className="eyebrow">GLOBAL MARKETS. REAL OPPORTUNITIES.</p><h1 id="hs-title">OWN YOUR{' '}<span>FUTURE<i>.</i></span></h1><p className="subtitle">{t('home.hero.subtitle')}</p><p className="description">{t('home.hero.description')}</p><div className="actions"><Link className="primary" to="/trade">{t('home.cta.openTerminal')}<ArrowRight size={19}/></Link><Link className="secondary" to="/markets">{t('home.cta.viewMarkets')}</Link></div><nav className="product-links product-shortcuts" aria-label="VOLTEX products"><Link to="/trade"><ChartCandlestick aria-hidden="true" size={18}/><span>Spot</span></Link><Link to="/futures"><TrendingUp aria-hidden="true" size={18}/><span>Futures</span></Link><Link to="/copy-trading"><Copy aria-hidden="true" size={18}/><span>Copy Trading</span></Link><Link to="/card"><CreditCard aria-hidden="true" size={18}/><span>Crypto Card</span></Link></nav></div>
     </div><HomeSapphireTape market={market}/>
   </section>;
 }
