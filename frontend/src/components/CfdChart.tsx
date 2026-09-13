@@ -36,12 +36,25 @@ async function fetchEnvelope(url:string,signal:AbortSignal):Promise<RawEnvelope>
   return response.json() as Promise<RawEnvelope>;
 }
 
+function firstSuccess<T>(tasks:Promise<T>[]):Promise<T>{
+  return new Promise<T>((resolve,reject)=>{
+    let remaining=tasks.length;
+    if(remaining===0){reject(new Error('cfd_chart_no_sources'));return;}
+    for(const task of tasks){
+      task.then(resolve).catch(()=>{
+        remaining-=1;
+        if(remaining===0)reject(new Error('cfd_chart_all_sources_failed'));
+      });
+    }
+  });
+}
+
 async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<ChartBar[]>{
   const provider=PROVIDER_SYMBOL[symbol]??symbol;
   const own=`${API_BASE}/cfd/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
   const direct=`https://biquote.io/api/${encodeURIComponent(provider)}/ohlc?interval=${interval}&limit=320`;
   const candidates=[own,direct].map(async url=>normalizeBars(await fetchEnvelope(url,signal),symbol,interval));
-  return Promise.any(candidates);
+  return firstSuccess(candidates);
 }
 
 /** Real OHLC candles only. No synthetic chart data and no explanatory labels in the customer UI. */
