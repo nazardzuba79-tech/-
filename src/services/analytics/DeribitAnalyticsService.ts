@@ -1,4 +1,4 @@
-import { ProviderCache, type CachedValue } from '../marketData/ProviderCache';
+import { ProviderCache } from '../marketData/ProviderCache';
 import {
   HttpProviderClient,
   ProviderHealth,
@@ -13,7 +13,8 @@ const MAX_STALE_MS = 5 * 60_000;
 const REQUEST_TIMEOUT_MS = 5_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const YEAR_MS = 365.25 * DAY_MS;
-const SUPPORTED = new Set(['BTC', 'ETH']);
+const SUPPORTED = new Set(['BTC', 'ETH', 'SOL', 'XRP']);
+const DVOL_SUPPORTED = new Set(['BTC', 'ETH']);
 
 export interface ImpliedVolatilityValue {
   baseAsset: string;
@@ -51,13 +52,15 @@ interface DeribitRpc<T> {
   error?: { code?: number; message?: string; data?: unknown };
 }
 
-interface DeribitFutureInstrument {
+interface DeribitInstrument {
   instrument_name: string;
   kind: string;
   is_active: boolean;
   settlement_period?: string;
   instrument_type?: string;
   expiration_timestamp: number;
+  base_currency?: string;
+  strike?: number | null;
 }
 
 interface DeribitBookSummary {
@@ -66,6 +69,8 @@ interface DeribitBookSummary {
   open_interest?: number | null;
   estimated_delivery_price?: number | null;
   underlying_price?: number | null;
+  base_currency?: string;
+  mark_iv?: number | null;
 }
 
 export class DeribitAnalyticsService {
@@ -109,7 +114,9 @@ export class DeribitAnalyticsService {
       return unavailable('unsupported_metric', `Implied volatility is not available for ${asset}.`);
     }
     try {
-      const cached = await this.ivCache.fetch(asset, () => this.fetchImpliedVolatility(asset));
+      const cached = await this.ivCache.fetch(asset, () =>
+        DVOL_SUPPORTED.has(asset) ? this.fetchImpliedVolatilityIndex(asset) : this.fetchAtmOptionImpliedVolatility(asset)
+      );
       return available({ value: cached.value, source: 'deribit', fetchedAt: cached.fetchedAt, stale: cached.stale });
     } catch (error) {
       return unavailable('provider_unavailable', safeMessage(error));
@@ -129,7 +136,7 @@ export class DeribitAnalyticsService {
     }
   }
 
-  private async fetchImpliedVolatility(asset: string): Promise<ImpliedVolatilityValue> {
+  private async fetchImpliedVolatilityIndex(asset: string): Promise<ImpliedVolatilityValue> {
     const end = Date.now();
     const start = end - DAY_MS;
     const body = await this.request<{ data: [number, number, number, number, number][]; continuation?: number | null }>(
@@ -165,22 +172,89 @@ export class DeribitAnalyticsService {
     };
   }
 
+  /**
+   * SOL/XRP do not have Deribit DVOL indexes. They do have live linear
+   * options. Use only the nearest-expiry options closest to the underlying
+   * price and report the median of their provider-reported mark IVs. This is
+   * a real ATM option-IV snapshot, not a fabricated historical index; the
+   * unavailable 24h fields stay null.
+   */
+  private async fetchAtmOptionImpliedVolatility(asset: string): Promise<ImpliedVolatilityValue> {
+    const [instrumentsRaw, summariesRaw] = await Promise.all([
+      this.request<DeribitInstrument[]>('/public/get_instruments', {
+        currency: 'USDC',
+        kind: 'option',
+        expired: false,
+      }),
+      this.request<DeribitBookSummary[]>('/public/get_book_summary_by_currency', {
+        currency: 'USDC',
+        kind: 'option',
+      }),
+    ]);
+    const now = Date.now();
+    const instruments = instrumentsRaw.filter((row) =>
+      row.kind === 'option' && row.is_active && row.base_currency === asset && row.expiration_timestamp > now && finitePositive(row.strike)
+    );
+    if (instruments.length === 0) throw new Error(`No active options for ${asset}`);
+    const nearestExpiry = Math.min(...instruments.map((row) => row.expiration_timestamp));
+    const summaries = summariesRaw.filter((row) => row.base_currency === asset);
+    const summaryByName = new Map(summaries.map((row) => [row.instrument_name, row]));
+    const underlying = firstPositive(...summaries.map((row) => row.underlying_price));
+    if (underlying === null) throw new Error(`No option underlying price for ${asset}`);
+
+    const candidates = instruments
+      .filter((row) => row.expiration_timestamp === nearestExpiry)
+      .map((row) => {
+        const summary = summaryByName.get(row.instrument_name);
+        const iv = Number(summary?.mark_iv);
+        const strike = Number(row.strike);
+        if (!finitePositive(iv) || !finitePositive(strike)) return null;
+        return { iv, distance: Math.abs(strike - underlying) / underlying };
+      })
+      .filter((row): row is { iv: number; distance: number } => row !== null)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 6);
+    if (candidates.length === 0) throw new Error(`No usable option IV for ${asset}`);
+    const ivs = candidates.map((row) => row.iv).sort((a, b) => a - b);
+    const mid = Math.floor(ivs.length / 2);
+    const current = ivs.length % 2 ? ivs[mid] : (ivs[mid - 1] + ivs[mid]) / 2;
+
+    return {
+      baseAsset: asset,
+      current,
+      open24h: null,
+      high24h: null,
+      low24h: null,
+      change24hPercent: null,
+      resolutionSeconds: 0,
+      points: candidates.length,
+    };
+  }
+
   private async fetchFuturesTermStructure(asset: string): Promise<FuturesTermStructureValue> {
-    const [instruments, summaries] = await Promise.all([
-      this.request<DeribitFutureInstrument[]>('/public/get_instruments', {
-        currency: asset,
+    const queryCurrency = asset === 'BTC' || asset === 'ETH' ? asset : 'USDC';
+    const [instrumentsRaw, summariesRaw] = await Promise.all([
+      this.request<DeribitInstrument[]>('/public/get_instruments', {
+        currency: queryCurrency,
         kind: 'future',
         expired: false,
       }),
       this.request<DeribitBookSummary[]>('/public/get_book_summary_by_currency', {
-        currency: asset,
+        currency: queryCurrency,
         kind: 'future',
       }),
     ]);
 
+    const instruments = instrumentsRaw.filter((row) => !row.base_currency || row.base_currency === asset);
+    const summaries = summariesRaw.filter((row) => !row.base_currency || row.base_currency === asset);
     const summaryByName = new Map(summaries.map((row) => [row.instrument_name, row]));
-    const perpetual = summaries.find((row) => row.instrument_name === `${asset}-PERPETUAL`);
-    const referencePrice = firstPositive(perpetual?.estimated_delivery_price, perpetual?.underlying_price);
+    const perpetual = summaries.find((row) => row.instrument_name === `${asset}-PERPETUAL` || row.instrument_name.includes('PERPETUAL'));
+    const referencePrice = firstPositive(
+      perpetual?.estimated_delivery_price,
+      perpetual?.underlying_price,
+      ...summaries.map((row) => row.estimated_delivery_price),
+      ...summaries.map((row) => row.underlying_price)
+    );
     if (referencePrice === null) throw new Error(`No reference price for ${asset}`);
 
     const now = Date.now();
