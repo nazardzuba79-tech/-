@@ -31,6 +31,12 @@ function defaultGroupStep(price: number | null): number {
   return 0.1;
 }
 
+function precisionDefaultGroupStep(price: number | null, finest: boolean): number {
+  if (!finest) return defaultSpotGroupStep(price);
+  const steps = spotGroupSteps(price);
+  return steps[0] ?? defaultSpotGroupStep(price);
+}
+
 // All five GROUP_STEPS values need at most one decimal place; this just
 // keeps a step like 5 or 10 from printing a pointless ".0".
 function decimalsForStep(step: number): number {
@@ -88,15 +94,6 @@ const USD_QUOTES = new Set(['USDT', 'USDC', 'USD']);
  * (Price / Amount / Sum), the ask stack laid out bottom-up, the spread
  * band, and the bid stack — with the reference's own depth bars behind
  * each row.
- *
- * The feed itself (real Kraken depth, delivered as `bids`/`asks` props) is
- * unchanged; what changed is what happens to it before it reaches the DOM:
- * levels are grouped onto the selected price grid first, and the parent
- * feed (krakenSocket.ts) now only forwards a fresh snapshot a few times a
- * second instead of on every single delta — see that file's
- * EMIT_INTERVAL_MS. Together those mean the rows below are keyed on a
- * bucket price that changes far less often than a raw tick, so React keeps
- * reusing the same row elements and only updates their text.
  */
 export function OrderBookPanel({
   bids,
@@ -105,14 +102,17 @@ export function OrderBookPanel({
   onPickPrice,
   onCollapse,
   spotPrecision = false,
+  initialFinestGrouping = false,
 }: {
   bids: Level[];
   asks: Level[];
   pair?: string;
   onPickPrice?: (price: string) => void;
   onCollapse?: () => void;
-  /** Opt in only for Spot; the shared Futures presentation remains unchanged. */
+  /** Precision-aware grouping and exact selectable price strings. */
   spotPrecision?: boolean;
+  /** Start a precision-aware book at the finest available step for dense Futures depth. */
+  initialFinestGrouping?: boolean;
 }) {
   const { t } = useLanguage();
   const asksViewport = useRef<HTMLDivElement>(null);
@@ -136,29 +136,25 @@ export function OrderBookPanel({
   const spotMetrics = useMemo(() => spotBookMetrics(bids, asks), [bids, asks]);
   const midPrice = spotPrecision ? spotMetrics.mid : bestAsk !== null && bestBid !== null ? (bestAsk + bestBid) / 2 : null;
 
-  const [storedGroupStep, setGroupStep] = useState(() => spotPrecision ? defaultSpotGroupStep(midPrice) : defaultGroupStep(midPrice));
+  const initialPrecisionStep = (price: number | null) => precisionDefaultGroupStep(price, initialFinestGrouping);
+  const [storedGroupStep, setGroupStep] = useState(() => spotPrecision ? initialPrecisionStep(midPrice) : defaultGroupStep(midPrice));
   const [storedGroupSteps, setGroupSteps] = useState(() => spotPrecision ? spotGroupSteps(midPrice) : GROUP_STEPS);
-  // Re-pick a sensible default step once real data first arrives (the very
-  // first render has no price yet to size the default from) and again
-  // whenever the instrument itself changes — a "10" step that was fine for
-  // BTC would collapse most of a lower-priced coin's book into a single
-  // row. Never while the same pair's own price just ticks, or the grouping
-  // would keep resetting under the trader mid-use.
+  // Re-pick a sensible default step once real data first arrives and again
+  // whenever the instrument itself changes. Futures opts into the finest
+  // available initial step so a live 200-level book is not collapsed into
+  // only a few rows before the trader chooses a coarser grouping manually.
   const lastPairRef = useRef<string | undefined>(undefined);
-  // The first valid new-pair snapshot must already render with its own step,
-  // not wait one effect/paint with the previous pair's stored grouping. Once
-  // initialized, same-pair live ticks keep the trader's manual selection.
   const initializeSpotGroup = spotPrecision && midPrice !== null && pair !== lastPairRef.current;
-  const groupStep = initializeSpotGroup ? defaultSpotGroupStep(midPrice) : storedGroupStep;
+  const groupStep = initializeSpotGroup ? initialPrecisionStep(midPrice) : storedGroupStep;
   const groupSteps = initializeSpotGroup ? spotGroupSteps(midPrice) : storedGroupSteps;
   useEffect(() => {
     if (midPrice !== null && pair !== lastPairRef.current) {
       lastPairRef.current = pair;
-      setGroupStep(spotPrecision ? defaultSpotGroupStep(midPrice) : defaultGroupStep(midPrice));
+      setGroupStep(spotPrecision ? initialPrecisionStep(midPrice) : defaultGroupStep(midPrice));
       setGroupSteps(spotPrecision ? spotGroupSteps(midPrice) : GROUP_STEPS);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pair, midPrice, spotPrecision]);
+  }, [pair, midPrice, spotPrecision, initialFinestGrouping]);
 
   const decimals = decimalsForStep(groupStep);
 
@@ -266,11 +262,6 @@ function useRowFlash(quantity: number): boolean {
   return flashing;
 }
 
-// Memoized so an unrelated row's parent re-render (a sibling bucket's
-// quantity changing) never re-invokes this one — with a stable key keyed
-// on the bucket price, React already reuses the same row element across
-// updates; this just skips redoing the row's own work when its own props
-// haven't changed either.
 const Row = memo(function Row({
   level,
   decimals,
