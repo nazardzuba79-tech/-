@@ -45,6 +45,7 @@ export type DataSource =
   | 'okx'
   | 'bybit'
   | 'deribit'
+  | 'coinglass'
   | 'voltex';
 
 /** Whether a source describes VOLTEX itself or an external venue. Used to
@@ -60,89 +61,31 @@ export type UnavailableReason =
   | 'unsupported_metric'
   | 'no_data';
 
-/**
- * A value plus where it came from and how old it is.
- *
- * `stale: true` means the provider failed and this is the previous good
- * value, still inside its staleness budget. It is deliberately not an
- * error: a 40-second-old market cap is far more useful than a dash. It is
- * also deliberately not silent: the flag reaches the client so a view can
- * dim a number instead of presenting it as live.
- */
 export interface Envelope<T> {
   value: T;
   source: DataSource;
-  /** When the provider data was actually retrieved (epoch ms). */
+  /** Epoch ms when the provider produced (or we received) this reading. */
   fetchedAt: number;
-  /** Served past its TTL because a refresh failed. */
-  stale: boolean;
-}
-
-/** The wire form of an envelope's metadata, without the value — what gets
- *  attached to a REST response as `meta`. */
-export interface EnvelopeMeta {
-  source: DataSource;
-  fetchedAt: number;
+  /** True means `value` is the last known good reading after a refresh
+   *  failed. It is still real data; it is just older than its normal TTL. */
   stale: boolean;
 }
 
 export interface Unavailable {
   available: false;
   reason: UnavailableReason;
-  /** Short, non-sensitive explanation. Safe to show an operator; never
-   *  contains a key, a URL with credentials, or a raw provider body. */
   detail?: string;
 }
 
-/** Either the data (with its provenance) or an explicit, value-free
- *  statement that it is not available. */
 export type Availability<T> = ({ available: true } & Envelope<T>) | Unavailable;
 
-export function envelope<T>(value: T, source: DataSource, fetchedAt: number, stale: boolean): Envelope<T> {
-  return { value, source, fetchedAt, stale };
+/** Construct the value-carrying arm without allowing availability metadata
+ *  to drift between callers. */
+export function available<T>(envelope: Envelope<T>): Availability<T> {
+  return { available: true, ...envelope };
 }
 
-export function meta<T>(e: Envelope<T>): EnvelopeMeta {
-  return { source: e.source, fetchedAt: e.fetchedAt, stale: e.stale };
-}
-
-export function available<T>(e: Envelope<T>): Availability<T> {
-  return { available: true, ...e };
-}
-
+/** Construct the value-free arm. There is intentionally no value parameter. */
 export function unavailable(reason: UnavailableReason, detail?: string): Unavailable {
   return detail === undefined ? { available: false, reason } : { available: false, reason, detail };
-}
-
-/**
- * What a provider can actually answer. Capabilities are declared, never
- * inferred: asking Twelve Data for an order book or Kraken spot for
- * cross-venue open interest is a programming error, and this makes it one
- * the gateway can refuse in a single place instead of each caller
- * discovering it as a runtime 404.
- */
-export type MarketDataCapability =
-  | 'asset_catalogue'
-  | 'tradable_markets'
-  | 'ticker'
-  | 'tickers'
-  | 'candles'
-  | 'order_book'
-  | 'recent_trades'
-  | 'market_overview'
-  | 'sentiment'
-  | 'cfd_quotes';
-
-export class CapabilityUnsupportedError extends Error {
-  constructor(
-    public readonly capability: MarketDataCapability,
-    public readonly provider?: string
-  ) {
-    super(
-      provider
-        ? `${provider} does not support the "${capability}" capability`
-        : `No configured provider supports the "${capability}" capability`
-    );
-    this.name = 'CapabilityUnsupportedError';
-  }
 }
