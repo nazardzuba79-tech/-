@@ -12,6 +12,7 @@
 import type { Key } from './keys';
 
 export const ZH: Record<Key, string> = {
+  'futures.chart': '图表',
   'nav.trade': '交易',
   'nav.tradeSpotDesc': '现货加密货币交易',
   'nav.tradeCfdDesc': '黄金、原油、指数杠杆交易',

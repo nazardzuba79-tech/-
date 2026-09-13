@@ -65,3 +65,23 @@ test.each([['ru','ru'],['en','en'],['zh','zh_CN'],['es','es'],['ja','ja']])('loc
 test('unknown CFD mapping and malformed symbols never substitute another instrument',async()=>{await render('UNKNOWN','cfd');expect(script()).toBeNull();expect(host.textContent).toContain('trade.cfdChartUnavailable');await render('BTC<script>');expect(script()).toBeNull();});
 test('verified CFD mapping and compact visible attribution are preserved',async()=>{await render('XAUUSD','cfd');expect(config().symbol).toBe('OANDA:XAUUSD');expect(host.textContent).toContain('XAU/USD · 15m');expect(host.textContent).toContain('by TradingView');expect(host.querySelector('.terminal-chart-controls')!.textContent).not.toMatch(/OANDA|BYBIT|Perpetual Contract/);expect(host.querySelector('.terminal-chart-controls a')).toBeNull();expect(host.querySelector('.voltex-tradingview-chart__copyright a')).not.toBeNull();});
 test('fallback translations remain available in all seven locales',()=>{for(const key of ['trade.cfdChartUnavailable','trade.cfdChartUnavailableHint','trade.cfdChartRetry'])expect(readAllLocales().split('\n').filter(line=>line.includes(`'${key}':`))).toHaveLength(7);});
+
+test.each([
+  ['spot', 'BTC/USDT', 'BYBIT:BTCUSDT', '#0d141d'],
+  ['futures', 'BTC/USDT', 'BYBIT:BTCUSDT.P', '#101014'],
+  ['cfd', 'XAUUSD', 'OANDA:XAUUSD', '#0d141d'],
+])('market palette preserves official symbol and native controls: %s', async (market, pair, symbol, backgroundColor) => {
+  await render(pair, market);
+  expect(config()).toMatchObject({ symbol, backgroundColor, hide_top_toolbar: false, hide_side_toolbar: false, allow_symbol_change: false });
+  expect(host.querySelectorAll('script')).toHaveLength(1);
+});
+
+test('switching Spot to Futures replaces the owned chart with the new palette and contract', async () => {
+  await render('BTC/USDT', 'spot');
+  const old = materialize();
+  await render('BTC/USDT', 'futures');
+  expect(old.isConnected).toBe(false);
+  expect(config()).toMatchObject({ symbol: 'BYBIT:BTCUSDT.P', backgroundColor: '#101014' });
+  materialize();
+  expect(host.querySelectorAll('iframe')).toHaveLength(1);
+});

@@ -1,0 +1,315 @@
+[
+  {
+    "viewport": 1920,
+    "scrollWidth": 1920,
+    "chart": {
+      "x": 0,
+      "y": 128,
+      "width": 1257.609375,
+      "height": 694
+    },
+    "book": {
+      "x": 1257.609375,
+      "y": 128,
+      "width": 316.796875,
+      "height": 694
+    },
+    "form": {
+      "x": 1574.40625,
+      "y": 64,
+      "width": 345.59375,
+      "height": 988
+    },
+    "bottom": {
+      "x": 0,
+      "y": 822,
+      "width": 1574.40625,
+      "height": 230
+    },
+    "frame": {
+      "x": 0,
+      "y": 172,
+      "width": 1257.609375,
+      "height": 634
+    },
+    "canvas": {
+      "x": 0,
+      "y": 172,
+      "width": 1257.609375,
+      "height": 634
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 149,
+        "scrollWidth": 149
+      },
+      {
+        "width": 149,
+        "scrollWidth": 149
+      }
+    ],
+    "background": "rgb(16, 16, 20)"
+  },
+  {
+    "viewport": 1440,
+    "scrollWidth": 1440,
+    "chart": {
+      "x": 0,
+      "y": 128,
+      "width": 920,
+      "height": 546
+    },
+    "book": {
+      "x": 920,
+      "y": 128,
+      "width": 240,
+      "height": 546
+    },
+    "form": {
+      "x": 1160,
+      "y": 64,
+      "width": 280,
+      "height": 808
+    },
+    "bottom": {
+      "x": 0,
+      "y": 674,
+      "width": 1160,
+      "height": 198
+    },
+    "frame": {
+      "x": 0,
+      "y": 172,
+      "width": 920,
+      "height": 486
+    },
+    "canvas": {
+      "x": 0,
+      "y": 172,
+      "width": 920,
+      "height": 486
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 116,
+        "scrollWidth": 116
+      },
+      {
+        "width": 116,
+        "scrollWidth": 116
+      }
+    ],
+    "background": "rgb(16, 16, 20)",
+    "marketSelector": "search focused; Escape restores focus; 20 alternating BTC/ETH selections; one matching iframe"
+  },
+  {
+    "viewport": 1366,
+    "scrollWidth": 1366,
+    "chart": {
+      "x": 0,
+      "y": 128,
+      "width": 846,
+      "height": 442
+    },
+    "book": {
+      "x": 846,
+      "y": 128,
+      "width": 240,
+      "height": 442
+    },
+    "form": {
+      "x": 1086,
+      "y": 64,
+      "width": 280,
+      "height": 676
+    },
+    "bottom": {
+      "x": 0,
+      "y": 570,
+      "width": 1086,
+      "height": 170
+    },
+    "frame": {
+      "x": 0,
+      "y": 172,
+      "width": 846,
+      "height": 382
+    },
+    "canvas": {
+      "x": 0,
+      "y": 172,
+      "width": 846,
+      "height": 382
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 116,
+        "scrollWidth": 116
+      },
+      {
+        "width": 116,
+        "scrollWidth": 116
+      }
+    ],
+    "background": "rgb(16, 16, 20)"
+  },
+  {
+    "viewport": 1024,
+    "scrollWidth": 1024,
+    "chart": {
+      "x": 0,
+      "y": 182.390625,
+      "width": 1024,
+      "height": 520
+    },
+    "book": {
+      "x": 0,
+      "y": 702.390625,
+      "width": 512,
+      "height": 929.125
+    },
+    "form": {
+      "x": 512,
+      "y": 702.390625,
+      "width": 512,
+      "height": 929.125
+    },
+    "bottom": {
+      "x": 0,
+      "y": 1631.515625,
+      "width": 1024,
+      "height": 115.390625
+    },
+    "frame": {
+      "x": 0,
+      "y": 226.390625,
+      "width": 1024,
+      "height": 460
+    },
+    "canvas": {
+      "x": 0,
+      "y": 226.390625,
+      "width": 1024,
+      "height": 460
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 232,
+        "scrollWidth": 232
+      },
+      {
+        "width": 232,
+        "scrollWidth": 232
+      }
+    ],
+    "background": "rgb(16, 16, 20)"
+  },
+  {
+    "viewport": 768,
+    "scrollWidth": 768,
+    "chart": {
+      "x": 0,
+      "y": 182.390625,
+      "width": 768,
+      "height": 520
+    },
+    "book": {
+      "x": 0,
+      "y": 702.390625,
+      "width": 384,
+      "height": 929.125
+    },
+    "form": {
+      "x": 384,
+      "y": 702.390625,
+      "width": 384,
+      "height": 929.125
+    },
+    "bottom": {
+      "x": 0,
+      "y": 1631.515625,
+      "width": 768,
+      "height": 115.390625
+    },
+    "frame": {
+      "x": 0,
+      "y": 226.390625,
+      "width": 768,
+      "height": 460
+    },
+    "canvas": {
+      "x": 0,
+      "y": 226.390625,
+      "width": 768,
+      "height": 460
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 168,
+        "scrollWidth": 168
+      },
+      {
+        "width": 168,
+        "scrollWidth": 168
+      }
+    ],
+    "background": "rgb(16, 16, 20)"
+  },
+  {
+    "viewport": 390,
+    "scrollWidth": 390,
+    "chart": {
+      "x": 0,
+      "y": 273.78125,
+      "width": 390,
+      "height": 460
+    },
+    "book": {
+      "x": 0,
+      "y": 1662.90625,
+      "width": 390,
+      "height": 460
+    },
+    "form": {
+      "x": 0,
+      "y": 733.78125,
+      "width": 390,
+      "height": 929.125
+    },
+    "bottom": {
+      "x": 0,
+      "y": 2122.90625,
+      "width": 390,
+      "height": 115.390625
+    },
+    "frame": {
+      "x": 0,
+      "y": 317.78125,
+      "width": 390,
+      "height": 400
+    },
+    "canvas": {
+      "x": 0,
+      "y": 317.78125,
+      "width": 390,
+      "height": 400
+    },
+    "frames": 1,
+    "buttons": [
+      {
+        "width": 173,
+        "scrollWidth": 173
+      },
+      {
+        "width": 173,
+        "scrollWidth": 173
+      }
+    ],
+    "background": "rgb(16, 16, 20)"
+  }
+]

@@ -12,6 +12,7 @@
 import type { Key } from './keys';
 
 export const HI: Record<Key, string> = {
+  'futures.chart': 'चार्ट',
   'nav.trade': 'ट्रेड करें',
   'nav.tradeSpotDesc': 'स्पॉट क्रिप्टो ट्रेडिंग',
   'nav.tradeCfdDesc': 'लीवरेज के साथ सोना, तेल, इंडेक्स',

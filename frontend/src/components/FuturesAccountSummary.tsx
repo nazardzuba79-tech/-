@@ -72,7 +72,7 @@ export function FuturesAccountSummary({
     value === null ? '—' : mask(format(value));
 
   return (
-    <div style={styles.wrap}>
+    <div className="futures-account-summary" style={styles.wrap}>
       <div style={styles.headerRow}>
         <span style={styles.title}>{t('futures.accountTitle')}</span>
         <div style={styles.headerRight}>

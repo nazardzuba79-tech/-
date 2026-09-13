@@ -2273,3 +2273,7 @@ a:hover > .nav-card-icon {
   .futures-terminal .global-header .mobile-menu { display: grid; }
   .futures-terminal .nav-mobile-menu.open { display: flex; }
 }
+
+/* Owner's Futures reference: header styling stays in the eager shell. */
+.futures-reference > .global-header { background:#17171d; border-bottom:4px solid #050507; box-shadow:none; }
+.futures-reference > .global-header .deposit-button { box-shadow:none; }

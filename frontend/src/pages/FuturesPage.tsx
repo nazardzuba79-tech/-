@@ -21,6 +21,7 @@ import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
+import './trade-terminal/ReferenceFuturesTerminal.css';
 
 const WS_FALLBACK_TIMEOUT_MS = 4000;
 
@@ -70,6 +71,11 @@ export function FuturesPage() {
   const [pickedPrice, setPickedPrice] = useState<{ value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
+  const marketDialogRef = useRef<HTMLDialogElement>(null);
+  function openMarkets() {
+    marketDialogRef.current?.showModal();
+    pairListRef.current?.focusSearch();
+  }
 
   // One shared read of /futures/config for the whole tab — this page, the
   // order form and the ticker bar used to fetch it independently on mount,
@@ -142,7 +148,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="trade-terminal futures-terminal">
+    <div className="trade-terminal futures-terminal futures-reference">
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market
@@ -161,14 +167,11 @@ export function FuturesPage() {
       <ConnectionBanner />
 
       <div className="terminal">
-        <FuturesTickerBar symbol={symbol} onSelectSymbol={() => pairListRef.current?.focusSearch()} />
+        <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
-          <div className="left-panel">
-            <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
-          </div>
-
           <div className="chart-area">
+            <div className="reference-chart-heading"><span>{t('futures.chart')}</span><span className="reference-chart-provider">TradingView</span></div>
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
@@ -188,6 +191,7 @@ export function FuturesPage() {
           </div>
 
           <div className="order-form-area">
+            <h2 className="reference-order-heading">{t('nav.trade')}</h2>
             <FuturesOrderForm
               symbol={symbol}
               onPlaced={handleOrderPlaced}
@@ -207,8 +211,8 @@ export function FuturesPage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'positions' && <span className="badge">{account.positions.data?.length ?? '—'}</span>}
-                {tab.id === 'orders' && <span className="badge">{account.orders.data?.length ?? '—'}</span>}
+                {tab.id === 'positions' && <span className="reference-tab-count">({account.positions.data?.length ?? '—'})</span>}
+                {tab.id === 'orders' && <span className="reference-tab-count">({account.orders.data?.length ?? '—'})</span>}
               </button>
             ))}
           </div>
@@ -225,6 +229,15 @@ export function FuturesPage() {
         </div>
       </div>
 
+      <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
+        onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
+        <div className="reference-market-heading"><strong>{t('nav.markets')}</strong>
+          <button type="button" aria-label={t('deposit.close')} onClick={() => marketDialogRef.current?.close()}>×</button>
+        </div>
+        <div className="left-panel">
+          <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
+        </div>
+      </dialog>
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );

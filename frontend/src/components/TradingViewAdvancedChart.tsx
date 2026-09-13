@@ -40,8 +40,8 @@ function ChartUnavailable({ retry }: { retry?: () => void }) {
     {retry && <button type="button" onClick={retry}>{t('trade.cfdChartRetry')}</button>}
   </div>;
 }
-function TradingViewEmbed({ symbol, locale }: {
-  symbol: string; locale: string;
+function TradingViewEmbed({ symbol, locale, backgroundColor }: {
+  symbol: string; locale: string; backgroundColor: string;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const [failed, setFailed] = useState(false);
@@ -63,7 +63,7 @@ function TradingViewEmbed({ symbol, locale }: {
     script.dataset.voltexTradingview = 'advanced-chart';
     script.text = JSON.stringify({
       autosize: true, symbol, interval: '15', timezone: 'Etc/UTC', theme: 'dark',
-      backgroundColor: '#0d141d', gridColor: '#0e151e', style: '1', locale,
+      backgroundColor, gridColor: backgroundColor === '#101014' ? '#18181e' : '#0e151e', style: '1', locale,
       hide_side_toolbar: false, hide_top_toolbar: false, hide_legend: true,
       hide_volume: false, allow_symbol_change: false, withdateranges: true,
       save_image: false, calendar: false, details: false, hotlist: false,
@@ -84,7 +84,7 @@ function TradingViewEmbed({ symbol, locale }: {
       owned.replaceChildren();
       owned.remove();
     };
-  }, [symbol, locale, attempt]);
+  }, [symbol, locale, backgroundColor, attempt]);
   return <div className="voltex-tradingview-chart__plot">
     <div className="voltex-tradingview-chart__embed" ref={hostRef} />
     {failed && <ChartUnavailable retry={() => setAttempt(n => n + 1)} />}
@@ -98,7 +98,7 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
   return <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
     {/* Timeframe, indicators and drawings belong to the native widget.
         Its cross-origin state cannot be mirrored honestly in a parent label. */}
-    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} />
+    {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} backgroundColor={market === 'futures' ? '#101014' : '#0d141d'} />
       : <div className="voltex-tradingview-chart__plot"><ChartUnavailable /></div>}
     <div className="tradingview-widget-copyright voltex-tradingview-chart__copyright">
       <a href={symbol ? `https://www.tradingview.com/symbols/${encodeURIComponent(symbol.replace(':', '-'))}/` : 'https://www.tradingview.com/'} rel="noopener nofollow" target="_blank">{ticker} chart</a>

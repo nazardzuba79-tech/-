@@ -12,6 +12,7 @@
 import type { Key } from './keys';
 
 export const KO: Record<Key, string> = {
+  'futures.chart': '차트',
   'nav.trade': '거래',
   'nav.tradeSpotDesc': '현물 암호화폐 거래',
   'nav.tradeCfdDesc': '레버리지가 적용된 금, 원유, 지수',
