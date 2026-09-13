@@ -11,7 +11,7 @@ import { useFuturesConfig } from '../lib/futuresConfigStore';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
-const SIZE_PRESETS = [10, 25, 50, 75, 100];
+const SIZE_PRESETS = [0, 25, 50, 75, 100];
 
 export function FuturesOrderForm({
   symbol,
@@ -386,7 +386,7 @@ export function FuturesOrderForm({
         </label>
 
         {/* The ONLY persistent slider in this panel. */}
-        <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} />
+        <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
         <label className="fo-reduceOnlyRow">
           <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />

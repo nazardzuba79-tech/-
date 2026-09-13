@@ -310,7 +310,7 @@ async function leverageForm() {
 // `leverage`/`onLeverageChange`. Every value asserted below is unchanged:
 // the same ceilings, the same selections, the same order payload, the same
 // confirmation rule.
-test.each([1, 5, 10, 20, 50, 100])('real form + leverage control select %dx and pass it unchanged to the order API', async leverage => {
+test.each([1, 3, 5, 10, 25, 50, 100])('real form + leverage control select %dx and pass it unchanged to the order API', async leverage => {
   const f = await leverageForm();
   let control = f.part(f.tree, 'FuturesMarginLeverage');
   expect(control.props.min).toBe(1); expect(control.props.max).toBe(100);

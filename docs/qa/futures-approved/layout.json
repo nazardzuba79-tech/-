@@ -1,0 +1,126 @@
+{
+  "fixture": "existing local synthetic Futures account",
+  "errors": [],
+  "results": [
+    {
+      "width": 1920,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    },
+    {
+      "width": 1600,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    },
+    {
+      "width": 1280,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    },
+    {
+      "width": 1024,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "buttons": [
+        {
+          "text": "Buy / Long",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        },
+        {
+          "text": "Sell / Short",
+          "radius": "999px",
+          "height": 48,
+          "disabled": false
+        }
+      ],
+      "gap": 12,
+      "charts": 1
+    }
+  ]
+}

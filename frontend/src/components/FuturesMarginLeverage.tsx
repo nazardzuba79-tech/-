@@ -25,9 +25,9 @@ import { useLanguage } from '../lib/i18n';
  */
 
 /** Offered leverages, before the live ceiling is applied. The ceiling
- *  itself is always appended, so a tier max of 20x shows 1/5/10/20 and
+ *  itself is always appended, so a tier max of 20x shows 1/3/5/10/20 and
  *  never an actionable 50x. */
-const LEVERAGE_PRESETS = [1, 5, 10, 20, 50, 100];
+const LEVERAGE_PRESETS = [1, 3, 5, 10, 25, 50, 100];
 
 export function FuturesMarginLeverage({
   marginType,
@@ -52,6 +52,7 @@ export function FuturesMarginLeverage({
   const [open, setOpen] = useState<null | 'margin' | 'leverage'>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const leverageTriggerRef = useRef<HTMLButtonElement>(null);
 
   const disabled = max === null;
   const isHigh = leverage >= warningThreshold;
@@ -66,7 +67,7 @@ export function FuturesMarginLeverage({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return;
       setOpen(null);
-      triggerRef.current?.focus();
+      (open === 'leverage' ? leverageTriggerRef : triggerRef).current?.focus();
     }
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
@@ -118,6 +119,7 @@ export function FuturesMarginLeverage({
 
         <button
           type="button"
+          ref={leverageTriggerRef}
           className="fo-mlTrigger fo-mlTriggerLevBtn"
           aria-haspopup="dialog"
           aria-expanded={open === 'leverage'}
@@ -143,7 +145,7 @@ export function FuturesMarginLeverage({
                   type="button"
                   className={`fo-mlMode ${marginType === mode ? 'fo-mlModeActive' : ''}`}
                   aria-pressed={marginType === mode}
-                  onClick={() => onMarginTypeChange(mode)}
+                  onClick={() => { onMarginTypeChange(mode); setOpen(null); triggerRef.current?.focus(); }}
                 >
                   {mode === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}
                 </button>
@@ -156,45 +158,6 @@ export function FuturesMarginLeverage({
       {open === 'leverage' && max !== null && (
         <div className="fo-mlPopover fo-mlPopoverRight" role="dialog" aria-label={t('futures.leverage')}>
           <div className="fo-mlSection">
-            <div className="fo-mlSectionTitle">
-              {t('futures.leverage')}
-              <span className="mono fo-mlRange">{min}x – {max}x</span>
-            </div>
-            {/* A numeric stepper, deliberately not a second slider. */}
-            <div className="fo-mlStepper">
-              <button
-                type="button"
-                className="fo-mlStep"
-                aria-label="-1x"
-                disabled={leverage <= min}
-                onClick={() => onLeverageChange(clamp(leverage - 1))}
-              >
-                −
-              </button>
-              <input
-                className="mono fo-mlValue"
-                type="number"
-                inputMode="numeric"
-                min={min}
-                max={max}
-                step={1}
-                value={leverage}
-                aria-label={t('futures.leverage')}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  if (Number.isFinite(next)) onLeverageChange(clamp(next));
-                }}
-              />
-              <button
-                type="button"
-                className="fo-mlStep"
-                aria-label="+1x"
-                disabled={leverage >= max}
-                onClick={() => onLeverageChange(clamp(leverage + 1))}
-              >
-                +
-              </button>
-            </div>
             <div className="fo-mlChips">
               {chips.map((preset) => (
                 <button
@@ -202,12 +165,54 @@ export function FuturesMarginLeverage({
                   type="button"
                   className={`fo-mlChip ${leverage === preset ? 'fo-mlChipActive' : ''}`}
                   aria-pressed={leverage === preset}
-                  onClick={() => onLeverageChange(clamp(preset))}
+                  onClick={() => { onLeverageChange(clamp(preset)); setOpen(null); leverageTriggerRef.current?.focus(); }}
                 >
                   {preset}x
                 </button>
               ))}
             </div>
+            <details className="fo-mlCustom">
+              <summary>{t('settings.title')}</summary>
+              <div className="fo-mlSectionTitle">
+                {t('futures.leverage')}
+                <span className="mono fo-mlRange">{min}x – {max}x</span>
+              </div>
+              {/* A numeric stepper, deliberately not a second slider. */}
+              <div className="fo-mlStepper">
+                <button
+                  type="button"
+                  className="fo-mlStep"
+                  aria-label="-1x"
+                  disabled={leverage <= min}
+                  onClick={() => onLeverageChange(clamp(leverage - 1))}
+                >
+                  −
+                </button>
+                <input
+                  className="mono fo-mlValue"
+                  type="number"
+                  inputMode="numeric"
+                  min={min}
+                  max={max}
+                  step={1}
+                  value={leverage}
+                  aria-label={t('futures.leverage')}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (Number.isFinite(next)) onLeverageChange(clamp(next));
+                  }}
+                />
+                <button
+                  type="button"
+                  className="fo-mlStep"
+                  aria-label="+1x"
+                  disabled={leverage >= max}
+                  onClick={() => onLeverageChange(clamp(leverage + 1))}
+                >
+                  +
+                </button>
+              </div>
+            </details>
             {isHigh && <div className="fo-mlWarn">{t('futures.leverageWarningTitle')}</div>}
           </div>
         </div>

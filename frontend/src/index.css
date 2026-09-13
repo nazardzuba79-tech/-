@@ -2264,3 +2264,12 @@ a:hover > .nav-card-icon {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Use the existing full navigation drawer before desktop links collide
+   with the account actions, including the additional admin link. */
+@media (max-width: 1439px) {
+  .futures-terminal .global-header .main-nav,
+  .futures-terminal .global-header .brand-separator { display: none; }
+  .futures-terminal .global-header .mobile-menu { display: grid; }
+  .futures-terminal .nav-mobile-menu.open { display: flex; }
+}

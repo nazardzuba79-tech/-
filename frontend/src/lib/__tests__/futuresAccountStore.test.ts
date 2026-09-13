@@ -492,3 +492,27 @@ describe('no fake zero, and failure behaviour', () => {
     off();
   });
 });
+
+describe('order history isolation', () => {
+  test('history uses unfiltered endpoint without changing active order filtering or polling', async () => {
+    const off = futuresAccountStore.subscribe(() => {}, { orders: 5000 });
+    await flush();
+    futuresAccountStore.invalidate(['orderHistory']);
+    await flush();
+    expect(getMyFuturesOrders.mock.calls).toEqual([['OPEN,PARTIALLY_FILLED'], []]);
+    expect(futuresAccountStore._intervalOf('orderHistory')).toBeNull();
+    off();
+  });
+  test('a history response from a logged-out account is discarded', async () => {
+    const pending = deferred<any[]>();
+    getMyFuturesOrders.mockReturnValue(pending.promise);
+    const off = futuresAccountStore.subscribe(() => {}, {});
+    futuresAccountStore.invalidate(['orderHistory']);
+    await flush();
+    clearToken();
+    pending.resolve([{ id: 'old-account-order' }]);
+    await flush();
+    expect(futuresAccountStore.getState().orderHistory.data).toBeNull();
+    off();
+  });
+});
