@@ -124,6 +124,7 @@
     "clippedChanges": 0,
     "panelBackground": "rgb(23, 23, 30)",
     "inputBackground": "rgb(37, 37, 47)",
+    "orderControls": "Limit/Market, price input, 5x/10x presets, order/position tabs, and read-only retry pass; no financial action",
     "nativeControls": "Indicators opens and closes; attribution remains visible; iframe uncropped",
     "marketSelector": "persistent search; 20 BTC/ETH selections; one matching iframe; responsive transition keeps one list and removes modal"
   },
@@ -266,19 +267,19 @@
       "x": 0,
       "y": 701.390625,
       "width": 512,
-      "height": 888.03125
+      "height": 935.296875
     },
     "form": {
       "x": 512,
       "y": 701.390625,
       "width": 512,
-      "height": 888.03125
+      "height": 935.296875
     },
     "bottom": {
       "x": 0,
-      "y": 1589.421875,
+      "y": 1636.6875,
       "width": 1024,
-      "height": 112.390625
+      "height": 179.84375
     },
     "frame": {
       "x": 0,
@@ -324,19 +325,19 @@
       "x": 0,
       "y": 701.390625,
       "width": 384,
-      "height": 888.03125
+      "height": 935.296875
     },
     "form": {
       "x": 384,
       "y": 701.390625,
       "width": 384,
-      "height": 888.03125
+      "height": 935.296875
     },
     "bottom": {
       "x": 0,
-      "y": 1589.421875,
+      "y": 1636.6875,
       "width": 768,
-      "height": 112.390625
+      "height": 179.84375
     },
     "frame": {
       "x": 0,
@@ -380,7 +381,7 @@
     },
     "book": {
       "x": 0,
-      "y": 1621.8125,
+      "y": 1630.078125,
       "width": 390,
       "height": 460
     },
@@ -388,13 +389,13 @@
       "x": 0,
       "y": 733.78125,
       "width": 390,
-      "height": 888.03125
+      "height": 896.296875
     },
     "bottom": {
       "x": 0,
-      "y": 2081.8125,
+      "y": 2090.078125,
       "width": 390,
-      "height": 112.390625
+      "height": 179.84375
     },
     "frame": {
       "x": 0,

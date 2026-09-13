@@ -351,7 +351,7 @@ export function FuturesOrderForm({
           <label className="fo-label">
             {t('futures.markPrice')}
             <div className="mono fo-input fo-markPrice">
-              {markPrice !== null ? `≈ ${markPrice}` : t('trade.loading')} {quoteAsset}
+              {markPrice !== null ? `≈ ${markPrice}` : '—'} {quoteAsset}
             </div>
           </label>
         )}

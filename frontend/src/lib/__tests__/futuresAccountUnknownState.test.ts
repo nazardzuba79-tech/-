@@ -237,6 +237,20 @@ describe('unknown is not empty in the positions panel', () => {
     expect(text(tree)).toContain('futures.loadPositionsError');
   });
 
+  test.each([['open', 'positions'], ['history', 'positionHistory']])('retry of failed %s reads only its account resource', (tab, key) => {
+    const panel = mount('components/FuturesPositionsPanel.tsx', {
+      account: accountState({ [key]: { data: null, failed: true, loaded: true, loading: false, refreshing: false, fetchedAt: 0 } }),
+    });
+    const tree = panel.render({ refreshKey: 0, tab });
+    panel.refreshes.length = 0;
+    const retry = nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.retry');
+    expect(retry).toBeDefined();
+    retry.props.onClick();
+    expect(panel.refreshes).toEqual([[key]]);
+    expect(text(tree)).not.toContain('futures.noPositions');
+    expect(text(tree)).not.toContain('futures.noPositionHistory');
+  });
+
   test('A2. a not-yet-loaded positions request does NOT claim there are no open positions', () => {
     const panel = mount('components/FuturesPositionsPanel.tsx', {
       account: accountState({ positions: resource(null) }),

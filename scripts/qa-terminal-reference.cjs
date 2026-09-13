@@ -19,6 +19,11 @@ const out = 'docs/qa/terminal-reference';
         const chart = page.frameLocator('.voltex-tradingview-chart iframe');
         await chart.locator('[data-name="open-indicators-dialog"]:visible').waitFor({ timeout: 45000 });
         await page.waitForTimeout(2000);
+        if (width === 1920) {
+          // Allow the actual public quote to arrive for the final overview.
+          // If unavailable, preserve the real unknown state; never seed values.
+          await page.waitForFunction(() => /[0-9]/.test(document.querySelector('.ticker-bar .value.price')?.textContent || ''), undefined, {timeout:18000}).catch(() => {});
+        }
         const geometry = await page.evaluate(() => {
           const rect = selector => {
             const r = document.querySelector(selector).getBoundingClientRect();
@@ -73,6 +78,34 @@ const out = 'docs/qa/terminal-reference';
           await page.screenshot({path:`${out}/futures-390-controls.png`});
         }
         if (width === 1440) {
+          // Editing controls only; the QA server blocks every financial write.
+          const marketType = page.locator('.fo-typeTab').nth(1);
+          await marketType.click();
+          assert.equal(await marketType.getAttribute('aria-pressed'), 'true');
+          assert.equal(await page.locator('.fo-priceInputRow').count(), 0);
+          await page.locator('.fo-typeTab').first().click();
+          await page.locator('.fo-priceInputRow input').fill('123.45');
+          assert.equal(await page.locator('.fo-priceInputRow input').inputValue(), '123.45');
+          await page.locator('.fo-priceInputRow input').fill('');
+          const leverage = page.locator('.fo-mlTriggerLevBtn');
+          await leverage.click();
+          const menu = page.locator('.fo-mlPopoverRight');
+          await menu.waitFor();
+          const menuFits = await menu.evaluate(n => {const r=n.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth;});
+          assert.ok(menuFits, 'leverage menu fits the rail');
+          await menu.locator('.fo-mlChip').filter({hasText:/^5x$/}).click();
+          assert.match(await leverage.innerText(), /5\.00x/);
+          await leverage.click();
+          await menu.locator('.fo-mlChip').filter({hasText:/^10x$/}).click();
+          const failure = page.locator('.futures-position-state');
+          await failure.locator('button').waitFor();
+          const retryRead = page.waitForRequest(r=>r.method()==='GET'&&r.url().includes('/futures/positions'));
+          await failure.locator('button').click();
+          await retryRead;
+          await page.locator('.bottom-tab').first().click();
+          await page.locator('.futures-orders-table').waitFor();
+          await page.locator('.bottom-tab').nth(1).click();
+          geometry.orderControls = 'Limit/Market, price input, 5x/10x presets, order/position tabs, and read-only retry pass; no financial action';
           await chart.locator('[data-name="open-indicators-dialog"]:visible').click();
           await chart.getByRole('dialog').waitFor({timeout:10000});
           await chart.getByRole('dialog').locator('[data-qa-id="close"]').click();

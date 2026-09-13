@@ -23,5 +23,10 @@
     "passed": 219,
     "failed": 4,
     "total": 223
+  },
+  "finalAcceptance": {
+    "passed": 221,
+    "failed": 4,
+    "total": 225
   }
 }
