@@ -57,3 +57,19 @@ Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the r
 - No full backend suite claimed: backend/collector, account state, order payloads, matching, balances, funding, leverage/risk formulas and protection logic are unchanged. Diff whitespace check passes.
 
 To repeat browser QA, run `scripts/qa-professional-terminals.cjs` with `TERMINAL_QA_PORT=4202`, then `scripts/qa-terminal-reference.cjs` with `PLAYWRIGHT_PATH` and `EDGE_PATH` pointing to the local Playwright module and browser executable. No market/account fixture values are injected.
+
+## 2026-09-13 — Compact chart identity and reference order book
+
+User correction: remove the native instrument-description/OHLC/volume legend and show the ticker with the native selected timeframe; make the order book match the supplied Bybit reference.
+
+- Supported TradingView `hide_legend: true` removes the noisy plot legend. Futures has a compact ticker row; the actual interval remains in the native toolbar and was verified changing 15m -> 1h -> 15m. No fake mirrored interval, cropped iframe, hidden attribution or unsupported library-only overrides. Spot/CFD behavior is unchanged.
+- Futures-only `FuturesReferenceBook` uses the existing safe grouping helpers and feed. It adds aligned base-quantity/cumulative-base columns, right-anchored depth bars, three functioning display modes, grouping, a visible-depth buy/sell ratio and a real Kraken trades subscription only while the Trades tab is selected. No sample executions are inserted if that feed is unavailable.
+- ResizeObserver budgets whole 26px rows around the central price band. Exact grouped price, not the formatted display, is sent to the existing price-pick handler. Tiny positive quantities remain nonzero; exact quantities stay in tooltips.
+- A valid shared last price is identified as Last. When it is unavailable, the pre-existing book midpoint remains available only with an explicit Mid label/formula; missing/crossed depth produces a dash. No substitute mark price or invented position ratio.
+- Financial APIs/payloads/guards/calculations, original Spot book, account states, search and trading form are preserved. The Futures wiring regression follows the renamed component; all prior late-REST, symbol ownership and repeated price-pick assertions remain.
+
+Validation: frontend TypeScript and production build PASS. Eleven focused suites: 262 passed / 8 existing failures / 270 total; fourteen new order-book cases pass. Exact failure names match the stored pristine-main baseline at 0f7ab66f9af6e5e1a33ff0356182a2174b804c66, fetched again this turn; zero new failures. See book-tests.json. Existing obsolete native-control assertions were retained. No full backend suite was needed for this frontend-only change.
+
+Browser: 1920/1440/1280/1024/768/390, no horizontal overflow, clipped numeric cells or partial depth rows. Bid-only/ask-only/both controls, 0.1/0.5 grouping and exact click-to-price verified without submitting an order. The Trades tab showed an honest dash in this session; delivery/filtering/unsubscribe/late-event handling are covered by DOM tests. Native timeframe changes verified; OHLC/contract description absent. Screenshots: book-1920.jpg, book-1440.jpg, book-390.jpg (mobile viewport scrolled to the book; full-page stitching produced a capture artifact and is not used). book-browser.json records geometry.
+
+Preview remains http://127.0.0.1:4202/futures. Local read-only QA keeps private accounts unavailable and blocks financial writes. Same draft PR #59, no merge/deploy.

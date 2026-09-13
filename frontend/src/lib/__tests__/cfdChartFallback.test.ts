@@ -73,7 +73,7 @@ test.each([
 ])('market palette preserves official symbol and native controls: %s', async (market, pair, symbol, backgroundColor) => {
   await render(pair, market);
   expect(config()).toMatchObject({ symbol, backgroundColor, hide_top_toolbar: false, hide_side_toolbar: false, allow_symbol_change: false });
-  expect(config().hide_legend).toBe(market !== 'futures');
+  expect(config().hide_legend).toBe(true);
   expect(config().gridColor).toBe(market === 'futures' ? 'rgba(255, 255, 255, 0.035)' : '#0e151e');
   expect(host.querySelectorAll('script')).toHaveLength(1);
 });

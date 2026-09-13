@@ -6,7 +6,7 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
-import { OrderBookPanel } from '../components/OrderBookPanel';
+import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
@@ -185,13 +185,11 @@ export function FuturesPage() {
           </div>
 
           <div className="orderbook-area">
-            <OrderBookPanel
+            <FuturesReferenceBook
               key={symbol}
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
-              // Reuse Spot's proven display precision without changing Spot or the feed.
-              spotPrecision
               onPickPrice={(value) => {
                 pickedSeq.current += 1;
                 setPickedPrice({ value, seq: pickedSeq.current });

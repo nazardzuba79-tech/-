@@ -64,7 +64,7 @@ function TradingViewEmbed({ symbol, locale, backgroundColor }: {
     script.text = JSON.stringify({
       autosize: true, symbol, interval: '15', timezone: 'Etc/UTC', theme: 'dark',
       backgroundColor, gridColor: backgroundColor === '#101014' ? 'rgba(255, 255, 255, 0.035)' : '#0e151e', style: '1', locale,
-      hide_side_toolbar: false, hide_top_toolbar: false, hide_legend: backgroundColor !== '#101014',
+      hide_side_toolbar: false, hide_top_toolbar: false, hide_legend: true,
       hide_volume: false, allow_symbol_change: false, withdateranges: true,
       save_image: false, calendar: false, details: false, hotlist: false,
       watchlist: [], compareSymbols: [], studies: [],
@@ -96,6 +96,7 @@ function TradingViewAdvancedChartImpl({ pair, market = 'spot' }: TradingViewAdva
   const locale = TV_LOCALE[lang] ?? 'en';
   const ticker = market === 'cfd' ? pair.toUpperCase().replace(/^([A-Z]{3})([A-Z]{3})$/, '$1/$2') : pair.toUpperCase();
   return <div className="voltex-tradingview-chart" data-market={market} data-symbol={symbol}>
+    {market === 'futures' && <div className="voltex-chart-ticker">{ticker}</div>}
     {/* Timeframe, indicators and drawings belong to the native widget.
         Its cross-origin state cannot be mirrored honestly in a parent label. */}
     {symbol ? <TradingViewEmbed key={`${symbol}:${locale}`} symbol={symbol} locale={locale} backgroundColor={market === 'futures' ? '#101014' : '#0d141d'} />
