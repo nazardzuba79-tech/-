@@ -79,8 +79,12 @@ export class LiquidationStreamService {
   private connected = false;
   private streamStartedAt: number | null = null;
   private continuousSince: number | null = null;
+  /** Earliest instant for which the in-memory event history is guaranteed
+   * complete. It moves forward after reconnects or retention truncation. */
+  private coverageFloorAt: number | null = null;
   private lastMessageAt: number | null = null;
   private events: LiquidationEvent[] = [];
+  private eventIds = new Set<string>();
 
   constructor(
     private readonly url = DEFAULT_URL,
@@ -101,6 +105,7 @@ export class LiquidationStreamService {
   stop(): void {
     this.stopped = true;
     this.connected = false;
+    this.continuousSince = null;
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -118,10 +123,10 @@ export class LiquidationStreamService {
       return unavailable('unsupported_metric', `Liquidation stream is not tracked for ${asset}.`);
     }
     if (this.streamStartedAt === null) {
-      return unavailable('provider_not_configured', 'Binance liquidation stream has not started.');
+      return unavailable('provider_not_configured', 'Liquidation stream has not started.');
     }
     if (!this.connected && this.lastMessageAt === null) {
-      return unavailable('provider_unavailable', 'Binance liquidation stream is not connected.');
+      return unavailable('provider_unavailable', 'Liquidation stream is not connected.');
     }
 
     const now = Date.now();
@@ -145,8 +150,9 @@ export class LiquidationStreamService {
   /** Public for deterministic unit tests; production feeds it only from WS. */
   ingest(raw: unknown): LiquidationEvent | null {
     const event = normalizeLiquidation(raw);
-    if (!event) return null;
+    if (!event || this.eventIds.has(event.id)) return null;
     this.events.push(event);
+    this.eventIds.add(event.id);
     this.lastMessageAt = Math.max(this.lastMessageAt ?? 0, event.tradeTime);
     this.prune(Date.now());
     return event;
@@ -165,8 +171,12 @@ export class LiquidationStreamService {
 
     socket.on('open', () => {
       if (this.stopped) return;
+      const now = Date.now();
       this.connected = true;
-      this.continuousSince = Date.now();
+      this.continuousSince = now;
+      // A disconnect creates an unknowable gap. Stored older events remain
+      // useful, but no rolling window crossing that gap is labelled complete.
+      this.coverageFloorAt = now;
       this.reconnectAttempt = 0;
       this.health.recordSuccess();
     });
@@ -219,8 +229,8 @@ export class LiquidationStreamService {
       hours,
       from,
       to: now,
-      coverageStartAt: this.continuousSince,
-      coverageComplete: this.continuousSince !== null && this.continuousSince <= from,
+      coverageStartAt: this.coverageFloorAt,
+      coverageComplete: this.connected && this.coverageFloorAt !== null && this.coverageFloorAt <= from,
       eventCount: rows.length,
       longNotionalUsd,
       shortNotionalUsd,
@@ -233,16 +243,31 @@ export class LiquidationStreamService {
 
   private prune(now: number): void {
     const cutoff = now - RETENTION_MS;
-    if (this.events.length > MAX_EVENTS || (this.events[0]?.tradeTime ?? now) < cutoff) {
-      this.events = this.events.filter((event) => event.tradeTime >= cutoff).slice(-MAX_EVENTS);
+    const before = this.events;
+    const withinRetention = before.filter((event) => event.tradeTime >= cutoff);
+    const kept = withinRetention.slice(-MAX_EVENTS);
+    if (kept.length === before.length) return;
+
+    if (withinRetention.length !== before.length) {
+      this.coverageFloorAt = Math.max(this.coverageFloorAt ?? cutoff, cutoff);
     }
+    if (kept.length !== withinRetention.length && kept.length > 0) {
+      this.coverageFloorAt = Math.max(this.coverageFloorAt ?? kept[0].tradeTime, kept[0].tradeTime);
+    }
+
+    this.events = kept;
+    this.eventIds = new Set(kept.map((event) => event.id));
   }
 }
 
 export function normalizeLiquidation(raw: unknown): LiquidationEvent | null {
   if (!raw || typeof raw !== 'object') return null;
-  const payload = raw as BinanceForceOrderPayload;
+  const wrapped = raw as { data?: unknown };
+  const candidate = wrapped.data && typeof wrapped.data === 'object' ? wrapped.data : raw;
+  const payload = candidate as BinanceForceOrderPayload;
   if (payload.e !== 'forceOrder' || !payload.o) return null;
+  // New mixed-stream payloads may include a stream type. Accept USD-M only;
+  // the dedicated fstream endpoint omits this field and is already USD-M.
   if (payload.st !== undefined && payload.st !== 1) return null;
   const symbol = String(payload.o.s ?? '').toUpperCase();
   const baseAsset = TRACKED_SYMBOLS[symbol];
