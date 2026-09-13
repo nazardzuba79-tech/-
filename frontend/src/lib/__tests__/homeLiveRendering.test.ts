@@ -69,15 +69,25 @@ test('the selected feed keeps its pair even when it leaves the watchlist or lose
   expect(withoutQuote).toMatch(/vx-terminal-pair[\s\S]*?<strong>BTC\/USDT<\/strong>[\s\S]*?—/);
 });
 
-test('hero asset pills keep unavailable Oil honest and zero Gold distinct from missing data', () => {
+test('hero commodity cards stay honest when unavailable and render real Gold/WTI quotes when present', () => {
   const initial = render(HomeHeroAssets, market({ tickers:[],cfd:null }));
   expect(initial).not.toContain('<polyline');
   expect(initial.match(/Data unavailable/g)?.length).toBeGreaterThanOrEqual(2);
-  const zero = render(HomeHeroAssets,market({cfd:{configured:true,tickers:[{symbol:'XAUUSD',price:'0',changePercent24h:'0'}]}}));
-  expect(zero).toContain('>0</span>'); expect(zero).toContain('+0.00%');
-  expect(zero).toContain('Reference quote');
-  const oil=zero.slice(zero.indexOf('vx-asset-oil'));
-  expect(oil).toContain('—'); expect(oil).toContain('Data unavailable'); expect(oil).not.toContain('<polyline');
+  const live = render(HomeHeroAssets, market({
+    cfd: { configured:true, tickers:[
+      { symbol:'XAUUSD', price:'0', changePercent24h:'0' },
+      { symbol:'WTIUSD', price:'72.45', changePercent24h:'-1.25' },
+    ] },
+    cfdPriceHistory: { WTIUSD:[71.8,72.1,72.45] },
+  }));
+  expect(live).toContain('>0</span>');
+  expect(live).toContain('+0.00%');
+  const oil=live.slice(live.indexOf('vx-asset-oil'));
+  expect(oil).toContain('72.45');
+  expect(oil).toContain('-1.25%');
+  expect(oil).toContain('Reference quote');
+  expect(oil).not.toContain('Data unavailable');
+  expect(oil).toContain('<polyline');
 });
 
 test('a failed ticker refresh preserves the last real quote with visible stale disclosure on both BTC and tape', () => {
