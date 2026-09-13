@@ -226,7 +226,7 @@ export function AnalyticsLiveModules() {
             </div>
             <div className="vx-term-table" role="table">
               <div className="vx-term-row is-head" role="row">
-                <span>{t('analytics.contract')}</span>
+                <span>{t('analytics.assetContext')}</span>
                 <span>{t('analytics.markPrice')}</span>
                 <span>{t('analytics.perpetualBasis')}</span>
                 <span>APR</span>
