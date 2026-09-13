@@ -124,9 +124,6 @@ export function HomeMarketOverview({ market }: { market: HomeMarket }) {
                 </div>
               </div>
             </div>
-            <div className="mt-auto border-t border-white/6 pt-3 text-[11px] text-faint">
-              {t('home.overview.updated')}: {new Date(fg.updatedAt * 1000).toLocaleDateString()}
-            </div>
           </>
         ) : (
           <Unavailable label={t('home.dataUnavailable')} />
