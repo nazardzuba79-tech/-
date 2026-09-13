@@ -144,3 +144,46 @@
   .trade-terminal.trade-terminal.trade-terminal.market-reference .ticker-bar { flex-wrap:wrap; gap:12px 20px; }
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book { min-height:460px; }
 }
+/* Futures composition: graphite canvas, aligned headings and a compact readable ladder. */
+.trade-terminal.trade-terminal.trade-terminal.futures-reference {
+  --workspace-bg:#14161b; --panel:#14161b; --panel-alt:#202329;
+  --border:#282c34; --border-color:#282c34; --text-primary:#e5e8ed; --text-secondary:#9ca4b1;
+}
+@media(min-width:1440px) {
+  .trade-terminal.trade-terminal.trade-terminal.futures-reference .terminal {
+    grid-template-columns:248px minmax(0,1fr) 248px 300px;
+  }
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.terminal-chart-heading,.rb-tabs,.reference-order-heading) {
+  height:38px; min-height:38px; background:#171a20; border-bottom:1px solid #282c34;
+  font-size:12px; font-weight:600; letter-spacing:0;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar { background:#171a20; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar .label { font-size:11px; color:#949daa; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.left-panel,.fo-panel,.bottom-panel) { background:#14161b; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .pairs-search { background:#14161b; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .pairs-search input { border:1px solid #30353f; background:#1c2027; border-radius:5px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .pair-row { min-height:34px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-row {
+  height:var(--book-row-height); flex-basis:var(--book-row-height); line-height:var(--book-row-height);
+  font-size:12px; font-weight:450;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-center {
+  background:#171a20; border-block:1px solid #282c34;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-center strong { font-size:19px; letter-spacing:-.3px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-controls { background:#101014; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-row:hover { background:#242a33; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-form { gap:12px; padding:12px 14px 16px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input,.fo-mlTrigger) {
+  background:#202329; border:1px solid #30353e; border-radius:5px; box-shadow:none;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-infoBox {
+  background:transparent; border:0; border-block:1px solid #282c34; border-radius:0; padding:10px 0;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-infoRow { font-size:12px; line-height:19px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-submitPair { gap:8px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-submitPair .submit-btn { border-radius:6px; min-height:42px; font-size:12px; font-weight:600; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tabs { background:#171a20; gap:20px; padding-inline:16px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tab { font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(input,button,select):focus-visible { outline:1px solid #e9ad35; outline-offset:2px; }
