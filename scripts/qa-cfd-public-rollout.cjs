@@ -20,14 +20,13 @@ const report = { environment: 'DISPOSABLE CI LOOPBACK, NOT RENDER', revision: pr
   limitations: ['TradingView and all browser external traffic intentionally blocked',
     'No production accounts or database; local /me is an explicit synthetic auth fixture',
     'No live-session crossing, distributed collector or Render reachability claim'] };
-let server, browser, mode = 'sample';
+let server, browser, activePage, mode = 'sample';
 const deniedHosts = new Set();
 (async () => {
   const refs = new PublicReferenceFeed({ enabled: true });
   await refs.refreshDue();
   const sample = refs.snapshot();
   report.realPublicSamples = sample.length; report.sourceDiagnostics = refs.diagnostics();
-  // Availability errors are recorded and gate the run, never replaced with prices.
   if (sample.length !== 13 || report.sourceDiagnostics.some(s => s.error)) report.findings.push('Real source sample incomplete');
   const simulated = stale => ({isEnabled:()=>true,isRefreshing:()=>false,refreshDue:async()=>{},diagnostics:()=>[],
     snapshot:()=>sample.map(q=>({...q,...(stale?{status:'stale',validUntil:Date.now()-1}:{})}))});
@@ -63,19 +62,22 @@ const deniedHosts = new Set();
   for(const width of [1920,1280,768,390]) for(const pagePath of ['/', '/trade?market=cfd']) {
     mode='sample';
     const context=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
-    await context.addInitScript(()=>{localStorage.setItem('exchange_token','explicit-local-qa-fixture-not-a-production-token');});
+    // The actual App redirects signed-in '/' to a trading terminal. Exercise
+    // the public homepage signed out, and only the protected terminal with
+    // this isolated fixture. Never change application routing to fit a test.
+    if(pagePath!=='/')await context.addInitScript(()=>localStorage.setItem('exchange_token','explicit-local-qa-fixture-not-a-production-token'));
     await context.route('**/*',route=>{
       const url=new URL(route.request().url());
       if(url.origin!==origin) {deniedHosts.add(url.hostname);return route.abort();}
       if(!['GET','HEAD'].includes(route.request().method())) {report.blockedWrites++;return route.abort();}
       return route.continue();
     });
-    const page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push({width,pagePath,error:e.message}));
+    const page=await context.newPage();activePage=page;page.on('pageerror',e=>report.pageErrors.push({width,pagePath,error:e.message}));
     await page.goto(origin+pagePath,{waitUntil:'domcontentloaded'});
     const selector=pagePath==='/'?'.vx-asset-oil':'.cfd-option';
     await page.locator(selector).first().waitFor({state:'visible',timeout:15000});
     await page.waitForTimeout(1400);
-    const result=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,
+    const result=await page.evaluate(()=>({pathname:location.pathname,overflow:document.documentElement.scrollWidth>innerWidth+1,
       rows:document.querySelectorAll('.cfd-option').length,
       oil:document.querySelector('.vx-asset-oil')?.textContent||null,
       gold:document.querySelector('.vx-asset-gold')?.textContent||null,
@@ -90,18 +92,17 @@ const deniedHosts = new Set();
       if(!(await page.locator('.cfd-ticker-bar').innerText()).includes('U.S. EIA'))report.findings.push(`WTI source missing: ${width}`);
     } else {
       if(!result.oil?.includes('U.S. EIA'))report.findings.push(`OIL source missing: ${width}`);
-      // Exact benchmark identity must remain visible even when a dated source label exists.
       if(!result.oil?.includes('WTI'))report.findings.push(`OIL benchmark WTI not identified: ${width}`);
     }
     await page.screenshot({path:path.join(OUT,`${pagePath==='/'?'home':'terminal'}-${width}.png`)});
-    await context.close();
+    await context.close();activePage=null;
   }
   for(const state of ['stale','off','error','malformed']) {
     mode=state;
     const context=await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:'block'});
     await context.addInitScript(()=>localStorage.setItem('exchange_token','explicit-local-qa-fixture-not-a-production-token'));
     await context.route('**/*',route=>new URL(route.request().url()).origin===origin&&['GET','HEAD'].includes(route.request().method())?route.continue():route.abort());
-    const page=await context.newPage();page.on('pageerror',e=>report.pageErrors.push({state,error:e.message}));
+    const page=await context.newPage();activePage=page;page.on('pageerror',e=>report.pageErrors.push({state,error:e.message}));
     await page.goto(origin+'/trade?market=cfd',{waitUntil:'domcontentloaded'});
     await page.locator('.cfd-terminal').waitFor({state:'visible',timeout:15000});await page.waitForTimeout(1500);
     const result=await page.evaluate(()=>({rows:document.querySelectorAll('.cfd-option').length,
@@ -112,10 +113,16 @@ const deniedHosts = new Set();
     if(result.submits.some(disabled=>!disabled)||!result.submits.length)report.findings.push(`Order form not blocked in ${state}`);
     if(state==='stale'&&!result.lastKnown)report.findings.push('Stale reference is not visibly labelled');
     if(['stale','off'].includes(state)&&result.rows!==13)report.findings.push(`Catalog missing in ${state}`);
-    await page.screenshot({path:path.join(OUT,`terminal-${state}.png`)});await context.close();
+    await page.screenshot({path:path.join(OUT,`terminal-${state}.png`)});await context.close();activePage=null;
   }
   assert.equal(report.pageErrors.length,0,'Browser runtime errors');
-})().catch(error=>{report.findings.push(error instanceof Error?error.message:'QA failed');process.exitCode=1;}).finally(async()=>{
+})().catch(async error=>{
+  report.findings.push(error instanceof Error?error.message:'QA failed');process.exitCode=1;
+  if(activePage&&!activePage.isClosed()){
+    report.failureUrl=activePage.url();
+    try {await activePage.screenshot({path:path.join(OUT,'failure.png'),timeout:3000});}catch{}
+  }
+}).finally(async()=>{
   if(browser)await browser.close();if(server)await new Promise(resolve=>server.close(resolve));
   report.blockedExternalHosts=[...deniedHosts];report.completedAt=new Date().toISOString();
   fs.writeFileSync(path.join(OUT,'report.json'),JSON.stringify(report,null,2));
