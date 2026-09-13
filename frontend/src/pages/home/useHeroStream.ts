@@ -9,9 +9,14 @@ export function useHeroStream(market: HomeMarket): HomeMarket {
   const [live, setLive] = useState<HeroStreamSnapshot | null>(null);
   const pair = market.hero.pair;
   const source = market.tickerSource;
+  // On first paint tickerSource is intentionally still empty while the much
+  // heavier all-pairs REST snapshot is loading. The hero pair is already the
+  // canonical BTC/USDT, so start the real Kraken socket immediately; if the
+  // eventual source is not Kraken this effect tears it down automatically.
+  const canStream = source === '' || source.toLowerCase() === 'kraken';
   useEffect(() => {
     setLive(null);
-    if (!pair || source.toLowerCase() !== 'kraken') return;
+    if (!pair || !canStream) return;
     let visible = false;
     let stop: (() => void) | undefined;
     const sync = () => {
@@ -26,6 +31,6 @@ export function useHeroStream(market: HomeMarket): HomeMarket {
     else { visible = true; sync(); }
     document.addEventListener('visibilitychange', sync);
     return () => { observer?.disconnect(); document.removeEventListener('visibilitychange', sync); stop?.(); };
-  }, [pair, source]);
-  return useMemo(() => ({ ...market, hero: combineHeroFeed(market.hero, source.toLowerCase() === 'kraken' ? live : null) }), [market, live, source]);
+  }, [pair, canStream]);
+  return useMemo(() => ({ ...market, hero: combineHeroFeed(market.hero, canStream ? live : null) }), [market, live, canStream]);
 }
