@@ -13,8 +13,6 @@ import { assertCfdFreshQuote, DEFAULT_MAX_QUOTE_AGE_MS, quoteAgeLimit, type CfdQ
  */
 export const DERIV_PUBLIC_WS_URL = 'wss://api.derivws.com/trading/v1/options/ws/public';
 
-const FX = ['EURUSD','GBPUSD','USDJPY','AUDUSD','USDCAD','USDCHF','NZDUSD'] as const;
-const METALS = ['XAUUSD','XAGUSD','XPTUSD','XPDUSD'] as const;
 const ALL = CFD_REFERENCE_CATALOG.map(i => i.symbol);
 const EXACT_IDS: Record<string, string[]> = {
   EURUSD:['frxEURUSD'], GBPUSD:['frxGBPUSD'], USDJPY:['frxUSDJPY'], AUDUSD:['frxAUDUSD'], USDCAD:['frxUSDCAD'], USDCHF:['frxUSDCHF'], NZDUSD:['frxNZDUSD'],
@@ -148,7 +146,8 @@ export class DerivPublicStreamQuoteSource implements CfdQuoteSource {
     let socket:WebSocket; try{socket=this.socketFactory(this.url);}catch{this.lastError='connect_init';this.scheduleReconnect();return;}
     this.socket=socket;
     socket.on('open',()=>{if(this.socket!==socket||this.stopped)return;this.lastConnectedAt=this.now();this.reconnectAttempt=0;this.lastError=null;
-      socket.send(JSON.stringify({active_symbols:'brief',product_type:'basic',req_id:1}));});
+      // New Deriv Options public API removed product_type from active_symbols.
+      socket.send(JSON.stringify({active_symbols:'brief',req_id:1}));});
     socket.on('message',(data:RawData)=>{if(this.socket===socket&&!this.stopped)this.handleMessage(data.toString());});
     socket.on('error',()=>{if(this.socket!==socket||this.stopped)return;this.lastError='socket_error';try{socket.terminate();}catch{}});
     socket.on('close',()=>{if(this.socket!==socket)return;this.socket=null;this.lastDisconnectedAt=this.now();this.scheduleReconnect();});
