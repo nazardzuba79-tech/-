@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { api } from './api';
-import { ageCfdTickerRows } from './cfdTickerFreshness';
+import { ageCfdTickerRows } from './cfdPresentation';
 import type { CfdTickerRow } from '../components/CfdInstrumentList';
 
 // Reference-only mode polls once per minute. Approved execution quotes
