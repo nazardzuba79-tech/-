@@ -112,9 +112,8 @@ export function CfdOrderForm({
 
   return (
     <div className="cfd-order-panel">
-      <div className="cfd-practice-head">
+      <div className="cfd-practice-head" title={copy.practiceNote}>
         <span className="cfd-practice-badge">{copy.practice}</span>
-        <span>{copy.practiceNote}</span>
       </div>
 
       <div className="cfd-sideTabs">
@@ -179,7 +178,6 @@ export function CfdOrderForm({
         </div>
 
         {error && <div className="cfd-error" role="alert">{error}</div>}
-        <p className="cfd-practice-footnote">{copy.practiceStored}</p>
 
         <button
           type="submit"
