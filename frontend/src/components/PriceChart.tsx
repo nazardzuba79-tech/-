@@ -189,10 +189,12 @@ export function PriceChart({
   drawingTools = false,
   market = 'spot',
   candleLoader,
+  compactTools = false,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
   drawingTools?: boolean;
+  compactTools?: boolean;
   /** Which product this chart belongs to. Only used to namespace saved
    *  drawings — spot BTC levels are not futures BTC levels. */
   market?: DrawingMarket;
@@ -278,13 +280,15 @@ export function PriceChart({
    * loaded candle. Real snapping against the candle array this chart
    * already holds — see `magnetSnap`.
    */
-  const [magnet, setMagnet] = useState(false);
+  const [savedMagnet, setMagnet] = useState(false);
+  const magnet = !compactTools && savedMagnet;
   /**
    * Lock: drawings stay visible and the chart stays fully navigable, but
    * nothing can add, erase or clear them. It guards exactly the mutating
    * actions this overlay has.
    */
-  const [locked, setLocked] = useState(false);
+  const [savedLocked, setLocked] = useState(false);
+  const locked = !compactTools && savedLocked;
   /** Flipped once the chart and series exist, so effects that create chart
    *  objects from state do not race the chart's own construction. */
   const [chartReady, setChartReady] = useState(false);
@@ -292,12 +296,14 @@ export function PriceChart({
   const [pendingPoint, setPendingPoint] = useState<Point | null>(null);
   // Drawings stay in state while hidden — this only controls whether the
   // overlay renders them, so toggling back shows exactly what was there.
-  const [drawingsHidden, setDrawingsHidden] = useState(false);
+  const [savedHidden, setDrawingsHidden] = useState(false);
+  const drawingsHidden = !compactTools && savedHidden;
   // A drawing tool currently stays selected until the trader picks another,
   // which is TradingView's "stay in drawing mode" behaviour. Turning this
   // off returns to the cursor after each completed shape. Both are real
   // behaviours of this overlay; nothing here simulates anything.
-  const [stayInDrawMode, setStayInDrawMode] = useState(true);
+  const [savedStayInDrawMode, setStayInDrawMode] = useState(true);
+  const stayInDrawMode = !compactTools && savedStayInDrawMode;
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
   const [drawDialog, setDrawDialog] = useState<{ kind: 'text'; at: Point } | { kind: 'clear' } | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
@@ -777,12 +783,12 @@ export function PriceChart({
   useEffect(() => {
     if (!storageKey || loadedKey !== storageKey) return;
     try {
-      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: drawingsHidden, locked }));
+      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: savedHidden, locked: savedLocked }));
     } catch {
       // Quota or a privacy mode that refuses writes. The chart keeps
       // working; only persistence is lost, and silently is correct here.
     }
-  }, [storageKey, loadedKey, collectDrawings, drawingsHidden, locked]);
+  }, [storageKey, loadedKey, collectDrawings, savedHidden, savedLocked]);
 
   const fitContent = useCallback(() => {
     chartRef.current?.timeScale().fitContent();
@@ -1341,8 +1347,9 @@ export function PriceChart({
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
+          compactTools={compactTools}
           tool={tool}
-          onSelect={(next) => { if (drawingToolsOn) setDrawingsHidden(false); setTool(next); }}
+          onSelect={(next) => { if (drawingToolsOn && !compactTools) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
@@ -1742,6 +1749,7 @@ function RulerLabel({ x, y, pct, priceDiff, bars, drawingTools = false, locale =
  * session — see `lastTrend`.
  */
 function DrawToolbar({
+  compactTools = false,
   tool,
   onSelect,
   onClear,
@@ -1760,6 +1768,7 @@ function DrawToolbar({
   tool: Tool;
   onSelect: (t: Tool) => void;
   onClear: () => void;
+  compactTools?: boolean;
   onFit: () => void;
   terminal?: boolean;
   drawingTools?: boolean;
@@ -1963,20 +1972,20 @@ function DrawToolbar({
 
       <div className="tool-divider" />
 
-      {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
-      {btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
+      {btn('ruler', t('draw.measure'), compactTools ? <PrecisionRulerIcon /> : <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
+      {!compactTools && btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
       {/* Magnet and lock only exist where the overlay implements them. */}
-      {drawingTools && onToggleMagnet
+      {!compactTools && drawingTools && onToggleMagnet
         ? btn('magnet', t('draw.magnet'), <MagnetIcon />, onToggleMagnet, magnet)
         : null}
-      {drawingTools && onToggleLock
+      {!compactTools && drawingTools && onToggleLock
         ? btn('lock', locked ? t('draw.unlock') : t('draw.lock'), locked ? <LockedIcon /> : <UnlockedIcon />, onToggleLock, locked)
         : null}
-      {btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
-      {btn(
+      {!compactTools && btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
+      {!compactTools && btn(
         'hide',
         drawingsHidden ? t('draw.show') : t('draw.hide'),
         drawingsHidden ? <EyeOffIcon /> : <EyeIcon />,
@@ -1989,9 +1998,9 @@ function DrawToolbar({
       {/* Removes ONE drawing — the one under the pointer. Distinct from
           the delete-all below it, which is why both exist. */}
       {drawingTools
-        ? btn('erase', t('draw.erase'), <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
+        ? btn('erase', t('draw.erase'), compactTools ? <TrashObjectIcon /> : <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
         : null}
-      {btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
+      {!compactTools && btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
     </div>
   );
 }
@@ -2072,12 +2081,21 @@ function BrushIcon() {
   );
 }
 function RulerIcon() {
+  return <svg {...ICON_PROPS}>
+    <rect x="3" y="9" width="18" height="6" rx="1" transform="rotate(-20 12 12)" />
+    <path d="M8 10l1 1.5M11 9l1 1.5M14 8l1 1.5" transform="rotate(-20 12 12)" />
+  </svg>;
+}
+function PrecisionRulerIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <rect x="3" y="9" width="18" height="6" rx="1" transform="rotate(-20 12 12)" />
-      <path d="M8 10l1 1.5M11 9l1 1.5M14 8l1 1.5" transform="rotate(-20 12 12)" />
+      <g transform="rotate(-45 12 12)"><rect x="2.5" y="8" width="19" height="8" rx="1" />
+      <path d="M6 8v4M10 8v2.5M14 8v4M18 8v2.5" /></g>
     </svg>
   );
+}
+function TrashObjectIcon() {
+  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" /></svg>;
 }
 function TextIcon() {
   return (

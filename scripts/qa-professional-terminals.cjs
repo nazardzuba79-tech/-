@@ -12,7 +12,8 @@ app.use((req,res,next)=>{
 });
 app.get('/__qa/start',(req,res)=>{
   const route = req.query.market === 'futures' ? '/futures' : '/trade';
-  const design = req.query.terminalDesign === 'studio' ? '?terminalDesign=studio' : '';
+  const selectedDesign = ['studio', 'graphite', 'focus'].includes(req.query.terminalDesign) ? req.query.terminalDesign : null;
+  const design = selectedDesign ? `?terminalDesign=${selectedDesign}` : '';
   res.type('html').send(`<script>localStorage.setItem('exchange_token','local-terminal-review-no-production-credentials');location.replace('${route}${design}');</script>`);
 });
 // Exercise the candidate's actual public candle adapter before backend deployment.

@@ -26,6 +26,7 @@ import './trade-terminal/ApprovedFuturesTerminal.css';
 import './trade-terminal/ReferenceFuturesTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/FuturesStudio.css';
+import './trade-terminal/FuturesDesignVariants.css';
 
 
 // Until /futures/config answers. Deliberately the same three contracts the
@@ -61,7 +62,9 @@ export function FuturesPage() {
   const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const studio = searchParams.get('terminalDesign') === 'studio';
+  const requestedDesign = searchParams.get('terminalDesign');
+  const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : null;
+  const studio = design !== null;
   // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
@@ -140,7 +143,14 @@ export function FuturesPage() {
   }
 
   return (
-    <div className={`trade-terminal futures-terminal futures-reference${studio ? ' futures-studio' : ''}`}>
+    <div className={`trade-terminal futures-terminal futures-reference${studio ? ' futures-studio' : ''}`} data-terminal-design={design ?? undefined}>
+      {studio && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
+        {([['studio', 'A · Studio'], ['graphite', 'B · Graphite'], ['focus', 'C · Focus']] as const).map(([id, label]) =>
+          <button key={id} type="button" aria-pressed={design === id} onClick={() => {
+            const next = new URLSearchParams(searchParams); next.set('terminalDesign', id);
+            navigate({ pathname: '/futures', search: next.toString() }, { replace: true });
+          }}>{label}</button>)}
+      </div>}
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market
@@ -168,7 +178,7 @@ export function FuturesPage() {
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />
           </div>
 
           <div className="orderbook-area repaired-futures-book">

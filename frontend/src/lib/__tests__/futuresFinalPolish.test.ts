@@ -482,6 +482,11 @@ test('studio is an opt-in composition and preserves the selected contract and or
  expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
  expect(nodes(tree).filter(n=>n.type===page.components.FuturesPairList)).toHaveLength(1);
+ for (const design of ['graphite','focus','studio']) {
+   params.set('terminalDesign',design);tree=page.render();
+   expect(nodes(tree).some(n=>n.props?.['data-terminal-design']===design)).toBe(true);
+   expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
+ }
  params.delete('terminalDesign');tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(false);
  expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
 });
