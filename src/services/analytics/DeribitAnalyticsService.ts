@@ -10,6 +10,7 @@ import { available, unavailable, type Availability } from '../marketData/types';
 
 const CACHE_TTL_MS = 30_000;
 const MAX_STALE_MS = 5 * 60_000;
+const REQUEST_TIMEOUT_MS = 5_000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const YEAR_MS = 365.25 * DAY_MS;
 const SUPPORTED = new Set(['BTC', 'ETH']);
@@ -33,6 +34,9 @@ export interface FuturesCurvePoint {
   basisPercent: number;
   annualizedBasisPercent: number;
   openInterest: number | null;
+  /** Deribit reports inverse futures OI in USD amount units and linear
+   * futures OI in base currency. Keep the unit with the value. */
+  openInterestUnit: 'USD' | 'BASE';
 }
 
 export interface FuturesTermStructureValue {
@@ -52,6 +56,7 @@ interface DeribitFutureInstrument {
   kind: string;
   is_active: boolean;
   settlement_period?: string;
+  instrument_type?: string;
   expiration_timestamp: number;
 }
 
@@ -101,7 +106,7 @@ export class DeribitAnalyticsService {
   async getImpliedVolatility(baseAsset: string): Promise<Availability<ImpliedVolatilityValue>> {
     const asset = baseAsset.toUpperCase();
     if (!SUPPORTED.has(asset)) {
-      return unavailable('unsupported_metric', `Deribit volatility index is not available for ${asset}.`);
+      return unavailable('unsupported_metric', `Implied volatility is not available for ${asset}.`);
     }
     try {
       const cached = await this.ivCache.fetch(asset, () => this.fetchImpliedVolatility(asset));
@@ -114,7 +119,7 @@ export class DeribitAnalyticsService {
   async getFuturesTermStructure(baseAsset: string): Promise<Availability<FuturesTermStructureValue>> {
     const asset = baseAsset.toUpperCase();
     if (!SUPPORTED.has(asset)) {
-      return unavailable('unsupported_metric', `Deribit dated futures are not available for ${asset}.`);
+      return unavailable('unsupported_metric', `Dated futures are not available for ${asset}.`);
     }
     try {
       const cached = await this.curveCache.fetch(asset, () => this.fetchFuturesTermStructure(asset));
@@ -137,7 +142,7 @@ export class DeribitAnalyticsService {
       }
     );
     const rows = Array.isArray(body.data) ? body.data.filter(validVolatilityRow) : [];
-    if (rows.length === 0) throw new Error(`Deribit returned no volatility index data for ${asset}`);
+    if (rows.length === 0) throw new Error(`No volatility index data for ${asset}`);
 
     const first = rows[0];
     const last = rows[rows.length - 1];
@@ -145,7 +150,7 @@ export class DeribitAnalyticsService {
     const lows = rows.map((r) => r[3]).filter(finitePositive);
     const open24h = finitePositive(first[1]) ? first[1] : null;
     const current = last[4];
-    if (!finitePositive(current)) throw new Error(`Deribit returned an invalid volatility index for ${asset}`);
+    if (!finitePositive(current)) throw new Error(`Invalid volatility index for ${asset}`);
     const change24hPercent = open24h && open24h !== 0 ? ((current - open24h) / open24h) * 100 : null;
 
     return {
@@ -176,7 +181,7 @@ export class DeribitAnalyticsService {
     const summaryByName = new Map(summaries.map((row) => [row.instrument_name, row]));
     const perpetual = summaries.find((row) => row.instrument_name === `${asset}-PERPETUAL`);
     const referencePrice = firstPositive(perpetual?.estimated_delivery_price, perpetual?.underlying_price);
-    if (referencePrice === null) throw new Error(`Deribit returned no reference price for ${asset}`);
+    if (referencePrice === null) throw new Error(`No reference price for ${asset}`);
 
     const now = Date.now();
     const points: FuturesCurvePoint[] = instruments
@@ -199,23 +204,25 @@ export class DeribitAnalyticsService {
           basisPercent,
           annualizedBasisPercent,
           openInterest: finiteNonNegative(summary?.open_interest) ? Number(summary!.open_interest) : null,
+          openInterestUnit: instrument.instrument_type === 'reversed' ? 'USD' : 'BASE',
         } satisfies FuturesCurvePoint;
       })
       .filter((p): p is FuturesCurvePoint => p !== null)
       .sort((a, b) => a.expiryAt - b.expiryAt);
 
-    if (points.length === 0) throw new Error(`Deribit returned no active dated futures for ${asset}`);
+    if (points.length === 0) throw new Error(`No active dated futures for ${asset}`);
     return { baseAsset: asset, referencePrice, points };
   }
 
   private async request<T>(path: string, params: Record<string, string | number | boolean>): Promise<T> {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) query.set(key, String(value));
-    const raw = (await this.http.getJson(`${this.baseUrl}${path}?${query}`)) as DeribitRpc<T>;
+    const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    const raw = (await this.http.getJson(`${this.baseUrl}${path}?${query}`, { signal })) as DeribitRpc<T>;
     if (raw.error) {
-      throw new Error(`Deribit error${raw.error.code ? ` ${raw.error.code}` : ''}: ${raw.error.message ?? 'unknown error'}`);
+      throw new Error(`Provider error${raw.error.code ? ` ${raw.error.code}` : ''}: ${raw.error.message ?? 'unknown error'}`);
     }
-    if (raw.result === undefined) throw new Error('Deribit response has no result');
+    if (raw.result === undefined) throw new Error('Provider response has no result');
     return raw.result;
   }
 }
