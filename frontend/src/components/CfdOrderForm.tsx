@@ -10,11 +10,6 @@ import type { CfdTickerRow } from './CfdInstrumentList';
 import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 import '../pages/trade-terminal/CfdPractice.css';
 
-/**
- * Fully interactive local CFD order ticket. Visible controls behave like a
- * finished terminal, while submission remains browser-local and never reaches
- * the financial CFD endpoints or an external market.
- */
 export function CfdOrderForm({
   symbol,
   ticker,
@@ -122,7 +117,7 @@ export function CfdOrderForm({
 
       <OrderFamilyTabs value={family} onChange={next => { setFamily(next); setError(null); }} />
       <div className="cfd-product-terms">
-        <span className="terminal-practice-label" title={copy.practiceNote}>{copy.practice}</span>
+        <span className="terminal-practice-label" title={copy.practiceNote} aria-label={copy.practice}>SIM</span>
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">
@@ -182,7 +177,6 @@ export function CfdOrderForm({
         <button
           type="submit"
           disabled={family !== 'MARKET' || submitting || price === null || qty === null}
-          title={family !== 'MARKET' ? t('analytics.unavailable') : undefined}
           className={`cfd-submit ${side === 'BUY' ? 'buy' : 'sell'}`}
         >
           {submitting ? t('auth.wait') : side === 'BUY' ? t('futures.buyLong') : t('futures.sellShort')}
