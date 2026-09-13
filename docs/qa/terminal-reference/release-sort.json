@@ -1,0 +1,56 @@
+[
+  {
+    "buttons": [
+      "Цена▼",
+      "24ч %⇅"
+    ],
+    "first": "BTC/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  },
+  {
+    "buttons": [
+      "Цена▲",
+      "24ч %⇅"
+    ],
+    "first": "AKE/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  },
+  {
+    "buttons": [
+      "Цена⇅",
+      "24ч %⇅"
+    ],
+    "first": "BTC/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  },
+  {
+    "buttons": [
+      "Цена⇅",
+      "24ч %▼"
+    ],
+    "first": "LSK/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  },
+  {
+    "buttons": [
+      "Цена⇅",
+      "24ч %▲"
+    ],
+    "first": "UAI/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  },
+  {
+    "buttons": [
+      "Цена⇅",
+      "24ч %⇅"
+    ],
+    "first": "BTC/USDT",
+    "scroll": 0,
+    "selected": "BTC/USDT"
+  }
+]

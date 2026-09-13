@@ -1,7 +1,7 @@
-import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
 import { useMarketTickers } from '../lib/useMarketData';
-import { useLanguage, Key } from '../lib/i18n';
+import { useLanguage } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
 import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
@@ -23,21 +23,8 @@ interface Row {
   quoteVolume24h: number | null;
 }
 
-type SortField = 'volume' | 'price' | 'change' | 'symbol';
-
-// Same seven modes and the same volume-descending default the spot pair
-// list uses, so the two panels sort identically. Open interest is not among
-// them: nothing in this exchange records it (see FuturesTickerBar's note),
-// and a sort key with no data behind it would just be a dead control.
-const SORT_MODES: { id: string; field: SortField; dir: 1 | -1; labelKey: Key }[] = [
-  { id: 'volume_desc', field: 'volume', dir: -1, labelKey: 'trade.sortVolumeDesc' },
-  { id: 'volume_asc', field: 'volume', dir: 1, labelKey: 'trade.sortVolumeAsc' },
-  { id: 'change_desc', field: 'change', dir: -1, labelKey: 'trade.sortChangeDesc' },
-  { id: 'change_asc', field: 'change', dir: 1, labelKey: 'trade.sortChangeAsc' },
-  { id: 'price_desc', field: 'price', dir: -1, labelKey: 'trade.sortPriceDesc' },
-  { id: 'price_asc', field: 'price', dir: 1, labelKey: 'trade.sortPriceAsc' },
-  { id: 'symbol_asc', field: 'symbol', dir: 1, labelKey: 'trade.sortSymbolAsc' },
-];
+type SortField = 'price' | 'change';
+type Sort = { field: SortField; dir: 1 | -1 } | null;
 
 /**
  * The futures market list, on the spot terminal's own `.pair-row` grid so
@@ -48,7 +35,7 @@ const SORT_MODES: { id: string; field: SortField; dir: 1 | -1; labelKey: Key }[]
  * Scoped to FUTURES_SYMBOLS — the only markets a position can actually be
  * opened on (config/futuresConfig.ts on the backend rejects anything else).
  * Prices and 24h figures come from the same live ticker feed the rest of
- * the app uses; nothing is ordered by a hardcoded list.
+ * the app uses. Default order pins BTC first, then ranks by real volume.
  *
  * Favorites use the exact same store as Spot and Markets (lib/pairList's
  * loadFavorites/saveFavorites, keyed by pair string) — a contract starred
@@ -66,12 +53,13 @@ export const FuturesPairList = forwardRef<
   const { t } = useLanguage();
   const [tickers, setTickers] = useState<Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }>>({});
   const [search, setSearch] = useState('');
-  const [sortId, setSortId] = useState('volume_desc');
+  const [sort, setSort] = useState<Sort>(null);
   // Shared store — see lib/useFavorites; the spot terminal, Markets and
   // the homepage table all read the same set, live.
   const { favorites, toggle: toggleFavoritePair } = useFavorites();
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLElement | null>(null);
 
   useImperativeHandle(ref, () => ({ focusSearch: () => searchRef.current?.focus() }), []);
 
@@ -80,13 +68,15 @@ export const FuturesPairList = forwardRef<
     toggleFavoritePair(pair);
   }
 
-  const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
-  const { field: sortField, dir: sortDir } = sortMode;
+  const sortField = sort?.field;
+  const sortDir = sort?.dir ?? -1;
 
   function toggleSort(field: SortField) {
-    const wantDir: 1 | -1 = sortField === field && sortDir === -1 ? 1 : -1;
-    const next = SORT_MODES.find((m) => m.field === field && m.dir === wantDir);
-    if (next) setSortId(next.id);
+    // Descending -> ascending -> default (BTC first). Sorting never
+    // switches the selected contract or discards search/favorites.
+    setSort(current => current?.field !== field ? { field, dir: -1 }
+      : current.dir === -1 ? { field, dir: 1 } : null);
+    if (listRef.current) listRef.current.scrollTop = 0;
   }
 
   // 4s, this list's original cadence, now served from the shared snapshot
@@ -140,14 +130,19 @@ export const FuturesPairList = forwardRef<
       return (a - b) * sortDir;
     };
     return built.sort((a, b) => {
-      if (sortField === 'symbol') return a.symbol.localeCompare(b.symbol) * sortDir;
       if (sortField === 'price') return by(a.lastPrice, b.lastPrice);
       if (sortField === 'change') return by(a.change, b.change);
+      if (a.symbol === 'BTC/USDT') return -1;
+      if (b.symbol === 'BTC/USDT') return 1;
       return by(a.quoteVolume24h, b.quoteVolume24h);
     });
   }, [symbols, tickers, search, sortField, sortDir, favoritesOnly, favorites]);
 
   const windowed = useWindowedRows(rows.length);
+  const attachList = useCallback((node: HTMLElement | null) => {
+    listRef.current = node;
+    windowed.ref(node);
+  }, [windowed.ref]);
 
   return (
     <>
@@ -172,23 +167,12 @@ export const FuturesPairList = forwardRef<
       </div>
 
       <div className="pairs-col-headers">
-        <select
-          className={`pch-mode ${sortField === 'volume' || sortField === 'symbol' ? 'active' : ''}`}
-          value={sortId}
-          onChange={(e) => setSortId(e.target.value)}
-          aria-label={t('trade.sortBy')}
-        >
-          {SORT_MODES.map((m) => (
-            <option key={m.id} value={m.id}>
-              {t(m.labelKey)}
-            </option>
-          ))}
-        </select>
-        <button className={`pch-sort ${sortField === 'price' ? 'active' : ''}`} onClick={() => toggleSort('price')}>
+        <span aria-hidden />
+        <button type="button" aria-pressed={sortField === 'price'} className={`pch-sort ${sortField === 'price' ? 'active' : ''}`} onClick={() => toggleSort('price')}>
           {t('trade.price')}
           <SortArrow active={sortField === 'price'} dir={sortDir} />
         </button>
-        <button className={`pch-sort ${sortField === 'change' ? 'active' : ''}`} onClick={() => toggleSort('change')}>
+        <button type="button" aria-pressed={sortField === 'change'} className={`pch-sort ${sortField === 'change' ? 'active' : ''}`} onClick={() => toggleSort('change')}>
           {t('markets.change24h')}
           <SortArrow active={sortField === 'change'} dir={sortDir} />
         </button>
@@ -199,7 +183,7 @@ export const FuturesPairList = forwardRef<
           actually show are in the DOM. Spacers preserve the real scroll
           height, so the scrollbar and keyboard scrolling behave exactly as
           they would with every row mounted. */}
-      <div className="pairs-list" ref={windowed.ref}>
+      <div className="pairs-list" ref={attachList}>
         {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         {windowed.padTop > 0 && <div style={{ height: windowed.padTop }} aria-hidden />}
         {rows.slice(windowed.start, windowed.end).map((r) => {
