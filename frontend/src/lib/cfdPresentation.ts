@@ -1,3 +1,5 @@
+export { ageCfdTickerRows } from './cfdTickerFreshness';
+
 /** Display precision is not a financial rounding rule. */
 const CFD_DECIMALS: Record<string, number> = {
   XAUUSD: 2, XAGUSD: 2, XPTUSD: 2, XPDUSD: 2, WTIUSD: 2, XBRUSD: 2,
