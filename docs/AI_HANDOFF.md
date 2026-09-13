@@ -2041,3 +2041,11 @@ withdrawal was placed.
 - Focused 122/122 pass; frontend TypeScript/build pass. Full frontend 1252 pass / 71 fail / 1323 total, 82 suites, 67.373 seconds. Exact new failure names zero compared with stored prior chart-restoration run (not a newly executed pristine baseline).
 - Browser: 1440/833/390 widths plus normal 1280 viewport, no horizontal overflow; 761 contracts, live book/trades, mode changes, OCO draft preserved after book/timeframe changes. Local QA blocks private account reads and financial writes, so account unavailable state is expected. No production-readiness assertion.
 - Committed locally only; no push/merge/deploy in this repair. Next: review repaired preview and existing 71 unrelated failures before release.
+
+
+## 2026-09-13 — Codex — Futures graphite composition proposal
+
+- Implementation 2738128a81e09b231792a944d6d8e6a8aff8c79e, continuing codex/terminal-layout-repair. Material files: FuturesReferenceBook, referenceBook utility/test, TerminalPresentationPolish.css and futures-graphite QA note/screenshot.
+- Unified graphite surfaces/headings, compact form styling and 22px book rows tied to the shared row-budget constant. Preserved all preceding repairs, chart alternatives, all order forms/guards, data transport and financial behavior.
+- 105 focused tests pass; frontend TypeScript/build pass. Desktop 1440 visual QA passed; 390 DOM overflow check passed but screenshot capture inconsistent. Normal viewport restored. Full-suite prior known failures unchanged in scope; no new full run. Details: docs/qa/terminal-presentation-polish/futures-graphite.md.
+- User asked to see result; preview requested in Codex panel at http://127.0.0.1:4210/futures. No push/merge/deploy; production still displays earlier version.
