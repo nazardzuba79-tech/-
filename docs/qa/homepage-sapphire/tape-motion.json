@@ -1,0 +1,58 @@
+{
+  "defaultMove": 62,
+  "wrapped": 16,
+  "reducedMove": 15,
+  "widths": [
+    {
+      "width": 1920,
+      "left": 0,
+      "right": 1920,
+      "overflow": false,
+      "labels": false,
+      "sets": 2,
+      "accessibleRows": 12,
+      "duplicateHidden": "true"
+    },
+    {
+      "width": 1600,
+      "left": 0,
+      "right": 1600,
+      "overflow": false,
+      "labels": false,
+      "sets": 2,
+      "accessibleRows": 12,
+      "duplicateHidden": "true"
+    },
+    {
+      "width": 1024,
+      "left": 0,
+      "right": 1024,
+      "overflow": false,
+      "labels": false,
+      "sets": 2,
+      "accessibleRows": 12,
+      "duplicateHidden": "true"
+    },
+    {
+      "width": 768,
+      "left": 0,
+      "right": 768,
+      "overflow": false,
+      "labels": false,
+      "sets": 2,
+      "accessibleRows": 12,
+      "duplicateHidden": "true"
+    },
+    {
+      "width": 390,
+      "left": 0,
+      "right": 390,
+      "overflow": false,
+      "labels": false,
+      "sets": 2,
+      "accessibleRows": 12,
+      "duplicateHidden": "true"
+    }
+  ],
+  "errors": []
+}
