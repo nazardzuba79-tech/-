@@ -67,10 +67,11 @@ test('market overview and chart use language-aware copy instead of hardcoded Eng
   const chart = read('components/CfdChart.tsx');
   expect(overview).toContain('cfdMarketCopy(lang)');
   expect(overview).toContain('copy.updated');
-  expect(overview).toContain('copy.multiSource');
-  expect(overview).toContain('copy.note');
+  expect(overview).not.toContain('copy.multiSource');
+  expect(overview).not.toContain('copy.note');
   expect(ticker).toContain('copy.status');
-  expect(chart).toContain('cfdMarketCopy(lang).chartNote');
+  expect(chart).not.toContain('chartNote');
+  expect(chart).toContain('TradingViewAdvancedChart');
 });
 
 test('deep links resolve only to listed canonical instruments', () => {
