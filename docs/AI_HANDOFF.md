@@ -2077,3 +2077,9 @@ withdrawal was placed.
 - Focused validation: 182 tests across 5 suites passed (futuresFinalPolish, referenceBook, futuresOrderPanel, chartDrawings, priceChartMarketOrders). Frontend TypeScript and production build passed (Vite 7.23s); QA script syntax and git diff --check passed. No new global/backend suite run.
 - Browser: all three at 1440, narrow desktop 1077, and mobile 390 checked without horizontal page overflow. Ruler drawing and single-object deletion exercised; OCO draft 80000 retained through all three designs. No orders submitted. Actual browser screenshots: docs/qa/terminal-presentation-polish/futures-design-{a-studio,b-graphite,c-focus}.png.
 - Review entry: http://127.0.0.1:4210/__qa/start?market=futures&terminalDesign=studio (or graphite/focus). Local-only QA keeps private reads unavailable and financial writes blocked; visible unavailable account states are expected, not hidden. No fabricated balances or readiness assertion. No push, merge or production deployment in this task.
+
+## 2026-09-13 — Codex — compact Studio palette comparison
+
+- Implementation a69a6679ed941d70621eae5348f07a47d7a2cd60. Only FuturesDesignVariants.css changed: opt-in A/Studio now uses B's 3px gutters, 4px outer padding, 33px market rows and desktop column/row sizing, retaining the original Studio palette. B/Graphite and C/Focus unchanged; all forms, chart behavior and data/financial logic preserved.
+- Frontend TypeScript and production build pass (Vite 6.16s), git diff --check passes. Browser comparison at 1440x900 confirms identical A/B geometry; A at 390 has no horizontal page overflow and retains usable chart/forms. Normal viewport restored. No new tests added or full suite rerun for CSS-only geometry. Screenshots: futures-hybrid-a-studio.png and futures-hybrid-b-graphite.png in docs/qa/terminal-presentation-polish.
+- Local review only; no push/merge/deploy. Next: owner chooses between compact Studio palette and unchanged Graphite.
