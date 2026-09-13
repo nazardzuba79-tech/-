@@ -75,8 +75,10 @@ function createReviewServer({feed,catalog,display,trace,revision=null,now=Date.n
     res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
     const send=(status,value,type='application/json')=>{res.writeHead(status,{'Content-Type':`${type}; charset=utf-8`});res.end(req.method==='HEAD'?undefined:typeof value==='string'?value:JSON.stringify(value));};
     if(!['GET','HEAD'].includes(req.method)){res.setHeader('Allow','GET, HEAD');return send(405,{error:'read_only_review'});}
-    const pathname=new URL(req.url,'http://reference-review.invalid').pathname;
     try {
+      // Only origin-form literal allowlisted paths. Malformed/absolute request
+      // targets cannot throw a URL-parser exception or select another host.
+      const pathname=typeof req.url==='string'?req.url.split('?',1)[0]:'';
       if(pathname==='/health')return send(200,{ok:true,mode:'read-only-reference-review',revision,databaseUsed:false,executionAllowed:false,observations:feed.snapshot().length});
       if(pathname==='/api/v1/cfd/tickers')return send(200,payload());
       if(pathname==='/diagnostics')return send(200,{mode:'read-only-reference-review',revision,observedAt:new Date(now()).toISOString(),sources:trace.diagnostics(),scheduler:feed.diagnostics()});
