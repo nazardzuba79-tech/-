@@ -9,6 +9,9 @@ on:
       - 'src/futures/__tests__/MarkPriceService.test.ts'
       - 'src/index.ts'
       - 'frontend/src/pages/analytics/**'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/__tests__/analyticsLive.test.ts'
+      - 'src/services/__tests__/AnalyticsDataService.test.ts'
       - '.github/workflows/analytics-live-data.yml'
 permissions:
   contents: read
@@ -42,3 +45,5 @@ jobs:
         env:
           VITE_API_URL: /api/v1
         run: npm run build
+      - name: Analytics contract, rendering and gateway regressions
+        run: npm test -- --runInBand --silent frontend/src/lib/__tests__/analyticsLive.test.ts src/services/analytics/__tests__ src/services/__tests__/AnalyticsDataService.test.ts src/api/routes/__tests__/analytics.test.ts

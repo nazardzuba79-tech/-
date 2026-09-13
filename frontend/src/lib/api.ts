@@ -302,10 +302,79 @@ export interface AnalyticsSectorRotation {
   universe: number;
 }
 
+export interface LiquidationEvent {
+  id: string;
+  symbol: string;
+  baseAsset: string;
+  side: 'LONG' | 'SHORT';
+  price: number;
+  quantity: number;
+  notionalUsd: number;
+  tradeTime: number;
+}
+
+export interface LiquidationBucket {
+  fromPrice: number;
+  toPrice: number;
+  longNotionalUsd: number;
+  shortNotionalUsd: number;
+  eventCount: number;
+}
+
+export interface LiquidationWindow {
+  hours: number;
+  from: number;
+  to: number;
+  coverageStartAt: number | null;
+  coverageComplete: boolean;
+  eventCount: number;
+  longNotionalUsd: number;
+  shortNotionalUsd: number;
+  totalNotionalUsd: number;
+  largestEvent: LiquidationEvent | null;
+  buckets: LiquidationBucket[];
+  recent: LiquidationEvent[];
+}
+
+export interface LiquidationsValue {
+  baseAsset: string;
+  connected: boolean;
+  streamStartedAt: number | null;
+  lastMessageAt: number | null;
+  windows: LiquidationWindow[];
+}
+
+export interface ImpliedVolatilityValue {
+  baseAsset: string;
+  current: number;
+  open24h: number | null;
+  high24h: number | null;
+  low24h: number | null;
+  change24hPercent: number | null;
+  resolutionSeconds: number;
+  points: number;
+}
+
+export interface FuturesCurvePoint {
+  instrument: string;
+  expiryAt: number;
+  markPrice: number;
+  referencePrice: number;
+  basisPercent: number;
+  annualizedBasisPercent: number;
+  openInterest: number | null;
+  openInterestUnit: 'USD' | 'BASE';
+}
+
+export interface FuturesTermStructureValue {
+  baseAsset: string;
+  referencePrice: number;
+  points: FuturesCurvePoint[];
+}
+
 export interface AnalyticsSnapshot {
   generatedAt: number;
-  /** Contracts VOLTEX actually lists — the asset selector is built from
-   *  this, never from a hardcoded list. */
+  /** Contracts VOLTEX actually lists; native metrics must match this list. */
   contracts: string[];
   /** Base assets the external/derived modules cover. */
   trackedAssets: string[];
@@ -322,6 +391,9 @@ export interface AnalyticsSnapshot {
     realizedVolatility: GatewaySection<AnalyticsRealizedVolatility>;
     cryptoCorrelations: GatewaySection<AnalyticsCorrelations>;
     sectorRotation: GatewaySection<AnalyticsSectorRotation>;
+    liquidations: GatewaySection<LiquidationsValue>;
+    impliedVolatility: GatewaySection<ImpliedVolatilityValue>;
+    futuresTermStructure: GatewaySection<FuturesTermStructureValue>;
   };
   /** Designed modules with no legitimate source yet. Each carries a
    *  reason and NO value-carrying fields. */

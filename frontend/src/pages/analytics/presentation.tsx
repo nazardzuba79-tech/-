@@ -21,7 +21,7 @@ export const DASH = '—';
 /** Compact USD. Returns null for anything that is not a finite number, so
  *  a bad value can never surface as "$0". */
 export function formatUsd(value: number | string | null | undefined): string | null {
-  const n = typeof value === 'string' ? Number(value) : value;
+  const n = typeof value === 'string' ? (value.trim() === '' ? null : Number(value)) : value;
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   const abs = Math.abs(n);
   if (abs >= 1e12) return `$${(n / 1e12).toFixed(2)}T`;
@@ -32,13 +32,13 @@ export function formatUsd(value: number | string | null | undefined): string | n
 }
 
 export function formatPercent(value: number | string | null | undefined, digits = 2): string | null {
-  const n = typeof value === 'string' ? Number(value) : value;
+  const n = typeof value === 'string' ? (value.trim() === '' ? null : Number(value)) : value;
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   return `${n.toFixed(digits)}%`;
 }
 
 export function formatSignedPercent(value: number | string | null | undefined, digits = 2): string | null {
-  const n = typeof value === 'string' ? Number(value) : value;
+  const n = typeof value === 'string' ? (value.trim() === '' ? null : Number(value)) : value;
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   return `${n >= 0 ? '+' : ''}${n.toFixed(digits)}%`;
 }
@@ -46,7 +46,7 @@ export function formatSignedPercent(value: number | string | null | undefined, d
 /** A price with enough significant digits for sub-dollar assets, and no
  *  rounding of a small real number down to "0.00". */
 export function formatPrice(value: string | number | null | undefined): string | null {
-  const n = typeof value === 'string' ? Number(value) : value;
+  const n = typeof value === 'string' ? (value.trim() === '' ? null : Number(value)) : value;
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   const abs = Math.abs(n);
   const digits = abs >= 1000 ? 2 : abs >= 1 ? 2 : abs >= 0.01 ? 4 : 8;
@@ -56,7 +56,7 @@ export function formatPrice(value: string | number | null | undefined): string |
 /** A base-asset quantity. A real zero stays "0"; small quantities keep
  *  their significant digits rather than rounding away to nothing. */
 export function formatQuantity(value: string | number | null | undefined): string | null {
-  const n = typeof value === 'string' ? Number(value) : value;
+  const n = typeof value === 'string' ? (value.trim() === '' ? null : Number(value)) : value;
   if (n === null || n === undefined || !Number.isFinite(n)) return null;
   if (n === 0) return '0';
   const abs = Math.abs(n);
@@ -69,7 +69,7 @@ export function formatQuantity(value: string | number | null | undefined): strin
 /** A funding rate is stored as a fraction; it is displayed as a percentage
  *  with four decimals, the convention the futures header already uses. */
 export function formatFundingRate(rate: string | null | undefined): string | null {
-  if (rate === null || rate === undefined) return null;
+  if (rate === null || rate === undefined || rate.trim() === '') return null;
   const n = Number(rate);
   if (!Number.isFinite(n)) return null;
   return `${n >= 0 ? '+' : ''}${(n * 100).toFixed(4)}%`;

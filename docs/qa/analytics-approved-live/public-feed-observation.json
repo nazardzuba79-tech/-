@@ -1,0 +1,1264 @@
+[
+  {
+    "at": 1789322500777,
+    "asset": "BTC",
+    "generatedAt": 1789322500777,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322529967,
+    "asset": "BTC",
+    "generatedAt": 1789322529967,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322559982,
+    "asset": "BTC",
+    "generatedAt": 1789322559982,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322582633,
+    "asset": "ETH",
+    "generatedAt": 1789322582633,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322589854,
+    "asset": "ETH",
+    "generatedAt": 1789322589854,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322619986,
+    "asset": "ETH",
+    "generatedAt": 1789322619986,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322649972,
+    "asset": "ETH",
+    "generatedAt": 1789322649972,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322670472,
+    "asset": "SOL",
+    "generatedAt": 1789322670472,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322679759,
+    "asset": "SOL",
+    "generatedAt": 1789322679759,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322709979,
+    "asset": "SOL",
+    "generatedAt": 1789322709979,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322719623,
+    "asset": "XRP",
+    "generatedAt": 1789322719623,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322740063,
+    "asset": "XRP",
+    "generatedAt": 1789322740063,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322769983,
+    "asset": "XRP",
+    "generatedAt": 1789322769983,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322799969,
+    "asset": "XRP",
+    "generatedAt": 1789322799969,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": false
+      },
+      "futuresTermStructure": {
+        "available": false
+      }
+    }
+  },
+  {
+    "at": 1789322815276,
+    "asset": "BTC",
+    "generatedAt": 1789322815276,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322845267,
+    "asset": "BTC",
+    "generatedAt": 1789322845267,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322849565,
+    "asset": "ETH",
+    "generatedAt": 1789322849565,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322875276,
+    "asset": "ETH",
+    "generatedAt": 1789322875276,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322905267,
+    "asset": "ETH",
+    "generatedAt": 1789322905267,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322935272,
+    "asset": "ETH",
+    "generatedAt": 1789322935272,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322965285,
+    "asset": "ETH",
+    "generatedAt": 1789322965285,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  },
+  {
+    "at": 1789322995269,
+    "asset": "ETH",
+    "generatedAt": 1789322995269,
+    "sections": {
+      "marketOverview": {
+        "available": true,
+        "stale": false
+      },
+      "sentiment": {
+        "available": true,
+        "stale": false
+      },
+      "derivatives": {
+        "available": false
+      },
+      "externalOpenInterest": {
+        "available": true,
+        "stale": false
+      },
+      "externalFunding": {
+        "available": true,
+        "stale": false
+      },
+      "perpetualBasis": {
+        "available": true,
+        "stale": false
+      },
+      "longShortPositioning": {
+        "available": true,
+        "stale": false
+      },
+      "realizedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "cryptoCorrelations": {
+        "available": true,
+        "stale": false
+      },
+      "sectorRotation": {
+        "available": true,
+        "stale": false
+      },
+      "liquidations": {
+        "available": true,
+        "stale": false
+      },
+      "impliedVolatility": {
+        "available": true,
+        "stale": false
+      },
+      "futuresTermStructure": {
+        "available": true,
+        "stale": false
+      }
+    }
+  }
+]
