@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { AnalyticsDataService } from '../../services/AnalyticsDataService';
+import { HistoricalOpenInterestService } from '../../services/analytics/HistoricalOpenInterestService';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 
@@ -24,6 +25,11 @@ import { requireAdmin } from '../middleware/admin';
  *                                 number in it is already visible on
  *                                 /markets or the futures terminal.
  *
+ *   GET /analytics/open-interest-history — signed-in users. Public,
+ *                                 read-only hourly open-interest history
+ *                                 for the selected BTC/ETH/SOL/XRP
+ *                                 perpetual reference contract.
+ *
  *   GET /analytics/diagnostics  — ADMIN ONLY. Provider circuit state,
  *                                 consecutive failures, cooldowns and
  *                                 rate-limit hits. Same gate, and the same
@@ -39,6 +45,9 @@ import { requireAdmin } from '../middleware/admin';
  */
 export function analyticsRouter(prisma: PrismaClient, analyticsService: AnalyticsDataService): Router {
   const router = Router();
+  const openInterestHistory = new HistoricalOpenInterestService(
+    process.env.BINANCE_FUTURES_API_BASE_URL || 'https://fapi.binance.com'
+  );
 
   router.get('/analytics/overview', requireAuth(prisma), async (req: AuthedRequest, res) => {
     try {
@@ -52,6 +61,20 @@ export function analyticsRouter(prisma: PrismaClient, analyticsService: Analytic
       // means something structural failed rather than one provider being
       // down — that is a 500, not a degraded 200.
       console.error('[analytics] snapshot failed', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  router.get('/analytics/open-interest-history', requireAuth(prisma), async (req: AuthedRequest, res) => {
+    try {
+      const asset = typeof req.query.asset === 'string' ? req.query.asset.slice(0, 12).toUpperCase() : '';
+      if (!asset) {
+        res.status(400).json({ error: 'asset is required' });
+        return;
+      }
+      res.json(await openInterestHistory.getHistory(asset));
+    } catch (err) {
+      console.error('[analytics] open-interest history failed', err);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
