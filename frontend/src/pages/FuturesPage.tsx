@@ -25,6 +25,7 @@ import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
 import './trade-terminal/ReferenceFuturesTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
+import './trade-terminal/FuturesStudio.css';
 
 
 // Until /futures/config answers. Deliberately the same three contracts the
@@ -60,6 +61,7 @@ export function FuturesPage() {
   const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const studio = searchParams.get('terminalDesign') === 'studio';
   // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
@@ -138,7 +140,7 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="trade-terminal futures-terminal futures-reference">
+    <div className={`trade-terminal futures-terminal futures-reference${studio ? ' futures-studio' : ''}`}>
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market
@@ -162,6 +164,7 @@ export function FuturesPage() {
 
         <div className="main-grid">
           {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
+            {studio && <h2 className="studio-market-heading">{t('nav.markets')}</h2>}
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>

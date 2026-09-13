@@ -342,10 +342,12 @@ export function PriceChart({
     // specifically for the spot terminal. Gated on `terminal` rather than
     // applied everywhere so Futures' chart (out of scope here) is
     // pixel-identical to before.
+    const plotBackground = typeof getComputedStyle === 'function'
+      ? getComputedStyle(containerRef.current).getPropertyValue('--voltex-plot-background').trim() : '';
     const chart = createChart(containerRef.current, {
       layout: {
         // Match the terminal surface, including the axes and drawing rail.
-        background: { type: ColorType.Solid, color: '#101014' },
+        background: { type: ColorType.Solid, color: plotBackground || '#101014' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
         textColor: terminal ? '#c7d2e0' : '#a3adba',

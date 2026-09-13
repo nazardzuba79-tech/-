@@ -474,3 +474,14 @@ test('Futures Assets uses only Futures balances; compact Spot keeps its original
   expect(source('pages/FuturesPage.tsx')).toContain('<AssetsPanel wallet="futures"');
   expect(source('pages/TradePage.tsx')).toContain('<AssetsPanel compact refreshKey={ordersRefreshKey} />');
 });
+
+test('studio is an opt-in composition and preserves the selected contract and order component',()=>{
+ const params=new URLSearchParams();const page=mount('pages/FuturesPage.tsx',{params,matchMedia:()=>({matches:true,addEventListener(){},removeEventListener(){}}),socket:{subscribeBook:()=>()=>{}}});
+ let tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(false);
+ nodes(tree).find(n=>n.type===page.components.FuturesPairList)!.props.onChange('ETH/USDT');params.set('terminalDesign','studio');tree=page.render();
+ expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(true);
+ expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
+ expect(nodes(tree).filter(n=>n.type===page.components.FuturesPairList)).toHaveLength(1);
+ params.delete('terminalDesign');tree=page.render();expect(nodes(tree).some(n=>String(n.props?.className).includes('futures-studio'))).toBe(false);
+ expect(nodes(tree).find(n=>n.type===page.components.FuturesOrderForm)!.props.symbol).toBe('ETH/USDT');
+});
