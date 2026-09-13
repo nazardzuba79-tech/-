@@ -90,24 +90,15 @@ export interface AnalyticsSnapshot {
     realizedVolatility: Availability<RealizedVolatilityValue>;
     cryptoCorrelations: Availability<CorrelationsValue>;
     sectorRotation: Availability<SectorRotationValue>;
-    /** Observed public forced-liquidation executions. Never extrapolated into latent liquidity. */
     liquidations: Availability<LiquidationsValue>;
-    /** Real hourly public open-interest history for the selected tracked asset. */
     openInterestHistory: Availability<OpenInterestHistoryValue>;
-    /** Licensed latent liquidation map, when a commercial provider is configured. */
     liquidationHeatmap: Availability<LiquidationHeatmapValue>;
-    /** Licensed ETF creation/redemption flow history, when available for the selected asset. */
     etfFlows: Availability<EtfFlowsValue>;
-    /** Labelled exchange balance changes, not exchange trading volume. */
     exchangeFlows: Availability<ExchangeFlowsValue>;
-    /** Labelled large on-chain transfers, never inferred from large exchange trades. */
     whaleActivity: Availability<WhaleActivityValue>;
-    /** Provider-reported implied volatility; BTC/ETH use DVOL, SOL/XRP use real ATM option mark IV. */
     impliedVolatility: Availability<ImpliedVolatilityValue>;
-    /** Real dated futures marks versus their reported reference price. */
     futuresTermStructure: Availability<FuturesTermStructureValue>;
   };
-  /** Kept for wire compatibility. First-class sections above now carry their own availability. */
   unsupported: Record<string, Unavailable>;
 }
 
@@ -175,6 +166,12 @@ export class AnalyticsDataService {
     ]);
 
     const liquidations = this.liquidations(selectedAsset);
+    const unsupported: Record<string, Unavailable> = this.licensedAnalytics ? {} : {
+      liquidationHeatmap: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      etfFlows: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      exchangeFlows: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      whaleActivity: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+    };
 
     return {
       generatedAt: Date.now(),
@@ -201,7 +198,7 @@ export class AnalyticsDataService {
         impliedVolatility,
         futuresTermStructure,
       },
-      unsupported: {},
+      unsupported,
     };
   }
 
