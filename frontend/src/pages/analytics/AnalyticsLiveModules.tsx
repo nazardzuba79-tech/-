@@ -77,6 +77,7 @@ interface FuturesCurvePoint {
   basisPercent: number;
   annualizedBasisPercent: number;
   openInterest: number | null;
+  openInterestUnit: 'USD' | 'BASE';
 }
 
 interface FuturesTermStructureValue {
@@ -107,6 +108,12 @@ export function AnalyticsLiveModules() {
   const curve = live.futuresTermStructure;
   const maxBucket = selectedWindow
     ? Math.max(0, ...selectedWindow.buckets.map((bucket) => bucket.longNotionalUsd + bucket.shortNotionalUsd))
+    : 0;
+  const coveragePercent = selectedWindow?.coverageStartAt
+    ? Math.max(
+        0,
+        Math.min(100, ((selectedWindow.to - selectedWindow.coverageStartAt) / (selectedWindow.hours * 60 * 60 * 1000)) * 100)
+      )
     : 0;
 
   return (
@@ -145,9 +152,15 @@ export function AnalyticsLiveModules() {
               </div>
 
               {!selectedWindow.coverageComplete && selectedWindow.coverageStartAt ? (
-                <div className="vx-live-coverage" title={new Date(selectedWindow.coverageStartAt).toLocaleString()}>
-                  <span className="vx-live-pulse" />
-                  {new Date(selectedWindow.coverageStartAt).toLocaleString()} → now
+                <div
+                  className="vx-live-coverage"
+                  role="progressbar"
+                  aria-label={`${selectedWindow.hours}h coverage`}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(coveragePercent)}
+                >
+                  <span style={{ width: `${coveragePercent}%` }} />
                 </div>
               ) : null}
 
@@ -199,11 +212,19 @@ export function AnalyticsLiveModules() {
         >
           {implied?.available ? (
             <div className="vx-metric-grid vx-live-metrics">
-              <Metric label={t('analytics.impliedVolatility')} value={Number.isFinite(implied.value.current) ? implied.value.current.toFixed(2) : null} emphasis />
+              <Metric
+                label={t('analytics.impliedVolatility')}
+                value={Number.isFinite(implied.value.current) ? `${implied.value.current.toFixed(2)}%` : null}
+                emphasis
+              />
               <Metric label="24h" value={formatSignedPercent(implied.value.change24hPercent)} tone={tone(implied.value.change24hPercent)} />
               <Metric
                 label={t('analytics.marketRange')}
-                value={implied.value.low24h !== null && implied.value.high24h !== null ? `${implied.value.low24h.toFixed(2)} … ${implied.value.high24h.toFixed(2)}` : null}
+                value={
+                  implied.value.low24h !== null && implied.value.high24h !== null
+                    ? `${implied.value.low24h.toFixed(2)}% … ${implied.value.high24h.toFixed(2)}%`
+                    : null
+                }
               />
               <Metric label={t('analytics.constituents')} value={String(implied.value.points)} />
             </div>
@@ -241,7 +262,13 @@ export function AnalyticsLiveModules() {
                   <span>{formatPrice(point.markPrice)}</span>
                   <span className={point.basisPercent >= 0 ? 'is-positive' : 'is-negative'}>{formatSignedPercent(point.basisPercent)}</span>
                   <span className={point.annualizedBasisPercent >= 0 ? 'is-positive' : 'is-negative'}>{formatSignedPercent(point.annualizedBasisPercent)}</span>
-                  <span>{formatQuantity(point.openInterest)}</span>
+                  <span>
+                    {point.openInterest === null
+                      ? '—'
+                      : point.openInterestUnit === 'USD'
+                        ? formatUsd(point.openInterest)
+                        : `${formatQuantity(point.openInterest)} ${curve.value.baseAsset}`}
+                  </span>
                 </div>
               ))}
             </div>
