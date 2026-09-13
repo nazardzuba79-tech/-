@@ -5,6 +5,10 @@ export interface FuturesDepthSnapshot { bids: {price:string;quantity:string}[]; 
 const empty = (): FuturesDepthSnapshot => ({ bids: [], asks: [] });
 const DEPTH = 200;
 const MAX_AGE_MS = 30_000;
+const FLUSH_MS = 300;
+const PING_MS = 20_000;
+const IDLE_CLOSE_MS = 750;
+const WS_URL = 'wss://stream.bybit.com/v5/public/linear';
 
 export class FuturesDepthBook {
   private bids = new Map<string,string>();
@@ -50,53 +54,220 @@ export class FuturesDepthBook {
   }
 }
 
-export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void): () => void {
-  listener(empty());
-  if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
-  const symbol=pair.replace('/','');
-  let socket:WebSocket|null=null, stopped=false, retry:ReturnType<typeof setTimeout>|null=null;
-  let flush:ReturnType<typeof setTimeout>|null=null, heartbeat:ReturnType<typeof setInterval>|null=null;
-  let backoff=1000;
-  const clearConnection=()=>{
-    const old=socket;socket=null;
-    if(old){old.onopen=null;old.onmessage=null;old.onerror=null;old.onclose=null;old.close();}
-    if(flush!==null)clearTimeout(flush);flush=null;
-    if(heartbeat!==null)clearInterval(heartbeat);heartbeat=null;
+type DepthListener = (book: FuturesDepthSnapshot) => void;
+interface ActiveDepth {
+  book: FuturesDepthBook;
+  listeners: Set<DepthListener>;
+  lastFrame: number;
+  flush: ReturnType<typeof setTimeout> | null;
+}
+
+/**
+ * One shared Bybit linear socket for the Futures tab. Switching contracts now
+ * unsubscribes/subscribes topics on the existing connection instead of closing
+ * and opening a brand-new WebSocket for every click. The small idle grace keeps
+ * React's cleanup -> next effect handoff on the same transport, eliminating the
+ * connection churn that could leave the order book blank while Bybit throttled
+ * repeated reconnects.
+ */
+class FuturesDepthTransport {
+  private socket: WebSocket | null = null;
+  private subscriptions = new Map<string, ActiveDepth>();
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private idleCloseTimer: ReturnType<typeof setTimeout> | null = null;
+  private heartbeat: ReturnType<typeof setInterval> | null = null;
+  private reconnectDelay = 1000;
+  private lastPing = 0;
+  private visibilityAttached = false;
+
+  subscribe(pair: string, listener: DepthListener): () => void {
+    listener(empty());
+    if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
+    const symbol = pair.replace('/','');
+    this.cancelIdleClose();
+    this.attachVisibility();
+
+    let active = this.subscriptions.get(symbol);
+    const isNewTopic = !active;
+    if (!active) {
+      active = { book: new FuturesDepthBook(symbol), listeners: new Set(), lastFrame: Date.now(), flush: null };
+      this.subscriptions.set(symbol, active);
+    }
+    active.listeners.add(listener);
+
+    this.connect();
+    if (isNewTopic) this.send('subscribe', symbol);
+
+    let stopped = false;
+    return () => {
+      if (stopped) return;
+      stopped = true;
+      const current = this.subscriptions.get(symbol);
+      if (!current) return;
+      current.listeners.delete(listener);
+      if (current.listeners.size === 0) {
+        if (current.flush !== null) clearTimeout(current.flush);
+        current.flush = null;
+        this.subscriptions.delete(symbol);
+        this.send('unsubscribe', symbol);
+      }
+      if (this.subscriptions.size === 0) this.scheduleIdleClose();
+    };
+  }
+
+  private attachVisibility() {
+    if (this.visibilityAttached) return;
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityAttached = true;
+  }
+
+  private detachVisibility() {
+    if (!this.visibilityAttached) return;
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
+    this.visibilityAttached = false;
+  }
+
+  private onVisibilityChange = () => {
+    this.cancelReconnect();
+    if (document.hidden) {
+      this.resetBooks();
+      this.clearSocket();
+      return;
+    }
+    this.connect();
   };
-  const reconnect=()=>{
-    clearConnection();listener(empty());
-    if(stopped||document.hidden||retry!==null)return;
-    retry=setTimeout(()=>{retry=null;connect();},backoff);
-    backoff=Math.min(backoff*2,15000);
-  };
-  const connect=()=>{
-    if(stopped||document.hidden||socket)return;
-    const book=new FuturesDepthBook(symbol);
-    let lastFrame=Date.now(),lastPing=Date.now();
+
+  private connect() {
+    if (this.subscriptions.size === 0 || document.hidden || this.socket || this.reconnectTimer !== null) return;
     try {
-      const ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');socket=ws;
-      ws.onopen=()=>{if(socket===ws)ws.send(JSON.stringify({op:'subscribe',args:[`orderbook.${DEPTH}.${symbol}`]}));};
-      ws.onmessage=event=>{
-        if(stopped||socket!==ws)return;
-        try{
-          const frame=JSON.parse(event.data);
-          if(frame.success===false)throw new Error('Subscription rejected');
-          if(!book.apply(frame,Date.now()))return;
-          lastFrame=Date.now();backoff=1000;
-          if(flush===null)flush=setTimeout(()=>{flush=null;if(!stopped&&socket===ws)listener(book.snapshot());},300);
-        }catch{reconnect();}
+      const ws = new WebSocket(WS_URL);
+      this.socket = ws;
+      this.lastPing = Date.now();
+      this.startHeartbeat();
+      ws.onopen = () => {
+        if (this.socket !== ws) return;
+        this.reconnectDelay = 1000;
+        this.lastPing = Date.now();
+        for (const symbol of this.subscriptions.keys()) this.send('subscribe', symbol);
       };
-      ws.onerror=ws.onclose=()=>{if(socket===ws)reconnect();};
-      heartbeat=setInterval(()=>{
-        if(Date.now()-lastFrame>MAX_AGE_MS){reconnect();return;}
-        if(ws.readyState===1&&Date.now()-lastPing>=20000){ws.send(JSON.stringify({op:'ping'}));lastPing=Date.now();}
-      },1000);
-    }catch{reconnect();}
-  };
-  const visibility=()=>{
-    if(retry!==null)clearTimeout(retry);retry=null;
-    clearConnection();listener(empty());if(!document.hidden)connect();
-  };
-  document.addEventListener('visibilitychange',visibility);connect();
-  return ()=>{stopped=true;if(retry!==null)clearTimeout(retry);clearConnection();document.removeEventListener('visibilitychange',visibility);};
+      ws.onmessage = event => {
+        if (this.socket !== ws) return;
+        let frame: any;
+        try { frame = JSON.parse(event.data); } catch { this.reconnect(); return; }
+        if (frame?.success === false) { this.reconnect(); return; }
+        const prefix = `orderbook.${DEPTH}.`;
+        if (typeof frame?.topic !== 'string' || !frame.topic.startsWith(prefix)) return;
+        const symbol = frame.topic.slice(prefix.length);
+        const active = this.subscriptions.get(symbol);
+        if (!active) return;
+        try {
+          if (!active.book.apply(frame, Date.now())) return;
+        } catch {
+          this.reconnect();
+          return;
+        }
+        active.lastFrame = Date.now();
+        this.reconnectDelay = 1000;
+        if (active.flush === null) {
+          active.flush = setTimeout(() => {
+            active.flush = null;
+            if (this.subscriptions.get(symbol) !== active) return;
+            const snapshot = active.book.snapshot();
+            for (const subscriber of active.listeners) subscriber(snapshot);
+          }, FLUSH_MS);
+        }
+      };
+      ws.onerror = ws.onclose = () => { if (this.socket === ws) this.reconnect(); };
+    } catch {
+      this.reconnect();
+    }
+  }
+
+  private send(op: 'subscribe' | 'unsubscribe', symbol: string) {
+    const ws = this.socket;
+    if (!ws || ws.readyState !== 1) return;
+    try {
+      ws.send(JSON.stringify({ op, args: [`orderbook.${DEPTH}.${symbol}`] }));
+    } catch {
+      this.reconnect();
+    }
+  }
+
+  private startHeartbeat() {
+    if (this.heartbeat !== null) clearInterval(this.heartbeat);
+    this.heartbeat = setInterval(() => {
+      if (this.subscriptions.size === 0) return;
+      const now = Date.now();
+      for (const active of this.subscriptions.values()) {
+        if (now - active.lastFrame > MAX_AGE_MS) { this.reconnect(); return; }
+      }
+      const ws = this.socket;
+      if (ws?.readyState === 1 && now - this.lastPing >= PING_MS) {
+        try { ws.send(JSON.stringify({ op: 'ping' })); this.lastPing = now; }
+        catch { this.reconnect(); }
+      }
+    }, 1000);
+  }
+
+  private resetBooks() {
+    const now = Date.now();
+    for (const [symbol, active] of this.subscriptions) {
+      if (active.flush !== null) clearTimeout(active.flush);
+      active.flush = null;
+      active.book = new FuturesDepthBook(symbol);
+      active.lastFrame = now;
+      for (const subscriber of active.listeners) subscriber(empty());
+    }
+  }
+
+  private reconnect() {
+    this.clearSocket();
+    this.resetBooks();
+    if (this.subscriptions.size === 0 || document.hidden || this.reconnectTimer !== null) return;
+    const delay = this.reconnectDelay;
+    this.reconnectDelay = Math.min(this.reconnectDelay * 2, 15_000);
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect();
+    }, delay);
+  }
+
+  private clearSocket() {
+    const ws = this.socket;
+    this.socket = null;
+    if (ws) {
+      ws.onopen = null; ws.onmessage = null; ws.onerror = null; ws.onclose = null;
+      try { ws.close(); } catch {}
+    }
+    if (this.heartbeat !== null) clearInterval(this.heartbeat);
+    this.heartbeat = null;
+  }
+
+  private cancelReconnect() {
+    if (this.reconnectTimer !== null) clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private cancelIdleClose() {
+    if (this.idleCloseTimer !== null) clearTimeout(this.idleCloseTimer);
+    this.idleCloseTimer = null;
+  }
+
+  private scheduleIdleClose() {
+    this.cancelIdleClose();
+    this.idleCloseTimer = setTimeout(() => {
+      this.idleCloseTimer = null;
+      if (this.subscriptions.size !== 0) return;
+      this.cancelReconnect();
+      this.clearSocket();
+      this.reconnectDelay = 1000;
+      this.detachVisibility();
+    }, IDLE_CLOSE_MS);
+  }
+}
+
+const transport = new FuturesDepthTransport();
+
+export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void): () => void {
+  return transport.subscribe(pair, listener);
 }
