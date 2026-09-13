@@ -131,6 +131,32 @@ test('one shared clock fetches one ticker snapshot and bounded real hero sources
   h.unmount();
 });
 
+test('laptop hero requests start before the full ticker universe and publish independently', async () => {
+  const tickerGate = deferred<ReturnType<typeof tickers>>();
+  const bookGate = deferred<typeof book>();
+  const h = mount({
+    getExternalTickers: jest.fn().mockReturnValue(tickerGate.promise),
+    getExternalOrderBook: jest.fn().mockReturnValue(bookGate.promise),
+  });
+  await flush();
+  const partial = h.render();
+  expect(partial.tickersStatus).toBe('loading');
+  expect(partial.hero.pair).toBe('BTC/USDT');
+  expect(partial.hero.bookStatus).toBe('loading');
+  expect(partial.hero.candlesStatus).toBe('ok');
+  expect(partial.hero.candles).toEqual([candle]);
+  expect(partial.hero.tradesStatus).toBe('ok');
+  expect(partial.hero.trades).toEqual([trade]);
+  expect(h.api.getExternalOrderBook).toHaveBeenCalledWith('BTC/USDT', 12);
+  expect(h.api.getExternalCandles).toHaveBeenCalledWith('BTC/USDT', '15m', 48);
+  expect(h.api.getExternalTrades).toHaveBeenCalledWith('BTC/USDT', 8);
+  bookGate.resolve(book);
+  tickerGate.resolve(tickers());
+  await flush();
+  expect(h.render().hero).toMatchObject({ book, bookStatus:'ok', candlesStatus:'ok', tradesStatus:'ok' });
+  h.unmount();
+});
+
 test('slow ticker and hero requests cannot overlap with their next scheduled reads', async () => {
   const tickerGate = deferred<ReturnType<typeof tickers>>();
   const bookGate = deferred<typeof book>();
@@ -174,10 +200,11 @@ test('offscreen hero pauses its three reads; hidden document pauses all recurrin
   h.unmount();
 });
 
-test('cleanup removes the clock, observer, and visibility listener and ignores a late response', async () => {
+test('cleanup removes the clock, observer, and visibility listener and ignores a late ticker response', async () => {
   const gate = deferred<ReturnType<typeof tickers>>();
   const h = mount({ getExternalTickers: jest.fn().mockReturnValue(gate.promise) });
   const before = h.render();
+  expect(h.api.getExternalOrderBook).toHaveBeenCalledTimes(1);
   h.unmount();
   expect(h.intervals.size).toBe(0);
   expect(h.observers[0].disconnect).toHaveBeenCalledTimes(1);
@@ -185,7 +212,7 @@ test('cleanup removes the clock, observer, and visibility listener and ignores a
   gate.resolve(tickers());
   await flush();
   expect(h.render().tickers).toBe(before.tickers);
-  expect(h.api.getExternalOrderBook).not.toHaveBeenCalled();
+  expect(h.api.getExternalOrderBook).toHaveBeenCalledTimes(1);
 });
 
 test('history retains only the last 24 prices actually received, without seeding a first-load chart', async () => {
@@ -228,11 +255,11 @@ test('malformed and wrong-pair hero records cannot be presented as valid real da
   });
   await flush();
   // There is no retained snapshot yet: unavailable is different from stale.
-  expect(h.render().hero).toMatchObject({ book: null, candles: [], trades: [], bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: false });
+  expect(h.render().hero).toMatchObject({ pair:'BTC/USDT', book: null, candles: [], trades: [], bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: false });
   h.unmount();
 });
 
-test.each(['transport failure', 'empty response', 'no USDT market'])('%s leaves no endless hero loading and recovers on the next real snapshot', async initial => {
+test.each(['transport failure', 'empty response', 'no USDT market'])('%s in the ticker universe does not block the BTC laptop feed', async initial => {
   const tickerCall = jest.fn().mockResolvedValue(tickers());
   if (initial === 'transport failure') tickerCall.mockRejectedValueOnce(new Error('offline'));
   else if (initial === 'empty response') tickerCall.mockResolvedValueOnce({ source: 'kraken', tickers: [] });
@@ -241,20 +268,19 @@ test.each(['transport failure', 'empty response', 'no USDT market'])('%s leaves 
   const h = mount({ getExternalTickers: tickerCall,
     getExternalOrderBook: jest.fn().mockReturnValue(bookGate.promise) });
   await flush();
-  const unavailable = h.render();
-  expect(unavailable.tickersStale).toBe(false);
-  expect(unavailable.hero).toMatchObject({ pair: null, book: null, candles: [], trades: [],
-    bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: false, updatedAt: null });
+  const first = h.render();
+  expect(first.tickersStale).toBe(false);
+  expect(first.hero).toMatchObject({ pair:'BTC/USDT', book:null, candles:[candle], trades:[trade],
+    bookStatus:'loading', candlesStatus:'ok', tradesStatus:'ok', stale:false, updatedAt:null });
   for (const call of [h.api.getExternalOrderBook, h.api.getExternalCandles, h.api.getExternalTrades]) {
-    expect(call).not.toHaveBeenCalled();
+    expect(call).toHaveBeenCalledTimes(1);
   }
 
   h.advance();
   await flush();
-  const loading = h.render();
-  expect(loading.tickersStatus).toBe('ok');
-  expect(loading.hero).toMatchObject({ pair: 'BTC/USDT', bookStatus: 'loading', candlesStatus: 'loading', tradesStatus: 'loading' });
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(2);
+  // The unresolved book keeps this generation in flight; the scheduled tick
+  // must not create a duplicate hero request.
   for (const call of [h.api.getExternalOrderBook, h.api.getExternalCandles, h.api.getExternalTrades]) {
     expect(call).toHaveBeenCalledTimes(1);
   }
