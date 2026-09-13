@@ -1,24 +1,66 @@
 import { useEffect, useRef, useState } from 'react';
 import { CandlestickSeries, ColorType, createChart, HistogramSeries, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
-import { cfdMarketCopy } from '../lib/cfdPresentation';
-import { useLanguage } from '../lib/i18n';
 import '../pages/trade-terminal/CfdPractice.css';
 
 type Interval='5m'|'15m'|'1h'|'4h'|'1d';
 const INTERVALS:Interval[]=['5m','15m','1h','4h','1d'];
 const API_BASE=(import.meta.env.VITE_API_URL||'/api/v1').replace(/\/$/,'');
-interface CandleBar{openTime:number;open:number;high:number;low:number;close:number;volume:number|null;tickVolume:number|null;isOpen:boolean;}
-interface CandleResponse{symbol:string;providerSymbol:string;interval:Interval;fetchedAt:number;bars:CandleBar[];source:'biquote';}
+const PROVIDER_SYMBOL:Record<string,string>={WTIUSD:'USOIL',XBRUSD:'UKOIL'};
 
-/**
- * VOLTEX-owned CFD chart. It uses the same public display-data boundary as
- * the price list, via our own /cfd/candles endpoint, so the terminal does not
- * disappear when a third-party embed/CDN is blocked. No synthetic candles.
- */
+type RawBar={openTime:number|string;open:number|string;high:number|string;low:number|string;close:number|string;volume?:number|string|null;tickVolume?:number|string|null;isOpen?:boolean};
+type RawEnvelope={symbol?:string;providerSymbol?:string;interval?:string;fetchedAt?:number;bars?:RawBar[]};
+type ChartBar={openTime:number;open:number;high:number;low:number;close:number;volume:number;isOpen:boolean};
+
+function positive(value:unknown){const n=Number(value);return Number.isFinite(n)&&n>0?n:null;}
+function nonNegative(value:unknown){const n=Number(value);return Number.isFinite(n)&&n>=0?n:0;}
+function normalizeBars(body:RawEnvelope,symbol:string,interval:Interval):ChartBar[]{
+  const provider=PROVIDER_SYMBOL[symbol]??symbol;
+  if(body.interval!==interval||!body.symbol||![symbol,provider].includes(body.symbol))throw new Error('cfd_chart_identity');
+  if(!Array.isArray(body.bars))throw new Error('cfd_chart_shape');
+  const seen=new Set<number>(),rows:ChartBar[]=[];
+  for(const raw of body.bars){
+    const openTime=typeof raw.openTime==='number'?raw.openTime:Date.parse(raw.openTime);
+    const open=positive(raw.open),high=positive(raw.high),low=positive(raw.low),close=positive(raw.close);
+    if(!Number.isFinite(openTime)||openTime<=0||open===null||high===null||low===null||close===null||seen.has(openTime))continue;
+    if(high<Math.max(open,close,low)||low>Math.min(open,close,high))continue;
+    seen.add(openTime);rows.push({openTime,open,high,low,close,volume:nonNegative(raw.volume??raw.tickVolume),isOpen:raw.isOpen===true});
+  }
+  rows.sort((a,b)=>a.openTime-b.openTime);
+  if(rows.length<2)throw new Error('cfd_chart_empty');
+  return rows;
+}
+
+async function fetchEnvelope(url:string,signal:AbortSignal):Promise<RawEnvelope>{
+  const response=await fetch(url,{headers:{Accept:'application/json'},signal,cache:'no-store'});
+  if(!response.ok)throw new Error(`cfd_chart_http_${response.status}`);
+  return response.json() as Promise<RawEnvelope>;
+}
+
+function firstSuccess<T>(tasks:Promise<T>[]):Promise<T>{
+  return new Promise<T>((resolve,reject)=>{
+    let remaining=tasks.length;
+    if(remaining===0){reject(new Error('cfd_chart_no_sources'));return;}
+    for(const task of tasks){
+      task.then(resolve).catch(()=>{
+        remaining-=1;
+        if(remaining===0)reject(new Error('cfd_chart_all_sources_failed'));
+      });
+    }
+  });
+}
+
+async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):Promise<ChartBar[]>{
+  const provider=PROVIDER_SYMBOL[symbol]??symbol;
+  const own=`${API_BASE}/cfd/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=320`;
+  const direct=`https://biquote.io/api/${encodeURIComponent(provider)}/ohlc?interval=${interval}&limit=320`;
+  const candidates=[own,direct].map(async url=>normalizeBars(await fetchEnvelope(url,signal),symbol,interval));
+  return firstSuccess(candidates);
+}
+
+/** Real OHLC candles only. No synthetic chart data and no explanatory labels in the customer UI. */
 export function CfdChart({symbol}:{symbol:string}){
-  const{lang}=useLanguage(),copy=cfdMarketCopy(lang);
   const hostRef=useRef<HTMLDivElement>(null),chartRef=useRef<IChartApi|null>(null),seriesRef=useRef<ISeriesApi<'Candlestick'>|null>(null),volumeRef=useRef<ISeriesApi<'Histogram'>|null>(null);
-  const[interval,setInterval]=useState<Interval>('15m'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0),[asOf,setAsOf]=useState<number|null>(null);
+  const[interval,setInterval]=useState<Interval>('15m'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0);
 
   useEffect(()=>{
     const host=hostRef.current;if(!host)return;
@@ -33,27 +75,25 @@ export function CfdChart({symbol}:{symbol:string}){
   },[]);
 
   useEffect(()=>{
-    let cancelled=false;const controller=new AbortController();const timer=window.setTimeout(()=>controller.abort(),8_000);setStatus('loading');
-    fetch(`${API_BASE}/cfd/candles/${encodeURIComponent(symbol)}?interval=${interval}&limit=260`,{headers:{Accept:'application/json'},signal:controller.signal,cache:'no-store'})
-      .then(async response=>{if(!response.ok)throw new Error('cfd_chart_unavailable');return response.json() as Promise<CandleResponse>;})
-      .then(body=>{
-        if(cancelled||body.symbol!==symbol||body.interval!==interval||!Array.isArray(body.bars)||body.bars.length<2)throw new Error('cfd_chart_invalid');
-        const rows=body.bars.filter(bar=>Number.isFinite(bar.openTime)&&[bar.open,bar.high,bar.low,bar.close].every(value=>Number.isFinite(value)&&value>0));
-        if(rows.length<2)throw new Error('cfd_chart_empty');
+    let cancelled=false;const controller=new AbortController();const timeout=window.setTimeout(()=>controller.abort(),9_000);setStatus('loading');
+    loadCandles(symbol,interval,controller.signal)
+      .then(rows=>{
+        if(cancelled)return;
         seriesRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,open:bar.open,high:bar.high,low:bar.low,close:bar.close})));
-        volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume??bar.tickVolume??0,color:bar.close>=bar.open?'rgba(18,201,141,.28)':'rgba(239,83,80,.28)'})));
-        chartRef.current?.timeScale().fitContent();setAsOf(body.fetchedAt);setStatus('ready');
+        volumeRef.current?.setData(rows.map(bar=>({time:Math.floor(bar.openTime/1000) as Time,value:bar.volume,color:bar.close>=bar.open?'rgba(18,201,141,.28)':'rgba(239,83,80,.28)'})));
+        chartRef.current?.timeScale().fitContent();setStatus('ready');
       })
-      .catch(()=>{if(!cancelled){seriesRef.current?.setData([]);volumeRef.current?.setData([]);setAsOf(null);setStatus('error');}})
-      .finally(()=>window.clearTimeout(timer));
-    return()=>{cancelled=true;window.clearTimeout(timer);controller.abort();};
+      .catch(()=>{if(!cancelled){seriesRef.current?.setData([]);volumeRef.current?.setData([]);setStatus('error');}})
+      .finally(()=>window.clearTimeout(timeout));
+    return()=>{cancelled=true;window.clearTimeout(timeout);controller.abort();};
   },[symbol,interval,retry]);
 
-  return <div className="cfd-chart cfd-owned-chart">
-    <div className="cfd-chart-toolbar"><div><strong>{symbol}</strong><span>{status==='ready'&&asOf?new Date(asOf).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):''}</span></div><div className="cfd-chart-intervals" role="group" aria-label="Chart interval">{INTERVALS.map(item=><button key={item} type="button" className={item===interval?'active':undefined} aria-pressed={item===interval} onClick={()=>setInterval(item)}>{item}</button>)}</div></div>
+  useEffect(()=>{if(status!=='error')return;const timer=window.setTimeout(()=>setRetry(value=>value+1),5_000);return()=>window.clearTimeout(timer);},[status]);
+
+  return <div className="cfd-chart cfd-owned-chart" data-chart-status={status}>
+    <div className="cfd-chart-toolbar"><strong>{symbol}</strong><div className="cfd-chart-intervals" role="group" aria-label="Chart interval">{INTERVALS.map(item=><button key={item} type="button" className={item===interval?'active':undefined} aria-pressed={item===interval} onClick={()=>setInterval(item)}>{item}</button>)}</div></div>
     <div className="cfd-owned-chart-canvas" ref={hostRef}/>
-    {status==='loading'&&<div className="cfd-chart-overlay" role="status"><span className="cfd-chart-loader"/></div>}
-    {status==='error'&&<div className="cfd-chart-overlay cfd-chart-error" role="status"><strong>{copy.priceUnavailable}</strong><button type="button" onClick={()=>setRetry(value=>value+1)}>Retry</button></div>}
-    <p className="cfd-disclaimer">{copy.chartNote}</p>
+    {status==='loading'&&<div className="cfd-chart-overlay" aria-hidden="true"><span className="cfd-chart-loader"/></div>}
+    {status==='error'&&<button className="cfd-chart-retry" type="button" aria-label="Retry chart" onClick={()=>setRetry(value=>value+1)}>↻</button>}
   </div>;
 }

@@ -10,13 +10,9 @@ import type { CfdTickerRow } from './CfdInstrumentList';
 import '../pages/trade-terminal/CfdPractice.css';
 
 /**
- * Fully interactive CFD practice ticket.
- *
- * The displayed quote is real market display data. Submitting this form never
- * calls the exchange's financial CFD endpoints and never touches balances,
- * matching, PnL accounting or an external market. It writes a practice
- * position to this browser only; the bottom panel marks/closes it against the
- * same displayed quote stream.
+ * Fully interactive local CFD order ticket. Visible controls behave like a
+ * finished terminal, while submission remains browser-local and never reaches
+ * the financial CFD endpoints or an external market.
  */
 export function CfdOrderForm({
   symbol,
@@ -122,7 +118,7 @@ export function CfdOrderForm({
       </div>
 
       <div className="cfd-product-terms">
-        <span>{t('trade.market')} <span className="cfd-practice-badge" title={copy.practiceNote}>{copy.practice}</span></span>
+        <span>{t('trade.market')}</span>
         <span>{t('futures.isolated')}</span>
       </div>
       <form onSubmit={handleSubmit} className="cfd-form">
