@@ -47,6 +47,20 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.ob-row,.orderbook-col-headers) { grid-template-columns:minmax(10ch,1.3fr) minmax(0,1fr) minmax(0,1fr); gap:4px; padding-inline:6px; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .ob-row { height:22px; min-height:22px; flex-basis:22px; line-height:22px; font-size:11px; }
 
+/* A quiet price separator, with the saved height available to real depth rows. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .repaired-futures-book .rb-center { background:transparent; border-block:1px solid #26313d; padding:3px 6px; gap:0 6px; flex-wrap:nowrap; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .repaired-futures-book .rb-center strong { font-size:17px; line-height:24px; white-space:nowrap; letter-spacing:-.35px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .repaired-futures-book .rb-center > span { font-size:9px; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .orderbook-spread { background:transparent; padding:4px 6px; gap:0; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .ob-spread-price { font-size:17px; line-height:21px; font-weight:600; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .ob-spread-detail { margin-top:0; line-height:12px; }
+
+/* Stable numeric columns and the same focus treatment across order families. */
+.trade-terminal.terminal-studio :is(.p-price,.p-change,.ticker-item .value,.rb-row,.rb-center,.fo-input,.order-family-input input,.input-group input,.cfd-input) { font-variant-numeric:tabular-nums lining-nums; }
+.trade-terminal.terminal-studio :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input,.input-group):focus-within { outline:1px solid #e9b44c; outline-offset:-1px; }
+.trade-terminal.terminal-studio :is(.fo-input,.order-family-input input,.input-group input,.cfd-input) { caret-color:#efc56d; }
+.trade-terminal.terminal-studio :is(.pair-row,.rb-row,.order-type-tab,.order-family-tabs button):focus-visible { outline:1px solid #e9b44c; outline-offset:-2px; }
+
 /* Familiar silhouette, consistent contrast and a clear selected state.
    Tool names remain in accessible labels/native hover hints, not permanent text. */
 .trade-terminal.terminal-studio .drawing-rail .tool-btn svg { width:23px; height:23px; stroke-width:1.65; }

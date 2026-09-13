@@ -35,8 +35,9 @@ export function visibleDepthRatio(bids: SpotDepthLevel[], asks: SpotDepthLevel[]
 }
 
 export const REFERENCE_ROW_HEIGHT = 22;
+export const REFERENCE_CENTER_HEIGHT = 36;
 
 /** Whole rows only: reserve the center price band before dividing the stacks. */
 export function referenceRowCount(height: number, both: boolean): number {
-  return Math.max(1, Math.min(30, Math.floor((height - 56) / (both ? 2 : 1) / REFERENCE_ROW_HEIGHT)));
+  return Math.max(1, Math.min(30, Math.floor((height - REFERENCE_CENTER_HEIGHT) / (both ? 2 : 1) / REFERENCE_ROW_HEIGHT)));
 }

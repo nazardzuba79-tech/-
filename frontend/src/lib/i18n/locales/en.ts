@@ -187,7 +187,7 @@ export const EN: Record<Key, string> = {
   'draw.brush': 'Brush',
   'draw.text': 'Text',
   'draw.addText': 'Add text',
-  'draw.measure': 'Measure',
+  'draw.measure': 'Ruler',
   'draw.zoom': 'Fit to screen',
   'draw.stayMode': 'Stay in drawing mode',
   'draw.hide': 'Hide drawings',

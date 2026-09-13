@@ -1,4 +1,4 @@
-import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio } from '../referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_CENTER_HEIGHT } from '../referenceBook';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
@@ -46,7 +46,7 @@ test('consistent decimals, tiny real quantities never rounded to zero, invalid q
   for(const v of [NaN,Infinity,-1])expect(referenceQuantity(v)).toBe('—');
 });
 test.each([312,460,472,598])('row budget at %spx cannot expose partial rows',height=>{
-  for(const both of [true,false])expect(referenceRowCount(height,both)*22*(both?2:1)+56).toBeLessThanOrEqual(height);
+  for(const both of [true,false])expect(referenceRowCount(height,both)*22*(both?2:1)+REFERENCE_CENTER_HEIGHT).toBeLessThanOrEqual(height);
 });
 test('depth ratio needs both real sides, never substitutes a fake 50/50',()=>{
   expect(visibleDepthRatio([],[])).toBeNull();

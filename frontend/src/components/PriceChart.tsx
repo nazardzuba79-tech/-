@@ -2042,9 +2042,9 @@ function CursorIcon() {
 function TrendLineIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="6" r="2" />
-      <line x1="7.5" y1="16.5" x2="16.5" y2="7.5" />
+      <path d="M5.5 18.5 18.5 5.5" />
+      <circle cx="4" cy="20" r="2" />
+      <circle cx="20" cy="4" r="2" />
     </svg>
   );
 }

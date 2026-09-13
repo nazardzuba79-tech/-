@@ -4,7 +4,7 @@ import type { FuturesTrade } from '../lib/futuresDepth';
 
 import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupSteps, spotLevelPrice,
   type SpotBookLevel, type SpotDepthLevel } from '../lib/spotOrderBook';
-import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT } from '../lib/referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT, REFERENCE_CENTER_HEIGHT } from '../lib/referenceBook';
 
 /** Exact-contract Futures presentation; price picking never submits an order. */
 export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [] }: {
@@ -62,7 +62,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
     </button>;
   });
 
-  return <div className="reference-book" style={{'--book-row-height': `${REFERENCE_ROW_HEIGHT}px`} as React.CSSProperties}>
+  return <div className="reference-book" style={{'--book-row-height': `${REFERENCE_ROW_HEIGHT}px`, '--book-center-height': `${REFERENCE_CENTER_HEIGHT}px`} as React.CSSProperties}>
     <div className="rb-tabs" role="tablist" aria-label={t('trade.orderBook')}>
       <button type="button" role="tab" aria-selected={tab === 'book'} onClick={() => setTab('book')}>{t('trade.orderBook')}</button>
       <button type="button" role="tab" aria-selected={tab === 'trades'} onClick={() => setTab('trades')}>{t('trade.trades')}</button>

@@ -262,7 +262,7 @@
 .futures-reference .rb-row.bid > span:first-of-type, .futures-reference .rb-center .up { color:#00bb83; }
 .futures-reference .rb-depth { position:absolute; inset:0 0 0 auto; pointer-events:none; background:rgba(34,151,108,.16); }
 .futures-reference .rb-row.ask .rb-depth { background:rgba(179,61,68,.16); }
-.futures-reference .rb-center { flex:0 0 56px; box-sizing:border-box; display:flex; align-items:center; flex-wrap:wrap; gap:0 9px; padding:6px 12px; }
+.futures-reference .rb-center { flex:0 0 var(--book-center-height,36px); box-sizing:border-box; display:flex; align-items:center; flex-wrap:wrap; gap:0 9px; padding:3px 6px; }
 .futures-reference .rb-center strong { font-size:19px; font-weight:600; line-height:25px; letter-spacing:-.4px; }
 .futures-reference .rb-center > span { color:#92929f; font-size:10px; line-height:15px; white-space:nowrap; }
 .futures-reference .rb-ratio { position:relative; display:flex; justify-content:space-between; align-items:center; flex:0 0 25px; margin:8px 12px 10px; padding:0 5px; background:rgba(173,56,65,.2); font-size:12px; overflow:hidden; }
