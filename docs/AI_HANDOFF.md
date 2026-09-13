@@ -2049,3 +2049,11 @@ withdrawal was placed.
 - Unified graphite surfaces/headings, compact form styling and 22px book rows tied to the shared row-budget constant. Preserved all preceding repairs, chart alternatives, all order forms/guards, data transport and financial behavior.
 - 105 focused tests pass; frontend TypeScript/build pass. Desktop 1440 visual QA passed; 390 DOM overflow check passed but screenshot capture inconsistent. Normal viewport restored. Full-suite prior known failures unchanged in scope; no new full run. Details: docs/qa/terminal-presentation-polish/futures-graphite.md.
 - User asked to see result; preview requested in Codex panel at http://127.0.0.1:4210/futures. No push/merge/deploy; production still displays earlier version.
+
+
+## 2026-09-13 — Codex — independent Futures composition
+
+- Owner clarified that a genuinely new layout was wanted, beyond incremental graphite polish. Implementation 3e9d9401d8542981a6d78090a24f69b771f6e781 on existing codex/terminal-layout-repair. Opt-in ?terminalDesign=studio preserves the current design at the plain URL.
+- Material files: FuturesStudio.css, FuturesPage.tsx, PriceChart.tsx, futuresFinalPolish test and futures-studio QA note/screenshots. Separate market and execution rails, central instrument overview, framed graph/book and positions area; scoped chart background inherits studio theme with original fallback.
+- Preserved prior fixes, all order-family forms and execution guards, exact contract streams, chart tools, TradingView alternative and financial logic. 193 focused tests pass; frontend TypeScript/build pass. Desktop 1440 and mobile 390 visually checked; search, contract change, OCO draft preservation and real trade feed checked. No financial writes. Normal viewport restored.
+- Not pushed/merged/deployed. User should review the new design before selecting it; production remains unchanged. Full details and local private-read limitation: docs/qa/terminal-presentation-polish/futures-studio.md.
