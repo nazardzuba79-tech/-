@@ -265,7 +265,8 @@ test('form uses styled real inputs and accessible selected-side/type state',()=>
  // replaces it is stricter — both directions are present as real buttons,
  // each naming its own side, and NEITHER is type="submit", so a stray
  // Enter cannot pick a direction on the trader's behalf.
- expect(source).toContain("aria-pressed={type === 'MARKET'}");
+ expect(source).toContain('<OrderFamilyTabs');
+ expect(read('components/OrderFamilyPresentation.tsx')).toContain('aria-selected={value === family}');
  expect(source).not.toContain('fo-sideTab');
  expect(source).toContain("onClick={() => place('BUY')}");
  expect(source).toContain("onClick={() => place('SELL')}");

@@ -2,9 +2,9 @@ import { FuturesTurnover } from './FuturesTurnover';
 import { memo, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import type { FuturesMarketStats, GatewaySection } from '../lib/api';
-import { useMarketTicker } from '../lib/useMarketData';
+import { useFuturesReference } from '../lib/useFuturesReference';
+import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
-import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 
@@ -137,27 +137,18 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
 
   const stats24h = derivatives?.available ? derivatives.value : null;
 
-  // Reference spot ticker for this contract's underlying, from the shared
-  // snapshot at the same 4s cadence this bar always used. A contract with
-  // no matching reference ticker yields null and renders as a dash — never
-  // a zero price, and never the previously selected contract's numbers,
-  // because the lookup is keyed on the current symbol.
-  const { ticker } = useMarketTicker(symbol, 4000);
+  const ticker = useFuturesReference().get(symbol);
   const stats: {
     lastPrice: number;
-    changePercent: number;
-    high24h: number;
-    low24h: number;
-    volume24h: number;
-    quoteVolume24h: number;
+    changePercent: number | null;
+    high24h: number | null;
+    low24h: number | null;
   } | null = ticker
     ? {
-        lastPrice: parseFloat(ticker.lastPrice),
-        changePercent: parseChangePercent(ticker.changePercent24h, symbol),
-        high24h: parseFloat(ticker.high24h),
-        low24h: parseFloat(ticker.low24h),
-        volume24h: parseFloat(ticker.volume24h),
-        quoteVolume24h: parseFloat(ticker.quoteVolume24h),
+        lastPrice: ticker.lastPrice!,
+        changePercent: referenceNumber(ticker.changePercent24h),
+        high24h: referenceNumber(ticker.high24h),
+        low24h: referenceNumber(ticker.low24h),
       }
     : null;
 
@@ -192,16 +183,16 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
       <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
-          {stats ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
+          {stats?.changePercent != null ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
         </span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('futures.headerHigh24h')}</span>
-        <span className="value">{stats ? formatPrice(stats.high24h) : '—'}</span>
+        <span className="value">{stats?.high24h != null ? formatPrice(stats.high24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('futures.headerLow24h')}</span>
-        <span className="value">{stats ? formatPrice(stats.low24h) : '—'}</span>
+        <span className="value">{stats?.low24h != null ? formatPrice(stats.low24h) : '—'}</span>
       </div>
       <div className="ticker-item">
         {/* Derivatives-market turnover, not this exchange's own and no

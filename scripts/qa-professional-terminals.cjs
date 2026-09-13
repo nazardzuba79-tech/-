@@ -13,7 +13,7 @@ app.use((req,res,next)=>{
 app.get('/__qa/start',(req,res)=>res.type('html').send(`<script>localStorage.setItem('exchange_token','local-terminal-review-no-production-credentials');location.replace('${req.query.market === 'futures' ? '/futures' : '/trade'}');</script>`));
 app.use('/api/v1',async(req,res)=>{
   if(req.path==='/me')return res.json({id:'local-ui-review',displayName:'LOCAL UI REVIEW',email:'local@example.invalid',createdAt:'2020-01-01',isAdmin:false,kycStatus:'NOT_STARTED'});
-  const allowed = req.path.startsWith('/market/') || ['/pairs','/cfd/tickers','/cfd/config','/futures/config','/futures/markets','/futures/mark-price','/futures/funding-rate'].includes(req.path);
+  const allowed = req.path.startsWith('/market/') || /^\/futures\/(mark-price|funding-rate)\/[^/]+$/.test(req.path) || /^\/cfd\/candles\/[^/]+$/.test(req.path) || ['/analytics/overview','/pairs','/cfd/tickers','/cfd/config','/futures/config','/futures/markets'].includes(req.path);
   if(!allowed)return res.status(503).json({error:'Account data unavailable in local read-only review'});
   try {
     const upstream=await fetch('https://api.voltextech.net/api/v1'+req.url,{signal:AbortSignal.timeout(req.path==='/market/live'?300000:15000)});

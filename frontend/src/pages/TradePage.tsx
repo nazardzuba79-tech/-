@@ -71,7 +71,7 @@ export function TradePage() {
   const [ordersRefreshKey, setOrdersRefreshKey] = useState(0);
   // Reference chrome: the tab badge and the Cancel All action both need the
   // open-order count, which only the panel knows; the panel reports it up.
-  const [openOrderCount, setOpenOrderCount] = useState(0);
+  const [openOrderCount, setOpenOrderCount] = useState<number | null>(null);
   const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
@@ -318,11 +318,11 @@ export function TradePage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'open' && <span className="badge">{openOrderCount}</span>}
+                {tab.id === 'open' && <span className="badge">{openOrderCount ?? '—'}</span>}
               </button>
             ))}
 
-            {bottomTab === 'open' && openOrderCount > 0 && (
+            {bottomTab === 'open' && openOrderCount !== null && openOrderCount > 0 && (
               <div className="bottom-actions">
                 <button className="bottom-action-btn" onClick={() => openOrdersRef.current?.cancelAll()}>
                   {t('trade.cancelAll')}

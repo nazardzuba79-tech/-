@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, FormEvent } from 'react';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useToast } from '../lib/toast';
-import { cfdDisplayState, cfdMarketCopy, formatCfdPrice } from '../lib/cfdPresentation';
+import { cfdDisplayState, cfdMarketCopy, cfdQuoteCurrency, formatCfdPrice } from '../lib/cfdPresentation';
 import { LeverageSlider } from './LeverageSlider';
 import { getLeverageTier, previewLiquidationPrice } from '../lib/futuresMath';
 import { openCfdPaperPosition } from '../lib/cfdPaperStore';
@@ -134,7 +134,7 @@ export function CfdOrderForm({
           warningThreshold={warningThreshold}
         />
 
-        <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote="USDT" includeLimit />
+        <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={cfdQuoteCurrency(symbol)} includeLimit />
         {family === 'MARKET' && <label className="cfd-label">
           {t('trade.cfdMarketPrice')}
           <div className="cfd-reference-wrap">

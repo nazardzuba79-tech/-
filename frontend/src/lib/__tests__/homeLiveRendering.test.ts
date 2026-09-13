@@ -17,7 +17,7 @@ function evaluate(file: string, overrides: Record<string, unknown> = {}) {
 }
 const priceChange = evaluate('lib/priceChange.ts');
 const cfdFreshness = evaluate('lib/cfdTickerFreshness.ts');
-const cfdPresentation = evaluate('lib/cfdPresentation.ts', { './cfdTickerFreshness': cfdFreshness });
+const cfdPresentation = evaluate('lib/cfdPresentation.ts', { './cfdTickerFreshness': cfdFreshness, './cfdDisplayCopy': evaluate('lib/cfdDisplayCopy.ts') });
 const marketModule = evaluate('pages/home/useHomeMarket.ts', {
   '../../lib/api': { api: {} }, '../../lib/priceChange': priceChange,
   '../../lib/futuresConfigStore': { futuresConfigStore: {} },

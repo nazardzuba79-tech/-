@@ -4,6 +4,7 @@ import { useMarketTickers } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { parseChangePercent } from '../lib/priceChange';
 import { TOP_COINS } from '../lib/topCoins';
+import type { LiveQuote } from '../lib/liveMarketTypes';
 
 interface Item {
   /** Slash-separated, e.g. "BTC/USDT" — what onSelect gets called with. */
@@ -57,12 +58,14 @@ export function TopGainersTicker({
   staticStrip,
   symbols,
   fitToWidth,
+  futuresReference,
 }: {
   onSelect?: (pair: string) => void;
   hrefFor?: (pair: string) => string;
   staticStrip?: boolean;
   symbols?: string[];
   fitToWidth?: boolean;
+  futuresReference?: ReadonlyMap<string, LiveQuote>;
 }) {
   const { lang, t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
@@ -77,6 +80,14 @@ export function TopGainersTicker({
   const { tickers: tickerMap } = useMarketTickers(15000);
 
   useEffect(() => {
+    if (futuresReference) {
+      const universe = new Set(symbols ?? []);
+      setItems([...futuresReference.values()].filter(row => universe.has(row.pair) &&
+        row.changePercent24h !== null && Number.isFinite(row.changePercent24h))
+        .sort((a,b) => (b.quoteVolume24h ?? -1) - (a.quoteVolume24h ?? -1))
+        .slice(0,24).map(row => ({ pair: row.pair, changePercent: row.changePercent24h! })));
+      return;
+    }
     // An empty snapshot leaves the previous rows on screen rather than
     // emptying the strip: the store keeps the last known good data across
     // a failed poll, and a blank ticker reads as "the market stopped".
@@ -95,7 +106,7 @@ export function TopGainersTicker({
         .sort((a, b) => b.quoteVolume24h - a.quoteVolume24h)
         .slice(0, 24)
     );
-  }, [tickerMap, lang, symbols?.join(',')]);
+  }, [tickerMap, lang, symbols?.join(','), futuresReference]);
 
   // Measured, not assumed: item width comes from the first rendered child,
   // so the slot size stays a CSS decision (see .market-ticker-static

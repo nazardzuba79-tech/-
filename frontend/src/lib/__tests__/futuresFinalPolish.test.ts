@@ -6,6 +6,7 @@ import ts from 'typescript';
 import * as bookMath from '../spotOrderBook';
 import * as futuresMath from '../futuresMath';
 import * as assetReads from '../../components/spotOrderPresentation';
+import * as futuresDiscovery from '../futuresDiscovery';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
 const frontend = resolve(__dirname, '../../..');
@@ -128,6 +129,13 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/api') return { api, ApiError: Error };
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
+    if (name === '../lib/futuresDiscovery') return futuresDiscovery;
+    if (name === '../lib/useFuturesReference') return { useFuturesReference: () => new Map() };
+    if (name === './OrderFamilyPresentation') {
+      components.OrderFamilyTabs ??= () => null;
+      components.OrderFamilyFields ??= () => null;
+      return { OrderFamilyTabs: components.OrderFamilyTabs, OrderFamilyFields: components.OrderFamilyFields };
+    }
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, params?: any) => params ? `${key}:${JSON.stringify(params)}` : key }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/terminalPresentation') return terminalPresentation;
@@ -136,7 +144,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return assetReads;
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
-    if (name === '../lib/krakenSocket') return { krakenSocket: overrides.socket };
+    if (name === '../lib/futuresDepth') return { subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn(), useSearchParams: () => [overrides.params] };
     if (name.endsWith('.css')) return {};
@@ -237,7 +245,7 @@ test('Futures moves one market list between desktop sidebar and mobile dialog wi
   expect(nodes(tree).some(n => n.type === 'dialog')).toBe(false);
 });
 
-test('Futures wires dynamic precision, rejects prior-pair REST and preserves repeated selection events', async () => {
+test('Futures wires dynamic precision, isolates selected-contract depth and preserves repeated selection events', async () => {
   const requests: { symbol: string; resolve: (value: any) => void }[] = [];
   const listeners: { symbol: string; callback: (value: any) => void }[] = [];
   const params = new URLSearchParams();
@@ -251,27 +259,34 @@ test('Futures wires dynamic precision, rejects prior-pair REST and preserves rep
   const btc = { bids: [level('79000.1')], asks: [level('79000.2')] };
   listeners[0].callback(btc);
   tree = page.render();
-  expect(readFileSync(resolve(frontend, 'src/components/FuturesReferenceBook.tsx'), 'utf8')).toContain('aggregateSpotBook(bids, step,');
-  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(btc.bids);
+  expect(part(tree, 'OrderBookPanel').props.spotPrecision).toBe(true);
+  expect(part(tree, 'OrderBookPanel').props.bids).toEqual(btc.bids);
   part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
   tree = page.render();
-  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
-  expect(part(tree, 'FuturesReferenceBook').key).toBe('DOGE/USDT');
-  requests[0].resolve(btc); await tick();
+  expect(part(tree, 'OrderBookPanel').props.bids).toEqual([]);
+  expect(part(tree, 'OrderBookPanel').key).toBe('DOGE/USDT');
+  listeners[0].callback(btc); await tick();
   tree = page.render();
-  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual([]);
+  expect(part(tree, 'OrderBookPanel').props.bids).toEqual([]);
   const doge = { bids: [level('0.094321')], asks: [level('0.094322')] };
   listeners[1].callback(doge);
-  requests[1].resolve(btc); await tick(); // Delayed REST cannot overwrite newer WS.
+  await tick(); // Transport snapshots are owned by the selected contract.
   tree = page.render();
-  expect(part(tree, 'FuturesReferenceBook').props.bids).toEqual(doge.bids);
-  part(tree, 'FuturesReferenceBook').props.onPickPrice('0.09432');
+  expect(part(tree, 'OrderBookPanel').props.bids).toEqual(doge.bids);
+  part(tree, 'OrderBookPanel').props.onPickPrice('0.09432');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBe('0.09432');
   expect(part(tree, 'FuturesOrderForm').props.pickedPriceSequence).toBe(1);
-  part(tree, 'FuturesReferenceBook').props.onPickPrice('0.09432');
+  part(tree, 'OrderBookPanel').props.onPickPrice('0.09432');
   tree = page.render();
   expect(part(tree, 'FuturesOrderForm').props.pickedPriceSequence).toBe(2);
+  part(tree, 'FuturesPairList').props.onChange('ETH/USDT');
+  tree = page.render();
+  expect(part(tree, 'FuturesOrderForm').key).toBe('ETH/USDT');
+  expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBeUndefined();
+  part(tree, 'FuturesPairList').props.onChange('DOGE/USDT');
+  tree = page.render();
+  expect(part(tree, 'FuturesOrderForm').props.pickedPrice).toBeUndefined();
 });
 
 test('only the translated leverage table is collapsed; repeat picks retain exact form price and select Limit', async () => {
@@ -289,7 +304,7 @@ test('only the translated leverage table is collapsed; repeat picks retain exact
   const priceInput = () => nodes(tree).find(n => n.type === 'input' && n.props.placeholder === '0.00');
   expect(priceInput().props.value).toBe('0.09432');
   priceInput().props.onChange({ target: { value: '0.08' } });
-  nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.marketOrder').props.onClick();
+  nodes(tree).find(n => n.type === form.components.OrderFamilyTabs).props.onChange('MARKET');
   tree = form.render(props);
   expect(priceInput()).toBeUndefined();
   form.render({ ...props, pickedPriceSequence: 2 });
@@ -421,7 +436,7 @@ test('form leverage ceiling reflects the expected aggregate tier while reduction
   tree = form.render(formProps);
   expect(nodes(tree).find(n => n.type === form.components.FuturesMarginLeverage).props.max).toBe(50);
 
-  nodes(tree).find(n => n.type === 'button' && n.props.children === 'futures.sellShort').props.onClick();
+  nodes(tree).find(n => n.type === 'button' && n.props.className === 'submit-btn sell').props.onClick();
   tree = form.render(formProps);
   expect(nodes(tree).find(n => n.type === form.components.FuturesMarginLeverage).props.max).toBe(100);
 });
@@ -432,7 +447,7 @@ test('high-leverage cancellation does not send an order; Market/Short/Cross/Redu
   nodes(f.render()).find(n => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() }); await tick();
   expect(f.placed).not.toHaveBeenCalled();
   let tree = f.render();
-  nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.marketOrder').props.onClick();
+  f.part(tree, 'OrderFamilyTabs').props.onChange('MARKET');
   // Margin mode now lives in the same compact control as leverage.
   f.part(tree, 'FuturesMarginLeverage').props.onMarginTypeChange('CROSS');
   nodes(tree).find(n => n.type === 'input' && n.props.type === 'checkbox').props.onChange({ target: { checked: true } });

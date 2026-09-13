@@ -158,16 +158,17 @@ describe('candles and order book are fetched for the selected symbol only', () =
 
   it('requests the order book for one symbol only', () => {
     const page = code(read('src/pages/FuturesPage.tsx'));
-    const calls = page.match(/getExternalOrderBook\(/g) ?? [];
+    const calls = page.match(/subscribeFuturesDepth\(/g) ?? [];
     expect(calls).toHaveLength(1);
-    expect(page).toContain('getExternalOrderBook(symbol)');
-    expect(page).not.toMatch(/symbols\.map\([^)]*getExternalOrderBook/);
+    expect(page).toContain('subscribeFuturesDepth(symbol,');
+    expect(page).not.toMatch(/getExternalOrderBook|krakenSocket|symbols\.map\([^)]*subscribeFuturesDepth/);
   });
 
   it('reads all list prices from the ONE shared snapshot, not per row', () => {
     // The pair list uses the shared store; there is no per-symbol ticker
     // request anywhere in it.
-    expect(pairList).toContain('useMarketTickers(4000)');
+    expect(pairList).toContain('useFuturesReference()');
+    expect(pairList).not.toContain('useMarketTickers');
     expect(pairList).not.toContain('getExternalTicker(');
     expect(pairList).not.toMatch(/\.map\([^)]*api\./);
   });

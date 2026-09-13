@@ -7,6 +7,11 @@ const CFD_DECIMALS: Record<string, number> = {
   EURUSD:5,GBPUSD:5,USDJPY:3,AUDUSD:5,USDCAD:5,USDCHF:5,NZDUSD:5,
 };
 
+/** Price currency, distinct from the account's collateral currency. */
+export function cfdQuoteCurrency(symbol: string): string {
+  return Object.prototype.hasOwnProperty.call(CFD_DECIMALS, symbol) ? symbol.slice(-3) : '—';
+}
+
 export function formatCfdPrice(value:string|number|null,symbol:string):string{
   if(value===null||value===''||!Number.isFinite(Number(value)))return '—';
   const price=Number(value);if(price<=0)return '—';

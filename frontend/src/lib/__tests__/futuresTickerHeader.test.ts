@@ -6,6 +6,7 @@ import { readLocale } from '../../../test-utils/i18nSource';
 import ts from 'typescript';
 import * as numbers from '../formatNumber';
 import * as changes from '../priceChange';
+import * as futuresReference from '../futuresReference';
 
 const root = resolve(__dirname, '../../../..');
 const req = createRequire(resolve(root, 'frontend/package.json'));
@@ -54,7 +55,8 @@ test('VOLTEX derivatives reads (mark, index, funding) stay on the futures servic
 // reads this suite exists to protect — mark price, index price and the
 // settled funding rate — are byte-unchanged, as the behavioural tests
 // above re-prove.
-test('market-data reads, including index price, are unchanged', () => {
+// Exact perpetual display replaces spot references; financial reads remain protected above.
+test('market-data reads use perpetual references and preserve financial inputs', () => {
   const reads = source.slice(source.indexOf('  const { t }'), source.indexOf('  return ('));
   // What the re-take is allowed to have changed, pinned so the digest
   // cannot be advanced again for something else without deleting these.
@@ -242,6 +244,10 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
+    if (name === '../lib/futuresReference') return futuresReference;
+    if (name === '../lib/useFuturesReference') return { useFuturesReference: () => new Map(overrides.__noTicker ? [] : [
+      ['BTC/USDT', Object.fromEntries(Object.entries(referenceTicker).map(([key, value]) => [key, key === 'pair' ? value : Number(value)]))],
+    ]) };
     if (name === '../lib/useMarketData') {
       return {
         useMarketTicker: (_pair: string) => ({

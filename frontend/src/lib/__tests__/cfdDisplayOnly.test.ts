@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { cfdDisplayState, cfdMarketCopy, formatCfdAsOf, formatCfdPrice, resolveCfdSymbol } from '../cfdPresentation';
+import { cfdDisplayState, cfdMarketCopy, cfdQuoteCurrency, formatCfdAsOf, formatCfdPrice, resolveCfdSymbol } from '../cfdPresentation';
 
 const root = resolve(__dirname, '../../..');
 const read = (path: string) => readFileSync(resolve(root, 'src', path), 'utf8');
@@ -63,17 +63,24 @@ test('CFD chart has two real OHLC paths and no explanatory customer copy', () =>
   expect(chart).not.toContain('chartNote');
 });
 
-test('customer CFD layout has no practice, technical or redundant market badges', () => {
+test('customer CFD layout keeps local practice identity without technical or redundant market badges', () => {
   const order=read('components/CfdOrderForm.tsx');
   const positions=read('components/CfdPositionsPanel.tsx');
   const ticker=read('components/CfdTickerBar.tsx');
   expect(order).not.toContain('cfd-practice-badge');
-  expect(order).not.toContain('copy.practice');
+  expect(order).toContain('terminal-practice-label');
+  expect(order).toContain('copy.practice');
   expect(positions).not.toContain('cfd-practice-mode');
-  expect(positions).not.toContain('copy.practice');
+  expect(positions).toContain('getCfdPaperState');
   expect(ticker).not.toContain('cfd-product-badge');
   expect(ticker).not.toContain('>MARKET<');
 });
+
+test.each([['USDJPY','JPY'],['USDCAD','CAD'],['USDCHF','CHF'],['XAUUSD','USD'],['WTIUSD','USD'],['EURUSD','USD'],['UNKNOWN','—']])(
+  'CFD %s price fields use %s rather than collateral units', (symbol, quote) => {
+    expect(cfdQuoteCurrency(symbol)).toBe(quote);
+  },
+);
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
   const hero = read('pages/home/HomeHeroAssets.tsx');

@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { api } from '../lib/api';
 import { useLanguage, localeOf } from '../lib/i18n';
-import { BottomNav } from '../components/BottomNav';
+import { Nav } from '../components/Nav';
 import { Footer } from '../components/Footer';
 import './settings-arctic/tailwind-utilities.css';
 import type { Tab } from './settings-arctic/types';
-import { ArcticTopNav } from './settings-arctic/ArcticTopNav';
 import { ProfileSidebar } from './settings-arctic/ProfileSidebar';
 import { ProfileHeaderCard } from './settings-arctic/ProfileHeaderCard';
 import { EditProfileModal } from './settings-arctic/EditProfileModal';
@@ -28,10 +27,8 @@ import { ReferralSection } from './settings-arctic/ReferralSection';
 // points its color tokens (border/card/foreground/brand/...) at these same
 // variables, so both the Tailwind utilities used throughout
 // pages/settings-arctic/*.tsx and any leftover var(--x) references
-// resolve consistently. This page renders its own ArcticTopNav (a
-// structural port of the archive's header, see that file's doc comment)
-// instead of the shared dark Nav every other page uses — logo/exchange
-// name stay the site's own Logo component either way.
+// resolve consistently. The shared exchange navigation sits outside this
+// scoped theme; the approved Arctic profile content retains its own palette.
 const ARCTIC_THEME_VARS = {
   '--bg': 'oklch(0.977 0.0018 247)',
   '--panel': 'oklch(1 0 0)',
@@ -91,9 +88,9 @@ export function SettingsPage() {
     // resolves against the dark theme's value at body's own scope, so a
     // descendant redefining the custom property doesn't retroactively
     // change what body already inherited.
+    <><Nav active="/settings" hideTicker />
     <div style={{ ...ARCTIC_THEME_VARS, color: 'var(--text-primary)', fontWeight: 400 }} className="settings-arctic-root min-h-screen bg-background">
       <Toaster position="top-right" richColors />
-      <ArcticTopNav />
       <main className="mx-auto max-w-[1600px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
         <div className="mb-6 sm:mb-8">
           <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-foreground sm:text-[34px]">{t('settings.title')}</h1>
@@ -120,8 +117,7 @@ export function SettingsPage() {
 
         <Footer />
       </main>
-      <BottomNav />
-    </div>
+    </div></>
   );
 }
 

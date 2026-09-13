@@ -1,3 +1,4 @@
+import * as futuresReference from '../futuresReference';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { createRequire } from 'module';
@@ -26,7 +27,8 @@ beforeEach(async () => {
   const favorites = new Set(['ETH/USDT', 'SOL/USDT']);
   new Function('exports','require',code)(output,(name:string) => {
     if(name.endsWith('/i18n'))return {useLanguage:()=>({t:(key:string)=>key})};
-    if(name.endsWith('/useMarketData'))return {useMarketTickers:()=>({tickers})};
+    if(name.endsWith('/useFuturesReference'))return {useFuturesReference:()=>new Map([...tickers].map(([pair,row])=>[pair,Object.fromEntries(Object.entries(row).map(([key,value])=>[key,Number(value)]))]))};
+    if(name.endsWith('/futuresReference'))return futuresReference;
     if(name.endsWith('/CryptoIcon'))return {CryptoIcon:()=>null};
     if(name.endsWith('/priceChange'))return {parseChangePercent:Number};
     if(name.endsWith('/formatNumber'))return {formatPrice:String};

@@ -1,9 +1,9 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Star } from 'lucide-react';
-import { useMarketTickers } from '../lib/useMarketData';
+import { useFuturesReference } from '../lib/useFuturesReference';
+import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
 import { CryptoIcon } from './CryptoIcon';
-import { parseChangePercent } from '../lib/priceChange';
 import { formatPrice } from '../lib/formatNumber';
 import { useFavorites } from '../lib/useFavorites';
 import { useWindowedRows } from '../lib/useWindowedRows';
@@ -51,7 +51,7 @@ export const FuturesPairList = forwardRef<
   }
 >(function FuturesPairList({ symbols, symbol, onChange }, ref) {
   const { t } = useLanguage();
-  const [tickers, setTickers] = useState<Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }>>({});
+  const tickers = useFuturesReference();
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<Sort>(null);
   // Shared store — see lib/useFavorites; the spot terminal, Markets and
@@ -79,26 +79,6 @@ export const FuturesPairList = forwardRef<
     if (listRef.current) listRef.current.scrollTop = 0;
   }
 
-  // 4s, this list's original cadence, now served from the shared snapshot
-  // instead of its own poll. Note this is REFERENCE spot price data for
-  // display only — every VOLTEX financial value on the futures side (mark
-  // price, funding, open interest, position state) is unchanged and still
-  // comes from the futures services.
-  const { tickers: tickerMap } = useMarketTickers(4000);
-
-  useEffect(() => {
-    // Empty means the store has nothing yet; keep the previous rows rather
-    // than resetting every price to a zero placeholder.
-    if (tickerMap.size === 0) return;
-    const bySymbol: Record<string, { lastPrice: string; changePercent24h: string; quoteVolume24h: string }> = {};
-    for (const symbol of symbols) {
-      const tk = tickerMap.get(symbol);
-      if (tk) bySymbol[symbol] = tk;
-    }
-    setTickers(bySymbol);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickerMap, symbols.join(',')]);
-
   // Asset artwork now resolves inside CryptoIcon from the gateway's asset
   // registry (one batched /market/assets/icons request for the symbols on
   // screen), replacing a full 500-coin rankings download — sparklines and
@@ -109,14 +89,12 @@ export const FuturesPairList = forwardRef<
       .filter((s) => s.toLowerCase().replace('/', '').includes(search.trim().toLowerCase().replace('/', '')))
       .filter((s) => !favoritesOnly || favorites.has(s))
       .map((s) => {
-        const tk = tickers[s];
-        const price = tk ? parseFloat(tk.lastPrice) : NaN;
-        const volume = tk ? parseFloat(tk.quoteVolume24h) : NaN;
+        const tk = tickers.get(s);
         return {
           symbol: s,
-          lastPrice: Number.isFinite(price) ? price : null,
-          change: tk ? Number(parseChangePercent(tk.changePercent24h, s).toFixed(2)) : null,
-          quoteVolume24h: Number.isFinite(volume) ? volume : null,
+          lastPrice: referenceNumber(tk?.lastPrice),
+          change: referenceNumber(tk?.changePercent24h),
+          quoteVolume24h: referenceNumber(tk?.quoteVolume24h),
         };
       });
 

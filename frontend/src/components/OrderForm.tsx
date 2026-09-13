@@ -457,7 +457,7 @@ export function OrderForm({
           <div className="available-balance">
             <span>{t('trade.available')}</span>
             <span className="amount">
-              {balanceReady ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6) : '—'}{' '}
+              {balanceReady && !balanceError ? (side === 'BUY' ? available.quote : available.base).toFixed(side === 'BUY' ? 2 : 6) : '—'}{' '}
               {side === 'BUY' ? quoteAsset : baseAsset}
             </span>
           </div>
@@ -530,11 +530,11 @@ export function OrderForm({
           <div className="info-heading">{t('trade.accountInfo')}</div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${baseAsset}`}</span>
-            <span className="info-value">{formatPrice(available.base)}</span>
+            <span className="info-value">{balanceReady && !balanceError ? formatPrice(available.base) : '—'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">{`${t('trade.available')} ${quoteAsset}`}</span>
-            <span className="info-value">{formatAmount(available.quote)}</span>
+            <span className="info-value">{balanceReady && !balanceError ? formatAmount(available.quote) : '—'}</span>
           </div>
         </div>
       </form>
