@@ -72,7 +72,9 @@ export class BiquoteCfdQuoteSource implements CfdQuoteSource {
       const receivedAt=this.now(); const url=new URL(`${this.baseUrl}/api/latest`);
       for(const symbol of ALL)url.searchParams.append('symbols',BIQUOTE_CFD_SYMBOLS[symbol]);
       let response:Response; this.requests++;
-      try{response=await this.fetchFn(url.toString(),{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(this.timeoutMs)});}catch{
+      try{
+        response=await this.fetchFn(url.toString(),{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(this.timeoutMs)});
+      }catch{
         for(const s of ALL)this.fail(s,'network'); return this.cache.length?this.cache.map(q=>({...q})):ALL.map(s=>this.missing(s,BIQUOTE_CFD_SYMBOLS[s]));
       }
       if(!response.ok){for(const s of ALL)this.fail(s,`http_${response.status}`);await response.body?.cancel();return this.cache.length?this.cache.map(q=>({...q})):ALL.map(s=>this.missing(s,BIQUOTE_CFD_SYMBOLS[s]));}
