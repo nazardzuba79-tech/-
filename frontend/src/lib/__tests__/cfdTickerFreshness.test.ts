@@ -1,8 +1,8 @@
-import { ageCfdTickerRows } from '../useCfdTickers';
-import type { CfdTickerRow } from '../../components/CfdInstrumentList';
+import { ageCfdTickerRows, type CfdTickerFreshnessRow } from '../cfdTickerFreshness';
 
+type Row = CfdTickerFreshnessRow & { symbol:string; name:string; price:string | null };
 const NOW = Date.UTC(2026,8,14,12,0,0);
-const live = (over: Partial<CfdTickerRow> = {}): CfdTickerRow => ({
+const live = (over: Partial<Row> = {}): Row => ({
   symbol:'EURUSD', name:'EUR/USD', price:'1.10', status:'live', stale:false, executionAllowed:true,
   providerTimestamp:NOW, fetchedAt:NOW, maxQuoteAgeMs:5000, ...over,
 });
