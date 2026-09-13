@@ -38,7 +38,7 @@ jobs:
         run: npm run build
       - name: Deterministic reference routing and adapter tests
         if: success() || failure()
-        run: node --test scripts/test-cfd-reference-router.cjs scripts/test-cfd-public-references.cjs
+        run: node --test scripts/test-cfd-reference-router.cjs scripts/test-cfd-public-references.cjs scripts/test-cfd-reference-labels.cjs
       - name: Frontend build
         if: success() || failure()
         working-directory: frontend
@@ -62,7 +62,9 @@ jobs:
       - name: Disposable loopback browser rollout validation (no accounts or DB)
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-qa/node_modules/playwright
-        run: node scripts/qa-cfd-public-rollout.cjs
+        run: |
+          # Ephemeral local middleware configuration, never a production secret.
+          JWT_SECRET="$(node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('hex'))")" node scripts/qa-cfd-public-rollout.cjs
       - name: Preserve screenshots and rollout findings
         if: success() || failure()
         uses: actions/upload-artifact@v4

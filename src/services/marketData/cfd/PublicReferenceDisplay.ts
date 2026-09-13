@@ -23,8 +23,12 @@ export function publicReferenceDisplay<Q extends PrimaryQuote>(q: Q, name: strin
   // A newer recent primary history beats older fallback history. A current daily
   // benchmark is a different, explicitly labelled reference, never an execution quote.
   if (!primaryFresh && fallbackUsable && (fallbackFresh || primaryPrice === null || fallbackTime > (q.providerTimestamp ?? -Infinity))) {
+    const basis = fallback.provider === 'eia'
+      ? `${fallback.symbol === 'WTIUSD' ? 'WTI Cushing' : 'Brent Europe'} · USD/barrel`
+      : fallback.unit === 'provider_native_quote' ? `${fallback.currency} · unit unverified`
+      : `${fallback.currency}/${fallback.unit}`;
     const label = [fallbackFresh ? '' : 'Last known', fallback.kind === 'daily_reference' ? 'Daily reference' : 'Indicative',
-      fallback.attribution, fallback.observationDate ?? new Date(fallback.sourceTimestamp!).toISOString(),
+      fallback.attribution, fallback.observationDate ?? new Date(fallback.sourceTimestamp!).toISOString(), basis,
       fallback.derivation ? 'calculated cross rate' : ''].filter(Boolean).join(' · ');
     return { ...q, name, price: fallback.priceDecimal, last: null, lastDecimal: undefined, bid: null, ask: null, mid: null,
       provider: fallback.provider, providerSymbol: fallback.providerSymbol,
