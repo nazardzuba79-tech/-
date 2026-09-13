@@ -10,7 +10,11 @@ app.use((req,res,next)=>{
   if(!['GET','HEAD'].includes(req.method))return res.status(403).json({error:'LOCAL QA: all financial writes blocked'});
   next();
 });
-app.get('/__qa/start',(req,res)=>res.type('html').send(`<script>localStorage.setItem('exchange_token','local-terminal-review-no-production-credentials');location.replace('${req.query.market === 'futures' ? '/futures' : '/trade'}');</script>`));
+app.get('/__qa/start',(req,res)=>{
+  const route = req.query.market === 'futures' ? '/futures' : '/trade';
+  const design = req.query.terminalDesign === 'studio' ? '?terminalDesign=studio' : '';
+  res.type('html').send(`<script>localStorage.setItem('exchange_token','local-terminal-review-no-production-credentials');location.replace('${route}${design}');</script>`);
+});
 // Exercise the candidate's actual public candle adapter before backend deployment.
 const { FuturesChartCandles } = require('../dist/services/FuturesChartCandles');
 const futuresChartCandles = new FuturesChartCandles();
