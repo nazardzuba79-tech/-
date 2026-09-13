@@ -15,10 +15,12 @@ export interface CfdTickerFreshnessRow {
  * formally expired observation green just because its next HTTP poll is later.
  * Any corrupted/non-array state fails closed to an empty row set rather than
  * throwing inside the polling timer. */
-export function ageCfdTickerRows<T extends CfdTickerFreshnessRow>(rows: T[] | unknown, now = Date.now()): T[] {
+export function ageCfdTickerRows<T extends CfdTickerFreshnessRow>(rows: T[], now?: number): T[];
+export function ageCfdTickerRows(rows: unknown, now?: number): CfdTickerFreshnessRow[];
+export function ageCfdTickerRows<T extends CfdTickerFreshnessRow>(rows: T[] | unknown, now = Date.now()): T[] | CfdTickerFreshnessRow[] {
   if (!Array.isArray(rows)) return [];
   let changed = false;
-  const next = rows.map((row) => {
+  const next = rows.map((row: T) => {
     let stale = row.stale === true;
     let executionAllowed = row.executionAllowed === true;
     let status = row.status;
@@ -41,7 +43,7 @@ export function ageCfdTickerRows<T extends CfdTickerFreshnessRow>(rows: T[] | un
       changed = true;
       return { ...row, stale, executionAllowed, status, ...(referenceLabel === undefined ? {} : { referenceLabel }) } as T;
     }
-    return row as T;
+    return row;
   });
   return changed ? next : rows as T[];
 }
