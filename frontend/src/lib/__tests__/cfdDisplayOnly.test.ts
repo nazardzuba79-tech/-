@@ -63,17 +63,27 @@ test('CFD chart has two real OHLC paths and no explanatory customer copy', () =>
   expect(chart).not.toContain('chartNote');
 });
 
-test('customer CFD layout keeps local practice identity without technical or redundant market badges', () => {
+test('customer CFD layout stays compact without verbose practice or per-row status copy', () => {
   const order=read('components/CfdOrderForm.tsx');
   const positions=read('components/CfdPositionsPanel.tsx');
   const ticker=read('components/CfdTickerBar.tsx');
-  expect(order).not.toContain('cfd-practice-badge');
-  expect(order).toContain('terminal-practice-label');
-  expect(order).toContain('copy.practice');
+  const instruments=read('components/CfdInstrumentList.tsx');
+  expect(order).toContain('>SIM</span>');
+  expect(order).not.toContain('>{copy.practice}</span>');
   expect(positions).not.toContain('cfd-practice-mode');
   expect(positions).toContain('getCfdPaperState');
   expect(ticker).not.toContain('cfd-product-badge');
   expect(ticker).not.toContain('>MARKET<');
+  expect(instruments).not.toContain('cfd-optionState');
+});
+
+test('homepage market cards deep-link to the selected real terminal and instrument', () => {
+  const markets=read('components/CfdMarketsSection.tsx');
+  expect(markets).toContain('/trade?market=cfd&symbol=${encodeURIComponent(tk.symbol)}');
+  expect(markets).toContain('/trade?pair=${encodeURIComponent(pair)}');
+  expect(markets).toContain('/trade?pair=${encodeURIComponent(trendingPair.pair)}');
+  expect(markets).toContain('<Link to="/markets" className="market-dashboard__view-all">');
+  expect(markets).not.toContain('key={tk.symbol} to="/trade"');
 });
 
 test.each([['USDJPY','JPY'],['USDCAD','CAD'],['USDCHF','CHF'],['XAUUSD','USD'],['WTIUSD','USD'],['EURUSD','USD'],['UNKNOWN','—']])(
