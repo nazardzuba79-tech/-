@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { createRequire } from 'module';
 import ts from 'typescript';
 import * as futuresMath from '../futuresMath';
+import * as orderPresentation from '../../components/spotOrderPresentation';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
 /**
@@ -128,6 +129,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/formatNumber') return { formatPrice: String };
     if (name === '../lib/futuresMath') return futuresMath;
+    if (name === './spotOrderPresentation') return orderPresentation;
     if (name.endsWith('.css')) return {};
     if (name.startsWith('./') || name.startsWith('../components/')) {
       const label = name.split('/').pop()!;
@@ -440,5 +442,47 @@ describe('exposure preview refuses unknown account state', () => {
     // Safer than pretending existing exposure is zero: the backend would
     // recompute and reject it anyway.
     expect(f.placed).not.toHaveBeenCalled();
+  });
+});
+
+describe('Futures orders presentation', () => {
+  const order = { id: 'fixture-order', symbol: 'BTC/USDT', side: 'BUY', type: 'LIMIT', price: '0.00000001', originalQuantity: '0.1', remainingQuantity: '0.03', status: 'PARTIALLY_FILLED', reduceOnly: false, leverage: 10, createdAt: '2026-09-13T00:00:00Z' };
+  test.each([false, true])('unknown/failed orders never claim empty (history=%s)', history => {
+    const key = history ? 'orderHistory' : 'orders';
+    for (const failed of [false, true]) {
+      const panel = mount('components/FuturesOrdersPanel.tsx', { account: { ...accountState(), [key]: resource(null, failed) } });
+      const view = text(panel.render({ history, refreshKey: 0 }));
+      expect(view).toContain(failed ? 'trade.loadOrdersError' : 'trade.loading');
+      expect(view).not.toContain('futures.noOpenOrders');
+      expect(view).not.toContain('futures.noOrderHistory');
+    }
+  });
+  test('history loads once on activation, never polls and has no cancel action', () => {
+    const panel = mount('components/FuturesOrdersPanel.tsx', { account: { ...accountState(), orderHistory: resource([order]) } });
+    const view = panel.render({ history: true, refreshKey: 0 });
+    panel.render({ history: true, refreshKey: 0 });
+    expect(panel.refreshes).toEqual([['orderHistory']]);
+    expect(panel.wantsSeen).toEqual([{}, {}]);
+    expect(text(view)).toContain('0.00000001');
+    expect(text(view)).toContain('0.07');
+    expect(nodes(view).filter(n => n.props?.className === 'cancel-btn')).toHaveLength(0);
+  });
+  test('cancel calls the Futures endpoint and refreshes affected resources', async () => {
+    const cancelFuturesOrder = jest.fn().mockResolvedValue(undefined);
+    const panel = mount('components/FuturesOrdersPanel.tsx', { account: { ...accountState(), orders: resource([order]) }, api: { cancelFuturesOrder } });
+    const view = panel.render({ refreshKey: 0 });
+    nodes(view).find(n => n.props?.className === 'cancel-btn').props.onClick();
+    await tick();
+    expect(cancelFuturesOrder).toHaveBeenCalledWith('fixture-order');
+    expect(panel.refreshes).toContainEqual(['orders', 'orderHistory', 'balances']);
+  });
+  test('failed cancel keeps the order and displays a retryable error', async () => {
+    const panel = mount('components/FuturesOrdersPanel.tsx', { account: { ...accountState(), orders: resource([order]) }, api: { cancelFuturesOrder: jest.fn().mockRejectedValue(new Error('failure')) } });
+    nodes(panel.render({ refreshKey: 0 })).find(n => n.props?.className === 'cancel-btn').props.onClick();
+    await tick();
+    const view = text(panel.render({ refreshKey: 0 }));
+    expect(view).toContain('fixture-order');
+    expect(view).toContain('trade.cancelOrderError');
+    expect(panel.refreshes).toEqual([]);
   });
 });

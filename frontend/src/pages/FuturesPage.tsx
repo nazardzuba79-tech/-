@@ -9,6 +9,8 @@ import { TradingViewAdvancedChart as PriceChart } from '../components/TradingVie
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
+import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -28,12 +30,12 @@ const WS_FALLBACK_TIMEOUT_MS = 4000;
 // replaces this as soon as the request lands.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
-// Only tabs with a real endpoint behind them. Positions leads, because on a
-// futures terminal the open position is the thing a trader watches. There is
-// no separate futures order-history route, so no tab pretends there is.
-type BottomTab = 'positions' | 'positionHistory' | 'assets';
-const BOTTOM_TABS: { id: BottomTab; labelKey: 'futures.positions' | 'futures.positionHistory' | 'trade.tabAssets' }[] = [
+// Orders and their history share /futures/orders/me with different filters.
+type BottomTab = 'orders' | 'positions' | 'orderHistory' | 'positionHistory' | 'assets';
+const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tabOrderHistory' | 'futures.positions' | 'futures.positionHistory' | 'trade.tabAssets' }[] = [
+  { id: 'orders', labelKey: 'trade.tabOpenOrders' },
   { id: 'positions', labelKey: 'futures.positions' },
+  { id: 'orderHistory', labelKey: 'trade.tabOrderHistory' },
   { id: 'positionHistory', labelKey: 'futures.positionHistory' },
   { id: 'assets', labelKey: 'trade.tabAssets' },
 ];
@@ -53,6 +55,7 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'futures.positions' | 'futures.pos
  */
 export function FuturesPage() {
   const { t } = useLanguage();
+  const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // The listed contracts come from the backend, which derives them from
@@ -65,7 +68,6 @@ export function FuturesPage() {
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
   const [pickedPrice, setPickedPrice] = useState<{ value: string; seq: number } | null>(null);
-  const [openPositionCount, setOpenPositionCount] = useState(0);
   const pickedSeq = useRef(0);
   const pairListRef = useRef<FuturesPairListHandle>(null);
 
@@ -205,16 +207,19 @@ export function FuturesPage() {
                 onClick={() => setBottomTab(tab.id)}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'positions' && <span className="badge">{openPositionCount}</span>}
+                {tab.id === 'positions' && <span className="badge">{account.positions.data?.length ?? '—'}</span>}
+                {tab.id === 'orders' && <span className="badge">{account.orders.data?.length ?? '—'}</span>}
               </button>
             ))}
           </div>
 
           <div className="bottom-content">
             {bottomTab === 'positions' && (
-              <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" onCount={setOpenPositionCount} />
+              <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />
             )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
+            {bottomTab === 'orders' && <FuturesOrdersPanel refreshKey={positionsRefreshKey} />}
+            {bottomTab === 'orderHistory' && <FuturesOrdersPanel history refreshKey={positionsRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel wallet="futures" refreshKey={positionsRefreshKey} />}
           </div>
         </div>

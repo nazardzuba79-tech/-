@@ -31,6 +31,35 @@ const tick = async () => { for (let i = 0; i < 6; i += 1) await Promise.resolve(
 const FORM = 'components/FuturesOrderForm.tsx';
 const CONTROL = 'components/FuturesMarginLeverage.tsx';
 
+describe('continuous Futures sizing', () => {
+  test('drag values between presets reach the sizing callback without snapping', () => {
+    const slider = mount('components/PercentSlider.tsx');
+    const onChange = jest.fn();
+    const tree = slider.render({ value: 0, onChange, continuous: true, label: 'Size' });
+    const range = nodes(tree).find(n => n.type === 'input' && n.props.type === 'range');
+    expect(range.props.step).toBe(1);
+    expect(range.props.min).toBe(0);
+    expect(range.props.max).toBe(100);
+    for (const value of ['11', '12', '37', '99']) range.props.onChange({ target: { value } });
+    expect(onChange.mock.calls.map(c => c[0])).toEqual([11, 12, 37, 99]);
+    range.props.onChange({ target: { value: '101' } });
+    expect(onChange).toHaveBeenLastCalledWith(100);
+    range.props.onChange({ target: { value: '-2' } });
+    expect(onChange).toHaveBeenLastCalledWith(0);
+  });
+
+  test('preset shortcuts stay optional and other callers retain their original slider', () => {
+    const slider = mount('components/PercentSlider.tsx');
+    const onChange = jest.fn();
+    const tree = slider.render({ value: 37, onChange, continuous: true });
+    const range = nodes(tree).find(n => n.type === 'input');
+    expect(range.props['aria-valuetext']).toBe('37%');
+    nodes(tree).find(n => n.type === 'button' && [n.props.children].flat().join('') === '75%').props.onClick();
+    expect(onChange).toHaveBeenLastCalledWith(75);
+    expect(nodes(slider.render({ value: 0, onChange })).some(n => n.type === 'input')).toBe(false);
+  });
+});
+
 type Resource = { data: unknown; loading?: boolean; refreshing?: boolean; failed?: boolean; loaded?: boolean; fetchedAt?: number };
 const resource = (data: unknown, failed = false): Resource =>
   ({ data, loading: false, refreshing: false, failed, loaded: data !== null || failed, fetchedAt: data === null ? 0 : 1 });
@@ -249,10 +278,11 @@ describe('A. the panel keeps exactly ONE persistent slider', () => {
     expect(inputs.some((i) => i.props.type === 'range')).toBe(false);
   });
 
-  test('the size presets are 10 / 25 / 50 / 75 / 100', async () => {
+  test('the size presets are 0 / 25 / 50 / 75 / 100', async () => {
     const f = await pricedForm();
     const slider = nodes(f.tree).find((n) => n.type === f.form.components.PercentSlider);
-    expect(slider.props.presets).toEqual([10, 25, 50, 75, 100]);
+    expect(slider.props.presets).toEqual([0, 25, 50, 75, 100]);
+    expect(slider.props.continuous).toBe(true);
   });
 });
 
@@ -277,19 +307,19 @@ describe('B. leverage bounds come from the same values as before', () => {
   test('no preset above the effective ceiling is offered', () => {
     const { tree } = open({ max: 20 });
     const chips = chipLabels(tree);
-    expect(chips).toEqual(['1x', '5x', '10x', '20x']);
+    expect(chips).toEqual(['1x', '3x', '5x', '10x', '20x']);
     expect(chips).not.toContain('50x');
     expect(chips).not.toContain('100x');
   });
 
   test('the ceiling itself is always offered, even when it is not a round preset', () => {
     const { tree } = open({ max: 37 });
-    expect(chipLabels(tree)).toEqual(['1x', '5x', '10x', '20x', '37x']);
+    expect(chipLabels(tree)).toEqual(['1x', '3x', '5x', '10x', '25x', '37x']);
   });
 
   test('presets below the minimum are not offered', () => {
     const { tree } = open({ min: 10, max: 50, leverage: 10 });
-    expect(chipLabels(tree)).toEqual(['10x', '20x', '50x']);
+    expect(chipLabels(tree)).toEqual(['10x', '25x', '50x']);
   });
 
   test('the stepper cannot leave [min, max]', () => {

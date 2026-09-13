@@ -13,10 +13,14 @@ export function PercentSlider({
   value,
   onChange,
   presets = DEFAULT_PRESETS,
+  continuous = false,
+  label = 'Position size',
 }: {
   value: number;
   onChange: (pct: number) => void;
   presets?: number[];
+  continuous?: boolean;
+  label?: string;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const marks = Array.from(new Set([0, ...presets])).sort((a, b) => a - b);
@@ -38,6 +42,29 @@ export function PercentSlider({
   function handlePointerMove(e: React.PointerEvent) {
     if (e.buttons === 0) return;
     setFromClientX(e.clientX);
+  }
+
+  if (continuous) {
+    const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
+    return <div className="percent-slider-continuous">
+      <div className="percent-slider-track">
+        <div className="percent-slider-marks" aria-hidden="true">
+          {[0, 25, 50, 75, 100].map(pct => <span key={pct} style={{ left: `${pct}%` }} />)}
+        </div>
+        <input type="range" min={0} max={100} step={1} value={safeValue}
+          aria-label={label} aria-valuetext={`${safeValue}%`}
+          style={{ '--size-percent': `${safeValue}%` } as React.CSSProperties}
+          onChange={e => {
+            const next = Number(e.target.value);
+            if (Number.isFinite(next)) onChange(Math.min(100, Math.max(0, next)));
+          }} />
+        <output className="percent-slider-value">{safeValue}%</output>
+      </div>
+      <div className="percent-slider-presets">
+        {presets.map(pct => <button key={pct} type="button" onClick={() => onChange(pct)}
+          aria-pressed={safeValue === pct}>{pct}%</button>)}
+      </div>
+    </div>;
   }
 
   return (
