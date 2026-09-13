@@ -55,13 +55,14 @@ export function CapitalFlowPanels({ snapshot }: { snapshot: AnalyticsSnapshot | 
   const exchange = valueOf(exchangeSection);
   const whale = valueOf(whaleSection);
   const title = lang === 'ru' ? 'Потоки капитала и on-chain' : 'Capital flows & on-chain';
+  const latestEtfPoint = etf?.points.length ? etf.points[etf.points.length - 1] : null;
 
   return <>
     <div className="ap-section-label"><h2>{title}</h2><span>{snapshot?.selectedAsset ?? ''}</span></div>
     <div className="ap-grid ap-grid-3">
       {etfSection?.available && etf ? <Panel title={t('analytics.etfFlows')} section={etfSection}>
         <div className="ap-metrics-3">
-          <Metric label={lang === 'ru' ? 'Последний день' : 'Latest day'} value={formatUsd(etf.points.at(-1)?.flowUsd)} />
+          <Metric label={lang === 'ru' ? 'Последний день' : 'Latest day'} value={formatUsd(latestEtfPoint?.flowUsd)} />
           <Metric label="7D" value={formatUsd(sumLast(etf.points, 7))} />
           <Metric label="30D" value={formatUsd(sumLast(etf.points, 30))} />
         </div>
