@@ -27,3 +27,12 @@ The shared finishing stylesheet deliberately has greater selector specificity th
 - No live financial actions, production deployment or merge performed.
 
 Screenshots: `spot-1440.png`, `futures-1440.png`, `cfd-1440.png`, `cfd-1280.png`, `cfd-1024.png`, `cfd-390.png`, `cfd-mobile-form.png`.
+
+## Follow-up: complete Futures discovery catalogue
+
+- Public production reads on 2026-09-13: `/futures/config` returned 28 execution-listed symbols, while `/market/universe?type=linear_perpetual` contained 761 Trading, USDT-quoted and USDT-settled perpetuals (829 linear perpetuals across settlement assets). The panel incorrectly used the execution list as its discovery catalogue.
+- Added one batched universe read with a 60-second refresh, retained last successful discovery on failure, and merged discovery with server-listed/in-flight symbols. No arbitrary market cap, synthetic symbols or prices. Added a compact catalogue count. Search, sorting and virtualized scrolling cover all 761 contracts.
+- Server execution rules are unchanged. The terminal explicitly passes execution membership to the order form; both side buttons and Enter remain blocked for discovery-only instruments. Mark price clears on symbol change to avoid retaining the previous contract's price.
+- Browser 1440px: count 761; full list scrollHeight 27,396px, viewport 740px; reached scrollTop 26,656px. ZRX search returned its actual contract, selecting it disabled both execution buttons, and clearing search restored all 761. Screenshot: futures-catalogue-761.png.
+- Frontend TypeScript/production build PASS. Six focused suites: 112 pass / 1 fail / 113 total. The sole failure, futuresConfigDedup's Windows path separator assertion, was reproduced on pristine af652a0 (22 pass / 1 fail for that baseline suite). Existing API fingerprint still verifies all original methods; only the additive universe method is excluded from that fingerprint. Four added regression cases pass, including blocked BUY/SELL/Enter submissions for discovery-only contracts.
+- Local preview continues to block private account reads and financial writes by design; no production accounts or deployments changed.

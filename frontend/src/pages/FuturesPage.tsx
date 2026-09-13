@@ -17,6 +17,7 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { discoverFuturesSymbols, type FuturesUniverse } from '../lib/futuresDiscovery';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
@@ -60,10 +61,9 @@ export function FuturesPage() {
   const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  // The listed contracts come from the backend, which derives them from
-  // live market data (see FuturesMarketRegistry) — this page must not keep
-  // its own copy, which is exactly why it used to show only three markets.
+  // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
+  const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
@@ -91,14 +91,21 @@ export function FuturesPage() {
   const { config: futuresConfig } = useFuturesConfig();
 
   useEffect(() => {
-    if (!futuresConfig || futuresConfig.symbols.length === 0) return;
-    const listed = futuresConfig.symbols;
+    let cancelled = false;
+    const refresh = () => api.getFuturesUniverse().then(result => {
+      if (!cancelled && result.available) setUniverse(result);
+    }).catch(() => {});
+    void refresh();
+    const timer = window.setInterval(refresh, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  useEffect(() => {
+    const listed = discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe);
     setSymbols(listed);
-    // A deep link to a contract that is no longer listed falls back to
-    // the first listed one rather than leaving the terminal pointed at
-    // a market the order route would reject.
-    setSymbol((current) => (listed.includes(current) ? current : listed[0]));
-  }, [futuresConfig]);
+    // Only a successfully loaded catalogue can invalidate a discovery deep link.
+    if (universe?.available) setSymbol((current) => (listed.includes(current) ? current : listed[0]));
+  }, [futuresConfig, universe]);
 
   // Same reason as the spot terminal: this page is not remounted when only
   // the query string changes, so without this a second deep-link into
@@ -202,6 +209,7 @@ export function FuturesPage() {
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
             <FuturesOrderForm
               symbol={symbol}
+              executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}
               onPlaced={handleOrderPlaced}
               onOpenTransfer={() => setShowTransfer(true)}
               pickedPrice={pickedPrice?.value}

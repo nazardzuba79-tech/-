@@ -1222,6 +1222,9 @@ export const api = {
 
   // Perpetual futures — fully separate wallet/orders/positions from spot
   // (see the backend's FuturesBalance/FuturesOrder schema comments).
+  getFuturesUniverse: () =>
+    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),
+
   getFuturesConfig: () =>
     request<{
       symbols: string[];

@@ -19,6 +19,7 @@ export function FuturesOrderForm({
   onOpenTransfer,
   pickedPrice,
   pickedPriceSequence,
+  executionEnabled = true,
 }: {
   symbol: string;
   onPlaced: () => void;
@@ -28,6 +29,8 @@ export function FuturesOrderForm({
   pickedPrice?: string | null;
   /** Repeated clicks on the same level must refill an edited Limit field too. */
   pickedPriceSequence?: number;
+  /** Discovery is broader than the server's execution whitelist. */
+  executionEnabled?: boolean;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -74,6 +77,7 @@ export function FuturesOrderForm({
 
   useEffect(() => {
     let cancelled = false;
+    setMarkPrice(null);
     function load() {
       api
         .getFuturesMarkPrice(symbol)
@@ -271,6 +275,7 @@ export function FuturesOrderForm({
    *     submittable during an outage — which is when they matter most.
    */
   const canSubmit = Boolean(config)
+    && executionEnabled
     && effectiveMaxLeverage !== null
     && leverage <= effectiveMaxLeverage
     && !submitting;
@@ -437,6 +442,7 @@ export function FuturesOrderForm({
         </div>
 
         {error && <div className="fo-error">{error}</div>}
+        {!executionEnabled && <div className="fo-error" role="status">{t('analytics.unavailable')}</div>}
 
         {/* The shared terminal CTA, same as spot — this used to be a
             flat accent fill under a coloured outer glow, which is the one

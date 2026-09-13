@@ -92,7 +92,9 @@ describe('the futures market list scales', () => {
     // mount effect, because a cold /futures fetched that static endpoint
     // three times over. See lib/futuresConfigStore.
     expect(page).toContain('useFuturesConfig()');
-    expect(page).toContain('const listed = futuresConfig.symbols;');
+    expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
+    expect(page).toContain('api.getFuturesUniverse()');
+    expect(page).toContain('executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}');
     expect(page).toContain('setSymbols(listed)');
     // And it does not go back to fetching the endpoint itself.
     expect(page).not.toContain('getFuturesConfig');

@@ -32,8 +32,8 @@ type Sort = { field: SortField; dir: 1 | -1 } | null;
  * with the two numeric columns at fixed widths and tabular figures so live
  * updates cannot move them.
  *
- * Scoped to FUTURES_SYMBOLS — the only markets a position can actually be
- * opened on (config/futuresConfig.ts on the backend rejects anything else).
+ * Shows the discoverable USDT perpetual catalogue. The order form and
+ * server independently enforce the narrower execution whitelist.
  * Prices and 24h figures come from the same live ticker feed the rest of
  * the app uses. Default order pins BTC first, then ranks by real volume.
  *
@@ -157,6 +157,7 @@ export const FuturesPairList = forwardRef<
       </div>
 
       <div className="pairs-tabs">
+        <span className="pairs-count" aria-label={t('nav.futures')}>{symbols.length}</span>
         <button
           type="button"
           className={`pairs-tab ${favoritesOnly ? 'active' : ''}`}
@@ -183,7 +184,7 @@ export const FuturesPairList = forwardRef<
           actually show are in the DOM. Spacers preserve the real scroll
           height, so the scrollbar and keyboard scrolling behave exactly as
           they would with every row mounted. */}
-      <div className="pairs-list" ref={attachList}>
+      <div className="pairs-list" ref={attachList} data-total={rows.length}>
         {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         {windowed.padTop > 0 && <div style={{ height: windowed.padTop }} aria-hidden />}
         {rows.slice(windowed.start, windowed.end).map((r) => {

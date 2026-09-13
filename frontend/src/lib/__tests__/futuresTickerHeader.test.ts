@@ -155,7 +155,7 @@ test.each([
   const source = path === 'frontend/src/lib/api.ts' ? read(path).replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ) : read(path);
+  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : read(path);
   expect(hash(source)).toBe(expected);
 });
 

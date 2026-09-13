@@ -28,6 +28,7 @@
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) button:focus-visible { outline:2px solid #f7a600; outline-offset:2px; }
 
 /* Spot keeps every order family visible even in a narrow ticket. */
+.trade-terminal.futures-reference .pairs-count { margin-left:auto; order:2; padding:0 12px; color:#a1a7b3; font-size:11px; font-variant-numeric:tabular-nums; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tabs { gap:0 14px; flex-wrap:wrap; overflow:visible; padding:0 16px; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tab { padding:10px 0; font-size:12px; line-height:18px; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-form-content { padding:16px; gap:18px; }

@@ -215,9 +215,10 @@ async function orderForm(overrides: Record<string, any> = {}) {
       ...overrides.extraApi,
     },
   });
-  form.render(props);
+  const formProps = { ...props, ...overrides.props };
+  form.render(formProps);
   await tick();
-  const render = () => form.render(props);
+  const render = () => form.render(formProps);
   const change = (tree: any, placeholder: string, value: string) =>
     nodes(tree).find((n: any) => n.type === 'input' && n.props.placeholder === placeholder)
       .props.onChange({ target: { value } });
@@ -234,6 +235,17 @@ async function pricedForm(overrides: Record<string, any> = {}) {
 
 const submit = (tree: any) =>
   nodes(tree).find((n) => n.type === 'form').props.onSubmit({ preventDefault: jest.fn() });
+
+test('discovery-only contracts cannot submit through either side or Enter', async () => {
+  const f = await pricedForm({ props: { executionEnabled: false } });
+  const buttons = byClass(f.tree, 'submit-btn');
+  expect(buttons).toHaveLength(2);
+  expect(buttons.every(button => button.props.disabled)).toBe(true);
+  for (const button of buttons) button.props.onClick();
+  submit(f.tree);
+  await tick();
+  expect(f.placed).not.toHaveBeenCalled();
+});
 
 // ── A. Exactly one persistent slider ─────────────────────────────────
 
