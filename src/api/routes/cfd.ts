@@ -19,7 +19,11 @@ import { requireAdmin } from '../middleware/admin';
 
 const CFD_SYMBOLS = CFD_REFERENCE_CATALOG.map((i) => i.symbol) as [string, ...string[]];
 const biquoteDisplay = new BiquoteCfdQuoteSource({ cacheMs: Number(process.env.CFD_DISPLAY_CACHE_MS ?? 5000), timeoutMs: 1400 });
-const derivDisplay = new DerivPublicStreamQuoteSource({ shadow:true, maxQuoteAgeMs:120_000 });
+// Deriv's adapter implements the strict financial quote contract, whose age
+// ceiling is 10s. The display router above it can keep its own looser 120s
+// presentation freshness, but the adapter itself must remain within the
+// shared safety invariant.
+const derivDisplay = new DerivPublicStreamQuoteSource({ shadow:true, maxQuoteAgeMs:10_000 });
 const eiaOilDisplay = new EiaOilDisplaySource();
 const defaultDisplaySource = new CfdDisplayQuoteRouter([
   {id:'biquote',priority:10,source:biquoteDisplay},
