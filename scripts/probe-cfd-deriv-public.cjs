@@ -7,12 +7,13 @@ const fs=require('node:fs'),path=require('node:path'),WebSocket=require('ws');
 const {discoverDerivSymbols,DERIV_PUBLIC_WS_URL}=require('../dist/services/marketData/cfd/DerivPublicStreamQuoteSource');
 const OUT=path.resolve('docs/qa/cfd-multi-provider/deriv-public-probe.json');fs.mkdirSync(path.dirname(OUT),{recursive:true});
 const report={checkedAt:new Date().toISOString(),endpoint:DERIV_PUBLIC_WS_URL,publicNoAuth:true,executionAllowed:false,rightsAdmitted:false,discovery:null,history:{},errors:[]};
-let socket,timer;
-function finish(code=0){clearTimeout(timer);try{socket?.close();}catch{}fs.writeFileSync(OUT,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));process.exitCode=code;}
+let socket,timer,finished=false;
+function finish(code=0){if(finished)return;finished=true;clearTimeout(timer);try{socket?.close();}catch{}fs.writeFileSync(OUT,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));process.exitCode=code;}
 try{
  socket=new WebSocket(DERIV_PUBLIC_WS_URL,{handshakeTimeout:8000});
  timer=setTimeout(()=>{report.errors.push('probe_timeout');finish(1);},20000);
- socket.on('open',()=>socket.send(JSON.stringify({active_symbols:'brief',product_type:'basic',req_id:1})));
+ // Current Deriv Options API removed product_type from active_symbols.
+ socket.on('open',()=>socket.send(JSON.stringify({active_symbols:'brief',req_id:1})));
  socket.on('error',()=>{report.errors.push('socket_error');});
  socket.on('message',data=>{
   let raw;try{raw=JSON.parse(data.toString());}catch{return;}
@@ -30,5 +31,5 @@ try{
     if(report.discovery&&Object.keys(report.history).length===13){if(Object.values(report.history).some(x=>!x.ok))report.errors.push('history_missing');finish(report.errors.length?1:0);}
   }
  });
- socket.on('close',()=>{if(!process.exitCode&&(!report.discovery||Object.keys(report.history).length<13)){report.errors.push('socket_closed_early');finish(1);}});
+ socket.on('close',()=>{if(!finished&&(!report.discovery||Object.keys(report.history).length<13)){report.errors.push('socket_closed_early');finish(1);}});
 }catch{report.errors.push('probe_init');finish(1);}
