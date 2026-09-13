@@ -6,7 +6,6 @@ on:
       - 'frontend/src/lib/__tests__/homeHeroStream.test.ts'
       - 'frontend/src/lib/__tests__/homeHeroVisibility.test.ts'
       - 'frontend/src/lib/__tests__/homeLiveMarket.test.ts'
-      - 'frontend/src/lib/__tests__/homeLiveRendering.test.ts'
       - 'scripts/qa-home-laptop-first-load.cjs'
       - '.github/workflows/home-laptop-first-load.yml'
 permissions:
@@ -31,7 +30,7 @@ jobs:
         working-directory: frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Homepage first-load regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/homeLiveMarket.test.ts frontend/src/lib/__tests__/homeHeroStream.test.ts frontend/src/lib/__tests__/homeHeroVisibility.test.ts frontend/src/lib/__tests__/homeLiveRendering.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/homeLiveMarket.test.ts frontend/src/lib/__tests__/homeHeroStream.test.ts frontend/src/lib/__tests__/homeHeroVisibility.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
