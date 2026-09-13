@@ -42,6 +42,8 @@ jobs:
       - name: Frontend build
         if: success() || failure()
         working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
         run: npm run build
       - name: CFD and homepage regression tests
         if: success() || failure()
@@ -52,6 +54,21 @@ jobs:
         with:
           name: cfd-test-results
           path: cfd-test-results.json
+          retention-days: 7
+      - name: Install isolated browser QA tooling (no app dependency changes)
+        run: |
+          npm install --prefix /tmp/voltex-cfd-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-cfd-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Disposable loopback browser rollout validation (no accounts or DB)
+        env:
+          CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-qa/node_modules/playwright
+        run: node scripts/qa-cfd-public-rollout.cjs
+      - name: Preserve screenshots and rollout findings
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfd-rollout-browser
+          path: docs/qa/cfd-multi-provider/browser/
           retention-days: 7
   public-probe:
     runs-on: ubuntu-latest
