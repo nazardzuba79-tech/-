@@ -94,3 +94,25 @@ jobs:
           name: cfd-public-feed-probe
           path: docs/qa/cfd-multi-provider/public-feed.json
           retention-days: 7
+  deriv-public-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install backend dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile public Deriv adapter only
+        run: npx tsc --strict --skipLibCheck --target ES2021 --module commonjs --esModuleInterop --moduleResolution node --outDir dist src/services/marketData/cfd/DerivPublicStreamQuoteSource.ts
+      - name: Verify unauthenticated Deriv coverage for all 13 canonical instruments
+        run: node scripts/probe-cfd-deriv-public.cjs
+      - uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: cfd-deriv-public-probe
+          path: docs/qa/cfd-multi-provider/deriv-public-probe.json
+          retention-days: 7
