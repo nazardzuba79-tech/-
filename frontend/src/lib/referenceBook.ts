@@ -1,12 +1,31 @@
-import type { SpotDepthLevel } from './spotOrderBook';
+import { formatSpotBookNumber, spotLevelPrice, type SpotDepthLevel } from './spotOrderBook';
 
 /** Display-only quantities in BASE units, including cumulative base depth. */
+function shortExponent(value: number): string {
+  const text = value.toExponential(2);
+  return text.length > 8 ? value.toExponential(1) : text;
+}
+
 export function referenceQuantity(value: number): string {
   if (!Number.isFinite(value) || value < 0) return '—';
-  if (value > 0 && value < 1e-7) return value.toExponential(2);
-  if (value > 0 && value < 0.001) return value.toLocaleString('en-US', { maximumFractionDigits: Math.ceil(-Math.log10(value)) + 2 });
-  if (value >= 1e6) return value.toExponential(3);
-  return value.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  if (value >= 1e12) return shortExponent(value);
+  for (const [scale, suffix] of [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']] as const) {
+    if (value >= scale) return `${(value / scale).toFixed(2)}${suffix}`;
+  }
+  const text = value > 0 && value < 0.001
+    ? value.toLocaleString('en-US', { maximumFractionDigits: Math.min(20, Math.ceil(-Math.log10(value)) + 2) })
+    : value.toLocaleString('en-US', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  return text.length > 8 || (value > 0 && Number(text) === 0) ? shortExponent(value) : text;
+}
+
+/** Bounded display only; price selection always uses the full spotLevelPrice value. */
+export function referencePrice(value: number, step?: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '—';
+  const decimals = step === undefined ? undefined : Math.max(2, spotLevelPrice(value, step).split('.')[1]?.length ?? 0);
+  const text = decimals === undefined ? formatSpotBookNumber(value) : value.toLocaleString('en-US', {
+    minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+  });
+  return text.length > 10 || Number(text.replace(/,/g, '')) === 0 ? value.toExponential(3) : text;
 }
 
 export function visibleDepthRatio(bids: SpotDepthLevel[], asks: SpotDepthLevel[]): number | null {

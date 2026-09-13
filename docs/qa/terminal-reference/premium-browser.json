@@ -1,0 +1,59 @@
+{
+  "checks": [
+    {
+      "bookWidth": 227.33334350585935,
+      "clippedCells": [],
+      "clippedRows": 0,
+      "frames": 1,
+      "overflow": false,
+      "rows": 18,
+      "ticker": "BTC/USDT",
+      "width": 1440
+    },
+    {
+      "bookWidth": 227.33334350585935,
+      "clippedCells": [],
+      "clippedRows": 0,
+      "frames": 1,
+      "overflow": false,
+      "rows": 14,
+      "ticker": "BTC/USDT",
+      "width": 1280
+    },
+    {
+      "bookWidth": 506.3333435058594,
+      "clippedCells": [],
+      "clippedRows": 0,
+      "frames": 1,
+      "overflow": false,
+      "rows": 28,
+      "ticker": "BTC/USDT",
+      "width": 1024
+    },
+    {
+      "bookWidth": 380,
+      "clippedCells": [],
+      "clippedRows": 0,
+      "frames": 1,
+      "overflow": false,
+      "rows": 8,
+      "ticker": "BTC/USDT",
+      "width": 390
+    },
+    {
+      "bookWidth": 293.0833435058594,
+      "clippedCells": [],
+      "clippedRows": 0,
+      "frames": 1,
+      "overflow": false,
+      "rows": 20,
+      "ticker": "BTC/USDT",
+      "width": 1920
+    }
+  ],
+  "controls": {
+    "leverage5x10x": true,
+    "limitMarket": true
+  },
+  "chart": "Hosted TradingView unchanged"
+}

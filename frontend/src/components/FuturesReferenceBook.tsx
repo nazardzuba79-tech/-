@@ -4,7 +4,7 @@ import { useMarketTicker } from '../lib/useMarketData';
 import { krakenSocket, type LiveTrade } from '../lib/krakenSocket';
 import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupSteps, spotLevelPrice,
   type SpotBookLevel, type SpotDepthLevel } from '../lib/spotOrderBook';
-import { referenceQuantity, referenceRowCount, visibleDepthRatio } from '../lib/referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio } from '../lib/referenceBook';
 
 /** Futures presentation only. External reference feed and price-pick contract stay unchanged. */
 export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
@@ -63,10 +63,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
 
   const rows = (levels: SpotDepthLevel[], side: 'bid' | 'ask') => levels.map(level => {
     const exact = spotLevelPrice(level.price, step);
-    const price = Number(exact).toLocaleString('en-US', {
-      minimumFractionDigits: Math.max(2, exact.split('.')[1]?.length ?? 0),
-      maximumFractionDigits: Math.max(2, exact.split('.')[1]?.length ?? 0),
-    });
+    const price = referencePrice(level.price, step);
     return <button type="button" className={`rb-row ${side}`} key={exact}
       aria-label={`${side === 'bid' ? 'Bid' : 'Ask'} ${exact}`} onClick={() => onPickPrice(exact)}>
       <i className="rb-depth" style={{ width: `${level.cumulative / maxDepth * 100}%` }} />
@@ -101,13 +98,13 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
       <div className={`rb-body rb-${mode}`} ref={body}>
         {mode !== 'bids' && <div className="rb-stack rb-asks">{rows(sell, 'ask')}</div>}
         <div className="rb-center">
-          <strong className={last === null ? '' : direction} title={last === null ? 'Mid · (best bid + best ask) / 2' : t('trade.lastPrice')}>{last !== null ? `${direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}${formatSpotBookNumber(last)}` : metrics.mid !== null ? formatSpotBookNumber(metrics.mid) : '—'}</strong>
+          <strong className={last === null ? '' : direction} title={last === null ? 'Mid · (best bid + best ask) / 2' : t('trade.lastPrice')}>{last !== null ? `${direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}${referencePrice(last)}` : metrics.mid !== null ? referencePrice(metrics.mid) : '—'}</strong>
           {last === null && metrics.mid !== null && <small className="rb-mid-label" title="(best bid + best ask) / 2">Mid</small>}
           <span title={t('trade.spread')}>{t('trade.spread')} {metrics.spread !== null ? formatSpotBookNumber(metrics.spread) : '—'}</span>
         </div>
         {mode !== 'asks' && <div className="rb-stack rb-bids">{rows(buy, 'bid')}</div>}
       </div>
-      <div className="rb-ratio" title="Buy / sell quantity in the displayed depth window; not a position ratio">
+      <div className="rb-ratio" data-available={ratio !== null} title="Buy / sell quantity in the displayed depth window; not a position ratio">
         {ratio !== null && <i style={{ width: `${ratio}%` }} />}
         <span><b>B</b> {ratio === null ? '—' : `${Math.round(ratio)}%`}</span>
         <span>{ratio === null ? '—' : `${100 - Math.round(ratio)}%`} <b>S</b></span>
@@ -116,7 +113,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
       <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.quantity')}<small>({base})</small></span><span>{t('trade.time')}</span></div>
       <div className="rb-tape" role="tabpanel">
         {tape.pair === pair && tape.rows.length ? tape.rows.map(trade => <div className={`rb-row ${trade.side === 'BUY' ? 'bid' : 'ask'}`} key={trade.id}>
-          <span>{formatSpotBookNumber(Number(trade.price))}</span><span title={trade.quantity}>{referenceQuantity(Number(trade.quantity))}</span>
+          <span title={trade.price}>{referencePrice(Number(trade.price))}</span><span title={trade.quantity}>{referenceQuantity(Number(trade.quantity))}</span>
           <span>{new Date(trade.time).toLocaleTimeString('en-GB', { hour12: false })}</span>
         </div>) : <div className="rb-empty">—</div>}
       </div>

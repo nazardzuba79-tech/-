@@ -73,3 +73,15 @@ Validation: frontend TypeScript and production build PASS. Eleven focused suites
 Browser: 1920/1440/1280/1024/768/390, no horizontal overflow, clipped numeric cells or partial depth rows. Bid-only/ask-only/both controls, 0.1/0.5 grouping and exact click-to-price verified without submitting an order. The Trades tab showed an honest dash in this session; delivery/filtering/unsubscribe/late-event handling are covered by DOM tests. Native timeframe changes verified; OHLC/contract description absent. Screenshots: book-1920.jpg, book-1440.jpg, book-390.jpg (mobile viewport scrolled to the book; full-page stitching produced a capture artifact and is not used). book-browser.json records geometry.
 
 Preview remains http://127.0.0.1:4202/futures. Local read-only QA keeps private accounts unavailable and blocks financial writes. Same draft PR #59, no merge/deploy.
+
+## 2026-09-13 — Final graphite presentation
+
+Retains the current hosted TradingView following the owner's explicit choice. An earlier temporary probe confirmed that its embed ignored custom candle/volume/legend overrides; the probe was reverted. No chart replacement or unsupported styling is included.
+
+The finish uses neutral graphite panel/control tones, clearer header/field hierarchy, restrained depth shading, an explicit selected book-mode state, a separated central quote band and quieter outlined account actions. Hover/focus feedback remains subtle and respects reduced motion. No chart, search, trading payload, risk/account math or backend change.
+
+Book numbers now fit narrow columns without decimal ellipses: normal quantities keep three decimals; larger values use K/M/B and exceptionally small values use scientific notation. Exact quantities/prices remain available on row tooltips, and price selection sends the exact decimal value. Unknown depth ratios are neutral rather than red. Formatting tests cover tiny values, long decimals, large values and unchanged price selection.
+
+Validation: frontend TypeScript and production build PASS. Eleven focused suites: 274 PASS / 8 known baseline failures / 282 total; zero new failure names against the previously verified pristine main 0f7ab66f9af6e5e1a33ff0356182a2174b804c66. See premium-tests.json. Browser checks: 1920/1440/1280/1024/390, no horizontal overflow, clipped book cells or partial depth rows; 5x/10x and Limit/Market controls verified without submitting an order. Screenshots: premium-1920.jpg, premium-1440.jpg, premium-390.jpg; geometry in premium-browser.json. Existing read-only preview/private-account unavailable states remain explicit.
+
+Same draft PR #59 and local preview http://127.0.0.1:4202/futures. No merge/deploy; no subjective numeric quality certification.

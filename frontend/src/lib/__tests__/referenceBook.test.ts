@@ -1,4 +1,4 @@
-import { referenceQuantity, referenceRowCount, visibleDepthRatio } from '../referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio } from '../referenceBook';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
@@ -84,4 +84,18 @@ test('trades are subscribed only when visible, invalid and late events ignored, 
   await render('ETH/USDT');expect(release).toHaveBeenCalledTimes(1);expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(0);
   await act(async()=>first({id:'late',price:'500',quantity:'2',side:'BUY',time:2000}));expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(0);
   await click('.rb-tabs button:nth-child(1)');expect(release).toHaveBeenCalledTimes(2);
+});
+
+
+test.each([0.000000987654,0.000000000000034,0.000009876,0.09999999,999.999,1234,999999,1e9,1e20,Number.MIN_VALUE,Number.MAX_VALUE])('long quantity %s fits a narrow column and never becomes false zero', value=>{
+  const display=referenceQuantity(value);expect(display.length).toBeLessThanOrEqual(8);expect(parseFloat(display)).toBeGreaterThan(0);expect(display).not.toContain('…');
+});
+test('price display is bounded while the price-pick value and tooltip preserve full tiny-price precision',async()=>{
+  expect(referencePrice(76803.9,0.1)).toBe('76,803.90');
+  expect(Number(referencePrice(1e-25))).toBeGreaterThan(0);
+  const value=0.0000000123456789;expect(referencePrice(value,1e-12).length).toBeLessThanOrEqual(10);
+  await render('TINY/USDT',[level(value,0.0000000987654321)],[level(value+1e-12,2)]);
+  const row=host.querySelector('.rb-bids button')!;const exact=row.querySelector('span')!.getAttribute('title');
+  await click('.rb-bids button');expect(pick).toHaveBeenLastCalledWith(exact);expect(Number(exact)).toBeGreaterThan(0);
+  expect(row.querySelector('span:nth-of-type(2)')!.getAttribute('title')).toBe('9.87654321e-8 TINY');
 });
