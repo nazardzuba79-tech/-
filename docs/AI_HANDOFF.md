@@ -1994,3 +1994,10 @@ withdrawal was placed.
 - Changed FuturesPage, FuturesPairList, FuturesOrderForm, api.ts, futuresDiscovery.ts, shared polish CSS and related tests/evidence. Mark price resets when symbol changes. No changes to other agents' backend or financial logic.
 - Build/TypeScript pass. Focused 112 pass / 1 reproduced pristine-main Windows path test failure; four added regressions pass. Browser confirms 761, last-page scrolling and ZRX search/selection with execution blocked. QA README records exact counts and limitations.
 - Same draft PR updated; not merged/deployed. Local account errors remain expected because the preview server blocks private account reads. Catalogue visibility does not imply execution is enabled on every contract.
+
+## 2026-09-13 — Codex — original book and presentation forms
+
+- Owner approved restoring the original narrow navy Futures book and explicitly chose presentation-only additional order forms. Implementation fc50d53928ab0565e23a2b2fa830ccb567cb3c23, same branch/PR #66.
+- Material changes: FuturesPage restores OrderBookPanel with precise formatting retained; TerminalPresentationPolish.css restores compact book width/color/rows. New OrderFamilyPresentation shared fields/tabs used by FuturesOrderForm and CfdOrderForm. Stop/TP/OCO are presentation-only and cannot submit as another type. Existing Futures Limit/Market and CFD local Market paths preserved. No backend, financial math, provider/catalogue, Spot execution or native TradingView changes.
+- Build/TypeScript PASS; Futures order-panel 52 tests PASS including three new no-write cases. Existing Spot amount-format assertion failure retained. Browser Futures/CFD desktop and 390px checks pass: five tabs, matching fields, no horizontal overflow, unsupported submissions disabled. Original book 216px at 1440, 22px rows. Native TradingView now rendered successfully in this session.
+- Evidence and details: docs/qa/terminal-presentation-polish/README.md. No merge/deploy; future execution support is outside the owner-confirmed presentation scope.
