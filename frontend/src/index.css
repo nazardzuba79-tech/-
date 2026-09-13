@@ -2275,5 +2275,5 @@ a:hover > .nav-card-icon {
 }
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
-.futures-reference > .global-header { background:#17171d; border-bottom:4px solid #050507; box-shadow:none; }
+.futures-reference > .global-header { background:#1b1b23; border-bottom:1px solid #2b2b35; box-shadow:none; }
 .futures-reference > .global-header .deposit-button { box-shadow:none; }

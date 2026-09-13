@@ -32,10 +32,18 @@ const out = 'docs/qa/terminal-reference';
             background:getComputedStyle(document.querySelector('.chart-area')).backgroundColor,
             sidebar:document.querySelector('.reference-market-sidebar') ? rect('.reference-market-sidebar') : null,
             marketLists:document.querySelectorAll('.pairs-list').length,
+            repeatedUsdtLabels:document.querySelectorAll('.pair-row[aria-label$="/USDT"] .p-quote').length,
+            clippedChanges:[...document.querySelectorAll('.reference-market-sidebar .p-change')].filter(n=>n.scrollWidth>n.clientWidth+1).length,
+            panelBackground:getComputedStyle(document.querySelector('.orderbook-area')).backgroundColor,
+            inputBackground:getComputedStyle(document.querySelector('.fo-input')).backgroundColor,
           };
         });
         assert.ok(geometry.scrollWidth <= width, `page overflow at ${width}: ${geometry.scrollWidth}`);
         assert.equal(geometry.frames, 1);
+        assert.equal(geometry.repeatedUsdtLabels, 0, 'no repeated USDT subtitle in the market list');
+        assert.equal(geometry.clippedChanges, 0, 'market percentage labels fit');
+        assert.notEqual(geometry.background, geometry.panelBackground, 'chart and panels have distinct graphite surfaces');
+        assert.notEqual(geometry.panelBackground, geometry.inputBackground, 'fields have a distinct surface');
         assert.ok(Math.abs(geometry.frame.width - geometry.canvas.width) <= 2, 'native frame fills chart');
         assert.ok(geometry.buttons.every(b => b.scrollWidth <= b.width + 1), 'action labels fit');
         if (width > 1024) {

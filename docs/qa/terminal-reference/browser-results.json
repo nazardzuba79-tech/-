@@ -41,12 +41,12 @@
     "frames": 1,
     "buttons": [
       {
-        "width": 149,
-        "scrollWidth": 149
+        "width": 150,
+        "scrollWidth": 150
       },
       {
-        "width": 149,
-        "scrollWidth": 149
+        "width": 150,
+        "scrollWidth": 150
       }
     ],
     "background": "rgb(16, 16, 20)",
@@ -56,15 +56,19 @@
       "width": 240,
       "height": 924
     },
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   },
   {
     "viewport": 1440,
     "scrollWidth": 1440,
     "chart": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 704,
+      "width": 686,
       "height": 546
     },
     "book": {
@@ -80,42 +84,46 @@
       "height": 808
     },
     "bottom": {
-      "x": 218,
+      "x": 236,
       "y": 674,
-      "width": 932,
+      "width": 914,
       "height": 198
     },
     "frame": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 704,
+      "width": 686,
       "height": 525
     },
     "canvas": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 704,
+      "width": 686,
       "height": 525
     },
     "frames": 1,
     "buttons": [
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       },
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       }
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": {
       "x": 0,
       "y": 128,
-      "width": 218,
+      "width": 236,
       "height": 744
     },
     "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)",
     "nativeControls": "Indicators opens and closes; attribution remains visible; iframe uncropped",
     "marketSelector": "persistent search; 20 BTC/ETH selections; one matching iframe; responsive transition keeps one list and removes modal"
   },
@@ -123,9 +131,9 @@
     "viewport": 1366,
     "scrollWidth": 1366,
     "chart": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 630,
+      "width": 612,
       "height": 442
     },
     "book": {
@@ -141,50 +149,54 @@
       "height": 676
     },
     "bottom": {
-      "x": 218,
+      "x": 236,
       "y": 570,
-      "width": 858,
+      "width": 840,
       "height": 170
     },
     "frame": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 630,
+      "width": 612,
       "height": 421
     },
     "canvas": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 630,
+      "width": 612,
       "height": 421
     },
     "frames": 1,
     "buttons": [
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       },
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       }
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": {
       "x": 0,
       "y": 128,
-      "width": 218,
+      "width": 236,
       "height": 612
     },
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   },
   {
     "viewport": 1280,
     "scrollWidth": 1280,
     "chart": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 544,
+      "width": 526,
       "height": 546
     },
     "book": {
@@ -200,187 +212,199 @@
       "height": 808
     },
     "bottom": {
-      "x": 218,
+      "x": 236,
       "y": 674,
-      "width": 772,
+      "width": 754,
       "height": 198
     },
     "frame": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 544,
+      "width": 526,
       "height": 525
     },
     "canvas": {
-      "x": 218,
+      "x": 236,
       "y": 128,
-      "width": 544,
+      "width": 526,
       "height": 525
     },
     "frames": 1,
     "buttons": [
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       },
       {
-        "width": 121,
-        "scrollWidth": 121
+        "width": 123,
+        "scrollWidth": 123
       }
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": {
       "x": 0,
       "y": 128,
-      "width": 218,
+      "width": 236,
       "height": 744
     },
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   },
   {
     "viewport": 1024,
     "scrollWidth": 1024,
     "chart": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 1024,
       "height": 520
     },
     "book": {
       "x": 0,
-      "y": 704.390625,
+      "y": 701.390625,
       "width": 512,
-      "height": 892.03125
+      "height": 888.03125
     },
     "form": {
       "x": 512,
-      "y": 704.390625,
+      "y": 701.390625,
       "width": 512,
-      "height": 892.03125
+      "height": 888.03125
     },
     "bottom": {
       "x": 0,
-      "y": 1596.421875,
+      "y": 1589.421875,
       "width": 1024,
-      "height": 115.390625
+      "height": 112.390625
     },
     "frame": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 1024,
       "height": 499
     },
     "canvas": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 1024,
       "height": 499
     },
     "frames": 1,
     "buttons": [
       {
-        "width": 232,
-        "scrollWidth": 232
+        "width": 234,
+        "scrollWidth": 234
       },
       {
-        "width": 232,
-        "scrollWidth": 232
+        "width": 234,
+        "scrollWidth": 234
       }
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": null,
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   },
   {
     "viewport": 768,
     "scrollWidth": 768,
     "chart": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 768,
       "height": 520
     },
     "book": {
       "x": 0,
-      "y": 704.390625,
+      "y": 701.390625,
       "width": 384,
-      "height": 892.03125
+      "height": 888.03125
     },
     "form": {
       "x": 384,
-      "y": 704.390625,
+      "y": 701.390625,
       "width": 384,
-      "height": 892.03125
+      "height": 888.03125
     },
     "bottom": {
       "x": 0,
-      "y": 1596.421875,
+      "y": 1589.421875,
       "width": 768,
-      "height": 115.390625
+      "height": 112.390625
     },
     "frame": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 768,
       "height": 499
     },
     "canvas": {
       "x": 0,
-      "y": 184.390625,
+      "y": 181.390625,
       "width": 768,
       "height": 499
     },
     "frames": 1,
     "buttons": [
       {
-        "width": 168,
-        "scrollWidth": 168
+        "width": 170,
+        "scrollWidth": 170
       },
       {
-        "width": 168,
-        "scrollWidth": 168
+        "width": 170,
+        "scrollWidth": 170
       }
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": null,
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   },
   {
     "viewport": 390,
     "scrollWidth": 390,
     "chart": {
       "x": 0,
-      "y": 276.78125,
+      "y": 273.78125,
       "width": 390,
       "height": 460
     },
     "book": {
       "x": 0,
-      "y": 1628.8125,
+      "y": 1621.8125,
       "width": 390,
       "height": 460
     },
     "form": {
       "x": 0,
-      "y": 736.78125,
+      "y": 733.78125,
       "width": 390,
-      "height": 892.03125
+      "height": 888.03125
     },
     "bottom": {
       "x": 0,
-      "y": 2088.8125,
+      "y": 2081.8125,
       "width": 390,
-      "height": 115.390625
+      "height": 112.390625
     },
     "frame": {
       "x": 0,
-      "y": 276.78125,
+      "y": 273.78125,
       "width": 390,
       "height": 439
     },
     "canvas": {
       "x": 0,
-      "y": 276.78125,
+      "y": 273.78125,
       "width": 390,
       "height": 439
     },
@@ -397,6 +421,10 @@
     ],
     "background": "rgb(16, 16, 20)",
     "sidebar": null,
-    "marketLists": 1
+    "marketLists": 1,
+    "repeatedUsdtLabels": 0,
+    "clippedChanges": 0,
+    "panelBackground": "rgb(23, 23, 30)",
+    "inputBackground": "rgb(37, 37, 47)"
   }
 ]

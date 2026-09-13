@@ -11,6 +11,8 @@ Branch: `codex/terminal-reference-layout`. Review only; no merge/deployment.
 - Market tape moves below the workspace. Tablet uses chart above book/form; mobile uses chart, form, book, positions. The existing mobile navigation remains fixed and content scrolls behind it.
 - Futures chart canvas uses the official TradingView background/grid options. Spot and CFD keep their original colors and symbol mappings. Native timeframe/indicator/drawing controls and attribution remain intact.
 - Chart integration follow-up removes the extra parent Graph/TradingView heading, aligning the native toolbar directly with the book heading and giving the plot 35px more height. A pointer-transparent one-pixel perimeter matches the terminal divider; the widget is not cropped/scaled or modified across origins. Attribution stays visible in a neutral footer. The chart remains an explicitly labelled accessible region.
+- Graphite refinement: chart stays `#101014`, panels use `#17171e`, fields use `#25252f`. One-pixel `#2b2b35` dividers replace thick black boundaries. Shared panel/border tokens unify the account summary and menus. Order estimates use simple horizontal rules instead of another boxed card.
+- USDT market rows show the base asset on one line, without a repeated `/USDT` subtitle. Full symbols remain in accessible button labels and all selection/search/API values; non-USDT quotes remain visible. Rows are 36px, with aligned numeric columns and enough room for triple-digit percentage moves. Desktop sidebar minimum is 236px (still 240px at 1920).
 
 This is a VOLTEX implementation of the reference's hierarchy and proportions, not a pixel-identical copy of Bybit's private chart integration. Unsupported Post-Only/TIF and order-entry TP/SL controls were not invented. VOLTEX branding and the real existing APIs remain.
 
@@ -28,6 +30,8 @@ Same 1920×1080 viewport, same read-only local harness, current main versus cand
 
 Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the running local QA server). This is not a deployed branch URL.
 
+[Immediately before graphite refinement](before-graphite-1920.png) · [Updated graphite refinement](futures-1920.png)
+
 ## Validation
 
 - Frontend TypeScript: PASS (`node frontend/node_modules/typescript/bin/tsc -b frontend`).
@@ -37,6 +41,7 @@ Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the r
 - Same six suites in pristine worktree at exact base main: **162 passed, 4 failed / 166**.
 - Additional account-store and position-protection suites: **52 passed / 52**.
 - Follow-up rerun of all eight suites together: **219 passed, same 4 failed / 223**. One additional responsive-list test verifies one list and retained contract across desktop/mobile changes. Existing hook harness now supplies the browser's `matchMedia` API; no existing assertion removed or weakened.
+- Graphite/row refinement rerun: TypeScript and production build PASS, eight focused suites again **219 passed / same 4 existing main failures**, new failures zero. Browser at seven widths checks the three distinct surfaces, no repeated USDT subtitles, unclipped percentage labels, no horizontal page overflow, one chart, native indicators and responsive market selection. Quotes in screenshots are actual public data, not fixtures.
 - **New failures versus main: 0.** Existing failing assertions were not weakened or rewritten:
   - `timeframe label is driven by the exact interval sent to the chart; controls cannot drift`
   - `native TradingView indicators toolbar is enabled and volume remains controllable`

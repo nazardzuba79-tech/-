@@ -209,6 +209,7 @@ export const FuturesPairList = forwardRef<
             <button
               key={r.symbol}
               data-row
+              aria-label={r.symbol}
               className={`pair-row ${r.symbol === symbol ? 'active' : ''}`}
               onClick={() => onChange(r.symbol)}
             >
@@ -224,7 +225,7 @@ export const FuturesPairList = forwardRef<
               </span>
               <span className="p-name">
                   <b className="p-base">{r.symbol.split('/')[0]}</b>
-                  <span className="p-quote">/{r.symbol.split('/')[1]}</span>
+                  {r.symbol.split('/')[1] !== 'USDT' && <span className="p-quote">/{r.symbol.split('/')[1]}</span>}
                 </span>
               <span className="p-price">{r.lastPrice !== null ? formatPrice(r.lastPrice) : '—'}</span>
               <span className={`p-change ${up ? 'up' : 'down'}`}>
