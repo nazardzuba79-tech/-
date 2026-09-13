@@ -38,6 +38,8 @@ import { KycEmailService } from './services/KycEmailService';
 import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { CfdMarketDataService } from './services/CfdMarketDataService';
+import { TraderMadeStreamQuoteSource } from './services/marketData/cfd/TraderMadeStreamQuoteSource';
+import { ResilientCfdQuoteSource } from './services/marketData/cfd/ResilientCfdQuoteSource';
 import { CfdPositionService } from './cfd/CfdPositionService';
 import { CfdLiquidationEngine } from './cfd/CfdLiquidationEngine';
 import { recoverFuturesOrderBook } from './futures/FuturesOrderBookRecovery';
@@ -80,18 +82,59 @@ const coinGeckoService = new CoinGeckoService(
 );
 const fearGreedService = new FearGreedService(process.env.FEAR_GREED_API_BASE_URL || 'https://api.alternative.me');
 const arbitrageService = new ArbitrageService(marketDataService);
+
+const parseCfdSymbols = (value: string | undefined) => (value ?? '').split(',').map(s => s.trim()).filter(Boolean);
+const cfdMaxQuoteAgeMs = Number(process.env.CFD_MAX_QUOTE_AGE_MS ?? 5000);
+const twelveEntitled = parseCfdSymbols(process.env.TWELVE_DATA_VERIFIED_LIVE_SYMBOLS ?? process.env.CFD_VERIFIED_LIVE_SYMBOLS);
+const twelveExecution = parseCfdSymbols(process.env.TWELVE_DATA_EXECUTION_SYMBOLS ?? process.env.CFD_EXECUTION_SYMBOLS);
 const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY, undefined, undefined, {}, {
-  maxQuoteAgeMs: Number(process.env.CFD_MAX_QUOTE_AGE_MS ?? 5000),
-  entitledSymbols: (process.env.CFD_VERIFIED_LIVE_SYMBOLS ?? '').split(',').map(s=>s.trim()).filter(Boolean),
-  executionSymbols: (process.env.CFD_EXECUTION_SYMBOLS ?? '').split(',').map(s=>s.trim()).filter(Boolean),
+  maxQuoteAgeMs: cfdMaxQuoteAgeMs,
+  entitledSymbols: twelveEntitled,
+  executionSymbols: twelveExecution,
   creditsPerMinute: Number(process.env.CFD_CREDITS_PER_MINUTE ?? 8),
   creditsPerDay: Number(process.env.CFD_CREDITS_PER_DAY ?? 800),
 });
-const cfdPositionService = new CfdPositionService(prisma, cfdDataService);
+
+// Execution-grade provider routing is an explicit rollout gate. Until it is
+// enabled, current Twelve Data semantics stay byte-for-byte compatible. Once
+// enabled, both providers are admitted only with non-secret commercial-use
+// evidence IDs and per-symbol entitlement lists. Missing redundancy blocks
+// NEW positions but a remaining admitted fresh source can still close/mark/
+// liquidate existing positions.
+const cfdMultiProviderExecutionEnabled = process.env.CFD_MULTI_PROVIDER_EXECUTION_ENABLED === 'true';
+const traderMadeCfdDataService = new TraderMadeStreamQuoteSource(process.env.TRADERMADE_STREAM_API_KEY, {
+  maxQuoteAgeMs: cfdMaxQuoteAgeMs,
+  entitledSymbols: parseCfdSymbols(process.env.TRADERMADE_VERIFIED_LIVE_SYMBOLS),
+  executionSymbols: parseCfdSymbols(process.env.TRADERMADE_EXECUTION_SYMBOLS),
+  financialUseEvidence: process.env.TRADERMADE_FINANCIAL_USE_EVIDENCE,
+});
+const resilientCfdDataService = new ResilientCfdQuoteSource([
+  {
+    id: 'twelvedata', source: cfdDataService, priority: 10,
+    lineage: process.env.TWELVE_DATA_LINEAGE_ID?.trim() || 'unknown', enabled: cfdMultiProviderExecutionEnabled,
+    admissionEvidence: process.env.TWELVE_DATA_FINANCIAL_USE_EVIDENCE ?? '',
+  },
+  {
+    id: 'tradermade', source: traderMadeCfdDataService, priority: 20,
+    lineage: process.env.TRADERMADE_LINEAGE_ID?.trim() || 'unknown', enabled: cfdMultiProviderExecutionEnabled,
+    admissionEvidence: process.env.TRADERMADE_FINANCIAL_USE_EVIDENCE ?? '',
+  },
+], {
+  maxQuoteAgeMs: cfdMaxQuoteAgeMs,
+  providerWaitMs: Number(process.env.CFD_PROVIDER_WAIT_MS ?? 1200),
+  maxDivergenceBps: Number(process.env.CFD_PROVIDER_MAX_DIVERGENCE_BPS ?? 100),
+  comparableWindowMs: Number(process.env.CFD_PROVIDER_COMPARABLE_WINDOW_MS ?? 5000),
+  failbackSamples: Number(process.env.CFD_PROVIDER_FAILBACK_SAMPLES ?? 3),
+  failbackHoldMs: Number(process.env.CFD_PROVIDER_FAILBACK_HOLD_MS ?? 30000),
+  minExecutionLineages: Number(process.env.CFD_MIN_EXECUTION_LINEAGES ?? 2),
+});
+const cfdRiskSource = cfdMultiProviderExecutionEnabled ? resilientCfdDataService : cfdDataService;
+const cfdPositionService = new CfdPositionService(prisma, cfdRiskSource);
 // Wallet valuation + portfolio performance. Reads the ledger, never writes
-// it; see WalletPortfolioService and AdminPortfolioProfile.
+// it; see WalletPortfolioService and AdminPortfolioProfile. It intentionally
+// keeps its existing reference valuation path; execution/risk uses cfdRiskSource.
 const walletPortfolioService = new WalletPortfolioService(prisma, marketDataService, cfdDataService);
-const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdDataService);
+const cfdLiquidationEngine = new CfdLiquidationEngine(prisma, cfdRiskSource);
 const supportEmailService = new SupportEmailService();
 const kycEmailService = new KycEmailService();
 
@@ -149,12 +192,12 @@ const demoTradingService = new DemoTradingService(prisma, demoEngine);
 // services constructed above rather than replacing them — same Kraken
 // service, same CoinGecko service, same caches, same circuits — and adds
 // the canonical asset registry, provenance/freshness on every answer, and
-// capability routing. It is deliberately given the CFD service too, so
-// "which provider answers a CFD quote" is a routing decision in one place.
+// capability routing. It is deliberately given the CFD reference service;
+// execution/risk uses the stricter cfdRiskSource defined above.
 //
 // It reads reference data only. Nothing here touches VOLTEX financial
 // state: mark price, funding settlement, open interest, positions, margin
-// and liquidation stay with the futures services and are unchanged.
+// and liquidation stay with the futures/CFD risk services.
 const marketDataGateway = new MarketDataGateway(marketDataService, coinGeckoService, fearGreedService, cfdDataService, undefined, liveReferenceCollector?.feed ?? null);
 
 // External derivatives reference data (Binance + OKX public futures
@@ -232,7 +275,7 @@ app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
-app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService));
+app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService, undefined, cfdRiskSource));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
@@ -273,6 +316,7 @@ async function start() {
     console.log(`Recovered ${recoveredFuturesCount} resting futures order(s) into the futures matching engine`);
   }
 
+  if (cfdMultiProviderExecutionEnabled) traderMadeCfdDataService.start();
   futuresMarketRegistry.start();
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
@@ -290,6 +334,7 @@ start().catch((err) => {
 });
 
 process.on('SIGTERM', async () => {
+  traderMadeCfdDataService.stop();
   liveReferenceCollector?.stop();
   marketUniverse.stop();
   futuresMarketRegistry.stop();
