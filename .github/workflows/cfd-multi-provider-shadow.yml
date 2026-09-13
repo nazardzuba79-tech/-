@@ -35,7 +35,6 @@ jobs:
       - name: Generate Prisma client (no DB connection or migrations)
         run: npx prisma generate
       - name: Backend build
-        id: backend
         run: npm run build
       - name: Deterministic reference routing tests
         if: success() || failure()
@@ -64,10 +63,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Bounded public reference probes (never admissions)
-        run: node scripts/probe-cfd-reference-providers.cjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Compile real public reference adapters without DB or application boot
+        run: npx tsc --strict --skipLibCheck --target ES2020 --module commonjs --lib ES2022,DOM --outDir dist/services/marketData/cfd src/services/marketData/cfd/PublicReferenceFeed.ts
+      - name: Seven bounded real public requests through actual adapters
+        run: node scripts/probe-cfd-public-feed.cjs
       - uses: actions/upload-artifact@v4
+        if: success() || failure()
         with:
-          name: cfd-public-provider-probe
-          path: docs/qa/cfd-multi-provider/public-probe.json
+          name: cfd-public-feed-probe
+          path: docs/qa/cfd-multi-provider/public-feed.json
           retention-days: 7
