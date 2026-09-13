@@ -21,8 +21,7 @@ describe('HistoricalOpenInterestService', () => {
       { observedAt: 2000, openInterestBase: 12.5, openInterestUsd: 1000000 },
     ]);
     expect(fetchFn).toHaveBeenCalledWith(
-      'https://example.test/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=168',
-      expect.anything()
+      'https://example.test/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=168'
     );
   });
 
