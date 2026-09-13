@@ -8,7 +8,6 @@ import {
   Metric,
   FreshnessTag,
   Module,
-  UnavailableModule,
   correlationTone,
   formatCountdown,
   formatFundingRate,
@@ -20,37 +19,6 @@ import {
   rangeOf,
 } from './presentation';
 import './analytics.css';
-
-/**
- * The Analytics workspace.
- *
- * Structure, ported from the approved archived design and reduced to what
- * this exchange can actually source:
- *
- *   1. Market overview — a dense six-figure strip, most important first.
- *   2. Asset context — the selector, built from the contracts VOLTEX
- *      really lists rather than from a hardcoded BTC/ETH/SOL/XRP.
- *   3. VOLTEX derivatives — open interest, funding, mark/index for the
- *      selected contract, explicitly venue-scoped.
- *   4. External derivatives and positioning.
- *   5. Real public liquidation, implied-volatility and futures-curve data.
- *   6. Market risk and market structure.
- *   7. Explicitly unsupported modules remain dashes rather than estimates.
- *
- * Every figure on this page is either real or a dash.
- */
-
-/** The future modules, in display order. The backend removes a module from
- * its unsupported map as soon as a real source is wired, so this list can
- * safely keep the full product roadmap without rendering stale placeholders. */
-const PENDING_MODULES: { key: string; titleKey: Key }[] = [
-  { key: 'liquidations', titleKey: 'analytics.liquidations' },
-  { key: 'impliedVolatility', titleKey: 'analytics.impliedVolatility' },
-  { key: 'futuresTermStructure', titleKey: 'analytics.futuresTermStructure' },
-  { key: 'etfFlows', titleKey: 'analytics.etfFlows' },
-  { key: 'exchangeFlows', titleKey: 'analytics.exchangeFlows' },
-  { key: 'whaleActivity', titleKey: 'analytics.whaleActivity' },
-];
 
 const RATIO_LABEL: Record<string, Key> = {
   global_account: 'analytics.lsGlobalAccount',
@@ -94,11 +62,6 @@ export function AnalyticsWorkspace() {
   }, [derivatives, activeSymbol]);
 
   const countdown = derivatives?.available ? formatCountdown(derivatives.value.nextSettlementAt, now) : null;
-
-  const pending = useMemo(
-    () => (snapshot ? PENDING_MODULES.filter((m) => snapshot.unsupported[m.key]?.available === false) : []),
-    [snapshot]
-  );
 
   return (
     <main className="vx-analytics">
@@ -176,18 +139,11 @@ export function AnalyticsWorkspace() {
           ) : (
             <span className="vx-context-empty">{loaded ? t('analytics.noContracts') : DASH}</span>
           )}
-          <small className="vx-context-hint">{t('analytics.assetContextHint')}</small>
         </div>
 
         <Module
           title={`${t('analytics.derivatives')}${activeSymbol ? ` · ${baseAsset(activeSymbol)}` : ''}`}
-          meta={
-            <div className="vx-source-row">
-              <span className="vx-scope">{t('analytics.venueScope')}</span>
-              {derivatives?.available ? <FreshnessTag live /> : null}
-            </div>
-          }
-          note={t('analytics.derivativesNote')}
+          meta={derivatives?.available ? <FreshnessTag live /> : null}
           className="vx-derivatives-module"
         >
           <div className="vx-grid-3">
@@ -229,20 +185,18 @@ export function AnalyticsWorkspace() {
         <div className="vx-grid-2">
           <Module
             title={`${t('analytics.trackedVenueOi')}${trackedAsset ? ` · ${trackedAsset}` : ''}`}
-            meta={externalOi?.available ? <div className="vx-source-row"><FreshnessTag fetchedAt={externalOi.fetchedAt} stale={externalOi.stale} /></div> : null}
-            note={t('analytics.trackedVenueOiNote')}
+            meta={externalOi?.available ? <FreshnessTag fetchedAt={externalOi.fetchedAt} stale={externalOi.stale} /> : null}
           >
             {externalOi?.available ? (
               <Metric emphasis label={t('analytics.openInterestUsd')} value={formatUsd(externalOi.value.totalOpenInterestUsd)} />
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
 
           <Module
             title={`${t('analytics.fundingComparison')}${trackedAsset ? ` · ${trackedAsset}` : ''}`}
-            meta={externalFunding?.available ? <div className="vx-source-row"><FreshnessTag fetchedAt={externalFunding.fetchedAt} stale={externalFunding.stale} /></div> : null}
-            note={t('analytics.fundingComparisonNote')}
+            meta={externalFunding?.available ? <FreshnessTag fetchedAt={externalFunding.fetchedAt} stale={externalFunding.stale} /> : null}
           >
             {externalFunding?.available ? (
               <Metric
@@ -251,15 +205,14 @@ export function AnalyticsWorkspace() {
                 value={rangeOf(externalFunding.value.venues.map((v) => v.fundingRate), (n) => formatFundingRate(String(n)) ?? DASH)}
               />
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
         </div>
 
         <Module
           title={`${t('analytics.positioning')}${trackedAsset ? ` · ${trackedAsset}` : ''}`}
-          meta={positioning?.available ? <div className="vx-source-row"><FreshnessTag fetchedAt={positioning.fetchedAt} stale={positioning.stale} /></div> : null}
-          note={t('analytics.positioningNote')}
+          meta={positioning?.available ? <FreshnessTag fetchedAt={positioning.fetchedAt} stale={positioning.stale} /> : null}
         >
           {positioning?.available ? (
             <div className="vx-grid-3">
@@ -275,7 +228,7 @@ export function AnalyticsWorkspace() {
               ))}
             </div>
           ) : (
-            <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
+            <p className="vx-module-empty" role="status">{DASH}</p>
           )}
         </Module>
 
@@ -286,7 +239,6 @@ export function AnalyticsWorkspace() {
           <Module
             title={`${t('analytics.realizedVolatility')}${volatility?.available ? ` · ${volatility.value.baseAsset}` : ''}`}
             meta={volatility?.available ? <FreshnessTag fetchedAt={volatility.fetchedAt} stale={volatility.stale} /> : null}
-            note={t('analytics.realizedVolatilityNote')}
           >
             {volatility?.available ? (
               <div className="vx-grid-3">
@@ -295,14 +247,13 @@ export function AnalyticsWorkspace() {
                 ))}
               </div>
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.unavailable')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
 
           <Module
             title={`${t('analytics.perpetualBasis')}${trackedAsset ? ` · ${trackedAsset}` : ''}`}
-            meta={basis?.available ? <div className="vx-source-row"><FreshnessTag fetchedAt={basis.fetchedAt} stale={basis.stale} /></div> : null}
-            note={t('analytics.perpetualBasisNote')}
+            meta={basis?.available ? <FreshnessTag fetchedAt={basis.fetchedAt} stale={basis.stale} /> : null}
           >
             {basis?.available ? (
               <Metric
@@ -311,7 +262,7 @@ export function AnalyticsWorkspace() {
                 value={rangeOf(basis.value.venues.map((v) => v.basisPercent), (n) => formatSignedPercent(n, 4) ?? DASH)}
               />
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.noExternalVenue')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
         </div>
@@ -321,7 +272,6 @@ export function AnalyticsWorkspace() {
           <Module
             title={t('analytics.cryptoCorrelations')}
             meta={correlations?.available ? <FreshnessTag fetchedAt={correlations.fetchedAt} stale={correlations.stale} /> : null}
-            note={t('analytics.correlationNote')}
           >
             {correlations?.available ? (
               <div className="vx-corr">
@@ -334,14 +284,13 @@ export function AnalyticsWorkspace() {
                 ))}
               </div>
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.unavailable')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
 
           <Module
             title={t('analytics.sectorRotation')}
             meta={sectors?.available ? <FreshnessTag fetchedAt={sectors.fetchedAt} stale={sectors.stale} /> : null}
-            note={t('analytics.sectorNote')}
           >
             {sectors?.available ? (
               <div className="vx-sectors">
@@ -356,29 +305,10 @@ export function AnalyticsWorkspace() {
                 ))}
               </div>
             ) : (
-              <p className="vx-module-empty" role="status">{t('analytics.unavailable')}</p>
+              <p className="vx-module-empty" role="status">{DASH}</p>
             )}
           </Module>
         </div>
-
-        <Module
-          title={t('analytics.liquidityMap')}
-          meta={<span className="vx-scope is-pending">{t('analytics.noSource')}</span>}
-          className="vx-map-module"
-        >
-          <div className="vx-map-pending" role="status">
-            <p>{t('analytics.liquidityMapPending')}</p>
-          </div>
-        </Module>
-
-        {pending.length > 0 ? (
-          <section className="vx-pending-section">
-            <h2 className="vx-pending-heading">{t('analytics.futureModules')}</h2>
-            <div className="vx-pending-grid">
-              {pending.map((m) => <UnavailableModule key={m.key} titleKey={m.titleKey} />)}
-            </div>
-          </section>
-        ) : null}
       </div>
     </main>
   );
