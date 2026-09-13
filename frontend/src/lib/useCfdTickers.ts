@@ -5,12 +5,46 @@ import type { CfdTickerRow } from '../components/CfdInstrumentList';
 // Reference-only mode polls once per minute. Approved execution quotes
 // use a bounded shorter cadence, while the server owns upstream credit limits.
 const POLL_MS = 60_000;
+const LOCAL_AGE_MS = 1_000;
 
 /** null is unknown, not zero. Preserve real numeric values from the wire. */
 function numericString(value: unknown): string | null {
   if (typeof value === 'number') return Number.isFinite(value) ? String(value) : null;
   if (typeof value !== 'string') return null;
   return value.trim() !== '' && Number.isFinite(Number(value)) ? value : null;
+}
+
+/** Browser clocks do not refresh source data. Between polls, locally expire
+ * both executable quotes and display-only references so the UI never keeps a
+ * formally expired observation green just because its next HTTP poll is later. */
+export function ageCfdTickerRows(rows: CfdTickerRow[], now = Date.now()): CfdTickerRow[] {
+  let changed = false;
+  const next = rows.map((row) => {
+    let stale = row.stale === true;
+    let executionAllowed = row.executionAllowed === true;
+    let status = row.status;
+    let referenceLabel = row.referenceLabel;
+
+    if (row.displayOnly === true) {
+      if (typeof row.referenceValidUntil === 'number' && Number.isFinite(row.referenceValidUntil) && now > row.referenceValidUntil) {
+        stale = true; executionAllowed = false; status = 'stale';
+        if (referenceLabel && !referenceLabel.startsWith('Last known')) referenceLabel = `Last known · ${referenceLabel}`;
+      }
+    } else if (row.status === 'live') {
+      const age = row.maxQuoteAgeMs;
+      const times = [row.providerTimestamp, row.fetchedAt];
+      const expired = typeof age !== 'number' || !Number.isFinite(age) || age < 250 || age > 10_000
+        || times.some(t => typeof t !== 'number' || !Number.isFinite(t) || t <= 0 || t > now + 1000 || now - t > age);
+      if (expired) { stale = true; executionAllowed = false; status = 'stale'; }
+    }
+
+    if (stale !== row.stale || executionAllowed !== row.executionAllowed || status !== row.status || referenceLabel !== row.referenceLabel) {
+      changed = true;
+      return { ...row, stale, executionAllowed, status, ...(referenceLabel === undefined ? {} : { referenceLabel }) };
+    }
+    return row;
+  });
+  return changed ? next : rows;
 }
 
 /** Validate before React state. Malformed payloads keep the last good rows;
@@ -45,7 +79,7 @@ function parseTickerPayload(value: unknown): CfdTickerRow[] | null {
       ...(change === null ? {} : { changePercent24h: change }),
     });
   }
-  return value.length > 0 && rows.length === 0 ? null : rows;
+  return value.length > 0 && rows.length === 0 ? null : ageCfdTickerRows(rows);
 }
 
 /** Shared poll so the instrument list and price panel do not own separate feeds. */
@@ -75,7 +109,10 @@ export function useCfdTickers() {
   }
   useEffect(() => {
     load();
-    const interval = window.setInterval(() => { if (Date.now()-startedAt.current >= cadence.current) load(); }, 2500);
+    const interval = window.setInterval(() => {
+      setTickers(old => ageCfdTickerRows(old));
+      if (Date.now()-startedAt.current >= cadence.current) load();
+    }, LOCAL_AGE_MS);
     return () => clearInterval(interval);
   }, []);
   return { tickers, configured, loadError, reload: load };
