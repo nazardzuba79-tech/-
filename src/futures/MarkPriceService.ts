@@ -1,31 +1,15 @@
 import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from '../services/KrakenMarketDataService';
 
-// How much weight each new basis sample gets in the EMA — small alpha means
-// the mark price moves smoothly rather than jumping on every single trade,
-// which is the entire point of having a mark price separate from last
-// price: a manipulator can't move it with one trade against thin liquidity.
 const BASIS_EMA_ALPHA = 0.2;
+const INDEX_READ_TIMEOUT_MS = 5_000;
 
-/**
- * Mark price = index price (real spot, from Kraken) + a smoothed basis
- * (how far our own internal futures book's last trade sits from that
- * index). PnL and liquidation are computed off THIS, never off the last
- * futures trade price directly — otherwise anyone could wick a thin
- * internal order book to trigger other users' liquidations.
- *
- * Until this contract has actually traded, there's no basis to speak of,
- * so mark price is simply the index price — an honest "no data yet"
- * default rather than a fabricated basis.
- */
 export class MarkPriceService {
   private basisEma = new Map<string, BigNumber>();
   private lastIndexPrice = new Map<string, BigNumber>();
 
   constructor(private marketData: KrakenMarketDataService) {}
 
-  /** Called by FuturesPositionService whenever the internal futures book
-   * actually trades, so the basis reflects real activity. */
   recordFuturesTrade(symbol: string, tradePrice: BigNumber) {
     const index = this.lastIndexPrice.get(symbol);
     if (!index || index.isZero()) return;
@@ -38,24 +22,41 @@ export class MarkPriceService {
   }
 
   async getIndexPrice(symbol: string): Promise<BigNumber | null> {
-    // Must never let an upstream failure (Kraken down/rate-limited/blocked)
-    // propagate as a thrown rejection: this is called from background
-    // schedulers (LiquidationEngine, FundingRateService) with no caller-side
-    // try/catch, so an uncaught rejection here would crash the whole
-    // process. An honest "no data" null is the same fallback the class's
-    // own doc comment already promises for an untraded contract.
-    let ticker;
     try {
-      ticker = await this.marketData.getTicker(symbol);
+      // A mark/index read is a single-market operation. Reading best bid/ask
+      // avoids coupling it to the full Kraken ticker-universe refresh, which
+      // can be slow on a cold cache. Midpoint is a real market observation;
+      // if the book is unavailable we return no value rather than inventing one.
+      const bookReader = (this.marketData as KrakenMarketDataService & {
+        getOrderBook?: (pair: string, limit?: number) => Promise<{ bids?: { price: string }[]; asks?: { price: string }[] }>;
+      }).getOrderBook;
+
+      if (typeof bookReader === 'function') {
+        const book = await withTimeout(bookReader.call(this.marketData, symbol, 1), INDEX_READ_TIMEOUT_MS);
+        const bid = new BigNumber(book?.bids?.[0]?.price ?? NaN);
+        const ask = new BigNumber(book?.asks?.[0]?.price ?? NaN);
+        if (bid.isFinite() && ask.isFinite() && bid.isGreaterThan(0) && ask.isGreaterThan(0)) {
+          const midpoint = bid.plus(ask).dividedBy(2);
+          if (midpoint.isFinite() && midpoint.isGreaterThan(0)) {
+            this.lastIndexPrice.set(symbol, midpoint);
+            return midpoint;
+          }
+        }
+      }
+
+      // Compatibility fallback for tests/older adapters that only expose a
+      // ticker read. It is bounded by the same timeout and never produces a
+      // synthetic fallback value.
+      const ticker = await withTimeout(this.marketData.getTicker(symbol), INDEX_READ_TIMEOUT_MS);
+      if (!ticker) return null;
+      const price = new BigNumber(ticker.lastPrice);
+      if (!price.isFinite() || price.isLessThanOrEqualTo(0)) return null;
+      this.lastIndexPrice.set(symbol, price);
+      return price;
     } catch (err) {
       console.error(`[MarkPriceService] Failed to fetch index price for ${symbol}:`, err);
       return null;
     }
-    if (!ticker) return null;
-    const price = new BigNumber(ticker.lastPrice);
-    if (!price.isFinite() || price.isLessThanOrEqualTo(0)) return null;
-    this.lastIndexPrice.set(symbol, price);
-    return price;
   }
 
   async getMarkPrice(symbol: string): Promise<BigNumber | null> {
@@ -63,5 +64,20 @@ export class MarkPriceService {
     if (!index) return null;
     const basis = this.basisEma.get(symbol) ?? new BigNumber(0);
     return index.plus(basis);
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timer: NodeJS.Timeout | null = null;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Market data read timed out after ${timeoutMs}ms`)), timeoutMs);
+        timer.unref?.();
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }

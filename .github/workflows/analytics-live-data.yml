@@ -1,0 +1,44 @@
+name: Analytics live data
+on:
+  pull_request:
+    paths:
+      - 'src/services/analytics/**'
+      - 'src/services/AnalyticsDataService.ts'
+      - 'src/services/marketData/types.ts'
+      - 'src/futures/MarkPriceService.ts'
+      - 'src/futures/__tests__/MarkPriceService.test.ts'
+      - 'src/index.ts'
+      - 'frontend/src/pages/analytics/**'
+      - '.github/workflows/analytics-live-data.yml'
+permissions:
+  contents: read
+concurrency:
+  group: analytics-live-data-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm rebuild bcrypt --build-from-source
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Analytics and Futures pricing regression tests
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/analytics/__tests__/LiquidationStreamService.test.ts src/services/analytics/__tests__/DeribitAnalyticsService.test.ts src/futures/__tests__/MarkPriceService.test.ts
+      - name: Frontend production build
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
