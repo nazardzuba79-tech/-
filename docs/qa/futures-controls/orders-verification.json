@@ -1,0 +1,19 @@
+{
+  "environment": "loopback synthetic account harness, public reference book",
+  "tests": {"suites": 6, "passed": 170},
+  "browser": {
+    "openOrders": "synthetic order rendered with quantity, filled amount, status and cancel action",
+    "orderHistory": "same real endpoint without status filter; no cancel action",
+    "search": "ETH query returns ETH only",
+    "widths": [1920, 1440, 1280, 1100, 863, 390],
+    "searchHeight": 36,
+    "searchFitsAllWidths": true,
+    "marketListOverflow": false,
+    "pageOverflow": false,
+    "chartInstances": 1,
+    "consoleErrors": 0,
+    "chartVisualCaveat": "Third-party TradingView iframe remained blank in local browser; production recheck required"
+  },
+  "preserved": ["auth", "execution payloads", "risk limits", "backend", "collector"],
+  "limitations": ["Orders endpoint returns at most 100 rows", "Post-Only and time-in-force unsupported by Futures API", "TP/SL remains available for existing positions"]
+}

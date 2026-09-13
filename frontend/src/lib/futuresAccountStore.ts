@@ -52,7 +52,7 @@ export type FuturesOrder = Awaited<ReturnType<typeof api.getMyFuturesOrders>>[nu
 export type FuturesPositionHistoryRow = Awaited<ReturnType<typeof api.getFuturesPositionHistory>>[number];
 export type FuturesBalance = Awaited<ReturnType<typeof api.getFuturesBalances>>[number];
 
-export type ResourceKey = 'balances' | 'positions' | 'orders' | 'positionHistory';
+export type ResourceKey = 'balances' | 'positions' | 'orders' | 'positionHistory' | 'orderHistory';
 
 /**
  * What a subscriber sees for one resource.
@@ -82,6 +82,7 @@ export interface FuturesAccountState {
   balances: ResourceState<FuturesBalance[]>;
   positions: ResourceState<FuturesPosition[]>;
   orders: ResourceState<FuturesOrder[]>;
+  orderHistory: ResourceState<FuturesOrder[]>;
   positionHistory: ResourceState<FuturesPositionHistoryRow[]>;
 }
 
@@ -94,6 +95,7 @@ function emptyState(): FuturesAccountState {
     balances: emptyResource<FuturesBalance[]>(),
     positions: emptyResource<FuturesPosition[]>(),
     orders: emptyResource<FuturesOrder[]>(),
+    orderHistory: emptyResource<FuturesOrder[]>(),
     positionHistory: emptyResource<FuturesPositionHistoryRow[]>(),
   };
 }
@@ -107,6 +109,8 @@ const FETCHERS: { [K in ResourceKey]: () => Promise<FuturesAccountState[K]['data
   balances: () => api.getFuturesBalances(),
   positions: () => api.getFuturesPositions(),
   orders: () => api.getMyFuturesOrders('OPEN,PARTIALLY_FILLED'),
+  // Same authenticated endpoint: latest 100 orders, including active ones.
+  orderHistory: () => api.getMyFuturesOrders(),
   positionHistory: () => api.getFuturesPositionHistory(),
 };
 
@@ -128,7 +132,7 @@ interface ResourceRuntime {
   inFlightGeneration: number;
 }
 
-const RESOURCE_KEYS: ResourceKey[] = ['balances', 'positions', 'orders', 'positionHistory'];
+const RESOURCE_KEYS: ResourceKey[] = ['balances', 'positions', 'orders', 'positionHistory', 'orderHistory'];
 
 class FuturesAccountStore {
   private state: FuturesAccountState = emptyState();
@@ -137,6 +141,7 @@ class FuturesAccountStore {
     balances: { timer: null, intervalMs: DEFAULT_INTERVAL_MS, inFlight: null, inFlightGeneration: 0 },
     positions: { timer: null, intervalMs: DEFAULT_INTERVAL_MS, inFlight: null, inFlightGeneration: 0 },
     orders: { timer: null, intervalMs: DEFAULT_INTERVAL_MS, inFlight: null, inFlightGeneration: 0 },
+    orderHistory: { timer: null, intervalMs: DEFAULT_INTERVAL_MS, inFlight: null, inFlightGeneration: 0 },
     positionHistory: { timer: null, intervalMs: DEFAULT_INTERVAL_MS, inFlight: null, inFlightGeneration: 0 },
   };
 
