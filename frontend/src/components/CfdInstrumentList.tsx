@@ -1,6 +1,6 @@
 import { useLanguage } from '../lib/i18n';
 import { SkeletonRow } from './Skeleton';
-import { cfdDisplayState,formatCfdPrice } from '../lib/cfdPresentation';
+import { cfdDisplayState,cfdMarketCopy,formatCfdPrice } from '../lib/cfdPresentation';
 import { PriceCell } from './PriceCell';
 import { parseChangePercentOrNull } from '../lib/priceChange';
 
@@ -15,7 +15,7 @@ export const CFD_ICON_BY_SYMBOL:Record<string,string>={
 };
 
 export function CfdInstrumentList({symbol,onChange,tickers,configured,loadError,onRetry}:{symbol:string;onChange:(symbol:string)=>void;tickers:CfdTickerRow[];configured:boolean;loadError:boolean;onRetry:()=>void;}){
-  const{t,lang}=useLanguage();
+  const{t,lang}=useLanguage(),copy=cfdMarketCopy(lang);
   return <div className="cfd-instruments">
     <div className="cfd-columns"><span>{t('trade.cfdInstrument')}</span><span className="cfd-align-right">{t('markets.price')}</span><span className="cfd-align-right">{t('markets.change24h')}</span></div>
     <div className="cfd-list">
@@ -26,7 +26,7 @@ export function CfdInstrumentList({symbol,onChange,tickers,configured,loadError,
           </span></span>
           {tk.price===null?<span className="mono cfd-price">—</span>:<PriceCell value={Number(tk.price)} className="mono cfd-price" format={value=>formatCfdPrice(value,tk.symbol)}/>}<span className={`mono cfd-change ${change===null?'':positive?'text-buy':'text-sell'}`}>{change===null?'—':`${positive?'+':''}${change.toFixed(2)}%`}</span>
         </button>;})}
-      {tickers.length===0&&!configured&&!loadError&&<p className="cfd-hint">{t('trade.cfdUnavailable')}</p>}
+      {tickers.length===0&&!configured&&!loadError&&<p className="cfd-hint">{copy.priceUnavailable}</p>}
       {tickers.length===0&&configured&&!loadError&&Array.from({length:7}).map((_,i)=><SkeletonRow key={i} columns={[3,1,1]}/>)}
       {tickers.length===0&&loadError&&<button onClick={onRetry} className="cfd-retryButton">{t('trade.loadPairsError')}</button>}
     </div>
