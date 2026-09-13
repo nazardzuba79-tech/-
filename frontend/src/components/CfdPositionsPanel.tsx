@@ -35,11 +35,11 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
     <div className="cfd-tabs" role="tablist" aria-label={t('futures.positions')}>
       <button onClick={()=>setTab('open')} className={`cfd-tab${tab==='open'?' active':''}`} role="tab" aria-selected={tab==='open'}>{t('futures.positions')} <span className="cfd-tab-count">{state.open.length}</span></button>
       <button onClick={()=>setTab('history')} className={`cfd-tab${tab==='history'?' active':''}`} role="tab" aria-selected={tab==='history'}>{t('futures.positionHistory')} <span className="cfd-tab-count">{state.history.length}</span></button>
-      <span className="cfd-practice-mode">{copy.practice}</span>
+      <span className="cfd-practice-mode" title={copy.practiceNote}>{copy.practice}</span>
     </div>
     {error&&<div className="cfd-error" role="alert">{error}</div>}
     <div className="cfd-position-content" role="tabpanel">
-      {tab==='open'?(state.open.length===0?<div className="cfd-empty">{t('futures.noPositions')}<small>{copy.practiceStored}</small></div>:
+      {tab==='open'?(state.open.length===0?<div className="cfd-empty">{t('futures.noPositions')}</div>:
         <div className="cfd-tableWrap"><table className="cfd-table"><thead><tr>
           <Th>{t('trade.cfdInstrument')}</Th><Th>{t('futures.side')}</Th><Th>{t('futures.size')}</Th><Th>{t('futures.entryPrice')}</Th><Th>{t('futures.markPrice')}</Th><Th>{t('futures.liqPrice')}</Th><Th>{t('futures.unrealizedPnl')}</Th><Th>{t('futures.roe')}</Th><Th></Th>
         </tr></thead><tbody>{state.open.map(p=>{
@@ -55,7 +55,7 @@ export function CfdPositionsPanel({refreshKey,tickers}:{refreshKey:number;ticker
             <Td><button className="cfd-closeBtn" disabled={closingId===p.id||mark===null} onClick={()=>close(p.id,p.symbol)}>{closingId===p.id?t('futures.closing'):t('futures.close')}</button></Td>
           </tr>;
         })}</tbody></table></div>
-      ):(state.history.length===0?<div className="cfd-empty">{t('futures.noPositionHistory')}<small>{copy.practiceStored}</small></div>:
+      ):(state.history.length===0?<div className="cfd-empty">{t('futures.noPositionHistory')}</div>:
         <div className="cfd-tableWrap"><table className="cfd-table"><thead><tr>
           <Th>{t('trade.cfdInstrument')}</Th><Th>{t('futures.side')}</Th><Th>{t('futures.size')}</Th><Th>{t('futures.entryPrice')}</Th><Th>{t('markets.price')}</Th><Th>{t('futures.realizedPnl')}</Th><Th>{t('trade.status')}</Th>
         </tr></thead><tbody>{state.history.map(p=>{const pnl=Number(p.realizedPnl),positive=pnl>=0;return <tr key={p.id}>
