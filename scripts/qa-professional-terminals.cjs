@@ -11,6 +11,13 @@ app.use((req,res,next)=>{
   next();
 });
 app.get('/__qa/start',(req,res)=>res.type('html').send(`<script>localStorage.setItem('exchange_token','local-terminal-review-no-production-credentials');location.replace('${req.query.market === 'futures' ? '/futures' : '/trade'}');</script>`));
+// Exercise the candidate's actual public candle adapter before backend deployment.
+const { FuturesChartCandles } = require('../dist/services/FuturesChartCandles');
+const futuresChartCandles = new FuturesChartCandles();
+app.get('/api/v1/market/futures/candles/:pair',async(req,res)=>{
+  try{res.json(await futuresChartCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520)));}
+  catch(error){res.status(error instanceof RangeError?400:503).json({error:'Candles unavailable'});}
+});
 app.use('/api/v1',async(req,res)=>{
   if(req.path==='/me')return res.json({id:'local-ui-review',displayName:'LOCAL UI REVIEW',email:'local@example.invalid',createdAt:'2020-01-01',isAdmin:false,kycStatus:'NOT_STARTED'});
   const allowed = req.path.startsWith('/market/') || /^\/futures\/(mark-price|funding-rate)\/[^/]+$/.test(req.path) || /^\/cfd\/candles\/[^/]+$/.test(req.path) || ['/analytics/overview','/pairs','/cfd/tickers','/cfd/config','/futures/config','/futures/markets'].includes(req.path);

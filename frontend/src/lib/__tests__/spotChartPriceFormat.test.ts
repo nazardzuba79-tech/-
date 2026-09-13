@@ -31,17 +31,16 @@ describe('Spot chart axis precision uses real candle magnitudes', () => {
     expect(spotChartPriceFormat([])).toBeNull();
     expect(spotChartPriceFormat([candle(NaN), candle(Infinity), candle(0), candle(-1)])).toBeNull();
   });
-  test('actual integration is opt-in Spot only and covers all price-series modes without touching other axes', () => {
+  test('actual integration supports Spot and explicit contract loaders without touching other axes', () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../../components/PriceChart.tsx'), 'utf8').replace(/\r\n/g, '\n');
-    const start = source.indexOf('        if (spotChartRefinements) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
+    const start = source.indexOf('        if (spotChartRefinements || candleLoader) {\n          const priceFormat = spotChartPriceFormat(res.candles);');
     expect(start).toBeGreaterThan(-1);
     const block = source.slice(start, source.indexOf('        seriesRef.current.setData(', start));
     for (const ref of ['seriesRef', 'lineSeriesRef', 'areaSeriesRef', 'maSeriesRef', 'bollUpperRef', 'bollMiddleRef', 'bollLowerRef']) expect(block).toContain(ref);
     expect(block).not.toContain('volumeSeriesRef'); expect(block).not.toContain('rsiSeriesRef'); expect(block).not.toContain('macdLineRef');
     expect(block).toContain('applyOptions({ priceFormat })'); expect(block).not.toContain('setData(');
-    // The rail was generalized to any terminal, but this axis refinement
-    // stayed on the spot terminal — otherwise enabling the rail on Futures
-    // would have changed its price-axis precision as a side effect.
+    // An exact contract loader now opts into small-price precision too;
+    // drawing-tool selection alone still does not control the formatter.
     expect(source).toContain('const drawingToolsOn = terminal && drawingTools');
     expect(source).toContain("const spotChartRefinements = terminal && market === 'spot'");
   });

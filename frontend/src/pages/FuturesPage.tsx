@@ -5,7 +5,7 @@ import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
-import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
+import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';

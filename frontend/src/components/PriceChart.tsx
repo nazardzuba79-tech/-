@@ -188,6 +188,7 @@ export function PriceChart({
   chrome = 'default',
   drawingTools = false,
   market = 'spot',
+  candleLoader,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -195,6 +196,7 @@ export function PriceChart({
   /** Which product this chart belongs to. Only used to namespace saved
    *  drawings — spot BTC levels are not futures BTC levels. */
   market?: DrawingMarket;
+  candleLoader?: (pair:string, interval:string, limit:number, signal?:AbortSignal) => Promise<{candles:Candle[]}>;
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -342,15 +344,13 @@ export function PriceChart({
     // pixel-identical to before.
     const chart = createChart(containerRef.current, {
       layout: {
-        // Pure black, not the panel's dark-gray — the chart is meant to
-        // read as its own "screen" rather than blend into the surrounding
-        // panel chrome.
-        background: { type: ColorType.Solid, color: '#000000' },
+        // Match the terminal surface, including the axes and drawing rail.
+        background: { type: ColorType.Solid, color: '#101014' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
         textColor: terminal ? '#c7d2e0' : '#a3adba',
-        fontFamily: 'var(--font-ui)',
-        fontSize: terminal ? 12 : 11,
+        fontFamily: 'Inter, Arial, sans-serif',
+        fontSize: 11,
       },
       grid: {
         vertLines: { visible: false },
@@ -364,8 +364,8 @@ export function PriceChart({
       // price axis — a graphite/blue tone rather than near-black makes the
       // axis read as an intentional part of the chart instead of text
       // floating in empty space.
-      rightPriceScale: { borderColor: terminal ? '#334155' : '#2b303a' },
-      timeScale: { borderColor: terminal ? '#334155' : '#2b303a', timeVisible: true },
+      rightPriceScale: { borderColor: '#292c34' },
+      timeScale: { borderColor: '#292c34', timeVisible: true },
       crosshair: terminal
         ? {
             mode: CrosshairMode.Normal,
@@ -792,13 +792,26 @@ export function PriceChart({
     // Only set the initial visible range once per pair/interval — every
     // later poll must leave the user's own pan/zoom alone.
     let hasSetInitialRange = false;
+    let loading = false;
+    let controller: AbortController | null = null;
+    const clearSeries = () => {
+      for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef,maSeriesRef,bollUpperRef,bollMiddleRef,bollLowerRef,rsiSeriesRef,macdLineRef,macdSignalRef,macdHistRef]) ref.current?.setData([]);
+      candlesRef.current=[];
+      setEmpty(true);
+    };
+    clearSeries();
 
     async function load() {
+      if (loading || (typeof document !== 'undefined' && document.hidden)) return;
+      loading=true;
+      controller=new AbortController();
+      const timeout=setTimeout(()=>controller?.abort(),12000);
       try {
-        const res = await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
+        const res = candleLoader ? await candleLoader(pair, interval, CANDLE_FETCH_LIMIT,controller.signal)
+          : await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
-        if (spotChartRefinements) {
+        if (spotChartRefinements || candleLoader) {
           const priceFormat = spotChartPriceFormat(res.candles);
           // All series sharing the price axis need the same formatter, even
           // when candles are hidden by Line/Area or an indicator toggle.
@@ -859,8 +872,10 @@ export function PriceChart({
 
         forceRedraw((n) => n + 1);
       } catch {
-        // Chart just stays empty on failure — not worth a full error state
-        // for a background poll.
+        if (!cancelled) clearSeries();
+      } finally {
+        clearTimeout(timeout);
+        loading=false;
       }
     }
 
@@ -868,9 +883,10 @@ export function PriceChart({
     const poll = window.setInterval(load, 5000);
     return () => {
       cancelled = true;
+      controller?.abort();
       window.clearInterval(poll);
     };
-  }, [pair, interval, drawingToolsOn, spotChartRefinements]);
+  }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at. Spot only: see
@@ -1349,6 +1365,7 @@ export function PriceChart({
 
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
+          {terminal && <div className="voltex-plot-title">{pair} · {interval}</div>}
 
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}
 
@@ -1594,7 +1611,7 @@ export function PriceChart({
           )}
 
           {(showMA || showBollinger || showRSI || showMACD) && (
-            <div style={styles.legend}>
+            <div className="voltex-indicator-legend" style={styles.legend}>
               {showMA && <LegendItem color={INDICATOR_COLORS.ma} label={t('chart.indicator.ma')} />}
               {showBollinger && <LegendItem color={INDICATOR_COLORS.bollinger} label={t('chart.indicator.bollinger')} />}
               {showRSI && <LegendItem color={INDICATOR_COLORS.rsi} label={t('chart.indicator.rsi')} />}
