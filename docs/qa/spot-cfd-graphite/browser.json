@@ -1,0 +1,58 @@
+[
+  {
+    "clipped": [],
+    "frames": 1,
+    "market": "cfd",
+    "overflow": false,
+    "width": 1440
+  },
+  {
+    "clipped": [],
+    "frames": 1,
+    "market": "cfd",
+    "overflow": false,
+    "width": 1280
+  },
+  {
+    "clipped": [],
+    "frames": 1,
+    "market": "cfd",
+    "overflow": false,
+    "width": 1024
+  },
+  {
+    "clipped": [],
+    "frames": 1,
+    "market": "cfd",
+    "overflow": false,
+    "width": 390
+  },
+  {
+    "frames": 1,
+    "market": "spot",
+    "overflow": false,
+    "visibleClipped": [],
+    "width": 1440
+  },
+  {
+    "frames": 1,
+    "market": "spot",
+    "overflow": false,
+    "visibleClipped": [],
+    "width": 1280
+  },
+  {
+    "frames": 1,
+    "market": "spot",
+    "overflow": false,
+    "visibleClipped": [],
+    "width": 1024
+  },
+  {
+    "frames": 1,
+    "market": "spot",
+    "overflow": false,
+    "visibleClipped": [],
+    "width": 390
+  }
+]

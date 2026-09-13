@@ -8,6 +8,7 @@ import { formatSpotBookNumber } from '../lib/spotOrderBook';
 import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
 import './SpotMarketControls.css';
+import { MarketColumnSort, nextMarketColumnSort } from '../lib/marketColumnSort';
 
 // Per-coin logos now come from the Market Data Gateway's asset registry,
 // resolved inside CryptoIcon itself (tier 1 of its fallback chain) via the
@@ -72,7 +73,8 @@ export const PairListSidebar = forwardRef<
     const [loadError, setLoadError] = useState(false);
     const [search, setSearch] = useState('');
     // Real 24h turnover, descending, until the trader picks otherwise.
-    const [sortId, setSortId] = useState('volume_desc');
+    const [columnSort, setColumnSort] = useState<MarketColumnSort>(null);
+    const sortId = columnSort ? `${columnSort.field}_${columnSort.dir === -1 ? 'desc' : 'asc'}` : 'volume_desc';
     const sortMode = SORT_MODES.find((m) => m.id === sortId) ?? SORT_MODES[0];
     const { field: sortField, dir: sortDir } = sortMode;
     const [quoteFilter, setQuoteFilter] = useState<string | null>('USDT');
@@ -81,6 +83,7 @@ export const PairListSidebar = forwardRef<
     // starring here shows up there immediately (see lib/useFavorites).
     const { favorites, toggle: toggleFavoritePair } = useFavorites();
     const searchRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
     // The row ORDER is driven by this snapshot of each pair's volume, not
     // the live figure straight off every 4s poll. Real quoteVolume24h is a
     // rolling window times the live price, so it never sits still — sorting
@@ -158,11 +161,9 @@ export const PairListSidebar = forwardRef<
     // price and % change alike); clicking the active one flips direction.
     // Every header drives the same single sortId, so the visible arrow and
     // the stable snapshot order can never disagree.
-    function toggleSort(field: SortField) {
-      const defaultDir: 1 | -1 = field === 'symbol' ? 1 : -1;
-      const wantDir: 1 | -1 = sortField === field ? (sortDir === -1 ? 1 : -1) : defaultDir;
-      const next = SORT_MODES.find((m) => m.field === field && m.dir === wantDir);
-      if (next) setSortId(next.id);
+    function toggleSort(field: 'price' | 'change') {
+      setColumnSort(current => nextMarketColumnSort(current, field));
+      if (listRef.current) listRef.current.scrollTop = 0;
     }
 
     function toggleFavorite(p: string, e: React.MouseEvent) {
@@ -192,6 +193,12 @@ export const PairListSidebar = forwardRef<
       sortDir,
       stableSort: true,
     });
+    // Keep the quote/search/favorites universe intact; default merely promotes
+    // its existing BTC row. A column sort never changes the selected market.
+    if (!columnSort) {
+      const btc = filtered.findIndex(tk => tk.pair === `BTC/${quoteFilter ?? 'USDT'}`);
+      if (btc > 0) filtered.unshift(...filtered.splice(btc, 1));
+    }
     // filterAndSortPairs ignores quoteFilter once a search is typed (a real
     // coin quoted outside the active tab must still be findable); the tab
     // row mirrors that here so it never shows "USDT" highlighted while the
@@ -245,27 +252,23 @@ export const PairListSidebar = forwardRef<
         </div>
 
         <div className="pairs-sort">
-          <button type="button" data-sort-field="volume" data-sort-dir={sortField === 'volume' ? sortDir : undefined} aria-pressed={sortField === 'volume'} onClick={() => toggleSort('volume')}>
-            {t('trade.volume24h')} <SortArrow active={sortField === 'volume'} dir={sortDir} />
-          </button>
+          <span aria-hidden />
           <button type="button" data-sort-field="price" data-sort-dir={sortField === 'price' ? sortDir : undefined} aria-pressed={sortField === 'price'} onClick={() => toggleSort('price')}>
             {t('trade.price')} <SortArrow active={sortField === 'price'} dir={sortDir} />
           </button>
           <button type="button" data-sort-field="change" data-sort-dir={sortField === 'change' ? sortDir : undefined} aria-pressed={sortField === 'change'} onClick={() => toggleSort('change')}>
             {t('markets.change24h')} <SortArrow active={sortField === 'change'} dir={sortDir} />
           </button>
-          <button type="button" data-sort-field="symbol" data-sort-dir={sortField === 'symbol' ? sortDir : undefined} aria-pressed={sortField === 'symbol'} onClick={() => toggleSort('symbol')} title="Символ A–Z">
-            A–Z <SortArrow active={sortField === 'symbol'} dir={sortDir} />
-          </button>
         </div>
 
-        <div className="pairs-list">
+        <div className="pairs-list" ref={listRef}>
           {filtered.map((tk) => {
             // Rounded before the direction is picked from it, not after: a
             // change of -0.001% otherwise printed as a red, downward
             // "▼ -0.00%" — an arrow and a sign pointing at nothing.
             const change = Number(parseChangePercent(tk.changePercent24h, tk.pair).toFixed(2));
             const up = change >= 0;
+            const priceText = formatSpotBookNumber(parseFloat(tk.lastPrice));
             return (
               <div
                 key={tk.pair}
@@ -295,11 +298,11 @@ export const PairListSidebar = forwardRef<
                 </span>
                 <span className="p-name">
                   <b className="p-base">{tk.pair.split('/')[0]}</b>
-                  <span className="p-quote">/{tk.pair.split('/')[1]}</span>
+                  {(!effectiveQuoteFilter || tk.pair.split('/')[1] !== effectiveQuoteFilter) && <span className="p-quote">/{tk.pair.split('/')[1]}</span>}
                 </span>
-                <span className="p-price">{formatSpotBookNumber(parseFloat(tk.lastPrice))}</span>
+                <span className="p-price" data-compact={priceText.length > 10 || undefined} title={priceText}>{priceText}</span>
                 <span className={`p-change ${up ? 'up' : 'down'}`}>
-                  {up ? '▲' : '▼'} {up ? '+' : ''}
+                  {up ? '+' : ''}
                   {change.toFixed(2)}%
                 </span>
                 </button>
@@ -334,6 +337,6 @@ export const PairListSidebar = forwardRef<
 // pointing the live direction on the active one — the same small-arrow
 // language the reference's own column headers use.
 function SortArrow({ active, dir }: { active: boolean; dir: 1 | -1 }) {
-  if (!active) return null;
+  if (!active) return <span className="pch-arrow idle" aria-hidden>⇅</span>;
   return dir === -1 ? <ChevronDown size={11} /> : <ChevronUp size={11} />;
 }

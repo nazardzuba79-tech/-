@@ -1,0 +1,11 @@
+# Spot / CFD graphite terminal continuation
+
+Base: 8ee9a0840fe43aa5751f66467c9fce5c8377ae43, freshly fetched main after the approved Futures release.
+
+Spot and CFD now share the approved graphite hierarchy and locally bundled Inter header typography. Scoped styles refine panels, controls, quote overview, book contrast and 3px scrollbars. Spot retains order families, exact numeric values, grouping, favorites, quote filters, keyboard selection and resizable panels. Price/24h header sorting cycles descending/ascending/default; eligible BTC returns first within the filtered quote universe. CFD gains name/symbol search and the same column cycle, restoring provider order. CFD remains display-only; stale/unavailable labels, source timestamps and missing quotes remain visible.
+
+Validation: frontend TypeScript and production Vite build pass. Existing environment-only esbuild WASM runner; no dependency changes. Fourteen candidate suites: 232 passed / 12 baseline failures / 244 total. Pristine exact-main baseline: 222 passed / 12 same failures / 2 pending / 236 total. Eight added sorting/search tests pass; exact new failure names = none (tests.json). Existing test harnesses now load the new helper and expect the scoped root class; instrument count assertions still require exactly 13 instrument rows, excluding the two new sort buttons. Known baseline failures were not suppressed.
+
+Actual browser checks at 1440/1280/1024/390 for both markets: one native chart, no horizontal page overflow and no clipped visible numeric labels. Spot MOG search confirms full 0.0000001033 / 0.0000000886 values fit; Market/OCO/Limit controls exercised without submission. Spot 24h cycle restores BTC without switching selection; CFD Oil search and price cycle restore XAU. See browser.json and spot/cfd screenshots at 1440 and 390.
+
+No backend, collector, Prisma, API, OrderForm, CfdOrderForm, OrderBookPanel or native TradingView source changes. Financial writes were blocked in local QA. Private-account unavailable states in screenshots are expected in that environment and are not hidden. Futures scope remains unchanged; shared header selector now also matches the two new market roots. Production verification follows publication.

@@ -25,6 +25,7 @@ import { rememberTradingMode } from '../lib/tradingMode';
 import { PanelLeftOpen, PanelRightOpen } from 'lucide-react';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
+import './trade-terminal/MarketReferenceTerminal.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -219,7 +220,7 @@ export function TradePage() {
   // CFD uses the same shell, with three columns and deliberately no order book.
   if (marketType === 'cfd') {
     return (
-      <div className="trade-terminal cfd-terminal">
+      <div className="trade-terminal cfd-terminal market-reference">
         <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
         <ConnectionBanner />
         <div className="terminal">
@@ -245,7 +246,7 @@ export function TradePage() {
   }
 
   return (
-    <div className="trade-terminal spot-terminal">
+    <div className="trade-terminal spot-terminal market-reference">
       <Nav active="/trade" onTickerSelect={setPair} staticTicker tickerFitToWidth />
       <ConnectionBanner />
 

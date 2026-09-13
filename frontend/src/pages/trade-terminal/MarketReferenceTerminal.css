@@ -1,0 +1,119 @@
+/* Spot and read-only CFD adopt the approved Futures surface hierarchy.
+   Scope excludes Futures; chart frames and execution behavior stay native. */
+.trade-terminal.trade-terminal.market-reference {
+  --bg-primary:#101014; --bg-secondary:#16181d; --workspace-bg:#16181d;
+  --toolbar-bg:#1c1e24; --chart-bg:#101014; --bg-tertiary:#22252c;
+  --panel:#16181d; --panel-alt:#22252c; --bg-hover:#24272e;
+  --border-color:#292c33; --panel-border:#292c33; --layer-border:#292c33; --border:#292c33;
+  --text-primary:#eceef2; --text-secondary:#a7adb9; --text-tertiary:#929aa8;
+  --accent:#f7a600; --accent-yellow:#f7a600; --color-buy:#00c076; --color-sell:#f43150;
+  --font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
+}
+.trade-terminal.trade-terminal.market-reference .terminal,
+.trade-terminal.trade-terminal.market-reference .mono { font-family:var(--font-family); font-variant-numeric:tabular-nums; }
+.trade-terminal.trade-terminal.market-reference > .market-ticker-static { order:3; height:28px; min-height:28px; flex:0 0 28px; background:#181a20; border-top:1px solid var(--border); border-bottom:0; }
+.trade-terminal.trade-terminal.market-reference .terminal { order:2; }
+.trade-terminal.trade-terminal.market-reference :is(.ticker-bar,.cfd-ticker-bar) { background:var(--workspace-bg); padding:10px 16px; gap:20px; min-height:64px; border-bottom:1px solid var(--border); }
+.trade-terminal.trade-terminal.market-reference :is(.ticker-item .label,.cfd-stat>span) { font-size:12px; line-height:17px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .ticker-item .value { font-size:14px; line-height:20px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .ticker-item .value.price { font-size:22px; line-height:28px; }
+.trade-terminal.trade-terminal.market-reference :is(.left-panel,.pairs-section,.order-form-area,.orderbook-area,.bottom-panel,.cfd-bottom-panel,.cfd-instruments-area,.cfd-form-area) { background:var(--workspace-bg); border-color:var(--border); }
+.trade-terminal.trade-terminal.market-reference :is(.chart-area,.cfd-chart-area,.cfd-chart) { background:var(--chart-bg); }
+.trade-terminal.trade-terminal.market-reference .voltex-tradingview-chart__copyright { background:var(--chart-bg); border-top:1px solid var(--border); font-size:11px!important; line-height:22px!important; }
+.trade-terminal.trade-terminal.market-reference :is(.pairs-header,.orderbook-header) { min-height:40px; height:40px; padding:0 12px; background:var(--chart-bg); border-bottom:1px solid var(--border); }
+.trade-terminal.trade-terminal.market-reference :is(.pairs-header,.orderbook-title) { font-size:14px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .orderbook-title { align-self:stretch; display:flex; align-items:center; border-bottom:2px solid var(--accent); }
+.trade-terminal.trade-terminal.market-reference :is(.pairs-header button,.orderbook-collapse) { color:var(--text-secondary); border:0; background:transparent; }
+.trade-terminal.trade-terminal.market-reference .pairs-search { padding:10px 12px; }
+.trade-terminal.trade-terminal.market-reference .pairs-search input { width:100%; box-sizing:border-box; height:36px; border:1px solid #30343d; border-radius:5px; background:var(--panel-alt); padding:0 10px 0 30px; color:var(--text-primary); font-size:12px; }
+.trade-terminal.trade-terminal.market-reference .pairs-search kbd { display:none; }
+.trade-terminal.trade-terminal.market-reference .pairs-tabs { padding:0 8px; gap:8px; overflow-x:auto; scrollbar-width:none; border-color:var(--border); }
+.trade-terminal.trade-terminal.market-reference .pairs-tab { font-size:11px; padding:9px 2px; white-space:nowrap; flex-shrink:0; background:transparent; border-radius:0; }
+.trade-terminal.trade-terminal.market-reference .pairs-sort { display:grid; grid-template-columns:minmax(0,1fr) 76px 66px; align-items:center; height:30px; min-height:30px; gap:5px; padding:0 8px; border-bottom:1px solid var(--border); }
+.trade-terminal.trade-terminal.market-reference .pairs-sort button { justify-content:flex-end; display:flex; align-items:center; gap:3px; padding:0; border:0; background:transparent; color:var(--text-secondary); font-size:11px; }
+.trade-terminal.trade-terminal.market-reference :is(.pairs-sort button,.cfd-columns button)[aria-pressed=true] { color:var(--accent); }
+.trade-terminal.trade-terminal.market-reference .pairs-list .pair-row { min-height:35px; grid-template-columns:14px 20px minmax(28px,1fr) 76px 66px; gap:4px; padding:0 8px; border-bottom:0; }
+.trade-terminal.trade-terminal.market-reference .pair-select { grid-template-columns:20px minmax(28px,1fr) 76px 66px; }
+.trade-terminal.trade-terminal.market-reference .pair-row .p-base { font-size:12px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .pair-row .p-price { font-size:12px; font-weight:400; color:#d7dbe3; }
+.trade-terminal.trade-terminal.market-reference .pair-row .p-price[data-compact] { font-size:10px; letter-spacing:-.2px; }
+.trade-terminal.trade-terminal.market-reference .pair-row .p-change { font-size:11px; font-weight:400; }
+.trade-terminal.trade-terminal.market-reference .pair-row .p-quote { font-size:10px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference :is(.pair-row,.cfd-option).active { background:#24221c; border-left-color:var(--accent); }
+.trade-terminal.trade-terminal.market-reference :is(.pair-row,.cfd-option):hover { background:#24272e; }
+.trade-terminal.trade-terminal.market-reference .pairs-resize-handle { width:3px; background:transparent; opacity:.25; }
+.trade-terminal.trade-terminal.market-reference .pairs-resize-handle svg { display:none; }
+.trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area) { scrollbar-width:thin; scrollbar-color:#30343a transparent; }
+@supports selector(::-webkit-scrollbar) {
+  .trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area) { scrollbar-width:auto; scrollbar-color:auto; }
+  .trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area)::-webkit-scrollbar { width:3px; height:3px; }
+  .trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area)::-webkit-scrollbar-track { background:transparent; }
+  .trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area)::-webkit-scrollbar-thumb { background:#30343a; border:0; border-radius:3px; }
+  .trade-terminal.trade-terminal.market-reference :is(.pairs-list,.cfd-list,.order-form-area,.cfd-form-area):hover::-webkit-scrollbar-thumb { background:#4b5058; }
+}
+.trade-terminal.trade-terminal.market-reference .ob-group-select { background:var(--panel-alt); color:var(--text-primary); border:0; border-radius:4px; height:28px; font-size:12px; }
+.trade-terminal.trade-terminal.market-reference .orderbook-col-headers { font-size:11px; color:var(--text-secondary); min-height:32px; }
+.trade-terminal.trade-terminal.market-reference .ob-row { height:24px; flex-basis:24px; font-size:12px; line-height:24px; }
+.trade-terminal.trade-terminal.market-reference .ob-depth-bar { opacity:.12; }
+.trade-terminal.trade-terminal.market-reference .orderbook-spread { background:#191c22; padding:12px 10px; border-block:1px solid var(--border); }
+.trade-terminal.trade-terminal.market-reference .ob-spread-price { font-size:19px; line-height:26px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .ob-spread-detail { font-size:10px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .orderbook-spread .usd { font-size:10px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .order-form-content { padding:14px 16px; gap:16px; }
+.trade-terminal.trade-terminal.market-reference .order-type-tabs { display:flex; flex-wrap:nowrap; padding:0 16px; gap:16px; overflow-x:auto; scrollbar-width:none; border-color:var(--border); }
+.trade-terminal.trade-terminal.market-reference .order-form-tabs { gap:6px; padding:12px 16px 8px; background:var(--workspace-bg); }
+.trade-terminal.trade-terminal.market-reference .order-form-tab { height:36px; min-height:36px; border-radius:5px; border:1px solid #30343b; background:var(--panel-alt); font-size:12px; font-weight:600; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .order-form-tab.buy.active { background:#00a96a; border-color:#00a96a; color:white; }
+.trade-terminal.trade-terminal.market-reference .order-form-tab.sell.active { background:#e93350; border-color:#e93350; color:white; }
+.trade-terminal.trade-terminal.market-reference .order-type-tab { font-size:12px; font-weight:500; white-space:nowrap; padding:12px 0; flex-shrink:0; }
+.trade-terminal.trade-terminal.market-reference .form-label { font-size:12px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .input-group { min-height:44px; background:var(--panel-alt); border:1px solid #30343b; border-radius:5px; }
+.trade-terminal.trade-terminal.market-reference .input-group input { min-height:42px; padding:10px 12px; font-size:14px; color:var(--text-primary); }
+.trade-terminal.trade-terminal.market-reference .input-group:focus-within { border-color:var(--accent); box-shadow:0 0 0 1px #f7a60020; }
+.trade-terminal.trade-terminal.market-reference .input-group:hover { border-color:#4b505a; }
+.trade-terminal.trade-terminal.market-reference .input-suffix { font-size:12px; color:var(--text-secondary); }
+.trade-terminal.trade-terminal.market-reference .submit-btn { min-height:44px; height:44px; border-radius:24px; font-size:14px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .order-summary { border:1px solid var(--border); border-radius:5px; padding:12px; background:#13151a; }
+.trade-terminal.trade-terminal.market-reference :is(.available-balance,.info-row) { font-size:12px; line-height:19px; }
+.trade-terminal.trade-terminal.market-reference .info-heading { font-size:13px; color:var(--text-primary); }
+.trade-terminal.trade-terminal.market-reference :is(.bottom-tabs,.cfd-tabs) { border-color:var(--border); background:var(--chart-bg); min-height:42px; }
+.trade-terminal.trade-terminal.market-reference .bottom-tab { font-size:12px; padding:12px 14px; }
+.trade-terminal.trade-terminal.market-reference .bottom-tab .badge { background:transparent; color:inherit; padding:0 3px; }
+.trade-terminal.trade-terminal.market-reference .terminal-size-range::-webkit-slider-runnable-track { background:#42474f; }
+.trade-terminal.trade-terminal.market-reference .terminal-size-range::-webkit-slider-thumb { background:#16181d; }
+.trade-terminal.trade-terminal.market-reference button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.trade-terminal.trade-terminal.market-reference .cfd-columns { font-size:11px; min-height:34px; background:var(--chart-bg); border-bottom:1px solid var(--border); }
+.trade-terminal.trade-terminal.market-reference .cfd-columns button { background:transparent; color:var(--text-secondary); border:0; font-size:11px; padding:0; cursor:pointer; white-space:nowrap; }
+.trade-terminal.trade-terminal.market-reference :is(.cfd-columns,.cfd-option) { grid-template-columns:minmax(0,1fr) 75px 60px; gap:6px; padding-inline:10px; }
+.trade-terminal.trade-terminal.market-reference .cfd-option { min-height:68px; }
+.trade-terminal.trade-terminal.market-reference .cfd-icon { flex-basis:26px; height:26px; background:#1c1f25; border-color:#353b46; }
+.trade-terminal.trade-terminal.market-reference .cfd-optionLeft { gap:6px; }
+.trade-terminal.trade-terminal.market-reference .cfd-optionSymbol { font-size:12px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference .cfd-optionName { font-size:10px; }
+.trade-terminal.trade-terminal.market-reference .cfd-optionState { white-space:normal; line-height:13px; overflow:visible; }
+.trade-terminal.trade-terminal.market-reference :is(.cfd-price,.cfd-change) { font-size:12px; }
+.trade-terminal.trade-terminal.market-reference .cfd-market-overview { padding:18px; }
+.trade-terminal.trade-terminal.market-reference .cfd-overview-head { font-size:14px; gap:8px; }
+.trade-terminal.trade-terminal.market-reference .cfd-overview-instrument strong { font-size:26px; font-weight:600; letter-spacing:-.02em; }
+.trade-terminal.trade-terminal.market-reference .cfd-overview-price { background:#1d2026; border:1px solid #343943; border-radius:6px; }
+.trade-terminal.trade-terminal.market-reference .cfd-overview-price strong { font-size:30px; font-weight:600; }
+.trade-terminal.trade-terminal.market-reference :is(.cfd-overview-grid,.cfd-data-coverage-grid) { background:var(--border); border-color:var(--border); border-radius:5px; }
+.trade-terminal.trade-terminal.market-reference :is(.cfd-overview-grid,.cfd-data-coverage-grid)>div { background:#191c22; }
+.trade-terminal.trade-terminal.market-reference :is(.cfd-overview-grid dt,.cfd-overview-price>span,.cfd-data-coverage-grid span,.cfd-overview-note,.cfd-data-coverage p) { color:var(--text-secondary); font-size:11px; }
+.trade-terminal.trade-terminal.market-reference .cfd-overview-grid dd { font-size:12px; white-space:normal; overflow-wrap:anywhere; }
+@media(min-width:1025px) {
+  .trade-terminal.trade-terminal.market-reference .main-grid { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 240px 292px; }
+  .trade-terminal.trade-terminal.market-reference .main-grid.market-panel-collapsed { grid-template-columns:0 minmax(0,1fr) 240px 292px; }
+  .trade-terminal.trade-terminal.market-reference .main-grid.orderbook-collapsed { grid-template-columns:var(--market-panel-width,258px) minmax(0,1fr) 0 292px; }
+  .trade-terminal.trade-terminal.market-reference .main-grid.market-panel-collapsed.orderbook-collapsed { grid-template-columns:0 minmax(0,1fr) 0 292px; }
+  .trade-terminal.trade-terminal.market-reference .cfd-workspace { grid-template-columns:300px minmax(0,1fr) 292px; }
+}
+@media(max-width:1024px) {
+  .trade-terminal.trade-terminal.market-reference .cfd-columns { display:grid; }
+  .trade-terminal.trade-terminal.market-reference .cfd-list { display:block; }
+  .trade-terminal.trade-terminal.market-reference .cfd-instruments-area { max-height:320px; }
+}
+@media(max-width:600px) {
+  .trade-terminal.trade-terminal.market-reference .order-form-content { padding:14px; }
+  .trade-terminal.trade-terminal.market-reference .pairs-sort { grid-template-columns:minmax(0,1fr) 76px 66px; }
+}
