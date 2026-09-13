@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { cfdDisplayState, formatCfdAsOf, formatCfdPrice, resolveCfdSymbol } from '../cfdPresentation';
+import { cfdDisplayState, cfdMarketCopy, formatCfdAsOf, formatCfdPrice, resolveCfdSymbol } from '../cfdPresentation';
 
 const root = resolve(__dirname, '../../..');
 const read = (path: string) => readFileSync(resolve(root, 'src', path), 'utf8');
@@ -23,6 +23,20 @@ test('display states communicate live, market closed, last quote and unavailable
   expect(formatCfdAsOf(at)).toBe('09:30 UTC');
 });
 
+test('all seven supported languages have complete professional CFD display copy', () => {
+  const langs=['ru','en','zh','es','hi','ja','ko'] as const;
+  for(const lang of langs){
+    const copy=cfdMarketCopy(lang);
+    for(const value of Object.values(copy))expect(typeof value==='string'&&value.trim().length>0).toBe(true);
+    expect(cfdDisplayState({price:'1',status:'live',stale:false,asOf:null},lang).label).toBe(copy.live);
+    expect(cfdDisplayState({price:null,status:'unavailable',stale:false,asOf:null},lang).label).toBe(copy.priceUnavailable);
+  }
+  expect(cfdMarketCopy('ru').marketOverview).toBe('Обзор рынка');
+  expect(cfdMarketCopy('zh').marketOverview).toBe('市场概览');
+  expect(cfdMarketCopy('es').marketOverview).toBe('Resumen del mercado');
+  expect(cfdMarketCopy('ja').marketOverview).toBe('市場概要');
+});
+
 test('CFD terminal is visibly read-only market data, not an order-entry surface', () => {
   const trade = read('pages/TradePage.tsx');
   const formerOrderPanel = read('components/CfdOrderForm.tsx');
@@ -33,7 +47,7 @@ test('CFD terminal is visibly read-only market data, not an order-entry surface'
   expect(formerOrderPanel).toContain('<CfdMarketOverview');
   expect(formerOrderPanel).not.toContain('openCfdPosition');
   expect(formerOrderPanel).not.toContain('getFuturesBalances');
-  expect(formerPositionsPanel).toContain('Market data coverage');
+  expect(formerPositionsPanel).toContain('copy.dataCoverage');
   expect(formerPositionsPanel).not.toContain('closeCfdPosition');
   expect(formerPositionsPanel).not.toContain('getCfdPositions');
 });
@@ -43,13 +57,20 @@ test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
   expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]XAUUSD['"]/);
   expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]WTIUSD['"]/);
   expect(hero).not.toMatch(/key:\s*['"]oil['"][\s\S]{0,120}price:\s*null/);
+  expect(hero).toContain('cfdDisplayState(gold,displayLang)');
+  expect(hero).toContain('cfdDisplayState(oil,displayLang)');
 });
 
-test('market overview discloses update time and multi-source routing', () => {
+test('market overview and chart use language-aware copy instead of hardcoded English labels', () => {
   const overview = read('components/CfdMarketOverview.tsx');
-  expect(overview).toContain('Updated');
-  expect(overview).toContain('Multi-source');
-  expect(overview).toContain('Missing data stays unavailable instead of being estimated');
+  const ticker = read('components/CfdTickerBar.tsx');
+  const chart = read('components/CfdChart.tsx');
+  expect(overview).toContain('cfdMarketCopy(lang)');
+  expect(overview).toContain('copy.updated');
+  expect(overview).toContain('copy.multiSource');
+  expect(overview).toContain('copy.note');
+  expect(ticker).toContain('copy.status');
+  expect(chart).toContain('cfdMarketCopy(lang).chartNote');
 });
 
 test('deep links resolve only to listed canonical instruments', () => {
