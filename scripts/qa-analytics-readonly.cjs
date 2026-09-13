@@ -63,4 +63,3 @@ const server = app.listen(port,'127.0.0.1',() => {
 });
 function stop() { liquidations.stop(); server.close(); }
 process.on('SIGINT',stop); process.on('SIGTERM',stop);
-

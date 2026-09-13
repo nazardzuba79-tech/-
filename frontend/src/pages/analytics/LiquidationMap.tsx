@@ -49,4 +49,3 @@ export function LiquidationMap({ snapshot }: { snapshot: AnalyticsSnapshot | nul
     </Panel>
   </>;
 }
-

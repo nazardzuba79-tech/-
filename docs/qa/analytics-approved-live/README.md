@@ -79,4 +79,3 @@ The local production bundle was exercised at `http://127.0.0.1:4197/analytics`, 
 ## Publication
 
 No merge or deployment requested. Every candidate commit uses `[CF-Pages-Skip]` so GitHub publication does not trigger a Cloudflare Pages preview deployment. This is the documented [Pages commit-message skip control](https://developers.cloudflare.com/pages/configuration/git-integration/github-integration/#skipping-a-build-via-a-commit-message). Main and production configuration remain unchanged.
-

@@ -45,4 +45,3 @@ export function PriceOpenInterest({ snapshot, asset }: { snapshot: AnalyticsSnap
     <div className="ap-chart-legend"><span><i className="ap-gold-key" />{c.reference} · USD</span></div>
   </Panel>;
 }
-

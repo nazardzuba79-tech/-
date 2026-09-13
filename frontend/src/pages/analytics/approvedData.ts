@@ -28,4 +28,3 @@ export function lineCoordinates(values: number[], width = 720, height = 190) {
     max === min ? height / 2 : 8 + (max - value) / (max - min) * (height - 16),
   ] as const);
 }
-
