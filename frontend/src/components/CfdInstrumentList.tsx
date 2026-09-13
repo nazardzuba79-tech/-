@@ -15,11 +15,11 @@ export const CFD_ICON_BY_SYMBOL:Record<string,string>={
 };
 
 export function CfdInstrumentList({symbol,onChange,tickers,configured,loadError,onRetry}:{symbol:string;onChange:(symbol:string)=>void;tickers:CfdTickerRow[];configured:boolean;loadError:boolean;onRetry:()=>void;}){
-  const{t}=useLanguage();
+  const{t,lang}=useLanguage();
   return <div className="cfd-instruments">
     <div className="cfd-columns"><span>{t('trade.cfdInstrument')}</span><span className="cfd-align-right">{t('markets.price')}</span><span className="cfd-align-right">{t('markets.change24h')}</span></div>
     <div className="cfd-list">
-      {tickers.map(tk=>{const change=parseChangePercentOrNull(tk.changePercent24h,tk.symbol),positive=(change??0)>=0,state=cfdDisplayState(tk);
+      {tickers.map(tk=>{const change=parseChangePercentOrNull(tk.changePercent24h,tk.symbol),positive=(change??0)>=0,state=cfdDisplayState(tk,lang);
         return <button key={tk.symbol} onClick={()=>onChange(tk.symbol)} className={`cfd-option${tk.symbol===symbol?' active':''}`} aria-pressed={tk.symbol===symbol}>
           <span className="cfd-optionLeft"><span className={`cfd-icon cfd-icon-${tk.symbol}`}>{CFD_ICON_BY_SYMBOL[tk.symbol]??'•'}</span><span className="cfd-optionTitle">
             <span className="mono cfd-optionSymbol">{tk.symbol}</span><span className="cfd-optionName">{tk.name}</span><span className={`cfd-optionState cfd-state-${state.tone}`}>{state.label}</span>
