@@ -39,6 +39,7 @@ import { recoverOrderBook } from './services/OrderBookRecovery';
 import { KrakenMarketDataService } from './services/KrakenMarketDataService';
 import { CfdMarketDataService } from './services/CfdMarketDataService';
 import { TraderMadeStreamQuoteSource } from './services/marketData/cfd/TraderMadeStreamQuoteSource';
+import { DerivPublicStreamQuoteSource } from './services/marketData/cfd/DerivPublicStreamQuoteSource';
 import { ResilientCfdQuoteSource } from './services/marketData/cfd/ResilientCfdQuoteSource';
 import { CfdPositionService } from './cfd/CfdPositionService';
 import { CfdLiquidationEngine } from './cfd/CfdLiquidationEngine';
@@ -97,16 +98,25 @@ const cfdDataService = new CfdMarketDataService(process.env.TWELVE_DATA_API_KEY,
 
 // Execution-grade provider routing is an explicit rollout gate. Until it is
 // enabled, current Twelve Data semantics stay byte-for-byte compatible. Once
-// enabled, both providers are admitted only with non-secret commercial-use
-// evidence IDs and per-symbol entitlement lists. Missing redundancy blocks
-// NEW positions but a remaining admitted fresh source can still close/mark/
-// liquidate existing positions.
+// enabled, providers are admitted only with non-secret commercial-use evidence
+// IDs and per-symbol entitlement lists. Missing redundancy blocks NEW positions
+// but a remaining admitted fresh source can still close/mark/liquidate existing
+// positions. Deriv may run in shadow without any financial permission; shadow
+// observations are diagnostics only and cannot enter this router's active set.
 const cfdMultiProviderExecutionEnabled = process.env.CFD_MULTI_PROVIDER_EXECUTION_ENABLED === 'true';
 const traderMadeCfdDataService = new TraderMadeStreamQuoteSource(process.env.TRADERMADE_STREAM_API_KEY, {
   maxQuoteAgeMs: cfdMaxQuoteAgeMs,
   entitledSymbols: parseCfdSymbols(process.env.TRADERMADE_VERIFIED_LIVE_SYMBOLS),
   executionSymbols: parseCfdSymbols(process.env.TRADERMADE_EXECUTION_SYMBOLS),
   financialUseEvidence: process.env.TRADERMADE_FINANCIAL_USE_EVIDENCE,
+});
+const derivShadowEnabled = process.env.DERIV_CFD_SHADOW_ENABLED === 'true';
+const derivCfdDataService = new DerivPublicStreamQuoteSource({
+  maxQuoteAgeMs: cfdMaxQuoteAgeMs,
+  shadow: derivShadowEnabled,
+  entitledSymbols: parseCfdSymbols(process.env.DERIV_CFD_VERIFIED_LIVE_SYMBOLS),
+  executionSymbols: parseCfdSymbols(process.env.DERIV_CFD_EXECUTION_SYMBOLS),
+  financialUseEvidence: process.env.DERIV_CFD_FINANCIAL_USE_EVIDENCE,
 });
 const resilientCfdDataService = new ResilientCfdQuoteSource([
   {
@@ -118,6 +128,11 @@ const resilientCfdDataService = new ResilientCfdQuoteSource([
     id: 'tradermade', source: traderMadeCfdDataService, priority: 20,
     lineage: process.env.TRADERMADE_LINEAGE_ID?.trim() || 'unknown', enabled: cfdMultiProviderExecutionEnabled,
     admissionEvidence: process.env.TRADERMADE_FINANCIAL_USE_EVIDENCE ?? '',
+  },
+  {
+    id: 'deriv', source: derivCfdDataService, priority: 30,
+    lineage: process.env.DERIV_CFD_LINEAGE_ID?.trim() || 'unknown', enabled: cfdMultiProviderExecutionEnabled,
+    admissionEvidence: process.env.DERIV_CFD_FINANCIAL_USE_EVIDENCE ?? '',
   },
 ], {
   maxQuoteAgeMs: cfdMaxQuoteAgeMs,
@@ -275,7 +290,7 @@ app.use('/api/v1', productsRouter(prisma));
 app.use('/api/v1', balancesRouter(prisma));
 app.use('/api/v1', marketRouter(marketDataService, coinGeckoService, fearGreedService, prisma));
 app.use('/api/v1', arbitrageRouter(arbitrageService));
-app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService, undefined, cfdRiskSource));
+app.use('/api/v1', cfdRouter(prisma, cfdDataService, cfdPositionService, undefined, cfdRiskSource, () => derivCfdDataService.diagnostics()));
 app.use('/api/v1', referralRouter(prisma));
 app.use('/api/v1', accountRouter(prisma));
 app.use('/api/v1', kycRouter(prisma, kycEmailService));
@@ -317,6 +332,7 @@ async function start() {
   }
 
   if (cfdMultiProviderExecutionEnabled) traderMadeCfdDataService.start();
+  if (derivShadowEnabled || (cfdMultiProviderExecutionEnabled && derivCfdDataService.isConfigured())) derivCfdDataService.start();
   futuresMarketRegistry.start();
   fundingRateService.startScheduler();
   liquidationEngine.startScheduler();
@@ -335,6 +351,7 @@ start().catch((err) => {
 
 process.on('SIGTERM', async () => {
   traderMadeCfdDataService.stop();
+  derivCfdDataService.stop();
   liveReferenceCollector?.stop();
   marketUniverse.stop();
   futuresMarketRegistry.stop();
