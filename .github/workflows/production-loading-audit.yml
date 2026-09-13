@@ -1,0 +1,51 @@
+name: Production loading and data audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/qa-production-loading.cjs'
+      - '.github/workflows/production-loading-audit.yml'
+      - 'frontend/**'
+      - 'src/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-loading-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install disposable Chromium
+        run: |
+          npm install --prefix /tmp/voltex-production-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-production-qa/node_modules/playwright/cli.js install --with-deps chromium
+
+      - name: Audit live VOLTEX loading and public market data
+        env:
+          VOLTEX_QA_PLAYWRIGHT: /tmp/voltex-production-qa/node_modules/playwright
+          VOLTEX_QA_ORIGIN: https://voltextech.net
+          VOLTEX_QA_API_ORIGIN: https://api.voltextech.net
+        run: node scripts/qa-production-loading.cjs
+
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-loading-audit
+          path: docs/qa/production-loading/
+          retention-days: 7
