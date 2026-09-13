@@ -13,7 +13,6 @@ import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
-import { ConnectionBanner } from '../components/ConnectionBanner';
 import { subscribeFuturesDepth } from '../lib/futuresDepth';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
@@ -119,6 +118,10 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
+  // Futures depth has its own Bybit linear-perpetual socket. Do not show the
+  // shared Spot/Kraken connection banner on this page: it can be disconnected
+  // while the Futures book is healthy, which produced a false reconnecting
+  // warning directly above a live Futures terminal.
   useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot })), [symbol]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
@@ -150,7 +153,6 @@ export function FuturesPage() {
         tickerFitToWidth
         futuresReference={reference}
       />
-      <ConnectionBanner />
 
       <div className="terminal">
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
@@ -167,6 +169,7 @@ export function FuturesPage() {
             <OrderBookPanel
               key={symbol}
               spotPrecision
+              initialFinestGrouping
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
