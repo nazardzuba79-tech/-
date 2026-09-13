@@ -10,6 +10,7 @@ on:
       - 'frontend/src/lib/useCfdTickers.ts'
       - 'frontend/src/lib/__tests__/cfdDisplayOnly.test.ts'
       - 'frontend/src/pages/home/**'
+      - 'scripts/qa-cfd-display-browser.cjs'
       - '.github/workflows/cfd-display-only.yml'
 permissions:
   contents: read
@@ -19,7 +20,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +44,21 @@ jobs:
         env:
           VITE_API_URL: /api/v1
         run: npm run build
+      - name: Install disposable browser QA tooling
+        run: |
+          npm install --prefix /tmp/voltex-cfd-display-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-cfd-display-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser QA — homepage and market terminal
+        env:
+          CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-display-qa/node_modules/playwright
+        run: node scripts/qa-cfd-display-browser.cjs
+      - name: Preserve browser evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfd-display-browser
+          path: docs/qa/cfd-display-browser/
+          retention-days: 7
   public-sources:
     runs-on: ubuntu-latest
     timeout-minutes: 4
