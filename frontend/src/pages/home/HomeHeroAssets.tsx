@@ -1,6 +1,6 @@
 import { Bitcoin } from 'lucide-react';
 import { Sparkline } from '../../components/Sparkline';
-import { cfdDisplayState } from '../../lib/cfdPresentation';
+import { cfdDisplayState,cfdMarketCopy } from '../../lib/cfdPresentation';
 import { useLanguage } from '../../lib/i18n';
 import { LiveValue } from './LiveValue';
 import type { HomeMarket } from './useHomeMarket';
@@ -12,11 +12,11 @@ function GoldIcon({size=24}:{size?:number;strokeWidth?:number}){return <svg widt
 function OilIcon({size=24}:{size?:number;strokeWidth?:number}){return <svg width={size+5} height={size+10} viewBox="0 0 40 48" fill="none" aria-hidden="true" focusable="false"><defs><linearGradient id="vx-hero-oil-metal" x1="6" y1="19" x2="35" y2="35" gradientUnits="userSpaceOnUse"><stop stopColor="#f1f6fc"/><stop offset=".18" stopColor="#a0b4c9"/><stop offset=".36" stopColor="#28394c"/><stop offset=".65" stopColor="#03080e"/><stop offset="1" stopColor="#314a61"/></linearGradient></defs><path d="M20 2C19 12 6 21 6 32a14 14 0 0 0 28 0C34 21 23 12 20 2Z" fill="url(#vx-hero-oil-metal)" stroke="#bdcddd" strokeWidth=".7"/><path d="M16 14C12 21 9 27 9 32c0 5 3 9 7 10" fill="none" stroke="#e6f2ff" strokeWidth="1.1" strokeLinecap="round" opacity=".78"/><path d="M14 43c7 3 14-1 16-7" fill="none" stroke="#7190ad" strokeWidth=".8" strokeLinecap="round" opacity=".6"/></svg>}
 
 export function HomeHeroAssets({market,englishLabels=false}:{market:HomeMarket;englishLabels?:boolean}){
-  const{lang,t}=useLanguage(),copy=globalHeroCopy[englishLabels?'en':lang],btc=market.tickers.find(row=>row.pair==='BTC/USDT');
+  const{lang,t}=useLanguage(),displayLang=englishLabels?'en':lang,copy=globalHeroCopy[displayLang],marketCopy=cfdMarketCopy(displayLang),btc=market.tickers.find(row=>row.pair==='BTC/USDT');
   const gold=market.cfd?.tickers.find(row=>row.symbol==='XAUUSD'),oil=market.cfd?.tickers.find(row=>row.symbol==='WTIUSD');
-  const goldState=cfdDisplayState(gold),oilState=cfdDisplayState(oil);
+  const goldState=cfdDisplayState(gold,displayLang),oilState=cfdDisplayState(oil,displayLang);
   const rows=[
-    {key:'btc',title:'BTC / USDT',price:market.hero.pair==='BTC/USDT'?market.hero.livePrice??btc?.price:btc?.price,change:btc?.change,Icon:Bitcoin,points:market.priceHistory['BTC/USDT']??[],note:market.tickersStale?'Last quote':'Live',stale:market.tickersStale},
+    {key:'btc',title:'BTC / USDT',price:market.hero.pair==='BTC/USDT'?market.hero.livePrice??btc?.price:btc?.price,change:btc?.change,Icon:Bitcoin,points:market.priceHistory['BTC/USDT']??[],note:market.tickersStale?marketCopy.lastQuote:marketCopy.live,stale:market.tickersStale},
     {key:'gold',title:'GOLD',price:finiteQuote(gold?.price),change:finiteQuote(gold?.changePercent24h),Icon:GoldIcon,points:gold?.status==='live'&&!gold.stale?market.cfdPriceHistory?.XAUUSD??[]:[],note:goldState.label,stale:gold?.stale},
     {key:'oil',title:'OIL',price:finiteQuote(oil?.price),change:finiteQuote(oil?.changePercent24h),Icon:OilIcon,points:oil?.status==='live'&&!oil.stale?market.cfdPriceHistory?.WTIUSD??[]:[],note:oilState.label,stale:oil?.stale},
   ];
