@@ -65,6 +65,12 @@ const out = 'docs/qa/terminal-reference';
           await page.screenshot({path:`${out}/futures-390-controls.png`});
         }
         if (width === 1440) {
+          await chart.locator('[data-name="open-indicators-dialog"]:visible').click();
+          await chart.getByRole('dialog').waitFor({timeout:10000});
+          await chart.getByRole('dialog').locator('[data-qa-id="close"]').click();
+          await chart.getByRole('dialog').waitFor({state:'hidden'});
+          assert.equal(await page.locator('.voltex-tradingview-chart__copyright a').isVisible(), true);
+          geometry.nativeControls = 'Indicators opens and closes; attribution remains visible; iframe uncropped';
           const chooser = page.locator('.ticker-bar .pair-selector');
           const sidebar = page.locator('.reference-market-sidebar');
           await chooser.click();

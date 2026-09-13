@@ -180,8 +180,7 @@ export function FuturesPage() {
           {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
-          <div className="chart-area">
-            <div className="reference-chart-heading"><span>{t('futures.chart')}</span><span className="reference-chart-provider">TradingView</span></div>
+          <div className="chart-area" role="region" aria-label={t('futures.chart')}>
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 

@@ -28,15 +28,15 @@
     },
     "frame": {
       "x": 240,
-      "y": 168,
+      "y": 128,
       "width": 1040.65625,
-      "height": 638
+      "height": 673
     },
     "canvas": {
       "x": 240,
-      "y": 168,
+      "y": 128,
       "width": 1040.65625,
-      "height": 638
+      "height": 673
     },
     "frames": 1,
     "buttons": [
@@ -87,15 +87,15 @@
     },
     "frame": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 704,
-      "height": 490
+      "height": 525
     },
     "canvas": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 704,
-      "height": 490
+      "height": 525
     },
     "frames": 1,
     "buttons": [
@@ -116,6 +116,7 @@
       "height": 744
     },
     "marketLists": 1,
+    "nativeControls": "Indicators opens and closes; attribution remains visible; iframe uncropped",
     "marketSelector": "persistent search; 20 BTC/ETH selections; one matching iframe; responsive transition keeps one list and removes modal"
   },
   {
@@ -147,15 +148,15 @@
     },
     "frame": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 630,
-      "height": 386
+      "height": 421
     },
     "canvas": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 630,
-      "height": 386
+      "height": 421
     },
     "frames": 1,
     "buttons": [
@@ -206,15 +207,15 @@
     },
     "frame": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 544,
-      "height": 490
+      "height": 525
     },
     "canvas": {
       "x": 218,
-      "y": 168,
+      "y": 128,
       "width": 544,
-      "height": 490
+      "height": 525
     },
     "frames": 1,
     "buttons": [
@@ -265,15 +266,15 @@
     },
     "frame": {
       "x": 0,
-      "y": 224.390625,
+      "y": 184.390625,
       "width": 1024,
-      "height": 464
+      "height": 499
     },
     "canvas": {
       "x": 0,
-      "y": 224.390625,
+      "y": 184.390625,
       "width": 1024,
-      "height": 464
+      "height": 499
     },
     "frames": 1,
     "buttons": [
@@ -319,15 +320,15 @@
     },
     "frame": {
       "x": 0,
-      "y": 224.390625,
+      "y": 184.390625,
       "width": 768,
-      "height": 464
+      "height": 499
     },
     "canvas": {
       "x": 0,
-      "y": 224.390625,
+      "y": 184.390625,
       "width": 768,
-      "height": 464
+      "height": 499
     },
     "frames": 1,
     "buttons": [
@@ -373,15 +374,15 @@
     },
     "frame": {
       "x": 0,
-      "y": 316.78125,
+      "y": 276.78125,
       "width": 390,
-      "height": 404
+      "height": 439
     },
     "canvas": {
       "x": 0,
-      "y": 316.78125,
+      "y": 276.78125,
       "width": 390,
-      "height": 404
+      "height": 439
     },
     "frames": 1,
     "buttons": [

@@ -10,6 +10,7 @@ Branch: `codex/terminal-reference-layout`. Review only; no merge/deployment.
 - Neutral charcoal surfaces, orange active accents, aligned book/chart headings, clearer secondary labels and one integrated account rail. Form gaps reduced from 18px to 13px, header values increased to 14px and form labels to 13px. Margin/leverage are above Limit/Market; existing sizing and order controls remain functional. Count labels no longer inherit decorative shared badges.
 - Market tape moves below the workspace. Tablet uses chart above book/form; mobile uses chart, form, book, positions. The existing mobile navigation remains fixed and content scrolls behind it.
 - Futures chart canvas uses the official TradingView background/grid options. Spot and CFD keep their original colors and symbol mappings. Native timeframe/indicator/drawing controls and attribution remain intact.
+- Chart integration follow-up removes the extra parent Graph/TradingView heading, aligning the native toolbar directly with the book heading and giving the plot 35px more height. A pointer-transparent one-pixel perimeter matches the terminal divider; the widget is not cropped/scaled or modified across origins. Attribution stays visible in a neutral footer. The chart remains an explicitly labelled accessible region.
 
 This is a VOLTEX implementation of the reference's hierarchy and proportions, not a pixel-identical copy of Bybit's private chart integration. Unsupported Post-Only/TIF and order-entry TP/SL controls were not invented. VOLTEX branding and the real existing APIs remain.
 
@@ -30,6 +31,7 @@ Local preview: `http://127.0.0.1:4202/__qa/start?market=futures` (requires the r
 ## Validation
 
 - Frontend TypeScript: PASS (`node frontend/node_modules/typescript/bin/tsc -b frontend`).
+- Chart integration follow-up: TypeScript/build rerun PASS; all seven browser widths rechecked, including opening/closing the native Indicators dialog through its own close button and visible attribution. The prior eight-suite counts below are from the preceding functional sidebar change; this follow-up only changes the outer chart presentation/accessible label.
 - Vite production build: PASS. Windows environment runner uses the same Vite/React configuration with in-process esbuild WASM because native Node pipe creation is restricted; no dependency or build configuration change committed.
 - Six focused suites (`futuresOrderPanel`, `futuresFinalPolish`, `futuresAccountUnknownState`, `cfdChartFallback`, `terminalPresentation`, `spotOrderBook`): **166 passed, 4 failed / 170**. Four new chart palette/ownership cases pass.
 - Same six suites in pristine worktree at exact base main: **162 passed, 4 failed / 166**.
