@@ -36,9 +36,9 @@ jobs:
         run: npx prisma generate
       - name: Backend build
         run: npm run build
-      - name: Deterministic reference routing tests
+      - name: Deterministic reference routing and adapter tests
         if: success() || failure()
-        run: node --test scripts/test-cfd-reference-router.cjs
+        run: node --test scripts/test-cfd-reference-router.cjs scripts/test-cfd-public-references.cjs
       - name: Frontend build
         if: success() || failure()
         working-directory: frontend
