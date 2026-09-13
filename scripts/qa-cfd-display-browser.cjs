@@ -29,6 +29,7 @@ const report = {
   environment: 'disposable loopback CI',
   startedAt: new Date().toISOString(),
   scenarios: [],
+  localization: [],
   pageErrors: [],
   findings: [],
   blockedExternalHosts: [],
@@ -54,6 +55,22 @@ function publicFixture(pathname) {
   if (pathname.startsWith('/market/external/trades/')) return { pair:'BTC/USDT', trades:[] };
   if (pathname === '/support/conversations/mine') return { conversation:null, messages:[] };
   return null;
+}
+
+function initContext(context, target, lang='ru') {
+  return context.addInitScript(({target,lang}) => {
+    localStorage.setItem('exchange_lang', lang);
+    if (target === 'cfd') localStorage.setItem('exchange_token','local-cfd-display-qa');
+  }, {target,lang});
+}
+
+async function restrictBrowser(context, origin) {
+  await context.route('**/*', route => {
+    const url = new URL(route.request().url());
+    if (url.origin !== origin) { deniedHosts.add(url.hostname); return route.abort(); }
+    if (!['GET','HEAD'].includes(route.request().method())) return route.abort();
+    return route.continue();
+  });
 }
 
 (async () => {
@@ -86,19 +103,16 @@ function publicFixture(pathname) {
   const origin = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({headless:true,args:['--no-sandbox']});
 
+  // Russian is the default VOLTEX locale. Check the complete visual surface
+  // at desktop/tablet/mobile sizes so localized labels cannot reintroduce overflow.
   for (const width of [1920,1280,768,390]) {
     for (const target of ['home','cfd']) {
       const context = await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
-      if (target === 'cfd') await context.addInitScript(() => localStorage.setItem('exchange_token','local-cfd-display-qa'));
-      await context.route('**/*', route => {
-        const url = new URL(route.request().url());
-        if (url.origin !== origin) { deniedHosts.add(url.hostname); return route.abort(); }
-        if (!['GET','HEAD'].includes(route.request().method())) return route.abort();
-        return route.continue();
-      });
+      await initContext(context,target,'ru');
+      await restrictBrowser(context,origin);
       const page = await context.newPage();
       activePage = page;
-      page.on('pageerror', error => report.pageErrors.push({target,width,error:error.message}));
+      page.on('pageerror', error => report.pageErrors.push({target,width,lang:'ru',error:error.message}));
       const href = target === 'home' ? '/' : '/trade?market=cfd&symbol=WTIUSD';
       await page.goto(origin + href,{waitUntil:'domcontentloaded'});
       if (target === 'home') {
@@ -121,10 +135,11 @@ function publicFixture(pathname) {
         gold: document.querySelector('.vx-asset-gold')?.textContent || null,
         oil: document.querySelector('.vx-asset-oil')?.textContent || null,
         overview: document.querySelector('.cfd-market-overview')?.textContent || null,
+        coverage: document.querySelector('.cfd-data-coverage')?.textContent || null,
         submits: document.querySelectorAll('.cfd-terminal button[type=submit]').length,
         forms: document.querySelectorAll('.cfd-terminal form').length,
       }),target);
-      report.scenarios.push({target,width,...result});
+      report.scenarios.push({target,width,lang:'ru',...result});
       if (result.overflow) report.findings.push(`Horizontal overflow: ${target} ${width}px`);
       if (target === 'home') {
         if (!result.gold || result.gold.includes('—')) report.findings.push(`GOLD missing: ${width}px`);
@@ -132,12 +147,44 @@ function publicFixture(pathname) {
       } else {
         if (result.rows !== 13) report.findings.push(`Expected 13 instruments, got ${result.rows}: ${width}px`);
         if (result.submits !== 0 || result.forms !== 0) report.findings.push(`Trading controls visible: ${width}px`);
-        if (!result.overview?.includes('WTIUSD') || !result.overview?.includes('Multi-source')) report.findings.push(`WTI overview incomplete: ${width}px`);
+        if (!result.overview?.includes('WTIUSD') || !result.overview?.includes('Несколько источников')) report.findings.push(`Localized WTI overview incomplete: ${width}px`);
+        if (!result.coverage?.includes('Покрытие рынка')) report.findings.push(`Localized coverage panel incomplete: ${width}px`);
       }
-      await page.screenshot({path:path.join(OUT,`${target}-${width}.png`),fullPage:true});
+      await page.screenshot({path:path.join(OUT,`${target}-ru-${width}.png`),fullPage:true});
       await context.close();
       activePage = null;
     }
+  }
+
+  // One real browser render per supported language. This is intentionally
+  // separate from the width matrix to keep upstream provider traffic bounded.
+  const translations = {
+    ru:['Обзор рынка','Несколько источников'],
+    en:['Market overview','Multi-source'],
+    zh:['市场概览','多数据源'],
+    es:['Resumen del mercado','Varias fuentes'],
+    hi:['बाज़ार अवलोकन','मल्टी-सोर्स'],
+    ja:['市場概要','複数ソース'],
+    ko:['시장 개요','다중 소스'],
+  };
+  for (const [lang,[heading,feed]] of Object.entries(translations)) {
+    const context = await browser.newContext({viewport:{width:1280,height:900},serviceWorkers:'block'});
+    await initContext(context,'cfd',lang);
+    await restrictBrowser(context,origin);
+    const page = await context.newPage();
+    activePage = page;
+    page.on('pageerror', error => report.pageErrors.push({target:'cfd-localization',lang,error:error.message}));
+    await page.goto(origin+'/trade?market=cfd&symbol=WTIUSD',{waitUntil:'domcontentloaded'});
+    await page.locator('.cfd-market-overview').waitFor({state:'visible',timeout:15000});
+    await page.waitForFunction(() => document.querySelectorAll('.cfd-option').length === 13,{timeout:15000});
+    const text = await page.locator('.cfd-market-overview').innerText();
+    const coverage = await page.locator('.cfd-data-coverage').innerText();
+    const ok = text.includes(heading) && text.includes(feed);
+    report.localization.push({lang,heading,feed,ok,overview:text,coverage});
+    if (!ok) report.findings.push(`Localization missing: ${lang}`);
+    await page.screenshot({path:path.join(OUT,`cfd-${lang}-1280.png`),fullPage:true});
+    await context.close();
+    activePage = null;
   }
 
   if (report.pageErrors.length) report.findings.push(`Browser errors: ${report.pageErrors.length}`);
