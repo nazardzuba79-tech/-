@@ -25,12 +25,17 @@ test('display states communicate live, market closed, last quote and unavailable
 
 test('CFD terminal is visibly read-only market data, not an order-entry surface', () => {
   const trade = read('pages/TradePage.tsx');
-  expect(trade).toContain('<CfdMarketOverview');
+  const formerOrderPanel = read('components/CfdOrderForm.tsx');
+  const formerPositionsPanel = read('components/CfdPositionsPanel.tsx');
   expect(trade).toContain('<CfdInstrumentList');
   expect(trade).toContain('<CfdTickerBar');
   expect(trade).toContain('<CfdChart');
-  expect(trade).not.toContain('CfdOrderForm');
-  expect(trade).not.toContain('CfdPositionsPanel');
+  expect(formerOrderPanel).toContain('<CfdMarketOverview');
+  expect(formerOrderPanel).not.toContain('openCfdPosition');
+  expect(formerOrderPanel).not.toContain('getFuturesBalances');
+  expect(formerPositionsPanel).toContain('Market data coverage');
+  expect(formerPositionsPanel).not.toContain('closeCfdPosition');
+  expect(formerPositionsPanel).not.toContain('getCfdPositions');
 });
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
