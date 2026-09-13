@@ -63,8 +63,9 @@ jobs:
         env:
           CFD_QA_PLAYWRIGHT: /tmp/voltex-cfd-qa/node_modules/playwright
         run: |
-          # Ephemeral local middleware configuration, never a production secret.
-          JWT_SECRET="$(node -e "process.stdout.write(require('node:crypto').randomBytes(48).toString('hex'))")" node scripts/qa-cfd-public-rollout.cjs
+          # Fresh random values exist only in this local test process, never in
+          # production, outputs, artifacts, persisted environment or app config.
+          node -e "const {randomBytes}=require('node:crypto'); process.env.JWT_SECRET=randomBytes(48).toString('hex'); process.env.API_KEY_ENCRYPTION_SECRET=randomBytes(32).toString('hex'); require('./scripts/qa-cfd-public-rollout.cjs');"
       - name: Preserve screenshots and rollout findings
         if: success() || failure()
         uses: actions/upload-artifact@v4
