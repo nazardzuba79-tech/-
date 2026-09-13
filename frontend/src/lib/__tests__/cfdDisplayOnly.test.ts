@@ -23,33 +23,41 @@ test('display states communicate live, market closed, last quote and unavailable
   expect(formatCfdAsOf(at)).toBe('09:30 UTC');
 });
 
-test('all seven supported languages have complete professional CFD display copy', () => {
+test('all seven supported languages have complete CFD and practice copy', () => {
   const langs=['ru','en','zh','es','hi','ja','ko'] as const;
   for(const lang of langs){
     const copy=cfdMarketCopy(lang);
     for(const value of Object.values(copy))expect(typeof value==='string'&&value.trim().length>0).toBe(true);
+    expect(copy.practice.length).toBeGreaterThan(0);
+    expect(copy.practiceNote.length).toBeGreaterThan(0);
     expect(cfdDisplayState({price:'1',status:'live',stale:false,asOf:null},lang).label).toBe(copy.live);
-    expect(cfdDisplayState({price:null,status:'unavailable',stale:false,asOf:null},lang).label).toBe(copy.priceUnavailable);
   }
-  expect(cfdMarketCopy('ru').marketOverview).toBe('Обзор рынка');
-  expect(cfdMarketCopy('zh').marketOverview).toBe('市场概览');
-  expect(cfdMarketCopy('es').marketOverview).toBe('Resumen del mercado');
-  expect(cfdMarketCopy('ja').marketOverview).toBe('市場概要');
 });
 
-test('CFD terminal is visibly read-only market data, not an order-entry surface', () => {
+test('CFD terminal exposes working practice controls but never financial execution calls', () => {
   const trade = read('pages/TradePage.tsx');
-  const formerOrderPanel = read('components/CfdOrderForm.tsx');
-  const formerPositionsPanel = read('components/CfdPositionsPanel.tsx');
-  expect(trade).toContain('<CfdInstrumentList');
-  expect(trade).toContain('<CfdTickerBar');
-  expect(trade).toContain('<CfdChart');
-  expect(formerOrderPanel).toContain('<CfdMarketOverview');
-  expect(formerOrderPanel).not.toContain('openCfdPosition');
-  expect(formerOrderPanel).not.toContain('getFuturesBalances');
-  expect(formerPositionsPanel).toContain('copy.dataCoverage');
-  expect(formerPositionsPanel).not.toContain('closeCfdPosition');
-  expect(formerPositionsPanel).not.toContain('getCfdPositions');
+  const order = read('components/CfdOrderForm.tsx');
+  const positions = read('components/CfdPositionsPanel.tsx');
+  const store = read('lib/cfdPaperStore.ts');
+  expect(trade).toContain('<CfdOrderForm');
+  expect(trade).toContain('<CfdPositionsPanel');
+  expect(order).toContain('openCfdPaperPosition');
+  expect(order).toContain('<form');
+  expect(order).toContain('type="submit"');
+  expect(order).toContain('LeverageSlider');
+  expect(positions).toContain('closeCfdPaperPosition');
+  expect(positions).toContain("type Tab='open'|'history'");
+  expect(store).toContain("voltex_cfd_practice_v1");
+  expect(order).not.toMatch(/api\.openCfdPosition|getFuturesBalances/);
+  expect(positions).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition/);
+});
+
+test('CFD chart uses same-origin real OHLC and not hosted TradingView', () => {
+  const chart=read('components/CfdChart.tsx');
+  expect(chart).toContain('/cfd/candles/');
+  expect(chart).toContain('CandlestickSeries');
+  expect(chart).toContain('createChart');
+  expect(chart).not.toContain('TradingViewAdvancedChart');
 });
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
@@ -57,21 +65,6 @@ test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
   expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]XAUUSD['"]/);
   expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]WTIUSD['"]/);
   expect(hero).not.toMatch(/key:\s*['"]oil['"][\s\S]{0,120}price:\s*null/);
-  expect(hero).toContain('cfdDisplayState(gold,displayLang)');
-  expect(hero).toContain('cfdDisplayState(oil,displayLang)');
-});
-
-test('market overview and chart use language-aware copy instead of hardcoded English labels', () => {
-  const overview = read('components/CfdMarketOverview.tsx');
-  const ticker = read('components/CfdTickerBar.tsx');
-  const chart = read('components/CfdChart.tsx');
-  expect(overview).toContain('cfdMarketCopy(lang)');
-  expect(overview).toContain('copy.updated');
-  expect(overview).not.toContain('copy.multiSource');
-  expect(overview).not.toContain('copy.note');
-  expect(ticker).toContain('copy.status');
-  expect(chart).not.toContain('chartNote');
-  expect(chart).toContain('TradingViewAdvancedChart');
 });
 
 test('deep links resolve only to listed canonical instruments', () => {

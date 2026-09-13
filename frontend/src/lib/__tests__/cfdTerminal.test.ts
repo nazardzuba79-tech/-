@@ -45,7 +45,7 @@ test('display states clearly distinguish live, closed, stale and unavailable',()
  expect(presentation.cfdDisplayState({price:null,status:'unavailable'}).label).toBe('Price unavailable');
 });
 
-test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD','?market=cfd&symbol=INVALID'])('TradePage %s renders read-only three-column market terminal',query=>{
+test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD','?market=cfd&symbol=INVALID'])('TradePage %s renders interactive three-column CFD terminal',query=>{
  const options={params:new URLSearchParams(query),feed:{tickers:rows,configured:true,loadError:false,reload:jest.fn()}};const page=mount('pages/TradePage.tsx',options),tree=page.render(),all=nodes(tree);
  expect(tree.props.className).toBe('trade-terminal cfd-terminal market-reference');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
  for(const component of ['CfdChart','CfdOrderForm','CfdInstrumentList','CfdTickerBar'])expect(all.find(n=>n.type===page.components[component]).props.symbol).toBe(expected);
@@ -54,9 +54,23 @@ test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD'
 
 test('all thirteen canonical display instruments render without fabricated extras',()=>{const list=mount('components/CfdInstrumentList.tsx');const tree=list.render({symbol:'XAUUSD',tickers:rows,configured:true,loadError:false,onRetry:jest.fn(),onChange:jest.fn()});expect(nodes(tree).filter(n=>n.type==='button'&&n.props.className?.includes('cfd-option'))).toHaveLength(13);for(const row of rows)expect(text(tree)).toContain(row.symbol);});
 
-test('visible CFD right panel is read-only market overview, not an order form',()=>{const source=read('components/CfdOrderForm.tsx');expect(source).toContain('CfdMarketOverview');expect(source).not.toMatch(/openCfdPosition|getFuturesBalances|<form|type="submit"|LeverageSlider/);});
+test('visible CFD right panel is a functional local practice order ticket',()=>{
+ const source=read('components/CfdOrderForm.tsx');
+ expect(source).toContain('openCfdPaperPosition');expect(source).toContain('<form');expect(source).toContain('type="submit"');expect(source).toContain('LeverageSlider');
+ expect(source).not.toMatch(/api\.openCfdPosition|getFuturesBalances|openCfdPosition\(/);
+});
 
-test('bottom panel is market-data coverage and makes no account requests',()=>{const source=read('components/CfdPositionsPanel.tsx');expect(source).toContain('Market data coverage');expect(source).not.toMatch(/getCfdPositions|getCfdPositionHistory|closeCfdPosition|api\./);});
+test('bottom panel provides local practice positions and history without account requests',()=>{
+ const source=read('components/CfdPositionsPanel.tsx');
+ expect(source).toContain('closeCfdPaperPosition');expect(source).toContain('useCfdTickers');expect(source).toContain("type Tab='open'|'history'");
+ expect(source).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition|api\.getFuturesBalances/);
+});
+
+test('CFD chart is owned by VOLTEX and uses real OHLC API rather than an external embed',()=>{
+ const source=read('components/CfdChart.tsx');
+ expect(source).toContain('createChart');expect(source).toContain('CandlestickSeries');expect(source).toContain('/cfd/candles/');
+ expect(source).not.toContain('TradingViewAdvancedChart');
+});
 
 test('ticker hook polls every 15 seconds and keeps last good rows after a failed refresh',async()=>{
  const getCfdTickers=jest.fn().mockResolvedValueOnce({configured:true,tickers:rows}).mockRejectedValue(new Error('temporary'));
@@ -69,7 +83,7 @@ test('WTI and Brent identities stay distinct in visible data',()=>{const wti=row
 
 test('display rows can never enable old execution UI helpers',()=>{const row={...rows[0],executionAllowed:true,status:'live',stale:false};expect(presentation.canExecuteCfdQuote(row as any)).toBe(false);});
 
-test('CFD CSS remains scoped to the CFD terminal and includes responsive read-only panels',()=>{const css=read('pages/trade-terminal/CfdTerminal.css');expect(css).toContain('.cfd-market-overview');expect(css).toContain('.cfd-data-coverage');expect(css).toContain('@media(max-width:430px)');expect(css).not.toMatch(/^\.spot-terminal/m);});
+test('CFD practice CSS remains scoped and responsive',()=>{const css=read('pages/trade-terminal/CfdPractice.css');expect(css).toContain('.cfd-order-panel');expect(css).toContain('.cfd-owned-chart');expect(css).toContain('.cfd-bottom-panel');expect(css).toContain('@media(max-width:430px)');expect(css).not.toMatch(/^\.spot-terminal/m);});
 
 test.each([0,1])('CFD column %s sorts both ways, leaves missing data last and restores provider order without selecting',column=>{
   const list=mount('components/CfdInstrumentList.tsx'),onChange=jest.fn();
