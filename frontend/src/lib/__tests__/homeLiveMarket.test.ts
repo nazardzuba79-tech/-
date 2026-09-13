@@ -125,9 +125,10 @@ test('one shared clock fetches one ticker snapshot and bounded real hero sources
   for (const call of [h.api.getExternalTickers, h.api.getExternalOrderBook, h.api.getExternalCandles, h.api.getExternalTrades]) {
     expect(call).toHaveBeenCalledTimes(2);
   }
-  for (const call of [h.api.getExternalRankings, h.api.getGlobalMarket, h.api.getCfdTickers, h.loadConfig]) {
+  for (const call of [h.api.getExternalRankings, h.api.getGlobalMarket, h.loadConfig]) {
     expect(call).toHaveBeenCalledTimes(1);
   }
+  expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
   h.unmount();
 });
 
@@ -254,7 +255,6 @@ test('malformed and wrong-pair hero records cannot be presented as valid real da
     getExternalCandles: jest.fn().mockResolvedValue({ pair: 'ETH/USDT', candles: [candle] }),
   });
   await flush();
-  // There is no retained snapshot yet: unavailable is different from stale.
   expect(h.render().hero).toMatchObject({ pair:'BTC/USDT', book: null, candles: [], trades: [], bookStatus: 'error', candlesStatus: 'error', tradesStatus: 'error', stale: false });
   h.unmount();
 });
@@ -279,8 +279,6 @@ test.each(['transport failure', 'empty response', 'no USDT market'])('%s in the 
   h.advance();
   await flush();
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(2);
-  // The unresolved book keeps this generation in flight; the scheduled tick
-  // must not create a duplicate hero request.
   for (const call of [h.api.getExternalOrderBook, h.api.getExternalCandles, h.api.getExternalTrades]) {
     expect(call).toHaveBeenCalledTimes(1);
   }
@@ -332,15 +330,16 @@ test('missing quote fields stay unknown while actual zero remains zero', async (
   h.unmount();
 });
 
-test('CFD reference observations share the clock at 60 seconds and pause offscreen', async () => {
-  const response={configured:true,source:'twelvedata',tickers:[{symbol:'XAUUSD',price:'2000',changePercent24h:'0'}]};
+test('CFD reference observations share the 15-second clock and pause offscreen', async () => {
+  const row={symbol:'XAUUSD',price:'2000',changePercent24h:'0',status:'live',stale:false};
+  const response={configured:true,source:'twelvedata',tickers:[row]};
   const h=mount({getCfdTickers:jest.fn().mockResolvedValue(response)}); await flush();
-  h.advance(15_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(1);
-  h.advance(45_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
-  expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000,2000]);
+  h.advance(15_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
+  h.advance(45_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
+  expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000,2000,2000]);
   h.observers[0].callback([{isIntersecting:false}]); h.advance(60_000); await flush();
-  expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
+  expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   h.api.getCfdTickers.mockRejectedValue(new Error('offline'));
   h.observers[0].callback([{isIntersecting:true}]); await flush();
-  expect(h.render().cfd).toBeNull(); expect(h.render().cfdStatus).toBe('error'); h.unmount();
+  expect(h.render().cfd).toEqual(response); expect(h.render().cfdStatus).toBe('error'); h.unmount();
 });
