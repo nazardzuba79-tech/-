@@ -1,11 +1,69 @@
 import { useState } from 'react';
-import type { AnalyticsSnapshot } from '../../lib/api';
+import type { AnalyticsSnapshot, GatewaySection } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { Metric, formatUsd, formatPrice, formatQuantity } from './presentation';
 import { valueOf, coverage, dateTime } from './approvedData';
 import { Panel, Empty, Segmented, useCopy } from './approvedPrimitives';
 
-/** Archive layout, but bars are executed events, never latent liquidation levels. */
+type HeatmapCell = { x: number; y: number; intensity: number };
+type HeatmapCandle = { time: number; open: number; high: number; low: number; close: number; volumeUsd: number };
+type HeatmapValue = {
+  baseAsset: string; exchange: string; symbol: string; range: '3d'; prices: number[];
+  cells: HeatmapCell[]; candles: HeatmapCandle[];
+};
+type PremiumSnapshot = AnalyticsSnapshot & {
+  sections: AnalyticsSnapshot['sections'] & { liquidationHeatmap?: GatewaySection<HeatmapValue> };
+};
+
+function LicensedHeatmap({ snapshot }: { snapshot: AnalyticsSnapshot | null }) {
+  const { lang } = useLanguage();
+  const section = (snapshot as PremiumSnapshot | null)?.sections.liquidationHeatmap;
+  const data = valueOf(section);
+  if (!section?.available || !data || data.prices.length < 2 || data.cells.length === 0 || data.candles.length < 2) return null;
+
+  const positive = data.cells.filter(cell => cell.intensity > 0);
+  const maxIntensity = Math.max(0, ...positive.map(cell => cell.intensity));
+  if (maxIntensity <= 0) return null;
+  const xCount = Math.max(data.candles.length, ...data.cells.map(cell => cell.x + 1));
+  const yCount = data.prices.length;
+  const minPrice = Math.min(...data.prices);
+  const maxPrice = Math.max(...data.prices);
+  const lastPrice = data.candles[data.candles.length - 1]?.close ?? null;
+  const strongest = positive.reduce((best, cell) => cell.intensity > best.intensity ? cell : best, positive[0]);
+  const strongestPrice = data.prices[strongest.y] ?? null;
+  const line = data.candles.map((candle, i) => {
+    const x = data.candles.length <= 1 ? 50 : i / (data.candles.length - 1) * 100;
+    const y = maxPrice === minPrice ? 50 : 100 - ((candle.close - minPrice) / (maxPrice - minPrice) * 100);
+    return `${x.toFixed(2)},${Math.max(0, Math.min(100, y)).toFixed(2)}`;
+  }).join(' ');
+
+  return <Panel title={lang === 'ru' ? 'Карта ликвидаций' : 'Liquidation heatmap'}
+    subtitle={data.baseAsset} section={section} tools={<span className="ap-subtle">3D</span>}>
+    <div className="ap-metrics-3">
+      <Metric label={lang === 'ru' ? 'Текущая цена' : 'Current price'} value={formatPrice(lastPrice)} />
+      <Metric label={lang === 'ru' ? 'Макс. концентрация' : 'Max concentration'} value={formatQuantity(maxIntensity)} />
+      <Metric label={lang === 'ru' ? 'Сильнейший уровень' : 'Strongest level'} value={formatPrice(strongestPrice)} />
+    </div>
+    <div role="img" aria-label={lang === 'ru' ? 'Карта потенциальных уровней ликвидаций' : 'Potential liquidation levels heatmap'}
+      style={{ position: 'relative', height: 300, border: '1px solid #e3e4e7', background: '#101215', overflow: 'hidden' }}>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" style={{ width: '100%', height: '100%', display: 'block' }}>
+        {positive.slice(0, 12000).map((cell, i) => {
+          const width = 100 / Math.max(1, xCount);
+          const height = 100 / Math.max(1, yCount);
+          const x = cell.x * width;
+          const y = 100 - (cell.y + 1) * height;
+          const opacity = Math.max(.08, Math.min(.9, cell.intensity / maxIntensity));
+          return <rect key={`${cell.x}-${cell.y}-${i}`} x={x} y={y} width={width + .08} height={height + .08}
+            fill={`rgba(217,164,59,${opacity})`} />;
+        })}
+        <polyline points={line} fill="none" stroke="#f3f4f5" strokeWidth=".45" vectorEffect="non-scaling-stroke" />
+      </svg>
+    </div>
+    <div className="ap-chart-axis"><span>{formatPrice(minPrice)}</span><span>{data.symbol}</span><span>{formatPrice(maxPrice)}</span></div>
+  </Panel>;
+}
+
+/** Observed forced-liquidation executions remain separate from latent heatmap levels. */
 export function LiquidationMap({ snapshot }: { snapshot: AnalyticsSnapshot | null }) {
   const { t } = useLanguage(), c = useCopy();
   const [hours, setHours] = useState(12);
@@ -15,6 +73,7 @@ export function LiquidationMap({ snapshot }: { snapshot: AnalyticsSnapshot | nul
   const maximum = Math.max(0, ...buckets.map(b => b.longNotionalUsd + b.shortNotionalUsd));
   const start = buckets[0]?.fromPrice, end = buckets[buckets.length - 1]?.toPrice;
   return <>
+    <LicensedHeatmap snapshot={snapshot} />
     <Panel title={c.observed} subtitle={c.distribution} className="ap-liquidations" section={section}
       tools={<Segmented values={[4, 12, 24]} selected={hours} onChange={setHours} label={c.sourcePeriod} suffix="h" />}>
       <div className="ap-metrics-4">

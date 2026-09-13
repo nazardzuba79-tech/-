@@ -8,6 +8,7 @@ import { LiquidationMap } from './LiquidationMap';
 import { OpenInterestStructure, FundingPressure, LongShortRatio, FundingRates, FuturesBasis, Volatility } from './DerivativesPanels';
 import { PriceOpenInterest } from './PriceOpenInterest';
 import { CorrelationMatrix, FearGreed, Sectors, ImpliedVolatility, FuturesTermStructure } from './MarketContextPanels';
+import { CapitalFlowPanels } from './FlowPanels';
 import './analytics.css';
 
 /** Layout and visual tokens from analytics-mp; data comes only from the current gateway. */
@@ -55,6 +56,7 @@ export function AnalyticsWorkspace() {
         <div className="ap-grid ap-grid-3"><Volatility {...props} /><ImpliedVolatility {...props} /><FuturesBasis {...props} /></div>
         <FundingRates {...props} />
         <FuturesTermStructure {...props} />
+        <CapitalFlowPanels {...props} />
         <SectionLabel>{c.context}</SectionLabel>
         <div className="ap-grid ap-grid-3"><div className="ap-span-2"><CorrelationMatrix {...props} /></div><FearGreed {...props} /></div>
         <Sectors {...props} />

@@ -29,6 +29,13 @@ import type {
 } from './analytics/DeribitAnalyticsService';
 import type { LiquidationStreamService, LiquidationsValue } from './analytics/LiquidationStreamService';
 import type { HistoricalOpenInterestService, OpenInterestHistoryValue } from './analytics/HistoricalOpenInterestService';
+import type {
+  CoinGlassAnalyticsService,
+  ExchangeFlowsValue,
+  EtfFlowsValue,
+  LiquidationHeatmapValue,
+  WhaleActivityValue,
+} from './analytics/CoinGlassAnalyticsService';
 
 export interface MarketOverviewValue {
   totalMarketCapUsd: number;
@@ -61,19 +68,9 @@ export interface DerivativesValue {
   contracts: DerivativeContract[];
 }
 
-/** Modules for which no truthful public/free source is currently wired. */
-const UNSUPPORTED: Record<string, string> = {
-  liquidationHeatmap:
-    'A latent liquidity heatmap needs aggregated position or liquidation-map data. Observed liquidation events are shown separately and are not extrapolated into hidden liquidity.',
-  etfFlows: 'ETF creation/redemption flows require a dedicated data source; none is configured.',
-  exchangeFlows: 'Exchange inflow/outflow requires on-chain attribution data; no provider is configured. Trading volume is not used as a proxy.',
-  whaleActivity:
-    'Whale tracking requires labelled on-chain address data; no provider is configured. Large exchange trades are not substituted for it.',
-};
-
-export type UnsupportedModule = keyof typeof UNSUPPORTED;
 const NO_EXTERNAL = 'No external derivatives venue is wired in this environment.';
 const NO_DERIVED = 'Derived analytics are not wired in this environment.';
+const NO_LICENSED_ANALYTICS = 'Licensed analytics are not configured in this environment.';
 
 export type MultiVenueSection<T> = Availability<T> & { venues?: VenueAttribution[] };
 
@@ -93,13 +90,13 @@ export interface AnalyticsSnapshot {
     realizedVolatility: Availability<RealizedVolatilityValue>;
     cryptoCorrelations: Availability<CorrelationsValue>;
     sectorRotation: Availability<SectorRotationValue>;
-    /** Observed public Binance USD-M forced-liquidation snapshots. */
     liquidations: Availability<LiquidationsValue>;
-    /** Real hourly public open-interest history for the selected tracked asset. */
     openInterestHistory: Availability<OpenInterestHistoryValue>;
-    /** Provider-reported implied volatility; BTC/ETH use DVOL, SOL/XRP use real ATM option mark IV. */
+    liquidationHeatmap: Availability<LiquidationHeatmapValue>;
+    etfFlows: Availability<EtfFlowsValue>;
+    exchangeFlows: Availability<ExchangeFlowsValue>;
+    whaleActivity: Availability<WhaleActivityValue>;
     impliedVolatility: Availability<ImpliedVolatilityValue>;
-    /** Real dated Deribit futures marks versus their reported reference price. */
     futuresTermStructure: Availability<FuturesTermStructureValue>;
   };
   unsupported: Record<string, Unavailable>;
@@ -120,7 +117,8 @@ export class AnalyticsDataService {
     private readonly coinGecko: CoinGeckoService | null = null,
     private readonly deribit: DeribitAnalyticsService | null = null,
     private readonly liquidationStream: LiquidationStreamService | null = null,
-    private readonly historicalOpenInterest: HistoricalOpenInterestService | null = null
+    private readonly historicalOpenInterest: HistoricalOpenInterestService | null = null,
+    private readonly licensedAnalytics: CoinGlassAnalyticsService | null = null
   ) {}
 
   async getSnapshot(asset?: string): Promise<AnalyticsSnapshot> {
@@ -141,6 +139,10 @@ export class AnalyticsDataService {
       cryptoCorrelations,
       sectorRotation,
       openInterestHistory,
+      liquidationHeatmap,
+      etfFlows,
+      exchangeFlows,
+      whaleActivity,
       impliedVolatility,
       futuresTermStructure,
     ] = await Promise.all([
@@ -155,15 +157,21 @@ export class AnalyticsDataService {
       this.correlations(),
       this.sectors(),
       this.openInterestHistory(selectedAsset),
+      this.liquidationHeatmap(selectedAsset),
+      this.etfFlows(selectedAsset),
+      this.exchangeFlows(selectedAsset),
+      this.whaleActivity(selectedAsset),
       this.impliedVolatility(selectedAsset),
       this.futuresTermStructure(selectedAsset),
     ]);
 
     const liquidations = this.liquidations(selectedAsset);
-    const unsupported: Record<string, Unavailable> = {};
-    for (const key of Object.keys(UNSUPPORTED)) {
-      unsupported[key] = unavailable('unsupported_metric', UNSUPPORTED[key]);
-    }
+    const unsupported: Record<string, Unavailable> = this.licensedAnalytics ? {} : {
+      liquidationHeatmap: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      etfFlows: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      exchangeFlows: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+      whaleActivity: unavailable('unsupported_metric', NO_LICENSED_ANALYTICS),
+    };
 
     return {
       generatedAt: Date.now(),
@@ -183,6 +191,10 @@ export class AnalyticsDataService {
         sectorRotation,
         liquidations,
         openInterestHistory,
+        liquidationHeatmap,
+        etfFlows,
+        exchangeFlows,
+        whaleActivity,
         impliedVolatility,
         futuresTermStructure,
       },
@@ -241,6 +253,26 @@ export class AnalyticsDataService {
       return unavailable('provider_not_configured', 'Historical open interest is not wired in this environment.');
     }
     return this.historicalOpenInterest.getHistory(asset);
+  }
+
+  private async liquidationHeatmap(asset: string | null): Promise<Availability<LiquidationHeatmapValue>> {
+    if (!this.licensedAnalytics || asset === null) return unavailable('provider_not_configured', NO_LICENSED_ANALYTICS);
+    return this.licensedAnalytics.getLiquidationHeatmap(asset);
+  }
+
+  private async etfFlows(asset: string | null): Promise<Availability<EtfFlowsValue>> {
+    if (!this.licensedAnalytics || asset === null) return unavailable('provider_not_configured', NO_LICENSED_ANALYTICS);
+    return this.licensedAnalytics.getEtfFlows(asset);
+  }
+
+  private async exchangeFlows(asset: string | null): Promise<Availability<ExchangeFlowsValue>> {
+    if (!this.licensedAnalytics || asset === null) return unavailable('provider_not_configured', NO_LICENSED_ANALYTICS);
+    return this.licensedAnalytics.getExchangeFlows(asset);
+  }
+
+  private async whaleActivity(asset: string | null): Promise<Availability<WhaleActivityValue>> {
+    if (!this.licensedAnalytics || asset === null) return unavailable('provider_not_configured', NO_LICENSED_ANALYTICS);
+    return this.licensedAnalytics.getWhaleActivity(asset);
   }
 
   private async impliedVolatility(asset: string | null): Promise<Availability<ImpliedVolatilityValue>> {
