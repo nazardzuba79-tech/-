@@ -6,7 +6,7 @@ import { CfdMarketDataService } from '../../services/CfdMarketDataService';
 import { PublicReferenceFeed } from '../../services/marketData/cfd/PublicReferenceFeed';
 import { publicReferenceDisplay, waitForReferenceWork } from '../../services/marketData/cfd/PublicReferenceDisplay';
 import { CFD_REFERENCE_CATALOG } from '../../services/marketData/cfd/catalog';
-import { assertCfdFreshQuote, CfdQuoteUnavailable } from '../../services/marketData/cfd/CfdQuote';
+import { assertCfdFreshQuote, CfdQuoteUnavailable, type CfdQuote, type CfdQuoteSource } from '../../services/marketData/cfd/CfdQuote';
 import { CfdPositionService } from '../../cfd/CfdPositionService';
 import { computeUnrealizedPnl, computeROE, PositionSide } from '../../futures/marginMath';
 import { MIN_LEVERAGE, MAX_LEVERAGE, HIGH_LEVERAGE_WARNING_THRESHOLD, LEVERAGE_TIERS } from '../../config/futuresConfig';
@@ -27,24 +27,55 @@ const openSchema = z.object({
   leverage: z.number().int().min(MIN_LEVERAGE).max(MAX_LEVERAGE),
 });
 
+function blankQuote(symbol: string): CfdQuote {
+  const row = CFD_REFERENCE_CATALOG.find(i => i.symbol === symbol)!;
+  return { provider:'multi-provider', symbol, providerSymbol:row.providerSymbol, bid:null, ask:null, mid:null, last:null,
+    providerTimestamp:null, fetchedAt:null, stale:false, status:'unavailable', referenceStatus:'unavailable',
+    entitlementVerified:false, executionAllowed:false };
+}
+
+async function boundedQuoteBatch(source: CfdQuoteSource, maxWaitMs = 1300): Promise<CfdQuote[]> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      source.getQuotes().catch(() => []),
+      new Promise<CfdQuote[]>(resolve => { timer = setTimeout(() => resolve([]), maxWaitMs); }),
+    ]);
+  } finally { if (timer) clearTimeout(timer); }
+}
+
+function sourceCatalog(cfdDataService: CfdMarketDataService, riskSource: CfdQuoteSource): any[] {
+  const source = riskSource as CfdQuoteSource & { catalog?: () => any[] };
+  try { return typeof source.catalog === 'function' ? source.catalog() : cfdDataService.catalog(); }
+  catch { return cfdDataService.catalog(); }
+}
+
 /** Public reference catalog/quotes plus the existing authenticated dealer model.
  * Public benchmarks are serialized ONLY on /cfd/tickers. Positions, risk and
- * financial operations retain the original strictly gated CfdQuoteSource. */
+ * financial operations use riskSource; display fallback can never become a
+ * CfdQuoteSource and therefore cannot leak into money operations. */
 export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataService, positionService: CfdPositionService,
-  references: PublicReferenceFeed = publicReferences): Router {
+  references: PublicReferenceFeed = publicReferences, riskSource: CfdQuoteSource = cfdDataService): Router {
   const router = Router();
 
   router.get('/admin/cfd/diagnostics', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    try { res.json({ ...await cfdDataService.diagnostics(), publicReferences: { enabled: references.isEnabled(), refreshing: references.isRefreshing(), sources: references.diagnostics() } }); }
-    catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
+    try {
+      const routed = riskSource as CfdQuoteSource & { diagnostics?: () => unknown | Promise<unknown> };
+      res.json({
+        ...await cfdDataService.diagnostics(),
+        executionRouting: riskSource === cfdDataService ? { mode:'single-provider', provider:'twelvedata' }
+          : typeof routed.diagnostics === 'function' ? await routed.diagnostics() : { mode:'multi-provider', diagnostics:'unavailable' },
+        publicReferences: { enabled: references.isEnabled(), refreshing: references.isRefreshing(), sources: references.diagnostics() },
+      });
+    } catch { res.status(503).json({error:'cfd_diagnostics_unavailable'}); }
   });
 
   router.get('/cfd/config', (_req, res) => {
     res.json({
       symbols: CFD_SYMBOLS,
-      catalog: cfdDataService.catalog(),
-      maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs,
+      catalog: sourceCatalog(cfdDataService, riskSource),
+      maxQuoteAgeMs: riskSource.maxQuoteAgeMs,
       minLeverage: MIN_LEVERAGE,
       maxLeverage: MAX_LEVERAGE,
       newAccountMaxLeverage: NEW_ACCOUNT_MAX_LEVERAGE,
@@ -54,23 +85,35 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     });
   });
 
-  router.get('/cfd/catalog', (_req, res) => res.json({ instruments: cfdDataService.catalog() }));
+  router.get('/cfd/catalog', (_req, res) => res.json({ instruments: sourceCatalog(cfdDataService, riskSource) }));
 
   router.get('/cfd/tickers', async (_req, res) => {
     try {
-      const work = references.refreshDue();
-      const quotes = await cfdDataService.getQuotes();
-      if (references.isEnabled()) await waitForReferenceWork(work);
+      // Start live + reference work together. Neither a slow metered REST
+      // provider nor a cold public reference endpoint is allowed to hold the
+      // browser open indefinitely. The underlying providers own/coalesce their
+      // own in-flight work; a timed-out read is consumed, not duplicated.
+      const referenceWork = references.refreshDue();
+      const [liveQuotes] = await Promise.all([
+        boundedQuoteBatch(riskSource),
+        references.isEnabled() ? waitForReferenceWork(referenceWork, 1300) : Promise.resolve(),
+      ]);
       const fallback = new Map(references.snapshot().map(q => [q.symbol, q]));
-      const configured = cfdDataService.isConfigured() || references.isEnabled();
-      const catalog = cfdDataService.catalog();
-      const tickers = quotes.map(q => {
-        const name = catalog.find(i => i.symbol === q.symbol)?.name ?? q.symbol;
-        return references.isEnabled() ? publicReferenceDisplay(q, name, fallback.get(q.symbol), cfdDataService.maxQuoteAgeMs)
-          : { ...q, name, price: q.last === null ? null : q.lastDecimal ?? String(q.last), maxQuoteAgeMs: cfdDataService.maxQuoteAgeMs };
+      const catalog = sourceCatalog(cfdDataService, riskSource);
+      const liveBySymbol = new Map(liveQuotes.map(q => [q.symbol, q]));
+      const tickers = CFD_REFERENCE_CATALOG.map(base => {
+        const q = liveBySymbol.get(base.symbol) ?? blankQuote(base.symbol);
+        const name = catalog.find(i => i.symbol === base.symbol)?.name ?? base.name;
+        return references.isEnabled() ? publicReferenceDisplay(q, name, fallback.get(base.symbol), riskSource.maxQuoteAgeMs)
+          : { ...q, name, price: q.last === null ? null : q.lastDecimal ?? String(q.last), maxQuoteAgeMs: riskSource.maxQuoteAgeMs };
       });
       res.setHeader('Cache-Control', 'no-store');
-      res.json({ source: references.isEnabled() ? 'multi-reference' : 'twelvedata', configured, tickers });
+      res.json({
+        source: riskSource === cfdDataService ? (references.isEnabled() ? 'twelvedata+public-reference' : 'twelvedata')
+          : (references.isEnabled() ? 'multi-provider+public-reference' : 'multi-provider'),
+        configured: riskSource.isConfigured() || cfdDataService.isConfigured() || references.isEnabled(),
+        tickers,
+      });
     } catch {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -100,9 +143,9 @@ export function cfdRouter(prisma: PrismaClient, cfdDataService: CfdMarketDataSer
     const positions = await positionService.listOpen(req.userId!);
     let tickers: { symbol: string; price: string }[] = [];
     try {
-      const quotes = await cfdDataService.getQuotes();
+      const quotes = await boundedQuoteBatch(riskSource);
       tickers = quotes.flatMap(q => {
-        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,cfdDataService.maxQuoteAgeMs))}]; }
+        try { return [{symbol:q.symbol,price:String(assertCfdFreshQuote(q,q.symbol,riskSource.maxQuoteAgeMs))}]; }
         catch { return []; }
       });
     } catch {
