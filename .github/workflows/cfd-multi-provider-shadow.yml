@@ -2,9 +2,12 @@ name: CFD multi-provider shadow validation
 on:
   pull_request:
     paths:
-      - 'src/services/marketData/cfd/ReferenceQuoteRouter.ts'
-      - 'scripts/test-cfd-reference-router.cjs'
-      - 'scripts/probe-cfd-reference-providers.cjs'
+      - 'src/services/marketData/cfd/**'
+      - 'src/api/routes/cfd.ts'
+      - 'src/cfd/__tests__/**'
+      - 'src/services/__tests__/CfdMarketDataService.test.ts'
+      - 'frontend/src/**'
+      - 'scripts/*cfd*'
       - '.github/workflows/cfd-multi-provider-shadow.yml'
 permissions:
   contents: read
@@ -24,19 +27,33 @@ jobs:
           node-version: '22'
       - name: Install backend dependencies without lifecycle scripts
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install frontend dependencies before shared Jest tests
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Build bcrypt native binding required by existing service tests
         run: npm rebuild bcrypt --build-from-source
       - name: Generate Prisma client (no DB connection or migrations)
         run: npx prisma generate
       - name: Backend build
+        id: backend
         run: npm run build
       - name: Deterministic reference routing tests
+        if: success() || failure()
         run: node --test scripts/test-cfd-reference-router.cjs
-      - name: Existing CFD regression tests
-        run: npm test -- --runInBand --testPathPattern='Cfd|cfd'
-      - name: Frontend dependency install and build
+      - name: Frontend build
+        if: success() || failure()
         working-directory: frontend
-        run: npm ci --ignore-scripts --no-audit --no-fund && npm run build
+        run: npm run build
+      - name: CFD and homepage regression tests
+        if: success() || failure()
+        run: npm test -- --runInBand --silent --testPathPattern='Cfd|cfd|homeLiveMarket' --json --outputFile=cfd-test-results.json
+      - name: Preserve complete test evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cfd-test-results
+          path: cfd-test-results.json
+          retention-days: 7
   public-probe:
     runs-on: ubuntu-latest
     timeout-minutes: 3
