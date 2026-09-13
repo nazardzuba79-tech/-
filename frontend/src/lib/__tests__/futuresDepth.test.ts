@@ -45,11 +45,26 @@ describe('selected-contract depth lifecycle',()=>{
     const late=ws.onmessage;stop();late({data:JSON.stringify(frame())});jest.advanceTimersByTime(60000);
     expect(listener).toHaveBeenCalledTimes(2);expect(ws.close).toHaveBeenCalled();expect(sockets).toHaveLength(1);
   });
+  test('switching contracts reuses the live socket instead of reconnecting and ignores old-topic frames',()=>{
+    const btc=jest.fn();const stopBtc=subscribeFuturesDepth('BTC/USDT',btc);const ws=sockets[0];ws.onopen();
+    const oldHandler=ws.onmessage;
+    stopBtc();
+    const eth=jest.fn();const stopEth=subscribeFuturesDepth('ETH/USDT',eth);
+    expect(sockets).toHaveLength(1);
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'unsubscribe',args:['orderbook.200.BTCUSDT']}));
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({op:'subscribe',args:['orderbook.200.ETHUSDT']}));
+    oldHandler({data:JSON.stringify(frame())});jest.advanceTimersByTime(300);
+    expect(btc).toHaveBeenCalledTimes(1);expect(eth).toHaveBeenCalledTimes(1);
+    ws.onmessage({data:JSON.stringify(frame({s:'ETHUSDT',b:[['200','1']],a:[['201','2']]},'snapshot',{topic:'orderbook.200.ETHUSDT'}))});
+    jest.advanceTimersByTime(300);
+    expect(eth).toHaveBeenCalledTimes(2);expect(eth.mock.calls[1][0]).toEqual({bids:[{price:'200',quantity:'1'}],asks:[{price:'201',quantity:'2'}]});
+    stopEth();jest.advanceTimersByTime(1000);expect(ws.close).toHaveBeenCalled();
+  });
   test('stale connection clears rows and reconnects; hidden tab stops transport until visible',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
     sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(32000);
     expect(listener).toHaveBeenLastCalledWith({bids:[],asks:[]});expect(sockets).toHaveLength(2);
     hidden=true;handlers.get('visibilitychange')!();jest.advanceTimersByTime(60000);expect(sockets).toHaveLength(2);
-    hidden=false;handlers.get('visibilitychange')!();expect(sockets).toHaveLength(3);stop();
+    hidden=false;handlers.get('visibilitychange')!();expect(sockets).toHaveLength(3);stop();jest.advanceTimersByTime(1000);
   });
 });
