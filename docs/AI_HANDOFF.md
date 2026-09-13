@@ -2031,3 +2031,13 @@ withdrawal was placed.
 - Owner explicitly authorized deployment of PR #66. Fresh main remains e2f22451e75b29baba4e3f2c4ec667886b688a90. Deployment topology fix 6a73b767bcfdd90f6d00c364ce4860e7ce6b046c routes Futures candle reads through the existing authenticated Frankfurt collector; Oregon API never falls back to direct venue requests. Reuses configured collector URL/token, forbids credential redirects, preserves bounded cache and exact contract validation.
 - Material files: FuturesChartCandles, market router, collectorServer, adapter tests. No frontend/form, financial, margin, account or other agent changes. Backend and collector TypeScript PASS; candle/transport focused suites 34/34 PASS. Prior frontend build and exact failure-name baseline comparison remain applicable (frontend unchanged).
 - Release requires production API, collector and Cloudflare frontend on the merged revision. Deployment verification follows; this entry does not claim release success. Existing presentation-only order-family and documented product-readiness limitations remain.
+
+
+## 2026-09-13 — Codex — Futures layout and active-stream repair
+
+- Owner requested continuing current git status/diff without reset, finishing Futures, tests/build/browser QA, then commit. Branch codex/terminal-layout-repair, base 9f65ee1461d6db0ac8cefb14b54a347e1d75067c. Implementation d818048acb97d819b92bbb96598eb21f4abd2773.
+- Material files: ConnectionBanner, FuturesReferenceBook, futuresDepth, FuturesPage, TerminalChart.css, TerminalPresentationPolish.css; focused tests and docs/qa/terminal-presentation-polish/terminal-repair.md with screenshots and exact failed-test names.
+- Fixed unused-Spot-socket error banner, restored compact book/trades modes on exact Futures depth/trades, fresh execution price priority, full-width header, wrapped chart tools and bounded asset labels. Preserved all five existing order-family forms and execution guards, chart alternatives, catalog, financial/backend logic and other agents' changes. No reset/rebase.
+- Focused 122/122 pass; frontend TypeScript/build pass. Full frontend 1252 pass / 71 fail / 1323 total, 82 suites, 67.373 seconds. Exact new failure names zero compared with stored prior chart-restoration run (not a newly executed pristine baseline).
+- Browser: 1440/833/390 widths plus normal 1280 viewport, no horizontal overflow; 761 contracts, live book/trades, mode changes, OCO draft preserved after book/timeframe changes. Local QA blocks private account reads and financial writes, so account unavailable state is expected. No production-readiness assertion.
+- Committed locally only; no push/merge/deploy in this repair. Next: review repaired preview and existing 71 unrelated failures before release.
