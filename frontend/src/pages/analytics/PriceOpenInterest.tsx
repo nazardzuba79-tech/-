@@ -4,15 +4,19 @@ import { useLanguage } from '../../lib/i18n';
 import { Metric, formatPrice, formatQuantity, formatUsd } from './presentation';
 import { contractFor, dateTime, lineCoordinates, valueOf } from './approvedData';
 import { Panel, Empty, useCopy } from './approvedPrimitives';
-import { getOpenInterestHistory, type OpenInterestHistoryValue } from './openInterestHistoryApi';
+import type { OpenInterestHistoryValue } from './openInterestHistoryApi';
 
 type Candle = { time: number; close: number };
+type SnapshotWithOpenInterestHistory = AnalyticsSnapshot & {
+  sections: AnalyticsSnapshot['sections'] & {
+    openInterestHistory?: GatewaySection<OpenInterestHistoryValue>;
+  };
+};
 
-/** Reference price candles + a real hourly open-interest series. */
+/** Reference price candles + a real hourly open-interest series from the shared Analytics snapshot. */
 export function PriceOpenInterest({ snapshot, asset }: { snapshot: AnalyticsSnapshot | null; asset: string | null }) {
   const { t } = useLanguage(), c = useCopy();
   const [history, setHistory] = useState<{ asset: string; candles: Candle[]; stale: boolean } | null>(null);
-  const [oiHistory, setOiHistory] = useState<{ asset: string; section: GatewaySection<OpenInterestHistoryValue> } | null>(null);
 
   useEffect(() => {
     if (!asset) return;
@@ -27,24 +31,13 @@ export function PriceOpenInterest({ snapshot, asset }: { snapshot: AnalyticsSnap
     return () => { cancelled = true; };
   }, [asset, snapshot?.generatedAt]);
 
-  useEffect(() => {
-    if (!asset) return;
-    let cancelled = false;
-    void getOpenInterestHistory(asset).then(section => {
-      if (!cancelled) setOiHistory({ asset, section });
-    }).catch(() => {
-      if (!cancelled) setOiHistory(null);
-    });
-    return () => { cancelled = true; };
-  }, [asset, snapshot?.generatedAt]);
-
   const candles = history?.asset === asset ? history.candles : [];
   const values = candles.map(candle => candle.close);
   const contract = contractFor(snapshot, asset);
   const points = lineCoordinates(values).map(point => point.join(',')).join(' ');
   const timeMs = (time: number) => time < 1e12 ? time * 1000 : time;
 
-  const oiSection = oiHistory?.asset === asset ? oiHistory.section : undefined;
+  const oiSection = (snapshot as SnapshotWithOpenInterestHistory | null)?.sections.openInterestHistory;
   const oi = valueOf(oiSection);
   const usdPoints = (oi?.points ?? []).filter(point => point.openInterestUsd !== null) as Array<{ observedAt: number; openInterestBase: number; openInterestUsd: number }>;
   const useUsd = usdPoints.length >= 2;
