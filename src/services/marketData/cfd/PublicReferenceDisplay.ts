@@ -3,7 +3,10 @@ interface PrimaryQuote {
   symbol: string; provider: string; last: number | null; lastDecimal?: string;
   status: string; stale: boolean; referenceStatus?: string;
   providerTimestamp: number | null; fetchedAt: number | null; executionAllowed: boolean;
+  entitlementVerified?: boolean; changePercent24h?: string;
 }
+const providerName = (provider: string) => provider === 'biquote' ? 'BiQuote' : provider === 'deriv' ? 'Deriv'
+  : provider === 'twelvedata' ? 'Twelve Data' : provider;
 /** PUBLIC SERIALIZER ONLY. Never pass these rows to a financial consumer.
  * The primary executable quote stays in CfdMarketDataService unchanged.
  * Fallbacks use distinct benchmark identities; they are not price consensus.
@@ -40,9 +43,20 @@ export function publicReferenceDisplay<Q extends PrimaryQuote>(q: Q, name: strin
       referenceValidUntil: fallback.validUntil, observationDate: fallback.observationDate,
       referenceDerivation: fallback.derivation, displayOnly: true };
   }
-  const label = primaryPrice !== null && !primaryFresh ? `Last known · ${q.provider} · ${q.providerTimestamp === null || !Number.isFinite(q.providerTimestamp) ? 'source time unknown' : new Date(q.providerTimestamp).toISOString()}` : undefined;
+  // Public/no-key display sources are allowed to keep the UI informative, but
+  // the serializer makes their non-financial nature explicit and the client
+  // independently refuses to submit orders from displayOnly rows.
+  if (primaryFresh && q.entitlementVerified !== true) {
+    const when = q.providerTimestamp === null ? null : new Date(q.providerTimestamp).toISOString();
+    const closed = q.referenceStatus === 'market_closed';
+    return { ...q, name, price: primaryPrice, maxQuoteAgeMs, status: closed ? 'market_closed' : 'reference_only',
+      stale: false, executionAllowed: false, entitlementVerified: false, displayOnly: true,
+      referenceLabel: [closed ? 'Market closed · Last known' : 'Live reference', providerName(q.provider), when].filter(Boolean).join(' · ') };
+  }
+  const label = primaryPrice !== null && !primaryFresh ? `Last known · ${providerName(q.provider)} · ${q.providerTimestamp === null || !Number.isFinite(q.providerTimestamp) ? 'source time unknown' : new Date(q.providerTimestamp).toISOString()}` : undefined;
   return { ...q, name, price: primaryPrice, maxQuoteAgeMs,
-    ...(label ? { referenceLabel: label, executionAllowed: false, status: 'stale', stale: true } : {}) };
+    ...(label ? { referenceLabel: label, executionAllowed: false, status: 'stale', stale: true,
+      ...(q.entitlementVerified !== true ? { entitlementVerified:false, displayOnly:true } : {}) } : {}) };
 }
 /** Upper bound on additional latency; work remains single-flight in the feed.
  * Clear the timeout whichever branch wins, and consume every rejection. */
