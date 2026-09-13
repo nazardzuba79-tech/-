@@ -132,6 +132,14 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(css).toContain('overflow-x: auto; overflow-y: hidden');
     expect(css).toContain('@media (max-width: 767px)');
   });
+  test('review rail keeps drawing tools, ruler and single-object deletion with accessible icon labels', () => {
+    const html = renderToStaticMarkup(React.createElement(exports.DrawToolbar, { ...props, drawingTools:true, compactTools:true }));
+    for (const id of ['cursor','trendline','fib','rectangle','brush','text','ruler','erase']) expect(html).toContain(`data-drawing-tool="${id}"`);
+    for (const id of ['fit','magnet','lock','stay','hide','clear']) expect(html).not.toContain(`data-drawing-tool="${id}"`);
+    expect(html).toContain('aria-label="draw.measure"');
+    expect(html).toContain('aria-label="draw.erase"');
+    expect(html).not.toContain('>draw.measure<');
+  });
   test('actual ruler label preserves a tiny negative price difference', () => {
     const html = renderToStaticMarkup(React.createElement('svg', {}, React.createElement(exports.RulerLabel,
       { x: 100, y: 100, pct: -20, priceDiff: -0.0000002, bars: 3, drawingTools: true, locale: 'en' })));
@@ -453,8 +461,8 @@ describe('the rail is shared, and every button does something', () => {
   const trade = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');
 
   test('Futures opts into the SAME implementation Spot uses', () => {
-    expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />');
-    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" />');
+    expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />');
+    expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.
     expect(fs.existsSync(path.resolve(__dirname, '../../components/FuturesPriceChart.tsx'))).toBe(false);

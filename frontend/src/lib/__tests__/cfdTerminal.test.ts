@@ -47,7 +47,7 @@ test('display states clearly distinguish live, closed, stale and unavailable',()
 
 test.each(['?market=cfd','?market=cfd&symbol=WTIUSD','?market=cfd&symbol=EURUSD','?market=cfd&symbol=INVALID'])('TradePage %s renders interactive three-column CFD terminal',query=>{
  const options={params:new URLSearchParams(query),feed:{tickers:rows,configured:true,loadError:false,reload:jest.fn()}};const page=mount('pages/TradePage.tsx',options),tree=page.render(),all=nodes(tree);
- expect(tree.props.className).toBe('trade-terminal cfd-terminal market-reference');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
+ expect(tree.props.className).toBe('trade-terminal cfd-terminal market-reference terminal-studio');const expected=query.includes('WTIUSD')?'WTIUSD':query.includes('EURUSD')?'EURUSD':'XAUUSD';
  for(const component of ['CfdChart','CfdOrderForm','CfdInstrumentList','CfdTickerBar'])expect(all.find(n=>n.type===page.components[component]).props.symbol).toBe(expected);
  expect(all.some(n=>n.type===page.components.OrderBookPanel)).toBe(false);
 });

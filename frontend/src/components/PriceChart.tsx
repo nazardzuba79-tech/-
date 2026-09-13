@@ -189,10 +189,12 @@ export function PriceChart({
   drawingTools = false,
   market = 'spot',
   candleLoader,
+  compactTools = false,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
   drawingTools?: boolean;
+  compactTools?: boolean;
   /** Which product this chart belongs to. Only used to namespace saved
    *  drawings — spot BTC levels are not futures BTC levels. */
   market?: DrawingMarket;
@@ -252,7 +254,7 @@ export function PriceChart({
   const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const candlesRef = useRef<Candle[]>([]);
-  const [interval, setInterval_] = useState<Interval>('15m');
+  const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
   const [chartType, setChartType] = useState<ChartType>('candles');
   const [showMA, setShowMA] = useState(true);
@@ -278,13 +280,15 @@ export function PriceChart({
    * loaded candle. Real snapping against the candle array this chart
    * already holds — see `magnetSnap`.
    */
-  const [magnet, setMagnet] = useState(false);
+  const [savedMagnet, setMagnet] = useState(false);
+  const magnet = !compactTools && savedMagnet;
   /**
    * Lock: drawings stay visible and the chart stays fully navigable, but
    * nothing can add, erase or clear them. It guards exactly the mutating
    * actions this overlay has.
    */
-  const [locked, setLocked] = useState(false);
+  const [savedLocked, setLocked] = useState(false);
+  const locked = !compactTools && savedLocked;
   /** Flipped once the chart and series exist, so effects that create chart
    *  objects from state do not race the chart's own construction. */
   const [chartReady, setChartReady] = useState(false);
@@ -292,12 +296,14 @@ export function PriceChart({
   const [pendingPoint, setPendingPoint] = useState<Point | null>(null);
   // Drawings stay in state while hidden — this only controls whether the
   // overlay renders them, so toggling back shows exactly what was there.
-  const [drawingsHidden, setDrawingsHidden] = useState(false);
+  const [savedHidden, setDrawingsHidden] = useState(false);
+  const drawingsHidden = !compactTools && savedHidden;
   // A drawing tool currently stays selected until the trader picks another,
   // which is TradingView's "stay in drawing mode" behaviour. Turning this
   // off returns to the cursor after each completed shape. Both are real
   // behaviours of this overlay; nothing here simulates anything.
-  const [stayInDrawMode, setStayInDrawMode] = useState(true);
+  const [savedStayInDrawMode, setStayInDrawMode] = useState(true);
+  const stayInDrawMode = !compactTools && savedStayInDrawMode;
   const [cursorPoint, setCursorPoint] = useState<Point | null>(null);
   const [drawDialog, setDrawDialog] = useState<{ kind: 'text'; at: Point } | { kind: 'clear' } | null>(null);
   // Bumped on every pan/zoom/resize to force the SVG overlay to recompute
@@ -342,10 +348,12 @@ export function PriceChart({
     // specifically for the spot terminal. Gated on `terminal` rather than
     // applied everywhere so Futures' chart (out of scope here) is
     // pixel-identical to before.
+    const plotBackground = typeof getComputedStyle === 'function'
+      ? getComputedStyle(containerRef.current).getPropertyValue('--voltex-plot-background').trim() : '';
     const chart = createChart(containerRef.current, {
       layout: {
         // Match the terminal surface, including the axes and drawing rail.
-        background: { type: ColorType.Solid, color: '#101014' },
+        background: { type: ColorType.Solid, color: plotBackground || '#101014' },
         // A cool, slightly desaturated near-white rather than pure #fff —
         // reads as a premium instrument panel, not a stark spreadsheet.
         textColor: terminal ? '#c7d2e0' : '#a3adba',
@@ -775,12 +783,12 @@ export function PriceChart({
   useEffect(() => {
     if (!storageKey || loadedKey !== storageKey) return;
     try {
-      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: drawingsHidden, locked }));
+      window.localStorage.setItem(storageKey, serializeDrawings({ drawings: collectDrawings(), hidden: savedHidden, locked: savedLocked }));
     } catch {
       // Quota or a privacy mode that refuses writes. The chart keeps
       // working; only persistence is lost, and silently is correct here.
     }
-  }, [storageKey, loadedKey, collectDrawings, drawingsHidden, locked]);
+  }, [storageKey, loadedKey, collectDrawings, savedHidden, savedLocked]);
 
   const fitContent = useCallback(() => {
     chartRef.current?.timeScale().fitContent();
@@ -1339,8 +1347,9 @@ export function PriceChart({
 
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
+          compactTools={compactTools}
           tool={tool}
-          onSelect={(next) => { if (drawingToolsOn) setDrawingsHidden(false); setTool(next); }}
+          onSelect={(next) => { if (drawingToolsOn && !compactTools) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
@@ -1740,6 +1749,7 @@ function RulerLabel({ x, y, pct, priceDiff, bars, drawingTools = false, locale =
  * session — see `lastTrend`.
  */
 function DrawToolbar({
+  compactTools = false,
   tool,
   onSelect,
   onClear,
@@ -1758,6 +1768,7 @@ function DrawToolbar({
   tool: Tool;
   onSelect: (t: Tool) => void;
   onClear: () => void;
+  compactTools?: boolean;
   onFit: () => void;
   terminal?: boolean;
   drawingTools?: boolean;
@@ -1772,6 +1783,16 @@ function DrawToolbar({
 }) {
   const { t } = useLanguage();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const [toolHint, setToolHint] = useState<{ label:string; left:number; top:number } | null>(null);
+  const showToolHint = (target: EventTarget | null) => {
+    if (!compactTools || !(target instanceof Element)) return;
+    const button = target.closest('button');
+    const label = button?.getAttribute('aria-label');
+    if (!button || !label) return;
+    const rect = button.getBoundingClientRect();
+    setToolHint({ label, left:Math.max(8, Math.min(window.innerWidth - 208, rect.right + 8)),
+      top:Math.max(8, Math.min(window.innerHeight - 42, rect.top)) });
+  };
   // Where to paint the flyout, in viewport coordinates. The rail has to
   // scroll on short screens, and an element that scrolls on one axis can
   // never let content overflow the other — `overflow-x: visible` computes
@@ -1877,7 +1898,11 @@ function DrawToolbar({
   );
 
   return (
-    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined} onScroll={drawingTools ? () => setOpenGroup(null) : undefined}>
+    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined}
+      onMouseOver={event => showToolHint(event.target)} onFocusCapture={event => showToolHint(event.target)}
+      onMouseLeave={() => setToolHint(null)} onBlurCapture={() => setToolHint(null)} onPointerDown={() => setToolHint(null)}
+      onKeyDown={event => { if (event.key === 'Escape') setToolHint(null); }}
+      onScroll={drawingTools ? () => { setOpenGroup(null); setToolHint(null); } : undefined}>
       {btn('cursor', t('draw.cursor'), <CursorIcon />, () => onSelect('cursor'), tool === 'cursor')}
 
       <div className="tool-divider" />
@@ -1961,20 +1986,20 @@ function DrawToolbar({
 
       <div className="tool-divider" />
 
-      {btn('ruler', t('draw.measure'), <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
-      {btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
+      {btn('ruler', t('draw.measure'), compactTools ? <PrecisionRulerIcon /> : <RulerIcon />, () => onSelect('ruler'), tool === 'ruler')}
+      {!compactTools && btn('fit', t('draw.zoom'), drawingTools ? <FitContentIcon /> : <FitIcon />, onFit, false)}
 
       <div className="tool-divider" />
 
       {/* Magnet and lock only exist where the overlay implements them. */}
-      {drawingTools && onToggleMagnet
+      {!compactTools && drawingTools && onToggleMagnet
         ? btn('magnet', t('draw.magnet'), <MagnetIcon />, onToggleMagnet, magnet)
         : null}
-      {drawingTools && onToggleLock
+      {!compactTools && drawingTools && onToggleLock
         ? btn('lock', locked ? t('draw.unlock') : t('draw.lock'), locked ? <LockedIcon /> : <UnlockedIcon />, onToggleLock, locked)
         : null}
-      {btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
-      {btn(
+      {!compactTools && btn('stay', t('draw.stayMode'), <StayModeIcon />, onToggleStay, stayInDrawMode)}
+      {!compactTools && btn(
         'hide',
         drawingsHidden ? t('draw.show') : t('draw.hide'),
         drawingsHidden ? <EyeOffIcon /> : <EyeIcon />,
@@ -1987,9 +2012,11 @@ function DrawToolbar({
       {/* Removes ONE drawing — the one under the pointer. Distinct from
           the delete-all below it, which is why both exist. */}
       {drawingTools
-        ? btn('erase', t('draw.erase'), <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
+        ? btn('erase', t('draw.erase'), compactTools ? <TrashObjectIcon /> : <EraseOneIcon />, () => onSelect('erase'), tool === 'erase')
         : null}
-      {btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
+      {!compactTools && btn('clear', t('draw.deleteAll'), <EraserIcon />, onClear, false)}
+      {toolHint && createPortal(<div className="terminal-tool-hint" role="tooltip"
+        style={{left:toolHint.left,top:toolHint.top}}>{toolHint.label}</div>, document.body)}
     </div>
   );
 }
@@ -2008,16 +2035,16 @@ const ICON_PROPS = {
 function CursorIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <path d="M4 4l7 16 2.5-6.5L20 11 4 4z" />
+      <path d="M5 3v17l4.5-4.5 3 6 3-1.5-3-6H19L5 3z" />
     </svg>
   );
 }
 function TrendLineIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <circle cx="6" cy="18" r="2" />
-      <circle cx="18" cy="6" r="2" />
-      <line x1="7.5" y1="16.5" x2="16.5" y2="7.5" />
+      <path d="M5.5 18.5 18.5 5.5" />
+      <circle cx="4" cy="20" r="2" />
+      <circle cx="20" cy="4" r="2" />
     </svg>
   );
 }
@@ -2054,28 +2081,36 @@ function RectangleIcon() {
 function FibIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <line x1="3" y1="6" x2="21" y2="6" />
-      <line x1="3" y1="11" x2="21" y2="11" strokeDasharray="3 2" />
-      <line x1="3" y1="16" x2="21" y2="16" strokeDasharray="3 2" />
-      <line x1="3" y1="21" x2="21" y2="21" />
+      <path d="M4 4h16M4 10h16M4 14h16M4 20h16" />
+      <path d="M4 20 20 4" strokeDasharray="2 3" opacity=".7" />
+      <circle cx="4" cy="20" r="2" fill="currentColor" stroke="none" />
+      <circle cx="20" cy="4" r="2" fill="currentColor" stroke="none" />
     </svg>
   );
 }
 function BrushIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <path d="M4 20c2-5 3-8 8-13l3 3c-5 5-8 6-13 8z" />
-      <path d="M14 8l2-2a2 2 0 0 1 3 3l-2 2" />
+      <path d="m15 4 5 5M3 21l1-6L16 3a2 2 0 0 1 3 0l2 2a2 2 0 0 1 0 3L9 20l-6 1zM4 15l5 5" />
     </svg>
   );
 }
 function RulerIcon() {
+  return <svg {...ICON_PROPS}>
+    <rect x="3" y="9" width="18" height="6" rx="1" transform="rotate(-20 12 12)" />
+    <path d="M8 10l1 1.5M11 9l1 1.5M14 8l1 1.5" transform="rotate(-20 12 12)" />
+  </svg>;
+}
+function PrecisionRulerIcon() {
   return (
     <svg {...ICON_PROPS}>
-      <rect x="3" y="9" width="18" height="6" rx="1" transform="rotate(-20 12 12)" />
-      <path d="M8 10l1 1.5M11 9l1 1.5M14 8l1 1.5" transform="rotate(-20 12 12)" />
+      <g transform="rotate(-45 12 12)"><rect x="2.5" y="8" width="19" height="8" rx="1" />
+      <path d="M6 8v4M10 8v2.5M14 8v4M18 8v2.5" /></g>
     </svg>
   );
+}
+function TrashObjectIcon() {
+  return <svg {...ICON_PROPS} aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6" /></svg>;
 }
 function TextIcon() {
   return (

@@ -190,7 +190,7 @@ export const RU = {
   'draw.brush': 'Кисть',
   'draw.text': 'Текст',
   'draw.addText': 'Добавить текст',
-  'draw.measure': 'Измерение',
+  'draw.measure': 'Линейка',
   'draw.zoom': 'Показать всё',
   'draw.stayMode': 'Остаться в режиме рисования',
   'draw.hide': 'Скрыть рисунки',

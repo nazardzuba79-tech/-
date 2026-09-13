@@ -22,14 +22,16 @@ export function spotBookMetrics(bids: readonly SpotBookLevel[], asks: readonly S
 }
 
 export function spotGroupSteps(referencePrice: number | null): number[] {
-  if (positive(referencePrice) === null) return [0.1, 0.5, 1, 10, 50];
-  const unit = 10 ** Math.max(-18, Math.floor(Math.log10(referencePrice!)) - 5);
-  return [1, 5, 10, 50, 100, 500].map(factor => Number((unit * factor).toPrecision(14)));
+  if (positive(referencePrice) === null) return [0.1, 0.2, 0.5, 1, 5];
+  // Five choices, capped at 5 quote units; scale down for inexpensive assets.
+  // Grouping merges real levels, it must never synthesize missing liquidity.
+  const unit = Math.min(0.1, 10 ** Math.max(-18, Math.floor(Math.log10(referencePrice!)) - 5));
+  return [1, 2, 5, 10, 50].map(factor => Number((unit * factor).toPrecision(14)));
 }
 
 export function defaultSpotGroupStep(referencePrice: number | null): number {
   const steps = spotGroupSteps(referencePrice);
-  return positive(referencePrice) === null ? steps[0] : steps[4];
+  return steps[0];
 }
 
 /** Plain decimal string: this exact value also fills the order price input. */

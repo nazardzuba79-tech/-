@@ -1763,7 +1763,6 @@ withdrawal was placed.
 - Validation: 20 focused market-data suites passed 397/397; `LiveTransport` plus `StagingVerifier` passed 68/68. Backend, collector and frontend TypeScript, production Vite build, verifier syntax and diff checks passed. Full candidate suite: 2,585 passed / 50 failed / 17 skipped; pristine exact-main suite: 2,492 passed / the identical 50 failed / 17 skipped. The candidate adds 93 passing tests and no new failures.
 - Next: owner review after the updated branch is published. A staging redeploy and repeat of the existing cold-start verification are recommended before any merge because the deployed candidate predates this synchronized head. Production remains untouched.
 
-
 ## Codex — 2026-09-12: inverse/options reference data and CFD freshness
 
 - Owner-requested existing branch: codex/inverse-options-cfd-data; current main ab564ae46dcbad3b2e6f4ea8bed874eb4115961b. Implementation commit: 051347f9bfb6553d13ddaff525767d8d1793e8c6.
@@ -2031,6 +2030,74 @@ withdrawal was placed.
 - Owner explicitly authorized deployment of PR #66. Fresh main remains e2f22451e75b29baba4e3f2c4ec667886b688a90. Deployment topology fix 6a73b767bcfdd90f6d00c364ce4860e7ce6b046c routes Futures candle reads through the existing authenticated Frankfurt collector; Oregon API never falls back to direct venue requests. Reuses configured collector URL/token, forbids credential redirects, preserves bounded cache and exact contract validation.
 - Material files: FuturesChartCandles, market router, collectorServer, adapter tests. No frontend/form, financial, margin, account or other agent changes. Backend and collector TypeScript PASS; candle/transport focused suites 34/34 PASS. Prior frontend build and exact failure-name baseline comparison remain applicable (frontend unchanged).
 - Release requires production API, collector and Cloudflare frontend on the merged revision. Deployment verification follows; this entry does not claim release success. Existing presentation-only order-family and documented product-readiness limitations remain.
+
+## 2026-09-13 — Codex — Futures layout and active-stream repair
+
+- Owner requested continuing current git status/diff without reset, finishing Futures, tests/build/browser QA, then commit. Branch codex/terminal-layout-repair, base 9f65ee1461d6db0ac8cefb14b54a347e1d75067c. Implementation d818048acb97d819b92bbb96598eb21f4abd2773.
+- Material files: ConnectionBanner, FuturesReferenceBook, futuresDepth, FuturesPage, TerminalChart.css, TerminalPresentationPolish.css; focused tests and docs/qa/terminal-presentation-polish/terminal-repair.md with screenshots and exact failed-test names.
+- Fixed unused-Spot-socket error banner, restored compact book/trades modes on exact Futures depth/trades, fresh execution price priority, full-width header, wrapped chart tools and bounded asset labels. Preserved all five existing order-family forms and execution guards, chart alternatives, catalog, financial/backend logic and other agents' changes. No reset/rebase.
+- Focused 122/122 pass; frontend TypeScript/build pass. Full frontend 1252 pass / 71 fail / 1323 total, 82 suites, 67.373 seconds. Exact new failure names zero compared with stored prior chart-restoration run (not a newly executed pristine baseline).
+- Browser: 1440/833/390 widths plus normal 1280 viewport, no horizontal overflow; 761 contracts, live book/trades, mode changes, OCO draft preserved after book/timeframe changes. Local QA blocks private account reads and financial writes, so account unavailable state is expected. No production-readiness assertion.
+- Committed locally only; no push/merge/deploy in this repair. Next: review repaired preview and existing 71 unrelated failures before release.
+
+## 2026-09-13 — Codex — Futures graphite composition proposal
+
+- Implementation 2738128a81e09b231792a944d6d8e6a8aff8c79e, continuing codex/terminal-layout-repair. Material files: FuturesReferenceBook, referenceBook utility/test, TerminalPresentationPolish.css and futures-graphite QA note/screenshot.
+- Unified graphite surfaces/headings, compact form styling and 22px book rows tied to the shared row-budget constant. Preserved all preceding repairs, chart alternatives, all order forms/guards, data transport and financial behavior.
+- 105 focused tests pass; frontend TypeScript/build pass. Desktop 1440 visual QA passed; 390 DOM overflow check passed but screenshot capture inconsistent. Normal viewport restored. Full-suite prior known failures unchanged in scope; no new full run. Details: docs/qa/terminal-presentation-polish/futures-graphite.md.
+- User asked to see result; preview requested in Codex panel at http://127.0.0.1:4210/futures. No push/merge/deploy; production still displays earlier version.
+
+## 2026-09-13 — Codex — independent Futures composition
+
+- Owner clarified that a genuinely new layout was wanted, beyond incremental graphite polish. Implementation 3e9d9401d8542981a6d78090a24f69b771f6e781 on existing codex/terminal-layout-repair. Opt-in ?terminalDesign=studio preserves the current design at the plain URL.
+- Material files: FuturesStudio.css, FuturesPage.tsx, PriceChart.tsx, futuresFinalPolish test and futures-studio QA note/screenshots. Separate market and execution rails, central instrument overview, framed graph/book and positions area; scoped chart background inherits studio theme with original fallback.
+- Preserved prior fixes, all order-family forms and execution guards, exact contract streams, chart tools, TradingView alternative and financial logic. 193 focused tests pass; frontend TypeScript/build pass. Desktop 1440 and mobile 390 visually checked; search, contract change, OCO draft preservation and real trade feed checked. No financial writes. Normal viewport restored.
+- Not pushed/merged/deployed. User should review the new design before selecting it; production remains unchanged. Full details and local private-read limitation: docs/qa/terminal-presentation-polish/futures-studio.md.
+
+## 2026-09-13 — Codex — direct local studio review link
+
+- Implementation 75a5509 preserves terminalDesign=studio in the local QA entry route. Material file: scripts/qa-professional-terminals.cjs. Existing loopback-only binding/host validation, blocked writes/private account reads, and all terminal code preserved.
+- Restarted only the verified QA server on 4210. node --check and git diff --check passed. Browser entry /__qa/start?market=futures&terminalDesign=studio resolves to the studio Futures page: studio root and 15m control present, no login heading.
+- Previous head 9a7a39f was published to a Cloudflare branch preview (3e342fd3.voltex-exchange.pages.dev); it requires normal login and lacks API CORS permission. Local entry is the usable design-review link on this computer. No production changes or authentication changes. This fix not pushed/deployed.
+
+## 2026-09-13 — Codex — studio proportions and readability refinement
+
+- Implementation fba942f on the existing branch. Only FuturesStudio.css and two actual browser screenshots materially changed. Kept the opt-in studio route and existing plain-route styling; no financial logic, data, order forms, chart defaults, or other agents' behavior changed.
+- Narrower auxiliary columns give the graph 678px at 1440 and 417px at 1077. Market rows use two lines without repeated USDT; full prices and 1000PEPE were checked without clipping. Chart controls stay on two defined rows (one on large screens); all five order tabs stay on one line. Empty account table headers wrap without horizontal scrolling; real populated tables retain their full columns. Unavailable account state remains accurate in local QA.
+- 106 tests / 3 suites pass (futuresFinalPolish, referenceBook, futuresOrderPanel). Frontend TypeScript and production build pass (Vite 6.06s). git diff --check passes. Browser 1440x900, 1077x900 and 390x844 show no horizontal page overflow. OCO TP 80000 survives switching book to trades and back. Search and long ticker verified. Normal viewport restored; local preview running on 4210. Not pushed, merged or deployed. Screenshots: docs/qa/terminal-presentation-polish/futures-studio-refined-{1440,390}.png.
+## 2026-09-13 — Codex — annotated Studio corrections and three review designs
+
+- Implementation f7ad46c9035695d3c531baf5f26e1b0151ff022d on codex/terminal-layout-repair. Material files: FuturesDesignVariants.css, FuturesPage.tsx, TerminalChart.tsx, PriceChart.tsx, chartDrawings/futuresFinalPolish tests, and the local QA entry script.
+- Applied the owner's annotated corrections: same-row ticker/price, single-strip instrument metrics, no redundant trading heading, simplified lower drawing rail with recognizable ruler and single-object deletion icons. Full toolbar and saved tool preferences remain intact outside compact review mode.
+- Three opt-in designs: studio, graphite, focus. Focus places the book to the left of the chart; Graphite reduces panel separation for a dense workstation. Review buttons switch without remounting chart/forms. Plain Futures styling, all added order forms, data sources, guards and financial logic are preserved.
+- Focused validation: 182 tests across 5 suites passed (futuresFinalPolish, referenceBook, futuresOrderPanel, chartDrawings, priceChartMarketOrders). Frontend TypeScript and production build passed (Vite 7.23s); QA script syntax and git diff --check passed. No new global/backend suite run.
+- Browser: all three at 1440, narrow desktop 1077, and mobile 390 checked without horizontal page overflow. Ruler drawing and single-object deletion exercised; OCO draft 80000 retained through all three designs. No orders submitted. Actual browser screenshots: docs/qa/terminal-presentation-polish/futures-design-{a-studio,b-graphite,c-focus}.png.
+- Review entry: http://127.0.0.1:4210/__qa/start?market=futures&terminalDesign=studio (or graphite/focus). Local-only QA keeps private reads unavailable and financial writes blocked; visible unavailable account states are expected, not hidden. No fabricated balances or readiness assertion. No push, merge or production deployment in this task.
+
+## 2026-09-13 — Codex — compact Studio palette comparison
+
+- Implementation a69a6679ed941d70621eae5348f07a47d7a2cd60. Only FuturesDesignVariants.css changed: opt-in A/Studio now uses B's 3px gutters, 4px outer padding, 33px market rows and desktop column/row sizing, retaining the original Studio palette. B/Graphite and C/Focus unchanged; all forms, chart behavior and data/financial logic preserved.
+- Frontend TypeScript and production build pass (Vite 6.16s), git diff --check passes. Browser comparison at 1440x900 confirms identical A/B geometry; A at 390 has no horizontal page overflow and retains usable chart/forms. Normal viewport restored. No new tests added or full suite rerun for CSS-only geometry. Screenshots: futures-hybrid-a-studio.png and futures-hybrid-b-graphite.png in docs/qa/terminal-presentation-polish.
+- Local review only; no push/merge/deploy. Next: owner chooses between compact Studio palette and unchanged Graphite.
+
+## 2026-09-13 — Codex — approved Studio rollout, drawing rail and order-book grouping
+
+- Implementation 05ca9851b0f2df141b1a42cb85ec5667133d0f6c on codex/terminal-layout-repair. Material files: TerminalStudio.css, FuturesPage/TradePage, PriceChart/CfdChart/TradingViewAdvancedChart, spotOrderBook, focused tests and local QA entry script.
+- Compact A is now the default Futures design, with single shared seams; the same palette, forms, surfaces and separators apply to Spot/CFD. Explicit A/B/C review URLs remain. All five order-family forms, real feeds, chart alternatives, account logic, matching and CFD execution guards preserved. CFD still has no fabricated depth book.
+- All chart paths default to 1h; other intervals remain selectable. Drawing rail has recognizable pointer/pencil/retracement/ruler/delete icons and immediate pointer/keyboard tool hints. No permanent labels or removed drawing functionality outside compact mode.
+- Spot/Futures grouping now has five price-scaled choices, maximum 5 quote units, default finest step. Aggregation itself unchanged; added conservation checks over 200 levels. Live BTC step 5 showed both sides with full prices; fixed equal-column price truncation. Coarse grouping naturally produces fewer merged rows; no artificial liquidity or padded rows.
+- Validation: 291 tests pass across 10 focused suites, frontend TypeScript/production build pass (5.80s), QA script syntax and diff checks pass. Separately, cfdChartFallback has 20 import.meta test-loader failures, reproduced with identical failure names on pristine pre-change 9d68d41 worktree at ../studio-validation-baseline. No new failures in that comparison; no global/backend suite claim.
+- Browser QA: Futures/Spot/CFD at 1440 and 390, Futures additionally 1077 with zero clipped book price cells. Initial 1h verified on all three, max step 5 and five choices verified, keyboard tool hint and Escape dismissal checked. Screenshots studio-rollout-{futures,spot,cfd}-1440.png. Normal viewport restored; no financial orders sent. Local QA private reads remain unavailable and writes blocked.
+- Local entry links: http://127.0.0.1:4210/__qa/start?market=futures (or spot/cfd). Preview process running intentionally. No push, merge or deployment. Remaining separate work: repair obsolete cfdChartFallback harness, then owner reviews the approved design on these local routes.
+
+## 2026-09-13 — Codex — compact price separator and recognizable chart tools
+
+- Implementation cdcb47db9c6da2ec87ee3e3e790eda3f4ecf86f9 on existing codex/terminal-layout-repair. Initial worktree clean; preserved all prior Studio rollout changes.
+- Material files: PriceChart, ru/en locale labels, FuturesReferenceBook/referenceBook, ReferenceFuturesTerminal.css, TerminalStudio.css and referenceBook test. Russian tool name is now Линейка (English Ruler); trend-line icon has a longer diagonal with clear endpoint anchors. Futures price separator is 36px instead of 56px with transparent background; one shared constant drives CSS height and real-row capacity. Spot separator is also compact. Added tabular numeric figures and consistent input/keyboard focus treatment across terminal forms.
+- Preserved A palette, 1h defaults, five grouping choices, real book aggregation/feeds, all five order forms, drawing behavior and all financial/execution safeguards. No new data, balances or executable order behavior introduced.
+- Validation: 243 tests in 7 focused suites passed (referenceBook, chartDrawings, spotOrderBook, futuresFinalPolish, futuresOrderPanel, spotOrdersPresentation, cfdTerminal). Frontend TypeScript and production build pass; git diff --check pass. No full-suite claim.
+- Browser: Futures 1440/1077 and mobile390, Spot1440, CFD1440 checked. Futures center measured36px; narrow desktop zero clipped book-price cells, no horizontal page overflow. Russian ruler label and active tooltip verified. CFD retains all five forms. Normal viewport restored. Screenshot studio-compact-price-separator-1440.png. No financial writes; loopback QA still intentionally lacks private account data.
+- Local preview updated on4210; no push, merge or production deployment. Broader account-loading and registration-flow work remains separate from these interface refinements.
 
 ## 2026-09-13 — Codex — approved Analytics design with real data
 

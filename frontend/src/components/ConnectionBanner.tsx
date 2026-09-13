@@ -9,14 +9,14 @@ import { useLanguage } from '../lib/i18n';
 // silently sitting on stale/absent live data with no explanation is worse.
 const SHOW_AFTER_MS = 2000;
 
-export function ConnectionBanner() {
+export function ConnectionBanner({connected}:{connected?:boolean}={}) {
   const { t } = useLanguage();
   const [status, setStatus] = useState<SocketStatus>(krakenSocket.getStatus());
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     let timer: number | null = null;
-    const unsubscribe = krakenSocket.subscribeStatus((s) => {
+    const update = (s:SocketStatus) => {
       setStatus(s);
       if (s === 'connected') {
         if (timer !== null) {
@@ -27,12 +27,16 @@ export function ConnectionBanner() {
       } else if (timer === null) {
         timer = window.setTimeout(() => setShow(true), SHOW_AFTER_MS);
       }
-    });
+    };
+    // Futures supplies the state of its own validated depth stream. Spot
+    // continues to observe its socket; never observe an unused connection.
+    const unsubscribe = connected === undefined ? krakenSocket.subscribeStatus(update) : () => {};
+    if(connected !== undefined)update(connected ? 'connected' : 'connecting');
     return () => {
       unsubscribe();
       if (timer !== null) window.clearTimeout(timer);
     };
-  }, []);
+  }, [connected]);
 
   if (!show) return null;
 

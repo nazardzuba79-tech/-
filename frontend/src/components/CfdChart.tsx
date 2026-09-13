@@ -60,11 +60,11 @@ async function loadCandles(symbol:string,interval:Interval,signal:AbortSignal):P
 /** Real OHLC candles only. No synthetic chart data and no explanatory labels in the customer UI. */
 export function CfdChart({symbol}:{symbol:string}){
   const hostRef=useRef<HTMLDivElement>(null),chartRef=useRef<IChartApi|null>(null),seriesRef=useRef<ISeriesApi<'Candlestick'>|null>(null),volumeRef=useRef<ISeriesApi<'Histogram'>|null>(null);
-  const[interval,setInterval]=useState<Interval>('15m'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0);
+  const[interval,setInterval]=useState<Interval>('1h'),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[retry,setRetry]=useState(0);
 
   useEffect(()=>{
     const host=hostRef.current;if(!host)return;
-    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:'#101014'},textColor:'#aeb9c4',fontFamily:'Inter, Arial, sans-serif',fontSize:11},grid:{vertLines:{color:'rgba(137,151,165,.04)'},horzLines:{color:'rgba(137,151,165,.06)'}},rightPriceScale:{borderColor:'#2b2e36'},timeScale:{borderColor:'#2b2e36',timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
+    const chart=createChart(host,{autoSize:true,layout:{background:{type:ColorType.Solid,color:getComputedStyle(host).getPropertyValue('--voltex-plot-background').trim()||'#101014'},textColor:'#aeb9c4',fontFamily:'Inter, Arial, sans-serif',fontSize:11},grid:{vertLines:{color:'rgba(137,151,165,.04)'},horzLines:{color:'rgba(137,151,165,.06)'}},rightPriceScale:{borderColor:'#2b2e36'},timeScale:{borderColor:'#2b2e36',timeVisible:true,secondsVisible:false},crosshair:{mode:0}});
     const candles=chart.addSeries(CandlestickSeries,{upColor:'#12c98d',downColor:'#ef5350',borderVisible:false,wickUpColor:'#12c98d',wickDownColor:'#ef5350',priceLineVisible:true,priceLineColor:'#d9b95b'});
     const volume=chart.addSeries(HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'volume',base:0});
     volume.priceScale().applyOptions({scaleMargins:{top:.82,bottom:0},visible:false});

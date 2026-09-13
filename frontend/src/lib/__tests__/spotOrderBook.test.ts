@@ -14,7 +14,25 @@ test.each([null, 80000, 3200, 125, 0.51, 0.0000081, 1e-14])('group default is a 
   expect(steps).toContain(defaultSpotGroupStep(price));
   expect(steps.every(step => step > 0 && Number.isFinite(step))).toBe(true);
   expect(new Set(steps).size).toBe(steps.length);
+  expect(steps).toHaveLength(5);
+  expect(Math.max(...steps)).toBeLessThanOrEqual(5);
+  expect(defaultSpotGroupStep(price)).toBe(steps[0]);
   for (const step of steps) expect(Number(spotLevelPrice(step, step))).toBe(step);
+});
+
+test('coarser BTC grouping merges levels without losing quantity or mutating raw depth', () => {
+  const raw = Array.from({length: 200}, (_, i) => level(77000 + i / 10, i + 1));
+  const before = JSON.stringify(raw);
+  for (const side of ['BUY','SELL'] as const) {
+    for (const step of spotGroupSteps(77000)) {
+      const rows = aggregateSpotBook(raw, step, side);
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.reduce((sum, row) => sum + row.quantity, 0)).toBe(20100);
+      expect(rows[rows.length - 1].cumulative).toBe(20100);
+      expect(rows.every(row => Number(spotLevelPrice(row.price, step)) === row.price)).toBe(true);
+    }
+  }
+  expect(JSON.stringify(raw)).toBe(before);
 });
 
 test('bid floors, ask ceils, exact grid boundaries and cumulative quantity conserve the real book', () => {
@@ -92,8 +110,8 @@ const render = (props: object) => renderToStaticMarkup(React.createElement(outpu
 
 test('actual Spot component shows real tiny prices, accessible rows and no false EUR dollar approximation', () => {
   const html = render({ pair: 'PEPE/EUR', bids: [level('0.00000811')], asks: [level('0.00000813')], spotPrecision: true, onPickPrice: () => {} });
-  expect(html).toContain('role="button" tabindex="0" aria-label="Bid 0.000008110"');
-  expect(html).toContain('aria-label="Ask 0.000008130"');
+  expect(html).toContain('role="button" tabindex="0" aria-label="Bid 0.00000811000"');
+  expect(html).toContain('aria-label="Ask 0.00000813000"');
   expect(html).toContain('0.00000002');
   expect(html).not.toContain('≈ $');
   expect(html).not.toContain('legacy:');
@@ -119,7 +137,7 @@ test('Spot tiny-price rows keep unchanged full numeric labels and narrowly scope
   expect(html).toContain(`class="cell bid-price" title="${expectedPrice}">${expectedPrice}</span>`);
   expect(html).toContain(`class="cell" title="${quantity}">${terminalPresentation.formatBookAmount(quantity)}</span>`);
   const rawTotal = Number(expectedPrice) * quantity;
-  const total = terminalPresentation.formatBookAmount(rawTotal);
+  const total = terminalPresentation.formatBookTotal(rawTotal);
   expect(html).toContain(`class="cell" title="${rawTotal}">${total}</span>`);
   const css = readFileSync(resolve(frontend, 'src/components/SpotMarketControls.css'), 'utf8');
   expect(css).toMatch(/\.ob-row\.ob-row--spot\s*\{\s*gap:\s*6px;/);
@@ -155,11 +173,11 @@ test('actual row handlers select exact small price by click, Enter and Space onl
     elements.push(node); walk(node.props?.children);
   }
   walk(element);
-  const rowNode = elements.find(node => node.props?.['aria-label'] === 'Bid 0.000008110');
+  const rowNode = elements.find(node => node.props?.['aria-label'] === 'Bid 0.00000811000');
   expect(rowNode).toBeDefined();
   const preventDefault = jest.fn();
   rowNode.props.onClick();
   for (const key of ['Enter', ' ', 'ArrowDown']) rowNode.props.onKeyDown({ key, preventDefault });
-  expect(picked).toEqual(['0.000008110', '0.000008110', '0.000008110']);
+  expect(picked).toEqual(['0.00000811000', '0.00000811000', '0.00000811000']);
   expect(preventDefault).toHaveBeenCalledTimes(2);
 });

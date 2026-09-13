@@ -2,6 +2,15 @@
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
  */
 export interface FuturesDepthSnapshot { bids: {price:string;quantity:string}[]; asks: {price:string;quantity:string}[] }
+export interface FuturesTrade { id:string; price:string; quantity:string; time:number; side:'BUY'|'SELL' }
+export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTrade[] {
+  if(frame?.topic!==`publicTrade.${symbol}`)return [];
+  if(!Array.isArray(frame.data)||frame.data.length>1024)return [];
+  return frame.data.filter((r:any)=>r?.s===symbol&&typeof r.i==='string'&&r.i.length>0&&['Buy','Sell'].includes(r.S)&&
+    Number.isFinite(r.T)&&r.T<=now+1000&&now-r.T<=30000&&
+    [r.p,r.v].every(v=>typeof v==='string'&&/^\d+(?:\.\d+)?$/.test(v)&&Number.isFinite(Number(v))&&Number(v)>0))
+    .map((r:any)=>({id:r.i,price:r.p,quantity:r.v,time:r.T,side:r.S==='Buy'?'BUY':'SELL'}));
+}
 const empty = (): FuturesDepthSnapshot => ({ bids: [], asks: [] });
 const DEPTH = 200;
 const MAX_AGE_MS = 30_000;
@@ -58,6 +67,9 @@ type DepthListener = (book: FuturesDepthSnapshot) => void;
 interface ActiveDepth {
   book: FuturesDepthBook;
   listeners: Set<DepthListener>;
+  tradeListeners: Set<(trades:FuturesTrade[])=>void>;
+  pendingTrades: FuturesTrade[];
+  tradeFlush: ReturnType<typeof setTimeout> | null;
   lastFrame: number;
   flush: ReturnType<typeof setTimeout> | null;
 }
@@ -80,7 +92,7 @@ class FuturesDepthTransport {
   private lastPing = 0;
   private visibilityAttached = false;
 
-  subscribe(pair: string, listener: DepthListener): () => void {
+  subscribe(pair: string, listener: DepthListener, onTrades?:(trades:FuturesTrade[])=>void): () => void {
     listener(empty());
     if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
     const symbol = pair.replace('/','');
@@ -90,10 +102,11 @@ class FuturesDepthTransport {
     let active = this.subscriptions.get(symbol);
     const isNewTopic = !active;
     if (!active) {
-      active = { book: new FuturesDepthBook(symbol), listeners: new Set(), lastFrame: Date.now(), flush: null };
+      active = { book: new FuturesDepthBook(symbol), listeners: new Set(), tradeListeners: new Set(), pendingTrades: [], tradeFlush: null, lastFrame: Date.now(), flush: null };
       this.subscriptions.set(symbol, active);
     }
     active.listeners.add(listener);
+    if(onTrades) active.tradeListeners.add(onTrades);
 
     this.connect();
     if (isNewTopic) this.send('subscribe', symbol);
@@ -105,9 +118,12 @@ class FuturesDepthTransport {
       const current = this.subscriptions.get(symbol);
       if (!current) return;
       current.listeners.delete(listener);
+      if(onTrades) current.tradeListeners.delete(onTrades);
       if (current.listeners.size === 0) {
         if (current.flush !== null) clearTimeout(current.flush);
         current.flush = null;
+        if(current.tradeFlush!==null)clearTimeout(current.tradeFlush);
+        current.tradeFlush=null;current.pendingTrades=[];
         this.subscriptions.delete(symbol);
         this.send('unsubscribe', symbol);
       }
@@ -155,6 +171,19 @@ class FuturesDepthTransport {
         let frame: any;
         try { frame = JSON.parse(event.data); } catch { this.reconnect(); return; }
         if (frame?.success === false) { this.reconnect(); return; }
+        if(typeof frame?.topic==='string'&&frame.topic.startsWith('publicTrade.')) {
+          const symbol=frame.topic.slice('publicTrade.'.length);
+          const active=this.subscriptions.get(symbol);
+          if(!active||!active.tradeListeners.size)return;
+          active.pendingTrades=[...parseFuturesTrades(frame,symbol,Date.now()),...active.pendingTrades].sort((a,b)=>b.time-a.time).slice(0,40);
+          if(active.pendingTrades.length&&active.tradeFlush===null)active.tradeFlush=setTimeout(()=>{
+            active.tradeFlush=null;
+            if(this.socket!==ws||this.subscriptions.get(symbol)!==active)return;
+            const trades=active.pendingTrades;active.pendingTrades=[];
+            for(const subscriber of active.tradeListeners)subscriber(trades);
+          },FLUSH_MS);
+          return;
+        }
         const prefix = `orderbook.${DEPTH}.`;
         if (typeof frame?.topic !== 'string' || !frame.topic.startsWith(prefix)) return;
         const symbol = frame.topic.slice(prefix.length);
@@ -187,7 +216,7 @@ class FuturesDepthTransport {
     const ws = this.socket;
     if (!ws || ws.readyState !== 1) return;
     try {
-      ws.send(JSON.stringify({ op, args: [`orderbook.${DEPTH}.${symbol}`] }));
+      ws.send(JSON.stringify({ op, args: [`orderbook.${DEPTH}.${symbol}`, `publicTrade.${symbol}`] }));
     } catch {
       this.reconnect();
     }
@@ -214,6 +243,9 @@ class FuturesDepthTransport {
     for (const [symbol, active] of this.subscriptions) {
       if (active.flush !== null) clearTimeout(active.flush);
       active.flush = null;
+      if(active.tradeFlush!==null)clearTimeout(active.tradeFlush);
+      active.tradeFlush=null;active.pendingTrades=[];
+      for(const subscriber of active.tradeListeners)subscriber([]);
       active.book = new FuturesDepthBook(symbol);
       active.lastFrame = now;
       for (const subscriber of active.listeners) subscriber(empty());
@@ -268,6 +300,6 @@ class FuturesDepthTransport {
 
 const transport = new FuturesDepthTransport();
 
-export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void): () => void {
-  return transport.subscribe(pair, listener);
+export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void, onTrades?:(trades:FuturesTrade[])=>void): () => void {
+  return transport.subscribe(pair, listener, onTrades);
 }

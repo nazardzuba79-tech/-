@@ -6,14 +6,15 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
-import { OrderBookPanel } from '../components/OrderBookPanel';
+import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
-import { subscribeFuturesDepth } from '../lib/futuresDepth';
+import { subscribeFuturesDepth, type FuturesTrade } from '../lib/futuresDepth';
+
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -24,7 +25,9 @@ import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/ApprovedFuturesTerminal.css';
 import './trade-terminal/ReferenceFuturesTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
-
+import './trade-terminal/FuturesStudio.css';
+import './trade-terminal/FuturesDesignVariants.css';
+import './trade-terminal/TerminalStudio.css';
 
 // Until /futures/config answers. Deliberately the same three contracts the
 // backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
@@ -59,6 +62,9 @@ export function FuturesPage() {
   const account = useFuturesAccount({ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const requestedDesign = searchParams.get('terminalDesign');
+  const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : 'studio';
+  const studio = design !== null;
   // Discover all real USDT perpetuals; execution remains restricted by config.
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
@@ -67,6 +73,7 @@ export function FuturesPage() {
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
+  const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -118,11 +125,11 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
-  // Futures depth has its own Bybit linear-perpetual socket. Do not show the
-  // shared Spot/Kraken connection banner on this page: it can be disconnected
-  // while the Futures book is healthy, which produced a false reconnecting
-  // warning directly above a live Futures terminal.
-  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot })), [symbol]);
+  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
+    setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
+      .filter((row,index,all)=>all.findIndex(other=>other.id===row.id)===index)
+      .sort((a,b)=>b.time-a.time).slice(0,40) : []}));
+  }), [symbol]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
@@ -136,7 +143,14 @@ export function FuturesPage() {
   }
 
   return (
-    <div className="trade-terminal futures-terminal futures-reference">
+    <div className={`trade-terminal futures-terminal futures-reference terminal-studio${studio ? ' futures-studio' : ''}`} data-terminal-design={design ?? undefined}>
+      {requestedDesign && <div className="terminal-design-review" role="group" aria-label="Вариант дизайна">
+        {([['studio', 'A · Studio'], ['graphite', 'B · Graphite'], ['focus', 'C · Focus']] as const).map(([id, label]) =>
+          <button key={id} type="button" aria-pressed={design === id} onClick={() => {
+            const next = new URLSearchParams(searchParams); next.set('terminalDesign', id);
+            navigate({ pathname: '/futures', search: next.toString() }, { replace: true });
+          }}>{label}</button>)}
+      </div>}
       {/* The strip carries this terminal's own listed perpetuals, held
           still, trimmed to what fits — and each one selects that contract
           in place through handleTickerSelect, the same path the market
@@ -159,17 +173,19 @@ export function FuturesPage() {
 
         <div className="main-grid">
           {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
+            {studio && <h2 className="studio-market-heading">{t('nav.markets')}</h2>}
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />
           </div>
 
-          <div className="orderbook-area legacy-futures-book">
-            <OrderBookPanel
+          <div className="orderbook-area repaired-futures-book">
+            <FuturesReferenceBook
               key={symbol}
-              spotPrecision
-              initialFinestGrouping
+              lastPrice={reference.get(symbol)?.lastPrice ?? null}
+              trades={tape.symbol===symbol?tape.rows:[]}
+
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
