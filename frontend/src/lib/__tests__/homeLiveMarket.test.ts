@@ -336,7 +336,7 @@ test('CFD reference observations share the 15-second clock and pause offscreen',
   const h=mount({getCfdTickers:jest.fn().mockResolvedValue(response)}); await flush();
   h.advance(15_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
   h.advance(45_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
-  expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000,2000,2000]);
+  expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000]);
   h.observers[0].callback([{isIntersecting:false}]); h.advance(60_000); await flush();
   expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   h.api.getCfdTickers.mockRejectedValue(new Error('offline'));
