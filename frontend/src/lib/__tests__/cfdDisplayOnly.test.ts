@@ -40,9 +40,9 @@ test('CFD terminal is visibly read-only market data, not an order-entry surface'
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
   const hero = read('pages/home/HomeHeroAssets.tsx');
-  expect(hero).toContain("row.symbol === 'XAUUSD'");
-  expect(hero).toContain("row.symbol === 'WTIUSD'");
-  expect(hero).not.toMatch(/key:\s*'oil'[\s\S]{0,120}price:\s*null/);
+  expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]XAUUSD['"]/);
+  expect(hero).toMatch(/row\s*=>\s*row\.symbol\s*===\s*['"]WTIUSD['"]/);
+  expect(hero).not.toMatch(/key:\s*['"]oil['"][\s\S]{0,120}price:\s*null/);
 });
 
 test('market overview discloses update time and multi-source routing', () => {
