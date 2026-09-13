@@ -6,7 +6,7 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
-import { OrderBookPanel } from '../components/OrderBookPanel';
+import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
@@ -14,7 +14,7 @@ import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
-import { subscribeFuturesDepth } from '../lib/futuresDepth';
+import { subscribeFuturesDepth, type FuturesTrade } from '../lib/futuresDepth';
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -68,6 +68,7 @@ export function FuturesPage() {
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
+  const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -119,7 +120,11 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
-  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot })), [symbol]);
+  useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
+    setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
+      .filter((row,index,all)=>all.findIndex(other=>other.id===row.id)===index)
+      .sort((a,b)=>b.time-a.time).slice(0,40) : []}));
+  }), [symbol]);
 
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
@@ -150,7 +155,7 @@ export function FuturesPage() {
         tickerFitToWidth
         futuresReference={reference}
       />
-      <ConnectionBanner />
+      <ConnectionBanner connected={book.symbol===symbol && book.bids.length>0 && book.asks.length>0} />
 
       <div className="terminal">
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
@@ -163,10 +168,11 @@ export function FuturesPage() {
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
-          <div className="orderbook-area legacy-futures-book">
-            <OrderBookPanel
+          <div className="orderbook-area repaired-futures-book">
+            <FuturesReferenceBook
               key={symbol}
-              spotPrecision
+              lastPrice={reference.get(symbol)?.lastPrice ?? null}
+              trades={tape.symbol===symbol?tape.rows:[]}
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}

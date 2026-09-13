@@ -36,7 +36,7 @@ beforeEach(()=>{
   Book=load(resolve(frontend,'src/components/FuturesReferenceBook')).FuturesReferenceBook;
 });
 afterEach(async()=>{await act(async()=>root.unmount());dom.window.close();});
-async function render(pair='BTC/USDT',b=bids,a=asks){await act(async()=>root.render(React.createElement(Book,{pair,bids:b,asks:a,onPickPrice:pick})));}
+async function render(pair='BTC/USDT',b=bids,a=asks,trades:any[]=[]){await act(async()=>root.render(React.createElement(Book,{pair,bids:b,asks:a,onPickPrice:pick,trades,lastPrice:!view.error&&!view.stale&&Number(view.ticker?.lastPrice)>0?Number(view.ticker.lastPrice):null})));}
 async function click(selector:string){const button=host.querySelector(selector) as HTMLButtonElement;expect(button).not.toBeNull();await act(async()=>button.click());}
 
 test('consistent decimals, tiny real quantities never rounded to zero, invalid quantities unavailable',()=>{
@@ -75,17 +75,12 @@ test.each([{error:true},{stale:true},{ticker:null},{ticker:{lastPrice:'0'}},{tic
   await render('BTC/USDT',[],[]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('—');
   expect(host.querySelector('.rb-mid-label')).toBeNull();
 });
-test('trades are subscribed only when visible, invalid and late events ignored, release on tab/pair change',async()=>{
-  await render();expect(subscribe).not.toHaveBeenCalled();await click('.rb-tabs button:nth-child(2)');
-  expect(subscribe).toHaveBeenCalledWith('BTC/USDT',expect.any(Function));
-  const first=listener;
-  await act(async()=>first({id:'1',price:'100',quantity:'2',side:'BUY',time:1000}));expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(1);
-  await act(async()=>first({id:'bad',price:'0',quantity:'2',side:'BUY',time:1000}));expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(1);
-  await render('ETH/USDT');expect(release).toHaveBeenCalledTimes(1);expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(0);
-  await act(async()=>first({id:'late',price:'500',quantity:'2',side:'BUY',time:2000}));expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(0);
-  await click('.rb-tabs button:nth-child(1)');expect(release).toHaveBeenCalledTimes(2);
+test('tape uses only parent-owned exact-contract trades, without a Spot subscription',async()=>{
+  await render();await click('.rb-tabs button:nth-child(2)');expect(subscribe).not.toHaveBeenCalled();
+  await render('BTC/USDT',bids,asks,[{id:'1',price:'100',quantity:'2',side:'BUY',time:1000}]);
+  expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(1);
+  await render('ETH/USDT');expect(host.querySelectorAll('.rb-tape .rb-row')).toHaveLength(0);
 });
-
 
 test.each([0.000000987654,0.000000000000034,0.000009876,0.09999999,999.999,1234,999999,1e9,1e20,Number.MIN_VALUE,Number.MAX_VALUE])('long quantity %s fits a narrow column and never becomes false zero', value=>{
   const display=referenceQuantity(value);expect(display.length).toBeLessThanOrEqual(8);expect(parseFloat(display)).toBeGreaterThan(0);expect(display).not.toContain('…');
@@ -98,4 +93,10 @@ test('price display is bounded while the price-pick value and tooltip preserve f
   const row=host.querySelector('.rb-bids button')!;const exact=row.querySelector('span')!.getAttribute('title');
   await click('.rb-bids button');expect(pick).toHaveBeenLastCalledWith(exact);expect(Number(exact)).toBeGreaterThan(0);
   expect(row.querySelector('span:nth-of-type(2)')!.getAttribute('title')).toBe('9.87654321e-8 TINY');
+});
+
+test('center uses the fresh selected-contract execution; stale execution cannot override the ticker',async()=>{
+ const trade={id:'latest',price:'100.50',quantity:'0.1',time:Date.now(),side:'BUY'};
+ await render('BTC/USDT',bids,asks,[trade]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('100.50');
+ await render('BTC/USDT',bids,asks,[{...trade,time:Date.now()-30001}]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('↓100.25');
 });

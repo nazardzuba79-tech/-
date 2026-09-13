@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
-import { useMarketTicker } from '../lib/useMarketData';
-import { krakenSocket, type LiveTrade } from '../lib/krakenSocket';
+import type { FuturesTrade } from '../lib/futuresDepth';
+
 import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupSteps, spotLevelPrice,
   type SpotBookLevel, type SpotDepthLevel } from '../lib/spotOrderBook';
 import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio } from '../lib/referenceBook';
 
-/** Futures presentation only. External reference feed and price-pick contract stay unchanged. */
-export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
-  bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; onPickPrice: (price: string) => void;
+/** Exact-contract Futures presentation; price picking never submits an order. */
+export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [] }: {
+  bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; lastPrice?:number|null; trades?:FuturesTrade[]; onPickPrice: (price: string) => void;
 }) {
   const { t } = useLanguage();
   const [base, quote] = pair.split('/');
@@ -29,9 +29,12 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
   const sell = useMemo(() => aggregateSpotBook(asks, step, 'SELL').slice(0, count), [asks, step, count]);
   const maxDepth = Math.max(buy[buy.length - 1]?.cumulative ?? 0, sell[sell.length - 1]?.cumulative ?? 0, Number.MIN_VALUE);
   const ratio = metrics.mid === null ? null : visibleDepthRatio(buy, sell);
-  const { ticker, error, stale } = useMarketTicker(pair, 4000);
-  const rawLast = Number(ticker?.lastPrice);
-  const last = !error && !stale && Number.isFinite(rawLast) && rawLast > 0 ? rawLast : null;
+  // The selected-contract execution stream is more current than the shared ticker snapshot.
+  const latestTrade = trades[0];
+  const tradePrice = Number(latestTrade?.price);
+  const freshTrade = latestTrade && latestTrade.time <= Date.now() + 1000 && Date.now() - latestTrade.time <= 30000;
+  const last = freshTrade && Number.isFinite(tradePrice) && tradePrice > 0 ? tradePrice
+    : lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 ? lastPrice : null;
   const previous = useRef<{ pair: string; price: number | null }>({ pair, price: null });
   const [direction, setDirection] = useState<'up' | 'down' | ''>('');
   useEffect(() => {
@@ -46,20 +49,6 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
     observer.observe(body.current);
     return () => observer.disconnect();
   }, [tab]);
-
-  const [tape, setTape] = useState<{ pair: string; rows: LiveTrade[] }>({ pair, rows: [] });
-  useEffect(() => {
-    if (tab !== 'trades') return;
-    let active = true;
-    setTape({ pair, rows: [] });
-    const release = krakenSocket.subscribeTrades(pair, trade => {
-      if (!active || !Number.isFinite(Number(trade.price)) || Number(trade.price) <= 0 ||
-          !Number.isFinite(Number(trade.quantity)) || Number(trade.quantity) <= 0 || !Number.isFinite(trade.time)) return;
-      setTape(current => ({ pair, rows: [trade, ...(current.pair === pair ? current.rows : [])
-        .filter(row => row.id !== trade.id)].sort((a, b) => b.time - a.time).slice(0, 30) }));
-    });
-    return () => { active = false; release(); };
-  }, [pair, tab]);
 
   const rows = (levels: SpotDepthLevel[], side: 'bid' | 'ask') => levels.map(level => {
     const exact = spotLevelPrice(level.price, step);
@@ -111,7 +100,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice }: {
     </> : <>
       <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.quantity')}<small>({base})</small></span><span>{t('trade.time')}</span></div>
       <div className="rb-tape" role="tabpanel">
-        {tape.pair === pair && tape.rows.length ? tape.rows.map(trade => <div className={`rb-row ${trade.side === 'BUY' ? 'bid' : 'ask'}`} key={trade.id}>
+        {trades.length ? trades.map(trade => <div className={`rb-row ${trade.side === 'BUY' ? 'bid' : 'ask'}`} key={trade.id}>
           <span title={trade.price}>{referencePrice(Number(trade.price))}</span><span title={trade.quantity}>{referenceQuantity(Number(trade.quantity))}</span>
           <span>{new Date(trade.time).toLocaleTimeString('en-GB', { hour12: false })}</span>
         </div>) : <div className="rb-empty">—</div>}

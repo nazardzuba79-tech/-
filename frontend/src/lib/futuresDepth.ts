@@ -2,6 +2,15 @@
  * Protocol: https://bybit-exchange.github.io/docs/v5/websocket/public/orderbook
  */
 export interface FuturesDepthSnapshot { bids: {price:string;quantity:string}[]; asks: {price:string;quantity:string}[] }
+export interface FuturesTrade { id:string; price:string; quantity:string; time:number; side:'BUY'|'SELL' }
+export function parseFuturesTrades(frame:any,symbol:string,now:number):FuturesTrade[] {
+  if(frame?.topic!==`publicTrade.${symbol}`)return [];
+  if(!Array.isArray(frame.data)||frame.data.length>1024)return [];
+  return frame.data.filter((r:any)=>r?.s===symbol&&typeof r.i==='string'&&r.i.length>0&&['Buy','Sell'].includes(r.S)&&
+    Number.isFinite(r.T)&&r.T<=now+1000&&now-r.T<=30000&&
+    [r.p,r.v].every(v=>typeof v==='string'&&/^\d+(?:\.\d+)?$/.test(v)&&Number.isFinite(Number(v))&&Number(v)>0))
+    .map((r:any)=>({id:r.i,price:r.p,quantity:r.v,time:r.T,side:r.S==='Buy'?'BUY':'SELL'}));
+}
 const empty = (): FuturesDepthSnapshot => ({ bids: [], asks: [] });
 const DEPTH = 200;
 const MAX_AGE_MS = 30_000;
@@ -50,21 +59,24 @@ export class FuturesDepthBook {
   }
 }
 
-export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void): () => void {
+export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepthSnapshot)=>void, onTrades?:(trades:FuturesTrade[])=>void): () => void {
   listener(empty());
   if (!/^[A-Z0-9]{1,32}\/USDT$/.test(pair)) return () => {};
   const symbol=pair.replace('/','');
   let socket:WebSocket|null=null, stopped=false, retry:ReturnType<typeof setTimeout>|null=null;
   let flush:ReturnType<typeof setTimeout>|null=null, heartbeat:ReturnType<typeof setInterval>|null=null;
+  let tradeFlush:ReturnType<typeof setTimeout>|null=null;
+  let pendingTrades:FuturesTrade[]=[];
   let backoff=1000;
   const clearConnection=()=>{
     const old=socket;socket=null;
     if(old){old.onopen=null;old.onmessage=null;old.onerror=null;old.onclose=null;old.close();}
     if(flush!==null)clearTimeout(flush);flush=null;
+    if(tradeFlush!==null)clearTimeout(tradeFlush);tradeFlush=null;pendingTrades=[];
     if(heartbeat!==null)clearInterval(heartbeat);heartbeat=null;
   };
   const reconnect=()=>{
-    clearConnection();listener(empty());
+    clearConnection();listener(empty());onTrades?.([]);
     if(stopped||document.hidden||retry!==null)return;
     retry=setTimeout(()=>{retry=null;connect();},backoff);
     backoff=Math.min(backoff*2,15000);
@@ -75,11 +87,16 @@ export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepth
     let lastFrame=Date.now(),lastPing=Date.now();
     try {
       const ws=new WebSocket('wss://stream.bybit.com/v5/public/linear');socket=ws;
-      ws.onopen=()=>{if(socket===ws)ws.send(JSON.stringify({op:'subscribe',args:[`orderbook.${DEPTH}.${symbol}`]}));};
+      ws.onopen=()=>{if(socket===ws)ws.send(JSON.stringify({op:'subscribe',args:[`orderbook.${DEPTH}.${symbol}`,...(onTrades?[`publicTrade.${symbol}`]:[])]}));};
       ws.onmessage=event=>{
         if(stopped||socket!==ws)return;
         try{
           const frame=JSON.parse(event.data);
+          if(frame.topic===`publicTrade.${symbol}`){
+            pendingTrades=[...parseFuturesTrades(frame,symbol,Date.now()),...pendingTrades].sort((a,b)=>b.time-a.time).slice(0,40);
+            if(pendingTrades.length&&tradeFlush===null)tradeFlush=setTimeout(()=>{tradeFlush=null;const trades=pendingTrades;pendingTrades=[];if(!stopped&&socket===ws)onTrades?.(trades);},300);
+            return;
+          }
           if(frame.success===false)throw new Error('Subscription rejected');
           if(!book.apply(frame,Date.now()))return;
           lastFrame=Date.now();backoff=1000;
@@ -95,7 +112,7 @@ export function subscribeFuturesDepth(pair: string, listener: (book:FuturesDepth
   };
   const visibility=()=>{
     if(retry!==null)clearTimeout(retry);retry=null;
-    clearConnection();listener(empty());if(!document.hidden)connect();
+    clearConnection();listener(empty());onTrades?.([]);if(!document.hidden)connect();
   };
   document.addEventListener('visibilitychange',visibility);connect();
   return ()=>{stopped=true;if(retry!==null)clearTimeout(retry);clearConnection();document.removeEventListener('visibilitychange',visibility);};

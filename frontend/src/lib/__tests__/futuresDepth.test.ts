@@ -1,4 +1,4 @@
-import { FuturesDepthBook, subscribeFuturesDepth } from '../futuresDepth';
+import { FuturesDepthBook, subscribeFuturesDepth, parseFuturesTrades } from '../futuresDepth';
 
 const now=1_800_000_000_000;
 const frame=(data:any={},type='snapshot',extra:any={})=>({topic:'orderbook.200.BTCUSDT',type,ts:now,
@@ -45,6 +45,20 @@ describe('selected-contract depth lifecycle',()=>{
     const late=ws.onmessage;stop();late({data:JSON.stringify(frame())});jest.advanceTimersByTime(60000);
     expect(listener).toHaveBeenCalledTimes(2);expect(ws.close).toHaveBeenCalled();expect(sockets).toHaveLength(1);
   });
+  test('trade updates share the exact-contract socket, batch and clear on disconnect; late events are ignored',()=>{
+    const depth=jest.fn(), trades=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',depth,trades);const ws=sockets[0];ws.onopen();
+    expect(JSON.parse(ws.send.mock.calls[0][0]).args).toEqual(['orderbook.200.BTCUSDT','publicTrade.BTCUSDT']);
+    const execution=(i:string,s='BTCUSDT')=>({topic:'publicTrade.BTCUSDT',data:[{s,i,S:'Buy',p:'100',v:'0.001',T:Date.now()}]});
+    ws.onmessage({data:JSON.stringify(execution('wrong','ETHUSDT'))});
+    ws.onmessage({data:JSON.stringify(execution('one'))});ws.onmessage({data:JSON.stringify(execution('two'))});
+    expect(trades).not.toHaveBeenCalled();jest.advanceTimersByTime(300);
+    expect(trades).toHaveBeenCalledTimes(1);expect(trades.mock.calls[0][0].map((t:any)=>t.id).sort()).toEqual(['one','two']);
+    const late=ws.onmessage;ws.onmessage({data:JSON.stringify(execution('pending'))});ws.onclose();
+    expect(trades).toHaveBeenLastCalledWith([]);jest.advanceTimersByTime(300);expect(trades).toHaveBeenCalledTimes(2);
+    late({data:JSON.stringify(execution('late'))});jest.advanceTimersByTime(1000);expect(trades).toHaveBeenCalledTimes(2);
+    hidden=true;handlers.get('visibilitychange')!();expect(trades).toHaveBeenLastCalledWith([]);
+    stop();const count=trades.mock.calls.length;late({data:JSON.stringify(execution('stopped'))});jest.advanceTimersByTime(60000);expect(trades).toHaveBeenCalledTimes(count);
+  });
   test('stale connection clears rows and reconnects; hidden tab stops transport until visible',()=>{
     const listener=jest.fn();const stop=subscribeFuturesDepth('BTC/USDT',listener);
     sockets[0].onmessage({data:JSON.stringify(frame())});jest.advanceTimersByTime(32000);
@@ -52,4 +66,13 @@ describe('selected-contract depth lifecycle',()=>{
     hidden=true;handlers.get('visibilitychange')!();jest.advanceTimersByTime(60000);expect(sockets).toHaveLength(2);
     hidden=false;handlers.get('visibilitychange')!();expect(sockets).toHaveLength(3);stop();
   });
+});
+
+test('trade frames require exact contract, recent timestamps and positive real quantities',()=>{
+ const good={s:'BTCUSDT',i:'execution-1',S:'Buy',p:'100.1',v:'0.001',T:now};
+ const input=(r:any)=>({topic:'publicTrade.BTCUSDT',data:[r]});
+ expect(parseFuturesTrades(input(good),'BTCUSDT',now)).toEqual([{id:'execution-1',side:'BUY',price:'100.1',quantity:'0.001',time:now}]);
+ for(const bad of [{s:'ETHUSDT'},{T:now-30001},{T:now+1001},{p:'0'},{v:null},{S:'Other'},{i:''}])expect(parseFuturesTrades(input({...good,...bad}),'BTCUSDT',now)).toEqual([]);
+ expect(parseFuturesTrades({topic:'publicTrade.BTCUSDT',data:[null,0,{}]},'BTCUSDT',now)).toEqual([]);
+ expect(parseFuturesTrades({...input(good),topic:'publicTrade.ETHUSDT'},'BTCUSDT',now)).toEqual([]);
 });
