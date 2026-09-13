@@ -1,0 +1,53 @@
+name: Homepage laptop first-load
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/home/**'
+      - 'frontend/src/lib/__tests__/homeHeroStream.test.ts'
+      - 'frontend/src/lib/__tests__/homeHeroVisibility.test.ts'
+      - 'frontend/src/lib/__tests__/homeLiveMarket.test.ts'
+      - 'scripts/qa-home-laptop-first-load.cjs'
+      - '.github/workflows/home-laptop-first-load.yml'
+permissions:
+  contents: read
+concurrency:
+  group: home-laptop-first-load-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Root test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Homepage first-load regression tests
+        run: npm test -- --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/homeLiveMarket.test.ts frontend/src/lib/__tests__/homeHeroStream.test.ts frontend/src/lib/__tests__/homeHeroVisibility.test.ts
+      - name: Frontend production build
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+      - name: Install disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-home-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-home-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser QA — laptop data does not wait for ticker universe
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+        run: node scripts/qa-home-laptop-first-load.cjs
+      - name: Preserve browser evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-laptop-first-load
+          path: docs/qa/home-laptop-first-load/
+          retention-days: 7
