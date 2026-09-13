@@ -20,22 +20,13 @@ function timestampMs(value: unknown): number | null {
 export interface BiquoteOptions {
   now?:()=>number; maxQuoteAgeMs?:number; baseUrl?:string; fetchFn?:typeof fetch;
   entitledSymbols?:string[]; executionSymbols?:string[];
-  /** Written permission / provider ticket / agreement reference. Not an API secret. */
   financialUseEvidence?:string;
-  /** Exact-contract evidence for WTI/Brent/metals. Symbol is not enough. */
   contractEvidence?:Partial<Record<string,string>>;
   timeoutMs?:number;
-  /** One shared batch per process; browsers never fan out upstream calls. */
   cacheMs?:number;
 }
 
-/**
- * No-key live market-data adapter. Technical access is public, but VOLTEX
- * treats every row as non-executable unless BOTH financial-use rights and
- * exact-contract evidence are explicitly configured. Public display may use
- * these rows through CfdDisplayQuoteRouter, which is structurally unable to
- * enter money operations.
- */
+/** Public/no-key technical feed. Financial use remains separately admitted. */
 export class BiquoteCfdQuoteSource implements CfdQuoteSource {
   readonly maxQuoteAgeMs:number;
   private readonly now:()=>number; private readonly baseUrl:string; private readonly fetchFn:typeof fetch;
@@ -85,7 +76,8 @@ export class BiquoteCfdQuoteSource implements CfdQuoteSource {
       const rows=ALL.map(symbol=>this.parse(symbol,raw[BIQUOTE_CFD_SYMBOLS[symbol]],receivedAt));
       this.cache=rows.map(q=>({...q}));this.cacheAt=receivedAt;return rows;
     })();
-    this.inFlight=run.finally(()=>{this.inFlight=null;}); return this.inFlight.then(rows=>rows.map(q=>({...q}));
+    this.inFlight=run.finally(()=>{this.inFlight=null;});
+    return this.inFlight.then(rows=>rows.map(q=>({...q})));
   }
   private missing(symbol:string,providerSymbol:string):CfdQuote{return{provider:'biquote',symbol,providerSymbol,bid:null,ask:null,mid:null,last:null,providerTimestamp:null,fetchedAt:null,stale:false,status:'unavailable',referenceStatus:'unavailable',entitlementVerified:false,executionAllowed:false};}
   private fail(symbol:string,reason:string){const p=this.failures.get(symbol)??{count:0,lastAt:null,lastReason:null};this.failures.set(symbol,{count:p.count+1,lastAt:this.now(),lastReason:reason});}
