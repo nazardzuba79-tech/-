@@ -8,6 +8,7 @@ import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
@@ -37,11 +38,14 @@ export function FuturesOrderForm({
   const [baseAsset, quoteAsset] = symbol.split('/');
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [type, setType] = useState<'LIMIT' | 'MARKET'>('LIMIT');
+  const [family, setFamily] = useState<OrderFamily>('LIMIT');
+  const connectedFamily = family === 'LIMIT' || family === 'MARKET';
   const [price, setPrice] = useState('');
   useEffect(() => {
     if (pickedPrice) {
       setPrice(pickedPrice);
       setType('LIMIT');
+      setFamily('LIMIT');
     }
   }, [pickedPrice, pickedPriceSequence]);
   const [quantity, setQuantity] = useState('');
@@ -92,7 +96,7 @@ export function FuturesOrderForm({
     };
   }, [symbol]);
 
-  const effectivePrice = type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
+  const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
   const requiredMargin = leverage > 0 ? notional / leverage : 0;
   /**
@@ -276,6 +280,7 @@ export function FuturesOrderForm({
    */
   const canSubmit = Boolean(config)
     && executionEnabled
+    && connectedFamily
     && effectiveMaxLeverage !== null
     && leverage <= effectiveMaxLeverage
     && !submitting;
@@ -299,22 +304,11 @@ export function FuturesOrderForm({
 
   return (
     <div className="fo-panel">
-      <div className="fo-typeTabs">
-        <button
-          type="button"
-          onClick={() => setType('LIMIT')}
-          className={`fo-typeTab ${type === 'LIMIT' ? 'fo-typeTabActive' : ''}`} aria-pressed={type === 'LIMIT'}
-        >
-          {t('trade.limitOrder')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setType('MARKET')}
-          className={`fo-typeTab ${type === 'MARKET' ? 'fo-typeTabActive' : ''}`} aria-pressed={type === 'MARKET'}
-        >
-          {t('trade.marketOrder')}
-        </button>
-      </div>
+      <OrderFamilyTabs value={family} onChange={next => {
+        setFamily(next);
+        if (next === 'LIMIT' || next === 'MARKET') setType(next);
+        setPercent(0); setError(null);
+      }} />
 
       <form onSubmit={handleSubmit} className="fo-form">
         {/* One compact control where a margin-mode toggle and a full
@@ -332,7 +326,8 @@ export function FuturesOrderForm({
           warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
         />
 
-        {type === 'LIMIT' ? (
+        <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={quoteAsset} />
+        {family === 'LIMIT' ? (
           <label className="fo-label fo-priceField">
             <span className="fo-fieldCaption">{t('trade.price')}</span>
             <div className="fo-priceInputRow">
@@ -352,14 +347,14 @@ export function FuturesOrderForm({
               )}
             </div>
           </label>
-        ) : (
+        ) : family === 'MARKET' ? (
           <label className="fo-label fo-priceField">
             <span className="fo-fieldCaption">{t('futures.markPrice')}</span>
             <div className="mono fo-input fo-markPrice">
               {markPrice !== null ? `≈ ${markPrice}` : '—'} {quoteAsset}
             </div>
           </label>
-        )}
+        ) : null}
 
         <label className="fo-label">
           <span className="fo-qtyLabelRow">
@@ -462,6 +457,7 @@ export function FuturesOrderForm({
           <button
             type="button"
             disabled={!canSubmit}
+            title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('BUY')}
             className="submit-btn buy"
           >
@@ -470,6 +466,7 @@ export function FuturesOrderForm({
           <button
             type="button"
             disabled={!canSubmit}
+            title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('SELL')}
             className="submit-btn sell"
           >

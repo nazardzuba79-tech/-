@@ -6,7 +6,7 @@ import { Nav } from '../components/Nav';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TradingViewAdvancedChart as PriceChart } from '../components/TradingViewAdvancedChart';
-import { FuturesReferenceBook } from '../components/FuturesReferenceBook';
+import { OrderBookPanel } from '../components/OrderBookPanel';
 import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
@@ -192,9 +192,10 @@ export function FuturesPage() {
             <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />
           </div>
 
-          <div className="orderbook-area">
-            <FuturesReferenceBook
+          <div className="orderbook-area legacy-futures-book">
+            <OrderBookPanel
               key={symbol}
+              spotPrecision
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}
