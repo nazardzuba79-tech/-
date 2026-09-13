@@ -1,12 +1,16 @@
+import { cfdMarketCopy } from '../lib/cfdPresentation';
+import { useLanguage } from '../lib/i18n';
+
 export function CfdPositionsPanel(_props:{refreshKey:number}){
-  return <section className="cfd-data-coverage" aria-label="Market data coverage">
-    <div className="cfd-data-coverage-title"><strong>Market data coverage</strong><span>13 instruments · multi-source</span></div>
+  const{lang}=useLanguage(),copy=cfdMarketCopy(lang);
+  return <section className="cfd-data-coverage" aria-label={copy.dataCoverage}>
+    <div className="cfd-data-coverage-title"><strong>{copy.dataCoverage}</strong><span>{copy.instrumentsMulti}</span></div>
     <div className="cfd-data-coverage-grid">
-      <div><b>Metals</b><span>XAU · XAG · XPT · XPD</span></div>
-      <div><b>Energy</b><span>WTI · Brent</span></div>
-      <div><b>FX majors</b><span>EUR · GBP · JPY · AUD · CAD · CHF · NZD</span></div>
-      <div><b>Resilience</b><span>Primary + reserve + last verified quote</span></div>
+      <div><b>{copy.metals}</b><span>XAU · XAG · XPT · XPD</span></div>
+      <div><b>{copy.energy}</b><span>WTI · Brent</span></div>
+      <div><b>{copy.fxMajors}</b><span>EUR · GBP · JPY · AUD · CAD · CHF · NZD</span></div>
+      <div><b>{copy.resilience}</b><span>{copy.primaryReserve}</span></div>
     </div>
-    <p>Prices are display data only. VOLTEX switches sources automatically and never fills a missing quote with an estimated value.</p>
+    <p>{copy.displayOnly}</p>
   </section>;
 }
