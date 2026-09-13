@@ -23,18 +23,16 @@ test('display states communicate live, market closed, last quote and unavailable
   expect(formatCfdAsOf(at)).toBe('09:30 UTC');
 });
 
-test('all seven supported languages have complete CFD and practice copy', () => {
+test('all seven supported languages keep required CFD copy complete', () => {
   const langs=['ru','en','zh','es','hi','ja','ko'] as const;
   for(const lang of langs){
     const copy=cfdMarketCopy(lang);
     for(const value of Object.values(copy))expect(typeof value==='string'&&value.trim().length>0).toBe(true);
-    expect(copy.practice.length).toBeGreaterThan(0);
-    expect(copy.practiceNote.length).toBeGreaterThan(0);
     expect(cfdDisplayState({price:'1',status:'live',stale:false,asOf:null},lang).label).toBe(copy.live);
   }
 });
 
-test('CFD terminal exposes working practice controls but never financial execution calls', () => {
+test('CFD terminal exposes working local order controls but never financial execution calls', () => {
   const trade = read('pages/TradePage.tsx');
   const order = read('components/CfdOrderForm.tsx');
   const positions = read('components/CfdPositionsPanel.tsx');
@@ -52,12 +50,26 @@ test('CFD terminal exposes working practice controls but never financial executi
   expect(positions).not.toMatch(/getCfdPositions|getCfdPositionHistory|api\.closeCfdPosition/);
 });
 
-test('CFD chart uses same-origin real OHLC and not hosted TradingView', () => {
+test('CFD chart has two real OHLC paths and no explanatory customer copy', () => {
   const chart=read('components/CfdChart.tsx');
   expect(chart).toContain('/cfd/candles/');
+  expect(chart).toContain('https://biquote.io/api/');
+  expect(chart).toContain('Promise.any');
   expect(chart).toContain('CandlestickSeries');
   expect(chart).toContain('createChart');
+  expect(chart).toContain('data-chart-status={status}');
   expect(chart).not.toContain('TradingViewAdvancedChart');
+  expect(chart).not.toContain('cfd-disclaimer');
+  expect(chart).not.toContain('chartNote');
+});
+
+test('customer CFD layout has no practice or technical helper badges', () => {
+  const order=read('components/CfdOrderForm.tsx');
+  const positions=read('components/CfdPositionsPanel.tsx');
+  expect(order).not.toContain('cfd-practice-badge');
+  expect(order).not.toContain('copy.practice');
+  expect(positions).not.toContain('cfd-practice-mode');
+  expect(positions).not.toContain('copy.practice');
 });
 
 test('homepage GOLD and OIL use routed XAU and exact WTI display rows', () => {
