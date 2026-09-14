@@ -70,7 +70,6 @@ export function privateTradingRouter(
   router.use('/private-trading', (req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Vary', 'Authorization'); void Promise.resolve(authenticate(req, res, next)).catch(next); });
   router.use('/private-trading', async (req: AuthedRequest, res, next) => {
     try {
-      // requireAuth has verified this same bearer token. Decode only its already-verified expiry.
       const claims = jwt.decode(req.headers.authorization!.slice(7)) as jwt.JwtPayload;
       const actor: OwnerSession = { userId: req.userId!, sessionId: req.sessionId ?? '', expiresAt: typeof claims?.exp === 'number' ? claims.exp * 1000 : 0 };
       await service.store.authorized(actor); res.locals.privateActor = actor; next();
@@ -81,7 +80,7 @@ export function privateTradingRouter(
   const handle = (run: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
     void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
   };
-  router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION' })));
+  router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'BYBIT_TESTNET' })));
 
   // Real owner-only Bybit Testnet account. Credentials never cross this API boundary.
   router.get('/private-trading/testnet/status', handle(async () => testnet.status()));
@@ -96,8 +95,8 @@ export function privateTradingRouter(
     return testnet.setLeverage(input.symbol, input.leverage);
   }));
   router.post('/private-trading/testnet/positions/:symbol/close', handle(async (req) => {
-    const input = z.object({ quantity: positive.optional() }).strict().parse(req.body ?? {});
-    return testnet.closePosition(testnetSymbol.parse(req.params.symbol), input.quantity);
+    const input = z.object({ quantity: positive.optional(), positionIdx: z.number().int().min(0).max(2) }).strict().parse(req.body ?? {});
+    return testnet.closePosition(testnetSymbol.parse(req.params.symbol), input.quantity, input.positionIdx);
   }));
 
   // Historical simulator remains available as a separate owner-only research tool.
