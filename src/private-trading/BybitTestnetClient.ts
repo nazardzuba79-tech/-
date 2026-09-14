@@ -238,7 +238,13 @@ export class BybitTestnetClient {
   async setLeverage(symbolInput: string, leverageInput: string): Promise<{ symbol: string; leverage: string }> {
     const symbol = cleanSymbol(symbolInput);
     const leverage = cleanDecimal(leverageInput, 'плеча');
-    await this.post('/v5/position/set-leverage', { category: 'linear', symbol, buyLeverage: leverage, sellLeverage: leverage });
+    try {
+      await this.post('/v5/position/set-leverage', { category: 'linear', symbol, buyLeverage: leverage, sellLeverage: leverage });
+    } catch (error) {
+      // Bybit V5 error 110043 means the requested leverage already equals the
+      // current value. For an idempotent owner action, that is success.
+      if (!(error instanceof BybitTestnetError) || error.code !== 'bybit_110043') throw error;
+    }
     return { symbol, leverage };
   }
 
