@@ -26,9 +26,13 @@ interface Connection {
   state: 'connecting' | 'live' | 'backoff'; pending: Set<string>; pongAt: number;
   openedAt: number; topicSet: Set<string>; lastActivityAt: number | null;
 }
+
+const DEFAULT_LIVE_BASE_ASSETS = ['BTC','ETH','SOL','XRP','DOGE','TRX'];
+const CATEGORIES: BybitCategory[] = ['spot','linear','inverse'];
+
 export interface CollectorOptions {
   spotUrl?: string; linearUrl?: string; inverseUrl?: string; batchMs?: number; staleMs?: number;
-  staleCheckMs?: number; spotRefreshMs?: number;
+  staleCheckMs?: number; slowRefreshMs?: number; liveBaseAssets?: string[];
   now?: () => number; random?: () => number;
   socket?: (url: string) => WebSocket;
 }
@@ -45,15 +49,21 @@ export class BybitLiveTickerCollector {
   private batchTimer: NodeJS.Timeout | null = null;
   private staleTimer: NodeJS.Timeout | null = null;
   private refreshTimer: NodeJS.Timeout | null = null;
-  private spotTimer: NodeJS.Timeout | null = null;
-  private spotRefreshing = false;
+  private slowTimer: NodeJS.Timeout | null = null;
+  private slowRefreshing = false;
   private refreshing = false;
   private lastProviderActivityAt: number | null = null;
   private lastTickerActivityAt: number | null = null;
   private connectionAttempts: number[] = [];
+  private liveIds = new Set<string>();
+  private slowIds = new Set<string>();
+  private readonly liveBaseAssets: Set<string>;
+  private readonly slowRefreshMs: number;
   private now: () => number;
   constructor(readonly rest: BybitMarketDataService, private options: CollectorOptions = {}) {
     this.now = options.now ?? Date.now;
+    this.liveBaseAssets = new Set((options.liveBaseAssets ?? DEFAULT_LIVE_BASE_ASSETS).map(x => x.trim().toUpperCase()).filter(Boolean));
+    this.slowRefreshMs = Math.max(10_000, Math.min(300_000, options.slowRefreshMs ?? 60_000));
     this.book = new BybitTickerBook(this.now);
     this.feed = new LiveFeed(randomUUID(), this.now);
     this.universe = new MarketUniverse(rest, { includeInverse: true });
@@ -61,21 +71,27 @@ export class BybitLiveTickerCollector {
   start(): void {
     if (this.running) return;
     this.running = true; this.generation++;
-    // The provider may emit thousands of ticker messages per second. UI and API
-    // consumers do not need a new JSON frame every 250ms, so coalesce changes
-    // for half a second. This does not slow provider ingestion: WS messages are
-    // still applied immediately and only the downstream publication is batched.
+    // Provider messages for the small live set are still applied immediately;
+    // only downstream publication is coalesced for half a second.
     const batchMs = Math.max(250, Math.min(1_000, this.options.batchMs ?? 500));
     this.batchTimer = setInterval(() => this.flush(), batchMs);
-    // A full stale scan walks every tracked instrument. It used to run inside
-    // every batch flush (4x/sec). Staleness has a 30s budget, so scanning every
-    // 5s preserves truthful freshness while removing most full-book passes.
+    // Live rows keep the strict 30s freshness budget. Slow catalogue rows are
+    // intentionally refreshed once a minute, so they get a separate budget
+    // and are never falsely marked stale between scheduled bulk snapshots.
     const staleCheckMs = Math.max(1_000, Math.min(10_000, this.options.staleCheckMs ?? 5_000));
     this.staleTimer = setInterval(() => {
-      this.book.stale(undefined, this.options.staleMs ?? 30_000);
+      this.book.stale(this.liveIds, this.options.staleMs ?? 30_000);
+      this.book.stale(this.slowIds, Math.max(90_000, this.slowRefreshMs * 2));
       this.flush();
     }, staleCheckMs);
     void this.bootstrap(0);
+  }
+  private rebuildCadenceSets(): void {
+    this.liveIds.clear(); this.slowIds.clear();
+    for (const instrument of this.book.instruments.values()) {
+      const target = this.liveBaseAssets.has(instrument.baseAsset.toUpperCase()) ? this.liveIds : this.slowIds;
+      target.add(instrumentKey(instrument));
+    }
   }
   private async bootstrap(attempt: number): Promise<void> {
     const generation = this.generation;
@@ -85,22 +101,26 @@ export class BybitLiveTickerCollector {
       const [spot, linear, inverse] = await Promise.all([this.rest.getTickers('spot'), this.rest.getTickers('linear'), this.rest.getTickers('inverse')]);
       if (!this.running || generation !== this.generation) return;
       this.book.setUniverse(this.universe.snapshot().instruments);
+      this.rebuildCadenceSets();
       this.book.bootstrap('spot', spot); this.book.bootstrap('linear', linear); this.book.bootstrap('inverse', inverse);
       this.feed.publish('snapshot', [...this.book.rows.values()]); this.book.drain();
-      const plans = (['spot','linear','inverse'] as const).flatMap(category => planSubscriptions(category,
-        [...this.book.instruments.values()].filter(i => categoryOf(i) === category).map(i => i.providerSymbol)));
+
+      // Keep continuous WebSocket updates only for the core/high-interest
+      // assets. Every other discovered instrument remains visible and is
+      // refreshed from the venue's bulk ticker REST snapshot once a minute.
+      // This removes the overwhelming majority of inbound ticker messages
+      // without shrinking the catalogue or fabricating any values.
+      const plans = CATEGORIES.flatMap(category => planSubscriptions(category,
+        [...this.book.instruments.values()]
+          .filter(i => categoryOf(i) === category && this.liveBaseAssets.has(i.baseAsset.toUpperCase()))
+          .map(i => i.providerSymbol)));
       if (plans.length > 16) throw new Error('Collector connection cap exceeded');
       for (const plan of plans) {
-          const connection: Connection = { plan, ws: null, timer: null, heartbeat: null, attempt: 0, stopped: false, state: 'connecting', pending: new Set(), pongAt: 0, openedAt: 0, topicSet: new Set(plan.topics), lastActivityAt: null };
-          this.connections.push(connection); void this.connect(connection, false);
-        }
+        const connection: Connection = { plan, ws: null, timer: null, heartbeat: null, attempt: 0, stopped: false, state: 'connecting', pending: new Set(), pongAt: 0, openedAt: 0, topicSet: new Set(plan.topics), lastActivityAt: null };
+        this.connections.push(connection); void this.connect(connection, false);
+      }
       this.refreshTimer = setInterval(() => void this.refreshUniverse(), 60_000);
-      // Spot ticker WS does not supply bid/ask. A periodic category snapshot
-      // keeps them real without a per-symbol orderbook fan-out. Last price,
-      // change and volume remain live through WS, so 15s is sufficient here
-      // and avoids repeatedly parsing the entire Spot ticker catalogue.
-      const spotRefreshMs = Math.max(5_000, Math.min(60_000, this.options.spotRefreshMs ?? 15_000));
-      this.spotTimer = setInterval(() => void this.refreshSpot(), spotRefreshMs);
+      this.slowTimer = setInterval(() => void this.refreshSlowCatalogue(), this.slowRefreshMs);
     } catch {
       if (!this.running || generation !== this.generation) return;
       this.feed.status = 'stale'; this.feed.publish('state');
@@ -124,15 +144,29 @@ export class BybitLiveTickerCollector {
       }
     } finally { this.refreshing = false; }
   }
-  private async refreshSpot(): Promise<void> {
-    if (this.spotRefreshing) return;
-    this.spotRefreshing = true; const generation = this.generation;
+  private async refreshSlowCatalogue(): Promise<void> {
+    if (this.slowRefreshing) return;
+    this.slowRefreshing = true;
+    const generation = this.generation;
     try {
-      const snapshot = await this.rest.getTickers('spot');
-      if (this.running && generation === this.generation) this.book.bootstrap('spot', snapshot);
-    } catch {
-      if (this.running && generation === this.generation) this.book.stale(new Set([...this.book.rows.values()].filter(row => row.marketType === 'spot').map(row => row.id)));
-    } finally { this.spotRefreshing = false; }
+      const results = await Promise.allSettled(CATEGORIES.map(category => this.rest.getTickers(category)));
+      if (!this.running || generation !== this.generation) return;
+      results.forEach((result, index) => {
+        const category = CATEGORIES[index];
+        if (result.status === 'fulfilled') {
+          // Core WS rows cannot be rewound by an older REST snapshot; the book
+          // already enforces provider timestamp ordering. Slow rows advance here.
+          this.book.bootstrap(category, result.value);
+        } else {
+          const ids = new Set([...this.slowIds].filter(id => {
+            const instrument = [...this.book.instruments.values()].find(i => instrumentKey(i) === id);
+            return instrument ? categoryOf(instrument) === category : false;
+          }));
+          this.book.stale(ids, 0);
+        }
+      });
+      this.flush();
+    } finally { this.slowRefreshing = false; }
   }
   private async connect(c: Connection, resnapshot: boolean): Promise<void> {
     const generation = this.generation;
@@ -197,7 +231,7 @@ export class BybitLiveTickerCollector {
     c.timer = setTimeout(() => { c.timer = null; void this.connect(c, true); }, reconnectDelay(c.attempt++, this.options.random));
   }
   flush(): void {
-    const status = this.connections.length && this.connections.every(c => c.state === 'live') ? 'live' : 'stale';
+    const status = this.connections.length === 0 || this.connections.every(c => c.state === 'live') ? 'live' : 'stale';
     const changed = status !== this.feed.status; this.feed.status = status;
     const rows = this.book.drain();
     if (rows.length) { this.feed.publish('delta', rows); this.counters.batches++; this.counters.changedRows += rows.length; }
@@ -205,6 +239,7 @@ export class BybitLiveTickerCollector {
   }
   diagnostics() {
     return { ...this.counters, activeInstruments: this.book.instruments.size, tickerCount: this.book.rows.size,
+      liveBaseAssets: [...this.liveBaseAssets], liveInstruments: this.liveIds.size, slowInstruments: this.slowIds.size, slowRefreshMs: this.slowRefreshMs,
       inversePerpetuals: [...this.book.instruments.values()].filter(i => i.marketType === 'inverse_perpetual').length,
       inverseFutures: [...this.book.instruments.values()].filter(i => i.marketType === 'inverse_futures').length,
       activeAssets: new Set([...this.book.instruments.values()].map(i => i.baseAsset)).size,
@@ -217,8 +252,8 @@ export class BybitLiveTickerCollector {
   }
   stop(): void {
     this.running = false; this.generation++;
-    for (const timer of [this.batchTimer, this.staleTimer, this.refreshTimer, this.bootstrapTimer, this.spotTimer]) if (timer) clearInterval(timer);
-    this.batchTimer = this.staleTimer = this.refreshTimer = this.bootstrapTimer = this.spotTimer = null;
+    for (const timer of [this.batchTimer, this.staleTimer, this.refreshTimer, this.bootstrapTimer, this.slowTimer]) if (timer) clearInterval(timer);
+    this.batchTimer = this.staleTimer = this.refreshTimer = this.bootstrapTimer = this.slowTimer = null;
     for (const c of this.connections) { c.stopped = true; if (c.timer) clearTimeout(c.timer); if (c.heartbeat) clearInterval(c.heartbeat); c.ws?.terminate(); }
     this.connections = []; this.book.stale(new Set(this.book.rows.keys())); this.flush();
   }
