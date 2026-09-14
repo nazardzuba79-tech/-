@@ -1,0 +1,37 @@
+name: Native demo public preview check
+on:
+  push:
+    branches: ['codex/private-cross-demo-bybit-model']
+    paths: ['.github/workflows/native-demo-preview-check.yml']
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check only the isolated preview, never production
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),assert=require('assert/strict'),{randomUUID}=require('crypto');
+          const origin='https://voltex-native-demo-review.onrender.com';
+          const report={productionVerified:false,isolatedPreview:true,checks:[]};
+          (async()=>{
+            async function json(path,options={}){const r=await fetch(origin+path,{...options,signal:AbortSignal.timeout(60000)});const b=await r.json();assert(r.ok(),path+' '+r.status+' '+JSON.stringify(b));return b;}
+            const health=await json('/health');assert.equal(health.kind,'isolated-native-demo-preview');assert.equal(health.fixtureMarket,false);report.health=health;
+            const root=await fetch(origin+'/futures?demo=1',{signal:AbortSignal.timeout(60000)});assert(root.ok());const html=await root.text();const m=/localStorage.setItem\("exchange_token",("[^"]+")\)/.exec(html);assert(m);const token=JSON.parse(m[1]);const headers={'Content-Type':'application/json',Authorization:'Bearer '+token};
+            let s=await json('/api/v1/private-trading/native/state',{headers});assert.equal(s.initialized,false);
+            s=await json('/api/v1/private-trading/native/initialize',{method:'POST',headers,body:JSON.stringify({idempotencyKey:'preview-check-'+randomUUID(),acceptedModel:s.model.version})});assert.equal(s.source,'PREVIEW_FIXTURE');report.checks.push('fresh isolated account initialized');
+            const chart=await json('/api/v1/private-trading/candles?symbol=BTCUSDT&source=BYBIT_LINEAR&interval=1h&limit=8',{headers});assert.equal(chart.source,'BYBIT_LINEAR');assert(chart.candles.length>=5);const selected=chart.candles[chart.candles.length-4];
+            const c={source:'BYBIT_LINEAR',interval:'1h',openTime:selected.time*1000,pricePoint:'CLOSE'};
+            s=await json('/api/v1/private-trading/native/commands',{method:'POST',headers,body:JSON.stringify({kind:'OPEN',symbol:'BTCUSDT',side:'LONG',type:'MARKET',margin:'5000',leverage:'10',candle:c,idempotencyKey:randomUUID()})});assert.equal(s.positions.length,1);assert.equal(s.positions[0].historical,true);assert.notEqual(s.positions[0].unrealizedPnl,null);report.checks.push('historical order on actual public mainnet candles produced position and P&L');
+            const again=await json('/api/v1/private-trading/native/state',{headers});assert.equal(again.revision,s.revision);assert.equal(again.positions[0].id,s.positions[0].id);report.checks.push('reload state persisted in isolated preview');
+            const noAuth=await fetch(origin+'/api/v1/private-trading/native/state');assert.equal(noAuth.status,401);const denied=await fetch(origin+'/api/v1/futures/orders',{method:'POST',headers,body:'{}'});assert.equal(denied.status,403);report.checks.push('unauthenticated native state and real trading writes denied');report.passed=true;
+          })().catch(e=>{report.passed=false;report.error=String(e.message);process.exitCode=1;}).finally(()=>{fs.writeFileSync('preview-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));});
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-demo-public-preview
+          path: preview-report.json
+          retention-days: 7
