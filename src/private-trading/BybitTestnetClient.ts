@@ -188,6 +188,17 @@ export class BybitTestnetClient {
     return this.signed<T>('POST', path, body);
   }
 
+  private async positionRows(symbol: string): Promise<any[]> {
+    const result = await this.get<any>('/v5/position/list', { category: 'linear', symbol });
+    return Array.isArray(result?.list) ? result.list : [];
+  }
+
+  private async openingPositionIdx(symbol: string, side: 'Buy' | 'Sell'): Promise<0 | 1 | 2> {
+    const rows = await this.positionRows(symbol);
+    const hedge = rows.some((row: any) => row?.positionIdx === 1 || row?.positionIdx === 2);
+    return hedge ? (side === 'Buy' ? 1 : 2) : 0;
+  }
+
   async state(): Promise<BybitTestnetState> {
     const [walletResult, positionsResult, openOrdersResult, historyResult, pnlResult] = await Promise.all([
       this.get<any>('/v5/account/wallet-balance', { accountType: 'UNIFIED' }),
@@ -241,8 +252,6 @@ export class BybitTestnetClient {
     try {
       await this.post('/v5/position/set-leverage', { category: 'linear', symbol, buyLeverage: leverage, sellLeverage: leverage });
     } catch (error) {
-      // Bybit V5 error 110043 means the requested leverage already equals the
-      // current value. For an idempotent owner action, that is success.
       if (!(error instanceof BybitTestnetError) || error.code !== 'bybit_110043') throw error;
     }
     return { symbol, leverage };
@@ -253,11 +262,12 @@ export class BybitTestnetClient {
     const qty = cleanDecimal(input.qty, 'количества');
     if (input.leverage) await this.setLeverage(symbol, input.leverage);
     const price = input.orderType === 'Limit' ? cleanDecimal(input.price ?? '', 'цены') : undefined;
+    const positionIdx = await this.openingPositionIdx(symbol, input.side);
     const orderLinkId = `vx${randomUUID().replace(/-/g, '').slice(0, 30)}`;
     const result = await this.post<any>('/v5/order/create', {
       category: 'linear', symbol, side: input.side, orderType: input.orderType, qty, price,
       timeInForce: input.orderType === 'Limit' ? 'GTC' : undefined,
-      positionIdx: 0, reduceOnly: input.reduceOnly === true, orderLinkId,
+      positionIdx, reduceOnly: input.reduceOnly === true, orderLinkId,
       takeProfit: input.takeProfit ? cleanDecimal(input.takeProfit, 'take-profit') : undefined,
       stopLoss: input.stopLoss ? cleanDecimal(input.stopLoss, 'stop-loss') : undefined,
     });
@@ -271,18 +281,20 @@ export class BybitTestnetClient {
     return { orderId: String(result?.orderId ?? orderId), orderLinkId: String(result?.orderLinkId ?? '') };
   }
 
-  async closePosition(symbolInput: string, quantityInput?: string): Promise<{ orderId: string; orderLinkId: string }> {
+  async closePosition(symbolInput: string, quantityInput?: string, positionIdxInput?: number): Promise<{ orderId: string; orderLinkId: string }> {
     const symbol = cleanSymbol(symbolInput);
-    const result = await this.get<any>('/v5/position/list', { category: 'linear', symbol });
-    const row = (Array.isArray(result?.list) ? result.list : []).find((item: any) => Number(item?.size) > 0);
-    if (!row) throw new BybitTestnetError('position_not_found', 'Открытая позиция не найдена', 404);
+    if (positionIdxInput !== undefined && ![0,1,2].includes(positionIdxInput)) throw new BybitTestnetError('invalid_position', 'Некорректная сторона позиции', 400);
+    const rows = (await this.positionRows(symbol)).filter((item: any) => Number(item?.size) > 0);
+    const matches = positionIdxInput === undefined ? rows : rows.filter((item: any) => item?.positionIdx === positionIdxInput);
+    if (!matches.length) throw new BybitTestnetError('position_not_found', 'Открытая позиция не найдена', 404);
+    if (matches.length !== 1) throw new BybitTestnetError('position_ambiguous', 'Выберите конкретную сторону позиции', 409);
+    const row = matches[0];
     const qty = cleanDecimal(quantityInput || String(row.size), 'количества');
     const side: 'Buy' | 'Sell' = row.side === 'Buy' ? 'Sell' : 'Buy';
+    const positionIdx = Number.isInteger(row.positionIdx) && [0,1,2].includes(row.positionIdx) ? row.positionIdx : 0;
     const orderLinkId = `vx${randomUUID().replace(/-/g, '').slice(0, 30)}`;
     const placed = await this.post<any>('/v5/order/create', {
-      category: 'linear', symbol, side, orderType: 'Market', qty,
-      positionIdx: Number.isInteger(row.positionIdx) ? row.positionIdx : 0,
-      reduceOnly: true, orderLinkId,
+      category: 'linear', symbol, side, orderType: 'Market', qty, positionIdx, reduceOnly: true, orderLinkId,
     });
     return { orderId: String(placed?.orderId ?? ''), orderLinkId: String(placed?.orderLinkId ?? orderLinkId) };
   }
