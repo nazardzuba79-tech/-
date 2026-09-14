@@ -37,7 +37,7 @@ describe('route code splitting', () => {
   it('loads every other page lazily', () => {
     const pages = [
       'RegisterPage', 'TradePage', 'FuturesPage', 'MarketsPage', 'SettingsPage', 'CardPage',
-      'OtcPage', 'WalletPage', 'CopyTradingPage', 'ArbitragePage', 'AnalyticsPage', 'LegalPage',
+      'OtcPage', 'WalletPage', 'CopyTradingPage', 'ArbitragePage', 'LegalPage',
       'ReferralRedirectPage', 'AdminLayout', 'AdminWalletsPage', 'AdminUsersPage',
       'AdminUserDetailPage', 'AdminKycPage', 'AdminWithdrawalsPage', 'AdminDepositsPage',
       'AdminOverviewPage', 'AdminAuditLogPage',
@@ -58,26 +58,22 @@ describe('route code splitting', () => {
   it('renders a stable shell rather than a blank screen while a chunk loads', () => {
     expect(app).toContain('<Suspense fallback={<RouteShell />}>');
     const shell = code(read('src/RouteShell.tsx'));
-    // The app's own ground colour at full height: the background never
-    // flashes and the scrollbar does not appear and disappear. Measured in
-    // a browser: body background stays rgb(10,12,16) across every
-    // navigation, with a shell hold of 0–25 ms.
     expect(shell).toContain("background: 'var(--bg)'");
     expect(shell).toContain("minHeight: '100vh'");
-    // Not a spinner, and not fabricated rows shaped like data.
     expect(shell).not.toMatch(/spinner|skeleton-row|placeholder/i);
   });
 
   it('warms the likely next chunk on idle, so the first navigation is not slower', () => {
-    // Splitting without this trades one big download for a stall on the
-    // first click. The prefetch is idle-only and failure-tolerant so it
-    // cannot compete with the current page's own requests.
     expect(app).toContain('usePrefetchLikelyRoutes');
     expect(app).toContain('requestIdleCallback');
     expect(app).toContain("import('./pages/FuturesPage')");
     expect(app).toContain("import('./pages/WalletPage')");
-    // Signed-out visitors are never made to prefetch a page behind auth.
     expect(app).toContain('if (!getToken()) return;');
+  });
+
+  it('folds the old Analytics URL into Markets instead of loading a standalone route', () => {
+    expect(app).not.toContain('const AnalyticsPage = lazy(');
+    expect(app).toContain('<Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />');
   });
 });
 
@@ -95,7 +91,6 @@ describe('pages are not re-merged through a shared barrel', () => {
 
 describe('nothing outside App.tsx statically imports a heavy page', () => {
   it('finds no cross-page static import of a lazily-loaded route', () => {
-    // A page importing another page statically defeats the split for both.
     const heavy = ['CopyTradingPage', 'CardPage', 'AnalyticsPage', 'FuturesPage', 'TradePage', 'WalletPage'];
     const offenders: string[] = [];
     const walk = (dir: string) => {
