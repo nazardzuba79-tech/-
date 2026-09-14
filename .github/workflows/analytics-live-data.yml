@@ -11,8 +11,14 @@ on:
       - 'src/api/routes/__tests__/analytics*.test.ts'
       - 'src/index.ts'
       - 'frontend/src/pages/analytics/**'
+      - 'frontend/src/pages/MarketsPage.tsx'
+      - 'frontend/src/pages/markets-bolt/MarketsAnalyticsSection.tsx'
+      - 'frontend/src/pages/markets-bolt/MarketsAnalyticsEmbed.css'
+      - 'frontend/src/components/Nav.tsx'
+      - 'frontend/src/App.tsx'
       - 'frontend/src/lib/api.ts'
       - 'frontend/src/lib/__tests__/analyticsLive.test.ts'
+      - 'frontend/src/lib/__tests__/routeCodeSplitting.test.ts'
       - 'src/services/__tests__/AnalyticsDataService.test.ts'
       - '.github/workflows/analytics-live-data.yml'
 permissions:
@@ -48,4 +54,4 @@ jobs:
           VITE_API_URL: /api/v1
         run: npm run build
       - name: Analytics contract, rendering and gateway regressions
-        run: npm test -- --runInBand --silent frontend/src/lib/__tests__/analyticsLive.test.ts src/services/analytics/__tests__ src/services/__tests__/AnalyticsDataService.test.ts src/api/routes/__tests__/analytics.test.ts src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts
+        run: npm test -- --runInBand --silent frontend/src/lib/__tests__/analyticsLive.test.ts frontend/src/lib/__tests__/routeCodeSplitting.test.ts src/services/analytics/__tests__ src/services/__tests__/AnalyticsDataService.test.ts src/api/routes/__tests__/analytics.test.ts src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts
