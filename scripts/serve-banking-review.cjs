@@ -45,23 +45,29 @@ export const bankingNumber=(value,digits=2)=>{if(value===null||value===undefined
 export const bankingErrorText=()=> 'Preview mode: операції з коштами вимкнені.';
 `);
 
+const pageSourcePath = path.join(frontend, 'src/pages/BankingPage.tsx');
+const pagePreviewPath = path.join(tmp, 'BankingPage.tsx');
+const bankingCssPath = path.join(frontend, 'src/pages/banking/BankingPage.css');
+let pageSource = fs.readFileSync(pageSourcePath, 'utf8');
+pageSource = pageSource
+  .replace("from '../components/Nav';", `from ${JSON.stringify(navMock)};`)
+  .replace("from '../lib/bankingApi';", `from ${JSON.stringify(apiMock)};`)
+  .replace("import './banking/BankingPage.css';", `import ${JSON.stringify(bankingCssPath)};`);
+fs.writeFileSync(pagePreviewPath, pageSource);
+
 const entry = `
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BankingPage } from './pages/BankingPage';
+import { BankingPage } from ${JSON.stringify(pagePreviewPath)};
 createRoot(document.getElementById('root')).render(<BankingPage/>);
 setTimeout(()=>{
   const amount=[...document.querySelectorAll('input')].find(x=>x.getAttribute('placeholder')==='0.00');
   if(amount){const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(amount,'2500');amount.dispatchEvent(new Event('input',{bubbles:true}));amount.dispatchEvent(new Event('change',{bubbles:true}));}
 },250);
-setTimeout(()=>{const buttons=[...document.querySelectorAll('button')];const b=buttons.find(x=>x.textContent.trim()==='Розрахувати'&&!x.disabled);if(b)b.click();},500);
+setTimeout(()=>{const buttons=[...document.querySelectorAll('button')];const b=buttons.find(x=>x.textContent.trim()==='Розрахувати'&&!x.disabled);if(b)b.click();},600);
 `;
 
-const plugin={name:'banking-review-alias',setup(build){
-  build.onResolve({filter:/\.\.\/components\/Nav$/},()=>({path:navMock}));
-  build.onResolve({filter:/\.\.\/lib\/bankingApi$/},()=>({path:apiMock}));
-}};
-const result=esbuild.buildSync({stdin:{contents:entry,resolveDir:path.join(frontend,'src'),sourcefile:'banking-review.tsx',loader:'tsx'},bundle:true,write:false,outdir:tmp,format:'iife',jsx:'automatic',plugins:[plugin]});
+const result=esbuild.buildSync({stdin:{contents:entry,resolveDir:path.join(frontend,'src'),sourcefile:'banking-review.tsx',loader:'tsx'},bundle:true,write:false,outdir:tmp,format:'iife',jsx:'automatic'});
 const js=result.outputFiles.find(file=>file.path.endsWith('.js')).text;
 const css=result.outputFiles.find(file=>file.path.endsWith('.css'))?.text||'';
 const reviewCss=`
