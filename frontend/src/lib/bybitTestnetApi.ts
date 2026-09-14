@@ -40,7 +40,7 @@ function createClient(base:string,token:()=>string|null,fetcher:typeof fetch=fet
     createOrder:(body:TestnetOrderRequest)=>request<{orderId:string;orderLinkId:string}>('/orders','POST',body),
     cancelOrder:(orderId:string,symbol:string)=>request<{orderId:string;orderLinkId:string}>(`/orders/${encodeURIComponent(orderId)}/cancel`,'POST',{symbol}),
     setLeverage:(symbol:string,leverage:string)=>request<{symbol:string;leverage:string}>('/leverage','POST',{symbol,leverage}),
-    closePosition:(symbol:string,quantity?:string)=>request<{orderId:string;orderLinkId:string}>(`/positions/${encodeURIComponent(symbol)}/close`,'POST',quantity?{quantity}:{}),
+    closePosition:(symbol:string,positionIdx:number,quantity?:string)=>request<{orderId:string;orderLinkId:string}>(`/positions/${encodeURIComponent(symbol)}/close`,'POST',{positionIdx,...(quantity?{quantity}:{})}),
   };
 }
 export const bybitTestnetApi=createClient(import.meta.env.VITE_API_URL||'/api/v1',getToken);
