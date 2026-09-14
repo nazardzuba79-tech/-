@@ -31,7 +31,7 @@ import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
  */
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
-const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
+const FuturesPage = lazy(() => import('./pages/FuturesRoute').then((m) => ({ default: m.FuturesRoute })));
 const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));

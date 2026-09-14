@@ -1,0 +1,1839 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-14T08:36:21.497Z",
+  "baselineMainSha": "e5ae1e4f62815a396662e268ffbba20d40b176be",
+  "method": {
+    "assertionIdentity": "Repository-relative suite path plus exact full assertion name, preserving duplicate multiplicity.",
+    "suiteFailureIdentity": "Repository-relative suite path plus complete normalized failure message for failed suites without a failed assertion (including zero-assertion suites).",
+    "normalization": "Only candidate/baseline absolute workspace prefixes, ANSI color codes and CRLF line endings are normalized in error text. Test names, values, ports, stack line numbers and error wording are not generalized.",
+    "noRerunPerformedByComparison": true
+  },
+  "baseline": {
+    "source": "outputs/full-baseline.json",
+    "sourceSha256": "cd85fc285697431d9ed0d6194403895cb6f76b8e7c57c0a7c618277e67b67658",
+    "startedAt": "2026-09-14T08:04:22.789Z",
+    "finishedAt": "2026-09-14T08:11:08.408Z",
+    "success": false,
+    "wasInterrupted": false,
+    "counts": {
+      "numTotalTestSuites": 202,
+      "numPassedTestSuites": 175,
+      "numFailedTestSuites": 26,
+      "numPendingTestSuites": 1,
+      "numRuntimeErrorTestSuites": 0,
+      "numTotalTests": 3037,
+      "numPassedTests": 2926,
+      "numFailedTests": 88,
+      "numPendingTests": 23,
+      "numTodoTests": 0
+    },
+    "exactAssertionFailures": [
+      {
+        "suite": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+        "fullName": "actual onError removes broken image, retains geometry and retries changed owner URL",
+        "title": "actual onError removes broken image, retains geometry and retries changed owner URL",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+        "fullName": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring",
+        "title": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "fallback translations remain available in all seven locales",
+        "title": "fallback translations remain available in all seven locales",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "loaded script without a widget times out and can retry, no poisoned global promise",
+        "title": "loaded script without a widget times out and can retry, no poisoned global promise",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: en",
+        "title": "locale switch remounts cleanly: en",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: es",
+        "title": "locale switch remounts cleanly: es",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: ja",
+        "title": "locale switch remounts cleanly: ja",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: ru",
+        "title": "locale switch remounts cleanly: ru",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: zh",
+        "title": "locale switch remounts cleanly: zh",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: cfd",
+        "title": "market palette preserves official symbol and native controls: cfd",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: futures",
+        "title": "market palette preserves official symbol and native controls: futures",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: spot",
+        "title": "market palette preserves official symbol and native controls: spot",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "native TradingView indicators toolbar is enabled and volume remains controllable",
+        "title": "native TradingView indicators toolbar is enabled and volume remains controllable",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: cfd",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: cfd",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: futures",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: futures",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: spot",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: spot",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+        "title": "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "switching Spot to Futures replaces the owned chart with the new palette and contract",
+        "title": "switching Spot to Futures replaces the owned chart with the new palette and contract",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+        "title": "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "unknown CFD mapping and malformed symbols never substitute another instrument",
+        "title": "unknown CFD mapping and malformed symbols never substitute another instrument",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "unmount pending script cancels callbacks and removes all owned nodes",
+        "title": "unmount pending script cancels callbacks and removes all owned nodes",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "verified CFD mapping and compact visible attribution are preserved",
+        "title": "verified CFD mapping and compact visible attribution are preserved",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+        "fullName": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift",
+        "title": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+        "fullName": "normal API paths replace review-only sources without altering token or request behavior",
+        "title": "normal API paths replace review-only sources without altering token or request behavior",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "fullName": "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+        "title": "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "fullName": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+        "title": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+        "fullName": "spot and futures pair lists are unchanged leaves the pair-list modules byte-identical",
+        "title": "leaves the pair-list modules byte-identical",
+        "ancestorTitles": [
+          "spot and futures pair lists are unchanged"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+        "fullName": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller",
+        "title": "the endpoint has exactly one client method, and one caller",
+        "ancestorTitles": [
+          "nobody fetches /futures/config except the store"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+        "fullName": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+        "title": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesAccountSummary.tsx preserves non-visual semantics",
+        "title": "components/FuturesAccountSummary.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesOrderForm.tsx preserves non-visual semantics",
+        "title": "components/FuturesOrderForm.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesPairList.tsx preserves non-visual semantics",
+        "title": "components/FuturesPairList.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/OrderBookPanel.tsx preserves non-visual semantics",
+        "title": "components/OrderBookPanel.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics",
+        "title": "pages/FuturesPage.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not",
+        "title": "7. route splitting is intact: the homepage is eager, the rest are not",
+        "ancestorTitles": [
+          "the homepage does not borrow another route's stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+        "title": "the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+        "ancestorTitles": [
+          "the homepage does not borrow another route's stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+        "fullName": "translation integrity preserves the exact source bytes of every dictionary body",
+        "title": "preserves the exact source bytes of every dictionary body",
+        "ancestorTitles": [
+          "translation integrity"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles",
+        "title": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "CopyButton remains byte-equivalent to approved V8",
+        "title": "CopyButton remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "MetricsPanel remains byte-equivalent to approved V8",
+        "title": "MetricsPanel remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "MiniPerformanceChart remains byte-equivalent to approved V8",
+        "title": "MiniPerformanceChart remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line",
+        "title": "Nazar VIP and the real verified badge share the name row, without a second status line",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants",
+        "title": "ordinary card content is preserved; absent Nazara metrics do not become fake constants",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names",
+        "title": "ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=false beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=true beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=undefined beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag",
+        "title": "VIP remains independent and identity verification never inherits the static catalogue flag",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "ProfilePerformanceChart remains byte-equivalent to approved V8",
+        "title": "ProfilePerformanceChart remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "30D keeps lifetime statistics separate from the selected chart period",
+        "title": "30D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "7D keeps lifetime statistics separate from the selected chart period",
+        "title": "7D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "90D keeps lifetime statistics separate from the selected chart period",
+        "title": "90D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips",
+        "title": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=false only inline with its heading",
+        "title": "actual profile shows identityVerified=false only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=true only inline with its heading",
+        "title": "actual profile shows identityVerified=true only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=undefined only inline with its heading",
+        "title": "actual profile shows identityVerified=undefined only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "ALL keeps lifetime statistics separate from the selected chart period",
+        "title": "ALL keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+        "fullName": "customer-facing components render no provider branding has no provider name in any executable line",
+        "title": "has no provider name in any executable line",
+        "ancestorTitles": [
+          "customer-facing components render no provider branding"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "fullName": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named",
+        "title": "exactly three stylesheets carry @tailwind utilities, each named",
+        "ancestorTitles": [
+          "the utilities layers in this repo are the three we think they are"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header",
+        "title": "and none of them shifts a box without excluding the header",
+        "ancestorTitles": [
+          "no route stylesheet may move the shared authenticated header"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+        "title": "finds the page-root resets this repo actually ships",
+        "ancestorTitles": [
+          "no route stylesheet may move the shared authenticated header"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class",
+        "title": "and no route stylesheet declares a rule whose subject is a header class",
+        "ancestorTitles": [
+          "the shared authenticated header does not depend on a lazy stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width",
+        "title": "and the shared burger is index.css's alone, at every width",
+        "ancestorTitles": [
+          "the shared authenticated header does not depend on a lazy stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/spotIndicators.test.ts",
+        "fullName": "legacy shared MACD is unchanged unless explicitly opted in by the Spot chart",
+        "title": "legacy shared MACD is unchanged unless explicitly opted in by the Spot chart",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+        "fullName": "actual stateful BTC → MOG → BTC book initializes grouping before paint and retains manual same-pair steps",
+        "title": "actual stateful BTC → MOG → BTC book initializes grouping before paint and retains manual same-pair steps",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "fullName": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly",
+        "title": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "fullName": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly",
+        "title": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+        "fullName": "unconfigured public catalog keeps all verified instruments visible with null quotes and blocked execution",
+        "title": "unconfigured public catalog keeps all verified instruments visible with null quotes and blocked execution",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "minute/day quota counts actual symbol cost and denies HTTP, including retries",
+        "title": "minute/day quota counts actual symbol cost and denies HTTP, including retries",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "provider close and Unix timestamp normalize without bid/ask fabrication, concurrent quotes cost one batch",
+        "title": "provider close and Unix timestamp normalize without bid/ask fabrication, concurrent quotes cost one batch",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "provider outage yields unavailable, never an old execution price",
+        "title": "provider outage yields unavailable, never an old execution price",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "support, entitlement, actual freshness and execution approval remain independent",
+        "title": "support, entitlement, actual freshness and execution approval remain independent",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/services/__tests__/CfdMarketDataService.test.ts",
+        "fullName": "CfdMarketDataService fetches and normalizes tickers keyed by symbol from a batched quote",
+        "title": "fetches and normalizes tickers keyed by symbol from a batched quote",
+        "ancestorTitles": [
+          "CfdMarketDataService"
+        ]
+      },
+      {
+        "suite": "src/services/__tests__/DepositService.test.ts",
+        "fullName": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000",
+        "title": "does not credit a confirmed deposit worth less than $1000",
+        "ancestorTitles": [
+          "DepositService",
+          "minimum deposit ($1000 USD-equivalent)"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier credits a matching Transfer event and computes confirmations from the current block",
+        "title": "credits a matching Transfer event and computes confirmations from the current block",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token",
+        "title": "lists recent TRC-20 transfers to the treasury address, one call per configured token",
+        "ancestorTitles": [
+          "TronDepositVerifier",
+          "listIncoming"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier sends the TRON-PRO-API-KEY header when configured",
+        "title": "sends the TRON-PRO-API-KEY header when configured",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier throws when the transaction has no events at all",
+        "title": "throws when the transaction has no events at all",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix opens the circuit after repeated failures and then stops calling the provider",
+        "title": "opens the circuit after repeated failures and then stops calling the provider",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix recovers through a HALF_OPEN probe once the cooldown elapses",
+        "title": "recovers through a HALF_OPEN probe once the cooldown elapses",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix retries a temporary 5xx and succeeds",
+        "title": "retries a temporary 5xx and succeeds",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix retries a transport timeout within a bounded budget, never unbounded",
+        "title": "retries a transport timeout within a bounded budget, never unbounded",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix stops serving once the stale budget expires rather than aging a price indefinitely",
+        "title": "stops serving once the stale budget expires rather than aging a price indefinitely",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+        "fullName": "live ticker implementation is unreachable from financial services",
+        "title": "live ticker implementation is unreachable from financial services",
+        "ancestorTitles": []
+      }
+    ],
+    "unassignedSuiteFailures": [],
+    "failedSuitePaths": [
+      "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+      "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+      "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+      "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "frontend/src/lib/__tests__/spotIndicators.test.ts",
+      "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+      "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+      "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+      "src/services/__tests__/CfdMarketDataService.test.ts",
+      "src/services/__tests__/DepositService.test.ts",
+      "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts"
+    ],
+    "testSuitePaths": [
+      "frontend/src/lib/__tests__/adminConsoleInteractions.test.ts",
+      "frontend/src/lib/__tests__/adminDepositRails.test.ts",
+      "frontend/src/lib/__tests__/analyticsLive.test.ts",
+      "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "frontend/src/lib/__tests__/cardApplicationState.test.ts",
+      "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+      "frontend/src/lib/__tests__/cfdDisplayOnly.test.ts",
+      "frontend/src/lib/__tests__/cfdTerminal.test.ts",
+      "frontend/src/lib/__tests__/chartDrawings.test.ts",
+      "frontend/src/lib/__tests__/connectionBanner.test.ts",
+      "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+      "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+      "frontend/src/lib/__tests__/copyMarketplacePayload.test.ts",
+      "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "frontend/src/lib/__tests__/copyVerifiedBadge.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardTranslations.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardVisualConsistency.test.ts",
+      "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+      "frontend/src/lib/__tests__/dailyPnlChart.test.ts",
+      "frontend/src/lib/__tests__/dailyReturnChart.test.ts",
+      "frontend/src/lib/__tests__/demoPerformance.test.ts",
+      "frontend/src/lib/__tests__/futuresAccountStore.test.ts",
+      "frontend/src/lib/__tests__/futuresAccountUnknownState.test.ts",
+      "frontend/src/lib/__tests__/futuresCandles.test.ts",
+      "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "frontend/src/lib/__tests__/futuresDepth.test.ts",
+      "frontend/src/lib/__tests__/futuresDiscovery.test.ts",
+      "frontend/src/lib/__tests__/futuresFinalPolish.test.ts",
+      "frontend/src/lib/__tests__/futuresMarketStats.test.ts",
+      "frontend/src/lib/__tests__/futuresOrderPanel.test.ts",
+      "frontend/src/lib/__tests__/futuresPairSort.test.ts",
+      "frontend/src/lib/__tests__/futuresPositionProtection.test.ts",
+      "frontend/src/lib/__tests__/futuresReference.test.ts",
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "frontend/src/lib/__tests__/heroReferenceTerminal.test.ts",
+      "frontend/src/lib/__tests__/homeApprovedAssembly.test.ts",
+      "frontend/src/lib/__tests__/homeHeatmapLayout.test.ts",
+      "frontend/src/lib/__tests__/homeHeroCopy.test.ts",
+      "frontend/src/lib/__tests__/homeHeroStream.test.ts",
+      "frontend/src/lib/__tests__/homeHeroVisibility.test.ts",
+      "frontend/src/lib/__tests__/homeLiveMarket.test.ts",
+      "frontend/src/lib/__tests__/homeLiveRendering.test.ts",
+      "frontend/src/lib/__tests__/homeSapphireProjection.test.ts",
+      "frontend/src/lib/__tests__/homeSapphireTerminal.test.ts",
+      "frontend/src/lib/__tests__/homeSessionsRendering.test.ts",
+      "frontend/src/lib/__tests__/homeTradingSessions.test.ts",
+      "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageRace.test.ts",
+      "frontend/src/lib/__tests__/liveMarketStore.test.ts",
+      "frontend/src/lib/__tests__/marketColumnSort.test.ts",
+      "frontend/src/lib/__tests__/marketDataStore.test.ts",
+      "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+      "frontend/src/lib/__tests__/modeledCopyData.test.ts",
+      "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "frontend/src/lib/__tests__/pairListFavorites.test.ts",
+      "frontend/src/lib/__tests__/priceChartMarketOrders.test.ts",
+      "frontend/src/lib/__tests__/referenceBook.test.ts",
+      "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "frontend/src/lib/__tests__/returnTo.test.ts",
+      "frontend/src/lib/__tests__/routeCodeSplitting.test.ts",
+      "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "frontend/src/lib/__tests__/spotBookRefresh.test.ts",
+      "frontend/src/lib/__tests__/spotChartPriceFormat.test.ts",
+      "frontend/src/lib/__tests__/spotIndicators.test.ts",
+      "frontend/src/lib/__tests__/spotOrderBook.test.ts",
+      "frontend/src/lib/__tests__/spotOrderEntry.test.ts",
+      "frontend/src/lib/__tests__/spotOrderFeedback.test.ts",
+      "frontend/src/lib/__tests__/spotOrdersPresentation.test.ts",
+      "frontend/src/lib/__tests__/spotPairList.test.ts",
+      "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+      "frontend/src/lib/__tests__/syntheticCashflowPresentation.test.ts",
+      "frontend/src/lib/__tests__/syntheticInceptionPresentation.test.ts",
+      "frontend/src/lib/__tests__/syntheticSimpleReturnPresentation.test.ts",
+      "frontend/src/lib/__tests__/terminalAccountPanel.test.ts",
+      "frontend/src/lib/__tests__/terminalPresentation.test.ts",
+      "frontend/src/lib/__tests__/traderVisuals.test.ts",
+      "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "src/api/middleware/__tests__/apiKeyAuth.test.ts",
+      "src/api/middleware/__tests__/auth.test.ts",
+      "src/api/routes/__tests__/account.test.ts",
+      "src/api/routes/__tests__/admin.test.ts",
+      "src/api/routes/__tests__/adminAuditLog.test.ts",
+      "src/api/routes/__tests__/adminDeposits.test.ts",
+      "src/api/routes/__tests__/adminOverview.test.ts",
+      "src/api/routes/__tests__/adminUsers.test.ts",
+      "src/api/routes/__tests__/adminWallets.test.ts",
+      "src/api/routes/__tests__/adminWithdrawals.test.ts",
+      "src/api/routes/__tests__/analytics.test.ts",
+      "src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts",
+      "src/api/routes/__tests__/apiKeys.test.ts",
+      "src/api/routes/__tests__/auth.test.ts",
+      "src/api/routes/__tests__/bcryptAuthRegression.test.ts",
+      "src/api/routes/__tests__/card.test.ts",
+      "src/api/routes/__tests__/cardApplications.test.ts",
+      "src/api/routes/__tests__/copyPerformance.test.ts",
+      "src/api/routes/__tests__/demoTrading.test.ts",
+      "src/api/routes/__tests__/deposits.test.ts",
+      "src/api/routes/__tests__/futuresProtection.test.ts",
+      "src/api/routes/__tests__/kyc.test.ts",
+      "src/api/routes/__tests__/market.test.ts",
+      "src/api/routes/__tests__/marketData.test.ts",
+      "src/api/routes/__tests__/marketUniverse.test.ts",
+      "src/api/routes/__tests__/orders.test.ts",
+      "src/api/routes/__tests__/portfolio.test.ts",
+      "src/api/routes/__tests__/products.test.ts",
+      "src/api/routes/__tests__/reserves.test.ts",
+      "src/api/routes/__tests__/support.test.ts",
+      "src/api/routes/__tests__/trades.test.ts",
+      "src/api/routes/__tests__/universeMeasure.test.ts",
+      "src/api/routes/__tests__/walletPortfolio.test.ts",
+      "src/api/routes/__tests__/withdrawals.test.ts",
+      "src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts",
+      "src/cfd/__tests__/CfdLiquidationEngine.test.ts",
+      "src/cfd/__tests__/CfdOperationGates.test.ts",
+      "src/cfd/__tests__/CfdPositionService.test.ts",
+      "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+      "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+      "src/config/__tests__/chains.test.ts",
+      "src/futures/__tests__/FundingRateService.test.ts",
+      "src/futures/__tests__/FuturesMarketRegistry.test.ts",
+      "src/futures/__tests__/FuturesPositionService.test.ts",
+      "src/futures/__tests__/FuturesProtectionService.test.ts",
+      "src/futures/__tests__/LiquidationEngine.test.ts",
+      "src/futures/__tests__/MarkPriceService.test.ts",
+      "src/futures/__tests__/futuresBookLock.pg.test.ts",
+      "src/futures/__tests__/marginMath.test.ts",
+      "src/matching-engine/__tests__/MatchingEngine.test.ts",
+      "src/services/__tests__/AdminPortfolioProfile.test.ts",
+      "src/services/__tests__/AnalyticsDataService.test.ts",
+      "src/services/__tests__/ApiKeyService.test.ts",
+      "src/services/__tests__/ArbitrageService.test.ts",
+      "src/services/__tests__/BalanceAdjustmentService.test.ts",
+      "src/services/__tests__/BcryptCompatibility.test.ts",
+      "src/services/__tests__/CandleService.test.ts",
+      "src/services/__tests__/CfdMarketDataService.test.ts",
+      "src/services/__tests__/CoinGeckoService.test.ts",
+      "src/services/__tests__/CountryDetectionService.test.ts",
+      "src/services/__tests__/DemoTradingService.test.ts",
+      "src/services/__tests__/DepositService.test.ts",
+      "src/services/__tests__/FearGreedService.test.ts",
+      "src/services/__tests__/FuturesChartCandles.test.ts",
+      "src/services/__tests__/KrakenMarketDataService.test.ts",
+      "src/services/__tests__/KycEmailService.test.ts",
+      "src/services/__tests__/NodemailerCompatibility.test.ts",
+      "src/services/__tests__/OrderBookRecovery.test.ts",
+      "src/services/__tests__/OrderService.test.ts",
+      "src/services/__tests__/PriceWatcherService.test.ts",
+      "src/services/__tests__/PurchaseService.test.ts",
+      "src/services/__tests__/ReservesService.test.ts",
+      "src/services/__tests__/SupportEmailService.test.ts",
+      "src/services/__tests__/TreasuryWalletService.test.ts",
+      "src/services/__tests__/TwoFactorService.test.ts",
+      "src/services/__tests__/WalletPortfolioService.test.ts",
+      "src/services/__tests__/WithdrawalService.test.ts",
+      "src/services/analytics/__tests__/AnalyticsSeparation.test.ts",
+      "src/services/analytics/__tests__/CoinGlassAnalyticsService.test.ts",
+      "src/services/analytics/__tests__/DeribitAnalyticsService.test.ts",
+      "src/services/analytics/__tests__/DerivedAnalytics.test.ts",
+      "src/services/analytics/__tests__/HistoricalOpenInterestService.test.ts",
+      "src/services/analytics/__tests__/LiquidationStreamService.test.ts",
+      "src/services/copyTrading/__tests__/ApprovedPerformanceSeed.test.ts",
+      "src/services/copyTrading/__tests__/CopyPerformanceIsolation.test.ts",
+      "src/services/copyTrading/__tests__/CopyPerformancePromotion.test.ts",
+      "src/services/copyTrading/__tests__/NazarPresentation.test.ts",
+      "src/services/copyTrading/__tests__/PublishedQuantityCompatibility.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticCopyTradingEngine.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticDailyPnlDistribution.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticInceptionHistory.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticProfilePeriods.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticWinRateCalibration.test.ts",
+      "src/services/copyTrading/__tests__/marketplaceSummary.test.ts",
+      "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewFollowerLedgerV8.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewPerformanceAnalyticsV8.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewPerformanceV8Master.test.ts",
+      "src/services/copyTrading/canonical/__tests__/kseniaReview.test.ts",
+      "src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/EvmDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "src/services/marketData/__tests__/AssetRegistry.test.ts",
+      "src/services/marketData/__tests__/CatalogueScale.test.ts",
+      "src/services/marketData/__tests__/MarketDataGateway.test.ts",
+      "src/services/marketData/__tests__/ProviderCache.test.ts",
+      "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "src/services/marketData/__tests__/ProviderHealth.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitInverse.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitMarketUniverse.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitOptions.test.ts",
+      "src/services/marketData/derivatives/__tests__/ExternalDerivatives.test.ts",
+      "src/services/marketData/live/__tests__/CollectorUniverseRouting.test.ts",
+      "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "src/services/marketData/live/__tests__/LiveTransport.test.ts",
+      "src/services/marketData/live/__tests__/StagingVerifier.test.ts"
+    ]
+  },
+  "candidate": {
+    "source": "outputs/full-candidate-final.json",
+    "sourceSha256": "0cefab3234a649bc54258213af5241f6e70e55fda32c843b18e2721321512ba9",
+    "startedAt": "2026-09-14T08:26:34.963Z",
+    "finishedAt": "2026-09-14T08:32:38.689Z",
+    "success": false,
+    "wasInterrupted": false,
+    "counts": {
+      "numTotalTestSuites": 211,
+      "numPassedTestSuites": 183,
+      "numFailedTestSuites": 26,
+      "numPendingTestSuites": 2,
+      "numRuntimeErrorTestSuites": 0,
+      "numTotalTests": 3271,
+      "numPassedTests": 3154,
+      "numFailedTests": 88,
+      "numPendingTests": 29,
+      "numTodoTests": 0
+    },
+    "exactAssertionFailures": [
+      {
+        "suite": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+        "fullName": "actual onError removes broken image, retains geometry and retries changed owner URL",
+        "title": "actual onError removes broken image, retains geometry and retries changed owner URL",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+        "fullName": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring",
+        "title": "approved yellow chart, histogram, statistics, trades and hero stay source-identical before additive Ksenia wiring",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "fallback translations remain available in all seven locales",
+        "title": "fallback translations remain available in all seven locales",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "loaded script without a widget times out and can retry, no poisoned global promise",
+        "title": "loaded script without a widget times out and can retry, no poisoned global promise",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: en",
+        "title": "locale switch remounts cleanly: en",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: es",
+        "title": "locale switch remounts cleanly: es",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: ja",
+        "title": "locale switch remounts cleanly: ja",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: ru",
+        "title": "locale switch remounts cleanly: ru",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "locale switch remounts cleanly: zh",
+        "title": "locale switch remounts cleanly: zh",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: cfd",
+        "title": "market palette preserves official symbol and native controls: cfd",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: futures",
+        "title": "market palette preserves official symbol and native controls: futures",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "market palette preserves official symbol and native controls: spot",
+        "title": "market palette preserves official symbol and native controls: spot",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "native TradingView indicators toolbar is enabled and volume remains controllable",
+        "title": "native TradingView indicators toolbar is enabled and volume remains controllable",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: cfd",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: cfd",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: futures",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: futures",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "one chart across ten rapid switches, detached late work cannot stack: spot",
+        "title": "one chart across ten rapid switches, detached late work cannot stack: spot",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+        "title": "script failure shows honest fallback, preserves CFD disclaimer and retry recovers",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "switching Spot to Futures replaces the owned chart with the new palette and contract",
+        "title": "switching Spot to Futures replaces the owned chart with the new palette and contract",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+        "title": "timeframe label is driven by the exact interval sent to the chart; controls cannot drift",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "unknown CFD mapping and malformed symbols never substitute another instrument",
+        "title": "unknown CFD mapping and malformed symbols never substitute another instrument",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "unmount pending script cancels callbacks and removes all owned nodes",
+        "title": "unmount pending script cancels callbacks and removes all owned nodes",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+        "fullName": "verified CFD mapping and compact visible attribution are preserved",
+        "title": "verified CFD mapping and compact visible attribution are preserved",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+        "fullName": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift",
+        "title": "normalization only reverses exact approved UX edits, never hides copy-action or financial drift",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+        "fullName": "normal API paths replace review-only sources without altering token or request behavior",
+        "title": "normal API paths replace review-only sources without altering token or request behavior",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "fullName": "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+        "title": "Copy preserves its approved source except exact labels and click-only deposit requirement UX",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+        "fullName": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+        "title": "selective Card promotion preserves the exact approved page, composition, copy and state machine",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+        "fullName": "spot and futures pair lists are unchanged leaves the pair-list modules byte-identical",
+        "title": "leaves the pair-list modules byte-identical",
+        "ancestorTitles": [
+          "spot and futures pair lists are unchanged"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+        "fullName": "nobody fetches /futures/config except the store the endpoint has exactly one client method, and one caller",
+        "title": "the endpoint has exactly one client method, and one caller",
+        "ancestorTitles": [
+          "nobody fetches /futures/config except the store"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+        "fullName": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+        "title": "frontend/src/lib/api.ts remains intact (index API, internal OI, Spot)",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesAccountSummary.tsx preserves non-visual semantics",
+        "title": "components/FuturesAccountSummary.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesOrderForm.tsx preserves non-visual semantics",
+        "title": "components/FuturesOrderForm.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/FuturesPairList.tsx preserves non-visual semantics",
+        "title": "components/FuturesPairList.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation components/OrderBookPanel.tsx preserves non-visual semantics",
+        "title": "components/OrderBookPanel.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+        "fullName": "Futures UI-only reconciliation pages/FuturesPage.tsx preserves non-visual semantics",
+        "title": "pages/FuturesPage.tsx preserves non-visual semantics",
+        "ancestorTitles": [
+          "Futures UI-only reconciliation"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "the homepage does not borrow another route's stylesheet 7. route splitting is intact: the homepage is eager, the rest are not",
+        "title": "7. route splitting is intact: the homepage is eager, the rest are not",
+        "ancestorTitles": [
+          "the homepage does not borrow another route's stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "the homepage does not borrow another route's stylesheet the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+        "title": "the two borrowed stylesheets are still reachable ONLY from their lazy pages",
+        "ancestorTitles": [
+          "the homepage does not borrow another route's stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+        "fullName": "translation integrity preserves the exact source bytes of every dictionary body",
+        "title": "preserves the exact source bytes of every dictionary body",
+        "ancestorTitles": [
+          "translation integrity"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles",
+        "title": "copy-card polish retains disabled/Following states and uses scoped, readable desktop/mobile styles",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "CopyButton remains byte-equivalent to approved V8",
+        "title": "CopyButton remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "MetricsPanel remains byte-equivalent to approved V8",
+        "title": "MetricsPanel remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "MiniPerformanceChart remains byte-equivalent to approved V8",
+        "title": "MiniPerformanceChart remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "30D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "7D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only 90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "90D consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "title": "ALL consumes canonical ROI, win rate, drawdown, followers and AUM without mutating input",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only Nazar VIP and the real verified badge share the name row, without a second status line",
+        "title": "Nazar VIP and the real verified badge share the name row, without a second status line",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ordinary card content is preserved; absent Nazara metrics do not become fake constants",
+        "title": "ordinary card content is preserved; absent Nazara metrics do not become fake constants",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names",
+        "title": "ordinary marketplace cards use the same real inline SVG, without hardcoded flagship names",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=false beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=false beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=true beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=true beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only the real card renders identityVerified=undefined beside the name, never over the avatar",
+        "title": "the real card renders identityVerified=undefined beside the name, never over the avatar",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "Nazara marketplace presentation only VIP remains independent and identity verification never inherits the static catalogue flag",
+        "title": "VIP remains independent and identity verification never inherits the static catalogue flag",
+        "ancestorTitles": [
+          "Nazara marketplace presentation only"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+        "fullName": "ProfilePerformanceChart remains byte-equivalent to approved V8",
+        "title": "ProfilePerformanceChart remains byte-equivalent to approved V8",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "30D keeps lifetime statistics separate from the selected chart period",
+        "title": "30D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "7D keeps lifetime statistics separate from the selected chart period",
+        "title": "7D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "90D keeps lifetime statistics separate from the selected chart period",
+        "title": "90D keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips",
+        "title": "actual histogram markup uses the same uncapped signed geometry and canonical tooltips",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=false only inline with its heading",
+        "title": "actual profile shows identityVerified=false only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=true only inline with its heading",
+        "title": "actual profile shows identityVerified=true only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "actual profile shows identityVerified=undefined only inline with its heading",
+        "title": "actual profile shows identityVerified=undefined only inline with its heading",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+        "fullName": "ALL keeps lifetime statistics separate from the selected chart period",
+        "title": "ALL keeps lifetime statistics separate from the selected chart period",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+        "fullName": "customer-facing components render no provider branding has no provider name in any executable line",
+        "title": "has no provider name in any executable line",
+        "ancestorTitles": [
+          "customer-facing components render no provider branding"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "fullName": "the utilities layers in this repo are the three we think they are exactly three stylesheets carry @tailwind utilities, each named",
+        "title": "exactly three stylesheets carry @tailwind utilities, each named",
+        "ancestorTitles": [
+          "the utilities layers in this repo are the three we think they are"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "no route stylesheet may move the shared authenticated header and none of them shifts a box without excluding the header",
+        "title": "and none of them shifts a box without excluding the header",
+        "ancestorTitles": [
+          "no route stylesheet may move the shared authenticated header"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "no route stylesheet may move the shared authenticated header finds the page-root resets this repo actually ships",
+        "title": "finds the page-root resets this repo actually ships",
+        "ancestorTitles": [
+          "no route stylesheet may move the shared authenticated header"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "the shared authenticated header does not depend on a lazy stylesheet and no route stylesheet declares a rule whose subject is a header class",
+        "title": "and no route stylesheet declares a rule whose subject is a header class",
+        "ancestorTitles": [
+          "the shared authenticated header does not depend on a lazy stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "the shared authenticated header does not depend on a lazy stylesheet and the shared burger is index.css's alone, at every width",
+        "title": "and the shared burger is index.css's alone, at every width",
+        "ancestorTitles": [
+          "the shared authenticated header does not depend on a lazy stylesheet"
+        ]
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/spotIndicators.test.ts",
+        "fullName": "legacy shared MACD is unchanged unless explicitly opted in by the Spot chart",
+        "title": "legacy shared MACD is unchanged unless explicitly opted in by the Spot chart",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+        "fullName": "actual stateful BTC → MOG → BTC book initializes grouping before paint and retains manual same-pair steps",
+        "title": "actual stateful BTC → MOG → BTC book initializes grouping before paint and retains manual same-pair steps",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "fullName": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly",
+        "title": "preserves existing financial/data/format/modal source frontend/src/lib/api.ts exactly",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+        "fullName": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly",
+        "title": "preserves existing financial/data/format/modal source frontend/src/pages/wallet-v3/DepositModal.tsx exactly",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+        "fullName": "unconfigured public catalog keeps all verified instruments visible with null quotes and blocked execution",
+        "title": "unconfigured public catalog keeps all verified instruments visible with null quotes and blocked execution",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "minute/day quota counts actual symbol cost and denies HTTP, including retries",
+        "title": "minute/day quota counts actual symbol cost and denies HTTP, including retries",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "provider close and Unix timestamp normalize without bid/ask fabrication, concurrent quotes cost one batch",
+        "title": "provider close and Unix timestamp normalize without bid/ask fabrication, concurrent quotes cost one batch",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "provider outage yields unavailable, never an old execution price",
+        "title": "provider outage yields unavailable, never an old execution price",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+        "fullName": "support, entitlement, actual freshness and execution approval remain independent",
+        "title": "support, entitlement, actual freshness and execution approval remain independent",
+        "ancestorTitles": []
+      },
+      {
+        "suite": "src/services/__tests__/CfdMarketDataService.test.ts",
+        "fullName": "CfdMarketDataService fetches and normalizes tickers keyed by symbol from a batched quote",
+        "title": "fetches and normalizes tickers keyed by symbol from a batched quote",
+        "ancestorTitles": [
+          "CfdMarketDataService"
+        ]
+      },
+      {
+        "suite": "src/services/__tests__/DepositService.test.ts",
+        "fullName": "DepositService minimum deposit ($1000 USD-equivalent) does not credit a confirmed deposit worth less than $1000",
+        "title": "does not credit a confirmed deposit worth less than $1000",
+        "ancestorTitles": [
+          "DepositService",
+          "minimum deposit ($1000 USD-equivalent)"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier credits a matching Transfer event and computes confirmations from the current block",
+        "title": "credits a matching Transfer event and computes confirmations from the current block",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier listIncoming lists recent TRC-20 transfers to the treasury address, one call per configured token",
+        "title": "lists recent TRC-20 transfers to the treasury address, one call per configured token",
+        "ancestorTitles": [
+          "TronDepositVerifier",
+          "listIncoming"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier sends the TRON-PRO-API-KEY header when configured",
+        "title": "sends the TRON-PRO-API-KEY header when configured",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+        "fullName": "TronDepositVerifier throws when the transaction has no events at all",
+        "title": "throws when the transaction has no events at all",
+        "ancestorTitles": [
+          "TronDepositVerifier"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix opens the circuit after repeated failures and then stops calling the provider",
+        "title": "opens the circuit after repeated failures and then stops calling the provider",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix recovers through a HALF_OPEN probe once the cooldown elapses",
+        "title": "recovers through a HALF_OPEN probe once the cooldown elapses",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix retries a temporary 5xx and succeeds",
+        "title": "retries a temporary 5xx and succeeds",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix retries a transport timeout within a bounded budget, never unbounded",
+        "title": "retries a transport timeout within a bounded budget, never unbounded",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+        "fullName": "provider failure matrix stops serving once the stale budget expires rather than aging a price indefinitely",
+        "title": "stops serving once the stale budget expires rather than aging a price indefinitely",
+        "ancestorTitles": [
+          "provider failure matrix"
+        ]
+      },
+      {
+        "suite": "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+        "fullName": "live ticker implementation is unreachable from financial services",
+        "title": "live ticker implementation is unreachable from financial services",
+        "ancestorTitles": []
+      }
+    ],
+    "unassignedSuiteFailures": [],
+    "failedSuitePaths": [
+      "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+      "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+      "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+      "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "frontend/src/lib/__tests__/spotIndicators.test.ts",
+      "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+      "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+      "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+      "src/services/__tests__/CfdMarketDataService.test.ts",
+      "src/services/__tests__/DepositService.test.ts",
+      "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts"
+    ],
+    "testSuitePaths": [
+      "frontend/src/lib/__tests__/adminConsoleInteractions.test.ts",
+      "frontend/src/lib/__tests__/adminDepositRails.test.ts",
+      "frontend/src/lib/__tests__/analyticsLive.test.ts",
+      "frontend/src/lib/__tests__/avatarIdentityPresentation.test.ts",
+      "frontend/src/lib/__tests__/cardApplicationState.test.ts",
+      "frontend/src/lib/__tests__/cfdChartFallback.test.ts",
+      "frontend/src/lib/__tests__/cfdDisplayOnly.test.ts",
+      "frontend/src/lib/__tests__/cfdTerminal.test.ts",
+      "frontend/src/lib/__tests__/chartDrawings.test.ts",
+      "frontend/src/lib/__tests__/connectionBanner.test.ts",
+      "frontend/src/lib/__tests__/copyDepositUx.test.ts",
+      "frontend/src/lib/__tests__/copyFirstLoad.test.ts",
+      "frontend/src/lib/__tests__/copyMarketplacePayload.test.ts",
+      "frontend/src/lib/__tests__/copyPrelaunchPromotion.test.ts",
+      "frontend/src/lib/__tests__/copyVerifiedBadge.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardProductionPromotion.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardTranslations.test.ts",
+      "frontend/src/lib/__tests__/cryptoCardVisualConsistency.test.ts",
+      "frontend/src/lib/__tests__/cryptoCatalogue.test.ts",
+      "frontend/src/lib/__tests__/dailyPnlChart.test.ts",
+      "frontend/src/lib/__tests__/dailyReturnChart.test.ts",
+      "frontend/src/lib/__tests__/demoPerformance.test.ts",
+      "frontend/src/lib/__tests__/futuresAccountStore.test.ts",
+      "frontend/src/lib/__tests__/futuresAccountUnknownState.test.ts",
+      "frontend/src/lib/__tests__/futuresCandles.test.ts",
+      "frontend/src/lib/__tests__/futuresConfigDedup.test.ts",
+      "frontend/src/lib/__tests__/futuresDepth.test.ts",
+      "frontend/src/lib/__tests__/futuresDiscovery.test.ts",
+      "frontend/src/lib/__tests__/futuresFinalPolish.test.ts",
+      "frontend/src/lib/__tests__/futuresMarketStats.test.ts",
+      "frontend/src/lib/__tests__/futuresOrderPanel.test.ts",
+      "frontend/src/lib/__tests__/futuresPairSort.test.ts",
+      "frontend/src/lib/__tests__/futuresPositionProtection.test.ts",
+      "frontend/src/lib/__tests__/futuresReference.test.ts",
+      "frontend/src/lib/__tests__/futuresTickerHeader.test.ts",
+      "frontend/src/lib/__tests__/futuresUiPolish.test.ts",
+      "frontend/src/lib/__tests__/heroReferenceTerminal.test.ts",
+      "frontend/src/lib/__tests__/homeApprovedAssembly.test.ts",
+      "frontend/src/lib/__tests__/homeHeatmapLayout.test.ts",
+      "frontend/src/lib/__tests__/homeHeroCopy.test.ts",
+      "frontend/src/lib/__tests__/homeHeroStream.test.ts",
+      "frontend/src/lib/__tests__/homeHeroVisibility.test.ts",
+      "frontend/src/lib/__tests__/homeLiveMarket.test.ts",
+      "frontend/src/lib/__tests__/homeLiveRendering.test.ts",
+      "frontend/src/lib/__tests__/homeSapphireProjection.test.ts",
+      "frontend/src/lib/__tests__/homeSapphireTerminal.test.ts",
+      "frontend/src/lib/__tests__/homeSessionsRendering.test.ts",
+      "frontend/src/lib/__tests__/homeTradingSessions.test.ts",
+      "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageChunks.test.ts",
+      "frontend/src/lib/__tests__/i18nLanguageRace.test.ts",
+      "frontend/src/lib/__tests__/liveMarketStore.test.ts",
+      "frontend/src/lib/__tests__/marketColumnSort.test.ts",
+      "frontend/src/lib/__tests__/marketDataStore.test.ts",
+      "frontend/src/lib/__tests__/marketUniverseScale.test.ts",
+      "frontend/src/lib/__tests__/modeledCopyData.test.ts",
+      "frontend/src/lib/__tests__/nazarProfileCorrection.test.ts",
+      "frontend/src/lib/__tests__/nazaraCardPresentation.test.ts",
+      "frontend/src/lib/__tests__/noProviderBranding.test.ts",
+      "frontend/src/lib/__tests__/pairListFavorites.test.ts",
+      "frontend/src/lib/__tests__/priceChartMarketOrders.test.ts",
+      "frontend/src/lib/__tests__/privateTradingFrontend.test.ts",
+      "frontend/src/lib/__tests__/referenceBook.test.ts",
+      "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+      "frontend/src/lib/__tests__/returnTo.test.ts",
+      "frontend/src/lib/__tests__/routeCodeSplitting.test.ts",
+      "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+      "frontend/src/lib/__tests__/spotBookRefresh.test.ts",
+      "frontend/src/lib/__tests__/spotChartPriceFormat.test.ts",
+      "frontend/src/lib/__tests__/spotIndicators.test.ts",
+      "frontend/src/lib/__tests__/spotOrderBook.test.ts",
+      "frontend/src/lib/__tests__/spotOrderEntry.test.ts",
+      "frontend/src/lib/__tests__/spotOrderFeedback.test.ts",
+      "frontend/src/lib/__tests__/spotOrdersPresentation.test.ts",
+      "frontend/src/lib/__tests__/spotPairList.test.ts",
+      "frontend/src/lib/__tests__/spotPairTransition.test.ts",
+      "frontend/src/lib/__tests__/syntheticCashflowPresentation.test.ts",
+      "frontend/src/lib/__tests__/syntheticInceptionPresentation.test.ts",
+      "frontend/src/lib/__tests__/syntheticSimpleReturnPresentation.test.ts",
+      "frontend/src/lib/__tests__/terminalAccountPanel.test.ts",
+      "frontend/src/lib/__tests__/terminalPresentation.test.ts",
+      "frontend/src/lib/__tests__/traderVisuals.test.ts",
+      "frontend/src/lib/__tests__/walletUxRefinement.test.ts",
+      "src/api/middleware/__tests__/apiKeyAuth.test.ts",
+      "src/api/middleware/__tests__/auth.test.ts",
+      "src/api/routes/__tests__/account.test.ts",
+      "src/api/routes/__tests__/admin.test.ts",
+      "src/api/routes/__tests__/adminAuditLog.test.ts",
+      "src/api/routes/__tests__/adminDeposits.test.ts",
+      "src/api/routes/__tests__/adminOverview.test.ts",
+      "src/api/routes/__tests__/adminUsers.test.ts",
+      "src/api/routes/__tests__/adminWallets.test.ts",
+      "src/api/routes/__tests__/adminWithdrawals.test.ts",
+      "src/api/routes/__tests__/analytics.test.ts",
+      "src/api/routes/__tests__/analyticsOpenInterestHistoryRoute.test.ts",
+      "src/api/routes/__tests__/apiKeys.test.ts",
+      "src/api/routes/__tests__/auth.test.ts",
+      "src/api/routes/__tests__/bcryptAuthRegression.test.ts",
+      "src/api/routes/__tests__/card.test.ts",
+      "src/api/routes/__tests__/cardApplications.test.ts",
+      "src/api/routes/__tests__/copyPerformance.test.ts",
+      "src/api/routes/__tests__/demoTrading.test.ts",
+      "src/api/routes/__tests__/deposits.test.ts",
+      "src/api/routes/__tests__/futuresProtection.test.ts",
+      "src/api/routes/__tests__/kyc.test.ts",
+      "src/api/routes/__tests__/market.test.ts",
+      "src/api/routes/__tests__/marketData.test.ts",
+      "src/api/routes/__tests__/marketUniverse.test.ts",
+      "src/api/routes/__tests__/orders.test.ts",
+      "src/api/routes/__tests__/portfolio.test.ts",
+      "src/api/routes/__tests__/privateTrading.test.ts",
+      "src/api/routes/__tests__/products.test.ts",
+      "src/api/routes/__tests__/reserves.test.ts",
+      "src/api/routes/__tests__/support.test.ts",
+      "src/api/routes/__tests__/trades.test.ts",
+      "src/api/routes/__tests__/universeMeasure.test.ts",
+      "src/api/routes/__tests__/walletPortfolio.test.ts",
+      "src/api/routes/__tests__/withdrawals.test.ts",
+      "src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts",
+      "src/cfd/__tests__/CfdLiquidationEngine.test.ts",
+      "src/cfd/__tests__/CfdOperationGates.test.ts",
+      "src/cfd/__tests__/CfdPositionService.test.ts",
+      "src/cfd/__tests__/CfdQuoteRoutes.test.ts",
+      "src/cfd/__tests__/CfdQuoteSafety.test.ts",
+      "src/config/__tests__/chains.test.ts",
+      "src/futures/__tests__/FundingRateService.test.ts",
+      "src/futures/__tests__/FuturesMarketRegistry.test.ts",
+      "src/futures/__tests__/FuturesPositionService.test.ts",
+      "src/futures/__tests__/FuturesProtectionService.test.ts",
+      "src/futures/__tests__/LiquidationEngine.test.ts",
+      "src/futures/__tests__/MarkPriceService.test.ts",
+      "src/futures/__tests__/futuresBookLock.pg.test.ts",
+      "src/futures/__tests__/marginMath.test.ts",
+      "src/matching-engine/__tests__/MatchingEngine.test.ts",
+      "src/private-trading/__tests__/liveEngine.test.ts",
+      "src/private-trading/__tests__/marketData.test.ts",
+      "src/private-trading/__tests__/math.test.ts",
+      "src/private-trading/__tests__/replay.test.ts",
+      "src/private-trading/__tests__/service.integration.test.ts",
+      "src/private-trading/__tests__/service.runtime.test.ts",
+      "src/private-trading/__tests__/store.test.ts",
+      "src/services/__tests__/AdminPortfolioProfile.test.ts",
+      "src/services/__tests__/AnalyticsDataService.test.ts",
+      "src/services/__tests__/ApiKeyService.test.ts",
+      "src/services/__tests__/ArbitrageService.test.ts",
+      "src/services/__tests__/BalanceAdjustmentService.test.ts",
+      "src/services/__tests__/BcryptCompatibility.test.ts",
+      "src/services/__tests__/CandleService.test.ts",
+      "src/services/__tests__/CfdMarketDataService.test.ts",
+      "src/services/__tests__/CoinGeckoService.test.ts",
+      "src/services/__tests__/CountryDetectionService.test.ts",
+      "src/services/__tests__/DemoTradingService.test.ts",
+      "src/services/__tests__/DepositService.test.ts",
+      "src/services/__tests__/FearGreedService.test.ts",
+      "src/services/__tests__/FuturesChartCandles.test.ts",
+      "src/services/__tests__/KrakenMarketDataService.test.ts",
+      "src/services/__tests__/KycEmailService.test.ts",
+      "src/services/__tests__/NodemailerCompatibility.test.ts",
+      "src/services/__tests__/OrderBookRecovery.test.ts",
+      "src/services/__tests__/OrderService.test.ts",
+      "src/services/__tests__/PriceWatcherService.test.ts",
+      "src/services/__tests__/PurchaseService.test.ts",
+      "src/services/__tests__/ReservesService.test.ts",
+      "src/services/__tests__/SupportEmailService.test.ts",
+      "src/services/__tests__/TreasuryWalletService.test.ts",
+      "src/services/__tests__/TwoFactorService.test.ts",
+      "src/services/__tests__/WalletPortfolioService.test.ts",
+      "src/services/__tests__/WithdrawalService.test.ts",
+      "src/services/analytics/__tests__/AnalyticsSeparation.test.ts",
+      "src/services/analytics/__tests__/CoinGlassAnalyticsService.test.ts",
+      "src/services/analytics/__tests__/DeribitAnalyticsService.test.ts",
+      "src/services/analytics/__tests__/DerivedAnalytics.test.ts",
+      "src/services/analytics/__tests__/HistoricalOpenInterestService.test.ts",
+      "src/services/analytics/__tests__/LiquidationStreamService.test.ts",
+      "src/services/copyTrading/__tests__/ApprovedPerformanceSeed.test.ts",
+      "src/services/copyTrading/__tests__/CopyPerformanceIsolation.test.ts",
+      "src/services/copyTrading/__tests__/CopyPerformancePromotion.test.ts",
+      "src/services/copyTrading/__tests__/NazarPresentation.test.ts",
+      "src/services/copyTrading/__tests__/PublishedQuantityCompatibility.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticCopyTradingEngine.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticDailyPnlDistribution.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticInceptionHistory.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticProfilePeriods.test.ts",
+      "src/services/copyTrading/__tests__/SyntheticWinRateCalibration.test.ts",
+      "src/services/copyTrading/__tests__/marketplaceSummary.test.ts",
+      "src/services/copyTrading/canonical/__tests__/CanonicalSourcePreservation.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewFollowerLedgerV8.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewPerformanceAnalyticsV8.test.ts",
+      "src/services/copyTrading/canonical/__tests__/ReviewPerformanceV8Master.test.ts",
+      "src/services/copyTrading/canonical/__tests__/kseniaReview.test.ts",
+      "src/services/deposit-verifiers/__tests__/BitcoinDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/EvmDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/SolanaDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/TonDepositVerifier.test.ts",
+      "src/services/deposit-verifiers/__tests__/TronDepositVerifier.test.ts",
+      "src/services/marketData/__tests__/AssetRegistry.test.ts",
+      "src/services/marketData/__tests__/CatalogueScale.test.ts",
+      "src/services/marketData/__tests__/MarketDataGateway.test.ts",
+      "src/services/marketData/__tests__/ProviderCache.test.ts",
+      "src/services/marketData/__tests__/ProviderFailureMatrix.test.ts",
+      "src/services/marketData/__tests__/ProviderHealth.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitInverse.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitMarketUniverse.test.ts",
+      "src/services/marketData/bybit/__tests__/BybitOptions.test.ts",
+      "src/services/marketData/derivatives/__tests__/ExternalDerivatives.test.ts",
+      "src/services/marketData/live/__tests__/CollectorUniverseRouting.test.ts",
+      "src/services/marketData/live/__tests__/LiveFinancialIsolation.test.ts",
+      "src/services/marketData/live/__tests__/LiveTransport.test.ts",
+      "src/services/marketData/live/__tests__/StagingVerifier.test.ts"
+    ]
+  },
+  "comparison": {
+    "newAssertionFailures": [],
+    "newUnassignedSuiteFailures": [],
+    "newFailedSuitePaths": [],
+    "baselineAssertionFailuresNoLongerPresent": [],
+    "baselineUnassignedSuiteFailuresNoLongerPresent": [],
+    "addedSuitePaths": [
+      "frontend/src/lib/__tests__/privateTradingFrontend.test.ts",
+      "src/api/routes/__tests__/privateTrading.test.ts",
+      "src/private-trading/__tests__/liveEngine.test.ts",
+      "src/private-trading/__tests__/marketData.test.ts",
+      "src/private-trading/__tests__/math.test.ts",
+      "src/private-trading/__tests__/replay.test.ts",
+      "src/private-trading/__tests__/service.integration.test.ts",
+      "src/private-trading/__tests__/service.runtime.test.ts",
+      "src/private-trading/__tests__/store.test.ts"
+    ],
+    "missingBaselineSuitePaths": [],
+    "baselinePendingNowPassed": [
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "build output: the shipped chunks agree the eager chunk still ships the header layout"
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/sharedHeaderStylesheetOwnership.test.ts",
+        "fullName": "build output: the shipped chunks agree and no lazy chunk blanket-resets it"
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "fullName": "build output: a cold /wallet downloads every utility it uses every one of them is in the CSS that route fetches"
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/registerWalletTailwindOwnership.test.ts",
+        "fullName": "build output: a cold /wallet downloads every utility it uses and no Tailwind preflight came with them"
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "5. the built EAGER stylesheet carries the homepage utilities index-*.css contains the utilities `/` needs"
+      },
+      {
+        "suite": "frontend/src/lib/__tests__/homepageTailwindUtilities.test.ts",
+        "fullName": "5. the built EAGER stylesheet carries the homepage utilities and still carries no Tailwind preflight reset"
+      }
+    ],
+    "baselinePassedNowPending": [],
+    "addedPendingAssertions": [
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions deposit allocation -> order -> partial/full close -> PnL -> private history -> immutable card persists across restart"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions repeated commands are idempotent and changed parameters do not spend twice"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions insufficient balance leaves preview, ledger and orders unchanged"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions quote expiration AFTER fill/journal work rolls back the whole financial transaction"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions concurrent full closes serialize; only one closes and credits PnL"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions concurrent remaining entry fill and full close never reopen the private position"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions owner revocation after precommit check rolls back account, ledger and confirmation writes"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions historical capital/result remain outside live PnL and production wallets"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions incomplete replay cannot confirm or appear in confirmed private history"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions advance replaces one scenario version without reallocating capital or duplicating earlier journal entries"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions pinned owner access applies to positions, history and cards; revoked flag/session blocks continued writes"
+      },
+      {
+        "suite": "src/private-trading/__tests__/service.integration.test.ts",
+        "fullName": "private trading real TEST PostgreSQL transactions funding both signs and repeated settlement persist once without a second debit after restart"
+      }
+    ],
+    "exactNewFailures": 0
+  }
+}

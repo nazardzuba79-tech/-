@@ -1,5 +1,6 @@
 import express from 'express';
 import { FuturesChartCandles } from '../../FuturesChartCandles';
+import { CollectorPrivateTradingSource, PrivateMarketDataError } from '../../../private-trading/marketData';
 import { createServer } from 'http';
 import { timingSafeEqual } from 'crypto';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -39,6 +40,33 @@ export function collectorServer(
     try {res.json(await futuresCandles.get(req.params.pair,String(req.query.interval??'15m'),Number(req.query.limit??520)));}
     catch(error) {res.status(error instanceof RangeError?400:503).json({error:'candles_unavailable'});}
   });
+  // Private replay transport carries public market data only. No owner/account data,
+  // database writes, or execution actions exist on the collector.
+  const privateTrading = new CollectorPrivateTradingSource();
+  for (const kind of ['instruments', 'quote', 'candles', 'funding'] as const) {
+    app.get(`/internal/v1/private-trading/${kind}/:symbol`, async (req, res) => {
+      const controller = new AbortController();
+      const cancel = () => { if (!res.writableEnded) controller.abort(); };
+      req.on('aborted', cancel); res.on('close', cancel);
+      try {
+        let result: unknown;
+        if (kind === 'instruments') result = await privateTrading.instrument(req.params.symbol, controller.signal);
+        else if (kind === 'quote') result = await privateTrading.freshQuote(req.params.symbol, controller.signal);
+        else {
+          const start = Number(req.query.startTime), end = Number(req.query.endTime);
+          if (kind === 'funding') result = await privateTrading.funding(req.params.symbol, start, end, controller.signal);
+          else {
+            if (req.query.kind !== 'trade' && req.query.kind !== 'mark') throw new PrivateMarketDataError('invalid_candle_kind', 400);
+            result = await privateTrading.candles(req.params.symbol, req.query.kind, Number(req.query.intervalMinutes), start, end, controller.signal);
+          }
+        }
+        if (!controller.signal.aborted) res.json(result);
+      } catch (error) {
+        if (!controller.signal.aborted) res.status(error instanceof PrivateMarketDataError ? error.status : 503)
+          .json({ error: error instanceof PrivateMarketDataError ? error.code : 'private_market_data_unavailable' });
+      } finally { req.off('aborted', cancel); res.off('close', cancel); }
+    });
+  }
   app.get('/internal/v1/diagnostics', async (_req,res) => {
     let cfd: unknown = null;
     if (typeof cfdDisplay?.diagnostics === 'function') {
