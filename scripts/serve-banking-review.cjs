@@ -67,7 +67,7 @@ setTimeout(()=>{
 setTimeout(()=>{const buttons=[...document.querySelectorAll('button')];const b=buttons.find(x=>x.textContent.trim()==='Розрахувати'&&!x.disabled);if(b)b.click();},600);
 `;
 
-const result=esbuild.buildSync({stdin:{contents:entry,resolveDir:path.join(frontend,'src'),sourcefile:'banking-review.tsx',loader:'tsx'},bundle:true,write:false,outdir:tmp,format:'iife',jsx:'automatic'});
+const result=esbuild.buildSync({stdin:{contents:entry,resolveDir:path.join(frontend,'src'),sourcefile:'banking-review.tsx',loader:'tsx'},bundle:true,write:false,outdir:tmp,format:'iife',jsx:'automatic',nodePaths:[path.join(frontend,'node_modules')]});
 const js=result.outputFiles.find(file=>file.path.endsWith('.js')).text;
 const css=result.outputFiles.find(file=>file.path.endsWith('.css'))?.text||'';
 const reviewCss=`
