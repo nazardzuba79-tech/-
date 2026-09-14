@@ -1,0 +1,99 @@
+name: Private trading and replay
+on:
+  pull_request:
+    paths:
+      - 'src/private-trading/**'
+      - 'src/api/routes/privateTrading.ts'
+      - 'src/api/routes/__tests__/privateTrading.test.ts'
+      - 'src/services/DemoTradingService.ts'
+      - 'src/services/__tests__/DemoTradingService.test.ts'
+      - 'frontend/src/lib/private*'
+      - 'frontend/src/lib/chartTrading.ts'
+      - 'frontend/src/lib/__tests__/private*'
+      - 'frontend/src/lib/__tests__/chartTrading.test.ts'
+      - 'frontend/src/pages/private-trading/**'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/components/TerminalChart*'
+      - 'prisma/**'
+      - 'scripts/qa-private-*'
+      - '.github/workflows/private-trading.yml'
+permissions:
+  contents: read
+concurrency:
+  group: private-trading-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: private_qa
+          POSTGRES_PASSWORD: ephemeral_ci_only
+          POSTGRES_DB: voltex_private_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U private_qa -d voltex_private_qa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      # Disposable loopback PostgreSQL only. Never inject production secrets.
+      DATABASE_URL: postgresql://private_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_private_qa?schema=public
+      DIRECT_URL: postgresql://private_qa:ephemeral_ci_only@127.0.0.1:5432/voltex_private_qa?schema=public
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm rebuild bcrypt --build-from-source
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Market-data collector build
+        run: npx tsc -p tsconfig.collector.json
+      - name: Frontend TypeScript and production build
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+      - name: Initialize disposable integration database
+        run: npx prisma db push --skip-generate
+      - name: Private trading, access isolation and chart regressions
+        env:
+          PRIVATE_TRADING_DB_TESTS: '1'
+        run: >-
+          npm test -- --runInBand --silent --json --outputFile=private-trading-tests.json
+          --runTestsByPath
+          src/private-trading/__tests__/chartMarketData.test.ts
+          src/private-trading/__tests__/liveEngine.test.ts
+          src/private-trading/__tests__/marketData.test.ts
+          src/private-trading/__tests__/math.test.ts
+          src/private-trading/__tests__/replay.test.ts
+          src/private-trading/__tests__/service.integration.test.ts
+          src/private-trading/__tests__/service.runtime.test.ts
+          src/private-trading/__tests__/store.test.ts
+          src/api/routes/__tests__/privateTrading.test.ts
+          src/services/__tests__/DemoTradingService.test.ts
+          frontend/src/lib/__tests__/chartDrawings.test.ts
+          frontend/src/lib/__tests__/chartTrading.test.ts
+          frontend/src/lib/__tests__/priceChartMarketOrders.test.ts
+          frontend/src/lib/__tests__/privateChartTicket.test.ts
+          frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+      - name: Preserve test results
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-trading-tests
+          path: private-trading-tests.json
+          retention-days: 7
