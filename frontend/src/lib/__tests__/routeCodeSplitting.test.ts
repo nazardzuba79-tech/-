@@ -26,12 +26,7 @@ const EAGER = ['./pages/home/HomePage', './pages/AuthPage'];
 
 describe('route code splitting', () => {
   it('keeps only the signed-out entry points eager', () => {
-    // HomePage is the first paint for a signed-out visitor: lazy-loading it
-    // would put a second round trip in front of the first pixel. AuthPage
-    // is one click from it and small.
-    for (const path of EAGER) {
-      expect(app).toContain(`from '${path}'`);
-    }
+    for (const path of EAGER) expect(app).toContain(`from '${path}'`);
   });
 
   it('loads every other page lazily', () => {
@@ -47,8 +42,6 @@ describe('route code splitting', () => {
   });
 
   it('has no static page import that would pull a route back into the first bundle', () => {
-    // A single `import { WalletPage } from './pages/WalletPage'` re-merges
-    // that page — and everything it imports — into the entry chunk.
     const staticPageImports = [...app.matchAll(/^import\s+\{[^}]*\}\s+from\s+'(\.\/pages\/[^']+)';$/gm)]
       .map((m) => m[1])
       .filter((path) => !EAGER.includes(path));
@@ -71,9 +64,14 @@ describe('route code splitting', () => {
     expect(app).toContain('if (!getToken()) return;');
   });
 
-  it('folds the old Analytics URL into Markets instead of loading a standalone route', () => {
+  it('folds the old Analytics URL into Markets instead of loading a standalone route or nav tab', () => {
     expect(app).not.toContain('const AnalyticsPage = lazy(');
     expect(app).toContain('<Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />');
+    const nav = code(read('src/components/Nav.tsx'));
+    expect(nav).not.toContain("{ to: '/analytics'");
+    const markets = code(read('src/pages/MarketsPage.tsx'));
+    expect(markets).toContain('/markets?view=analytics');
+    expect(markets).toContain('MarketsAnalyticsSection');
   });
 });
 
