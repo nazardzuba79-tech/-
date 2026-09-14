@@ -44,7 +44,6 @@ const CopyTradingPage = lazy(() => {
   return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
 });
 const ArbitragePage = lazy(() => import('./pages/ArbitragePage').then((m) => ({ default: m.ArbitragePage })));
-const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })));
 const LegalPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.LegalPage })));
 const ReferralRedirectPage = lazy(() => import('./pages/ReferralRedirectPage').then((m) => ({ default: m.ReferralRedirectPage })));
 const AdminLayout = lazy(() => import('./pages/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
@@ -202,19 +201,10 @@ export function App() {
             </RequireAuth>
           }
         />
-        {/* A normal exchange feature, available to any signed-in user —
-            RequireAuth is the whole client-side boundary, and the server
-            re-checks auth on every request. Operational provider health is
-            NOT here: it lives behind /analytics/diagnostics and
-            /market/status, both still admin-gated. */}
-        <Route
-          path="/analytics"
-          element={
-            <RequireAuth>
-              <AnalyticsPage />
-            </RequireAuth>
-          }
-        />
+        {/* Analytics is no longer a standalone product tab. Working modules
+            live under Markets, and the old URL remains only as a compatibility
+            redirect for bookmarks/deep links. */}
+        <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
         {/* Public — reachable both signed-in (footer link) and from the
             login screen, without requiring auth like every other page. */}
         <Route path="/legal/:doc" element={<LegalPage />} />
