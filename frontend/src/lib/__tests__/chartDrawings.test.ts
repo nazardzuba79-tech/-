@@ -4,6 +4,7 @@ import { createRequire } from 'module';
 import ts from 'typescript';
 import * as drawings from '../chartDrawings';
 import * as chartPriceFormat from '../spotChartPriceFormat';
+import * as chartTrading from '../chartTrading';
 
 const { drawingMeasurement, drawingRetracements, formatDrawingPrice, drawingFlyoutPosition, trackDrawingGesture } = drawings;
 
@@ -98,6 +99,8 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     if (id.endsWith('.css') || id === 'lightweight-charts' || id === '../lib/api' || id === '../lib/indicators') return {};
     if (id === '../lib/chartDrawings') return drawings;
     if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
+    if (id === '../lib/chartTrading') return chartTrading;
+    if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     return localRequire(id);
   }, exports);
@@ -154,6 +157,8 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/chartDrawings') return drawings;
       if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
+      if (id === '../lib/chartTrading') return chartTrading;
+    if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
       return localRequire(id);
     }, output);
     const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleHidden: jest.fn(), onSelect: jest.fn() };
@@ -246,6 +251,8 @@ describe('shared drawing toolbar presentation and chart integration', () => {
       if (id === '../lib/chartDrawings') return drawings;
       if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
       if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
+      if (id === '../lib/chartTrading') return chartTrading;
+    if (id === './PrivatePositionLines') return { PrivatePositionLines: () => null };
       return localRequire(id);
     }, bindings);
     const render = () => {

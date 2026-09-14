@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
+import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
 import { FuturesTickerBar } from '../components/FuturesTickerBar';
 import { FuturesPairList, FuturesPairListHandle } from '../components/FuturesPairList';
 import { TerminalChart as PriceChart } from '../components/TerminalChart';
@@ -171,6 +172,7 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
+        rightExtra={<PrivateTradingEntry />}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}

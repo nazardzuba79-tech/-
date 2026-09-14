@@ -1,0 +1,58 @@
+name: Private reference UI evidence
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/private-trading/**'
+      - 'frontend/src/components/PrivatePositionLines*'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/private*'
+      - 'frontend/src/lib/chartTrading.ts'
+      - 'scripts/qa-private-*'
+      - '.github/workflows/private-reference-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: private-reference-ui-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Disposable browser tools
+        run: |
+          npm install --prefix /tmp/private-reference-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/private-reference-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual reference position table and native price-line browser QA
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/private-reference-qa/node_modules/playwright
+        run: node scripts/qa-private-reference-browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-reference-browser
+          path: docs/qa/private-trading/reference-browser/
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: private-reference-review-source
+          path: |
+            frontend/src/components/PrivatePositionLines*
+            frontend/src/components/PriceChart.tsx
+            frontend/src/lib/private*
+            frontend/src/lib/chartTrading.ts
+            frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+            frontend/src/pages/private-trading/
+            src/private-trading/service.ts
+            src/private-trading/__tests__/service.runtime.test.ts
+          retention-days: 3

@@ -21,6 +21,11 @@ datasource db {
 
 model User {
   copyStrategyOwnerships CopyStrategyOwner[]
+  privateTradingAccount PrivateTradingAccount?
+  privateTradingLedger PrivateTradingLedger[]
+  privateTradingCommands PrivateTradingCommand[]
+  privateTradingPreviews PrivateTradingPreview[]
+  privateTradingCards PrivateTradingCard[]
   id            String    @id @default(uuid())
   email         String    @unique
   passwordHash  String
@@ -920,4 +925,69 @@ model CopyPerformanceScenario {
   simulatedAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Owner-only simulation state. No production financial relationships/events.
+model PrivateTradingAccount {
+  userId    String   @id
+  user      User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  available Decimal  @default(0) @db.Decimal(36, 18)
+  reserved  Decimal  @default(0) @db.Decimal(36, 18)
+  principal Decimal  @default(0) @db.Decimal(36, 18)
+  realized  Decimal  @default(0) @db.Decimal(36, 18)
+  state     Json
+  updatedAt DateTime @updatedAt
+}
+
+model PrivateTradingLedger {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  eventId     String
+  scenarioId  String?
+  kind        String
+  amount      Decimal  @db.Decimal(36, 18)
+  metadata    Json
+  effectiveAt DateTime
+  createdAt   DateTime @default(now())
+  @@unique([userId, eventId])
+  @@index([userId, scenarioId, effectiveAt])
+}
+
+model PrivateTradingCommand {
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  key         String
+  requestHash String
+  response    Json
+  createdAt   DateTime @default(now())
+  @@id([userId, key])
+}
+
+model PrivateTradingPreview {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  requestKey  String
+  session     Json
+  mode        String
+  status      String
+  request     Json
+  result      Json?
+  progress    Int      @default(0)
+  error       String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  confirmedAt DateTime?
+  @@unique([userId, requestKey])
+  @@index([userId, status])
+}
+
+model PrivateTradingCard {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payload   Json
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
 }

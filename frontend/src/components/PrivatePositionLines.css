@@ -1,0 +1,10 @@
+.private-position-lines{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.private-position-line-label{--line:#13ad75;position:absolute;transform:translateY(-50%);display:flex;height:22px;box-sizing:border-box;border:1px solid var(--line);background:#101014;color:#fff;pointer-events:auto;white-space:nowrap;font-family:Arial,sans-serif;font-size:11px;line-height:20px;font-variant-numeric:tabular-nums}
+.private-position-line-label.short{--line:#f33b57}
+.private-position-line-label button{font:inherit;line-height:20px;box-sizing:border-box;border:0;border-radius:0;padding:0 5px;color:inherit;background:#101014;cursor:pointer;min-height:0;height:20px}
+.private-position-line-label button+button{border-left:1px solid var(--line)}
+.private-position-line-label .private-line-pnl{font-weight:700;padding:0 6px}
+.private-position-line-label .private-line-quantity{background:var(--line);font-weight:700}
+.private-position-line-label .private-line-action{width:22px;padding:0;color:#9ea3aa;font-size:16px}
+.private-position-line-label button:disabled{opacity:.5;cursor:not-allowed}
+.private-position-line-label button:focus-visible{outline:2px solid #f7a600;outline-offset:2px}

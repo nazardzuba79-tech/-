@@ -1,0 +1,9 @@
+/* Portrait preview only; exported PNG dimensions are fixed by the renderer. */
+dialog.private-card-dialog {
+  width: min(600px, calc(100vw - 32px));
+}
+dialog.private-card-dialog img {
+  height: auto;
+  max-height: calc(100dvh - 190px);
+  object-fit: contain;
+}

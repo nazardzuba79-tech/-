@@ -4,6 +4,13 @@
 .terminal-chart-heading button { border:0; border-bottom:2px solid transparent; padding:0; background:none; color:#8d939f; font:inherit; font-size:11px; cursor:pointer; }
 .terminal-chart-heading button[aria-pressed=true] { color:#f7a600; border-bottom-color:#f7a600; }
 .terminal-chart-heading button:focus-visible { outline:2px solid #f7a600; outline-offset:2px; }
+.terminal-chart-heading .chart-trade-action { align-self:center; min-height:28px; padding:3px 8px; border:1px solid #455362; border-radius:5px; color:#dbe4ef; white-space:nowrap; }
+.terminal-chart-heading .chart-trade-action[aria-pressed=true] { background:#302b1d; border-color:#e9b44c; color:#f0c76d; }
+.chart-trade-status { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-shrink:0; min-height:28px; padding:4px 12px; background:#1b2937; color:#c8d8e8; font-size:11px; }
+.chart-trade-status button { padding:0 6px; background:none; border:0; font-size:19px; color:#dce6f0; cursor:pointer; }
+.chart-history-now { margin-left:4px; border:0; padding:4px 6px; background:transparent; font-size:11px; color:#a5b7ca; cursor:pointer; }
+[data-chart-trade-selecting] .chart-view canvas { cursor:crosshair !important; }
+@media(max-width:600px) { .terminal-chart-heading > div { gap:8px; } .terminal-chart-heading .chart-trade-action { font-size:10px; padding:3px 5px; } }
 .trade-terminal .terminal-chart-shell .chart-toolbar { background:#17181e; border-bottom:1px solid #292c34; min-height:38px; height:auto; padding:4px 8px; gap:6px; flex-wrap:wrap; }
 .trade-terminal .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { font-family:Inter,Arial,sans-serif; font-size:11px; font-weight:500; border-radius:4px; }
 .trade-terminal .terminal-chart-shell .chart-tools { gap:3px; flex-wrap:wrap; }

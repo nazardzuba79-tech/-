@@ -8,6 +8,14 @@ type TxClient = Prisma.TransactionClient;
 
 export class DemoTradingError extends Error {}
 
+/** DemoBalance is Decimal(36,18): do not round a lock/transfer into a different amount. */
+function exactDemoDelta(value: BigNumber): string {
+  if (!value.isFinite() || value.decimalPlaces()! > 18 || value.abs().gte('1000000000000000000')) {
+    throw new DemoTradingError('Demo amount exceeds supported precision');
+  }
+  return value.toFixed();
+}
+
 /**
  * A stripped-down mirror of OrderService (LIMIT/MARKET only — no
  * stop/take-profit/OCO, no PriceWatcher integration) that trades against
@@ -56,7 +64,7 @@ export class DemoTradingService {
   }) {
     const [base, quote] = params.pair.split('/');
     if (!base || !quote) throw new DemoTradingError(`Invalid pair: ${params.pair}`);
-    if (params.type === 'LIMIT' && !params.price) {
+    if (params.type === 'LIMIT' && (!params.price || !params.price.isFinite() || params.price.lte(0))) {
       throw new DemoTradingError('price is required for a LIMIT order');
     }
     if (!params.quantity.isFinite() || params.quantity.isLessThanOrEqualTo(0)) {
@@ -117,7 +125,10 @@ export class DemoTradingService {
       if (!order || order.userId !== userId) return null;
       if (!['OPEN', 'PARTIALLY_FILLED'].includes(order.status)) return null;
 
-      await tx.demoOrder.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+      const claimed = await tx.demoOrder.updateMany({
+        where: { id: order.id, userId, status: { in: ['OPEN', 'PARTIALLY_FILLED'] } }, data: { status: 'CANCELLED' },
+      });
+      if (claimed.count !== 1) return null;
       this.engine.cancelOrder(order.pair, order.id);
 
       const [base, quote] = order.pair.split('/');
@@ -187,18 +198,17 @@ export class DemoTradingService {
   }
 
   private async lockFunds(tx: TxClient, userId: string, asset: string, amount: BigNumber) {
-    const balance = await tx.demoBalance.findUnique({ where: { userId_asset: { userId, asset } } });
-    const available = new BigNumber(balance?.available.toString() ?? '0');
-    if (available.isLessThan(amount)) {
+    const exact = exactDemoDelta(amount);
+    if (!amount.gt(0)) throw new DemoTradingError('Demo lock must be positive');
+    // Shares the same database row with private leveraged-demo allocations. A
+    // conditional delta survives concurrent transfers without overwriting them.
+    const updated = await tx.demoBalance.updateMany({
+      where: { userId, asset, available: { gte: exact } },
+      data: { available: { decrement: exact }, locked: { increment: exact } },
+    });
+    if (updated.count !== 1) {
       throw new DemoTradingError(`Insufficient demo ${asset} balance`);
     }
-    await tx.demoBalance.update({
-      where: { userId_asset: { userId, asset } },
-      data: {
-        available: available.minus(amount).toString(),
-        locked: new BigNumber(balance!.locked.toString()).plus(amount).toString(),
-      },
-    });
   }
 
   private async settleTrade(tx: TxClient, trade: { side: OrderSide; price: BigNumber; quantity: BigNumber; takerUserId: string; makerUserId: string }, base: string, quote: string) {
@@ -213,14 +223,21 @@ export class DemoTradingService {
   }
 
   private async adjustBalance(tx: TxClient, userId: string, asset: string, delta: { available?: BigNumber; locked?: BigNumber }) {
-    const existing = await tx.demoBalance.upsert({
-      where: { userId_asset: { userId, asset } },
-      create: { userId, asset, available: '0', locked: '0' },
-      update: {},
+    const available = delta.available ?? new BigNumber(0), locked = delta.locked ?? new BigNumber(0);
+    const exactAvailable = exactDemoDelta(available), exactLocked = exactDemoDelta(locked);
+    const data = { available: { increment: exactAvailable }, locked: { increment: exactLocked } };
+    if (!available.isNegative() && !locked.isNegative()) {
+      await tx.demoBalance.upsert({ where: { userId_asset: { userId, asset } },
+        create: { userId, asset, available: exactAvailable, locked: exactLocked }, update: data });
+      return;
+    }
+    const updated = await tx.demoBalance.updateMany({
+      where: { userId, asset,
+        ...(available.isNegative() ? { available: { gte: available.negated().toFixed() } } : {}),
+        ...(locked.isNegative() ? { locked: { gte: locked.negated().toFixed() } } : {}),
+      }, data,
     });
-    const available = new BigNumber(existing.available.toString()).plus(delta.available ?? 0);
-    const locked = new BigNumber(existing.locked.toString()).plus(delta.locked ?? 0);
-    await tx.demoBalance.update({ where: { userId_asset: { userId, asset } }, data: { available: available.toString(), locked: locked.toString() } });
+    if (updated.count !== 1) throw new DemoTradingError(`Insufficient demo ${asset} balance`);
   }
 
   /** Manual credit/debit — the demo equivalent of BalanceAdjustmentService,
@@ -228,18 +245,12 @@ export class DemoTradingService {
   async topUp(params: { userId: string; asset: string; amount: string; performedByAdminId: string; note?: string }) {
     const delta = new BigNumber(params.amount);
     if (!delta.isFinite() || delta.isZero()) throw new DemoTradingError('Amount must be a non-zero number');
+    exactDemoDelta(delta);
 
     return this.prisma.$transaction(async (tx: TxClient) => {
-      const existing = await tx.demoBalance.findUnique({ where: { userId_asset: { userId: params.userId, asset: params.asset } } });
-      const currentAvailable = new BigNumber(existing?.available.toString() ?? '0');
-      const newAvailable = currentAvailable.plus(delta);
-      if (newAvailable.isNegative()) throw new DemoTradingError('Adjustment would make the demo balance negative');
-
-      const updated = await tx.demoBalance.upsert({
-        where: { userId_asset: { userId: params.userId, asset: params.asset } },
-        create: { userId: params.userId, asset: params.asset, available: newAvailable.toString() },
-        update: { available: newAvailable.toString() },
-      });
+      await this.adjustBalance(tx, params.userId, params.asset, { available: delta });
+      // The preceding atomic mutation holds this row's lock until commit.
+      const updated = await tx.demoBalance.findUniqueOrThrow({ where: { userId_asset: { userId: params.userId, asset: params.asset } } });
 
       await tx.auditLog.create({
         data: {
@@ -248,7 +259,7 @@ export class DemoTradingService {
           metadata: {
             asset: params.asset,
             delta: delta.toString(),
-            newAvailable: newAvailable.toString(),
+            newAvailable: updated.available.toString(),
             reason: 'demo top-up',
             note: params.note ?? null,
             performedByAdminId: params.performedByAdminId,

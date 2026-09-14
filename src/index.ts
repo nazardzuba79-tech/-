@@ -54,6 +54,10 @@ import { PriceWatcherService } from './services/PriceWatcherService';
 import { PRICE_WATCHER_CHECK_INTERVAL_MS } from './config/limits';
 import { DemoTradingService } from './services/DemoTradingService';
 import { demoTradingRouter } from './api/routes/demoTrading';
+import { privateTradingRouter } from './api/routes/privateTrading';
+import { PrivateTradingService } from './private-trading/service';
+import { PrivateTradingStore } from './private-trading/store';
+import { PrivateTradingMarketData } from './private-trading/marketData';
 import { portfolioRouter } from './api/routes/portfolio';
 import { WalletPortfolioService } from './services/WalletPortfolioService';
 import { syntheticCopyTradingRouter } from './api/routes/syntheticCopyTrading';
@@ -118,6 +122,10 @@ const priceWatcherService = new PriceWatcherService(prisma, spotOrderService, ma
 
 const demoEngine = new MatchingEngine();
 const demoTradingService = new DemoTradingService(prisma, demoEngine);
+const privateTradingService = new PrivateTradingService(new PrivateTradingStore(prisma),
+  process.env.MARKET_DATA_COLLECTOR_URL && process.env.MARKET_DATA_COLLECTOR_TOKEN
+    ? new PrivateTradingMarketData({ collector: { url: process.env.MARKET_DATA_COLLECTOR_URL, token: process.env.MARKET_DATA_COLLECTOR_TOKEN } })
+    : null);
 
 const marketDataGateway = new MarketDataGateway(
   marketDataService,
@@ -208,6 +216,7 @@ app.use('/api/v1', reservesRouter(prisma));
 app.use('/api/v1', futuresRouter(prisma, futuresEngine, futuresPositionService, markPriceService, futuresMarketRegistry, futuresProtectionService));
 app.use('/api/v1', supportRouter(prisma, supportEmailService));
 app.use('/api/v1', demoTradingRouter(prisma, demoTradingService));
+app.use('/api/v1', privateTradingRouter(prisma, privateTradingService));
 app.use('/api/v1', portfolioRouter(prisma, walletPortfolioService));
 app.use('/api/v1', syntheticCopyTradingRouter(prisma));
 app.use('/api/v1', copyPerformanceRouter(prisma));
@@ -238,6 +247,7 @@ async function start() {
   futuresProtectionService.startScheduler();
   cfdLiquidationEngine.startScheduler();
   priceWatcherService.startScheduler(PRICE_WATCHER_CHECK_INTERVAL_MS);
+  privateTradingService.start();
   liquidationStreamService.start();
 
   app.listen(PORT, () => console.log(`Exchange API listening on :${PORT}`));
@@ -259,6 +269,7 @@ process.on('SIGTERM', async () => {
   futuresProtectionService.stopScheduler();
   cfdLiquidationEngine.stopScheduler();
   priceWatcherService.stopScheduler();
+  privateTradingService.stop();
   await prisma.$disconnect();
   process.exit(0);
 });
