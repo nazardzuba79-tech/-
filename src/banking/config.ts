@@ -22,15 +22,18 @@ export const BANKING_ASSET_STEPS: Record<BankingAsset, string> = {
   USDT: '0.01', USDC: '0.01', BTC: '0.00000001', ETH: '0.00000001', SOL: '0.00000001',
 };
 
+// Stable program IDs are retained for compatibility inside this still-unmerged PR.
+// The current commercial terms are authoritative here: 17% monthly for 12 months,
+// 21% monthly with compounding for 24 months.
 export const BANKING_PROGRAMS: readonly BankingProgramConfig[] = [
   {
-    id: 'MONTHLY_17_24M', name: 'Щомісячні виплати', monthlyRate: '0.17', termMonths: 24,
+    id: 'MONTHLY_17_24M', name: 'Ежемесячные выплаты', monthlyRate: '0.17', termMonths: 12,
     minUsd: '2500', assets: ['USDT','USDC','BTC','ETH','SOL'], compound: false,
     payoutFrequency: 'MONTHLY', lockRule: 'PRINCIPAL_RETURN_UNDEFINED', enabled: true,
     availableFrom: null, availableUntil: null,
   },
   {
-    id: 'COMPOUND_21_12M', name: 'Накопичення', monthlyRate: '0.21', termMonths: 12,
+    id: 'COMPOUND_21_12M', name: 'Накопление', monthlyRate: '0.21', termMonths: 24,
     minUsd: '2500', assets: ['USDT','USDC','BTC','ETH','SOL'], compound: true,
     payoutFrequency: 'MATURITY', lockRule: 'PRINCIPAL_AND_REWARDS_LOCKED_TO_MATURITY', enabled: true,
     availableFrom: null, availableUntil: null,
