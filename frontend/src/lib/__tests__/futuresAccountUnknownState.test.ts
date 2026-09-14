@@ -122,6 +122,7 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   } }).outputText;
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === 'react') return react;
+    if (name === 'react-router-dom') return { useNavigate: () => jest.fn() };
     if (name === '../lib/api') return { api, ApiError: Error };
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
@@ -130,6 +131,8 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/formatNumber') return { formatPrice: String };
     if (name === '../lib/futuresMath') return futuresMath;
     if (name === './spotOrderPresentation') return orderPresentation;
+    if (name === './FuturesPositionProtection') return { FuturesPositionProtectionCell: () => null };
+    if (name === './OrderFamilyPresentation') return { OrderFamilyTabs: () => null, OrderFamilyFields: () => null };
     if (name.endsWith('.css')) return {};
     if (name.startsWith('./') || name.startsWith('../components/')) {
       const label = name.split('/').pop()!;
@@ -301,6 +304,47 @@ describe('unknown is not empty in the positions panel', () => {
     const tree = panel.render({ refreshKey: 0, tab: 'open' });
     expect(text(tree)).toContain('104000');
     expect(text(tree)).not.toContain('futures.noPositions');
+    expect(nodes(tree).filter(n => n.props?.role === 'alert')).toHaveLength(1);
+    expect(nodes(tree).filter(n => n.type === 'button' && n.props.children === 'trade.retry')).toHaveLength(1);
+  });
+  test.each([['open', 'positions'], ['history', 'positionHistory']])('failed refresh of a previously empty %s response does not claim the account is currently empty', (tab, key) => {
+    const panel = mount('components/FuturesPositionsPanel.tsx', { account: accountState({ [key]: resource([], true) }) });
+    const tree = panel.render({ tab, refreshKey: 0 });
+    expect(text(tree)).toContain('futures.loadPositionsError');
+    expect(text(tree)).not.toContain('futures.noPositions');
+    expect(text(tree)).not.toContain('futures.noPositionHistory');
+    expect(nodes(tree).filter(n => n.type === 'button' && n.props.children === 'trade.retry')).toHaveLength(1);
+  });
+});
+
+describe('account summary and assets recovery states', () => {
+  test('summary consolidates failed balance and position reads into one action with exact resource retry', () => {
+    const panel = mount('components/FuturesAccountSummary.tsx', { account: accountState({ balances: resource(null, true), positions: resource(null, true) }) });
+    const tree = panel.render({ quoteAsset: 'USDT', config: null });
+    expect(nodes(tree).filter(n => n.props?.role === 'alert')).toHaveLength(1);
+    expect(text(tree)).toContain('trade.loadAssetsError');
+    expect(text(tree)).not.toContain('futures.loadPositionsError');
+    const retry = nodes(tree).filter(n => n.type === 'button' && n.props.children === 'trade.retry');
+    expect(retry).toHaveLength(1);
+    retry[0].props.onClick();
+    expect(panel.refreshes).toEqual([['balances', 'positions']]);
+    expect(text(tree)).not.toContain('0.00');
+  });
+  test('summary preserves known balances during failed refresh and disables duplicate retries while busy', () => {
+    const panel = mount('components/FuturesAccountSummary.tsx', { account: accountState({ balances: { ...resource([{ asset: 'USDT', available: '123.45', locked: '10' }], true), refreshing: true } }) });
+    const tree = panel.render({ quoteAsset: 'USDT', config: null });
+    expect(text(tree)).toContain('133.45');
+    expect(nodes(tree).find(n => n.type === 'button' && n.props.children === 'trade.retry').props.disabled).toBe(true);
+  });
+  test.each([null, []])('Futures assets failed read has one retry and never claims an empty wallet (%s)', data => {
+    const panel = mount('components/AssetsPanel.tsx', { account: accountState({ balances: resource(data, true) }) });
+    const tree = panel.render({ wallet: 'futures', refreshKey: 0 });
+    expect(text(tree)).toContain('trade.loadAssetsError');
+    expect(text(tree)).not.toContain('trade.noAssets');
+    const retry = nodes(tree).filter(n => n.type === 'button' && n.props.children === 'trade.retry');
+    expect(retry).toHaveLength(1);
+    retry[0].props.onClick();
+    expect(panel.refreshes).toEqual([['balances']]);
   });
 });
 
@@ -480,6 +524,15 @@ describe('Futures orders presentation', () => {
     expect(text(view)).toContain('0.00000001');
     expect(text(view)).toContain('0.07');
     expect(nodes(view).filter(n => n.props?.className === 'cancel-btn')).toHaveLength(0);
+  });
+  test.each([false, true])('failed refresh after empty orders has one retry, no false empty state (history=%s)', history => {
+    const key = history ? 'orderHistory' : 'orders';
+    const panel = mount('components/FuturesOrdersPanel.tsx', { account: { ...accountState(), [key]: resource([], true) } });
+    const tree = panel.render({ history, refreshKey: 0 });
+    expect(text(tree)).toContain('trade.loadOrdersError');
+    expect(text(tree)).not.toContain('futures.noOpenOrders');
+    expect(text(tree)).not.toContain('futures.noOrderHistory');
+    expect(nodes(tree).filter(n => n.type === 'button' && n.props.children === 'trade.retry')).toHaveLength(1);
   });
   test('cancel calls the Futures endpoint and refreshes affected resources', async () => {
     const cancelFuturesOrder = jest.fn().mockResolvedValue(undefined);

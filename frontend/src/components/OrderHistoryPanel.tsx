@@ -17,10 +17,12 @@ export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
   const { t, lang } = useLanguage();
   const [orders, setOrders] = useState<SpotOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
   const reader = useRef<SpotReadController | null>(null);
   if (!reader.current) reader.current = createSpotReadController(() => api.getMyOrders('FILLED,CANCELLED'), {
-    accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true), settled: () => setLoading(false),
+    started: () => setRefreshing(true), accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true),
+    settled: () => { setLoading(false); setRefreshing(false); },
   });
   const load = useCallback((fresh = false) => reader.current!.read(fresh), []);
 
@@ -33,6 +35,6 @@ export function OrderHistoryPanel({ pair, refreshKey }: { pair: string; refreshK
 
   const pairOrders = orders.filter((o) => o.pair === pair);
 
-  return <SpotOrdersView orders={pairOrders} loading={loading} error={failed ? t('trade.loadOrdersError') : null}
+  return <SpotOrdersView orders={pairOrders} loading={loading} refreshing={refreshing} error={failed ? t('trade.loadOrdersError') : null}
     history locale={localeOf(lang)} t={t} onRetry={() => { void load(true); }} />;
 }

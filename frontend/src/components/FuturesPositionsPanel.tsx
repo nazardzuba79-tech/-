@@ -44,6 +44,7 @@ export function FuturesPositionsPanel({
    *  claim about the account that nobody made. */
   const positions = account.positions.data;
   const history = account.positionHistory.data;
+  const activeResource = tab === 'open' ? account.positions : account.positionHistory;
 
   // The one history load, on tab activation.
   useEffect(() => {
@@ -113,6 +114,11 @@ export function FuturesPositionsPanel({
       </div>}
 
       {error && <div style={styles.error}>{error}</div>}
+      {activeResource.failed && !!activeResource.data?.length && <div className="terminal-account-state" role="alert" aria-busy={activeResource.refreshing}>
+        <span>{t('futures.loadPositionsError')}</span>
+        <button type="button" className="terminal-account-retry" disabled={activeResource.loading || activeResource.refreshing}
+          onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
+      </div>}
 
       {tab === 'open' ? (
         positions === null ? (
@@ -120,7 +126,7 @@ export function FuturesPositionsPanel({
           // makes, with the same two existing strings.
           renderState(account.positions.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positions.failed)
         ) : positions.length === 0 ? (
-          renderState(t('futures.noPositions'))
+          renderState(t(account.positions.failed ? 'futures.loadPositionsError' : 'futures.noPositions'), account.positions.failed)
         ) : (
           <div style={styles.tableWrap}>
             <table style={styles.table}>
@@ -188,7 +194,7 @@ export function FuturesPositionsPanel({
       ) : history === null ? (
         renderState(account.positionHistory.failed ? t('futures.loadPositionsError') : t('trade.loading'), account.positionHistory.failed)
       ) : history.length === 0 ? (
-        renderState(t('futures.noPositionHistory'))
+        renderState(t(account.positionHistory.failed ? 'futures.loadPositionsError' : 'futures.noPositionHistory'), account.positionHistory.failed)
       ) : (
         <div style={styles.tableWrap}>
           <table style={styles.table}>

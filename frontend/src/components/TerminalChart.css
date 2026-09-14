@@ -23,3 +23,41 @@
   .trade-terminal .terminal-chart-shell .drawing-tools > .chart-view { flex-direction:column; }
   .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { width:100%; min-width:0; max-width:100%; height:40px; min-height:40px; flex:0 0 40px; flex-direction:row; overflow-x:auto; overflow-y:hidden; }
 }
+
+/* Keep the reveal control outside the scrollable tools so it is reachable
+   even on short screens. Collapsing this rail never unmounts the chart. */
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell {
+  display:flex; flex-direction:column; align-self:stretch; flex:0 0 44px;
+  width:44px; min-height:0; overflow:hidden; border-right:1px solid #26313d;
+  background:var(--voltex-plot-background,#111922);
+}
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed {
+  width:18px; flex-basis:18px;
+}
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
+  width:100%; min-width:0; flex:1 1 auto; border-right:0;
+}
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail[hidden] { display:none; }
+.trade-terminal .terminal-chart-shell .drawing-rail-toggle {
+  display:flex; align-items:center; justify-content:center; flex:0 0 24px;
+  width:100%; min-height:24px; padding:0; margin-top:auto;
+  border:0; border-top:1px solid #26313d; border-radius:0;
+  background:#17232f; color:#c1cdd9; cursor:pointer;
+}
+.trade-terminal .terminal-chart-shell .drawing-rail-toggle:hover { background:#243340; color:#fff; }
+.trade-terminal .terminal-chart-shell .drawing-rail-toggle:focus-visible { outline:2px solid #e9b44c; outline-offset:-2px; }
+.trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle svg { transform:rotate(180deg); }
+@media(max-width:900px) {
+  .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell {
+    flex-direction:row; width:100%; flex-basis:42px; min-height:42px;
+    border-right:0; border-bottom:1px solid #26313d;
+  }
+  .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
+    flex:1 1 auto; width:auto; height:42px; min-height:42px; border-bottom:0;
+  }
+  .trade-terminal .terminal-chart-shell .drawing-rail-toggle { width:24px; height:100%; margin-top:0; border-top:0; border-left:1px solid #26313d; }
+  .trade-terminal .terminal-chart-shell .drawing-rail-toggle svg { transform:rotate(90deg); }
+  .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed { width:100%; flex-basis:24px; min-height:24px; }
+  .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle { flex:1; width:100%; border-left:0; }
+  .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle svg { transform:rotate(270deg); }
+}

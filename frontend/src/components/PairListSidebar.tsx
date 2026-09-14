@@ -3,7 +3,7 @@ import { useMarketTickers } from '../lib/useMarketData';
 import { useLanguage } from '../lib/i18n';
 import { QUOTE_PRIORITY, filterAndSortPairs, TickerRow } from '../lib/pairList';
 import { useFavorites } from '../lib/useFavorites';
-import { parseChangePercent } from '../lib/priceChange';
+import { parseChangePercentOrNull } from '../lib/priceChange';
 import { formatSpotBookNumber } from '../lib/spotOrderBook';
 import { CryptoIcon } from './CryptoIcon';
 import { ChevronDown, ChevronUp, GripVertical, PanelLeftClose, Star } from 'lucide-react';
@@ -266,9 +266,15 @@ export const PairListSidebar = forwardRef<
             // Rounded before the direction is picked from it, not after: a
             // change of -0.001% otherwise printed as a red, downward
             // "▼ -0.00%" — an arrow and a sign pointing at nothing.
-            const change = Number(parseChangePercent(tk.changePercent24h, tk.pair).toFixed(2));
-            const up = change >= 0;
-            const priceText = formatSpotBookNumber(parseFloat(tk.lastPrice));
+            // A catalogue row without a last trade can carry provider zero
+            // sentinels. Keep the instrument, but do not present it as free
+            // or claim flat performance without a valid last-trade price.
+            const lastPrice = typeof tk.lastPrice === 'string' && tk.lastPrice.trim() !== '' ? Number(tk.lastPrice) : NaN;
+            const hasPrice = Number.isFinite(lastPrice) && lastPrice > 0;
+            const rawChange = hasPrice ? parseChangePercentOrNull(tk.changePercent24h, tk.pair) : null;
+            const change = rawChange === null ? null : Number(rawChange.toFixed(2));
+            const up = change !== null && change >= 0;
+            const priceText = hasPrice ? formatSpotBookNumber(lastPrice) : '—';
             return (
               <div
                 key={tk.pair}
@@ -301,9 +307,8 @@ export const PairListSidebar = forwardRef<
                   {(!effectiveQuoteFilter || tk.pair.split('/')[1] !== effectiveQuoteFilter) && <span className="p-quote">/{tk.pair.split('/')[1]}</span>}
                 </span>
                 <span className="p-price" data-compact={priceText.length > 10 || undefined} title={priceText}>{priceText}</span>
-                <span className={`p-change ${up ? 'up' : 'down'}`}>
-                  {up ? '+' : ''}
-                  {change.toFixed(2)}%
+                <span className={`p-change${change === null ? '' : up ? ' up' : ' down'}`}>
+                  {change === null ? '—' : `${up ? '+' : ''}${change.toFixed(2)}%`}
                 </span>
                 </button>
               </div>

@@ -7,6 +7,7 @@ import * as bookMath from '../spotOrderBook';
 import * as futuresMath from '../futuresMath';
 import * as assetReads from '../../components/spotOrderPresentation';
 import * as futuresDiscovery from '../futuresDiscovery';
+import * as accountPanelState from '../terminalAccountPanel';
 import { LEVERAGE_TIERS } from '../../../../src/config/futuresConfig';
 
 const frontend = resolve(__dirname, '../../..');
@@ -126,6 +127,15 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   } }).outputText;
   new Function('require', 'exports', 'window', compiled)((name: string) => {
     if (name === 'react') return react;
+    if (name === '../lib/terminalAccountPanel') return accountPanelState;
+    if (name === '../lib/useCompactAccountPanel') {
+      const module: any = {};
+      const code = ts.transpileModule(source('lib/useCompactAccountPanel.ts'), { compilerOptions: {
+        module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022,
+      } }).outputText;
+      new Function('require', 'exports', code)(() => react, module);
+      return module;
+    }
     if (name === '../lib/api') return { api, ApiError: Error };
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
 
 type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
@@ -30,6 +30,8 @@ export function FuturesAccountSummary({
   // independently timed copies of it. The 5s cadence is the one this card
   // always used.
   const account = useFuturesAccount({ balances: 5000, positions: 5000 });
+  const failedResources = (['balances', 'positions'] as const).filter(key => account[key].failed);
+  const retrying = failedResources.some(key => account[key].loading || account[key].refreshing);
 
   // `null` means "not known", and stays null when a request fails. It is
   // never coerced to 0: reporting an empty margin account to a trader whose
@@ -79,6 +81,10 @@ export function FuturesAccountSummary({
           {showBalance ? <EyeIcon /> : <EyeOffIcon />}
         </button>
       </div>
+      {failedResources.length > 0 && <div className="terminal-account-state" role="alert" aria-busy={retrying}>
+        <span>{t(account.balances.failed ? 'trade.loadAssetsError' : 'futures.loadPositionsError')}</span>
+        <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => refreshFuturesAccount(failedResources)}>{t('trade.retry')}</button>
+      </div>}
       <div className="futures-account-pnl" style={styles.headerRight}>
         <span>{t('futures.unrealizedPnl')}</span>
         <span

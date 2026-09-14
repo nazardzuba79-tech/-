@@ -21,10 +21,12 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   const { t } = useLanguage();
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [failed, setFailed] = useState(false);
   const reader = useRef<SpotReadController | null>(null);
   if (!reader.current) reader.current = createSpotReadController(() => api.getBalances(), {
-    accept: rows => { setBalances(rows); setFailed(false); }, reject: () => setFailed(true), settled: () => setLoading(false),
+    started: () => setRefreshing(true), accept: rows => { setBalances(rows); setFailed(false); }, reject: () => setFailed(true),
+    settled: () => { setLoading(false); setRefreshing(false); },
   });
 
   // Futures reads the ONE shared account store — same 4s cadence, but it
@@ -39,10 +41,11 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   const load = useCallback((fresh = false) => {
     if (compact) return reader.current!.read(fresh);
     if (wallet === 'futures') return refreshFuturesAccount(['balances']);
+    setRefreshing(true);
     api.getBalances()
       .then(rows => { setBalances(rows); setFailed(false); })
       .catch(() => setFailed(true))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setRefreshing(false); });
   }, [compact, wallet]);
 
   useEffect(() => {
@@ -63,27 +66,32 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
   // Futures: `null` is "not known yet or failed" and must not render as an
   // empty wallet; `[]` is a real empty wallet and does.
   const isLoading = isFutures ? !futuresAccount.balances.loaded : loading;
-  const hasFailed = isFutures ? futuresAccount.balances.failed && rows === null : failed;
+  const hasFailed = isFutures ? futuresAccount.balances.failed : failed;
+  const isRefreshing = isFutures ? futuresAccount.balances.loading || futuresAccount.balances.refreshing : refreshing;
+  const failure = <div className="terminal-account-state" role="alert" aria-busy={isRefreshing}>
+    <span>{t('trade.loadAssetsError')}</span>
+    <button type="button" className="terminal-account-retry" disabled={isRefreshing} onClick={() => { void load(true); }}>{t('trade.retry')}</button>
+  </div>;
 
-  // Explicit Spot-only opt-in: the shared Futures table/empty state below
-  // remains unchanged, including its existing number formatting.
-  if (compact) return <SpotAssetsView balances={balances} loading={loading} error={failed ? t('trade.loadAssetsError') : null} t={t} onRetry={() => { void load(true); }} />;
+  // Spot keeps its compact view; Futures keeps its existing table format.
+  if (compact) return <SpotAssetsView balances={balances} loading={loading} refreshing={refreshing} error={failed ? t('trade.loadAssetsError') : null} t={t} onRetry={() => { void load(true); }} />;
 
-  // A failed read is not an empty wallet. Spot keeps its existing
-  // behaviour exactly; Futures now says so instead of showing "no assets"
-  // over a balance it simply could not fetch.
+  // A failed read is not an empty wallet. The same retry remains available
+  // for a failed initial read and for a refresh of a previously empty wallet.
   if (isFutures && rows === null) {
-    return <div className="empty-state">{isLoading ? t('trade.loading') : t('trade.loadAssetsError')}</div>;
+    return hasFailed ? failure : <div className="empty-state" role="status" aria-busy={isLoading}>{t('trade.loading')}</div>;
   }
   if (hasFailed && (rows === null || rows.length === 0)) {
-    return <div className="empty-state">{t('trade.loadAssetsError')}</div>;
+    return failure;
   }
   if (!isLoading && (rows ?? []).length === 0) {
     return <div className="empty-state">{t('trade.noAssets')}</div>;
   }
 
   return (
-    <table className="orders-table">
+    <>
+    {hasFailed && failure}
+    <table className="orders-table" aria-busy={isRefreshing}>
       <thead>
         <tr>
           <th>{t('trade.asset')}</th>
@@ -107,5 +115,6 @@ export function AssetsPanel({ refreshKey, compact = false, wallet = 'spot' }: { 
         })}
       </tbody>
     </table>
+    </>
   );
 }

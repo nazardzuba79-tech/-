@@ -2270,10 +2270,14 @@ a:hover > .nav-card-icon {
 /* Use the existing full navigation drawer before desktop links collide
    with the account actions, including the additional admin link. */
 @media (max-width: 1439px) {
-  .futures-terminal .global-header .main-nav,
-  .futures-terminal .global-header .brand-separator { display: none; }
-  .futures-terminal .global-header .mobile-menu { display: grid; }
-  .futures-terminal .nav-mobile-menu.open { display: flex; }
+  .trade-terminal.terminal-studio .global-header .main-nav,
+  .trade-terminal.terminal-studio .global-header .brand-separator { display: none; }
+  .trade-terminal.terminal-studio .global-header .mobile-menu { display: grid; }
+  .trade-terminal.terminal-studio .nav-mobile-menu.open { display: flex; }
+  .trade-terminal.terminal-studio .nav-mobile-menu { top:48px; max-height:calc(100dvh - 48px); }
+}
+@media (max-width: 1024px) {
+  .trade-terminal.terminal-studio .nav-mobile-menu { top:56px; max-height:calc(100dvh - 56px); }
 }
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
@@ -2290,3 +2294,12 @@ a:hover > .nav-card-icon {
 :is(.futures-reference,.market-reference) > .global-header .deposit-button { font-family:inherit; font-size:14px; font-weight:500; letter-spacing:0; }
 :is(.futures-reference,.market-reference) > .global-header .deposit-button { min-height:32px; height:32px; padding:0 16px; border-radius:6px; background:#f7a600; }
 @media(max-width:1024px) { :is(.futures-reference,.market-reference) > .global-header { height:56px; padding:0 16px; } }
+
+/* Studio terminal header: brighter navigation and a crisp white brand mark.
+   Keep the active gold/admin colours and the existing logo geometry. */
+.trade-terminal.terminal-studio > .global-header {
+  --h-text:#ffffff;
+  --h-text-2:#e5e9ef;
+  --h-text-3:#c5cdd7;
+}
+.trade-terminal.terminal-studio > .global-header .header-brand { --text-primary:#ffffff; }

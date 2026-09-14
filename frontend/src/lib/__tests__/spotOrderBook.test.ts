@@ -135,14 +135,28 @@ test('Spot tiny-price rows keep unchanged full numeric labels and narrowly scope
   expect(html).toContain('ob-row--spot');
   const expectedPrice = spotLevelPrice(Number(price), defaultSpotGroupStep(0.00000010915));
   expect(html).toContain(`class="cell bid-price" title="${expectedPrice}">${expectedPrice}</span>`);
-  expect(html).toContain(`class="cell" title="${quantity}">${terminalPresentation.formatBookAmount(quantity)}</span>`);
+  expect(html).toContain(`class="cell" title="${quantity}">${terminalPresentation.formatCompactBookValue(quantity)}</span>`);
   const rawTotal = Number(expectedPrice) * quantity;
-  const total = terminalPresentation.formatBookTotal(rawTotal);
+  const total = terminalPresentation.formatCompactBookValue(rawTotal, 'total');
   expect(html).toContain(`class="cell" title="${rawTotal}">${total}</span>`);
   const css = readFileSync(resolve(frontend, 'src/components/SpotMarketControls.css'), 'utf8');
   expect(css).toMatch(/\.ob-row\.ob-row--spot\s*\{\s*gap:\s*6px;/);
   expect(css).toMatch(/\.ob-row\.ob-row--spot \.cell\s*\{[^}]*min-width:\s*0;[^}]*overflow:\s*hidden;[^}]*text-overflow:\s*ellipsis;[^}]*white-space:\s*nowrap;/);
   expect(css).toMatch(/\.ob-row\.ob-row--spot \.cell\.ask-price\s*\{[^}]*flex:\s*0 0 auto;[^}]*max-width:\s*55%;/);
+});
+
+test('Spot large base quantities and quote totals fit narrow columns without changing exact row values', () => {
+  const quantity = 123456.789012;
+  const price = 123.4;
+  const html = render({ pair: 'ABC/EUR', bids: [level(price, quantity)], asks: [level(123.5, quantity)],
+    spotPrecision: true, onPickPrice: () => {} });
+  expect(html).toContain(`class="cell" title="${quantity}">123.46K</span>`);
+  expect(html).toContain(`class="cell" title="${price * quantity}">15.23M</span>`);
+  expect(html).toContain('aria-label="Bid 123.400"');
+  expect(html).not.toContain('≈ $');
+  const cells = [...html.matchAll(/class="cell" title="[^"]+">([^<]+)<\/span>/g)];
+  expect(cells.length).toBe(4);
+  for (const [, text] of cells) expect(text.length).toBeLessThanOrEqual(8);
 });
 
 test('exact Spot selection text is shared by click and keyboard, not toFixed(2)', () => {

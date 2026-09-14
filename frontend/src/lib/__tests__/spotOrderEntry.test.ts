@@ -2,6 +2,7 @@ import BigNumber from 'bignumber.js';
 import { balancePercentageQuantity, orderFundingPrice, positiveOrderNumber } from '../spotOrderEntry';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import ts from 'typescript';
 
 test.each([null, '', '  ', 'NaN', 'Infinity', NaN, Infinity, 0, -1, '-3'])('rejects nonpositive/nonfinite input %s', value => {
   expect(positiveOrderNumber(value)).toBeNull();
@@ -107,4 +108,36 @@ test('parent wiring keeps plain matching APIs, pair-keyed reset and genuine fund
   expect(form).toContain('orderFundingPrice(family, execution, price, triggerPrice, ocoTakeProfitPrice, ocoStopLimitPrice, marketPrice)');
   expect(page).toContain('<OrderForm key={pair}'); expect(page).toContain('spotPrecision');
   expect(page).toContain('onResizeBy='); expect(page).toContain('marketWidth={marketPanelWidth}');
+});
+
+test('actual balance reader keeps Retry busy through failure and recovery without duplicate pending requests', async () => {
+  const source = readFileSync(resolve(__dirname, '../../components/OrderForm.tsx'), 'utf8');
+  const effect = source.slice(source.indexOf('  useEffect(() => {\n    let cancelled = false;'), source.indexOf('  const { ticker: referenceTicker }'));
+  expect(effect).toContain('setBalanceLoading(true)');
+  let rejectFirst!: (reason: Error) => void;
+  const getBalances = jest.fn().mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectFirst = reject; }))
+    .mockResolvedValue([{ asset: 'BTC', available: '0.5' }, { asset: 'USDT', available: '100' }]);
+  let poll!: () => void;
+  let cleanup!: () => void;
+  const bindings = { api: { getBalances }, useEffect: (fn: () => () => void) => { cleanup = fn(); },
+    window: { setInterval: (fn: () => void) => { poll = fn; return 1; } }, clearInterval: jest.fn(),
+    baseAsset: 'BTC', quoteAsset: 'USDT', side: 'BUY', refreshKey: 0, balanceVersion: 0,
+    setBalanceLoading: jest.fn(), setBalanceError: jest.fn(), setBalanceReady: jest.fn(), setAvailable: jest.fn() };
+  const code = ts.transpileModule(effect, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  new Function(...Object.keys(bindings), code)(...Object.values(bindings));
+  poll(); poll();
+  expect(getBalances).toHaveBeenCalledTimes(1);
+  expect(bindings.setBalanceLoading.mock.calls).toEqual([[true]]);
+  rejectFirst(new Error('unavailable'));
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+  expect(bindings.setBalanceLoading.mock.calls).toEqual([[true], [false]]);
+  expect(bindings.setBalanceError).toHaveBeenLastCalledWith(true);
+  expect(bindings.setAvailable).not.toHaveBeenCalled();
+  poll();
+  for (let i = 0; i < 6; i++) await Promise.resolve();
+  expect(getBalances).toHaveBeenCalledTimes(2);
+  expect(bindings.setBalanceLoading.mock.calls).toEqual([[true], [false], [true], [false]]);
+  expect(bindings.setBalanceError).toHaveBeenLastCalledWith(false);
+  expect(bindings.setAvailable).toHaveBeenCalledWith({ base: 0.5, quote: 100 });
+  cleanup();
 });
