@@ -34,23 +34,38 @@ class Socket extends EventEmitter {
   open() { this.emit('open'); for (const f of this.frames.filter(f => f.op === 'subscribe')) this.emit('message',Buffer.from(JSON.stringify({ op:'subscribe', success:true, req_id:f.req_id }))); }
 }
 const settle = async () => { await jest.advanceTimersByTimeAsync(0); };
+const LIVE_ASSETS = ['ASSET0','ASSET1','ASSET2'];
 
 describe('Bybit live collector', () => {
   afterEach(() => jest.useRealTimers());
-  test('1300 active instruments / 650 assets bootstrap in seven bulk REST calls and two sockets', async () => {
+  test('1300 active instruments stay visible while only core assets use live sockets', async () => {
     jest.useFakeTimers(); const f = fixture(); const sockets: Socket[] = [];
-    const c = new BybitLiveTickerCollector(f.rest, { now: () => 1_000_000, socket: () => { const s = new Socket(); sockets.push(s); return s as any; } });
+    const liveBaseAssets = Array.from({length:6},(_,i)=>`ASSET${i}`);
+    const c = new BybitLiveTickerCollector(f.rest, { now: () => 1_000_000, liveBaseAssets, socket: () => { const s = new Socket(); sockets.push(s); return s as any; } });
     c.start(); c.start(); await settle(); sockets.forEach(s => s.open()); c.flush();
     expect(c.book.instruments.size).toBe(1300); expect(c.book.rows.size).toBe(1300);
     expect(f.calls).toHaveLength(7); expect(f.calls.every(u => !new URL(u).searchParams.has('symbol'))).toBe(true);
     expect(f.calls.filter(u => u.includes('category=linear') && u.includes('instruments')).every(u => u.includes('limit=1000'))).toBe(true);
-    expect(sockets).toHaveLength(2); expect(c.counters.subscriptions).toBe(66);
-    const spot = sockets[0].frames.filter(f => f.op === 'subscribe');
-    expect(spot).toHaveLength(65); expect(spot.every(f => f.args.length <= 10)).toBe(true);
-    expect(new Set(spot.flatMap(f => f.args)).size).toBe(650);
+    expect(sockets).toHaveLength(2); expect(c.counters.subscriptions).toBe(2);
+    const subscribed = sockets.flatMap(s => s.frames.filter(f => f.op === 'subscribe').flatMap(f => f.args));
+    expect(subscribed).toHaveLength(12);
+    expect(new Set(subscribed)).toEqual(new Set(liveBaseAssets.flatMap(a => [`tickers.${a}USDT`,`tickers.${a}USDT`])));
+    expect(c.diagnostics()).toMatchObject({liveInstruments:12,slowInstruments:1288,slowRefreshMs:60_000});
     const unsubscribers = Array.from({length:100}, () => c.feed.subscribe(() => {}));
     expect(sockets).toHaveLength(2); unsubscribers.forEach(unsub => unsub());
     expect(c.feed.status).toBe('live'); c.stop(); expect(jest.getTimerCount()).toBe(0);
+  });
+  test('non-live catalogue rows use one bulk refresh per category each minute and do not go stale between snapshots', async () => {
+    jest.useFakeTimers(); const f=fixture(3,Date.now); const c=new BybitLiveTickerCollector(f.rest,{liveBaseAssets:[],slowRefreshMs:60_000});
+    c.start(); await settle(); c.flush();
+    expect(c.book.rows.size).toBe(6); expect(c.diagnostics()).toMatchObject({liveInstruments:0,slowInstruments:6});
+    expect(f.calls.filter(u=>u.includes('/v5/market/tickers')).length).toBe(3);
+    await jest.advanceTimersByTimeAsync(35_000);
+    expect([...c.book.rows.values()].every(row=>row.stale!==true)).toBe(true);
+    await jest.advanceTimersByTimeAsync(25_001); await settle();
+    expect(f.calls.filter(u=>u.includes('/v5/market/tickers')).length).toBe(6);
+    expect([...c.book.rows.values()].every(row=>row.stale!==true)).toBe(true);
+    c.stop(); expect(jest.getTimerCount()).toBe(0);
   });
   test.each(['spot','linear','inverse'] as const)('%s packs actual encoded topics below the total connection limit', category => {
     const symbols = Array.from({length:1800},(_,i) => `LONG${'X'.repeat(i%50)}${i}USDT`);
@@ -101,7 +116,7 @@ describe('Bybit live collector', () => {
   });
   test('disconnect retains last-good, reconnect bootstraps and resubscribes once, stop cancels retry', async () => {
     jest.useFakeTimers(); let now = 1_000_000; const f = fixture(3,()=>now); const sockets: Socket[] = [];
-    const c = new BybitLiveTickerCollector(f.rest,{now:()=>now,random:()=>0,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
+    const c = new BybitLiveTickerCollector(f.rest,{now:()=>now,random:()=>0,liveBaseAssets:LIVE_ASSETS,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
     c.start(); await settle(); sockets.forEach(s=>s.open()); c.flush();
     sockets[0].emit('close'); sockets[0].emit('error',new Error('duplicate event'));
     expect(c.book.rows.get('spot:ASSET0USDT')).toMatchObject({lastPrice:12.5,stale:true});
@@ -114,7 +129,7 @@ describe('Bybit live collector', () => {
   });
   test('heartbeat accepts pong and drops an unresponsive session without a storm', async () => {
     jest.useFakeTimers(); const f=fixture(1,Date.now); const sockets:Socket[]=[];
-    const c=new BybitLiveTickerCollector(f.rest,{socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
+    const c=new BybitLiveTickerCollector(f.rest,{liveBaseAssets:['ASSET0'],socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
     c.start(); await settle(); sockets.forEach(s=>s.open());
     await jest.advanceTimersByTimeAsync(20_000);
     expect(sockets[0].frames.at(-1).op).toBe('ping');
@@ -128,7 +143,7 @@ describe('Bybit live collector', () => {
   });
   test('twelve reconnects keep two active sockets, bounded timers and exactly one subscription set per socket',async()=>{
     jest.useFakeTimers();const f=fixture(3),sockets:Socket[]=[];
-    const c=new BybitLiveTickerCollector(f.rest,{now:()=>1_000_000,random:()=>0,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
+    const c=new BybitLiveTickerCollector(f.rest,{now:()=>1_000_000,random:()=>0,liveBaseAssets:LIVE_ASSETS,socket:()=>{const s=new Socket();sockets.push(s);return s as any;}});
     c.start();await settle();sockets.forEach(s=>s.open());c.flush();const timers=jest.getTimerCount();
     for(let i=0;i<12;i++){
       const activeSpot=i===0?sockets[0]:sockets.at(-1)!;activeSpot.terminate();expect(c.feed.status).toBe('stale');

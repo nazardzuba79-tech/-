@@ -11,9 +11,14 @@ import { BiquoteCfdOhlcSource } from './services/marketData/cfd/BiquoteCfdOhlcSo
 
 const token = process.env.MARKET_DATA_COLLECTOR_TOKEN;
 if (!token) throw new Error('MARKET_DATA_COLLECTOR_TOKEN is required');
+const liveBaseAssets = (process.env.MARKET_DATA_LIVE_BASE_ASSETS ?? 'BTC,ETH,SOL,XRP,DOGE,TRX')
+  .split(',').map(x => x.trim().toUpperCase()).filter(Boolean);
+const slowRefreshMs = Number(process.env.MARKET_DATA_SLOW_REFRESH_MS ?? 60_000);
 const collector = new BybitLiveTickerCollector(new BybitMarketDataService({ baseUrl: process.env.BYBIT_REST_URL }), {
   spotUrl: process.env.BYBIT_SPOT_WS_URL, linearUrl: process.env.BYBIT_LINEAR_WS_URL,
   inverseUrl: process.env.BYBIT_INVERSE_WS_URL,
+  liveBaseAssets,
+  slowRefreshMs: Number.isFinite(slowRefreshMs) ? slowRefreshMs : 60_000,
 });
 const options = new BybitOptions(collector.rest);
 
