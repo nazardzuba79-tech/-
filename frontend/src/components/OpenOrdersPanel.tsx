@@ -20,8 +20,12 @@ export interface OpenOrdersHandle {
  * action, which loops the same per-order endpoint rather than needing a new
  * one.
  */
-export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refreshKey: number; onCount?: (n: number | null) => void }>(
-  function OpenOrdersPanel({ pair, refreshKey, onCount }, ref) {
+export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, {
+  pair: string; refreshKey: number;
+  onCount?: (n: number | null) => void;
+  onAccountCount?: (n: number | null) => void;
+}>(
+  function OpenOrdersPanel({ pair, refreshKey, onCount, onAccountCount }, ref) {
     const { t, lang } = useLanguage();
     const toast = useToast();
     const [orders, setOrders] = useState<SpotOrderRow[]>([]);
@@ -50,6 +54,10 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
     useEffect(() => {
       onCount?.(loading || failed ? null : pairOrders.length);
     }, [pairOrders.length, loading, failed, onCount]);
+    // Compaction must not infer an empty account from one filtered pair.
+    useEffect(() => {
+      onAccountCount?.(loading || failed ? null : orders.length);
+    }, [orders, loading, failed, onAccountCount]);
 
     async function handleCancel(orderId: string) {
       if (cancelInFlight.current) return;

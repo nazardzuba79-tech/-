@@ -105,3 +105,25 @@
 @media(max-width:767px) {
   .trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .cfd-selected-instrument { width:auto; min-width:112px; }
 }
+
+/* Owner's annotated refinement: clearer text with the same quiet Studio
+   surfaces, plus fully rounded trading actions across all three markets. */
+.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio {
+  --text-primary:#f1f4f8;
+  --text-secondary:#b2bfcc;
+}
+.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio :is(.ticker-bar .label,.cfd-ticker-metric>:first-child,.fo-label,.form-label,.cfd-label,.order-family-label,.rb-columns,.orderbook-col-headers) { color:#b2bfcc; }
+.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio :is(.pairs-title-row,.studio-market-heading,.terminal-chart-heading,.orderbook-header,.rb-tabs,.info-heading) { color:#f1f4f8; }
+.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio :is(.submit-btn,.cfd-submit,.order-form-tab,.cfd-sideTab) { border-radius:999px; }
+.trade-terminal.terminal-studio.terminal-studio.terminal-studio.terminal-studio.terminal-studio .cfd-sideTabs { border:0; padding:0; gap:6px; background:transparent; }
+
+/* Match the Futures support dock so an empty-account restore control stays
+   reachable. Keep the floating launcher unchanged on mobile and other pages. */
+@media(min-width:1025px) {
+  body:has(.trade-terminal.terminal-studio.market-reference) .support-launcher { bottom:0 !important; right:0 !important; width:42px !important; height:28px !important; border-radius:0 !important; background:#192632 !important; box-shadow:none !important; border-left:1px solid #304050 !important; --on-accent:#f7a600; }
+  body:has(.trade-terminal.terminal-studio.market-reference) .support-launcher svg { width:18px; height:18px; }
+  body:has(.trade-terminal.terminal-studio.market-reference) .support-launcher:hover { background:#243340 !important; }
+  body:has(.trade-terminal.terminal-studio.market-reference) .support-launcher:focus-visible { outline:2px solid #f7a600; outline-offset:-2px; }
+  body:has(.trade-terminal.terminal-studio.market-reference) .support-panel { bottom:36px !important; right:8px !important; }
+  .trade-terminal.terminal-studio.market-reference > .market-ticker-static { padding-right:42px; }
+}

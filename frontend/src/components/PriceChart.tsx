@@ -342,12 +342,8 @@ export function PriceChart({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // The terminal chrome gets a more legible price axis than Futures'
-    // default chrome — brighter axis text, a faint horizontal grid tying
-    // candles to price levels, and a clearer crosshair — requested
-    // specifically for the spot terminal. Gated on `terminal` rather than
-    // applied everywhere so Futures' chart (out of scope here) is
-    // pixel-identical to before.
+    // Keep the plot clean; axes, the crosshair and actual indicator/order
+    // lines provide the price reference without a permanent background grid.
     const plotBackground = typeof getComputedStyle === 'function'
       ? getComputedStyle(containerRef.current).getPropertyValue('--voltex-plot-background').trim() : '';
     const chart = createChart(containerRef.current, {
@@ -362,11 +358,7 @@ export function PriceChart({
       },
       grid: {
         vertLines: { visible: false },
-        // Faint horizontal reference lines only — enough to tie a candle
-        // to its price level without turning the chart into a spreadsheet
-        // grid. Vertical (time) gridlines stay off; the crosshair below
-        // already marks a specific moment when the trader needs one.
-        horzLines: terminal ? { color: 'rgba(148, 163, 184, 0.07)' } : { visible: false },
+        horzLines: { visible: false },
       },
       // borderColor is what draws the 1px seam between the candles and the
       // price axis — a graphite/blue tone rather than near-black makes the
@@ -1354,6 +1346,7 @@ export function PriceChart({
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
           compactTools={compactTools}
+          onCollapse={() => { cancelGestureRef.current?.(); setTool('cursor'); }}
           tool={tool}
           onSelect={(next) => { if (drawingToolsOn && !compactTools) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
@@ -1770,6 +1763,7 @@ function DrawToolbar({
   onToggleMagnet,
   locked = false,
   onToggleLock,
+  onCollapse,
 }: {
   tool: Tool;
   onSelect: (t: Tool) => void;
@@ -1786,8 +1780,13 @@ function DrawToolbar({
   onToggleMagnet?: () => void;
   locked?: boolean;
   onToggleLock?: () => void;
+  onCollapse?: () => void;
 }) {
   const { t } = useLanguage();
+  // Presentation state only: keep the rail mounted so its last-used line
+  // tool survives collapse. Drawings and saved preferences live above it.
+  const [collapsed, setCollapsed] = useState(false);
+  const railId = useId();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const [toolHint, setToolHint] = useState<{ label:string; left:number; top:number } | null>(null);
   const showToolHint = (target: EventTarget | null) => {
@@ -1903,8 +1902,8 @@ function DrawToolbar({
     </button>
   );
 
-  return (
-    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined}
+  const rail = (
+    <div className={`draw-toolbar${drawingTools ? ' drawing-rail' : ''}`} id={drawingTools ? railId : undefined} hidden={drawingTools && collapsed} role={drawingTools ? 'toolbar' : undefined} aria-label={drawingTools ? t('draw.shapes') : undefined}
       onMouseOver={event => showToolHint(event.target)} onFocusCapture={event => showToolHint(event.target)}
       onMouseLeave={() => setToolHint(null)} onBlurCapture={() => setToolHint(null)} onPointerDown={() => setToolHint(null)}
       onKeyDown={event => { if (event.key === 'Escape') setToolHint(null); }}
@@ -2025,6 +2024,23 @@ function DrawToolbar({
         style={{left:toolHint.left,top:toolHint.top}}>{toolHint.label}</div>, document.body)}
     </div>
   );
+  if (!drawingTools) return rail;
+  const toggleLabel = t(collapsed ? 'draw.expandToolbar' : 'draw.collapseToolbar');
+  return <div className={`drawing-rail-shell${collapsed ? ' is-collapsed' : ''}`}>
+    {rail}
+    <button type="button" className="drawing-rail-toggle" data-drawing-toolbar-toggle
+      aria-expanded={!collapsed} aria-controls={railId} aria-label={toggleLabel} title={toggleLabel}
+      onClick={() => {
+        setOpenGroup(null);
+        setToolHint(null);
+        if (!collapsed) onCollapse?.();
+        setCollapsed(!collapsed);
+      }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="m14 6-6 6 6 6" />
+      </svg>
+    </button>
+  </div>;
 }
 
 const ICON_PROPS = {
@@ -2109,9 +2125,9 @@ function RulerIcon() {
 }
 function PrecisionRulerIcon() {
   return (
-    <svg {...ICON_PROPS}>
-      <g transform="rotate(-45 12 12)"><rect x="2.5" y="8" width="19" height="8" rx="1" />
-      <path d="M6 8v4M10 8v2.5M14 8v4M18 8v2.5" /></g>
+    <svg {...ICON_PROPS} style={{ width: 27, height: 27, strokeWidth: 1.65 }}>
+      <g transform="rotate(-45 12 12)"><rect x="1" y="8.5" width="22" height="7" rx="1" />
+      <path d="M5 8.5v3.5M8.5 8.5v2M12 8.5v3.5M15.5 8.5v2M19 8.5v3.5" /></g>
     </svg>
   );
 }
@@ -2120,8 +2136,8 @@ function TrashObjectIcon() {
 }
 function TextIcon() {
   return (
-    <svg {...ICON_PROPS}>
-      <path d="M5 5h14M12 5v14" />
+    <svg {...ICON_PROPS} style={{ strokeWidth: 2.35 }}>
+      <path d="M5 7V4h14v3M12 4v16M8 20h8" />
     </svg>
   );
 }

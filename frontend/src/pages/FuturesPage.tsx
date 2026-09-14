@@ -13,6 +13,9 @@ import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
+import { AccountPanelToggle } from '../components/AccountPanelToggle';
+import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
+import { isVerifiedEmptyAccountResource } from '../lib/terminalAccountPanel';
 import { subscribeFuturesDepth, type FuturesTrade } from '../lib/futuresDepth';
 
 import { useFuturesReference } from '../lib/useFuturesReference';
@@ -28,6 +31,7 @@ import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/FuturesStudio.css';
 import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
+import './trade-terminal/TerminalAccountPanel.css';
 
 // Until /futures/config answers. Deliberately the same three contracts the
 // backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
@@ -72,6 +76,12 @@ export function FuturesPage() {
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
+  const accountPanel = useCompactAccountPanel(
+    (bottomTab === 'orders' || bottomTab === 'positions')
+      && isVerifiedEmptyAccountResource(account.orders)
+      && isVerifiedEmptyAccountResource(account.positions),
+    `futures:${bottomTab}`,
+  );
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
@@ -168,7 +178,7 @@ export function FuturesPage() {
         futuresReference={reference}
       />
 
-      <div className="terminal">
+      <div className="terminal" data-account-compact={accountPanel.compact}>
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
@@ -210,13 +220,19 @@ export function FuturesPage() {
           </div>
         </div>
 
-        <div className="bottom-panel">
-          <div className="bottom-tabs">
+        <div className="bottom-panel" data-account-compact={accountPanel.compact}>
+          <div className="terminal-account-header">
+          <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
               <button
                 key={tab.id}
+                type="button"
+                role="tab"
+                id={`futures-tab-${tab.id}`}
+                aria-selected={bottomTab === tab.id}
+                aria-controls="futures-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
-                onClick={() => setBottomTab(tab.id)}
+                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(`futures:${tab.id}`); }}
               >
                 {t(tab.labelKey)}
                 {tab.id === 'positions' && <span className="reference-tab-count">({account.positions.data?.length ?? '—'})</span>}
@@ -224,8 +240,10 @@ export function FuturesPage() {
               </button>
             ))}
           </div>
+          {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="futures-bottom-content" />}
+          </div>
 
-          <div className="bottom-content">
+          <div className="bottom-content" id="futures-bottom-content" role="tabpanel" aria-labelledby={`futures-tab-${bottomTab}`} hidden={accountPanel.compact}>
             {bottomTab === 'positions' && (
               <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />
             )}

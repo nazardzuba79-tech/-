@@ -1,0 +1,27 @@
+/* Empty account tables yield space to the chart, while tabs and their restore
+   control stay visible. Readers remain mounted in the hidden body. */
+.trade-terminal.terminal-studio .terminal-account-header {
+  display:flex; flex:0 0 auto; min-width:0; align-items:stretch;
+  background:var(--toolbar-bg,#141e29); border-bottom:1px solid var(--border-color,#26313d);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio .terminal-account-header > .bottom-tabs {
+  flex:1; min-width:0; min-height:43px; height:43px; border-bottom:0;
+}
+.trade-terminal.terminal-studio .terminal-account-toggle {
+  display:flex; align-items:center; justify-content:center; flex:0 0 36px;
+  align-self:stretch; padding:0; border:0; border-left:1px solid var(--border-color,#26313d);
+  background:transparent; color:#bac7d5; cursor:pointer;
+}
+.trade-terminal.terminal-studio .terminal-account-toggle:hover { color:#f3f6fa; background:#ffffff08; }
+.trade-terminal.terminal-studio .terminal-account-toggle:focus-visible { outline:1px solid #e9b44c; outline-offset:-3px; }
+.trade-terminal.terminal-studio .bottom-content[hidden] { display:none; }
+.trade-terminal.terminal-studio .account-tab-content[hidden] { display:none; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio .bottom-panel[data-account-compact=true] {
+  height:44px; min-height:44px; max-height:44px; flex-basis:44px;
+}
+.trade-terminal.terminal-studio .bottom-panel[data-account-compact=true] .orders-resize-handle { display:none; }
+@media(min-width:1025px) {
+  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .terminal[data-account-compact=true] {
+    grid-template-rows:70px minmax(0,1fr) 44px;
+  }
+}

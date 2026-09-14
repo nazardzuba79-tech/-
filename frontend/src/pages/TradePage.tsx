@@ -11,6 +11,8 @@ import { TerminalChart as PriceChart } from '../components/TerminalChart';
 import { OpenOrdersPanel, OpenOrdersHandle } from '../components/OpenOrdersPanel';
 import { OrderHistoryPanel } from '../components/OrderHistoryPanel';
 import { AssetsPanel } from '../components/AssetsPanel';
+import { AccountPanelToggle } from '../components/AccountPanelToggle';
+import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { krakenSocket } from '../lib/krakenSocket';
 import { CfdInstrumentList } from '../components/CfdInstrumentList';
@@ -28,6 +30,7 @@ import './trade-terminal/ProfessionalTerminal.css';
 import './trade-terminal/MarketReferenceTerminal.css';
 import './trade-terminal/TerminalPresentationPolish.css';
 import './trade-terminal/TerminalStudio.css';
+import './trade-terminal/TerminalAccountPanel.css';
 
 // 'tradeHistory' ("История сделок") was dropped from this bottom-tab set
 // on request — it duplicated the account's own fills, which the Wallet
@@ -73,6 +76,8 @@ export function TradePage() {
   // Reference chrome: the tab badge and the Cancel All action both need the
   // open-order count, which only the panel knows; the panel reports it up.
   const [openOrderCount, setOpenOrderCount] = useState<number | null>(null);
+  const [accountOpenOrderCount, setAccountOpenOrderCount] = useState<number | null>(null);
+  const accountPanel = useCompactAccountPanel(bottomTab === 'open' && accountOpenOrderCount === 0, `spot:${pair}:${bottomTab}`);
   const [pickedPrice, setPickedPrice] = useState<PickedPrice | null>(null);
   const openOrdersRef = useRef<OpenOrdersHandle>(null);
   const pairListRef = useRef<PairListHandle>(null);
@@ -176,6 +181,7 @@ export function TradePage() {
   }, [pair, refreshBook]);
 
   function handleOrderPlaced() {
+    setAccountOpenOrderCount(null);
     refreshBook();
     setOrdersRefreshKey((k) => k + 1);
   }
@@ -303,10 +309,11 @@ export function TradePage() {
           </div>
         </div>
 
-        <div className="bottom-panel" style={{ '--orders-height': `${ordersHeight}px` } as React.CSSProperties}>
+        <div className="bottom-panel" data-account-compact={accountPanel.compact} style={{ '--orders-height': `${ordersHeight}px` } as React.CSSProperties}>
           <div className="orders-resize-handle" role="separator" tabIndex={0} aria-label="Высота панели ордеров" aria-orientation="horizontal" aria-valuemin={136} aria-valuemax={360} aria-valuenow={ordersHeight} onPointerDown={startOrdersResize} onKeyDown={event => {
             if (event.key === 'ArrowUp' || event.key === 'ArrowDown') { event.preventDefault(); resizeOrders(event.key === 'ArrowUp' ? 24 : -24); }
           }} />
+          <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label="Ордера и активы">
             {BOTTOM_TABS.map((tab) => (
               <button
@@ -316,7 +323,7 @@ export function TradePage() {
                 aria-selected={bottomTab === tab.id}
                 aria-controls="spot-bottom-content"
                 className={`bottom-tab ${bottomTab === tab.id ? 'active' : ''}`}
-                onClick={() => setBottomTab(tab.id)}
+                onClick={() => { setBottomTab(tab.id); accountPanel.reveal(`spot:${pair}:${tab.id}`); }}
               >
                 {t(tab.labelKey)}
                 {tab.id === 'open' && <span className="badge">{openOrderCount ?? '—'}</span>}
@@ -331,11 +338,15 @@ export function TradePage() {
               </div>
             )}
           </div>
+          {accountPanel.canCompact && <AccountPanelToggle compact={accountPanel.compact} onToggle={accountPanel.toggle} controls="spot-bottom-content" />}
+          </div>
 
-          <div className="bottom-content" id="spot-bottom-content" role="tabpanel" aria-labelledby={`spot-tab-${bottomTab}`}>
-            {bottomTab === 'open' && (
-              <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} />
-            )}
+          <div className="bottom-content" id="spot-bottom-content" role="tabpanel" aria-labelledby={`spot-tab-${bottomTab}`} hidden={accountPanel.compact}>
+            {/* Keep the reader mounted: a real incoming order or failed poll
+                must restore this panel without waiting for a tab click. */}
+            <div className="account-tab-content" hidden={bottomTab !== 'open'}>
+              <OpenOrdersPanel ref={openOrdersRef} pair={pair} refreshKey={ordersRefreshKey} onCount={setOpenOrderCount} onAccountCount={setAccountOpenOrderCount} />
+            </div>
             {bottomTab === 'orderHistory' && <OrderHistoryPanel pair={pair} refreshKey={ordersRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel compact refreshKey={ordersRefreshKey} />}
           </div>

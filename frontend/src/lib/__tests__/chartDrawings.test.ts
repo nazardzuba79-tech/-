@@ -140,6 +140,56 @@ describe('shared drawing toolbar presentation and chart integration', () => {
     expect(html).toContain('aria-label="draw.erase"');
     expect(html).not.toContain('>draw.measure<');
   });
+  test('drawing rail opens by default and its accessible toggle preserves tools across collapse and reopen', () => {
+    const state: any[] = [];
+    let index = 0;
+    const output: Record<string, any> = {};
+    new Function('require', 'exports', compiled)((id: string) => {
+      if (id === 'react') return { ...React,
+        useState: (initial: any) => { const i = index++; if (!(i in state)) state[i] = initial;
+          return [state[i], (next: any) => { state[i] = typeof next === 'function' ? next(state[i]) : next; }]; },
+        useId: () => `rail-${index++}`, useEffect: () => {}, useRef: () => ({ current: null }),
+      };
+      if (id.endsWith('.css') || id === 'lightweight-charts' || id === '../lib/api' || id === '../lib/indicators') return {};
+      if (id === '../lib/chartDrawings') return drawings;
+      if (id === '../lib/spotChartPriceFormat') return chartPriceFormat;
+      if (id === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
+      return localRequire(id);
+    }, output);
+    const callbacks = { onCollapse: jest.fn(), onClear: jest.fn(), onToggleHidden: jest.fn(), onSelect: jest.fn() };
+    const render = () => {
+      index = 0;
+      const tree = output.DrawToolbar({ ...props, ...callbacks, drawingTools: true, compactTools: true });
+      const nodes: any[] = [];
+      const walk = (node: any) => { if (!node || typeof node !== 'object') return;
+        if (Array.isArray(node)) { node.forEach(walk); return; } nodes.push(node); walk(node.props?.children); };
+      walk(tree);
+      return { toggle: nodes.find(node => node.props?.['data-drawing-toolbar-toggle'] !== undefined),
+        rail: nodes.find(node => node.props?.role === 'toolbar'),
+        tools: nodes.filter(node => node.props?.['data-drawing-tool']).map(node => node.props['data-drawing-tool']) };
+    };
+    let view = render();
+    const tools = view.tools;
+    expect(view.toggle.props['aria-expanded']).toBe(true);
+    expect(view.toggle.props['aria-controls']).toBe(view.rail.props.id);
+    expect(view.toggle.props['aria-label']).toBe('draw.collapseToolbar');
+    expect(view.rail.props.hidden).toBe(false);
+    view.toggle.props.onClick();
+    view = render();
+    expect(view.toggle.props['aria-expanded']).toBe(false);
+    expect(view.toggle.props['aria-label']).toBe('draw.expandToolbar');
+    expect(view.rail.props.hidden).toBe(true);
+    expect(view.tools).toEqual(tools);
+    view.toggle.props.onClick();
+    view = render();
+    expect(view.rail.props.hidden).toBe(false);
+    expect(view.toggle.props['aria-expanded']).toBe(true);
+    expect(view.tools).toEqual(tools);
+    expect(callbacks.onCollapse).toHaveBeenCalledTimes(1);
+    expect(callbacks.onClear).not.toHaveBeenCalled();
+    expect(callbacks.onToggleHidden).not.toHaveBeenCalled();
+    expect(callbacks.onSelect).not.toHaveBeenCalled();
+  });
   test('actual ruler label preserves a tiny negative price difference', () => {
     const html = renderToStaticMarkup(React.createElement('svg', {}, React.createElement(exports.RulerLabel,
       { x: 100, y: 100, pct: -20, priceDiff: -0.0000002, bars: 3, drawingTools: true, locale: 'en' })));

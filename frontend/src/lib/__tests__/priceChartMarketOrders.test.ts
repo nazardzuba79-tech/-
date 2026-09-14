@@ -37,6 +37,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
   const hooks: any[] = [];
   let effects: (() => void)[] = [];
   const cleanups: (() => void)[] = [];
+  const chartOptions: any[] = [];
 
   const getMyOrders = overrides.getMyOrders ?? jest.fn().mockResolvedValue(ORDER);
   const updateOrderTrigger = overrides.updateOrderTrigger ?? jest.fn().mockResolvedValue({});
@@ -79,7 +80,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     // The chart library is never reached: the init effect early-returns on
     // a null container ref, which the stubbed useRef gives it.
-    if (name === 'lightweight-charts') return fakeCharts();
+    if (name === 'lightweight-charts') return fakeCharts(chartOptions);
     // The REAL modules, so drawing/indicator/format behaviour is genuine
     // rather than stubbed away: only the network and the chart library are
     // replaced.
@@ -102,7 +103,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     return tree;
   };
   const unmount = () => cleanups.forEach((fn) => fn?.());
-  return { render, unmount, getMyOrders, updateOrderTrigger };
+  return { render, unmount, getMyOrders, updateOrderTrigger, chartOptions };
 }
 
 /**
@@ -114,7 +115,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
  * futures "no lines" assertion would pass for the wrong reason. With it,
  * spot genuinely draws lines and futures genuinely does not.
  */
-function fakeCharts() {
+function fakeCharts(chartOptions: any[] = []) {
   const series = () => ({
     applyOptions: () => {},
     setData: () => {},
@@ -148,7 +149,7 @@ function fakeCharts() {
     applyOptions: () => {},
   };
   return {
-    createChart: () => chart,
+    createChart: (_host: unknown, options: unknown) => { chartOptions.push(options); return chart; },
     ColorType: { Solid: 'solid' },
     LineStyle: { Solid: 0, Dotted: 1, Dashed: 2, LargeDashed: 3, SparseDotted: 4 },
     CrosshairMode: { Normal: 0, Magnet: 1 },
@@ -243,6 +244,33 @@ afterEach(() => {
 });
 
 // ── Futures: no spot conditional-order traffic at all ────────────────
+
+describe('clean terminal chart presentation preserves chart behavior', () => {
+  test.each([SPOT, FUTURES])('$market disables background grid while retaining the crosshair and default MA', props => {
+    const chart = mount(props);
+    const tree = chart.render();
+    expect(chart.chartOptions[0].grid).toEqual({ vertLines: { visible: false }, horzLines: { visible: false } });
+    expect(chart.chartOptions[0].crosshair.horzLine.color).toBe('#f0b90b');
+    const ma = nodes(tree).find(node => node.type === 'button' && node.key === 'ma');
+    expect(ma.props['aria-pressed']).toBe(true);
+    chart.unmount();
+  });
+  test('collapsing the rail leaves conditional order lines and indicator settings intact and exits the active drawing tool', async () => {
+    const chart = mount(SPOT);
+    chart.render();
+    await flush();
+    const toolbar = (tree: any) => nodes(tree).find(node => node.type?.name === 'DrawToolbar');
+    toolbar(chart.render()).props.onSelect('ruler');
+    expect(toolbar(chart.render()).props.tool).toBe('ruler');
+    toolbar(chart.render()).props.onCollapse();
+    const tree = chart.render();
+    expect(toolbar(tree).props.tool).toBe('cursor');
+    expect(conditionalLines(tree)).toHaveLength(1);
+    expect(nodes(tree).find(node => node.type === 'button' && node.key === 'ma').props['aria-pressed']).toBe(true);
+    expect(chart.updateOrderTrigger).not.toHaveBeenCalled();
+    chart.unmount();
+  });
+});
 
 describe('futures never touches the spot conditional-order endpoint', () => {
   test('A. getMyOrders(PENDING_TRIGGER) is never called on mount', async () => {

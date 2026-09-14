@@ -67,7 +67,7 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-input { background:transparent; color:#e7edf3; font-size:14px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-label { font-size:11px; color:#9fafbf; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-infoBox { background:#0c141d; border:1px solid #23313f; border-radius:6px; padding:11px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-submitPair .submit-btn { min-height:44px; border-radius:6px; font-size:12px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-submitPair .submit-btn { min-height:44px; border-radius:999px; font-size:12px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-account-summary { background:#101720 !important; border-color:#26313d !important; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tabs { gap:18px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tab { font-size:11px; }
