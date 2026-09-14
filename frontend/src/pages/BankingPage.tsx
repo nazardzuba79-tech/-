@@ -12,6 +12,7 @@ import {
   type BankingState,
 } from '../lib/bankingApi';
 import './banking/BankingPage.css';
+import './banking/BankingReadability.css';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const percent = (rate: string) => `${bankingNumber(String(Number(rate) * 100), 0)}%`;
@@ -59,10 +60,10 @@ export function BankingPage() {
 
   useEffect(() => {
     setCalculation(null);
-    if (programId === 'COMPOUND_21_12M' && period === '24') setPeriod('12');
-  }, [programId, asset, amount, startDate, period, endDate]);
+    if (program?.termMonths === 12 && period === '24') setPeriod('12');
+  }, [programId, asset, amount, startDate, period, endDate, program?.termMonths]);
 
-  const availablePeriods = programId === 'MONTHLY_17_24M'
+  const availablePeriods = program?.termMonths === 24
     ? (['6', '12', '24', 'custom'] as const)
     : (['6', '12', 'custom'] as const);
   const canCalculate = Boolean(amount && startDate && assetInfo?.priceUsd && (period !== 'custom' || endDate));
@@ -139,7 +140,7 @@ export function BankingPage() {
                   <dt>Капитализация</dt><dd>{item.compound ? 'Ежемесячная' : 'Без auto-compound'}</dd>
                   <dt>Выплата</dt><dd>{item.payoutFrequency === 'MONTHLY' ? 'Ежемесячно' : 'После завершения срока'}</dd>
                 </dl>
-                <p className="banking-condition">{item.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы пока не определены.' : 'Основная сумма и вознаграждения заблокированы на 12 месяцев.'}</p>
+                <p className="banking-condition">{item.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы пока не определены.' : `Основная сумма и вознаграждения заблокированы на ${item.termMonths} месяцев.`}</p>
                 <div className="banking-assets">USDT · USDC · BTC · ETH · SOL</div>
                 <button type="button" onClick={(event) => { event.stopPropagation(); setProgramId(item.id); document.getElementById('banking-calculator')?.scrollIntoView({ behavior: 'smooth' }); }}>Рассчитать</button>
               </article>
@@ -194,7 +195,7 @@ export function BankingPage() {
         </section>
       </main>
 
-      {confirmOpen && calculation && <div className="banking-modal-backdrop" role="presentation"><div className="banking-modal" role="dialog" aria-modal="true" aria-label="Подтверждение размещения"><button className="banking-modal-close" onClick={() => setConfirmOpen(false)} aria-label="Закрыть"><X /></button><h2>Подтвердить размещение</h2><p>{programLabel(programId)} · {asset}</p><div className="banking-modal-amount">{bankingNumber(amount, precision)} <span>{asset}</span></div><dl><dt>Ставка</dt><dd>{program && percent(program.monthlyRate)} в месяц</dd><dt>Срок</dt><dd>{program?.termMonths} месяцев</dd><dt>Валюта вознаграждения</dt><dd>{asset}</dd><dt>Минимум</dt><dd>$2,500 equivalent</dd></dl><p className="banking-condition">{program?.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы не определены.' : 'Основная сумма и вознаграждения заблокированы на 12 месяцев.'}</p><button className="banking-primary" disabled={busy} onClick={() => void place()}>{busy ? 'Сохранение…' : 'Подтвердить'}</button></div></div>}
+      {confirmOpen && calculation && <div className="banking-modal-backdrop" role="presentation"><div className="banking-modal" role="dialog" aria-modal="true" aria-label="Подтверждение размещения"><button className="banking-modal-close" onClick={() => setConfirmOpen(false)} aria-label="Закрыть"><X /></button><h2>Подтвердить размещение</h2><p>{programLabel(programId)} · {asset}</p><div className="banking-modal-amount">{bankingNumber(amount, precision)} <span>{asset}</span></div><dl><dt>Ставка</dt><dd>{program && percent(program.monthlyRate)} в месяц</dd><dt>Срок</dt><dd>{program?.termMonths} месяцев</dd><dt>Валюта вознаграждения</dt><dd>{asset}</dd><dt>Минимум</dt><dd>$2,500 equivalent</dd></dl><p className="banking-condition">{program?.lockRule === 'PRINCIPAL_RETURN_UNDEFINED' ? 'Условия досрочного возврата основной суммы не определены.' : `Основная сумма и вознаграждения заблокированы на ${program?.termMonths ?? 24} месяцев.`}</p><button className="banking-primary" disabled={busy} onClick={() => void place()}>{busy ? 'Сохранение…' : 'Подтвердить'}</button></div></div>}
     </div>
   );
 }
