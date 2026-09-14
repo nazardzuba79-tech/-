@@ -57,6 +57,7 @@ export class BybitLiveTickerCollector {
   private connectionAttempts: number[] = [];
   private liveIds = new Set<string>();
   private slowIds = new Set<string>();
+  private slowIdsByCategory = new Map<BybitCategory, Set<string>>(CATEGORIES.map(category => [category, new Set<string>()]));
   private readonly liveBaseAssets: Set<string>;
   private readonly slowRefreshMs: number;
   private now: () => number;
@@ -80,17 +81,23 @@ export class BybitLiveTickerCollector {
     // and are never falsely marked stale between scheduled bulk snapshots.
     const staleCheckMs = Math.max(1_000, Math.min(10_000, this.options.staleCheckMs ?? 5_000));
     this.staleTimer = setInterval(() => {
-      this.book.stale(this.liveIds, this.options.staleMs ?? 30_000);
-      this.book.stale(this.slowIds, Math.max(90_000, this.slowRefreshMs * 2));
+      this.book.staleOlderThan(this.options.staleMs ?? 30_000, this.liveIds);
+      this.book.staleOlderThan(Math.max(90_000, this.slowRefreshMs * 2), this.slowIds);
       this.flush();
     }, staleCheckMs);
     void this.bootstrap(0);
   }
   private rebuildCadenceSets(): void {
     this.liveIds.clear(); this.slowIds.clear();
+    for (const category of CATEGORIES) this.slowIdsByCategory.set(category, new Set());
     for (const instrument of this.book.instruments.values()) {
-      const target = this.liveBaseAssets.has(instrument.baseAsset.toUpperCase()) ? this.liveIds : this.slowIds;
-      target.add(instrumentKey(instrument));
+      const id = instrumentKey(instrument);
+      if (this.liveBaseAssets.has(instrument.baseAsset.toUpperCase())) {
+        this.liveIds.add(id);
+      } else {
+        this.slowIds.add(id);
+        this.slowIdsByCategory.get(categoryOf(instrument))!.add(id);
+      }
     }
   }
   private async bootstrap(attempt: number): Promise<void> {
@@ -158,11 +165,9 @@ export class BybitLiveTickerCollector {
           // already enforces provider timestamp ordering. Slow rows advance here.
           this.book.bootstrap(category, result.value);
         } else {
-          const ids = new Set([...this.slowIds].filter(id => {
-            const instrument = [...this.book.instruments.values()].find(i => instrumentKey(i) === id);
-            return instrument ? categoryOf(instrument) === category : false;
-          }));
-          this.book.stale(ids, 0);
+          // A failed scheduled snapshot is explicit degradation only for that
+          // slow category. Live WS rows keep their independent connection state.
+          this.book.stale(this.slowIdsByCategory.get(category) ?? new Set());
         }
       });
       this.flush();
