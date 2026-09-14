@@ -1,0 +1,50 @@
+/* Readability pass: preserve the warm premium palette while increasing text contrast and minimum type sizes. */
+.banking-page{color:#1f2925}
+.banking-hero h2{color:#35423c;font-weight:600}
+.banking-hero p:last-child{color:#4f5a54;font-size:15px;line-height:1.55}
+.banking-eyebrow{color:#735a2f;font-size:12px}
+.banking-summary span{color:#46534d;font-size:13px;font-weight:600}
+.banking-summary small{color:#59645e;font-size:12px;line-height:1.4}
+.banking-heading p{color:#4f5b54;font-size:13px;line-height:1.55}
+.banking-program-top span{color:#445148;font-size:13px;font-weight:600}
+.banking-program h3{font-weight:650}
+.banking-program h3 small{color:#40594a;font-size:15px;font-weight:600}
+.banking-program dl{font-size:13px;line-height:1.45}
+.banking-program dt{color:#536159;font-weight:600}
+.banking-program dd{color:#26332c;font-weight:550}
+.banking-condition{font-size:12px;line-height:1.55;color:#57492f}
+.banking-assets{font-size:13px;color:#3e5147;font-weight:600}
+.banking-program>button{font-size:13px;color:#60481f}
+.banking-form label{color:#44534a;font-size:13px;font-weight:600}
+.banking-form input,.banking-form select{color:#25352c;font-size:14px;font-weight:500}
+.banking-reference{color:#4b594f;font-size:12px;line-height:1.45}
+.banking-reference strong{color:#30483a;font-weight:700}
+.banking-periods button{font-size:13px;color:#4e5d52;font-weight:600}
+.banking-periods button.active{color:#60481f}
+.banking-result-head{color:#4f5d53;font-size:13px}
+.banking-result-head strong{color:#243a2c;font-weight:650}
+.banking-result-grid span{color:#4f5d53;font-size:12px;font-weight:600}
+.banking-result-grid strong{color:#206a46;font-weight:650}
+.banking-result-grid small{color:#52635a;font-size:12px}
+.banking-result>p{color:#4e5a53;font-size:12.5px;line-height:1.55}
+.banking-result-empty{color:#5d675f}
+.banking-result-empty h3{color:#334139;font-size:18px}
+.banking-result-empty p{font-size:13px;line-height:1.55}
+.banking-card-yield p{color:#4c5851;font-size:13px;line-height:1.55}
+.banking-card-metric span,.banking-card-metric small{color:#586159;font-size:11.5px}
+.banking-card-metric strong{color:#2b3f34;font-weight:650}
+.banking-table-wrap table{font-size:13px}
+.banking-table-wrap th{color:#505c55;font-size:12px;font-weight:650}
+.banking-table-wrap td{color:#2f3d35}
+.banking-empty{color:#59645e;font-size:13px}
+.banking-modal>p{color:#505c55;font-size:13px}
+.banking-modal dl{font-size:13px;line-height:1.45}
+.banking-modal dt{color:#536159;font-weight:600}
+.banking-modal dd{color:#26332c;font-weight:550}
+
+@media(max-width:800px){
+  .banking-hero p:last-child{font-size:14px}
+  .banking-summary span{font-size:12.5px}
+  .banking-heading p,.banking-card-yield p{font-size:12.5px}
+  .banking-program dl,.banking-form label,.banking-table-wrap table{font-size:12.5px}
+}

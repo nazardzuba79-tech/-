@@ -8,27 +8,6 @@ import { loginPathFor, readNext } from './lib/returnTo';
 import { getToken } from './lib/api';
 import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
 
-/**
- * Route-level code splitting.
- *
- * Every page in this app used to ship in one JavaScript file. Opening the
- * wallet downloaded the futures terminal, the charting library, the Copy
- * Trading marketplace and all eight admin screens; a signed-out visitor
- * reading the homepage downloaded the same. One bundle, paid for in full
- * on the very first paint, by everyone.
- *
- * Two pages stay EAGER on purpose:
- *
- *   HomePage — the first thing a signed-out visitor sees. Lazy-loading it
- *   would put a second network round trip in front of the first pixel,
- *   which is the opposite of the goal.
- *
- *   AuthPage — reached from the homepage in one click, and small.
- *
- * Everything else is fetched when its route is actually entered. Nothing
- * here is split finer than a route: a dozen micro-chunks would trade one
- * big download for a dozen round trips.
- */
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
 const FuturesPage = lazy(() => import('./pages/FuturesRoute').then((m) => ({ default: m.FuturesRoute })));
@@ -37,9 +16,8 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ de
 const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
 const OtcPage = lazy(() => import('./pages/OtcPage').then((m) => ({ default: m.OtcPage })));
 const WalletPage = lazy(() => import('./pages/WalletPage').then((m) => ({ default: m.WalletPage })));
+const BankingPage = lazy(() => import('./pages/BankingPage').then((m) => ({ default: m.BankingPage })));
 const CopyTradingPage = lazy(() => {
-  // Also cover SPA navigation without hover (mobile, deep links, keyboard).
-  // Direct entry and nav intent join the same session's in-flight request.
   prefetchCopyMarketplace();
   return import('./pages/CopyTradingPage').then((m) => ({ default: m.CopyTradingPage }));
 });
@@ -56,18 +34,6 @@ const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').t
 const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 
-/**
- * Warms the chunk a signed-in user is most likely to open next, once the
- * browser is idle and the current page has already painted.
- *
- * Without this, splitting would make the first navigation SLOWER than the
- * single bundle was: the chunk would only start downloading on the click.
- * With it, the chunk is usually already in the HTTP cache by then, so the
- * click stays instant and the first paint is still small.
- *
- * Idle-only and failure-tolerant on purpose — this is a nicety, and it
- * must never compete with the current page's own requests.
- */
 function usePrefetchLikelyRoutes() {
   useEffect(() => {
     if (!getToken()) return;
@@ -76,8 +42,7 @@ function usePrefetchLikelyRoutes() {
       void (terminal === '/futures' ? import('./pages/FuturesPage') : import('./pages/TradePage')).catch(() => {});
       void import('./pages/WalletPage').catch(() => {});
     };
-    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number })
-      .requestIdleCallback;
+    const idle = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback;
     if (idle) {
       const handle = idle(warm, { timeout: 3000 });
       return () => (window as unknown as { cancelIdleCallback?: (h: number) => void }).cancelIdleCallback?.(handle);
@@ -89,14 +54,9 @@ function usePrefetchLikelyRoutes() {
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const location = useLocation();
-  // Not "/" — see lib/returnTo. Sending a signed-out visitor back to the
-  // homepage made every product link on it look broken; they go to the
-  // login screen, which then returns them here.
   return getToken() ? children : <Navigate to={loginPathFor(location)} replace />;
 }
 
-/** A page only a signed-out visitor should see (login, registration). Once
- *  signed in they go on to whatever they were originally after. */
 function RedirectIfAuthed({ children }: { children: JSX.Element }) {
   const location = useLocation();
   if (!getToken()) return children;
@@ -107,118 +67,26 @@ export function App() {
   usePrefetchLikelyRoutes();
   return (
     <BrowserRouter>
-      {/* One boundary around the whole route table rather than one per
-          route: the fallback is a background hold, so a single boundary
-          produces exactly the same pixels with far less machinery. */}
       <Suspense fallback={<RouteShell />}>
       <Routes>
-        {/* These two, and AuthPage's post-sign-in redirect, are the only
-            places the app picks a terminal without the user naming one, so
-            they are the only places the trading-mode preference applies —
-            see lib/tradingMode. A direct /trade or /futures URL is its own
-            route and is never rewritten. */}
         <Route path="/" element={getToken() ? <Navigate to={defaultTradingPath()} replace /> : <HomePage />} />
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
-        {/* Registration is its own screen (the approved two-column design)
-            rather than a mode of the login form. Both entry points point
-            straight here: the homepage header's primary CTA and the login
-            card's own Регистрация tab. AuthPage keeps its /login behaviour
-            untouched. */}
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
-        <Route
-          path="/trade"
-          element={
-            <RequireAuth>
-              <TradePage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/futures"
-          element={
-            <RequireAuth>
-              <FuturesPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/markets"
-          element={
-            <RequireAuth>
-              <MarketsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <RequireAuth>
-              <SettingsPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/card"
-          element={
-            <RequireAuth>
-              <CardPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/wallet"
-          element={
-            <RequireAuth>
-              <WalletPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/otc"
-          element={
-            <RequireAuth>
-              <OtcPage />
-            </RequireAuth>
-          }
-        />
-        {/* Dashboard folded into Wallet (see WalletPage's doc comment) —
-            redirect rather than a hard 404 for anything that still links
-            to the old path. */}
+        <Route path="/trade" element={<RequireAuth><TradePage /></RequireAuth>} />
+        <Route path="/futures" element={<RequireAuth><FuturesPage /></RequireAuth>} />
+        <Route path="/markets" element={<RequireAuth><MarketsPage /></RequireAuth>} />
+        <Route path="/banking" element={<RequireAuth><BankingPage /></RequireAuth>} />
+        <Route path="/earn" element={<Navigate to="/banking" replace />} />
+        <Route path="/settings" element={<RequireAuth><SettingsPage /></RequireAuth>} />
+        <Route path="/card" element={<RequireAuth><CardPage /></RequireAuth>} />
+        <Route path="/wallet" element={<RequireAuth><WalletPage /></RequireAuth>} />
+        <Route path="/otc" element={<RequireAuth><OtcPage /></RequireAuth>} />
         <Route path="/dashboard" element={<Navigate to="/wallet" replace />} />
-        <Route
-          path="/copy-trading"
-          element={
-            <RequireAuth>
-              <CopyTradingPage />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/arbitrage"
-          element={
-            <RequireAuth>
-              <ArbitragePage />
-            </RequireAuth>
-          }
-        />
-        {/* Analytics is no longer a standalone product tab. Working modules
-            live under Markets, and the old URL remains only as a compatibility
-            redirect for bookmarks/deep links. */}
+        <Route path="/copy-trading" element={<RequireAuth><CopyTradingPage /></RequireAuth>} />
+        <Route path="/arbitrage" element={<RequireAuth><ArbitragePage /></RequireAuth>} />
         <Route path="/analytics" element={<Navigate to="/markets?view=analytics" replace />} />
-        {/* Public — reachable both signed-in (footer link) and from the
-            login screen, without requiring auth like every other page. */}
         <Route path="/legal/:doc" element={<LegalPage />} />
-        {/* A referral link (see Settings' Referral tab) — public, no auth,
-            since it has to work for someone who's never signed up yet. Bare
-            /:code (no "/r/" prefix) since the code itself already reads as
-            a referral code; react-router ranks every static route above
-            this dynamic one, so it never shadows /trade, /wallet, etc. */}
         <Route path="/:code" element={<ReferralRedirectPage />} />
-
-        {/* Admin panel — deliberately not linked from anywhere in the
-            normal UI, reachable only by a direct visit. AdminLayout is a
-            UX-only gate; every request underneath is independently
-            re-checked for role ADMIN on the server (see requireAdmin). */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminOverviewPage />} />
           <Route path="wallets" element={<AdminWalletsPage />} />
