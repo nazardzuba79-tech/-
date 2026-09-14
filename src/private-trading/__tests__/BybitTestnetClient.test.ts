@@ -28,6 +28,13 @@ describe('BybitTestnetClient',()=>{
     expect(String(url)).not.toContain('test-secret');
   });
 
+  test('treats Bybit 110043 unchanged leverage as idempotent success',async()=>{
+    const fetcher=jest.fn(async()=>({ok:true,json:async()=>({retCode:110043,retMsg:'Set leverage has not been modified.',result:{}})} as Response));
+    const client=new BybitTestnetClient({apiKey:'key',apiSecret:'secret'},fetcher as any,()=>1700000000000);
+    await expect(client.setLeverage('BTCUSDT','10')).resolves.toEqual({symbol:'BTCUSDT',leverage:'10'});
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   test('normalizes wallet, live positions, orders and real zeroes without inventing values',async()=>{
     const fetcher=jest.fn((url:string)=>{
       if(url.includes('/wallet-balance'))return ok({list:[{accountType:'UNIFIED',totalEquity:'10000',totalWalletBalance:'9990',totalMarginBalance:'10002',totalAvailableBalance:'9000',totalPerpUPL:'12',coin:[{coin:'USDT',equity:'10000',walletBalance:'9990',usdValue:'10000',unrealisedPnl:'12',locked:'0'}]}]});
