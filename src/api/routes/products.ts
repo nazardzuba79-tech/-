@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
 import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { requireAdmin } from '../middleware/admin';
 import { PurchaseService, PurchaseError } from '../../services/PurchaseService';
+import { bankingRouter } from './banking';
 
 const createProductSchema = z.object({
   name: z.string().min(1).max(200),
@@ -28,6 +29,11 @@ export function productsRouter(prisma: PrismaClient): Router {
   const router = Router();
   const purchaseService = new PurchaseService(prisma);
 
+  // Banking & Earn is mounted here because this router is already attached
+  // at /api/v1. Banking keeps its own routes/service/ledger and does not use
+  // the product-purchase balance path below.
+  router.use(bankingRouter(prisma));
+
   // Public catalog — anyone can browse without logging in.
   router.get('/products', async (_req, res) => {
     const products = await prisma.product.findMany({ where: { active: true }, orderBy: { createdAt: 'desc' } });
@@ -44,30 +50,22 @@ export function productsRouter(prisma: PrismaClient): Router {
     );
   });
 
-  // Admin-only: add a product/service to sell.
   router.post('/products', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const parsed = createProductSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
     const product = await prisma.product.create({ data: parsed.data });
     res.status(201).json({ ...product, priceAmount: product.priceAmount.toString() });
   });
 
-  // Admin-only: every product, active or not — the public catalog above
-  // only ever shows active ones, so the admin panel needs its own listing
-  // to manage (and reactivate) everything.
   router.get('/admin/products', requireAuth(prisma), requireAdmin(prisma), async (_req, res) => {
     const products = await prisma.product.findMany({ orderBy: { createdAt: 'desc' } });
     res.json(products.map((p) => ({ ...p, priceAmount: p.priceAmount.toString() })));
   });
 
-  // Admin-only: edit any subset of a product's fields, including
-  // reactivating one that was previously soft-deleted.
   router.patch('/products/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     const parsed = updateProductSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     if (Object.keys(parsed.data).length === 0) return res.status(400).json({ error: 'No fields to update' });
-
     try {
       const product = await prisma.product.update({ where: { id: req.params.id }, data: parsed.data });
       res.json({ ...product, priceAmount: product.priceAmount.toString() });
@@ -76,18 +74,15 @@ export function productsRouter(prisma: PrismaClient): Router {
     }
   });
 
-  // Admin-only: stop selling a product (soft delete — keeps purchase history intact).
   router.delete('/products/:id', requireAuth(prisma), requireAdmin(prisma), async (req, res) => {
     await prisma.product.update({ where: { id: req.params.id }, data: { active: false } });
     res.status(204).send();
   });
 
-  // Any logged-in user: "pay" for a product using their internal balance.
   router.post('/purchases', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const schema = z.object({ productId: z.string().min(1) });
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
-
     try {
       const purchase = await purchaseService.purchaseProduct(req.userId!, parsed.data.productId);
       res.status(201).json({ ...purchase, amount: purchase.amount.toString() });
@@ -98,7 +93,6 @@ export function productsRouter(prisma: PrismaClient): Router {
     }
   });
 
-  // A user's own purchase history.
   router.get('/purchases/me', requireAuth(prisma), async (req: AuthedRequest, res) => {
     const purchases = await prisma.purchase.findMany({
       where: { userId: req.userId },
