@@ -97,3 +97,15 @@ jobs:
           name: private-trading-tests
           path: private-trading-tests.json
           retention-days: 7
+      - name: Preserve exact card review inputs
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-trading-card-review-source
+          path: |
+            frontend/src/lib/privateResultCard.ts
+            frontend/src/lib/privateTradingApi.ts
+            frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+            frontend/src/pages/private-trading/PrivateResultCardDialog.tsx
+            frontend/src/pages/private-trading/privateTrading.css
+          retention-days: 7
