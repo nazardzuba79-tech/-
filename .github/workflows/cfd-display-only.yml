@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/api/routes/cfd.ts'
       - 'src/marketDataCollector.ts'
+      - 'src/services/marketData/bybit/**'
       - 'src/services/marketData/cfd/**'
       - 'src/services/marketData/live/**'
       - 'src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts'
@@ -43,8 +44,8 @@ jobs:
         run: npm run build
       - name: Market-data collector build
         run: npx tsc -p tsconfig.collector.json
-      - name: CFD regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
+      - name: Market-data and CFD regression tests
+        run: npm test -- --runInBand --silent --runTestsByPath src/services/marketData/bybit/__tests__/BybitLiveCollector.test.ts src/cfd/__tests__/CfdDisplayQuoteRouter.test.ts frontend/src/lib/__tests__/cfdDisplayOnly.test.ts frontend/src/lib/__tests__/cfdTerminal.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
