@@ -90,12 +90,27 @@ jobs:
           frontend/src/lib/__tests__/priceChartMarketOrders.test.ts
           frontend/src/lib/__tests__/privateChartTicket.test.ts
           frontend/src/lib/__tests__/privateTradingFrontend.test.ts
+      - name: Install disposable card browser tooling
+        run: |
+          npm install --prefix /tmp/voltex-private-card-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-private-card-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Actual P&L dialog and PNG browser QA
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/voltex-private-card-qa/node_modules/playwright
+        run: node scripts/qa-private-card-browser.cjs
       - name: Preserve test results
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: private-trading-tests
           path: private-trading-tests.json
+          retention-days: 7
+      - name: Preserve card browser evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-trading-card-browser
+          path: docs/qa/private-trading/card-browser/
           retention-days: 7
       - name: Preserve exact card review inputs
         if: success() || failure()
@@ -108,4 +123,5 @@ jobs:
             frontend/src/lib/__tests__/privateTradingFrontend.test.ts
             frontend/src/pages/private-trading/PrivateResultCardDialog.tsx
             frontend/src/pages/private-trading/privateTrading.css
+            frontend/src/pages/private-trading/privateResultCard.css
           retention-days: 7

@@ -112,18 +112,66 @@ describe('private snapshot display and dates',()=>{
     expect(api.privateEffectiveSort(rows).map((r:any)=>r.id)).toEqual(['newer-effective','older-created-today']);expect(rows[0].id).toBe('older-created-today');
   });
   const snapshot={id:'secret-resource-id',symbol:'BTCUSDT',side:'LONG',leverage:'10',mode:'DEMO_LIVE',netPnl:'-5.75',unrealizedPnl:'123.45',roiPercent:'12.345',entryPrice:'100',valuationPrice:'220',usdPnl:null,asOf:'2026-08-08T12:00:00.000Z',status:'OPEN',label:'Симуляция'};
-  test('open PNG pairs unrealized P&L with server ROI and frozen valuation, without fabricated USD',()=>{
-    const svg=cardRenderer.privateResultCardSvg(snapshot);
-    expect(svg).toContain('Прибыль  123.45 USDT');expect(svg).toContain('Нереализованная прибыль');expect(svg).toContain('Текущая цена');expect(svg).toContain('12.35%');expect(svg).not.toContain('USD  ');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).toContain('220.000000');expect(svg).toContain('2026-08-08 12:00:00 UTC');expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain('-5.75');
+  function rendered(card:any){
+    const svg=cardRenderer.privateResultCardSvg(card);
+    const {JSDOM}=req('jsdom');const doc=new JSDOM(svg,{contentType:'image/svg+xml'}).window.document;
+    const field=(name:string)=>doc.querySelector(`[data-field="${name}"]`);
+    return {svg,doc,field,visible:[...doc.querySelectorAll('text')].map((node:any)=>node.textContent).join(' | ')};
+  }
+  test('open PNG pairs frozen unrealized P&L with server ROI and valuation without hidden legacy captions',()=>{
+    const {svg,doc,field,visible}=rendered(snapshot);
+    expect(field('profit-number').textContent).toBe('+123.45');expect(field('profit-unit').textContent).toBe('USDT');
+    expect(field('roi-number').textContent).toBe('+12.35');expect(field('roi-unit').textContent).toBe('%');
+    expect(field('valuation-label').textContent).toBe('Current Price');expect(field('valuation-price').textContent).toBe('220.000000');
+    expect(field('historical-label')).toBeNull();expect(doc.querySelector('metadata,[display="none"]')).toBeNull();
+    expect(visible).not.toMatch(/Simulation|Симуляция|snapshot|scenario net|Нереализованная|USD(?!T)/i);
+    expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain(snapshot.asOf);expect(svg).not.toContain('-5.75');
   });
-  test('closed historical card keeps net result and readable test designation',()=>{
-    const svg=cardRenderer.privateResultCardSvg({...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест',roiPercent:'-0.575'});
-    expect(svg).toContain('Прибыль  -5.75 USDT');expect(svg).not.toContain('net');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).not.toContain('Исторический тест');expect(svg).toContain('Цена выхода');expect(svg).not.toContain('123.45');
+  test('closed historical card visibly keeps the net result and exactly one Historical Test label',()=>{
+    const {field,doc,visible}=rendered({...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест',roiPercent:'-0.575'});
+    expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
+    expect(field('valuation-label').textContent).toBe('Exit Price');expect(field('historical-label').textContent).toBe('Historical Test');
+    expect(doc.querySelectorAll('[data-field="historical-label"]')).toHaveLength(1);
+    expect(visible).not.toMatch(/123\.45|scenario net|snapshot|Исторический тест|Симуляция/i);
   });
-  test('an open historical scenario uses server net P&L consistently with scenario ROI',()=>{
-    const svg=cardRenderer.privateResultCardSvg({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
-    expect(svg).toContain('>Цена</text>');expect(svg).not.toContain('Текущая цена');expect(svg).toContain('2026-08-08 12:00:00 UTC');
-    expect(svg).toContain('Прибыль  -5.75 USDT');expect(svg).not.toContain('net');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).not.toContain('123.45');
+  test('open historical card uses frozen server scenario P&L, never the live unrealized value',()=>{
+    const {field,visible}=rendered({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
+    expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
+    expect(field('valuation-label').textContent).toBe('Current Price');expect(field('historical-label').textContent).toBe('Historical Test');
+    expect(visible).not.toContain('123.45');
+  });
+  test('portrait geometry uses separate, smaller percent and USDT glyphs',()=>{
+    const {doc,field}=rendered({...snapshot,pnl:'24580.00',roiPercent:'211.38'});const root=doc.documentElement;
+    expect(root.getAttribute('width')).toBe('1080');expect(root.getAttribute('height')).toBe('1440');expect(root.getAttribute('viewBox')).toBe('0 0 1080 1440');
+    const digits=field('roi-number'),unit=field('roi-unit');
+    expect(digits.textContent).toBe('+211.38');expect(unit.textContent).toBe('%');expect(digits).not.toBe(unit);
+    const size=Number(digits.getAttribute('font-size')),ratio=Number(unit.getAttribute('font-size'))/size;
+    expect(size).toBeGreaterThanOrEqual(88);expect(size).toBeLessThanOrEqual(96);expect(ratio).toBeGreaterThanOrEqual(.58);expect(ratio).toBeLessThanOrEqual(.65);
+    expect(field('profit-number').textContent).toBe('+24,580.00');expect(Number(field('profit-unit').getAttribute('dx'))).toBeGreaterThanOrEqual(20);
+    expect(Number(field('profit-unit').getAttribute('font-size'))).toBeLessThan(Number(field('profit-number').getAttribute('font-size')));
+  });
+  test.each([null,undefined,'',' ','NaN','Infinity','0x10'])('card unknown %s remains unavailable rather than a fabricated zero',value=>{
+    const {field}=rendered({...snapshot,pnl:value,netPnl:value,unrealizedPnl:value,roiPercent:value,entryPrice:value,valuationPrice:value});
+    for(const name of ['roi-number','profit-number','entry-price','valuation-price'])expect(field(name).textContent).toBe('—');
+    expect(field('roi-unit')).toBeNull();
+  });
+  test('real zero remains zero with a percent unit',()=>{
+    const {field}=rendered({...snapshot,pnl:'0',roiPercent:'0',entryPrice:'0',valuationPrice:'0'});
+    expect(field('roi-number').textContent).toBe('0.00');expect(field('profit-number').textContent).toBe('0.00');expect(field('roi-unit').textContent).toBe('%');
+    expect(field('entry-price').textContent).toBe('0.000000');expect(field('valuation-price').textContent).toBe('0.000000');
+  });
+  test('explicit frozen server result wins over all fallback fields without mutating or recalculating the snapshot',()=>{
+    const card=Object.freeze({...snapshot,pnl:'321.09',pnlKind:'NET_REALIZED',roiPercent:'7.77',entryPrice:'1',valuationPrice:'9000',netPnl:'999999',unrealizedPnl:'888888'});
+    const before=JSON.stringify(card);const {field,visible}=rendered(card);
+    expect(field('profit-number').textContent).toBe('+321.09');expect(field('roi-number').textContent).toBe('+7.77');expect(JSON.stringify(card)).toBe(before);
+    expect(visible).not.toContain('999,999');expect(visible).not.toContain('888,888');
+  });
+  test('Short, fractional leverage and long negative results retain the portrait hierarchy',()=>{
+    const {field,doc}=rendered({...snapshot,side:'SHORT',leverage:'12.5',pnl:'-123456789123456789.99',roiPercent:'-123456789.12'});
+    expect(field('side').textContent).toBe('Short');expect(field('leverage').textContent).toBe('12.5x');
+    const size=Number(field('roi-number').getAttribute('font-size')),percent=Number(field('roi-unit').getAttribute('font-size'));
+    expect(percent/size).toBeGreaterThanOrEqual(.58);expect(percent/size).toBeLessThanOrEqual(.65);
+    expect(field('profit-number').getAttribute('lengthAdjust')).toBe('spacingAndGlyphs');expect(doc.querySelector('metadata,[display="none"]')).toBeNull();
   });
   test('expired preview refresh copies reviewed inputs but never old idempotency or server-only state',()=>{
     const request={mode:'DEMO_LIVE',symbol:'ETHUSDT',side:'SHORT',type:'MARKET',quantity:'0.1',leverage:'3',idempotencyKey:'old-command',quote:{lastPrice:'9999'},profile:{fee:'0'}};

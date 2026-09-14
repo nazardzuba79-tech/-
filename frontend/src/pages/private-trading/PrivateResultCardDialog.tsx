@@ -1,3 +1,4 @@
+import './privateResultCard.css';
 import { useEffect,useRef,useState } from 'react';
 import { Download,ExternalLink,X } from 'lucide-react';
 import { privateTradingApi,privateErrorText,privateCardPnl,type PrivateResultCard } from '../../lib/privateTradingApi';
