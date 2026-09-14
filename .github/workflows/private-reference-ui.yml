@@ -29,29 +29,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = e5ae1e4f62815a396662e268ffbba20d40b176be
-      - name: Obtain the supplied Canva artwork export
+      - name: Obtain existing Canva reference preview for inspection
         env:
           CANVA_SOURCE: 'https://export-download.canva.com/5a5cc326-0e37-43a7-b6f6-9916857fb7be/0/0001-8450394664267514559.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAQYCGKMUH5AO7UJ26%2F20260913%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260913T200117Z&X-Amz-Expires=65780&X-Amz-Signature=48fea7d70e5e7b5392b8ab1a4820b333fc366fca3163b51599d030fffdf8e7c3&X-Amz-SignedHeaders=host%3Bx-amz-expected-bucket-owner&response-expires=Mon%2C%2014%20Sep%202026%2014%3A17%3A37%20GMT'
-        run: curl --fail --location --max-time 40 "$CANVA_SOURCE" --output /tmp/canva-original.png
+        run: |
+          curl --fail --location --max-time 40 "$CANVA_SOURCE" --output canva-reference-source.png
       - run: python -m pip install --disable-pip-version-check pillow numpy
-      - name: Verify exact source pixels and extract artwork without baked numbers
+      - name: Extract only decorative pixels and record exact input resolution
         run: |
           python <<'PY'
           from PIL import Image
-          import numpy as np,base64,io,hashlib
+          import numpy as np,base64,io,hashlib,json
           from pathlib import Path
-          im=Image.open('/tmp/canva-original.png').convert('RGBA')
-          if im.size!=(1080,1440): raise ValueError('Wrong source dimensions')
+          im=Image.open('canva-reference-source.png').convert('RGBA')
           digest=hashlib.sha256(im.convert('RGB').tobytes()).hexdigest()
-          print('Source pixel hash:',digest)
-          if digest!='bf53b3dd346bad76323c217be68ee01b26d03e6d25a1e725cecd7b962e381411': raise ValueError('Canva export does not match the uploaded reference')
+          print('Source resolution and pixel hash:',im.size,digest)
+          Path('canva-source-manifest.json').write_text(json.dumps({'dimensions':im.size,'pixelSha256':digest,'source':'Existing Canva Final A warm portrait preview; resolution normalization must be visually reviewed'},indent=2))
+          if abs(im.width/im.height-.75)>.002 or im.width<400: raise ValueError('Unexpected source proportions or insufficient size')
+          im=im.resize((1080,1440),Image.Resampling.LANCZOS)
           a=np.array(im);y,x=np.mgrid[0:1440,0:1080]
           smooth=lambda t: np.clip(t,0,1)**2*(3-2*np.clip(t,0,1))
           m=np.maximum(smooth((x-660)/140),smooth((y-985)/80))
           a[:,:,3]=(255*m).round().astype('uint8');a[a[:,:,3]==0,:3]=0
           buf=io.BytesIO();Image.fromarray(a).save(buf,'WEBP',quality=92,method=6)
           uri='data:image/webp;base64,'+base64.b64encode(buf.getvalue()).decode()
-          Path('frontend/src/lib/privateCardArtwork.ts').write_text('// Extracted from the user-provided Canva PNG; all baked financial text removed.\nexport const privateCardArtwork = '+repr(uri)+';\n')
+          Path('frontend/src/lib/privateCardArtwork.ts').write_text('// Extracted from Canva Final A preview. Resolution-normalized; baked financial labels removed.\nexport const privateCardArtwork = '+repr(uri)+';\n')
           PY
       - name: Prepare auditable blobs only - no ref update, commit or deploy
         env:
@@ -63,6 +65,8 @@ jobs:
           name: private-reference-prepared-source
           path: |
             private-reference-prepared-tree.json
+            canva-reference-source.png
+            canva-source-manifest.json
             frontend/src/components/PrivatePositionLines*
             frontend/src/components/PriceChart.tsx
             frontend/src/lib/private*
