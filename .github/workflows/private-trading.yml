@@ -75,6 +75,7 @@ jobs:
         run: >-
           npm test -- --runInBand --silent --json --outputFile=private-trading-tests.json
           --runTestsByPath
+          src/private-trading/__tests__/crossDemo.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
           src/private-trading/__tests__/liveEngine.test.ts
           src/private-trading/__tests__/marketData.test.ts
