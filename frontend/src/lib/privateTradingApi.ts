@@ -13,7 +13,8 @@ export interface PrivatePosition {
   liquidationPrice:PrivateDecimal; unrealizedPnl:PrivateDecimal; netPnl:PrivateDecimal; roiPercent:PrivateDecimal;
   takeProfit:PrivateDecimal; stopLoss:PrivateDecimal; status:string; createdAt:string;
   effectiveOpenedAt:string; effectiveClosedAt?:string|null; verification?:string;
-  notional?:PrivateDecimal;
+  notional?:PrivateDecimal; realizedPnl?:PrivateDecimal; unrealizedRoiPercent?:PrivateDecimal;
+  usdUnrealizedPnl?:PrivateDecimal; usdRealizedPnl?:PrivateDecimal;
   dataStatus?:'LIVE'|'UNAVAILABLE';asOf?:string;
   initialQuantity?:string;
   candleEntry?:PrivateResolvedCandleSelection;candleClose?:PrivateResolvedCandleSelection;fills?:PrivateReplayFill[];evaluatedThrough?:number|null;version?:number;

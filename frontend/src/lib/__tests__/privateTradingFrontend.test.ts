@@ -14,7 +14,7 @@ function load(file:string,imports:Record<string,unknown>={}){
   return output;
 }
 const api=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>null}});
-const cardRenderer=load('lib/privateResultCard.ts',{'./privateTradingApi':api});
+const cardRenderer=load('lib/privateResultCard.ts',{'./privateTradingApi':api,'./privateCardArtwork':load('lib/privateCardArtwork.ts')});
 const reply=(body:unknown,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body}) as Response;
 
 function mount(file:string,name:string,initialProps:any,imports:Record<string,unknown>={}){
@@ -310,7 +310,7 @@ describe('actual private forms',()=>{
     const scenario={id:'historical-id',symbol:'ETHUSDT',side:'LONG',mode:'HISTORICAL_REPLAY',status:'OPEN',verification:'VERIFIED',quantity:'0.1',initialQuantity:'0.1',leverage:'3',entryPrice:'2000',markPrice:'2200',notional:'220',allocatedMargin:'70',allocatedCapital:'200',scenarioEquity:'219.5',netPnl:'19.5',unrealizedPnl:'20',roiPercent:'27.85',liquidationPrice:'1500',effectiveOpenedAt:'2026-08-01T12:00:00Z',asOf:'2026-08-02T12:00:00Z'};
     const ui=mount('pages/private-trading/PrivatePositions.tsx','PrivatePositions',{state:empty,busy:false,onAction,onCard,onAdvance,onCancelOrder:jest.fn()});let tree=ui.render();button(tree,'Сценарии').props.onClick();ui.render();
     ui.render({state:{...empty,scenarios:[scenario]}});tree=ui.render();expect(button(tree,'Позиции (1)').props['aria-selected']).toBe(true);expect(text(tree)).toContain('По истории');expect(text(tree)).not.toContain('Исторический тест');expect(text(tree)).toContain('На: 2026-08-02 12:00:00 UTC');
-    expect(nodes(tree).filter(n=>n.type==='small'&&text(n)==='Итого')).toHaveLength(1);expect(text(tree)).not.toContain('Net');expect(text(tree)).toContain('Прибыль, USDT');
+    expect(text(tree)).not.toContain('Net');expect(text(tree)).toContain('Нереализованный P&L(ROI)');expect(text(tree)).toContain('20.0000');
     expect(nodes(tree).some(n=>n.type==='button'&&['Маржа','Закрыть','TP/SL'].includes(text(n)))).toBe(false);
     button(tree,'Обновить до сейчас').props.onClick();expect(onAdvance).toHaveBeenCalledWith('historical-id');find(tree,n=>n.props?.['aria-label']==='Открыть карточку ETHUSDT').props.onClick();expect(onCard).toHaveBeenCalledWith('historical-id');expect(onAction).not.toHaveBeenCalled();
     ui.render({state:{...empty,scenarios:[{...scenario,status:'CLOSED',quantity:'0',effectiveClosedAt:'2026-08-03T12:00:00Z'}]}});tree=ui.render();expect(button(tree,'История позиций').props['aria-selected']).toBe(true);expect(text(tree)).toContain('0.10000000');expect(text(tree)).toContain('По истории');expect(text(tree)).not.toContain('Исторический тест');expect(wallet.realizedPnl).toBe('0');

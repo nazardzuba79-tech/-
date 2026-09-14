@@ -112,6 +112,10 @@ export class PrivateTradingService {
     return { ...position,
       notional: money(number(valuationQuantity).times(position.markPrice)),
       entryNotional: money(number(valuationQuantity).times(position.entryPrice)),
+      // Display only; immutable execution, fee and funding fields remain authoritative.
+      realizedPnl: money(number(position.realizedGross).minus(position.openingFees).minus(position.closingFees).plus(position.fundingNet)),
+      unrealizedRoiPercent: roiPercent(position.unrealizedPnl, position.allocatedMargin),
+      usdUnrealizedPnl: null, usdRealizedPnl: null,
       ...(live ? { dataStatus: fresh && !this.unavailableSymbols.has(position.symbol) ? 'LIVE' as const : 'UNAVAILABLE' as const }
         : { dataStatus: undefined }),
     };

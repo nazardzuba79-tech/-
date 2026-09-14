@@ -1,3 +1,4 @@
+import { privateCardArtwork } from './privateCardArtwork';
 import { privateNumber, privateCardPnl, type PrivateResultCard } from './privateTradingApi';
 
 export const PRIVATE_RESULT_CARD_WIDTH = 1080;
@@ -26,30 +27,12 @@ function brand(): string {
   return `<g transform="translate(78 76)"><g transform="translate(0 2) scale(.62)"><defs><mask id="logoMask" maskUnits="userSpaceOnUse" x="0" y="0" width="82" height="64"><rect width="82" height="64" fill="white"/><circle cx="41" cy="32" r="24" fill="black"/></mask></defs><ellipse cx="41" cy="32" rx="39" ry="12.5" transform="rotate(-23 41 32)" stroke="#fff" stroke-width="3.3" mask="url(#logoMask)"/><path d="M57.36 14.44A24 24 0 0 0 18.9 41.37ZM24.64 49.56A24 24 0 0 0 63.1 22.63Z" fill="#fff"/></g><text x="70" y="40" font-size="42" fill="#fff" font-weight="700" letter-spacing="1.3">VOLTEX</text></g>`;
 }
 
-// The existing rising ribbon is retained, with a tighter crop and warm depth.
-// Decorative geometry is not a chart and never encodes account performance.
+// The actual supplied Canva ribbon is retained as raster artwork. These bags are decorative only.
 function warmArtwork(): string {
-  return `<g data-artwork="warm-rise" aria-hidden="true"><defs>
-<radialGradient id="ambient" cx="91%" cy="45%" r="78%"><stop stop-color="#c78a4e" stop-opacity=".38"/><stop offset=".43" stop-color="#9e5c2e" stop-opacity=".13"/><stop offset="1" stop-color="#302622" stop-opacity="0"/></radialGradient>
-<radialGradient id="orb" cx="38%" cy="16%" r="83%"><stop stop-color="#f5d394"/><stop offset=".23" stop-color="#bb7938"/><stop offset=".62" stop-color="#5d3520"/><stop offset="1" stop-color="#271f1c"/></radialGradient>
-<linearGradient id="gold" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#704323"/><stop offset=".32" stop-color="#bf843e"/><stop offset=".58" stop-color="#ffe0a0"/><stop offset=".78" stop-color="#bf8542"/><stop offset="1" stop-color="#f5cc7d"/></linearGradient>
-<linearGradient id="goldHi" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#85562d"/><stop offset=".48" stop-color="#ffe7b4"/><stop offset="1" stop-color="#ddab61"/></linearGradient>
-<linearGradient id="trail" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#d99442" stop-opacity="0"/><stop offset=".5" stop-color="#dfac66" stop-opacity=".30"/><stop offset="1" stop-color="#f3d49e" stop-opacity=".06"/></linearGradient>
-<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="40"/></filter>
-</defs>
-<rect width="1080" height="1440" fill="url(#ambient)"/>
-<ellipse cx="860" cy="1120" rx="500" ry="320" fill="#c18340" opacity=".16" filter="url(#glow)"/>
-<path d="M-100 1380C345 1300 664 1054 815 763S1000 401 1175 364" fill="none" stroke="url(#trail)" stroke-width="88" opacity=".32"/>
-<path d="M-70 1440C355 1325 715 1060 873 752S1058 437 1190 395" fill="none" stroke="url(#trail)" stroke-width="2"/>
-<circle cx="965" cy="1330" r="420" fill="url(#orb)" opacity=".72"/>
-<g transform="translate(138 -64) scale(.87)">
-<path d="M466 1390C540 1232 642 1164 748 1106c112-62 150-130 162-230l-80 42 145-249 38 282-78-47c-20 135-94 242-213 316-107 67-169 116-216 220Z" transform="translate(20 26)" fill="#664023" opacity=".9"/>
-<path d="M466 1390C540 1232 642 1164 748 1106c112-62 150-130 162-230l-80 42 145-249 38 282-78-47c-20 135-94 242-213 316-107 67-169 116-216 220Z" fill="url(#gold)"/>
-<path d="M504 1392c58-123 153-178 256-234 112-61 151-148 166-240" fill="none" stroke="url(#goldHi)" stroke-width="22" stroke-linecap="round" opacity=".86"/>
-<path d="M847 861 975 669l28 225-66-40c-27 90-80 161-161 220" fill="url(#goldHi)"/>
-<path d="m847 861 128-192 28 225" fill="none" stroke="#ffdf9b" stroke-width="2" opacity=".75"/>
-</g></g>`;
+  const bag = (x:number,y:number,scale:number) => `<g transform="translate(${x} ${y}) scale(${scale})"><path d="M52 75C40 44 35 34 45 27c14-10 23 11 30 10 10-23 27-25 35-3 17-22 42-19 37 0-3 12-15 26-21 41" fill="#fff8e9" stroke="#4b3726" stroke-width="3"/><path d="M53 95C27 121 3 155 8 196c5 48 163 50 174 0 8-35-14-69-56-101Z" fill="#fffaf0" stroke="#4b3726" stroke-width="3"/><rect x="47" y="70" width="88" height="22" rx="11" fill="#f9ae37" stroke="#4b3726" stroke-width="3"/><text x="94" y="193" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="114" fill="#292522">$</text></g>`;
+  return `<g data-artwork="warm-rise" aria-hidden="true"><image href="${privateCardArtwork}" x="0" y="0" width="1080" height="1440"/><g data-artwork="money-bags">${bag(888,890,.90)}${bag(639,1144,.74)}</g></g>`;
 }
+
 
 /** One frozen server snapshot drives the preview and the downloaded PNG. */
 export function privateResultCardSvg(card: PrivateResultCard): string {

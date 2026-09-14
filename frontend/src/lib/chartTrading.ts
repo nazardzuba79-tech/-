@@ -22,6 +22,7 @@ export interface ChartTradeOverlay {
   entryPrice: number;
   quantity: number;
   pnl: number;
+  status?: string;
   entryTime: number;
   /** Close execution belongs to the selected completed candle, including at a timeframe boundary. */
   entryCandleOpenTime?: number;
@@ -42,6 +43,8 @@ export interface ChartTradingInteraction {
   onCandleSelect(candle: ChartTradeCandle): void;
   onCancelSelection(): void;
   onTradeSelect(id: string): void;
+  /** Requests confirmation; never executes on a chart click. */
+  onTradeClose?(id: string): void;
   onSelectionModeChange?(selecting: 'entry' | 'exit' | null): void;
 }
 export type ChartCandleLoader = (pair: string, interval: string, limit: number, signal?: AbortSignal, endTime?: number) => Promise<{ candles: Candle[] }>;

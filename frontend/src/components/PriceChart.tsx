@@ -39,6 +39,7 @@ import {
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
 import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction } from '../lib/chartTrading';
 import './DrawingTools.css';
+import { PrivatePositionLines } from './PrivatePositionLines';
 
 const MA_PERIOD = 200;
 const VISIBLE_CANDLES = 300;
@@ -682,13 +683,17 @@ export function PriceChart({
     const visibleSeries = chartType === 'line' ? lineSeriesRef.current : chartType === 'area' ? areaSeriesRef.current : series;
     privateLineOwnerRef.current = visibleSeries;
     const selectedTrade = relevant.find(trade => trade.id === privateTrading.selectedTradeId);
+    for (const trade of relevant.filter(t => t.status === 'OPEN')) {
+      if (visibleSeries && Number.isFinite(trade.entryPrice) && trade.entryPrice > 0) {
+        privateLinesRef.current.push(visibleSeries.createPriceLine({price:trade.entryPrice,title:'',color:trade.side==='LONG'?'#13ad75':'#f33b57',lineWidth:1,lineStyle:LineStyle.Dotted,axisLabelVisible:true}));
+      }
+    }
     if (selectedTrade) {
-      const base = pair.split('/')[0];
       const addLine = (price: number | null | undefined, title: string, color: string, style: LineStyle) => {
         if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return;
         if (visibleSeries) privateLinesRef.current.push(visibleSeries.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true }));
       };
-      addLine(selectedTrade.entryPrice, `${selectedTrade.side} ${selectedTrade.quantity} ${base} · P&L ${selectedTrade.pnl >= 0 ? '+' : ''}${selectedTrade.pnl.toFixed(2)} USDT`, '#e9b44c', LineStyle.Solid);
+      if (selectedTrade.status !== 'OPEN') addLine(selectedTrade.entryPrice, 'Entry', '#7d8188', LineStyle.Dotted);
       addLine(selectedTrade.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
       addLine(selectedTrade.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
       addLine(selectedTrade.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
@@ -1613,6 +1618,7 @@ export function PriceChart({
 
         <div style={styles.chartArea}>
           <div ref={containerRef} style={styles.chart} />
+          {privateTrading?.enabled && chartReady && <PrivatePositionLines chart={chartRef.current} series={seriesRef.current} interaction={privateTrading} pair={pair}/>}
           {terminal && <div className="voltex-plot-title">{pair} · {interval}</div>}
 
           {terminal && <div className="chart-watermark">{pair.split('/')[0]}</div>}

@@ -90,6 +90,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/spotChartPriceFormat') return chartPriceFormat;
     if (name === '../lib/chartTrading') return chartTrading;
+    if (name === './PrivatePositionLines') return { PrivatePositionLines: () => null };
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
     return req(name);

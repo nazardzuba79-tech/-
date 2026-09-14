@@ -23,6 +23,7 @@ import '../trade-terminal/TerminalPresentationPolish.css';
 import '../trade-terminal/FuturesStudio.css';
 import '../trade-terminal/TerminalStudio.css';
 import './privateTrading.css';
+import './privateReferencePositions.css';
 
 export function PrivateTradingPage(){
   const[params]=useSearchParams(),cardId=params.get('card');
@@ -106,12 +107,18 @@ function PrivateTradingWorkspace({onDenied}:{onDenied:()=>void}){
   function showEntry(id:string){const position=chartPositions.find(row=>row.id===id);if(!position)return;cancelChartSelection();setSelectedTradeId(id);setSymbol(position.symbol.replace(/USDT$/,'/USDT'));setChartFocus(current=>({tradeId:id,time:position.candleEntry?.openTime??Date.parse(position.effectiveOpenedAt),sequence:(current?.sequence??0)+1}));}
   function selectTrade(id:string){const position=chartPositions.find(row=>row.id===id);if(!position)return;cancelChartSelection();setSelectedTradeId(id);setSymbol(position.symbol.replace(/USDT$/,'/USDT'));}
   function closeOnChart(id:string){selectTrade(id);setExitId(id);setSelectedCandle(null);setSelecting('exit');}
+  function closeFromChart(id:string){
+    if(busy)return;
+    const position=chartPositions.find(row=>row.id===id&&row.status==='OPEN');if(!position)return;
+    if(position.mode==='HISTORICAL_REPLAY')closeOnChart(id);
+    else{setError('');setAction({kind:'close',position});}
+  }
   return <>
     <div className="private-mode-bar"><span className="private-mode-badge"><LockKeyhole size={13}/>Симуляция</span><span>Выделено: <strong>{privateNumber(state?.wallet.allocatedCapital)} USDT</strong></span><span>Резерв: <strong>{privateNumber(state?.wallet.reserved)} USDT</strong></span><Link to="/futures">Обычный терминал</Link></div>
     {error&&<div className="private-page-notice" role="alert"><span>{error}</span><button type="button" onClick={()=>{setError('');void refresh();}}><RefreshCw size={14}/>Повторить</button></div>}
     <main className="private-terminal-grid">
       <aside className="private-market-sidebar"><h2>Рынки</h2><FuturesPairList symbols={symbols} symbol={symbol} onChange={next=>{if(pending.current)return;cancelChartSelection();setSelectedTradeId(null);setChartFocus(null);setSymbol(next);setPreview(null);setPickedPrice(null);}}/></aside>
-      <div className="private-chart-stack"><div className="private-instrument"><strong>{symbol}</strong><span><small>Mark Price</small><b>{privateNumber(market?.markPrice,2)}</b></span><span><small>Обновлено</small>{market?privateUtc(market.providerTimestamp):'—'}</span></div><TerminalChart pair={symbol} market="futures" compactTools candleLoader={chartLoader} privateTrading={{enabled:true,selecting,selectedCandle,trades:privateChartOverlays(chartPositions,symbol),selectedTradeId,focus:chartFocus,onCandleSelect:candle=>{setSelectedCandle(candle);setSelecting(null);},onCancelSelection:cancelChartSelection,onTradeSelect:setSelectedTradeId,onSelectionModeChange:chooseChartMode}}/>
+      <div className="private-chart-stack"><div className="private-instrument"><strong>{symbol}</strong><span><small>Mark Price</small><b>{privateNumber(market?.markPrice,2)}</b></span><span><small>Обновлено</small>{market?privateUtc(market.providerTimestamp):'—'}</span></div><TerminalChart pair={symbol} market="futures" compactTools candleLoader={chartLoader} privateTrading={{enabled:true,selecting,selectedCandle,trades:privateChartOverlays(chartPositions,symbol),selectedTradeId,focus:chartFocus,onCandleSelect:candle=>{setSelectedCandle(candle);setSelecting(null);},onCancelSelection:cancelChartSelection,onTradeSelect:setSelectedTradeId,onTradeClose:closeFromChart,onSelectionModeChange:chooseChartMode}}/>
         {selectedTrade&&<div className="private-chart-trade-detail"><strong>{selectedTrade.symbol} · {selectedTrade.side} · {selectedTrade.leverage}×</strong><span>Прибыль {privateNumber(selectedTrade.netPnl)} USDT</span><button type="button" onClick={()=>showEntry(selectedTrade.id)}>Показать вход</button>{selectedTrade.mode==='HISTORICAL_REPLAY'&&selectedTrade.status==='OPEN'&&<button type="button" onClick={()=>closeOnChart(selectedTrade.id)}>Закрыть на графике</button>}<button type="button" aria-label="Скрыть детали позиции" onClick={()=>setSelectedTradeId(null)}>×</button></div>}</div>
       <div className="private-book repaired-futures-book"><FuturesReferenceBook key={symbol} pair={symbol} bids={market?.bids??[]} asks={market?.asks??[]} lastPrice={market?Number(market.lastPrice):null} onPickPrice={price=>setPickedPrice(current=>({price,sequence:(current?.sequence??0)+1}))}/></div>
       <PrivateOrderTicket onChartEntry={()=>chooseChartMode('entry')} key={symbol} symbol={symbol} market={market} wallet={state?.wallet??null} busy={busy} preview={preview} pickedPrice={pickedPrice} savedPreviews={state?.previews??[]}
