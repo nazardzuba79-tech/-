@@ -8,8 +8,10 @@ on:
       - 'src/services/DemoTradingService.ts'
       - 'src/services/__tests__/DemoTradingService.test.ts'
       - 'frontend/src/lib/private*'
+      - 'frontend/src/lib/bybitTestnet*'
       - 'frontend/src/lib/chartTrading.ts'
       - 'frontend/src/lib/__tests__/private*'
+      - 'frontend/src/lib/__tests__/bybitTestnet*'
       - 'frontend/src/lib/__tests__/chartTrading.test.ts'
       - 'frontend/src/pages/private-trading/**'
       - 'frontend/src/components/PriceChart.tsx'
@@ -75,6 +77,7 @@ jobs:
         run: >-
           npm test -- --runInBand --silent --json --outputFile=private-trading-tests.json
           --runTestsByPath
+          src/private-trading/__tests__/BybitTestnetClient.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
           src/private-trading/__tests__/liveEngine.test.ts
           src/private-trading/__tests__/marketData.test.ts
