@@ -2,7 +2,7 @@ import { privateNumber,privateUtc,privateCardPnl,type PrivateResultCard } from '
 
 const escapeXml=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]!));
 const finite=(value:unknown)=>{const n=Number(value);return Number.isFinite(n)?n:null;};
-const signed=(value:unknown,digits=2)=>{const n=finite(value);if(n===null)return '—';const formatted=privateNumber(value,digits);return n>0?`+${formatted}`:formatted;};
+const signed=(value:string|null|undefined,digits=2)=>{const n=finite(value);if(n===null)return '—';const formatted=privateNumber(value,digits);return n>0?`+${formatted}`:formatted;};
 const priceLabel=(card:PrivateResultCard)=>card.status==='OPEN'?(card.mode==='DEMO_LIVE'?'Current Price':'Price'):'Exit Price';
 
 function brand(){
