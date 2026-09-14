@@ -26,13 +26,15 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
     const toast = useToast();
     const [orders, setOrders] = useState<SpotOrderRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [failed, setFailed] = useState(false);
     const [cancellingId, setCancellingId] = useState<string | null>(null);
     const [cancelling, setCancelling] = useState(false);
     const cancelInFlight = useRef(false);
     const reader = useRef<SpotReadController | null>(null);
     if (!reader.current) reader.current = createSpotReadController(() => api.getMyOrders('PENDING_TRIGGER,OPEN,PARTIALLY_FILLED'), {
-      accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true), settled: () => setLoading(false),
+      started: () => setRefreshing(true), accept: rows => { setOrders(rows); setFailed(false); }, reject: () => setFailed(true),
+      settled: () => { setLoading(false); setRefreshing(false); },
     });
     const load = useCallback((fresh = false) => reader.current!.read(fresh), []);
 
@@ -91,7 +93,7 @@ export const OpenOrdersPanel = forwardRef<OpenOrdersHandle, { pair: string; refr
       [pairOrders, load, toast, t]
     );
 
-    return <SpotOrdersView orders={pairOrders} loading={loading} error={failed ? t('trade.loadOrdersError') : null}
+    return <SpotOrdersView orders={pairOrders} loading={loading} refreshing={refreshing} error={failed ? t('trade.loadOrdersError') : null}
       cancelling={cancelling} cancellingId={cancellingId} locale={localeOf(lang)} t={t} onCancel={handleCancel} onRetry={() => { void load(true); }} />;
   }
 );

@@ -1273,6 +1273,8 @@ export function PriceChart({
   const intervalButtons = INTERVALS.map((i) => (
     <button
       key={i}
+      type="button"
+      aria-pressed={interval === i}
       onClick={() => setInterval_(i)}
       className={terminal ? `chart-tab ${interval === i ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(interval === i ? styles.intervalBtnActive : {}) }}
@@ -1290,6 +1292,8 @@ export function PriceChart({
   ).map(([ct, label]) => (
     <button
       key={ct}
+      type="button"
+      aria-pressed={chartType === ct}
       onClick={() => setChartType(ct)}
       className={terminal ? `chart-tool-btn ${chartType === ct ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
@@ -1308,6 +1312,8 @@ export function PriceChart({
   ).map(([key, active, setter, color, label]) => (
     <button
       key={key}
+      type="button"
+      aria-pressed={active}
       onClick={() => setter(!active)}
       className={terminal ? `chart-tool-btn ${active ? 'active' : ''}` : undefined}
       style={
@@ -1329,10 +1335,10 @@ export function PriceChart({
     <div className={drawingToolsOn ? 'drawing-tools' : undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
         <div className="chart-toolbar">
-          <div className="chart-tabs">{intervalButtons}</div>
+          <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}</div>
           <div className="chart-tools">
-            {typeButtons}
-            {indicatorButtons}
+            <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
+            <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
           </div>
         </div>
       ) : (

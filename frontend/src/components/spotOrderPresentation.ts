@@ -72,7 +72,7 @@ export interface SpotReadController {
  * A mutation/refresh invalidates that response and queues one immediate read;
  * its returned promise waits for the fresh read as well. */
 export function createSpotReadController<T>(request: () => Promise<T>, handlers: {
-  accept: (rows: T) => void; reject: () => void; settled: () => void;
+  accept: (rows: T) => void; reject: () => void; settled: () => void; started?: () => void;
 }): SpotReadController {
   let enabled = true, revision = 0, queued = false;
   let pending: Promise<void> | null = null;
@@ -88,7 +88,7 @@ export function createSpotReadController<T>(request: () => Promise<T>, handlers:
         queued = false;
         const requestedRevision = revision;
         const current = () => enabled && requestedRevision === revision;
-        try { const rows = await request(); if (current()) handlers.accept(rows); }
+        try { handlers.started?.(); const rows = await request(); if (current()) handlers.accept(rows); }
         catch { if (current()) handlers.reject(); }
         finally { if (current()) handlers.settled(); }
       } while (enabled && queued);

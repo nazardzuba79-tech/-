@@ -6,6 +6,7 @@ import ts from 'typescript';
 import * as pairHelpers from '../pairList';
 import * as spotBookHelpers from '../spotOrderBook';
 import * as columnSort from '../marketColumnSort';
+import * as changeHelpers from '../priceChange';
 
 const row = (pair: string, price = '2', volume = '100', change = '1'): TickerRow => ({ pair, lastPrice: price, quoteVolume24h: volume, changePercent24h: change });
 const base = { search: '', quoteFilter: null, favoritesOnly: false, favorites: new Set<string>(), stableSort: true };
@@ -82,8 +83,12 @@ test('actual controls keep native favourite separate from pair selection and res
   const compiled = ts.transpileModule(source, { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
-  const fixture = [row('BTC/USDT'), row('ETH/USDT'), row('MOG/USDT', '0.000000123456'),
-    row('COQ/USDT', '0.000000234567'), row('BTT/USDT', '0.000000345678')];
+  const fixture = [row('BTC/USDT'), row('ETH/USDT', '2', '100', '0'), row('MOG/USDT', '0.000000123456'),
+    row('COQ/USDT', '0.000000234567'), row('BTT/USDT', '0.000000345678'),
+    row('GHIBLI/USDT', '0.000000000', '0', '0'), row('MISSING/USDT', '', '0', ''),
+    row('UNKNOWN/USDT', '2', '100', 'NaN'), row('NULL/USDT', null as unknown as string, '0', null as unknown as string),
+    row('NOCHANGE/USDT', '2', '100', ''), row('NULLCHANGE/USDT', '2', '100', null as unknown as string),
+    { ...row('UNDEFINEDCHANGE/USDT'), changePercent24h: undefined as unknown as string }];
   const favorite = jest.fn(), changed = jest.fn(), resized = jest.fn();
   const output: Record<string, any> = {};
   new Function('require', 'exports', compiled)((name: string) => {
@@ -96,7 +101,7 @@ test('actual controls keep native favourite separate from pair selection and res
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name === '../lib/useFavorites') return { useFavorites: () => ({ favorites: new Set(['BTC/USDT']), toggle: favorite }) };
     if (name === '../lib/spotOrderBook') return spotBookHelpers;
-    if (name === '../lib/priceChange') return { parseChangePercent: Number };
+    if (name === '../lib/priceChange') return changeHelpers;
     if (name === '../lib/api') return { api: {} };
     if (name === '../lib/useMarketData') {
       return { useMarketTickers: () => ({ tickers: new Map(), loading: false, error: false, stale: false, refresh: () => {} }) };
@@ -114,6 +119,27 @@ test('actual controls keep native favourite separate from pair selection and res
     expect(priceTexts).toContain(actualPrice);
   }
   expect(priceTexts).not.toContain('0');
+  const findRow = (pair: string) => elements.find(node => node.props?.['data-pair'] === pair);
+  const rowCells = (pair: string) => {
+    const cellNodes: any[] = [];
+    const collect = (node: any) => { if (!node || typeof node !== 'object') return; if (Array.isArray(node)) { node.forEach(collect); return; } cellNodes.push(node); collect(node.props?.children); };
+    collect(findRow(pair));
+    return { price: cellNodes.find(node => node.props?.className === 'p-price'), change: cellNodes.find(node => String(node.props?.className ?? '').split(' ').includes('p-change')) };
+  };
+  // Real no-trade provider row, missing fields and malformed fields retain
+  // their searchable instrument without a made-up zero price/performance.
+  for (const pair of ['GHIBLI/USDT', 'MISSING/USDT', 'NULL/USDT']) {
+    const cells = rowCells(pair);
+    expect(cells.price.props.children).toBe('—');
+    expect(cells.change.props.children).toBe('—');
+    expect(cells.change.props.className).toBe('p-change');
+  }
+  for (const pair of ['UNKNOWN/USDT', 'NOCHANGE/USDT', 'NULLCHANGE/USDT', 'UNDEFINEDCHANGE/USDT']) {
+    expect(rowCells(pair).price.props.children).toBe('2.0000');
+    expect(rowCells(pair).change.props.children).toBe('—');
+  }
+  expect(rowCells('ETH/USDT').change.props.children).toBe('+0.00%');
+  expect(elements.filter(node => node.props?.['data-pair'])).toHaveLength(fixture.length);
   const star = elements.find(node => node.type === 'button' && node.props?.['aria-label'] === 'trade.favorites: BTC/USDT');
   expect(star.props['aria-pressed']).toBe(true);
   const stopPropagation = jest.fn();

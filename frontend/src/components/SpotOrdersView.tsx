@@ -1,30 +1,34 @@
 import { LayoutList, History, WalletCards } from 'lucide-react';
 import { formatOrderDecimal, formatOrderDifference, formatOrderProduct, formatOrderSum, spotOrderStatus, spotOrderType, type SpotOrderRow } from './spotOrderPresentation';
 
-export function SpotOrdersEmpty({ title, detail, loading = false, kind = 'orders' }: {
+export function SpotOrdersEmpty({ title, detail, loading = false, kind = 'orders', onRetry, retryLabel, retrying = false }: {
   title: string; detail?: string; loading?: boolean; kind?: 'orders' | 'history' | 'assets';
+  onRetry?: () => void; retryLabel?: string; retrying?: boolean;
 }) {
   const Icon = kind === 'assets' ? WalletCards : kind === 'history' ? History : LayoutList;
-  return <div className="spot-orders-empty" role="status" aria-busy={loading}>
+  return <div className={`spot-orders-empty${onRetry ? ' terminal-account-state' : ''}`} role={onRetry ? 'alert' : 'status'} aria-busy={loading || retrying}>
     <span className="spot-orders-empty-icon" aria-hidden="true"><Icon size={19} strokeWidth={1.5} /></span>
     <div><strong>{title}</strong>{detail && <span>{detail}</span>}</div>
+    {onRetry && <button type="button" className="terminal-account-retry" disabled={loading || retrying} onClick={onRetry}>{retryLabel}</button>}
   </div>;
 }
 
-export function SpotOrdersView({ orders, loading, error, history = false, cancelling = false, cancellingId, locale, t, onCancel, onRetry }: {
+export function SpotOrdersView({ orders, loading, refreshing = false, error, history = false, cancelling = false, cancellingId, locale, t, onCancel, onRetry }: {
   orders: SpotOrderRow[]; loading: boolean; error: string | null; history?: boolean;
+  refreshing?: boolean;
   cancelling?: boolean; cancellingId?: string | null; locale: string; t: (key: any) => string;
   onCancel?: (id: string) => void; onRetry: () => void;
 }) {
   const headers = ['trade.time', 'markets.pair', 'trade.orderTypeCol', 'trade.side', 'trade.price', 'trade.quantity', 'trade.filled', 'trade.total', 'trade.trigger', 'trade.status'];
   if (!history) headers.push('trade.action');
-  return <div className="spot-orders-panel" aria-busy={loading}>
-    {error && <div className="spot-orders-error" role="alert"><span>{error}</span><button type="button" onClick={onRetry}>{t('trade.retry')}</button></div>}
+  return <div className="spot-orders-panel" aria-busy={loading || refreshing}>
+    {error && orders.length > 0 && <div className="spot-orders-error terminal-account-state" role="alert"><span>{error}</span><button type="button" className="terminal-account-retry" disabled={loading || refreshing} onClick={onRetry}>{t('trade.retry')}</button></div>}
     <table className={`orders-table spot-orders-table${history ? ' spot-orders-history' : ''}`} data-has-rows={orders.length > 0}>
       <thead><tr>{headers.map((key, index) => <th scope="col" key={key} className={index >= 4 && index <= 8 ? 'spot-order-number' : undefined}>{t(key)}</th>)}</tr></thead>
       <tbody>{orders.length === 0 ? <tr><td className="spot-orders-empty-cell" colSpan={headers.length}>
         <SpotOrdersEmpty kind={history ? 'history' : 'orders'} loading={loading}
-          title={loading ? t('trade.loading') : error ? t('trade.loadOrdersError') : t(history ? 'trade.noOrderHistory' : 'trade.noOrdersForPair')}
+          title={loading ? t('trade.loading') : error ?? t(history ? 'trade.noOrderHistory' : 'trade.noOrdersForPair')}
+          onRetry={error ? onRetry : undefined} retryLabel={t('trade.retry')} retrying={refreshing}
           detail={!loading && !error && !history ? t('trade.placeOrderPrompt') : undefined} />
       </td></tr> : orders.map(order => {
         const date = new Date(order.createdAt);
@@ -54,16 +58,18 @@ export function SpotOrdersView({ orders, loading, error, history = false, cancel
   </div>;
 }
 
-export function SpotAssetsView({ balances, loading, error, t, onRetry }: {
+export function SpotAssetsView({ balances, loading, refreshing = false, error, t, onRetry }: {
   balances: { asset: string; available: string; locked: string }[]; loading: boolean;
+  refreshing?: boolean;
   error: string | null; t: (key: any) => string; onRetry: () => void;
 }) {
-  return <div className="spot-orders-panel" aria-busy={loading}>
-    {error && <div className="spot-orders-error" role="alert"><span>{error}</span><button type="button" onClick={onRetry}>{t('trade.retry')}</button></div>}
+  return <div className="spot-orders-panel" aria-busy={loading || refreshing}>
+    {error && balances.length > 0 && <div className="spot-orders-error terminal-account-state" role="alert"><span>{error}</span><button type="button" className="terminal-account-retry" disabled={loading || refreshing} onClick={onRetry}>{t('trade.retry')}</button></div>}
     <table className="orders-table spot-orders-table spot-assets-table" data-has-rows={balances.length > 0}>
       <thead><tr>{['trade.asset', 'trade.available', 'trade.locked', 'trade.total'].map((key, i) => <th key={key} scope="col" className={i ? 'spot-order-number' : undefined}>{t(key)}</th>)}</tr></thead>
       <tbody>{balances.length === 0 ? <tr><td className="spot-orders-empty-cell" colSpan={4}>
-        <SpotOrdersEmpty kind="assets" loading={loading} title={t(loading ? 'trade.loading' : error ? 'trade.loadAssetsError' : 'trade.noAssets')} />
+        <SpotOrdersEmpty kind="assets" loading={loading} title={loading ? t('trade.loading') : error ?? t('trade.noAssets')}
+          onRetry={error ? onRetry : undefined} retryLabel={t('trade.retry')} retrying={refreshing} />
       </td></tr> : balances.map(balance => <tr key={balance.asset}>
         <td className="spot-order-pair">{balance.asset}</td>
         <td className="spot-order-number">{formatOrderDecimal(balance.available)}</td>

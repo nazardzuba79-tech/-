@@ -18,6 +18,24 @@ export function formatBookTotal(value: number): string {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** Eight-character display for narrow book columns; callers retain the exact value in title. */
+export function formatCompactBookValue(value: number, kind: 'amount' | 'total' = 'amount'): string {
+  const full = kind === 'total' ? formatBookTotal(value) : formatBookAmount(value);
+  if (full.length <= 8) return full;
+  for (const [scale, suffix] of [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']] as const) {
+    if (value >= scale && value < scale * 1000) {
+      const text = `${(value / scale).toFixed(2)}${suffix}`;
+      if (text.length <= 8) return text;
+    }
+  }
+  // Scientific notation keeps tiny nonzero levels readable without implying zero.
+  for (let precision = 3; precision >= 0; precision--) {
+    const text = value.toExponential(precision).replace(/\.?0+e/, 'e').replace('e+', 'e');
+    if (text.length <= 8) return text;
+  }
+  return full;
+}
+
 /** Reference-only fallback, never spot volume, dated contracts or converted units. */
 export function livePerpetualTurnover(state: LiveState, pair: string, now = Date.now()): number | null {
   if (state.status !== 'live') return null;

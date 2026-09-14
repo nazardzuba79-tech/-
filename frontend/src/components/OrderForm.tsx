@@ -64,6 +64,7 @@ export function OrderForm({
   const submittingRef = useRef(false);
   const [balanceReady, setBalanceReady] = useState(false);
   const [balanceError, setBalanceError] = useState(false);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [balanceVersion, setBalanceVersion] = useState(0);
 
   const isConditional = family === 'STOP' || family === 'TAKE_PROFIT';
@@ -97,6 +98,7 @@ export function OrderForm({
     async function load() {
       if (pending) return;
       pending = true;
+      setBalanceLoading(true);
       await api
       .getBalances()
       .then((balances) => {
@@ -108,7 +110,7 @@ export function OrderForm({
         setBalanceError(false);
       })
       .catch(() => { if (!cancelled) setBalanceError(true); })
-      .finally(() => { pending = false; });
+      .finally(() => { pending = false; if (!cancelled) setBalanceLoading(false); });
     }
     void load();
     const timer = window.setInterval(load, 4000);
@@ -464,7 +466,10 @@ export function OrderForm({
 
         </div>
 
-        {balanceError && <div className="order-entry-error" role="status">{t('trade.loadAssetsError')} <button type="button" onClick={() => setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button></div>}
+        {balanceError && <div className="terminal-account-state" role="alert" aria-busy={balanceLoading}>
+          <span>{t('trade.loadAssetsError')}</span>
+          <button type="button" className="terminal-account-retry" disabled={balanceLoading} onClick={() => setBalanceVersion(version => version + 1)}>{t('trade.retry')}</button>
+        </div>}
         {error && (
           <div role="alert" className="available-balance" style={{ color: 'var(--color-sell)' }}>
             <span style={{ color: 'inherit' }}>{error}</span>

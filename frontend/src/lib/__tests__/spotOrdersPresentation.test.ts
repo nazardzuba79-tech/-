@@ -89,6 +89,32 @@ describe('Spot orders truthful dense presentation', () => {
     expect(html).toContain('trade.cancelling');
     expect(html).toContain('temporary read failure');
   });
+  it.each([false, true])('renders one actionable initial orders failure without a duplicate banner (history=%s)', history => {
+    const html = renderOrders({ history, error: 'trade.loadOrdersError' });
+    expect(html.match(/trade.loadOrdersError/g)).toHaveLength(1);
+    expect(html.match(/trade.retry/g)).toHaveLength(1);
+    expect(html.match(/role="alert"/g)).toHaveLength(1);
+    expect(html).not.toContain('spot-orders-error');
+    expect(html).not.toContain('trade.noOrderHistory');
+    expect(html).not.toContain('trade.noOrdersForPair');
+  });
+  it('renders one initial assets failure and marks Retry busy until its request settles', () => {
+    const html = renderAssets({ error: 'trade.loadAssetsError', refreshing: true });
+    expect(html.match(/trade.loadAssetsError/g)).toHaveLength(1);
+    expect(html.match(/trade.retry/g)).toHaveLength(1);
+    expect(html.match(/role="alert"/g)).toHaveLength(1);
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('aria-busy="true"');
+    expect(html).not.toContain('trade.noAssets');
+  });
+  it('keeps prior asset values with one failed-refresh notice and enables retry after it settles', () => {
+    const html = renderAssets({ balances: [{ asset: 'BTC', available: '0.01234567', locked: '0.00000001' }], error: 'trade.loadAssetsError' });
+    expect(html).toContain('0.01234567');
+    expect(html.match(/trade.loadAssetsError/g)).toHaveLength(1);
+    expect(html.match(/trade.retry/g)).toHaveLength(1);
+    expect(html).not.toContain('disabled=""');
+    expect(html).not.toContain('trade.noAssets');
+  });
   it('history exposes pair, type, fill and actual terminal status without a cancel action', () => {
     const html = renderOrders({ orders: [{ ...order, status: 'FILLED', remainingQuantity: '0' }], history: true });
     expect(html.match(/<th /g)).toHaveLength(10);
@@ -111,6 +137,16 @@ describe('Spot orders truthful dense presentation', () => {
     return { reader: createSpotReadController(request, handlers), request, requests, handlers };
   }
   const flush = async () => { for (let i = 0; i < 6; i++) await Promise.resolve(); };
+  it('publishes one busy transition per real request and clears it on failure and recovery', async () => {
+    const calls: string[] = [];
+    const request = jest.fn<Promise<string>, []>().mockRejectedValueOnce(new Error('offline')).mockResolvedValue('recovered');
+    const reader = createSpotReadController(request, {
+      started: () => calls.push('start'), accept: value => calls.push(value), reject: () => calls.push('failed'), settled: () => calls.push('settled'),
+    });
+    await reader.read(true);
+    await reader.read(true);
+    expect(calls).toEqual(['start', 'failed', 'settled', 'start', 'recovered', 'settled']);
+  });
   it('a GET slower than three 4-second polls still publishes, without overlapping requests', async () => {
     jest.useFakeTimers();
     const session = readSession();
