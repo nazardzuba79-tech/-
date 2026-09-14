@@ -1,0 +1,47 @@
+name: Private reference UI evidence
+on:
+  pull_request:
+    paths:
+      - 'frontend/src/pages/private-trading/**'
+      - 'frontend/src/components/PriceChart.tsx'
+      - 'frontend/src/lib/private*'
+      - 'frontend/src/lib/chartTrading.ts'
+      - 'scripts/qa-private-*'
+      - '.github/workflows/private-reference-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: private-reference-ui-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  review-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record exact reviewed candidate
+        run: |
+          git rev-parse HEAD > private-reference-revision.txt
+          git rev-parse HEAD^{tree} >> private-reference-revision.txt
+      - name: Preserve code inputs only, no credentials or environment files
+        uses: actions/upload-artifact@v4
+        with:
+          name: private-reference-review-source
+          path: |
+            private-reference-revision.txt
+            frontend/src/
+            frontend/package.json
+            frontend/package-lock.json
+            frontend/tsconfig*.json
+            frontend/vite.config.*
+            src/private-trading/
+            src/api/routes/privateTrading.ts
+            src/api/routes/__tests__/privateTrading.test.ts
+            scripts/qa-private-*.cjs
+            package.json
+            package-lock.json
+            tsconfig*.json
+            jest.config.*
+          retention-days: 3
