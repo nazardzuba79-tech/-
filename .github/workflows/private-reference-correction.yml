@@ -1,0 +1,71 @@
+name: Prepare reference QA corrections
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/private-reference-correction.yml'
+permissions:
+  contents: read
+jobs:
+  prepare:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'codex/private-trading-replay'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Verify fresh main and exact source files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/ref/heads/main --jq .object.sha)" = e5ae1e4f62815a396662e268ffbba20d40b176be
+          test "$(git hash-object src/private-trading/__tests__/service.runtime.test.ts)" = 125564a0b1f94009b497d90c8d080ae436317bdf
+          test "$(git hash-object frontend/src/lib/__tests__/priceChartMarketOrders.test.ts)" = 86b713fd424d4c440d96b2f64b81b8434dc5f9a6
+      - name: Prepare test expectations and use the production chart host
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          def edit(file,old,new):
+            p=Path(file);s=p.read_text()
+            if s.count(old)!=1:raise ValueError((file,old,s.count(old)))
+            p.write_text(s.replace(old,new))
+          edit('src/private-trading/__tests__/service.runtime.test.ts',"expect(dto.realizedPnl).toBe('3.65');expect(dto.unrealizedRoiPercent).toBe('2');","expect(new BigNumber(dto.realizedPnl).eq('3.65')).toBe(true);expect(new BigNumber(dto.unrealizedRoiPercent).eq('2')).toBe(true);")
+          edit('frontend/src/lib/__tests__/priceChartMarketOrders.test.ts',"const trade = { id: 'p1', symbol: 'BTCUSDT', side: 'LONG', leverage: 10, entryPrice: 73000, quantity: 0.01, pnl: 5,","const trade = { id: 'p1', symbol: 'BTCUSDT', side: 'LONG', status: 'OPEN', leverage: 10, entryPrice: 73000, quantity: 0.01, pnl: 5,")
+          edit('frontend/src/lib/__tests__/priceChartMarketOrders.test.ts',"expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['LONG 0.01 BTC · P&L +5.00 USDT', 'TP', 'SL', 'LIQ']);","expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL', 'LIQ']);\n    expect(chart.chartHarness.priceLines[0].options).toMatchObject({price:73000,color:'#13ad75',axisLabelVisible:true});")
+          file='scripts/qa-private-reference-browser.cjs'
+          edit(file,"import {PriceChart} from './src/components/PriceChart';","import {TerminalChart} from './src/components/TerminalChart';")
+          edit(file,'<PriceChart pair=','<TerminalChart pair=')
+          edit(file,"import './src/pages/private-trading/privateReferencePositions.css';","import './src/pages/private-trading/privateReferencePositions.css';import './src/pages/trade-terminal/ReferenceTerminal.css';import './src/pages/trade-terminal/FuturesStudio.css';")
+          edit(file,'className="trade-terminal private-trading-terminal"','className="trade-terminal futures-reference futures-studio terminal-studio private-trading-terminal"')
+          edit(file,"<div style={{height:'calc(100vh - 260px)',minHeight:360}}>","<div className=\"private-chart-panel\" style={{height:'calc(100vh - 260px)',minHeight:360}}>")
+          edit(file,"viewport:{width,height:922}","viewport:{width,height:922},deviceScaleFactor:width===1664?2048/1664:1")
+          edit(file,"await page.locator('.private-reference-table').waitFor();await page.locator('[data-position-line]').waitFor();","await page.locator('.private-reference-table').waitFor();await page.waitForFunction(()=>window.__qaSeries?.data().length>0);await page.evaluate(()=>window.__qaChart.timeScale().fitContent());try{await page.locator('[data-position-line]').waitFor();}catch(error){await page.screenshot({path:path.join(out,'failed-'+width+'.png'),fullPage:true});fs.writeFileSync(path.join(out,'failed-'+width+'.json'),JSON.stringify({errors,state:await page.evaluate(()=>({coordinate:window.__qaSeries.priceToCoordinate(77736.2),pane:window.__qaChart.panes()[0].getHeight(),labels:document.querySelectorAll('[data-position-line]').length}))},null,2));throw error;}")
+          PY
+      - name: Store unreferenced review blobs only; never move a branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python <<'PY'
+          import json,subprocess,base64,os
+          from pathlib import Path
+          paths=['src/private-trading/__tests__/service.runtime.test.ts','frontend/src/lib/__tests__/priceChartMarketOrders.test.ts','scripts/qa-private-reference-browser.cjs']
+          entries=[]
+          for path in paths:
+            payload=json.dumps({'content':base64.b64encode(Path(path).read_bytes()).decode(),'encoding':'base64'})
+            reply=json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs','--input','-'],input=payload.encode()))
+            entries.append({'path':path,'mode':'100644','type':'blob','sha':reply['sha']})
+          Path('reference-corrections.json').write_text(json.dumps(entries,indent=2));print(json.dumps(entries,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-qa-corrections
+          path: |
+            reference-corrections.json
+            src/private-trading/__tests__/service.runtime.test.ts
+            frontend/src/lib/__tests__/priceChartMarketOrders.test.ts
+            scripts/qa-private-reference-browser.cjs
+          retention-days: 3
