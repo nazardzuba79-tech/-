@@ -11,6 +11,7 @@ import { PriceOpenInterest } from '../analytics/PriceOpenInterest';
 import { CorrelationMatrix, FearGreed, Sectors, ImpliedVolatility, FuturesTermStructure } from '../analytics/MarketContextPanels';
 import { CapitalFlowPanels } from '../analytics/FlowPanels';
 import '../analytics/analytics.css';
+import './MarketsAnalyticsEmbed.css';
 
 type SectionKey = keyof AnalyticsSnapshot['sections'];
 
