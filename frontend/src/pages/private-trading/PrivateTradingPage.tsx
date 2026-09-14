@@ -91,11 +91,11 @@ function PrivateTradingWorkspace({onDenied}:{onDenied:()=>void}){
     });
   }
   return <>
-    <div className="private-mode-bar"><span className="private-mode-badge"><LockKeyhole size={13}/>Симуляция · приватный режим</span><span>Выделено: <strong>{privateNumber(state?.wallet.allocatedCapital)} USDT</strong></span><span>Резерв: <strong>{privateNumber(state?.wallet.reserved)} USDT</strong></span><Link to="/futures">Обычный терминал</Link></div>
+    <div className="private-mode-bar"><span className="private-mode-badge"><LockKeyhole size={13}/>Симуляция</span><span>Выделено: <strong>{privateNumber(state?.wallet.allocatedCapital)} USDT</strong></span><span>Резерв: <strong>{privateNumber(state?.wallet.reserved)} USDT</strong></span><Link to="/futures">Обычный терминал</Link></div>
     {error&&<div className="private-page-notice" role="alert"><span>{error}</span><button type="button" onClick={()=>{setError('');void refresh();}}><RefreshCw size={14}/>Повторить</button></div>}
     <main className="private-terminal-grid">
       <aside className="private-market-sidebar"><h2>Рынки</h2><FuturesPairList symbols={symbols} symbol={symbol} onChange={next=>{if(pending.current)return;setSymbol(next);setPreview(null);setPickedPrice(null);}}/></aside>
-      <div className="private-chart-stack"><div className="private-instrument"><strong>{symbol}</strong><span><small>Mark Price</small><b>{privateNumber(market?.markPrice,2)}</b></span><span><small>Оценка</small>{market?privateUtc(market.providerTimestamp):'—'}</span></div><TerminalChart pair={symbol} market="futures" compactTools/></div>
+      <div className="private-chart-stack"><div className="private-instrument"><strong>{symbol}</strong><span><small>Mark Price</small><b>{privateNumber(market?.markPrice,2)}</b></span><span><small>Обновлено</small>{market?privateUtc(market.providerTimestamp):'—'}</span></div><TerminalChart pair={symbol} market="futures" compactTools/></div>
       <div className="private-book repaired-futures-book"><FuturesReferenceBook key={symbol} pair={symbol} bids={market?.bids??[]} asks={market?.asks??[]} lastPrice={market?Number(market.lastPrice):null} onPickPrice={price=>setPickedPrice(current=>({price,sequence:(current?.sequence??0)+1}))}/></div>
       <PrivateOrderTicket key={symbol} symbol={symbol} market={market} wallet={state?.wallet??null} busy={busy} preview={preview} pickedPrice={pickedPrice} savedPreviews={state?.previews??[]}
         onModeChange={()=>{setPreview(null);setPickedPrice(null);setError('');}}

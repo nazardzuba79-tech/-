@@ -114,15 +114,16 @@ describe('private snapshot display and dates',()=>{
   const snapshot={id:'secret-resource-id',symbol:'BTCUSDT',side:'LONG',leverage:'10',mode:'DEMO_LIVE',netPnl:'-5.75',unrealizedPnl:'123.45',roiPercent:'12.345',entryPrice:'100',valuationPrice:'220',usdPnl:null,asOf:'2026-08-08T12:00:00.000Z',status:'OPEN',label:'Симуляция'};
   test('open PNG pairs unrealized P&L with server ROI and frozen valuation, without fabricated USD',()=>{
     const svg=cardRenderer.privateResultCardSvg(snapshot);
-    expect(svg).toContain('Нереализованный P&amp;L  123.45 USDT');expect(svg).toContain('12.35%');expect(svg).toContain('USD  —');expect(svg).toContain('220.000000');expect(svg).toContain('2026-08-08 12:00:00 UTC');expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain('-5.75');
+    expect(svg).toContain('Прибыль  123.45 USDT');expect(svg).toContain('Нереализованная прибыль');expect(svg).toContain('Текущая цена');expect(svg).toContain('12.35%');expect(svg).not.toContain('USD  ');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).toContain('220.000000');expect(svg).toContain('2026-08-08 12:00:00 UTC');expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain('-5.75');
   });
   test('closed historical card keeps net result and readable test designation',()=>{
     const svg=cardRenderer.privateResultCardSvg({...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест',roiPercent:'-0.575'});
-    expect(svg).toContain('Результат сценария · net  -5.75 USDT');expect(svg).toContain('Исторический тест');expect(svg).toContain('Цена выхода');expect(svg).not.toContain('123.45');
+    expect(svg).toContain('Прибыль  -5.75 USDT');expect(svg).not.toContain('net');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).not.toContain('Исторический тест');expect(svg).toContain('Цена выхода');expect(svg).not.toContain('123.45');
   });
   test('an open historical scenario uses server net P&L consistently with scenario ROI',()=>{
     const svg=cardRenderer.privateResultCardSvg({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
-    expect(svg).toContain('Результат сценария · net  -5.75 USDT');expect(svg).not.toContain('123.45');
+    expect(svg).toContain('Цена на дату расчёта');expect(svg).not.toContain('Текущая цена');
+    expect(svg).toContain('Прибыль  -5.75 USDT');expect(svg).not.toContain('net');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).not.toContain('123.45');
   });
   test('expired preview refresh copies reviewed inputs but never old idempotency or server-only state',()=>{
     const request={mode:'DEMO_LIVE',symbol:'ETHUSDT',side:'SHORT',type:'MARKET',quantity:'0.1',leverage:'3',idempotencyKey:'old-command',quote:{lastPrice:'9999'},profile:{fee:'0'}};
@@ -186,7 +187,7 @@ describe('actual private forms',()=>{
     const ui=ticket(),onModeChange=jest.fn();let tree=ui.render({onModeChange,preview:{id:'live',mode:'DEMO_LIVE',status:'READY'}});
     button(tree,'Историческая сделка').props.onClick();expect(onModeChange).toHaveBeenCalledWith('HISTORICAL_REPLAY');expect(ui.onConfirm).not.toHaveBeenCalled();
     tree=ui.render({preview:null});expect(text(tree)).not.toContain('Предпросмотр ·');
-    ui.render({preview:{id:'resume-historical',mode:'HISTORICAL_REPLAY',status:'RUNNING'}});tree=ui.render();expect(button(tree,'Историческая сделка').props['aria-selected']).toBe(true);expect(text(tree)).toContain('Предпросмотр · Исторический тест');
+    ui.render({preview:{id:'resume-historical',mode:'HISTORICAL_REPLAY',status:'RUNNING'}});tree=ui.render();expect(button(tree,'Историческая сделка').props['aria-selected']).toBe(true);expect(text(tree)).toContain('Предпросмотр · По истории');
   });
   test('stale position valuation is unavailable and order history uses dedicated server collection',()=>{
     const p={id:'p',symbol:'ETHUSDT',side:'LONG',mode:'DEMO_LIVE',status:'OPEN',dataStatus:'UNAVAILABLE',verification:'VERIFIED',quantity:'0.1',leverage:'3',entryPrice:'2000',markPrice:'2222.22',notional:'222.222',allocatedMargin:'75',netPnl:'22.22',unrealizedPnl:'23.45',roiPercent:'30.01',liquidationPrice:'1000',effectiveOpenedAt:'2026-08-01T12:00:00Z'};
@@ -239,11 +240,11 @@ describe('actual private forms',()=>{
     const empty={positions:[],orders:[],orderHistory:[],history:[],scenarios:[],copyHistory:[],wallet};
     const scenario={id:'historical-id',symbol:'ETHUSDT',side:'LONG',mode:'HISTORICAL_REPLAY',status:'OPEN',verification:'VERIFIED',quantity:'0.1',initialQuantity:'0.1',leverage:'3',entryPrice:'2000',markPrice:'2200',notional:'220',allocatedMargin:'70',allocatedCapital:'200',scenarioEquity:'219.5',netPnl:'19.5',unrealizedPnl:'20',roiPercent:'27.85',liquidationPrice:'1500',effectiveOpenedAt:'2026-08-01T12:00:00Z',asOf:'2026-08-02T12:00:00Z'};
     const ui=mount('pages/private-trading/PrivatePositions.tsx','PrivatePositions',{state:empty,busy:false,onAction,onCard,onAdvance,onCancelOrder:jest.fn()});let tree=ui.render();button(tree,'Сценарии').props.onClick();ui.render();
-    ui.render({state:{...empty,scenarios:[scenario]}});tree=ui.render();expect(button(tree,'Позиции (1)').props['aria-selected']).toBe(true);expect(text(tree)).toContain('Исторический тест');expect(text(tree)).toContain('На: 2026-08-02 12:00:00 UTC');
-    expect(nodes(tree).filter(n=>n.type==='small'&&text(n)==='Net')).toHaveLength(1);expect(text(tree)).not.toContain('Net · Net');
+    ui.render({state:{...empty,scenarios:[scenario]}});tree=ui.render();expect(button(tree,'Позиции (1)').props['aria-selected']).toBe(true);expect(text(tree)).toContain('По истории');expect(text(tree)).not.toContain('Исторический тест');expect(text(tree)).toContain('На: 2026-08-02 12:00:00 UTC');
+    expect(nodes(tree).filter(n=>n.type==='small'&&text(n)==='Итого')).toHaveLength(1);expect(text(tree)).not.toContain('Net');expect(text(tree)).toContain('Прибыль, USDT');
     expect(nodes(tree).some(n=>n.type==='button'&&['Маржа','Закрыть','TP/SL'].includes(text(n)))).toBe(false);
     button(tree,'Обновить до сейчас').props.onClick();expect(onAdvance).toHaveBeenCalledWith('historical-id');find(tree,n=>n.props?.['aria-label']==='Открыть карточку ETHUSDT').props.onClick();expect(onCard).toHaveBeenCalledWith('historical-id');expect(onAction).not.toHaveBeenCalled();
-    ui.render({state:{...empty,scenarios:[{...scenario,status:'CLOSED',quantity:'0',effectiveClosedAt:'2026-08-03T12:00:00Z'}]}});tree=ui.render();expect(button(tree,'История позиций').props['aria-selected']).toBe(true);expect(text(tree)).toContain('0.10000000');expect(text(tree)).toContain('Исторический тест');expect(wallet.realizedPnl).toBe('0');
+    ui.render({state:{...empty,scenarios:[{...scenario,status:'CLOSED',quantity:'0',effectiveClosedAt:'2026-08-03T12:00:00Z'}]}});tree=ui.render();expect(button(tree,'История позиций').props['aria-selected']).toBe(true);expect(text(tree)).toContain('0.10000000');expect(text(tree)).toContain('По истории');expect(text(tree)).not.toContain('Исторический тест');expect(wallet.realizedPnl).toBe('0');
     button(tree,'Сценарии').props.onClick();tree=ui.render();expect(text(tree)).toContain('200.00');expect(text(tree)).toContain('219.50');expect(text(tree)).toContain('19.50');
   });
   test('unverified scenarios stay in drafts and do not populate positions/history or expose verified equity',()=>{

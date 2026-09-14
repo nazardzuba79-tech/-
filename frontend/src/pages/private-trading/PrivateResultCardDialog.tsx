@@ -30,7 +30,7 @@ export function PrivateResultCardDialog({snapshot,onClose,onError}:{snapshot:Pri
   }
   return <dialog ref={dialog} className="private-card-dialog" aria-label="Карточка результата VOLTEX" onCancel={onClose} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><strong>Карточка результата</strong><button type="button" aria-label="Закрыть" onClick={onClose}><X size={20}/></button></header>
-    {url?<img src={url} alt={`${snapshot.label}: ${snapshot.symbol}, P&L ${privateCardPnl(snapshot)??'—'} USDT`}/>:<p role="status">Подготовка карточки…</p>}
+    {url?<img src={url} alt={`Симуляция: ${snapshot.symbol}, Прибыль ${privateCardPnl(snapshot)??'—'} USDT`}/>:<p role="status">Подготовка карточки…</p>}
     {error&&<p role="alert">{error}</p>}
     <footer><a href={`/futures?privateTrading=1&card=${encodeURIComponent(snapshot.id)}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Открыть</a><button type="button" className="primary" onClick={()=>void exportCard()} disabled={!url||busy}><Download size={16}/>Сохранить PNG</button></footer>
   </dialog>;

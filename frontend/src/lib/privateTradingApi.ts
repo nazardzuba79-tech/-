@@ -155,7 +155,7 @@ export function privateErrorText(error:unknown):string{
   if(error instanceof PrivateTradingError){
     if(error.status===401||error.status===403)return 'Доступ к приватному режиму завершён';
     if(/quote.*stale|stale.*quote|quote.*expired/i.test(error.message))return 'Котировка обновилась. Рассчитайте предпросмотр ещё раз.';
-    if(/insufficient|balance|capital/i.test(error.message))return 'Недостаточно выделенного демо-капитала для этой операции.';
+    if(/insufficient|balance|capital/i.test(error.message))return 'Недостаточно выделенных средств для этой операции.';
     if(/history.*gap|incomplete|unavailable/i.test(error.message))return 'Данные сейчас недоступны. Повторите запрос позже.';
     if(error.status===429)return 'Расчёт уже выполняется. Дождитесь завершения.';
     if(error.status>=500)return 'Не удалось обновить данные. Повторите запрос.';
