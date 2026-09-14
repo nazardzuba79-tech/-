@@ -28,6 +28,7 @@ interface Connection {
 }
 export interface CollectorOptions {
   spotUrl?: string; linearUrl?: string; inverseUrl?: string; batchMs?: number; staleMs?: number;
+  staleCheckMs?: number; spotRefreshMs?: number;
   now?: () => number; random?: () => number;
   socket?: (url: string) => WebSocket;
 }
@@ -42,6 +43,7 @@ export class BybitLiveTickerCollector {
   private generation = 0;
   private bootstrapTimer: NodeJS.Timeout | null = null;
   private batchTimer: NodeJS.Timeout | null = null;
+  private staleTimer: NodeJS.Timeout | null = null;
   private refreshTimer: NodeJS.Timeout | null = null;
   private spotTimer: NodeJS.Timeout | null = null;
   private spotRefreshing = false;
@@ -59,7 +61,20 @@ export class BybitLiveTickerCollector {
   start(): void {
     if (this.running) return;
     this.running = true; this.generation++;
-    this.batchTimer = setInterval(() => this.flush(), Math.max(200, Math.min(500, this.options.batchMs ?? 250)));
+    // The provider may emit thousands of ticker messages per second. UI and API
+    // consumers do not need a new JSON frame every 250ms, so coalesce changes
+    // for half a second. This does not slow provider ingestion: WS messages are
+    // still applied immediately and only the downstream publication is batched.
+    const batchMs = Math.max(250, Math.min(1_000, this.options.batchMs ?? 500));
+    this.batchTimer = setInterval(() => this.flush(), batchMs);
+    // A full stale scan walks every tracked instrument. It used to run inside
+    // every batch flush (4x/sec). Staleness has a 30s budget, so scanning every
+    // 5s preserves truthful freshness while removing most full-book passes.
+    const staleCheckMs = Math.max(1_000, Math.min(10_000, this.options.staleCheckMs ?? 5_000));
+    this.staleTimer = setInterval(() => {
+      this.book.stale(undefined, this.options.staleMs ?? 30_000);
+      this.flush();
+    }, staleCheckMs);
     void this.bootstrap(0);
   }
   private async bootstrap(attempt: number): Promise<void> {
@@ -80,9 +95,12 @@ export class BybitLiveTickerCollector {
           this.connections.push(connection); void this.connect(connection, false);
         }
       this.refreshTimer = setInterval(() => void this.refreshUniverse(), 60_000);
-      // Spot ticker WS does not supply bid/ask. One category snapshot keeps
-      // these real quotes current without a per-symbol orderbook fan-out.
-      this.spotTimer = setInterval(() => void this.refreshSpot(), 5_000);
+      // Spot ticker WS does not supply bid/ask. A periodic category snapshot
+      // keeps them real without a per-symbol orderbook fan-out. Last price,
+      // change and volume remain live through WS, so 15s is sufficient here
+      // and avoids repeatedly parsing the entire Spot ticker catalogue.
+      const spotRefreshMs = Math.max(5_000, Math.min(60_000, this.options.spotRefreshMs ?? 15_000));
+      this.spotTimer = setInterval(() => void this.refreshSpot(), spotRefreshMs);
     } catch {
       if (!this.running || generation !== this.generation) return;
       this.feed.status = 'stale'; this.feed.publish('state');
@@ -179,7 +197,6 @@ export class BybitLiveTickerCollector {
     c.timer = setTimeout(() => { c.timer = null; void this.connect(c, true); }, reconnectDelay(c.attempt++, this.options.random));
   }
   flush(): void {
-    this.book.stale(undefined, this.options.staleMs ?? 30_000);
     const status = this.connections.length && this.connections.every(c => c.state === 'live') ? 'live' : 'stale';
     const changed = status !== this.feed.status; this.feed.status = status;
     const rows = this.book.drain();
@@ -200,8 +217,8 @@ export class BybitLiveTickerCollector {
   }
   stop(): void {
     this.running = false; this.generation++;
-    for (const timer of [this.batchTimer, this.refreshTimer, this.bootstrapTimer, this.spotTimer]) if (timer) clearInterval(timer);
-    this.batchTimer = this.refreshTimer = this.bootstrapTimer = this.spotTimer = null;
+    for (const timer of [this.batchTimer, this.staleTimer, this.refreshTimer, this.bootstrapTimer, this.spotTimer]) if (timer) clearInterval(timer);
+    this.batchTimer = this.staleTimer = this.refreshTimer = this.bootstrapTimer = this.spotTimer = null;
     for (const c of this.connections) { c.stopped = true; if (c.timer) clearTimeout(c.timer); if (c.heartbeat) clearInterval(c.heartbeat); c.ws?.terminate(); }
     this.connections = []; this.book.stale(new Set(this.book.rows.keys())); this.flush();
   }
