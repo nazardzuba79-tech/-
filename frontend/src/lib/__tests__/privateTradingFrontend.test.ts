@@ -29,7 +29,7 @@ function mount(file:string,name:string,initialProps:any,imports:Record<string,un
 function nodes(node:any):any[]{return !node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(nodes):[node,...nodes(node.props?.children)];}
 function text(node:any):string{return node===null||node===undefined||typeof node==='boolean'?'':typeof node!=='object'?String(node):Array.isArray(node)?node.map(text).join(''):text(node.props?.children);}
 function find(tree:any,predicate:(node:any)=>boolean){const node=nodes(tree).find(predicate);if(!node)throw new Error('Expected rendered control not found');return node;}
-function button(tree:any,label:string){return find(tree,n=>n.type==='button'&&text(n)===label);}
+function button(tree:any,label:string){return find(tree,n=>n.type==='button'&&text(n)===''+label);}
 function labeled(tree:any,label:string){const container=find(tree,n=>n.type==='label'&&text(n).startsWith(label));return find(container,n=>n.type==='input');}
 function input(tree:any,label:string){return find(tree,n=>n.type==='input'&&n.props['aria-label']===label);}
 const tick=async()=>{await Promise.resolve();await Promise.resolve();await Promise.resolve();};
@@ -122,7 +122,7 @@ describe('private snapshot display and dates',()=>{
     const {svg,doc,field,visible}=rendered(snapshot);
     expect(field('profit-number').textContent).toBe('+123.45');expect(field('profit-unit').textContent).toBe('USDT');
     expect(field('roi-number').textContent).toBe('+12.35');expect(field('roi-unit').textContent).toBe('%');
-    expect(field('valuation-label').textContent).toBe('Current Price');expect(field('valuation-price').textContent).toBe('220.000000');
+    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('valuation-price').textContent).toBe('220.00');
     expect(field('historical-label')).toBeNull();expect(doc.querySelector('metadata,[display="none"]')).toBeNull();
     expect(visible).not.toMatch(/Simulation|Симуляция|snapshot|scenario net|Нереализованная|USD(?!T)/i);
     expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain(snapshot.asOf);expect(svg).not.toContain('-5.75');
@@ -130,25 +130,46 @@ describe('private snapshot display and dates',()=>{
   test('closed historical card visibly keeps the net result and exactly one Historical Test label',()=>{
     const {field,doc,visible}=rendered({...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест',roiPercent:'-0.575'});
     expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
-    expect(field('valuation-label').textContent).toBe('Exit Price');expect(field('historical-label').textContent).toBe('Historical Test');
+    expect(field('valuation-label').textContent).toBe('Цена выхода');expect(field('historical-label').textContent).toBe('Historical Test');
     expect(doc.querySelectorAll('[data-field="historical-label"]')).toHaveLength(1);
     expect(visible).not.toMatch(/123\.45|scenario net|snapshot|Исторический тест|Симуляция/i);
   });
   test('open historical card uses frozen server scenario P&L, never the live unrealized value',()=>{
     const {field,visible}=rendered({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
     expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
-    expect(field('valuation-label').textContent).toBe('Current Price');expect(field('historical-label').textContent).toBe('Historical Test');
+    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('historical-label').textContent).toBe('Historical Test');
     expect(visible).not.toContain('123.45');
   });
-  test('portrait geometry uses separate, smaller percent and USDT glyphs',()=>{
+  test('portrait geometry uses equal-size baseline-aligned ROI percent and smaller USDT',()=>{
     const {doc,field}=rendered({...snapshot,pnl:'24580.00',roiPercent:'211.38'});const root=doc.documentElement;
     expect(root.getAttribute('width')).toBe('1080');expect(root.getAttribute('height')).toBe('1440');expect(root.getAttribute('viewBox')).toBe('0 0 1080 1440');
     const digits=field('roi-number'),unit=field('roi-unit');
     expect(digits.textContent).toBe('+211.38');expect(unit.textContent).toBe('%');expect(digits).not.toBe(unit);
     const size=Number(digits.getAttribute('font-size')),ratio=Number(unit.getAttribute('font-size'))/size;
-    expect(size).toBeGreaterThanOrEqual(88);expect(size).toBeLessThanOrEqual(96);expect(ratio).toBeGreaterThanOrEqual(.58);expect(ratio).toBeLessThanOrEqual(.65);
+    expect(size).toBeGreaterThanOrEqual(88);expect(size).toBeLessThanOrEqual(96);expect(ratio).toBe(1);
+    expect(unit.getAttribute('dy')).toBe('0');expect(unit.parentElement).toBe(digits.parentElement);
     expect(field('profit-number').textContent).toBe('+24,580.00');expect(Number(field('profit-unit').getAttribute('dx'))).toBeGreaterThanOrEqual(20);
     expect(Number(field('profit-unit').getAttribute('font-size'))).toBeLessThan(Number(field('profit-number').getAttribute('font-size')));
+  });
+  test('requested two-decimal price examples use Russian labels and preserve the frozen fields',()=>{
+    const card=Object.freeze({...snapshot,entryPrice:'77736.200000',valuationPrice:'78526.700000'});
+    const {field}=rendered(card);
+    expect(field('entry-label').textContent).toBe('Цена Входа');expect(field('valuation-label').textContent).toBe('Рыночная цена');
+    expect(field('entry-price').textContent).toBe('77,736.20');expect(field('valuation-price').textContent).toBe('78,526.70');
+    expect(field('entry-price').getAttribute('font-weight')).toBe('700');expect(field('valuation-price').getAttribute('font-weight')).toBe('700');
+    expect(card.entryPrice).toBe('77736.200000');expect(card.valuationPrice).toBe('78526.700000');
+    expect(field('profit-number').textContent).toBe('+123.45');expect(field('roi-number').textContent).toBe('+12.35');
+  });
+  test.each([['77736.199999','77,736.20'],['78526.7','78,526.70'],['12','12.00'],['0','0.00'],['1.239999','1.24'],['0.004','0.00']])('card price %s has exactly two display decimals', (value,expected)=>{
+    const {field}=rendered({...snapshot,entryPrice:value,valuationPrice:value});
+    expect(field('entry-price').textContent).toBe(expected);expect(field('valuation-price').textContent).toBe(expected);
+    expect(field('entry-price').textContent).toMatch(/\.\d{2}$/);
+  });
+  test('ROI and profit form a compact block while the artwork remains decorative',()=>{
+    const {doc,field}=rendered(snapshot);
+    const gap=Number(field('profit-label').getAttribute('y'))-Number(field('roi-line').getAttribute('y'));
+    expect(gap).toBeGreaterThanOrEqual(32);expect(gap).toBeLessThanOrEqual(88);
+    expect(doc.querySelector('[data-artwork="warm-rise"]').getAttribute('aria-hidden')).toBe('true');
   });
   test.each([null,undefined,'',' ','NaN','Infinity','0x10'])('card unknown %s remains unavailable rather than a fabricated zero',value=>{
     const {field}=rendered({...snapshot,pnl:value,netPnl:value,unrealizedPnl:value,roiPercent:value,entryPrice:value,valuationPrice:value});
@@ -158,7 +179,7 @@ describe('private snapshot display and dates',()=>{
   test('real zero remains zero with a percent unit',()=>{
     const {field}=rendered({...snapshot,pnl:'0',roiPercent:'0',entryPrice:'0',valuationPrice:'0'});
     expect(field('roi-number').textContent).toBe('0.00');expect(field('profit-number').textContent).toBe('0.00');expect(field('roi-unit').textContent).toBe('%');
-    expect(field('entry-price').textContent).toBe('0.000000');expect(field('valuation-price').textContent).toBe('0.000000');
+    expect(field('entry-price').textContent).toBe('0.00');expect(field('valuation-price').textContent).toBe('0.00');
   });
   test('explicit frozen server result wins over all fallback fields without mutating or recalculating the snapshot',()=>{
     const card=Object.freeze({...snapshot,pnl:'321.09',pnlKind:'NET_REALIZED',roiPercent:'7.77',entryPrice:'1',valuationPrice:'9000',netPnl:'999999',unrealizedPnl:'888888'});
@@ -166,11 +187,11 @@ describe('private snapshot display and dates',()=>{
     expect(field('profit-number').textContent).toBe('+321.09');expect(field('roi-number').textContent).toBe('+7.77');expect(JSON.stringify(card)).toBe(before);
     expect(visible).not.toContain('999,999');expect(visible).not.toContain('888,888');
   });
-  test('Short, fractional leverage and long negative results retain the portrait hierarchy',()=>{
+  test('Short, fractional leverage and long negative results retain equal-size percent and the portrait hierarchy',()=>{
     const {field,doc}=rendered({...snapshot,side:'SHORT',leverage:'12.5',pnl:'-123456789123456789.99',roiPercent:'-123456789.12'});
     expect(field('side').textContent).toBe('Short');expect(field('leverage').textContent).toBe('12.5x');
     const size=Number(field('roi-number').getAttribute('font-size')),percent=Number(field('roi-unit').getAttribute('font-size'));
-    expect(percent/size).toBeGreaterThanOrEqual(.58);expect(percent/size).toBeLessThanOrEqual(.65);
+    expect(percent).toBe(size);expect(field('roi-unit').getAttribute('dy')).toBe('0');
     expect(field('profit-number').getAttribute('lengthAdjust')).toBe('spacingAndGlyphs');expect(doc.querySelector('metadata,[display="none"]')).toBeNull();
   });
   test('expired preview refresh copies reviewed inputs but never old idempotency or server-only state',()=>{
@@ -215,7 +236,7 @@ describe('actual private forms',()=>{
     expect(onSubmit).toHaveBeenCalledWith({quantity:'0.1'});expect(text(find(tree,n=>n.props?.role==='alert'))).toBe('Котировка устарела');
   });
   test('EXPIRED can only refresh; a new explicit confirmation is still required',()=>{
-    const ui=ticket(),onRefresh=jest.fn();const tree=ui.render({preview:{id:'expired',status:'EXPIRED'},onRefresh});
+    const ui=ticket();const onRefresh=jest.fn();const tree=ui.render({preview:{id:'expired',status:'EXPIRED'},onRefresh});
     expect(nodes(tree).some(n=>n.type==='button'&&text(n)==='Подтвердить и сохранить')).toBe(false);
     button(tree,'Обновить расчёт').props.onClick();expect(onRefresh).toHaveBeenCalledTimes(1);expect(ui.onConfirm).not.toHaveBeenCalled();
   });

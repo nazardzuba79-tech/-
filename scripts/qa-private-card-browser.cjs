@@ -18,7 +18,7 @@ const fixture = Object.freeze({
   id: 'qa-fixture-not-an-account-result', symbol: 'BTCUSDT', side: 'LONG', leverage: '10',
   mode: 'HISTORICAL_REPLAY', status: 'CLOSED', label: 'Historical Test',
   roiPercent: '211.38', pnl: '24580.00', netPnl: '24580.00', unrealizedPnl: '0',
-  entryPrice: '77316.7', valuationPrice: '93660.972046', usdPnl: null,
+  entryPrice: '77736.200000', valuationPrice: '78526.700000', usdPnl: null,
   asOf: '2026-09-14T00:00:00Z',
 });
 // Deliberately independent frozen display fields: the frontend must not recompute them.
@@ -81,6 +81,43 @@ async function main() {
     assert(geometry.footer.bottom <= geometry.height, 'PNG controls must remain inside the viewport');
     assert(geometry.scrollWidth <= width);
     await page.screenshot({ path: path.join(out, `dialog-${width}.png`), fullPage: true });
+    // Measure actual SVG text layout; checking the attribute alone misses baseline/overflow regressions.
+    const typography = await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.style.cssText = 'position:fixed;left:-20000px;top:0;width:1080px;pointer-events:none';
+      document.body.append(host);
+      const field = name => host.querySelector(`[data-field="${name}"]`);
+      try {
+        host.innerHTML = window.__cardRenderer.privateResultCardSvg(window.__fixture);
+        const digits = field('roi-number'), unit = field('roi-unit');
+        const result = {
+          numberSize: getComputedStyle(digits).fontSize, unitSize: getComputedStyle(unit).fontSize,
+          numberY: digits.getBBox().y, unitY: unit.getBBox().y,
+          numberHeight: digits.getBBox().height, unitHeight: unit.getBBox().height,
+          entry: field('entry-price').textContent, valuation: field('valuation-price').textContent,
+          entryLabel: field('entry-label').textContent, closedLabel: field('valuation-label').textContent,
+          profitGap: field('profit-unit').getBBox().x - (field('profit-number').getBBox().x + field('profit-number').getBBox().width),
+        };
+        host.innerHTML = window.__cardRenderer.privateResultCardSvg({...window.__fixture,mode:'DEMO_LIVE',status:'OPEN',label:'Симуляция'});
+        result.openLabel = field('valuation-label').textContent;
+        host.innerHTML = window.__cardRenderer.privateResultCardSvg({...window.__fixture,roiPercent:'-123456789123456789.99'});
+        const long = field('roi-line').getBBox();
+        result.longRoiRight = 80 + long.x + long.width;
+        result.longNumberSize = getComputedStyle(field('roi-number')).fontSize;
+        result.longUnitSize = getComputedStyle(field('roi-unit')).fontSize;
+        return result;
+      } finally { host.remove(); }
+    });
+    assert.equal(typography.numberSize, typography.unitSize);
+    assert(Math.abs(typography.numberY - typography.unitY) < .1);
+    assert(Math.abs(typography.numberHeight - typography.unitHeight) < .1);
+    assert.equal(typography.entry, '77,736.20'); assert.equal(typography.valuation, '78,526.70');
+    assert.equal(typography.entryLabel, 'Цена Входа'); assert.equal(typography.openLabel, 'Рыночная цена');
+    assert.equal(typography.closedLabel, 'Цена выхода');
+    assert(typography.profitGap >= 20);
+    assert(typography.longRoiRight <= 1000, 'Long ROI and its equal-size percent must fit together');
+    assert.equal(typography.longNumberSize, typography.longUnitSize);
+    report.checks.push({ name: `equal-percent-two-decimal-prices-${width}`, passed: true, typography });
     const preview = Buffer.from((await image.getAttribute('src')).split(',')[1], 'base64');
     const downloadPromise = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Сохранить PNG' }).click();
@@ -93,6 +130,11 @@ async function main() {
     assert.equal(download.suggestedFilename(), 'VOLTEX-BTCUSDT-historical.png');
     assert.deepEqual(errors, []);
     report.checks.push({ name: `actual-dialog-export-${width}`, passed: true, geometry, sha256: createHash('sha256').update(bytes).digest('hex') });
+    // An additional clearly synthetic open-state example uses the real PNG renderer.
+    const openImage = await page.evaluate(async () => window.__cardRenderer.privateResultCardDataUrl(
+      await window.__cardRenderer.privateResultCardPng(Object.freeze({...window.__fixture,mode:'DEMO_LIVE',status:'OPEN',label:'Симуляция'})),
+    ));
+    fs.writeFileSync(path.join(out, `open-example-${width}.png`), Buffer.from(openImage.split(',')[1], 'base64'));
     // Revoke permission on the delivery check, after the authorized PNG has rendered.
     reads = 0; denyAt = 2;
     let leaked = false; const onDownload = () => { leaked = true; }; page.on('download', onDownload);
