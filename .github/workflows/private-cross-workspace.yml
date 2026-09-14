@@ -1,0 +1,36 @@
+name: Private cross exact-source workspace
+on:
+  push:
+    branches: ['codex/private-cross-demo-bybit-model']
+    paths: ['.github/workflows/private-cross-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Package only source and disposable dependencies, never secrets
+        run: |
+          git rev-parse HEAD > /tmp/workspace-sha.txt
+          git archive --format=tar HEAD > /tmp/review-source.tar
+          tar -cf /tmp/review-dependencies.tar node_modules frontend/node_modules
+          gzip -1 /tmp/review-source.tar /tmp/review-dependencies.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: private-cross-exact-workspace
+          retention-days: 1
+          compression-level: 0
+          path: |
+            /tmp/workspace-sha.txt
+            /tmp/review-source.tar.gz
+            /tmp/review-dependencies.tar.gz
