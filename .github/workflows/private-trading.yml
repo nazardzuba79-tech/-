@@ -4,7 +4,7 @@ on:
     paths:
       - 'src/private-trading/**'
       - 'src/api/routes/privateTrading.ts'
-      - 'src/api/routes/__tests__/privateTrading.test.ts'
+      - 'src/api/routes/__tests__/privateTrading*.test.ts'
       - 'src/services/DemoTradingService.ts'
       - 'src/services/__tests__/DemoTradingService.test.ts'
       - 'frontend/src/lib/private*'
@@ -87,6 +87,7 @@ jobs:
           src/private-trading/__tests__/service.runtime.test.ts
           src/private-trading/__tests__/store.test.ts
           src/api/routes/__tests__/privateTrading.test.ts
+          src/api/routes/__tests__/privateTradingTestnet.test.ts
           src/services/__tests__/DemoTradingService.test.ts
           frontend/src/lib/__tests__/chartDrawings.test.ts
           frontend/src/lib/__tests__/chartTrading.test.ts
