@@ -54,7 +54,8 @@ export function bankingAsset(value: string): BankingAsset | null {
 export function minimumAssetQuantity(priceUsd: string, asset: BankingAsset, minUsd = '2500'): string {
   const price = new BigNumber(priceUsd), step = new BigNumber(BANKING_ASSET_STEPS[asset]);
   if (!price.isFinite() || !price.isGreaterThan(0)) throw new Error('asset_price_unavailable');
-  return new BigNumber(minUsd).div(price).div(step).integerValue(BigNumber.ROUND_CEIL).times(step).toFixed(step.dp());
+  const decimals = step.decimalPlaces() ?? 0;
+  return new BigNumber(minUsd).div(price).div(step).integerValue(BigNumber.ROUND_CEIL).times(step).toFixed(decimals);
 }
 
 export function bankingPublicConfig() {
