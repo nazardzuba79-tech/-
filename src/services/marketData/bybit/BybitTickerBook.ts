@@ -91,8 +91,16 @@ export class BybitTickerBook {
     next.receivedAt = this.now(); next.fetchedAt = this.now(); next.stale = false;
     this.rows.set(id, next); this.dirty.add(id); return true;
   }
+  /** Immediate stale marking for known provider failures/disconnects. */
   stale(ids?: Set<string>, ageMs = 30_000): void {
     for (const [id, row] of this.rows) if (!row.stale && (ids ? ids.has(id) : this.now() - row.receivedAt > ageMs)) {
+      this.rows.set(id, { ...row, stale: true }); this.dirty.add(id);
+    }
+  }
+  /** Age-gated stale marking. Unlike `stale(ids)`, supplying ids here does
+   * not make the change immediate; the row must also exceed the age budget. */
+  staleOlderThan(ageMs: number, ids?: Set<string>): void {
+    for (const [id, row] of this.rows) if (!row.stale && (!ids || ids.has(id)) && this.now() - row.receivedAt > ageMs) {
       this.rows.set(id, { ...row, stale: true }); this.dirty.add(id);
     }
   }
