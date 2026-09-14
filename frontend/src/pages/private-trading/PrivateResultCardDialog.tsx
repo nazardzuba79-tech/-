@@ -4,7 +4,7 @@ import { Download,ExternalLink,X } from 'lucide-react';
 import { privateTradingApi,privateErrorText,privateCardPnl,type PrivateResultCard } from '../../lib/privateTradingApi';
 import { privateResultCardPng,privateResultCardDataUrl } from '../../lib/privateResultCard';
 
-export function PrivateResultCardDialog({snapshot,onClose,onError}:{snapshot:PrivateResultCard;onClose:()=>void;onError:(error:unknown)=>void}){
+export function PrivateResultCardDialog({snapshot,onClose,onError,loadSnapshot=privateTradingApi.getCard,openHref}:{snapshot:PrivateResultCard;onClose:()=>void;onError:(error:unknown)=>void;loadSnapshot?:(id:string)=>Promise<PrivateResultCard>;openHref?:string}){
   const[url,setUrl]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const dialog=useRef<HTMLDialogElement>(null);
   const alive=useRef(true);
@@ -18,11 +18,11 @@ export function PrivateResultCardDialog({snapshot,onClose,onError}:{snapshot:Pri
     if(busy)return;setBusy(true);setError('');
     try{
       // Recheck owner/role/session/flag even for a previously rendered snapshot.
-      const authorized=await privateTradingApi.getCard(snapshot.id);
+      const authorized=await loadSnapshot(snapshot.id);
       const blob=await privateResultCardPng(authorized);
       const pngUrl=await privateResultCardDataUrl(blob);if(!alive.current)return;
       // Rendering can outlive role/session revocation. Authorize delivery too.
-      await privateTradingApi.getCard(snapshot.id);if(!alive.current)return;
+      await loadSnapshot(snapshot.id);if(!alive.current)return;
       const anchor=document.createElement('a');anchor.href=pngUrl;
       anchor.download=`VOLTEX-${authorized.symbol.replace(/[^A-Za-z0-9]/g,'')}-${authorized.mode==='HISTORICAL_REPLAY'?'historical':'simulation'}.png`;
       anchor.hidden=true;document.body.append(anchor);
@@ -33,6 +33,6 @@ export function PrivateResultCardDialog({snapshot,onClose,onError}:{snapshot:Pri
     <header><strong>Карточка результата</strong><button type="button" aria-label="Закрыть" onClick={onClose}><X size={20}/></button></header>
     {url?<img src={url} alt={`Симуляция: ${snapshot.symbol}, Прибыль ${privateCardPnl(snapshot)??'—'} USDT`}/>:<p role="status">Подготовка карточки…</p>}
     {error&&<p role="alert">{error}</p>}
-    <footer><a href={`/futures?privateTrading=1&card=${encodeURIComponent(snapshot.id)}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Открыть</a><button type="button" className="primary" onClick={()=>void exportCard()} disabled={!url||busy}><Download size={16}/>Сохранить PNG</button></footer>
+    <footer><a href={openHref??`/futures?privateTrading=1&card=${encodeURIComponent(snapshot.id)}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Открыть</a><button type="button" className="primary" onClick={()=>void exportCard()} disabled={!url||busy}><Download size={16}/>Сохранить PNG</button></footer>
   </dialog>;
 }

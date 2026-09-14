@@ -1,3 +1,6 @@
+import { NativeDemoService } from '../../private-trading/native/service';
+import { PrismaNativeRepository } from '../../private-trading/native/store';
+import { nativeDemoRoutes } from '../../private-trading/native/routes';
 import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -60,7 +63,9 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   const handle = (run: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
     void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
   };
-  router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION' })));
+  const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma), service.market) : null;
+  router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: !!native })));
+  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor));
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
   router.get('/private-trading/market', handle(async (req, res) => service.getMarket(actor(res), z.string().min(1).max(40).parse(req.query.symbol))));
   router.get('/private-trading/candles', handle(async (req, res) => {

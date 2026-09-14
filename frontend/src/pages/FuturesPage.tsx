@@ -1,3 +1,5 @@
+import { useNativeDemo } from './private-trading/useNativeDemo';
+import { NativeDemoSwitch,NativeDemoTicket,NativeDemoPanel,NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -64,7 +66,9 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
 export function FuturesPage() {
   const { t } = useLanguage();
   const reference = useFuturesReference();
-  const account = useFuturesAccount({ orders: 5000, positions: 4000 });
+  const [initialParams] = useSearchParams();
+  const nativeRequested = initialParams.get('demo')==='1'||initialParams.get('privateTrading')==='1';
+  const account = useFuturesAccount(nativeRequested?{}:{ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
@@ -74,6 +78,7 @@ export function FuturesPage() {
   const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
+  const native = useNativeDemo(symbol,setSymbol);
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
@@ -172,7 +177,7 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
-        rightExtra={<PrivateTradingEntry />}
+        rightExtra={<><NativeDemoSwitch controller={native}/>{!native.allowed&&<PrivateTradingEntry/>}</>}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -180,7 +185,7 @@ export function FuturesPage() {
         futuresReference={reference}
       />
 
-      <div className="terminal" data-account-compact={accountPanel.compact}>
+      <div className="terminal" data-account-compact={native.requested?false:accountPanel.compact}>
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
@@ -189,7 +194,7 @@ export function FuturesPage() {
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} privateTrading={native.requested&&native.allowed?native.interaction:undefined} candleLoader={native.requested&&native.allowed?native.loader:undefined} />
           </div>
 
           <div className="orderbook-area repaired-futures-book">
@@ -210,7 +215,7 @@ export function FuturesPage() {
 
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
-            <FuturesOrderForm
+            {native.requested?<NativeDemoTicket key={symbol} controller={native} symbol={symbol} pickedPrice={pickedPrice?.symbol===symbol?pickedPrice.value:undefined} pickedSequence={pickedPrice?.seq}/>:<FuturesOrderForm
               key={symbol}
               symbol={symbol}
               executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}
@@ -218,11 +223,12 @@ export function FuturesPage() {
               onOpenTransfer={() => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
-            />
+            />}
           </div>
         </div>
 
-        <div className="bottom-panel" data-account-compact={accountPanel.compact}>
+        <div className="bottom-panel" data-account-compact={native.requested?false:accountPanel.compact}>
+          {native.requested?<NativeDemoPanel controller={native}/>:<>
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
@@ -253,7 +259,7 @@ export function FuturesPage() {
             {bottomTab === 'orders' && <FuturesOrdersPanel refreshKey={positionsRefreshKey} />}
             {bottomTab === 'orderHistory' && <FuturesOrdersPanel history refreshKey={positionsRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel wallet="futures" refreshKey={positionsRefreshKey} />}
-          </div>
+          </div></>}
         </div>
       </div>
 
@@ -266,6 +272,7 @@ export function FuturesPage() {
           <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
       </dialog>}
+      {native.requested&&<NativeDemoDialogs controller={native}/>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
