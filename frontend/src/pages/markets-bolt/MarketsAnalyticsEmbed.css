@@ -1,0 +1,10 @@
+.markets-view-tabs{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card-1);margin:0 0 20px}
+.markets-view-tabs button{border:0;background:transparent;color:var(--text-secondary);padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer}
+.markets-view-tabs button.is-active{background:var(--bg-card-2);color:var(--text-primary);box-shadow:inset 0 0 0 1px var(--border)}
+.markets-analytics-embedded{min-height:0;background:transparent;border:0;margin:0 0 24px}
+.markets-analytics-embedded .ap-shell{max-width:none;padding:0}
+.markets-analytics-embedded .markets-analytics-head{margin:0 0 16px;padding-top:2px}
+.markets-analytics-embedded .markets-analytics-head h2{font-size:24px;line-height:1.2;font-weight:600;letter-spacing:-.025em;margin:6px 0}
+.markets-analytics-embedded .ap-span-3{grid-column:1/-1;min-width:0}
+.markets-analytics-empty{padding:28px;border:1px solid var(--ap-line);background:white;color:var(--ap-muted);text-align:center}
+@media(max-width:760px){.markets-view-tabs{width:100%}.markets-view-tabs button{flex:1}.markets-analytics-embedded .markets-analytics-head{align-items:flex-start}.markets-analytics-embedded .markets-analytics-head h2{font-size:21px}}
