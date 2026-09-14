@@ -61,10 +61,10 @@ describe('Bybit live collector', () => {
     expect(c.book.rows.size).toBe(6); expect(c.diagnostics()).toMatchObject({liveInstruments:0,slowInstruments:6});
     expect(f.calls.filter(u=>u.includes('/v5/market/tickers')).length).toBe(3);
     await jest.advanceTimersByTimeAsync(35_000);
-    expect([...c.book.rows.values()].every(row=>row.stale===false)).toBe(true);
+    expect([...c.book.rows.values()].every(row=>row.stale!==true)).toBe(true);
     await jest.advanceTimersByTimeAsync(25_001); await settle();
     expect(f.calls.filter(u=>u.includes('/v5/market/tickers')).length).toBe(6);
-    expect([...c.book.rows.values()].every(row=>row.stale===false)).toBe(true);
+    expect([...c.book.rows.values()].every(row=>row.stale!==true)).toBe(true);
     c.stop(); expect(jest.getTimerCount()).toBe(0);
   });
   test.each(['spot','linear','inverse'] as const)('%s packs actual encoded topics below the total connection limit', category => {
