@@ -365,7 +365,7 @@ describe('reference table server DTO',()=>{
  test('fees and signed funding are realized, USD stays unknown, stored position unchanged',()=>{
   const f=fixture(),position=Object.freeze({id:'dto',mode:'HISTORICAL_REPLAY',status:'OPEN',symbol:'XYZUSDT',quantity:'2',initialQuantity:'2',entryPrice:'100',markPrice:'101',asOf:new Date(NOW).toISOString(),realizedGross:'5',openingFees:'1',closingFees:'0.25',fundingNet:'-0.10',unrealizedPnl:'2',allocatedMargin:'100'});
   const before=JSON.stringify(position),dto=(f.service as any).positionDto(position);
-  expect(dto.realizedPnl).toBe('3.65');expect(dto.unrealizedRoiPercent).toBe('2');expect(dto.usdUnrealizedPnl).toBeNull();expect(dto.usdRealizedPnl).toBeNull();expect(JSON.stringify(position)).toBe(before);
+  expect(new BigNumber(dto.realizedPnl).eq('3.65')).toBe(true);expect(new BigNumber(dto.unrealizedRoiPercent).eq('2')).toBe(true);expect(dto.usdUnrealizedPnl).toBeNull();expect(dto.usdRealizedPnl).toBeNull();expect(JSON.stringify(position)).toBe(before);
   expect((f.service as any).positionDto({...position,allocatedMargin:'0'}).unrealizedRoiPercent).toBeNull();
  });
 });

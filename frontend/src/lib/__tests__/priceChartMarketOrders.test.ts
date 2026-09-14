@@ -244,13 +244,14 @@ describe('private chart native interaction and history', () => {
   });
 
   test('persistent entry markers, distinct exit markers and readonly levels use selected contract only', async () => {
-    const trade = { id: 'p1', symbol: 'BTCUSDT', side: 'LONG', leverage: 10, entryPrice: 73000, quantity: 0.01, pnl: 5, entryTime: time * 1000 + 3600000, entryModel: 'CLOSE', takeProfit: 80000, stopLoss: 65000, liquidationPrice: 60000, exits: [{ time: time * 1000 + 1, price: 74000, kind: 'PARTIAL' }] };
+    const trade = { id: 'p1', symbol: 'BTCUSDT', side: 'LONG', status: 'OPEN', leverage: 10, entryPrice: 73000, quantity: 0.01, pnl: 5, entryTime: time * 1000 + 3600000, entryModel: 'CLOSE', takeProfit: 80000, stopLoss: 65000, liquidationPrice: 60000, exits: [{ time: time * 1000 + 1, price: 74000, kind: 'PARTIAL' }] };
     const state = { ...interaction(), selecting: null, selectedTradeId: 'p1', trades: [trade, { ...trade, id: 'wrong', symbol: 'ETHUSDT' }] };
     const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: jest.fn().mockResolvedValue({ candles: [candle] }) });
     chart.render(); await flush(); chart.render();
     expect(chart.chartHarness.markers.map((marker: any) => marker.id)).toEqual(['private-trade:p1|entry', 'private-trade:p1|exit:0']);
     expect(chart.chartHarness.markers[0].time).toBe(time);
-    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['LONG 0.01 BTC · P&L +5.00 USDT', 'TP', 'SL', 'LIQ']);
+    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['', 'TP', 'SL', 'LIQ']);
+    expect(chart.chartHarness.priceLines[0].options).toMatchObject({price:73000,color:'#13ad75',axisLabelVisible:true});
     chart.chartHarness.click(event(chart, { hoveredInfo: { objectId: 'private-trade:p1|entry' } }));
     expect(state.onTradeSelect).toHaveBeenCalledWith('p1');
     chart.chartHarness.click(event(chart, { hoveredObjectId: 'private-trade:wrong|entry' }));
