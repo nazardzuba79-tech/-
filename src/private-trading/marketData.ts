@@ -34,6 +34,25 @@ export const privateQuoteSchema = z.object({
 });
 export type PrivateFreshQuote = z.infer<typeof privateQuoteSchema>;
 export interface PrivateCandle { timestamp: number; open: string; high: string; low: string; close: string }
+export const PRIVATE_CHART_INTERVALS = ['1m', '5m', '15m', '1h', '4h', '1d', '1w'] as const;
+export type PrivateChartInterval = typeof PRIVATE_CHART_INTERVALS[number];
+export interface PrivateChartRequest { symbol: string; interval: PrivateChartInterval; limit?: number; endTime?: number; signal?: AbortSignal }
+export interface PrivateCandleSelection { symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; openTime: number; pricePoint: 'OPEN' | 'CLOSE'; signal?: AbortSignal }
+export interface ResolvedPrivateCandle {
+  symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; intervalMs: number; openTime: number; closeTime: number;
+  effectiveAt: number; price: string; pricePoint: 'OPEN' | 'CLOSE'; candle: PrivateCandle & { volume: string }; fetchedAt: number; verification: 'VERIFIED';
+}
+const chartIntervals: Record<PrivateChartInterval, { wire: string; milliseconds: number; offset: number }> = {
+  '1m': { wire: '1', milliseconds: 60_000, offset: 0 }, '5m': { wire: '5', milliseconds: 300_000, offset: 0 },
+  '15m': { wire: '15', milliseconds: 900_000, offset: 0 }, '1h': { wire: '60', milliseconds: 3_600_000, offset: 0 },
+  '4h': { wire: '240', milliseconds: 14_400_000, offset: 0 }, '1d': { wire: 'D', milliseconds: 86_400_000, offset: 0 },
+  // Bybit weekly bars start Monday 00:00 UTC, four days after the Unix epoch Thursday.
+  '1w': { wire: 'W', milliseconds: 604_800_000, offset: 345_600_000 },
+};
+export function privateChartIntervalMs(interval: PrivateChartInterval): number {
+  if (!Object.prototype.hasOwnProperty.call(chartIntervals, interval)) throw new PrivateMarketDataError('invalid_chart_interval', 400);
+  return chartIntervals[interval].milliseconds;
+}
 export interface PrivateFundingEvent { timestamp: number; rate: string; markPrice: string }
 export interface PrivateHistoricalData {
   symbol: string; tradeCandles: PrivateCandle[]; markCandles: PrivateCandle[];
@@ -48,6 +67,11 @@ export interface PrivateHistoryRequest {
 const candleSchema = z.object({ timestamp, open: positive, high: positive, low: positive, close: positive }).refine(c =>
   new BigNumber(c.high).gte(c.low) && new BigNumber(c.high).gte(c.open) && new BigNumber(c.high).gte(c.close)
   && new BigNumber(c.low).lte(c.open) && new BigNumber(c.low).lte(c.close), 'Inconsistent OHLC');
+const chartCandleSchema = z.object({ timestamp, open: positive, high: positive, low: positive, close: positive, volume: nonnegative })
+  .refine(c => candleSchema.safeParse(c).success, 'Inconsistent OHLC');
+const chartPageSchema = z.object({ source: z.literal('BYBIT_LINEAR'), symbol: symbolSchema, interval: z.enum(PRIVATE_CHART_INTERVALS),
+  candles: z.array(chartCandleSchema).max(1000), fetchedAt: timestamp, providerTimestamp: timestamp });
+type PrivateChartPage = z.infer<typeof chartPageSchema>;
 const fundingSchema = z.object({ timestamp, rate: signed });
 const candlePageSchema = z.object({ symbol: symbolSchema, candles: z.array(candleSchema).max(1000), fetchedAt: timestamp });
 const fundingPageSchema = z.object({ symbol: symbolSchema, events: z.array(fundingSchema).max(200), fetchedAt: timestamp });
@@ -67,6 +91,28 @@ function symbol(value: string): string {
   return normalized;
 }
 function time(value: unknown): number { const parsed = Number(value); return read(timestamp, parsed); }
+function chartRequest(request: PrivateChartRequest, now: number, maxLimit: number) {
+  const contract = symbol(request.symbol), intervalMs = privateChartIntervalMs(request.interval), limit = request.limit ?? 520;
+  if (!Number.isInteger(limit) || limit < 1 || limit > maxLimit || (request.endTime !== undefined
+    && (!Number.isSafeInteger(request.endTime) || request.endTime <= 0 || request.endTime > now))) throw new PrivateMarketDataError('invalid_chart_range', 400);
+  return { contract, intervalMs, limit, end: request.endTime ?? now };
+}
+function checkedChartPage(value: unknown, request: PrivateChartRequest, now: number): PrivateChartPage {
+  const { contract, intervalMs, limit, end } = chartRequest(request, now, 1000), page = read(chartPageSchema, value);
+  if (page.symbol !== contract || page.interval !== request.interval || page.candles.length > limit || page.fetchedAt > now + FUTURE_SKEW_MS || page.providerTimestamp > now + FUTURE_SKEW_MS) return invalid();
+  const seen = new Set<number>(), offset = chartIntervals[request.interval].offset;
+  for (const candle of page.candles) {
+    if (candle.timestamp > end || candle.timestamp > page.providerTimestamp || (candle.timestamp - offset) % intervalMs !== 0 || seen.has(candle.timestamp)) return invalid();
+    seen.add(candle.timestamp);
+  }
+  page.candles.sort((a, b) => a.timestamp - b.timestamp);
+  return page;
+}
+function chartCacheKey(request: PrivateChartRequest): string { return `${symbol(request.symbol)}:${request.interval}:${request.limit ?? 520}:${request.endTime ?? 'latest'}`; }
+function chartCacheTtl(page: PrivateChartPage): number {
+  const step = privateChartIntervalMs(page.interval);
+  return page.candles.length && page.candles.every(c => c.timestamp + step <= page.providerTimestamp) ? 15 * 60_000 : 2_000;
+}
 function fresh(value: number, now: number, maxAge = PRIVATE_QUOTE_MAX_AGE_MS): boolean {
   return Number.isSafeInteger(value) && value > 0 && value <= now + FUTURE_SKEW_MS && now - value <= maxAge;
 }
@@ -91,6 +137,7 @@ export function assertPrivateFreshQuote(value: unknown, expectedSymbol: string, 
 export class CollectorPrivateTradingSource {
   private instruments = new Map<string, { at: number; value: PrivateInstrument }>();
   private historyPages = new Map<string, { at: number; value: unknown }>();
+  private chartPages = new Map<string, { at: number; ttl: number; value: PrivateChartPage }>();
   private active = 0;
   constructor(private request: typeof fetch = fetch, private now: () => number = Date.now) {}
   private async get(path: string, query: Record<string, string>, signal?: AbortSignal): Promise<any> {
@@ -175,6 +222,24 @@ export class CollectorPrivateTradingSource {
       markPrice: quote.markPrice, lastPrice: quote.lastPrice, fundingRate: quote.fundingRate, nextFundingTime: time(quote.nextFundingTime),
       providerTimestamp: time(book.result.cts), bookGeneratedAt: time(book.result.ts), markProviderTimestamp: time(ticker.time), fetchedAt: this.now() }, contract, this.now());
   }
+  async chartCandles(request: PrivateChartRequest): Promise<PrivateChartPage> {
+    abort(request.signal);
+    const { contract, limit } = chartRequest(request, this.now(), 1000), key = chartCacheKey(request), cached = this.chartPages.get(key);
+    if (cached && this.now() - cached.at < cached.ttl) return structuredClone(cached.value);
+    await this.instrument(contract, request.signal);
+    const data = await this.get('kline', { symbol: contract, interval: chartIntervals[request.interval].wire, limit: String(limit),
+      ...(request.endTime === undefined ? {} : { end: String(request.endTime) }) }, request.signal);
+    if (data.result.category !== 'linear' || data.result.symbol !== contract || !Array.isArray(data.result.list)) return invalid();
+    const page = checkedChartPage({ source: 'BYBIT_LINEAR', symbol: contract, interval: request.interval, fetchedAt: this.now(), providerTimestamp: time(data.time),
+      candles: data.result.list.map((row: unknown) => {
+        if (!Array.isArray(row) || row.length < 6) return invalid();
+        return { timestamp: time(row[0]), open: row[1], high: row[2], low: row[3], close: row[4], volume: row[5] };
+      }) }, request, this.now());
+    abort(request.signal);
+    if (this.chartPages.size >= 64) this.chartPages.delete(this.chartPages.keys().next().value!);
+    this.chartPages.set(key, { at: this.now(), ttl: request.endTime === undefined ? 2_000 : chartCacheTtl(page), value: page });
+    return structuredClone(page);
+  }
   async candles(input: string, kind: 'trade' | 'mark', intervalMinutes: number, startTime: number, endTime: number, signal?: AbortSignal) {
     const contract = symbol(input); validatePageRange(intervalMinutes, startTime, endTime, this.now());
     const data = await this.get(kind === 'trade' ? 'kline' : 'mark-price-kline', {
@@ -210,6 +275,8 @@ function validatePageRange(interval: number, startTime: number, endTime: number,
 
 export class PrivateTradingMarketData {
   private historyActive = false;
+  private chartActive = 0;
+  private chartPages = new Map<string, { at: number; ttl: number; value: PrivateChartPage }>();
   private readonly origin: string;
   private readonly token: string;
   private readonly request: typeof fetch;
@@ -237,6 +304,59 @@ export class PrivateTradingMarketData {
   async freshQuote(input: string, signal?: AbortSignal): Promise<PrivateFreshQuote> {
     const contract = symbol(input);
     return assertPrivateFreshQuote(await this.get(`quote/${contract}`, signal), contract, this.now());
+  }
+  private async chartPage(request: PrivateChartRequest): Promise<PrivateChartPage> {
+    abort(request.signal);
+    const { contract, limit } = chartRequest(request, this.now(), 1000), key = chartCacheKey(request), cached = this.chartPages.get(key);
+    if (cached && this.now() - cached.at < cached.ttl) return structuredClone(cached.value);
+    if (this.chartActive >= 4) throw new PrivateMarketDataError('chart_busy', 429);
+    this.chartActive++;
+    try {
+      const query = new URLSearchParams({ interval: request.interval, limit: String(limit), ...(request.endTime === undefined ? {} : { endTime: String(request.endTime) }) });
+      const page = checkedChartPage(await this.get(`chart-candles/${contract}?${query}`, request.signal), request, this.now());
+      abort(request.signal);
+      if (this.chartPages.size >= 64) this.chartPages.delete(this.chartPages.keys().next().value!);
+      this.chartPages.set(key, { at: this.now(), ttl: request.endTime === undefined ? 2_000 : chartCacheTtl(page), value: page });
+      return structuredClone(page);
+    } finally { this.chartActive--; }
+  }
+  async chartCandles(request: PrivateChartRequest): Promise<{
+    source: 'BYBIT_LINEAR'; symbol: string; interval: PrivateChartInterval;
+    candles: Array<{ time: number; open: number; high: number; low: number; close: number; volume: number }>;
+  }> {
+    abort(request.signal);
+    const { contract, limit } = chartRequest(request, this.now(), 1500), candles = new Map<number, PrivateCandle & { volume: string }>();
+    let endTime = request.endTime;
+    for (let pageIndex = 0; pageIndex < 2 && candles.size < limit; pageIndex++) {
+      const pageLimit = Math.min(1000, limit - candles.size);
+      const page = await this.chartPage({ ...request, symbol: contract, limit: pageLimit, endTime });
+      for (const candle of page.candles) { if (candles.has(candle.timestamp)) return invalid(); candles.set(candle.timestamp, candle); }
+      if (page.candles.length < pageLimit) break;
+      endTime = page.candles[0].timestamp - 1;
+      if (endTime <= 0) break;
+    }
+    const numeric = (value: string) => { const result = Number(value); if (!Number.isFinite(result)) return invalid(); return result; };
+    return { source: 'BYBIT_LINEAR', symbol: contract, interval: request.interval,
+      candles: [...candles.values()].sort((a, b) => a.timestamp - b.timestamp).map(c => ({ time: c.timestamp / 1000,
+        open: numeric(c.open), high: numeric(c.high), low: numeric(c.low), close: numeric(c.close), volume: numeric(c.volume) })) };
+  }
+  async resolveCandle(selection: PrivateCandleSelection): Promise<ResolvedPrivateCandle> {
+    abort(selection.signal);
+    const parsed = z.object({ symbol: symbolSchema, source: z.literal('BYBIT_LINEAR'), interval: z.enum(PRIVATE_CHART_INTERVALS), openTime: timestamp, pricePoint: z.enum(['OPEN', 'CLOSE']) })
+      .safeParse({ ...selection, symbol: symbol(selection.symbol) });
+    if (!parsed.success) throw new PrivateMarketDataError('invalid_candle_selection', 400);
+    const value = parsed.data, intervalMs = privateChartIntervalMs(value.interval), closeTime = value.openTime + intervalMs;
+    if ((value.openTime - chartIntervals[value.interval].offset) % intervalMs !== 0 || !Number.isSafeInteger(closeTime)) throw new PrivateMarketDataError('invalid_candle_alignment', 400);
+    if (closeTime > this.now()) throw new PrivateMarketDataError('candle_not_closed', 409);
+    const instrument = await this.instrument(value.symbol, selection.signal);
+    if (value.openTime < instrument.launchTime) throw new PrivateMarketDataError('contract_not_launched', 400);
+    const page = await this.chartPage({ symbol: value.symbol, interval: value.interval, limit: 1, endTime: closeTime - 1, signal: selection.signal });
+    const candle = page.candles.find(c => c.timestamp === value.openTime);
+    if (!candle) throw new PrivateMarketDataError('selected_candle_missing', 409);
+    if (closeTime > page.providerTimestamp) throw new PrivateMarketDataError('candle_not_closed', 409);
+    abort(selection.signal);
+    return { ...value, intervalMs, closeTime, effectiveAt: value.pricePoint === 'OPEN' ? value.openTime : closeTime,
+      price: value.pricePoint === 'OPEN' ? candle.open : candle.close, candle: structuredClone(candle), fetchedAt: page.fetchedAt, verification: 'VERIFIED' };
   }
   /** Settled funding only. Mark candle open is the versioned simulation valuation rule. */
   async funding(input: string, startTime: number, endTime: number, signal?: AbortSignal): Promise<{

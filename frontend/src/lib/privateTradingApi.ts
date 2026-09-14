@@ -3,6 +3,10 @@ import { getToken } from './api';
 export type PrivateMode = 'DEMO_LIVE' | 'HISTORICAL_REPLAY';
 export type PrivateSide = 'LONG' | 'SHORT';
 export type PrivateDecimal = string | null;
+export interface PrivateCandleSelection { source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE' }
+export interface PrivateResolvedCandleSelection extends PrivateCandleSelection { effectiveAt?:number;closeTime?:number }
+export interface PrivateReplayFill { id:string;effectiveAt:number;kind:'OPEN'|'CLOSE'|'TAKE_PROFIT'|'STOP_LOSS'|'LIQUIDATION';quantity:string;price:string;fee:string;realizedGross:string }
+export interface PrivateChartCandles { source:'BYBIT_LINEAR';symbol:string;interval:string;candles:{time:number;open:number;high:number;low:number;close:number;volume:number}[] }
 export interface PrivatePosition {
   id:string; mode:PrivateMode; symbol:string; side:PrivateSide; leverage:string; quantity:string;
   entryPrice:PrivateDecimal; markPrice:PrivateDecimal; allocatedMargin:PrivateDecimal;
@@ -12,6 +16,7 @@ export interface PrivatePosition {
   notional?:PrivateDecimal;
   dataStatus?:'LIVE'|'UNAVAILABLE';asOf?:string;
   initialQuantity?:string;
+  candleEntry?:PrivateResolvedCandleSelection;candleClose?:PrivateResolvedCandleSelection;fills?:PrivateReplayFill[];evaluatedThrough?:number|null;version?:number;
 }
 export interface PrivateOrder {
   id:string; symbol:string; side:PrivateSide; type:string; status:string; quantity:string;
@@ -22,7 +27,7 @@ export interface PrivateScenario extends PrivatePosition { asOf:string;verificat
 export interface PrivatePreview {
   id:string; status:'RUNNING'|'READY'|'INCOMPLETE'|'AMBIGUOUS'|'FAILED'|'CANCELLED'|'CONFIRMED'|'EXPIRED'; progress:number; error?:string;
   mode?:PrivateMode;createdAt?:string;expiresAt?:string;
-  result?:{position:PrivatePosition|null;cost:{required:PrivateDecimal;initialMargin:PrivateDecimal;fee:PrivateDecimal;closeFeeReserve:PrivateDecimal};issues?:string[];assumptions?:string[];request?:PrivatePreviewRequest;consent?:PrivateExecutionConsent}|null;
+  result?:{capital?:{total:string;usedMargin:string;free:string};position:PrivatePosition|null;cost:{required:PrivateDecimal;initialMargin:PrivateDecimal;fee:PrivateDecimal;closeFeeReserve:PrivateDecimal};issues?:string[];assumptions?:string[];request?:PrivatePreviewRequest;consent?:PrivateExecutionConsent}|null;
 }
 export interface PrivateExecutionConsent {
   slippageBps:string;slippagePercent?:string;quantity:string;minimumFillQuantity:string;maxRequired:string;
@@ -35,7 +40,7 @@ export interface PrivateState {
 export interface PrivatePreviewRequest {
   mode:PrivateMode;symbol:string;side:PrivateSide;type:'MARKET'|'LIMIT';quantity?:string;margin?:string;leverage:string;
   limitPrice?:string;takeProfit?:string;stopLoss?:string;effectiveOpenedAt?:string;asOf?:string;effectiveClosedAt?:string;
-  capital?:string;manualEntryPrice?:string;idempotencyKey:string;
+  capital?:string;manualEntryPrice?:string;idempotencyKey:string;candleEntry?:PrivateCandleSelection;
   events?:({id:string;effectiveAt:string}&({kind:'MARGIN';amount:string}|{kind:'CLOSE';quantity:string}|{kind:'TPSL';takeProfit:string|null;stopLoss:string|null}))[];
 }
 export interface PrivateResultCard {
@@ -71,6 +76,8 @@ export function createPrivateTradingClient(base:string,token:()=>string|null,fet
     access:(signal?:AbortSignal)=>request<{allowed:true;mode:'PRIVATE_SIMULATION'}>('/access','GET',undefined,signal),
     state:(signal?:AbortSignal)=>request<PrivateState>('/state','GET',undefined,signal),
     market:(symbol:string,signal?:AbortSignal)=>request<PrivateMarket>(`/market?symbol=${encodeURIComponent(symbol)}`,'GET',undefined,signal),
+    candles:(symbol:string,interval:string,limit:number,signal?:AbortSignal,endTime?:number)=>request<PrivateChartCandles>(`/candles?${new URLSearchParams({source:'BYBIT_LINEAR',symbol,interval,limit:String(limit),...(endTime===undefined?{}:{endTime:String(endTime)})})}`,'GET',undefined,signal),
+    closeOnChart:(scenarioId:string,candle:PrivateCandleSelection,idempotencyKey:string)=>request<PrivatePreview>(`/scenarios/${id(scenarioId)}/close-on-chart`,'POST',{candle,idempotencyKey}),
     allocate:(amount:string,idempotencyKey:string)=>request('/allocate','POST',{amount,idempotencyKey}),
     preview:(body:PrivatePreviewRequest)=>request<PrivatePreview>('/previews','POST',body),
     getPreview:(previewId:string,signal?:AbortSignal)=>request<PrivatePreview>(`/previews/${id(previewId)}`,'GET',undefined,signal),
@@ -115,7 +122,7 @@ export function privateCardPnl(card:PrivateResultCard):PrivateDecimal{
 /** Refresh exactly the reviewed inputs; exclude server models and the old command key. */
 export function privateRefreshDraft(preview:PrivatePreview):Omit<PrivatePreviewRequest,'idempotencyKey'>|null{
   const request=preview.result?.request;if(!request)return null;
-  const keys=['mode','symbol','side','type','quantity','margin','leverage','limitPrice','takeProfit','stopLoss','effectiveOpenedAt','asOf','effectiveClosedAt','capital','manualEntryPrice','events'] as const;
+  const keys=['mode','symbol','side','type','quantity','margin','leverage','limitPrice','takeProfit','stopLoss','effectiveOpenedAt','asOf','effectiveClosedAt','capital','manualEntryPrice','events','candleEntry'] as const;
   // Server snapshots also retain computed quantity for a margin-based request.
   // Refresh the original size input, never submit both quantity and margin.
   return Object.fromEntries(keys.filter(key=>request[key]!==undefined&&!(key==='quantity'&&request.margin!==undefined)).map(key=>[key,request[key]])) as Omit<PrivatePreviewRequest,'idempotencyKey'>;

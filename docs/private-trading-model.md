@@ -1,4 +1,4 @@
-# Private trading model, version 1
+# Private trading model: financial V1 and selected-candle pricing V2
 
 This model is confined to the owner's private simulator. Production matching,
 balances, maintenance margins and liquidation functions are not modified.
@@ -78,8 +78,10 @@ ROI, not account ROI, and alternative experiment results must not be summed.
 
 - UTC integer timestamps. `createdAt` is the actual creation time; effective
   times belong only to the simulation. The result retains a fixed `asOf`.
-- Entry and explicit requested close execute at the **next** candle open, with
-  model slippage and actual model fees. A manual entry is a recorded assumption.
+- Legacy V1 entry and explicit requested close execute at the **next** candle
+  open, with model slippage and actual model fees. A manual entry is a recorded
+  assumption. Existing saved V1 scenarios keep their original pricing, fees,
+  risk parameters, entry and creation time.
 - User margin, close and TP/SL events must be on a candle boundary. Otherwise
   finer historical data is required; the engine returns an ambiguous draft.
 - Boundary ordering: existing mark risk; funding for positions already held;
@@ -106,6 +108,47 @@ ROI, not account ROI, and alternative experiment results must not be summed.
 - All fills/journal entries have deterministic IDs. The persistence service must
   enforce uniqueness, preview-version confirmation, transaction isolation,
   ownership and cancellation; the pure module performs no financial writes.
+
+### Selected-candle pricing V2
+
+`VOLTEX_SELECTED_CANDLE_POINT_V2` accepts a selected candle's identity rather
+than a browser-supplied historical price: `BYBIT_LINEAR`, the linear USDT
+perpetual symbol, timeframe, candle open timestamp and `OPEN` or `CLOSE`.
+The provider resolves the exact completed trade candle and the server freezes
+its OHLC, exclusive close time and chosen price. Both price points require a
+completed candle. The controlled chart and replay use the same Bybit linear
+contract; Spot, another source, forming candles and mismatched finer-history
+entry/exit points cannot produce a verified result.
+
+Close is the default entry point. Its effective entry time is the candle's
+exclusive close boundary; the selected candle's earlier High/Low never test a
+position that did not yet exist. Open entry starts at the selected open and
+includes that candle's subsequent risk path. Selected entry and selected
+manual exit use the exact resolved OHLC point, without the V1 2 bps entry/exit
+slippage adjustment. This is an OHLC pricing assumption, not proof that the
+requested quantity traded at that price or was available in historical depth.
+Configured fees, funding, margin and liquidation math are unchanged. Other
+modeled exits retain their existing slippage. A selected exit still evaluates
+the complete intervening mark path and funding; earlier liquidation wins.
+
+Verified open results persist a versioned checkpoint containing the remaining
+collateral, free scenario cash, ROI contributions, protection levels and the
+next history boundary. A processed-boundary flag prevents funding and manual
+events from being applied twice. Continuation fetches only the new history
+range and appends to the original fills/journal. A canonical identity binds
+the checkpoint to its scenario, quantity, entry, model and events. An older V1
+result without a checkpoint needs one full reconstruction before subsequent
+incremental continuations; the existing immutable-prefix confirmation remains.
+
+Choosing an earlier exit for an already evaluated open scenario creates an
+explicit `CLOSE_REVISION` preview. Confirmation retains the same scenario ID
+and held capital, preserves its original entry and profile, increments its
+version and stores the prior full request/result/position as immutable audit
+evidence. It appends a zero-cash `SCENARIO_CLOSE_REVISION` record instead of
+rewriting prior ledger entries or allocating capital again. Only the current
+private view is superseded; old cards remain frozen and alternative results
+are not added together as earnings. A competing version change rejects the
+reviewed close. This exception is separate from ordinary append-only advances.
 
 ## Execution depth
 

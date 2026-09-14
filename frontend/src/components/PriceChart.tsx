@@ -14,6 +14,9 @@ import {
   Time,
   LineStyle,
   CrosshairMode,
+  createSeriesMarkers,
+  type ISeriesMarkersPluginApi,
+  type SeriesMarker,
 } from 'lightweight-charts';
 import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -34,6 +37,7 @@ import {
   type StoredDrawing,
 } from '../lib/chartDrawings';
 import { spotChartPriceFormat } from '../lib/spotChartPriceFormat';
+import { chartEntryAnchor, chartEventBar, chartSymbol, completeChartCandle, isCandleHit, mergeChartCandles, CHART_INTERVAL_MS, type ChartCandleLoader, type ChartTradingInteraction } from '../lib/chartTrading';
 import './DrawingTools.css';
 
 const MA_PERIOD = 200;
@@ -190,6 +194,7 @@ export function PriceChart({
   market = 'spot',
   candleLoader,
   compactTools = false,
+  privateTrading,
 }: {
   pair: string;
   chrome?: 'default' | 'terminal';
@@ -198,7 +203,8 @@ export function PriceChart({
   /** Which product this chart belongs to. Only used to namespace saved
    *  drawings — spot BTC levels are not futures BTC levels. */
   market?: DrawingMarket;
-  candleLoader?: (pair:string, interval:string, limit:number, signal?:AbortSignal) => Promise<{candles:Candle[]}>;
+  candleLoader?: ChartCandleLoader;
+  privateTrading?: ChartTradingInteraction;
 }) {
   const { t, lang } = useLanguage();
   const terminal = chrome === 'terminal';
@@ -254,6 +260,14 @@ export function PriceChart({
   const macdHistRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
   const candlesRef = useRef<Candle[]>([]);
+  const tradingRef = useRef(privateTrading);
+  tradingRef.current = privateTrading;
+  const privateMarkersRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const privateLinesRef = useRef<IPriceLine[]>([]);
+  const privateLineOwnerRef = useRef<ISeriesApi<'Candlestick'> | ISeriesApi<'Line'> | ISeriesApi<'Area'> | null>(null);
+  const privateHistoryRef = useRef<((time: number) => Promise<void>) | null>(null);
+  const [candlesRevision, setCandlesRevision] = useState(0);
+  const [historyState, setHistoryState] = useState<'idle' | 'loading' | 'unavailable' | 'limit'>('idle');
   const [interval, setInterval_] = useState<Interval>('1h');
   const [empty, setEmpty] = useState(false);
   const [chartType, setChartType] = useState<ChartType>('candles');
@@ -261,6 +275,9 @@ export function PriceChart({
   const [showBollinger, setShowBollinger] = useState(false);
   const [showRSI, setShowRSI] = useState(false);
   const [showMACD, setShowMACD] = useState(false);
+  const chartHitRef = useRef({ pair, interval, showRSI, showMACD });
+  chartHitRef.current = { pair, interval, showRSI, showMACD };
+  const tradingSelection = !!privateTrading?.enabled && !!privateTrading.selecting;
 
   const [tool, setTool] = useState<Tool>('cursor');
   const [trendLines, setTrendLines] = useState<TrendLine[]>([]);
@@ -486,6 +503,23 @@ export function PriceChart({
 
     const redraw = () => forceRedraw((n) => n + 1);
     chart.timeScale().subscribeVisibleTimeRangeChange(redraw);
+    // Native click is also emitted after some touch/pan gestures. Keep a separate
+    // gesture guard; pointer movement never triggers network requests or selection.
+    const host = containerRef.current;
+    let gesture: { x: number; y: number; moved: boolean } | null = null;
+    let dragged = false;
+    const pointerDown = (event: PointerEvent) => {
+      if (!tradingRef.current?.enabled) return;
+      if (!event.isPrimary) { dragged = true; if (gesture) gesture.moved = true; return; }
+      gesture = { x: event.clientX, y: event.clientY, moved: false }; dragged = false;
+    };
+    const pointerMove = (event: PointerEvent) => {
+      if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 5) { gesture.moved = true; dragged = true; }
+    };
+    const pointerCancel = () => { dragged = true; gesture = null; };
+    host.addEventListener('pointerdown', pointerDown, true);
+    host.addEventListener('pointermove', pointerMove, true);
+    host.addEventListener('pointercancel', pointerCancel, true);
 
     function pointFromEvent(param: MouseEventParams<Time>): Point | null {
       if (!param.point || !seriesRef.current) return null;
@@ -499,6 +533,34 @@ export function PriceChart({
     }
 
     function handleClick(param: MouseEventParams<Time>) {
+      const interaction = tradingRef.current;
+      if (interaction?.enabled) {
+        if (dragged) return;
+        const objectId = param.hoveredInfo?.objectId ?? param.hoveredObjectId;
+        if (!interaction.selecting && typeof objectId === 'string' && objectId.startsWith('private-trade:')) {
+          const id = objectId.slice('private-trade:'.length).split('|')[0];
+          if (interaction.trades.some(trade => trade.id === id && chartSymbol(trade.symbol) === chartSymbol(chartHitRef.current.pair))) interaction.onTradeSelect(id);
+          return;
+        }
+        if (interaction.selecting) {
+          const data = param.seriesData.get(series);
+          if (!param.point || !data || !('open' in data) || typeof data.time !== 'number') return;
+          const candle = candlesRef.current.find(item => item.time === data.time);
+          if (!candle) return;
+          const pane = chart.paneSize(0);
+          const hovered = param.hoveredInfo?.series ?? param.hoveredSeries;
+          if (!isCandleHit({ x: param.point.x, y: param.point.y,
+            candleX: chart.timeScale().timeToCoordinate(data.time), highY: series.priceToCoordinate(candle.high), lowY: series.priceToCoordinate(candle.low),
+            paneWidth: pane.width, paneHeight: pane.height, barSpacing: chart.timeScale().options().barSpacing,
+            paneIndex: param.paneIndex, dragged, indicatorHovered: !!hovered && hovered !== series,
+            indicatorPanelVisible: chartHitRef.current.showRSI || chartHitRef.current.showMACD })) return;
+          const selected = completeChartCandle(candle, chartHitRef.current.pair, chartHitRef.current.interval);
+          if (!selected) return;
+          const bounds = host.getBoundingClientRect();
+          interaction.onCandleSelect({ ...selected, x: bounds.left + param.point.x, y: bounds.top + param.point.y });
+          return;
+        }
+      }
       if (drawingToolsOn && hiddenRef.current) return;
       // Locked: drawings stay visible and the chart stays fully
       // navigable — only adding and removing them is refused.
@@ -559,11 +621,83 @@ export function PriceChart({
 
     return () => {
       resizeObserver.disconnect();
+      host.removeEventListener('pointerdown', pointerDown, true);
+      host.removeEventListener('pointermove', pointerMove, true);
+      host.removeEventListener('pointercancel', pointerCancel, true);
       chart.unsubscribeClick(handleClick);
+      privateMarkersRef.current?.detach();
+      privateMarkersRef.current = null;
+      privateLinesRef.current = [];
+      privateLineOwnerRef.current = null;
       chart.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!tradingSelection) return;
+    cancelGestureRef.current?.();
+    setTool('cursor'); setChartType('candles'); setPendingPoint(null); setPendingBrush(null); setDrawDialog(null);
+  }, [tradingSelection]);
+
+  useEffect(() => {
+    if (!privateTrading?.enabled || !chartReady || !seriesRef.current) return;
+    const series = chartType === 'line' ? lineSeriesRef.current : chartType === 'area' ? areaSeriesRef.current : seriesRef.current;
+    if (!series) return;
+    const plugin = createSeriesMarkers(series, [], { autoScale: false });
+    privateMarkersRef.current = plugin;
+    return () => {
+      if (privateMarkersRef.current !== plugin) return;
+      plugin.detach(); privateMarkersRef.current = null;
+      for (const line of privateLinesRef.current) privateLineOwnerRef.current?.removePriceLine(line);
+      privateLinesRef.current = [];
+      privateLineOwnerRef.current = null;
+    };
+  }, [chartReady, privateTrading?.enabled, chartType]);
+
+  useEffect(() => {
+    if (!privateTrading?.enabled || !chartReady || !seriesRef.current || !privateMarkersRef.current) return;
+    const series = seriesRef.current;
+    const relevant = privateTrading.trades.filter(trade => chartSymbol(trade.symbol) === chartSymbol(pair));
+    const markers: SeriesMarker<Time>[] = [];
+    for (const trade of relevant) {
+      const selected = trade.id === privateTrading.selectedTradeId;
+      const time = chartEventBar(candlesRef.current, chartEntryAnchor(trade), interval);
+      if (time !== null) markers.push({ time: time as Time, id: `private-trade:${trade.id}|entry`, position: trade.side === 'LONG' ? 'belowBar' : 'aboveBar',
+        shape: trade.side === 'LONG' ? 'arrowUp' : 'arrowDown', color: selected ? '#f0b90b' : trade.side === 'LONG' ? '#00c79a' : '#ff5278', size: selected ? 1.3 : 1,
+        text: `${trade.side === 'LONG' ? 'Long' : 'Short'} ${trade.leverage}× · ${formatDrawingPrice(trade.entryPrice)}` });
+      trade.exits.forEach((exit, index) => {
+        const exitTime = chartEventBar(candlesRef.current, exit.candleOpenTime ?? exit.time, interval);
+        if (exitTime === null) return;
+        const liquidated = /LIQUID/i.test(exit.kind);
+        markers.push({ time: exitTime as Time, id: `private-trade:${trade.id}|exit:${index}`, position: trade.side === 'LONG' ? 'aboveBar' : 'belowBar',
+          shape: 'circle', color: liquidated ? '#ff5278' : '#b8c9df', size: 1,
+          text: `${liquidated ? 'LIQ' : /PARTIAL/i.test(exit.kind) ? '½' : '×'} ${formatDrawingPrice(exit.price)}` });
+      });
+    }
+    markers.sort((a, b) => Number(a.time) - Number(b.time));
+    privateMarkersRef.current.setMarkers(markers);
+    for (const line of privateLinesRef.current) privateLineOwnerRef.current?.removePriceLine(line);
+    privateLinesRef.current = [];
+    const visibleSeries = chartType === 'line' ? lineSeriesRef.current : chartType === 'area' ? areaSeriesRef.current : series;
+    privateLineOwnerRef.current = visibleSeries;
+    const selectedTrade = relevant.find(trade => trade.id === privateTrading.selectedTradeId);
+    if (selectedTrade) {
+      const base = pair.split('/')[0];
+      const addLine = (price: number | null | undefined, title: string, color: string, style: LineStyle) => {
+        if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0) return;
+        if (visibleSeries) privateLinesRef.current.push(visibleSeries.createPriceLine({ price, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true }));
+      };
+      addLine(selectedTrade.entryPrice, `${selectedTrade.side} ${selectedTrade.quantity} ${base} · P&L ${selectedTrade.pnl >= 0 ? '+' : ''}${selectedTrade.pnl.toFixed(2)} USDT`, '#e9b44c', LineStyle.Solid);
+      addLine(selectedTrade.takeProfit, 'TP', '#00c79a', LineStyle.Dashed);
+      addLine(selectedTrade.stopLoss, 'SL', '#ff5278', LineStyle.Dashed);
+      addLine(selectedTrade.liquidationPrice, 'LIQ', '#d67ad8', LineStyle.Dotted);
+    }
+    const selected = privateTrading.selectedCandle;
+    const selectedTime = selected && chartSymbol(selected.symbol) === chartSymbol(pair) ? chartEventBar(candlesRef.current, selected.openTime, interval) : null;
+    series.setData(candlesRef.current.map(candle => ({ time: candle.time as Time, open: candle.open, high: candle.high, low: candle.low, close: candle.close,
+      ...(candle.time === selectedTime ? { color: '#61b9ff', borderColor: '#b8e2ff', wickColor: '#b8e2ff' } : {}) })));
+  }, [privateTrading, chartReady, candlesRevision, pair, interval, chartType]);
 
   // Switching tools (or pairs) cancels any half-drawn shape so a stray
   // anchor point from a previous tool never leaks into the next drawing.
@@ -595,6 +729,7 @@ export function PriceChart({
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== 'Escape') return;
+      if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection();
       setPendingPoint(null);
       setPendingBrush(null);
       setCursorPoint(null);
@@ -794,21 +929,23 @@ export function PriceChart({
     let hasSetInitialRange = false;
     let loading = false;
     let controller: AbortController | null = null;
+    let historyController: AbortController | null = null;
+    let historyLoading = false;
+    let historyEnd = false;
+    let historicalWindow = false;
+    let suppressBackfill = false;
+    let backfillTimer: ReturnType<typeof setTimeout> | undefined;
+    const privateMode = !!privateTrading?.enabled && !!candleLoader;
     const clearSeries = () => {
       for (const ref of [seriesRef,volumeSeriesRef,lineSeriesRef,areaSeriesRef,maSeriesRef,bollUpperRef,bollMiddleRef,bollLowerRef,rsiSeriesRef,macdLineRef,macdSignalRef,macdHistRef]) ref.current?.setData([]);
       candlesRef.current=[];
       setEmpty(true);
+      if (privateMode) setCandlesRevision(value => value + 1);
     };
     clearSeries();
+    if (privateMode) setHistoryState('idle');
 
-    async function load() {
-      if (loading || (typeof document !== 'undefined' && document.hidden)) return;
-      loading=true;
-      controller=new AbortController();
-      const timeout=setTimeout(()=>controller?.abort(),12000);
-      try {
-        const res = candleLoader ? await candleLoader(pair, interval, CANDLE_FETCH_LIMIT,controller.signal)
-          : await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
+    function display(res: { candles: Candle[] }) {
         if (cancelled || !seriesRef.current || !volumeSeriesRef.current) return;
         setEmpty(res.candles.length === 0);
         if (spotChartRefinements || candleLoader) {
@@ -871,12 +1008,94 @@ export function PriceChart({
         }
 
         forceRedraw((n) => n + 1);
+        if (privateMode) setCandlesRevision(value => value + 1);
+    }
+
+    async function load() {
+      if (loading || historyLoading || historicalWindow || (typeof document !== 'undefined' && document.hidden)) return;
+      loading=true;
+      const requestController = new AbortController();
+      controller=requestController;
+      const timeout=setTimeout(()=>requestController.abort(),12000);
+      try {
+        const res = candleLoader ? await candleLoader(pair, interval, CANDLE_FETCH_LIMIT,requestController.signal)
+          : await api.getExternalCandles(pair, interval, CANDLE_FETCH_LIMIT);
+        if (cancelled || requestController.signal.aborted) return;
+        display(privateMode ? { candles: mergeChartCandles(candlesRef.current, res.candles) } : res);
       } catch {
-        if (!cancelled) clearSeries();
+        // Historical bars remain immutable and usable during a transient tail
+        // refresh failure; public chart failure behaviour is unchanged.
+        if (!cancelled && !requestController.signal.aborted && (!privateMode || !candlesRef.current.length)) clearSeries();
       } finally {
         clearTimeout(timeout);
         loading=false;
       }
+    }
+
+    async function history(targetTime?: number) {
+      if (!privateMode || !candleLoader || cancelled || !chartRef.current) return;
+      const scale = chartRef.current.timeScale();
+      if (targetTime !== undefined) {
+        const existing = chartEventBar(candlesRef.current, targetTime, interval);
+        if (existing !== null) {
+          const index = candlesRef.current.findIndex(candle => candle.time === existing);
+          suppressBackfill = true;
+          scale.setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
+          suppressBackfill = false;
+          return;
+        }
+        historyController?.abort();
+      } else if (historyLoading || historyEnd || !candlesRef.current.length || candlesRef.current.length >= 10000) {
+        if (candlesRef.current.length >= 10000) setHistoryState('limit');
+        return;
+      }
+      controller?.abort();
+      const requestController = new AbortController();
+      historyController = requestController;
+      historyLoading = true;
+      setHistoryState('loading');
+      const timeout = setTimeout(() => requestController.abort(), 12000);
+      const range = scale.getVisibleLogicalRange();
+      const firstTime = candlesRef.current[0]?.time;
+      const endTime = targetTime === undefined ? firstTime * 1000 - 1 : Math.min(Date.now(), targetTime + CHART_INTERVAL_MS[interval] * 120);
+      try {
+        const res = await candleLoader(pair, interval, CANDLE_FETCH_LIMIT, requestController.signal, endTime);
+        if (cancelled || requestController.signal.aborted) return;
+        if (!res.candles.length) { historyEnd = true; setHistoryState('unavailable'); return; }
+        const data = targetTime === undefined ? mergeChartCandles(res.candles, candlesRef.current) : res.candles;
+        const added = firstTime === undefined ? 0 : data.filter(candle => candle.time < firstTime).length;
+        if (targetTime === undefined && added === 0) { historyEnd = true; setHistoryState('unavailable'); return; }
+        suppressBackfill = true;
+        hasSetInitialRange = true;
+        display({ candles: data });
+        if (targetTime !== undefined) {
+          historicalWindow = data[data.length - 1].time * 1000 + CHART_INTERVAL_MS[interval] < Date.now();
+          historyEnd = false;
+          const time = chartEventBar(data, targetTime, interval);
+          if (time === null) { setHistoryState('unavailable'); return; }
+          const index = data.findIndex(candle => candle.time === time);
+          scale.setVisibleLogicalRange({ from: Math.max(0, index - 70), to: index + 90 });
+        } else if (range) scale.setVisibleLogicalRange({ from: range.from + added, to: range.to + added });
+        setHistoryState('idle');
+      } catch {
+        if (!cancelled && historyController === requestController) setHistoryState('unavailable');
+      } finally {
+        suppressBackfill = false;
+        clearTimeout(timeout);
+        if (historyController === requestController) historyLoading = false;
+      }
+    }
+    const onRangeChange = (range: { from: number; to: number } | null) => {
+      if (!privateMode || !range || range.from > 30 || !hasSetInitialRange || suppressBackfill || historyLoading || loading || historyEnd) return;
+      clearTimeout(backfillTimer);
+      backfillTimer = setTimeout(() => { void history(); }, 180);
+    };
+    if (privateMode) {
+      privateHistoryRef.current = async time => {
+        if (time === 0) { historicalWindow = false; hasSetInitialRange = false; historyEnd = false; historyController?.abort(); historyLoading = false; clearSeries(); await load(); }
+        else await history(time);
+      };
+      chartRef.current?.timeScale().subscribeVisibleLogicalRangeChange(onRangeChange);
     }
 
     load();
@@ -884,9 +1103,21 @@ export function PriceChart({
     return () => {
       cancelled = true;
       controller?.abort();
+      historyController?.abort();
+      clearTimeout(backfillTimer);
+      if (privateMode) {
+        privateHistoryRef.current = null;
+        chartRef.current?.timeScale().unsubscribeVisibleLogicalRangeChange(onRangeChange);
+      }
       window.clearInterval(poll);
     };
-  }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader]);
+  }, [pair, interval, drawingToolsOn, spotChartRefinements, candleLoader, privateTrading?.enabled]);
+
+  useEffect(() => {
+    if (!privateTrading?.enabled || !privateTrading.focus || !chartReady) return;
+    const trade = privateTrading.trades.find(item => item.id === privateTrading.focus?.tradeId && chartSymbol(item.symbol) === chartSymbol(pair));
+    if (trade) void privateHistoryRef.current?.(chartEntryAnchor(trade));
+  }, [privateTrading?.focus?.sequence, privateTrading?.enabled, chartReady, pair, interval]);
 
   // Poll this pair's pending SL/TP orders — cheap enough at 4s, same
   // cadence OpenOrdersPanel already polls at. Spot only: see
@@ -1267,7 +1498,7 @@ export function PriceChart({
       key={i}
       type="button"
       aria-pressed={interval === i}
-      onClick={() => setInterval_(i)}
+      onClick={() => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); setInterval_(i); }}
       className={terminal ? `chart-tab ${interval === i ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(interval === i ? styles.intervalBtnActive : {}) }}
     >
@@ -1286,7 +1517,7 @@ export function PriceChart({
       key={ct}
       type="button"
       aria-pressed={chartType === ct}
-      onClick={() => setChartType(ct)}
+      onClick={() => { if (tradingRef.current?.selecting && ct !== 'candles') tradingRef.current.onCancelSelection(); setChartType(ct); }}
       className={terminal ? `chart-tool-btn ${chartType === ct ? 'active' : ''}` : undefined}
       style={terminal ? undefined : { ...styles.intervalBtn, ...(chartType === ct ? styles.intervalBtnActive : {}) }}
     >
@@ -1324,10 +1555,10 @@ export function PriceChart({
   ));
 
   return (
-    <div className={drawingToolsOn ? 'drawing-tools' : undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
+    <div className={drawingToolsOn ? 'drawing-tools' : undefined} data-chart-trade-selecting={tradingSelection || undefined} style={terminal ? TERMINAL_WRAPPER : styles.wrapper}>
       {terminal ? (
         <div className="chart-toolbar">
-          <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}</div>
+          <div className="chart-tabs" role="group" aria-label={t('chart.group.timeframe')}>{intervalButtons}{privateTrading?.enabled && <button type="button" className="chart-history-now" onClick={() => void privateHistoryRef.current?.(0)}>{lang === 'ru' ? 'Сейчас' : 'Now'}</button>}</div>
           <div className="chart-tools">
             <div className="chart-type-group" role="group" aria-label={t('chart.group.type')}>{typeButtons}</div>
             <div className="chart-indicator-group" role="group" aria-label={t('chart.group.indicators')}>{indicatorButtons}</div>
@@ -1343,12 +1574,21 @@ export function PriceChart({
         </div>
       )}
 
+      {privateTrading?.enabled && (tradingSelection || historyState !== 'idle') && <div className="chart-trade-status" role="status">
+        <span>{tradingSelection
+          ? (lang === 'ru' ? (privateTrading.selecting === 'exit' ? 'Выберите свечу выхода' : 'Выберите завершённую свечу') : 'Select a completed candle')
+          : historyState === 'loading' ? (lang === 'ru' ? 'Загрузка свечей…' : 'Loading candles…')
+          : historyState === 'limit' ? (lang === 'ru' ? 'Для более раннего входа выберите старший таймфрейм' : 'Use a larger timeframe for an earlier entry')
+          : (lang === 'ru' ? 'Свечи за этот период недоступны' : 'Candles unavailable for this period')}</span>
+        {tradingSelection && <button type="button" aria-label={lang === 'ru' ? 'Отменить выбор' : 'Cancel selection'} onClick={() => privateTrading.onCancelSelection()}>×</button>}
+      </div>}
+
       <div className={terminal ? 'chart-view' : undefined} style={terminal ? TERMINAL_VIEW : styles.body}>
         <DrawToolbar
           compactTools={compactTools}
           onCollapse={() => { cancelGestureRef.current?.(); setTool('cursor'); }}
           tool={tool}
-          onSelect={(next) => { if (drawingToolsOn && !compactTools) setDrawingsHidden(false); setTool(next); }}
+          onSelect={(next) => { if (tradingRef.current?.selecting) tradingRef.current.onCancelSelection(); if (drawingToolsOn && !compactTools) setDrawingsHidden(false); setTool(next); }}
           onClear={clearAll}
           onFit={fitContent}
           terminal={terminal}
@@ -1387,7 +1627,7 @@ export function PriceChart({
               // invisible layer would swallow clicks meant for the chart.
               display: drawingsHidden && !drawingToolsOn ? 'none' : undefined,
               pointerEvents:
-                !drawingsHidden && OVERLAY_POINTER_TOOLS.includes(tool)
+                !tradingSelection && !drawingsHidden && OVERLAY_POINTER_TOOLS.includes(tool)
                   ? 'auto'
                   : 'none',
             }}

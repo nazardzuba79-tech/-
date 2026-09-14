@@ -43,10 +43,17 @@ workflow; this change is initially delivered as a review branch, not deployed.
    budget, reduce the reviewed fill or use an expired quote.
 4. Positions and orders appear below the native chart. Use the private actions
    for partial/full close, TP/SL, margin edits, cancellation and result cards.
-5. In **Историческая сделка**, use UTC entry/exit dates, scenario capital and
-   optional timed margin/close/TP-SL events. The result is pinned to its `asOf`.
-   Continue an open scenario only through **Обновить** and another reviewed
-   preview. Closed scenarios retain their original exit valuation.
+5. Use the compact chart-entry action, select a completed candle and set
+   Long/Short, leverage and margin in the nearby form. The candle supplies its
+   timestamp and default Close price; no manual date/time or price entry is
+   needed. Open pricing and TP/SL belong to the expanded settings. The server
+   returns position size, scenario capital, used collateral and free remainder
+   before confirmation. Selecting another candle does not allocate a deposit.
+   The result defaults to the latest available completed-history boundary and
+   retains its visible `asOf`. **Показать вход** focuses its marker, while
+   **Закрыть на графике** selects an exit and requires a reviewed close preview.
+   Open results advance from their persisted checkpoint, including the bounded
+   visible-page refresh; closed results retain their exit snapshot.
 6. Open the result-card button beside a position's P&L and choose **Сохранить**.
    The same canvas supplies the preview and PNG. The server supplies every
    financial value; the export retains **Симуляция** or **Исторический тест**.
@@ -58,6 +65,24 @@ capital return and no credit of hypothetical gains. Advancing replaces one
 scenario version with an immutable-journal extension, rather than adding an
 alternative run's profit a second time. Historical experiments are excluded
 from the live wallet's P&L totals and all public performance.
+
+A chart-close revision may choose an exit earlier than the last valuation.
+It reuses that scenario's held capital, preserves the previous full result in
+an immutable revision audit and keeps the entry, pricing/risk profile and
+actual creation timestamp unchanged. It does not reserve another deposit,
+release hypothetical gains or update public Copy Trading. Concurrent changes
+invalidate the preview through its saved scenario version. Legacy next-open V1
+scenarios continue with their original model; the new selected-point V2 entry
+is explicit rather than a reinterpretation of an old requested timestamp.
+
+Private chart history is served by the owner-protected `/private-trading/candles`
+endpoint with `source=BYBIT_LINEAR` and bounded pages. Its access check requires
+the same current owner ID, ADMIN role, feature flag and session as financial
+actions. Cancellation propagates to the provider when the client disconnects.
+Entry/exit selection is resolved again on the server, and the replay's finer
+trade/mark history must match that same linear perpetual contract. Exact OHLC
+pricing is not an assertion of historical order-book availability. Missing or
+ambiguous paths stay unconfirmed; no validation gate is relaxed for chart entry.
 
 ## Explicit limits
 

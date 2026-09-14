@@ -5,7 +5,8 @@ const escapeXml=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'
 export function privateResultCardSvg(card:PrivateResultCard):string{
   if(!['DEMO_LIVE','HISTORICAL_REPLAY'].includes(card.mode)||!card.label?.trim())throw new Error('Недоступен подтверждённый снимок карточки');
   const open=card.status==='OPEN',pnl=privateCardPnl(card);
-  const priceLabel=open?(card.mode==='HISTORICAL_REPLAY'?'Цена на дату расчёта':'Текущая цена'):'Цена выхода';
+  const fresh=Date.now()-Date.parse(card.asOf)>=0&&Date.now()-Date.parse(card.asOf)<=90_000;
+  const priceLabel=open?(card.mode==='DEMO_LIVE'||fresh?'Текущая цена':'Цена'):'Цена выхода';
   const pnlDetail=card.mode==='DEMO_LIVE'&&open?'Нереализованная прибыль':'С учётом комиссий и финансирования';
   const color=pnl!==null&&Number(pnl)<0?'#fb6479':'#21cca3';
   const text=(x:number,y:number,label:string,size=22,fill='#dce5ef',weight=400)=>`<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" font-weight="${weight}">${escapeXml(label)}</text>`;

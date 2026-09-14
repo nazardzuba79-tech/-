@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
 import { PrivateTradingStore, json, money, hash, AccountTx } from './store';
-import { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateFundingEvent, assertPrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS } from './marketData';
+import { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateFundingEvent, PrivateChartInterval, PrivateCandleSelection, assertPrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS } from './marketData';
 import { amount, calculatePosition, consumeBook, decimal, quoteOrderCost, roiPercent, validateContractOrder } from './math';
 import { replayScenario } from './replay';
-import { ContractRules, ModelProfile, ReplayResult } from './types';
+import { CandleSelection, ContractRules, ModelProfile, ReplayResult, ResolvedCandleSelection } from './types';
 import { OwnerSession, PreviewResult, PrivateOrder, PrivatePosition, PrivateTradingError, TradeRequest } from './serviceTypes';
 import { applyPrivateFunding, availablePrivateBook, cancelPrivateOrder, closePrivatePosition, fillPrivateOrder, updatePosition } from './liveEngine';
 
@@ -12,12 +12,15 @@ const number = (v: string) => new BigNumber(v);
 const iso = (time: number) => new Date(time).toISOString();
 const normalize = (symbol: string) => symbol.toUpperCase().replace(/[-/]USDT$/, 'USDT');
 const activeOrder = (order: PrivateOrder) => ['OPEN', 'PARTIALLY_FILLED'].includes(order.status);
-type StoredRequest = TradeRequest & { advance?: { id: string; version: number }; historyIntervalMinutes?: 1 | 5 | 15 | 60;
+type ScenarioAction = { id: string; version: number; closeCandle?: CandleSelection };
+type StoredRequest = TradeRequest & { advance?: ScenarioAction; historyIntervalMinutes?: 1 | 5 | 15 | 60;
+  resolvedEntry?: ResolvedCandleSelection; resolvedClose?: ResolvedCandleSelection; resume?: ReplayResult;
+  historyEntryPrice?: string;
   instrumentSnapshot?: PrivateInstrument; frozenScenario?: { profile: ModelProfile; createdAt: number; capital: string } };
 interface FundingPlan { symbol: string; intervalMs: number; through: number; from: number; events: PrivateFundingEvent[] }
 const canonical = (value: unknown): unknown => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object'
   ? Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([, v]) => v !== undefined).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, canonical(v)])) : value;
-const sameRequest = (a: unknown, b: unknown) => hash(canonical(a)) === hash(canonical(b));
+const sameRequest = (a: unknown, b: unknown) => a === undefined || b === undefined ? a === b : hash(canonical(a)) === hash(canonical(b));
 export const contractRules = (instrument: PrivateInstrument): ContractRules => ({
   symbol: instrument.symbol, ...instrument.filters, minLeverage: instrument.leverage.min,
   maxLeverage: instrument.leverage.max, leverageStep: instrument.leverage.step,
@@ -119,6 +122,13 @@ export class PrivateTradingService {
     await this.store.authorized(actor);
     return { ...quote, instrument: { ...instrument, ...contractRules(instrument) } };
   }
+  async getChartCandles(actor: OwnerSession, input: { symbol: string; source: 'BYBIT_LINEAR'; interval: PrivateChartInterval; endTime?: number; limit?: number }, signal?: AbortSignal) {
+    await this.store.authorized(actor);
+    const candles = await this.data().chartCandles({ ...input, symbol: normalize(input.symbol), signal });
+    if (signal?.aborted) throw new PrivateTradingError('cancelled', 'Запрос отменён', 409);
+    await this.store.authorized(actor);
+    return candles;
+  }
   async state(actor: OwnerSession) {
     const account = await this.store.read(actor);
     const [balance, previews] = await Promise.all([
@@ -128,7 +138,10 @@ export class PrivateTradingService {
     const positions = account.state.positions.filter(p => p.status === 'OPEN').map(p => this.positionDto(p));
     const history = account.state.positions.filter(p => p.status !== 'OPEN').map(p => this.positionDto(p));
     const scenarios = account.state.scenarios.map(s => ({ ...this.positionDto(s.position), version: s.version, issues: s.result.issues,
-      allocatedCapital: s.allocatedCapital, scenarioEquity: s.result.scenarioEquity }));
+      allocatedCapital: s.allocatedCapital, scenarioEquity: s.result.scenarioEquity, evaluatedThrough: s.result.evaluatedThrough,
+      candleEntry: s.result.candleEntry, candleClose: s.result.candleClose, fills: s.result.fills, journal: s.result.journal,
+      revisions: (s.revisions ?? []).map(r => ({ version: r.version, supersededAt: r.supersededAt, asOf: r.result.asOf, status: r.result.status })),
+      freeCapital: s.result.checkpoint?.free ?? money(number(s.result.scenarioEquity).minus(s.result.remainingCollateral).minus(s.result.unrealizedPnl)) }));
     const sortHistory = <T extends PrivatePosition>(items: T[]) => items.sort((a, b) => Date.parse(b.effectiveClosedAt ?? b.effectiveOpenedAt) - Date.parse(a.effectiveClosedAt ?? a.effectiveOpenedAt));
     await this.store.authorized(actor);
     return {
@@ -156,18 +169,22 @@ export class PrivateTradingService {
     await this.store.authorized(actor);
     return this.previewDto(row);
   }
-  async preview(actor: OwnerSession, request: TradeRequest, scenario?: { id: string; version: number }) {
+  async preview(actor: OwnerSession, request: TradeRequest, scenario?: ScenarioAction) {
     await this.store.authorized(actor);
     request = { ...request, symbol: normalize(request.symbol) };
     let stored: StoredRequest = { ...request };
     // Model and creation time come from the persisted scenario, never from the browser.
     delete stored.instrumentSnapshot; delete stored.frozenScenario; delete stored.historyIntervalMinutes; delete stored.advance;
+    delete stored.resolvedEntry; delete stored.resolvedClose; delete stored.resume;
+    delete stored.historyEntryPrice;
     if (scenario) {
       const account = await this.store.read(actor), original = account.state.scenarios.find(s => s.id === scenario.id);
       if (!original || original.version !== scenario.version || original.result.status !== 'OPEN') throw new PrivateTradingError('scenario_changed', 'Сценарий изменился. Обновите расчёт', 409);
       const originalRequest = original.request as StoredRequest;
       stored = { ...originalRequest, asOf: request.asOf, idempotencyKey: request.idempotencyKey, advance: scenario,
         capital: original.allocatedCapital, historyIntervalMinutes: originalRequest.historyIntervalMinutes ?? 1,
+        resolvedEntry: original.result.candleEntry, resolvedClose: undefined,
+        resume: scenario.closeCandle ? undefined : original.result.checkpoint ? original.result : undefined,
         frozenScenario: { profile: original.profile, createdAt: Date.parse(original.createdAt), capital: original.allocatedCapital } };
     }
     const prior = await this.store.db.privateTradingPreview.findFirst({ where: { userId: actor.userId, requestKey: request.idempotencyKey } });
@@ -217,7 +234,7 @@ export class PrivateTradingService {
       // A revoked owner session cancels even a long historical page fetch.
       guard = setInterval(() => { void this.store.authorized(actor).catch(() => abort.abort()); }, 2_000); guard.unref();
       const instrument = request.advance && request.instrumentSnapshot ? request.instrumentSnapshot : await this.data().instrument(request.symbol, abort.signal);
-      const profile = request.frozenScenario?.profile ?? simulationProfile(instrument);
+      let profile = request.frozenScenario?.profile ?? simulationProfile(instrument);
       let result: PreviewResult;
       if (request.mode === 'DEMO_LIVE') {
         const account = await this.store.read(actor);
@@ -274,24 +291,36 @@ export class PrivateTradingService {
             minAveragePrice: request.side === 'SHORT' ? request.type === 'LIMIT' ? request.limitPrice! : amount(number(price).times('0.9995')) : null },
           issues: number(previewQuantity).lt(quantity) ? [request.type === 'MARKET' ? 'Частичное исполнение: остаток рыночного ордера будет отменён' : 'Частичное исполнение: остаток останется лимитным ордером'] : [], assumptions: profile.assumptions };
       } else {
-        const start = Date.parse(request.effectiveOpenedAt!), requestedEnd = Date.parse(request.asOf ?? iso(Date.now()));
-        if (!Number.isFinite(start) || !Number.isFinite(requestedEnd) || start >= requestedEnd || requestedEnd > Date.now() || start < instrument.launchTime) throw new PrivateTradingError('invalid_history_range', 'Проверьте даты и период существования контракта');
-        const intervalMinutes = request.historyIntervalMinutes ?? (requestedEnd - start <= 30 * 86400_000 ? 1 : 5);
-        const intervalMs = intervalMinutes * 60_000;
-        const end = Math.floor(requestedEnd / intervalMs) * intervalMs;
-        const data = await this.data().history({ symbol: request.symbol, startTime: Math.floor(start / intervalMs) * intervalMs, endTime: end, intervalMinutes, signal: abort.signal,
+        const selected = request.resolvedEntry ?? (request.candleEntry ? await this.data().resolveCandle({ ...request.candleEntry, interval: request.candleEntry.interval as PrivateChartInterval, symbol: request.symbol, signal: abort.signal }) : undefined);
+        const selectedClose = request.advance?.closeCandle ? await this.data().resolveCandle({ ...request.advance.closeCandle, interval: request.advance.closeCandle.interval as PrivateChartInterval, symbol: request.symbol, signal: abort.signal }) : undefined;
+        const start = selected?.effectiveAt ?? Date.parse(request.effectiveOpenedAt!), requestedEnd = selectedClose?.effectiveAt ?? Date.parse(request.asOf ?? iso(Date.now()));
+        if (!Number.isFinite(start) || !Number.isFinite(requestedEnd) || start > requestedEnd || (!selected && start === requestedEnd) || requestedEnd > Date.now() || start < instrument.launchTime) throw new PrivateTradingError('invalid_history_range', 'Проверьте выбранную свечу и период существования контракта');
+        if (selectedClose && (selectedClose.effectiveAt <= start || selectedClose.symbol !== request.symbol)) throw new PrivateTradingError('invalid_close_candle', 'Свеча выхода должна следовать за входом');
+        if (selected && !request.frozenScenario) profile = { ...profile, pricingModelVersion: 'VOLTEX_SELECTED_CANDLE_POINT_V2', assumptions: profile.assumptions.filter(a => !a.startsWith('Historical fills use')).concat('Selected entry/close use exact completed OHLC point; other exits retain 2 bps modeled slippage; not historical depth execution.') };
+        const intervalMinutes = request.historyIntervalMinutes ?? (requestedEnd - start <= 30 * 86400_000 || (selected && selected.intervalMs < 300_000) ? 1 : 5);
+        const intervalMs = intervalMinutes * 60_000, end = Math.floor(requestedEnd / intervalMs) * intervalMs;
+        const from = request.resume?.checkpoint?.nextTime ?? (selected ? Math.max(selected.openTime, start - (selected.pricePoint === 'CLOSE' ? intervalMs : 0)) : Math.floor(start / intervalMs) * intervalMs);
+        const historyEnd = selectedClose?.pricePoint === 'OPEN' ? end + intervalMs : end;
+        const data = await this.data().history({ symbol: request.symbol, startTime: from, endTime: historyEnd, intervalMinutes, signal: abort.signal,
           onProgress: p => { void this.store.db.privateTradingPreview.updateMany({ where: { id, status: 'RUNNING' }, data: { progress: Math.min(90, p.pages * 3) } }).catch(() => {}); },
         });
+        if (data.symbol !== request.symbol || data.instrument.symbol !== request.symbol || data.instrument.provider !== 'bybit' || data.instrument.contractType !== 'LinearPerpetual') throw new PrivateTradingError('history_identity_mismatch', 'Свечи не соответствуют выбранному фьючерсному контракту', 409);
         if (request.advance && request.instrumentSnapshot) {
           const interval = instrument.fundingIntervalMinutes * 60_000;
           data.expectedFundingTimestamps = [];
-          for (let at = Math.ceil(start / interval) * interval; at < end; at += interval) data.expectedFundingTimestamps.push(at);
+          for (let at = Math.ceil(from / interval) * interval; at < historyEnd; at += interval) data.expectedFundingTimestamps.push(at);
           const fundingTimes = new Set(data.fundingEvents.map(event => event.timestamp));
           data.issues = data.issues.filter(issue => issue !== 'funding_history_gap');
           if (data.expectedFundingTimestamps.some(at => !fundingTimes.has(at))) data.issues.push('funding_history_gap');
           data.complete = data.issues.length === 0;
         }
-        const entry = data.tradeCandles.find(c => c.timestamp > start)?.open;
+        if (selectedClose?.pricePoint === 'CLOSE' && end % (instrument.fundingIntervalMinutes * 60_000) === 0) {
+          const boundaryFunding = await this.data().funding(request.symbol, end, end, abort.signal);
+          data.fundingEvents.push(...boundaryFunding.events.filter(e => !data.fundingEvents.some(old => old.timestamp === e.timestamp)));
+          data.expectedFundingTimestamps.push(end);
+          if (!boundaryFunding.complete) { data.complete = false; data.issues.push(...boundaryFunding.issues); }
+        }
+        const entry = selected?.price ?? request.historyEntryPrice ?? request.resume?.entryPrice ?? data.tradeCandles.find(c => c.timestamp > start)?.open;
         if (!entry) throw new PrivateTradingError('history_incomplete', 'Недостаточно истории для выбранного входа', 409);
         const quantity = this.quantity(request, request.manualEntryPrice ?? entry, instrument, profile);
         validateContractOrder({ rules: contractRules(instrument), quantity, price: request.manualEntryPrice ?? entry, leverage: request.leverage, market: true, profile });
@@ -305,14 +334,16 @@ export class PrivateTradingService {
         const cost = quoteOrderCost({ side: request.side, quantity, price: request.manualEntryPrice ?? entry, leverage: request.leverage, profile });
         const capital = request.frozenScenario?.capital ?? request.capital ?? money(number(cost.totalCost).times('1.01'));
         const replay = replayScenario({ scenarioId: request.advance?.id ?? id, symbol: request.symbol, side: request.side, quantity,
-          leverage: request.leverage, createdAt: request.frozenScenario?.createdAt ?? row.createdAt.getTime(), evaluatedAt: Date.now(), requestedOpenedAt: start, requestedClosedAt: request.effectiveClosedAt ? Date.parse(request.effectiveClosedAt) : undefined,
-          asOf: end, allocatedCapital: capital, manualEntryPrice: request.manualEntryPrice, takeProfit: request.takeProfit, stopLoss: request.stopLoss, events: request.events, data, profile,
+          leverage: request.leverage, createdAt: request.frozenScenario?.createdAt ?? row.createdAt.getTime(), evaluatedAt: Date.now(), requestedOpenedAt: selected?.openTime ?? start, requestedClosedAt: selectedClose ? undefined : request.effectiveClosedAt ? Date.parse(request.effectiveClosedAt) : undefined,
+          asOf: end, allocatedCapital: capital, manualEntryPrice: request.manualEntryPrice, takeProfit: request.takeProfit, stopLoss: request.stopLoss,
+          events: selectedClose ? request.events?.filter(e => e.effectiveAt <= end) : request.events, data, profile, candleEntry: selected, candleClose: selectedClose, resume: request.resume,
         });
         result = { position: this.historicalPosition(id, { ...request, quantity }, replay, profile), replay,
-          request: { ...request, quantity, capital, asOf: iso(end), historyIntervalMinutes: intervalMinutes, instrumentSnapshot: instrument } as StoredRequest, profile,
+          request: { ...request, quantity, capital, asOf: iso(end), historyIntervalMinutes: intervalMinutes, historyEntryPrice: entry, instrumentSnapshot: instrument, resolvedEntry: selected, resolvedClose: selectedClose, resume: undefined } as StoredRequest, profile,
+          capital: { total: capital, usedMargin: replay.remainingCollateral, free: replay.checkpoint?.free ?? money(number(replay.scenarioEquity).minus(replay.remainingCollateral).minus(replay.unrealizedPnl)) },
           cost: { required: capital, initialMargin: cost.baseInitialMargin, fee: cost.openingFee, closeFeeReserve: cost.closeFeeReserve },
           issues: replay.issues, assumptions: [...profile.assumptions, ...replay.assumptions],
-          scenarioId: request.advance?.id, scenarioVersion: request.advance?.version,
+          scenarioId: request.advance?.id, scenarioVersion: request.advance?.version, scenarioAction: request.advance?.closeCandle ? 'CLOSE_REVISION' : request.advance ? 'ADVANCE' : undefined,
         };
       }
       if (abort.signal.aborted) throw new PrivateTradingError('cancelled', 'Расчёт отменён', 409);
@@ -438,23 +469,39 @@ export class PrivateTradingService {
         if (replay.verification !== 'VERIFIED' || !replay.entryPrice) throw new PrivateTradingError('unverified_scenario', 'Неполный сценарий нельзя подтвердить', 409);
         const previous = result.scenarioId ? tx.state.scenarios.find(s => s.id === result.scenarioId) : undefined;
         if (result.scenarioId && (!previous || previous.version !== result.scenarioVersion)) throw new PrivateTradingError('scenario_changed', 'Сценарий изменился. Обновите расчёт', 409);
+        const closeRevision = result.scenarioAction === 'CLOSE_REVISION';
         const previousJournal = previous?.result.journal ?? [];
         if (previous && (!sameRequest(previous.profile, result.profile) || previous.allocatedCapital !== result.cost.required
-          || previous.createdAt !== result.position.createdAt || previous.result.asOf >= replay.asOf
-          || !sameRequest(previousJournal, replay.journal.slice(0, previousJournal.length)))) {
+          || previous.createdAt !== result.position.createdAt || previous.result.status !== 'OPEN'
+          || (!closeRevision && (previous.result.asOf >= replay.asOf || !sameRequest(previousJournal, replay.journal.slice(0, previousJournal.length)))))) {
           throw new PrivateTradingError('scenario_history_changed', 'История или модель сценария изменились. Создайте отдельный расчёт', 409);
         }
+        if (closeRevision && (!previous || !replay.candleClose || replay.status === 'OPEN'
+          || !sameRequest(previous.result.fills[0], replay.fills[0]) || previous.position.entryPrice !== result.position.entryPrice
+          || previous.position.effectiveOpenedAt !== result.position.effectiveOpenedAt
+          || !sameRequest(previous.result.candleEntry, replay.candleEntry))) throw new PrivateTradingError('scenario_entry_changed', 'Исходная точка входа изменилась. Закрытие отменено', 409);
         if (!previous) {
           if (tx.state.scenarios.length >= 100) throw new PrivateTradingError('scenario_limit', 'Достигнут лимит приватных сценариев', 409);
           if (tx.available.lt(result.cost.required)) throw new PrivateTradingError('insufficient_capital', 'Недостаточно демо-капитала для сценария', 409);
           tx.available = tx.available.minus(result.cost.required); tx.reserved = tx.reserved.plus(result.cost.required);
           await tx.entry('SCENARIO_ALLOCATION', result.cost.required, `scenario:${replay.scenarioId}`, undefined, replay.scenarioId);
           tx.state.scenarios.push({ id: replay.scenarioId, request, result: replay, position: result.position, profile: result.profile, allocatedCapital: result.cost.required, createdAt: result.position.createdAt, version: 1 });
-        } else { previous.result = replay; previous.position = result.position; previous.request = request; previous.version++; }
+        } else {
+          if (closeRevision) {
+            if ((previous.revisions?.length ?? 0) >= 100) throw new PrivateTradingError('revision_limit', 'Достигнут лимит версий сценария', 409);
+            previous.revisions ??= [];
+            previous.revisions.push({ version: previous.version, supersededAt: iso(Date.now()), request: structuredClone(previous.request), result: structuredClone(previous.result), position: structuredClone(previous.position) });
+          }
+          previous.result = replay; previous.position = result.position; previous.request = request; previous.version++;
+        }
         // Scenario equity stays in its own escrow, never becoming spendable DEMO_LIVE profit.
         // An advance can append new immutable events, never rewrite a prior simulated fill.
         await tx.entry('SCENARIO_SNAPSHOT', '0', `snapshot:${id}`, replay.asOf, replay.scenarioId, { netPnl: replay.netPnl, version: previous?.version ?? 1 });
-        for (const event of replay.journal.slice(previousJournal.length)) await tx.entry(event.kind, event.amount, event.id, event.effectiveAt, replay.scenarioId);
+        if (closeRevision) {
+          // Revision replaces a historical view, never cash or existing journal rows. Full evidence is immutable.
+          await tx.entry('SCENARIO_CLOSE_REVISION', '0', `revision:${id}`, replay.asOf, replay.scenarioId,
+            { version: previous!.version, supersedesVersion: result.scenarioVersion, result: replay });
+        } else for (const event of replay.journal.slice(previousJournal.length)) await tx.entry(event.kind, event.amount, event.id, event.effectiveAt, replay.scenarioId);
       }
       tx.state.session = actor;
       await tx.db.privateTradingPreview.update({ where: { id }, data: { status: 'CONFIRMED', confirmedAt: new Date() } });
@@ -534,6 +581,18 @@ export class PrivateTradingService {
     if (!scenario) throw new PrivateTradingError('not_found', 'Сценарий не найден', 404);
     if (scenario.result.status !== 'OPEN' || Date.parse(asOf) <= scenario.result.asOf) throw new PrivateTradingError('scenario_closed', 'Можно продолжить только открытый сценарий', 409);
     return this.preview(actor, { ...scenario.request, asOf, idempotencyKey: key }, { id, version: scenario.version });
+  }
+  async closeOnChart(actor: OwnerSession, id: string, candle: CandleSelection, key: string) {
+    await this.store.authorized(actor);
+    const prior = await this.store.db.privateTradingPreview.findFirst({ where: { userId: actor.userId, requestKey: key } });
+    if (prior) {
+      const stored = prior.request as unknown as StoredRequest;
+      if (stored.advance?.id !== id || !sameRequest(stored.advance.closeCandle, candle)) throw new PrivateTradingError('idempotency_conflict', 'Параметры запроса изменились', 409);
+      await this.store.authorized(actor); return this.previewDto(prior);
+    }
+    const account = await this.store.read(actor), scenario = account.state.scenarios.find(s => s.id === id);
+    if (!scenario || scenario.result.status !== 'OPEN' || scenario.result.verification !== 'VERIFIED') throw new PrivateTradingError('scenario_closed', 'Выберите открытую позицию', 409);
+    return this.preview(actor, { ...scenario.request, idempotencyKey: key }, { id, version: scenario.version, closeCandle: candle });
   }
   async card(actor: OwnerSession, positionId: string) {
     const account = await this.store.read(actor), original = account.state.positions.find(x => x.id === positionId);

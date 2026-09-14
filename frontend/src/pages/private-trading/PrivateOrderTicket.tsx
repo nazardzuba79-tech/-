@@ -2,13 +2,13 @@ import { useEffect,useRef,useState } from 'react';
 import { privateInputUtc,privateNumber,privateUtc,privateExplanation,type PrivateMarket,type PrivateMode,type PrivatePreview,type PrivatePreviewRequest,type PrivateSide,type PrivateState } from '../../lib/privateTradingApi';
 
 type Draft=Omit<PrivatePreviewRequest,'idempotencyKey'>;
-export function PrivateOrderTicket({symbol,market,wallet,busy,preview,pickedPrice,savedPreviews=[],onResume,onRefresh,onModeChange,onPreview,onConfirm,onCancel,onAllocate}:{
+export function PrivateOrderTicket({symbol,market,wallet,busy,preview,pickedPrice,savedPreviews=[],onResume,onRefresh,onModeChange,onPreview,onConfirm,onCancel,onAllocate,onChartEntry}:{
   symbol:string;market:PrivateMarket|null;wallet:PrivateState['wallet']|null;busy:boolean;preview:PrivatePreview|null;
   onPreview:(draft:Draft)=>void;onConfirm:()=>void;onCancel:()=>void;onAllocate:(amount:string)=>void;
   pickedPrice?:{price:string;sequence:number}|null;
   savedPreviews?:PrivatePreview[];onResume?:(id:string)=>void;
   onRefresh?:()=>void;
-  onModeChange?:(mode:PrivateMode)=>void;
+  onModeChange?:(mode:PrivateMode)=>void;onChartEntry?:()=>void;
 }){
   const[mode,setMode]=useState<PrivateMode>('DEMO_LIVE'),[side,setSide]=useState<PrivateSide>('LONG'),[type,setType]=useState<'MARKET'|'LIMIT'>('MARKET');
   const[sizeType,setSizeType]=useState<'quantity'|'margin'>('margin'),[size,setSize]=useState(''),[leverage,setLeverage]=useState('10');
@@ -36,13 +36,7 @@ export function PrivateOrderTicket({symbol,market,wallet,busy,preview,pickedPric
       onPreview(draft);
     }catch(e){setError(e instanceof Error?e.message:'Проверьте параметры');}
   }
-  return <aside className="private-order-ticket">
-    <div className="private-segments" role="tablist" aria-label="Время сделки">
-      <button type="button" role="tab" aria-selected={!historical} disabled={busy} onClick={()=>selectMode('DEMO_LIVE')}>Сейчас</button>
-      <button type="button" role="tab" aria-selected={historical} disabled={busy} onClick={()=>selectMode('HISTORICAL_REPLAY')}>Историческая сделка</button>
-    </div>
-    <div className="private-wallet"><span>Доступно</span><strong>{privateNumber(wallet?.available)} USDT</strong><details><summary>Выделить средства</summary><p>Доступно для перевода: {privateNumber(wallet?.demoAvailable)} USDT</p><label>Сумма, USDT<input inputMode="decimal" type="number" min="0.00000001" step="any" value={allocation} onChange={e=>setAllocation(e.target.value)}/></label><button type="button" disabled={busy||!allocation||Number(allocation)<=0} onClick={()=>onAllocate(allocation)}>Выделить</button></details></div>
-    <form onSubmit={submit}>
+  const form=(<form onSubmit={submit}>
       <div className="private-segments sides" role="group" aria-label="Направление"><button type="button" className="long" aria-pressed={side==='LONG'} onClick={()=>setSide('LONG')}>Long</button><button type="button" className="short" aria-pressed={side==='SHORT'} onClick={()=>setSide('SHORT')}>Short</button></div>
       <div className="private-ticket-row"><span>Изолированная маржа</span><label>Плечо<input aria-label="Плечо" type="number" min={rules?.minLeverage||'1'} max={rules?.maxLeverage} step={rules?.leverageStep||'1'} value={leverage} onChange={e=>setLeverage(e.target.value)} required/></label></div>
       {!historical&&<div className="private-segments" role="group" aria-label="Тип ордера"><button type="button" aria-pressed={type==='MARKET'} onClick={()=>setType('MARKET')}>Рынок</button><button type="button" aria-pressed={type==='LIMIT'} onClick={()=>setType('LIMIT')}>Лимит</button></div>}
@@ -56,8 +50,14 @@ export function PrivateOrderTicket({symbol,market,wallet,busy,preview,pickedPric
       })}<button type="button" disabled={events.length>=40} onClick={()=>setEvents(current=>[...current,{id:crypto.randomUUID(),effectiveAt:'',kind:'MARGIN',amount:'',quantity:'',takeProfit:'',stopLoss:''}])}>Добавить событие</button></details>}
       {error&&<p role="alert">{error}</p>}
       <button className={`private-submit ${side==='LONG'?'long':'short'}`} disabled={busy||!wallet||(!historical&&!market)}>{busy?'Расчёт…':'Рассчитать сделку'}</button>
-    </form>
-    {savedPreviews.some(item=>['RUNNING','READY','INCOMPLETE','AMBIGUOUS'].includes(item.status))&&<details className="private-saved-previews"><summary>Сохранённые расчёты</summary>{savedPreviews.filter(item=>['RUNNING','READY','INCOMPLETE','AMBIGUOUS'].includes(item.status)).map(item=><button type="button" key={item.id} disabled={busy} onClick={()=>onResume?.(item.id)}><strong>{item.result?.position?.symbol||'Сценарий'}</strong><span>{privateUtc(item.createdAt)}</span><small>{item.status==='RUNNING'?'Выполняется':item.status==='READY'?'Готов к подтверждению':'Черновик'}</small></button>)}</details>}
+    </form>);
+  return <aside className="private-order-ticket">
+    <div className="private-segments" role="tablist" aria-label="Время сделки">
+      <button type="button" role="tab" aria-selected={!historical} disabled={busy} onClick={()=>selectMode('DEMO_LIVE')}>Сейчас</button>
+      <button type="button" role="tab" aria-selected={historical} disabled={busy} onClick={()=>{selectMode('HISTORICAL_REPLAY');onChartEntry?.();}}>Историческая сделка</button>
+    </div>
+    <div className="private-wallet"><span>Доступно</span><strong>{privateNumber(wallet?.available)} USDT</strong><details><summary>Выделить средства</summary><p>Доступно для перевода: {privateNumber(wallet?.demoAvailable)} USDT</p><label>Сумма, USDT<input inputMode="decimal" type="number" min="0.00000001" step="any" value={allocation} onChange={e=>setAllocation(e.target.value)}/></label><button type="button" disabled={busy||!allocation||Number(allocation)<=0} onClick={()=>onAllocate(allocation)}>Выделить</button></details></div>
+    {historical&&onChartEntry?<><button className="private-submit long" type="button" onClick={onChartEntry}>Выбрать свечу на графике</button><details className="private-manual-ticket"><summary>Ручной редактор</summary>{form}</details></>:form} {savedPreviews.some(item=>['RUNNING','READY','INCOMPLETE','AMBIGUOUS'].includes(item.status))&&<details className="private-saved-previews"><summary>Сохранённые расчёты</summary>{savedPreviews.filter(item=>['RUNNING','READY','INCOMPLETE','AMBIGUOUS'].includes(item.status)).map(item=><button type="button" key={item.id} disabled={busy} onClick={()=>onResume?.(item.id)}><strong>{item.result?.position?.symbol||'Сценарий'}</strong><span>{privateUtc(item.createdAt)}</span><small>{item.status==='RUNNING'?'Выполняется':item.status==='READY'?'Готов к подтверждению':'Черновик'}</small></button>)}</details>}
     {preview&&<section className="private-preview" aria-live="polite"><header><strong>Предпросмотр · {livePreview?'Сейчас':'По истории'}</strong><button type="button" disabled={busy} onClick={onCancel} aria-label="Закрыть предпросмотр">×</button></header>
       {preview.status==='RUNNING'&&<><progress max="100" value={preview.progress}/><p>Расчёт сценария · {preview.progress}%</p></>}
       {preview.error&&<p role="alert">{preview.error}</p>}

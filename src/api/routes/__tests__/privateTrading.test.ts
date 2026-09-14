@@ -13,7 +13,7 @@ const fixture = () => {
     session: { findUnique: jest.fn(async ({ where }: any) => sessions[where.id]), update: jest.fn(async () => ({})) },
   };
   const service: any = { store: { authorized: (actor: any) => assertOwner(prisma, actor, () => config), allocate: jest.fn(async () => ({ available: '10' })) } };
-  for (const method of ['state', 'getMarket', 'preview', 'getPreview', 'cancelPreview', 'confirm', 'cancelOrder', 'close', 'edit', 'advance', 'card', 'getCard']) service[method] = jest.fn(async () => ({ ok: true }));
+  for (const method of ['state', 'getMarket', 'getChartCandles', 'preview', 'getPreview', 'cancelPreview', 'confirm', 'cancelOrder', 'close', 'edit', 'advance', 'closeOnChart', 'card', 'getCard']) service[method] = jest.fn(async () => ({ ok: true }));
   const app = express(); app.use(express.json()); app.use('/api/v1', privateTradingRouter(prisma, service));
   const token = (id = 'owner', extras: any = {}, options: any = {}) => jwt.sign({ sub: id, sid: `session-${id}`, ...extras }, process.env.JWT_SECRET!, { expiresIn: '1h', ...options });
   return { app, service, prisma, config, users, sessions, token };
@@ -55,6 +55,8 @@ describe('private owner trading API', () => {
     ['patch', '/positions/id', { marginDelta: '1', idempotencyKey: 'request-key' }],
     ['post', '/scenarios/id/advance', { asOf: new Date().toISOString(), idempotencyKey: 'request-key' }],
     ['get', '/cards/id', {}], ['post', '/cards', { positionId: 'id' }], ['post', '/allocate', { amount: '1', idempotencyKey: 'request-key' }],
+    ['get', '/candles?symbol=BTCUSDT&source=BYBIT_LINEAR&interval=1h', {}],
+    ['post', '/scenarios/id/close-on-chart', { candle: { source: 'BYBIT_LINEAR', interval: '1h', openTime: 1789340400000, pricePoint: 'CLOSE' }, idempotencyKey: 'request-key' }],
   ])('other admins cannot reach %s %s', async (method, path, body) => {
     const f = fixture();
     const res = await (request(f.app) as any)[method as string](`/api/v1/private-trading${path}`).auth(f.token('admin2'), { type: 'bearer' }).send(body);
@@ -90,5 +92,32 @@ describe('private owner trading API', () => {
     const res = await request(f.app).get('/api/v1/private-trading/state').auth(f.token(), { type: 'bearer' });
     expect(res.status).toBe(500); expect(res.headers['cache-control']).toBe('private, no-store');
     expect(res.headers.vary).toContain('Authorization'); expect(JSON.stringify(res.body)).not.toMatch(/password|postgres|SQL/);
+  });
+});
+
+describe('private chart trade API', () => {
+  const candle = { source: 'BYBIT_LINEAR', interval: '1h', openTime: 1789340400000, pricePoint: 'CLOSE' };
+  test('historical entry needs only selected candle identity, never manual date or price', async () => {
+    const f = fixture(); const res = await request(f.app).post('/api/v1/private-trading/previews').auth(f.token(), { type: 'bearer' }).send({ ...trade, mode: 'HISTORICAL_REPLAY', candleEntry: candle });
+    expect(res.status).toBe(200); expect(f.service.preview.mock.calls[0][1]).toMatchObject({ candleEntry: candle });
+    expect(f.service.preview.mock.calls[0][1]).not.toHaveProperty('effectiveOpenedAt');
+  });
+  test.each([{ source: 'BYBIT_SPOT' }, { price: '100' }, { effectiveAt: 12345 }, { interval: '2h' }, { openTime: -1 }, { openTime: null }])('selected candle forbids source and financial overrides %p', patch => {
+    expect(privatePreviewSchema.safeParse({ ...trade, mode: 'HISTORICAL_REPLAY', candleEntry: { ...candle, ...patch } }).success).toBe(false);
+  });
+  test('candle entry cannot be mixed with manual price/date or live execution', () => {
+    for (const patch of [{ manualEntryPrice: '100' }, { effectiveOpenedAt: '2026-09-01T00:00:00Z' }, { effectiveClosedAt: '2026-09-02T00:00:00Z' }, { mode: 'DEMO_LIVE' }]) expect(privatePreviewSchema.safeParse({ ...trade, mode: 'HISTORICAL_REPLAY', candleEntry: candle, ...patch }).success).toBe(false);
+  });
+  test('close-on-chart passes owner session, scenario ID and strict candle identity', async () => {
+    const f = fixture(); const res = await request(f.app).post('/api/v1/private-trading/scenarios/scenario-1/close-on-chart').auth(f.token(), { type: 'bearer' }).send({ candle, idempotencyKey: 'close-request-1' });
+    expect(res.status).toBe(200); expect(f.service.closeOnChart).toHaveBeenCalledWith(expect.objectContaining({ userId: 'owner' }), 'scenario-1', candle, 'close-request-1');
+    const forged = await request(f.app).post('/api/v1/private-trading/scenarios/scenario-1/close-on-chart').auth(f.token(), { type: 'bearer' }).send({ candle: { ...candle, price: '1' }, idempotencyKey: 'close-request-1' });
+    expect(forged.status).toBe(400); expect(f.service.closeOnChart).toHaveBeenCalledTimes(1);
+  });
+  test('private chart candle read is bounded, uncached publicly and has a cancellation signal', async () => {
+    const f = fixture(); const res = await request(f.app).get('/api/v1/private-trading/candles?symbol=BTCUSDT&source=BYBIT_LINEAR&interval=1h&limit=500').auth(f.token(), { type: 'bearer' });
+    expect(res.status).toBe(200); expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(f.service.getChartCandles).toHaveBeenCalledWith(expect.objectContaining({ userId: 'owner' }), expect.objectContaining({ symbol: 'BTCUSDT', limit: 500 }), expect.any(AbortSignal));
+    expect((await request(f.app).get('/api/v1/private-trading/candles?symbol=BTCUSDT&source=BYBIT_LINEAR&interval=1h&limit=10000').auth(f.token(), { type: 'bearer' })).status).toBe(400);
   });
 });

@@ -69,6 +69,19 @@ export interface Candle {
   low: DecimalString;
   close: DecimalString;
 }
+/** The browser sends only the identity; price and effective time are resolved by the server. */
+export interface CandleSelection {
+  source: 'BYBIT_LINEAR'; interval: string; openTime: number; pricePoint: 'OPEN' | 'CLOSE';
+}
+export interface ResolvedCandleSelection extends CandleSelection {
+  symbol: string; intervalMs: number; closeTime: number; effectiveAt: number; price: DecimalString;
+  candle: Candle; fetchedAt: number; verification: 'VERIFIED';
+}
+export interface ReplayCheckpoint {
+  version: 1; identity: string; nextTime: number; boundaryProcessed: boolean;
+  free: DecimalString; margin: DecimalString; basisRemaining: DecimalString; basisClosed: DecimalString;
+  takeProfit: DecimalString | null; stopLoss: DecimalString | null;
+}
 export interface FundingEvent { timestamp: number; rate: DecimalString; markPrice: DecimalString }
 export interface HistoricalData {
   tradeCandles: Candle[];
@@ -97,6 +110,11 @@ export interface ReplayInput {
   asOf: number;
   allocatedCapital: DecimalString;
   manualEntryPrice?: DecimalString;
+  /** V2 exact selected OHLC point; never accepted as a browser-provided price. */
+  candleEntry?: ResolvedCandleSelection;
+  candleClose?: ResolvedCandleSelection;
+  /** Trusted persisted result, including its append-only journal and resume cursor. */
+  resume?: ReplayResult;
   takeProfit?: DecimalString | null;
   stopLoss?: DecimalString | null;
   events?: ScenarioEvent[];
@@ -151,4 +169,7 @@ export interface ReplayResult {
   liquidationPrice: DecimalString | null;
   fills: ReplayFill[];
   journal: ReplayJournalEntry[];
+  candleEntry?: ResolvedCandleSelection;
+  candleClose?: ResolvedCandleSelection;
+  checkpoint?: ReplayCheckpoint;
 }

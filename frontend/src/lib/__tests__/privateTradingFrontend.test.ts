@@ -122,7 +122,7 @@ describe('private snapshot display and dates',()=>{
   });
   test('an open historical scenario uses server net P&L consistently with scenario ROI',()=>{
     const svg=cardRenderer.privateResultCardSvg({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
-    expect(svg).toContain('Цена на дату расчёта');expect(svg).not.toContain('Текущая цена');
+    expect(svg).toContain('>Цена</text>');expect(svg).not.toContain('Текущая цена');expect(svg).toContain('2026-08-08 12:00:00 UTC');
     expect(svg).toContain('Прибыль  -5.75 USDT');expect(svg).not.toContain('net');expect(svg.match(/Симуляция/g)).toHaveLength(1);expect(svg).not.toContain('123.45');
   });
   test('expired preview refresh copies reviewed inputs but never old idempotency or server-only state',()=>{

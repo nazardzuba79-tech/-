@@ -1,4 +1,4 @@
-import type { ModelProfile, ReplayInput, ReplayResult, Side } from './types';
+import type { CandleSelection, ModelProfile, ReplayInput, ReplayResult, Side } from './types';
 
 export type Mode = 'DEMO_LIVE' | 'HISTORICAL_REPLAY';
 export interface OwnerSession { userId: string; sessionId: string; expiresAt: number }
@@ -8,6 +8,7 @@ export interface TradeRequest {
   takeProfit?: string | null; stopLoss?: string | null;
   effectiveOpenedAt?: string; effectiveClosedAt?: string; asOf?: string;
   capital?: string; manualEntryPrice?: string; events?: ReplayInput['events'];
+  candleEntry?: CandleSelection;
   idempotencyKey: string;
 }
 export interface PrivatePosition {
@@ -38,6 +39,8 @@ export interface PrivateOrder {
 export interface PrivateScenario {
   id: string; request: TradeRequest; result: ReplayResult; position: PrivatePosition;
   profile: ModelProfile; allocatedCapital: string; createdAt: string; version: number;
+  /** Immutable past views; a chart-close revision reuses the same held capital. */
+  revisions?: Array<{ version: number; supersededAt: string; request: TradeRequest; result: ReplayResult; position: PrivatePosition }>;
 }
 export interface AccountState {
   version: 1; positions: PrivatePosition[]; orders: PrivateOrder[]; scenarios: PrivateScenario[];
@@ -47,10 +50,12 @@ export interface AccountState {
 }
 export interface PreviewResult {
   position: PrivatePosition;
+  capital?: { total: string; usedMargin: string; free: string };
   cost: { required: string; initialMargin: string; fee: string; closeFeeReserve: string };
   issues: string[]; assumptions: string[];
   request: TradeRequest; profile: ModelProfile;
   replay?: ReplayResult; quote?: unknown; scenarioId?: string; scenarioVersion?: number;
+  scenarioAction?: 'ADVANCE' | 'CLOSE_REVISION';
   consent?: { slippageBps: string; slippagePercent: string; quantity: string; minimumFillQuantity: string; maxRequired: string;
     maxAveragePrice: string | null; minAveragePrice: string | null };
 }

@@ -5,6 +5,7 @@ import ts from 'typescript';
 import * as indicators from '../indicators';
 import * as drawings from '../chartDrawings';
 import * as chartPriceFormat from '../spotChartPriceFormat';
+import * as chartTrading from '../chartTrading';
 
 /**
  * Conditional (SL/TP trigger) orders are a SPOT-ONLY feature, and the
@@ -38,6 +39,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
   let effects: (() => void)[] = [];
   const cleanups: (() => void)[] = [];
   const chartOptions: any[] = [];
+  const chartHarness: any = { series: [], hostEvents: new Map(), markers: [], priceLines: [], ranges: [] };
 
   const getMyOrders = overrides.getMyOrders ?? jest.fn().mockResolvedValue(ORDER);
   const updateOrderTrigger = overrides.updateOrderTrigger ?? jest.fn().mockResolvedValue({});
@@ -52,7 +54,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     },
     useRef(initial: any) {
       const i = index++;
-      if (!(i in hooks)) hooks[i] = { current: i === 0 ? containerStub() : initial };
+      if (!(i in hooks)) hooks[i] = { current: i === 0 ? containerStub(chartHarness) : initial };
       return hooks[i];
     },
     useMemo(fn: any) { return fn(); },
@@ -80,13 +82,14 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key, lang: 'en' }) };
     // The chart library is never reached: the init effect early-returns on
     // a null container ref, which the stubbed useRef gives it.
-    if (name === 'lightweight-charts') return fakeCharts(chartOptions);
+    if (name === 'lightweight-charts') return fakeCharts(chartOptions, chartHarness);
     // The REAL modules, so drawing/indicator/format behaviour is genuine
     // rather than stubbed away: only the network and the chart library are
     // replaced.
     if (name === '../lib/indicators') return indicators;
     if (name === '../lib/chartDrawings') return drawings;
     if (name === '../lib/spotChartPriceFormat') return chartPriceFormat;
+    if (name === '../lib/chartTrading') return chartTrading;
     if (name === 'react-dom') return { createPortal: (children: unknown) => children };
     if (name.endsWith('.css')) return {};
     return req(name);
@@ -103,7 +106,7 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
     return tree;
   };
   const unmount = () => cleanups.forEach((fn) => fn?.());
-  return { render, unmount, getMyOrders, updateOrderTrigger, chartOptions };
+  return { render, unmount, getMyOrders, updateOrderTrigger, chartOptions, chartHarness };
 }
 
 /**
@@ -115,41 +118,48 @@ function mount(props: Record<string, unknown>, overrides: Record<string, any> = 
  * futures "no lines" assertion would pass for the wrong reason. With it,
  * spot genuinely draws lines and futures genuinely does not.
  */
-function fakeCharts(chartOptions: any[] = []) {
-  const series = () => ({
+function fakeCharts(chartOptions: any[] = [], harness: any) {
+  const series = () => {
+    const result = {
     applyOptions: () => {},
-    setData: () => {},
+    options: () => ({ priceFormat: { type: 'price', precision: 2, minMove: 0.01 } }),
+    setData: jest.fn(),
     priceScale: () => ({ applyOptions: () => {} }),
     // A linear, invertible mapping is all the overlay needs.
     priceToCoordinate: (price: number) => 500 - price / 1000,
     coordinateToPrice: (y: number) => (500 - y) * 1000,
-    createPriceLine: () => ({ applyOptions: () => {} }),
-    removePriceLine: () => {},
-  });
+    createPriceLine: (options: unknown) => { const line = { options, applyOptions: () => {} }; harness.priceLines.push(line); return line; },
+    removePriceLine: (line: unknown) => { harness.priceLines = harness.priceLines.filter((item: unknown) => item !== line); },
+  }; harness.series.push(result); return result; };
   const timeScale = {
     fitContent: () => {},
-    setVisibleLogicalRange: () => {},
+    setVisibleLogicalRange: (range: unknown) => { harness.ranges.push(range); },
+    getVisibleLogicalRange: () => ({ from: 100, to: 200 }),
+    options: () => ({ barSpacing: 10 }),
     subscribeVisibleTimeRangeChange: () => {},
     unsubscribeVisibleTimeRangeChange: () => {},
-    subscribeVisibleLogicalRangeChange: () => {},
+    subscribeVisibleLogicalRangeChange: (callback: unknown) => { harness.rangeChange = callback; },
+    unsubscribeVisibleLogicalRangeChange: () => { harness.rangeChange = undefined; },
     coordinateToTime: () => 0,
-    timeToCoordinate: () => 0,
+    timeToCoordinate: () => 100,
     applyOptions: () => {},
   };
   const chart = {
     addSeries: () => series(),
     priceScale: () => ({ applyOptions: () => {} }),
     timeScale: () => timeScale,
-    subscribeClick: () => {},
+    subscribeClick: (callback: unknown) => { harness.click = callback; },
     unsubscribeClick: () => {},
     subscribeCrosshairMove: () => {},
     unsubscribeCrosshairMove: () => {},
     resize: () => {},
     remove: () => {},
     applyOptions: () => {},
+    paneSize: () => ({ width: 1100, height: 600 }),
   };
   return {
     createChart: (_host: unknown, options: unknown) => { chartOptions.push(options); return chart; },
+    createSeriesMarkers: (_series: unknown, markers: unknown[]) => { harness.markers = markers; return { setMarkers: (next: unknown[]) => { harness.markers = next; }, detach: () => {} }; },
     ColorType: { Solid: 'solid' },
     LineStyle: { Solid: 0, Dotted: 1, Dashed: 2, LargeDashed: 3, SparseDotted: 4 },
     CrosshairMode: { Normal: 0, Magnet: 1 },
@@ -158,11 +168,11 @@ function fakeCharts(chartOptions: any[] = []) {
 }
 
 /** The container element the chart mounts into. */
-function containerStub() {
+function containerStub(harness?: any) {
   return {
     clientWidth: 1200, clientHeight: 600,
     getBoundingClientRect: () => ({ top: 0, left: 0, width: 1200, height: 600, right: 1200, bottom: 600 }),
-    addEventListener: () => {}, removeEventListener: () => {},
+    addEventListener: (name: string, callback: unknown) => { harness?.hostEvents.set(name, callback); }, removeEventListener: (name: string) => { harness?.hostEvents.delete(name); },
     appendChild: () => {}, removeChild: () => {}, contains: () => false,
     querySelector: () => null, style: {},
   };
@@ -207,6 +217,73 @@ const flush = async () => { for (let i = 0; i < 8; i += 1) await Promise.resolve
 
 const SPOT = { pair: 'BTC/USDT', chrome: 'terminal', drawingTools: true, market: 'spot' };
 const FUTURES = { pair: 'BTC/USDT', chrome: 'terminal', drawingTools: true, market: 'futures' };
+
+describe('private chart native interaction and history', () => {
+  const time = Date.UTC(2026, 8, 1, 12) / 1000;
+  const candle = { time, open: 72000, high: 75000, low: 68000, close: 73000, volume: 100 };
+  const interaction = () => ({ enabled: true, selecting: 'entry', trades: [], onCandleSelect: jest.fn(), onCancelSelection: jest.fn(), onTradeSelect: jest.fn() });
+  const event = (chart: ReturnType<typeof mount>, extra = {}) => ({ point: { x: 100, y: 428 }, time, paneIndex: 0, seriesData: new Map([[chart.chartHarness.series[0], candle]]), ...extra });
+
+  test('selects actual completed OHLC with viewport anchor; drag, empty, indicator and volume cannot select or fetch', async () => {
+    jest.setSystemTime(new Date('2026-09-14T12:00:00Z'));
+    const state = interaction();
+    const loader = jest.fn().mockResolvedValue({ candles: [candle] });
+    const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: loader });
+    chart.render(); await flush(); chart.render();
+    chart.chartHarness.click(event(chart));
+    expect(state.onCandleSelect).toHaveBeenCalledWith(expect.objectContaining({ symbol: 'BTCUSDT', source: 'BYBIT_LINEAR', openTime: time * 1000, closeTime: time * 1000 + 3600000, close: 73000, x: 100, y: 428 }));
+    const invalid = [event(chart, { point: { x: 100, y: 580 } }), event(chart, { point: { x: 100, y: 100 } }), event(chart, { seriesData: new Map() }), event(chart, { hoveredSeries: chart.chartHarness.series[3] })];
+    invalid.forEach(item => chart.chartHarness.click(item));
+    chart.chartHarness.hostEvents.get('pointerdown')({ clientX: 100, clientY: 428, isPrimary: true });
+    chart.chartHarness.hostEvents.get('pointermove')({ clientX: 140, clientY: 428 });
+    chart.chartHarness.click(event(chart));
+    expect(state.onCandleSelect).toHaveBeenCalledTimes(1);
+    expect(loader).toHaveBeenCalledTimes(1);
+    chart.unmount();
+  });
+
+  test('persistent entry markers, distinct exit markers and readonly levels use selected contract only', async () => {
+    const trade = { id: 'p1', symbol: 'BTCUSDT', side: 'LONG', leverage: 10, entryPrice: 73000, quantity: 0.01, pnl: 5, entryTime: time * 1000 + 3600000, entryModel: 'CLOSE', takeProfit: 80000, stopLoss: 65000, liquidationPrice: 60000, exits: [{ time: time * 1000 + 1, price: 74000, kind: 'PARTIAL' }] };
+    const state = { ...interaction(), selecting: null, selectedTradeId: 'p1', trades: [trade, { ...trade, id: 'wrong', symbol: 'ETHUSDT' }] };
+    const chart = mount({ ...FUTURES, privateTrading: state, candleLoader: jest.fn().mockResolvedValue({ candles: [candle] }) });
+    chart.render(); await flush(); chart.render();
+    expect(chart.chartHarness.markers.map((marker: any) => marker.id)).toEqual(['private-trade:p1|entry', 'private-trade:p1|exit:0']);
+    expect(chart.chartHarness.markers[0].time).toBe(time);
+    expect(chart.chartHarness.priceLines.map((line: any) => line.options.title)).toEqual(['LONG 0.01 BTC · P&L +5.00 USDT', 'TP', 'SL', 'LIQ']);
+    chart.chartHarness.click(event(chart, { hoveredInfo: { objectId: 'private-trade:p1|entry' } }));
+    expect(state.onTradeSelect).toHaveBeenCalledWith('p1');
+    chart.chartHarness.click(event(chart, { hoveredObjectId: 'private-trade:wrong|entry' }));
+    expect(state.onTradeSelect).toHaveBeenCalledTimes(1);
+    chart.unmount();
+  });
+
+  test('scroll backfill requests before first real candle and preserves viewport when prepending', async () => {
+    const prior = { ...candle, time: time - 3600 };
+    const loader = jest.fn().mockResolvedValueOnce({ candles: [candle] }).mockResolvedValueOnce({ candles: [prior] });
+    const chart = mount({ ...FUTURES, privateTrading: interaction(), candleLoader: loader });
+    chart.render(); await flush(); chart.render();
+    chart.chartHarness.rangeChange({ from: 10, to: 200 });
+    jest.advanceTimersByTime(181); await flush(); chart.render();
+    expect(loader).toHaveBeenLastCalledWith('BTC/USDT', '1h', 520, expect.any(AbortSignal), time * 1000 - 1);
+    expect(chart.chartHarness.series[0].setData.mock.calls.at(-1)[0].map((item: any) => item.time)).toEqual([prior.time, candle.time]);
+    expect(chart.chartHarness.ranges.at(-1)).toEqual({ from: 101, to: 201 });
+    chart.unmount();
+  });
+
+  test('late history from a replaced pair is aborted and cannot repaint new contract', async () => {
+    let resolveHistory!: (value: unknown) => void;
+    const loader = jest.fn().mockResolvedValueOnce({ candles: [candle] }).mockImplementationOnce(() => new Promise(resolve => { resolveHistory = resolve; })).mockResolvedValueOnce({ candles: [{ ...candle, close: 74000 }] });
+    const chart = mount({ ...FUTURES, privateTrading: interaction(), candleLoader: loader });
+    chart.render(); await flush(); chart.render();
+    chart.chartHarness.rangeChange({ from: 10, to: 200 }); jest.advanceTimersByTime(181); await flush();
+    const oldSignal = loader.mock.calls[1][3];
+    chart.render({ pair: 'ETH/USDT' }); await flush();
+    resolveHistory({ candles: [{ ...candle, time: time - 100000 }] }); await flush(); chart.render();
+    expect(oldSignal.aborted).toBe(true);
+    expect(chart.chartHarness.series[0].setData.mock.calls.at(-1)[0]).toEqual([expect.objectContaining({ time, close: 74000 })]);
+    chart.unmount();
+  });
+});
 
 /**
  * `ResizeObserver`, `document` and `localStorage` are referenced as BARE

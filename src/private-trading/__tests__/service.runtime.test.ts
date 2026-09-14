@@ -17,6 +17,29 @@ const quote = (): PrivateFreshQuote => ({ provider: 'bybit', symbol: 'XYZUSDT', 
   nextFundingTime: Date.now() + 28_800_000, providerTimestamp: Date.now(), bookGeneratedAt: Date.now(), markProviderTimestamp: Date.now(), fetchedAt: Date.now() });
 const request = (patch: Partial<TradeRequest> = {}): TradeRequest => ({ mode: 'DEMO_LIVE', symbol: 'XYZUSDT', type: 'MARKET', side: 'LONG', leverage: '10', quantity: '2', idempotencyKey: 'request', ...patch });
 
+function historicalFixture() {
+  const f = fixture();
+  f.market.resolveCandle.mockImplementation(async selection => {
+    const candle = { timestamp: selection.openTime, open: '100', high: '100', low: '100', close: '100', volume: '10' };
+    return { ...selection, source: 'BYBIT_LINEAR', symbol: selection.symbol, candle, intervalMs: 60000,
+      closeTime: selection.openTime + 60000, effectiveAt: selection.openTime + (selection.pricePoint === 'CLOSE' ? 60000 : 0), price: '100', fetchedAt: Date.now(), verification: 'VERIFIED' };
+  });
+  f.market.history.mockImplementation(async input => {
+    const candles = []; for (let at = input.startTime; at < input.endTime; at += 60000) candles.push({ timestamp: at, open: '100', high: '100', low: '100', close: '100' });
+    const timestamps = candles.filter(c => c.timestamp % (480 * 60000) === 0).map(c => c.timestamp);
+    return { symbol: 'XYZUSDT', instrument: instrument(), tradeCandles: candles, markCandles: candles, intervalMs: 60000, complete: true, issues: [],
+      fundingEvents: timestamps.map(timestamp => ({ timestamp, rate: '0.0001', markPrice: '100' })), expectedFundingTimestamps: timestamps };
+  });
+  f.market.funding.mockImplementation(async (...args: any[]) => ({ events: [{ timestamp: args[1], rate: '0.0001', markPrice: '100' }], complete: true, issues: [] }));
+  return f;
+}
+async function finished(f: ReturnType<typeof fixture>, id: string): Promise<any> {
+  for (let step = 0; step < 500 && f.rows.get(id)?.status === 'RUNNING'; step++) await Promise.resolve();
+  return f.service.getPreview(actor, id);
+}
+const candleRequest = (patch: Partial<TradeRequest> = {}) => request({ mode: 'HISTORICAL_REPLAY', quantity: '10', capital: '1000',
+  candleEntry: { source: 'BYBIT_LINEAR', interval: '1m', openTime: NOW - 6 * 60000, pricePoint: 'CLOSE' }, ...patch });
+
 /** Pure runtime harness; real row-lock/rollback behavior is covered separately on the TEST database. */
 function fixture() {
   let allowed = true;
@@ -57,6 +80,8 @@ function fixture() {
     freshQuote: jest.fn(async (symbol = 'XYZUSDT') => { outsideLock(); return { ...quote(), symbol }; }),
     funding: jest.fn(async () => { outsideLock(); return { events: [] as { timestamp: number; rate: string; markPrice: string }[], complete: true, issues: [] as string[] }; }),
     history: jest.fn(async (_request: any): Promise<any> => { outsideLock(); throw new Error('fixture history not provided'); }),
+    resolveCandle: jest.fn(async (_selection: any): Promise<any> => { outsideLock(); throw new Error('fixture selection not provided'); }),
+    chartCandles: jest.fn(async (_selection: any): Promise<any> => { outsideLock(); return { candles: [] }; }),
   };
   const service = new PrivateTradingService(store as PrivateTradingStore, market as unknown as PrivateTradingMarketData);
   return { service, store, market, rows, commands, entries, get state() { return tx.state; }, tx, authorized, revoke: () => { allowed = false; } };
@@ -163,7 +188,7 @@ describe('private service runtime integrity', () => {
     expect(f.rows.get('expired').status).toBe('EXPIRED'); expect(f.market.instrument).not.toHaveBeenCalled();
   });
   test('missing historical entry yields incomplete state, never a zero-price position', async () => {
-    const f = fixture(); f.market.history.mockResolvedValue({ tradeCandles: [], markCandles: [], fundingEvents: [], expectedFundingTimestamps: [], complete: false, issues: ['trade_history_gap'], intervalMs: 60000 });
+    const f = fixture(); f.market.history.mockResolvedValue({ symbol: 'XYZUSDT', instrument: instrument(), tradeCandles: [], markCandles: [], fundingEvents: [], expectedFundingTimestamps: [], complete: false, issues: ['trade_history_gap'], intervalMs: 60000 });
     f.rows.set('history', { id: 'history', userId: actor.userId, status: 'RUNNING', mode: 'HISTORICAL_REPLAY', session: actor,
       request: request({ mode: 'HISTORICAL_REPLAY', effectiveOpenedAt: new Date(NOW - 3600000).toISOString(), asOf: new Date(NOW - 60000).toISOString() }),
       createdAt: new Date(NOW), expiresAt: new Date(NOW + 60000), result: null });
@@ -257,5 +282,81 @@ describe('private service runtime integrity', () => {
     };
     const a = await run(false), b = await run(true);
     expect(a).toEqual(b); expect(a.available).toBe('0'); expect(a.positions.every(p => new BigNumber(p.allocatedMargin).eq(a.originalMargin))).toBe(true);
+  });
+});
+
+describe('private candle workflow runtime', () => {
+  beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(NOW); });
+  afterEach(() => { jest.useRealTimers(); });
+  test('server resolves selected entry, exposes exact marker and separate capital without allocating at click', async () => {
+    const f = historicalFixture(), started = await f.service.preview(actor, candleRequest()), p = await finished(f, started.id);
+    expect(p.status).toBe('READY'); expect(p.result.position.entryPrice).toBe('100');
+    expect(p.result.profile.pricingModelVersion).toBe('VOLTEX_SELECTED_CANDLE_POINT_V2');
+    expect(p.result.replay.candleEntry).toMatchObject({ openTime: NOW - 6 * 60000, effectiveAt: NOW - 5 * 60000, pricePoint: 'CLOSE' });
+    expect(p.result.capital.total).toBe('1000'); expect(new BigNumber(p.result.capital.free).gt(800)).toBe(true);
+    expect(f.entries).toHaveLength(0); expect(f.state.scenarios).toHaveLength(0);
+    await f.service.confirm(actor, p.id, 'confirm-one');
+    const dto = await f.service.state(actor); expect(dto.scenarios[0].fills[0]).toMatchObject({ kind: 'OPEN', effectiveAt: NOW - 5 * 60000, price: '100' });
+    expect(dto.scenarios[0].candleEntry?.source).toBe('BYBIT_LINEAR'); expect(dto.scenarios[0].evaluatedThrough).toBe(NOW);
+  });
+  test('repeated candle click reuses preview and confirmation cannot reserve twice', async () => {
+    const f = historicalFixture(), [one, two] = await Promise.all([f.service.preview(actor, candleRequest()), f.service.preview(actor, candleRequest())]);
+    expect(one.id).toBe(two.id); await finished(f, one.id); await f.service.confirm(actor, one.id, 'first');
+    await expect(f.service.confirm(actor, one.id, 'second')).rejects.toMatchObject({ code: 'preview_not_ready' });
+    expect(f.state.scenarios).toHaveLength(1); expect(f.entries.filter(e => e.kind === 'SCENARIO_ALLOCATION')).toHaveLength(1); expect(f.tx.reserved.eq(1000)).toBe(true);
+  });
+  test('incremental advance fetches only after saved checkpoint, preserves entry and funding prefix', async () => {
+    const f = historicalFixture(), initial = await f.service.preview(actor, candleRequest()); await finished(f, initial.id); await f.service.confirm(actor, initial.id, 'initial');
+    const old = structuredClone(f.state.scenarios[0]); f.market.history.mockClear(); f.market.resolveCandle.mockClear(); jest.setSystemTime(NOW + 120000);
+    const started = await f.service.advance(actor, old.id, new Date(NOW + 120000).toISOString(), 'advance-key'), next = await finished(f, started.id);
+    expect(next.status).toBe('READY'); expect(f.market.history).toHaveBeenCalledWith(expect.objectContaining({ startTime: NOW, endTime: NOW + 120000 }));
+    expect(f.market.resolveCandle).not.toHaveBeenCalled(); expect(next.result.replay.journal.slice(0, old.result.journal.length)).toEqual(old.result.journal);
+    await f.service.confirm(actor, next.id, 'advance-confirm'); expect(f.state.scenarios[0].version).toBe(2);
+    expect(f.state.scenarios[0].position.effectiveOpenedAt).toBe(old.position.effectiveOpenedAt); expect(f.tx.reserved.eq(1000)).toBe(true);
+    expect(f.entries.filter(e => e.kind === 'OPEN_FEE')).toHaveLength(1); expect(f.entries.filter(e => e.kind === 'FUNDING')).toHaveLength(1);
+  });
+  test('legacy next-open model keeps its original slipped fill on an incremental advance', async () => {
+    const f = historicalFixture(), initial = await f.service.preview(actor, candleRequest({ candleEntry: undefined, effectiveOpenedAt: new Date(NOW - 6 * 60000).toISOString() }));
+    const first = await finished(f, initial.id); expect(first.status).toBe('READY'); expect(first.result.position.entryPrice).toBe('100.02');
+    expect(first.result.profile.pricingModelVersion).toBe('VOLTEX_OBSERVED_DEPTH_IOC_NEXT_OPEN_V1');
+    await f.service.confirm(actor, initial.id, 'initial'); const original = structuredClone(f.state.scenarios[0]); jest.setSystemTime(NOW + 60000);
+    const started = await f.service.advance(actor, original.id, new Date(NOW + 60000).toISOString(), 'advance-key'), next = await finished(f, started.id);
+    expect(next.status).toBe('READY'); expect(next.result.replay.fills[0]).toEqual(original.result.fills[0]);
+    expect(next.result.profile).toEqual(original.profile); await f.service.confirm(actor, next.id, 'advance-confirm');
+    expect(f.state.scenarios[0].position.entryPrice).toBe('100.02'); expect(f.state.scenarios[0].createdAt).toBe(original.createdAt);
+  });
+  test('close on an earlier chart candle revises same scenario and escrow with immutable prior audit', async () => {
+    const f = historicalFixture(), initial = await f.service.preview(actor, candleRequest()); await finished(f, initial.id); await f.service.confirm(actor, initial.id, 'initial');
+    const old = structuredClone(f.state.scenarios[0]), before = { available: f.tx.available.toFixed(), reserved: f.tx.reserved.toFixed(), entries: [...f.entries] };
+    const candle = { source: 'BYBIT_LINEAR' as const, interval: '1m', openTime: NOW - 3 * 60000, pricePoint: 'CLOSE' as const };
+    const started = await f.service.closeOnChart(actor, old.id, candle, 'close-chart'), p = await finished(f, started.id);
+    expect(p.status).toBe('READY'); expect(p.result.scenarioAction).toBe('CLOSE_REVISION'); expect(p.result.position.status).toBe('CLOSED');
+    expect(p.result.position.effectiveClosedAt).toBe(new Date(NOW - 2 * 60000).toISOString());
+    const repeated = await f.service.closeOnChart(actor, old.id, candle, 'close-chart'); expect(repeated.id).toBe(started.id);
+    await f.service.confirm(actor, p.id, 'close-confirm');
+    expect(f.state.scenarios).toHaveLength(1); const updated = f.state.scenarios[0];
+    expect(updated.id).toBe(old.id); expect(updated.version).toBe(2); expect(updated.position.entryPrice).toBe(old.position.entryPrice);
+    expect(updated.revisions?.[0].result).toEqual(old.result); expect(updated.revisions?.[0].position).toEqual(old.position);
+    expect(f.tx.available.toFixed()).toBe(before.available); expect(f.tx.reserved.toFixed()).toBe(before.reserved);
+    expect(f.entries.slice(0, before.entries.length)).toEqual(before.entries); expect(f.entries.filter(e => e.kind === 'SCENARIO_ALLOCATION')).toHaveLength(1);
+    expect(f.entries.filter(e => e.kind === 'SCENARIO_CLOSE_REVISION')).toHaveLength(1);
+    await expect(f.service.confirm(actor, p.id, 'repeat-confirm')).rejects.toMatchObject({ code: 'preview_not_ready' }); expect(f.state.scenarios[0].revisions).toHaveLength(1);
+  });
+  test('a competing advance invalidates a previously reviewed close without another write', async () => {
+    const f = historicalFixture(), initial = await f.service.preview(actor, candleRequest()); await finished(f, initial.id); await f.service.confirm(actor, initial.id, 'initial');
+    const id = f.state.scenarios[0].id;
+    const started = await f.service.closeOnChart(actor, id, { source: 'BYBIT_LINEAR', interval: '1m', openTime: NOW - 3 * 60000, pricePoint: 'CLOSE' }, 'close'); await finished(f, started.id);
+    f.state.scenarios[0].version++; const length = f.entries.length;
+    await expect(f.service.confirm(actor, started.id, 'confirm')).rejects.toMatchObject({ code: 'scenario_changed' }); expect(f.entries).toHaveLength(length);
+  });
+  test('mismatched contract or changed finer candle never publishes verified ready result', async () => {
+    const f = historicalFixture(), history = f.market.history.getMockImplementation()!;
+    f.market.history.mockImplementation(async input => ({ ...await history(input), symbol: 'OTHERUSDT' }));
+    const started = await f.service.preview(actor, candleRequest()), p = await finished(f, started.id);
+    expect(p.status).toBe('FAILED'); expect(f.entries).toHaveLength(0); expect(f.state.scenarios).toHaveLength(0);
+  });
+  test('candle read checks owner authorization after public data load', async () => {
+    const f = historicalFixture(); f.market.chartCandles.mockImplementation(async () => { f.revoke(); return { candles: [] }; });
+    await expect(f.service.getChartCandles(actor, { symbol: 'XYZUSDT', source: 'BYBIT_LINEAR', interval: '1m' })).rejects.toMatchObject({ code: 'private_access_denied' });
   });
 });
