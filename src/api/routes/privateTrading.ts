@@ -8,6 +8,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { PrivateTradingService } from '../../private-trading/service';
 import { OwnerSession, PrivateTradingError, TradeRequest } from '../../private-trading/serviceTypes';
 import { PrivateMarketDataError } from '../../private-trading/marketData';
+import { BybitTestnetClient, BybitTestnetError } from '../../private-trading/BybitTestnetClient';
 
 const signed = z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/).refine(v => new BigNumber(v).isFinite());
 const positive = signed.refine(v => new BigNumber(v).gt(0));
@@ -23,6 +24,22 @@ const scenarioEvent = z.discriminatedUnion('kind', [
   z.object({ id: key, kind: z.literal('CLOSE'), effectiveAt: eventTime, quantity: positive }).strict(),
   z.object({ id: key, kind: z.literal('TPSL'), effectiveAt: eventTime, takeProfit: positive.nullable(), stopLoss: positive.nullable() }).strict(),
 ]);
+const testnetSymbol = z.string().min(4).max(40).transform(v => v.toUpperCase().replace(/[^A-Z0-9]/g, '')).refine(v => /^[A-Z0-9]{2,32}USDT$/.test(v), 'invalid symbol');
+const testnetOrderId = z.string().min(1).max(80).regex(/^[A-Za-z0-9_-]+$/);
+const testnetOrder = z.object({
+  symbol: testnetSymbol,
+  side: z.enum(['Buy', 'Sell']),
+  orderType: z.enum(['Market', 'Limit']),
+  qty: positive,
+  price: positive.optional(),
+  leverage: positive.optional(),
+  takeProfit: positive.optional(),
+  stopLoss: positive.optional(),
+  reduceOnly: z.boolean().optional(),
+}).strict().superRefine((value, ctx) => {
+  if (value.orderType === 'Limit' && !value.price) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['price'], message: 'Укажите лимитную цену' });
+  if (value.orderType === 'Market' && value.price) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['price'], message: 'Рыночному ордеру цена не задаётся' });
+});
 export const privatePreviewSchema = z.object({
   mode: z.enum(['DEMO_LIVE', 'HISTORICAL_REPLAY']), symbol: z.string().max(40).regex(/^[A-Z0-9]+(?:\/|-)?USDT$/),
   side: z.enum(['LONG', 'SHORT']), type: z.enum(['MARKET', 'LIMIT']), leverage: positive,
@@ -43,7 +60,11 @@ export const privatePreviewSchema = z.object({
   }
 });
 
-export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradingService): Router {
+export function privateTradingRouter(
+  prisma: PrismaClient,
+  service: PrivateTradingService,
+  testnet: BybitTestnetClient = BybitTestnetClient.fromEnv(),
+): Router {
   const router = Router();
   const authenticate = requireAuth(prisma);
   router.use('/private-trading', (req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); res.setHeader('Vary', 'Authorization'); void Promise.resolve(authenticate(req, res, next)).catch(next); });
@@ -61,6 +82,25 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
     void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
   };
   router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION' })));
+
+  // Real owner-only Bybit Testnet account. Credentials never cross this API boundary.
+  router.get('/private-trading/testnet/status', handle(async () => testnet.status()));
+  router.get('/private-trading/testnet/state', handle(async () => testnet.state()));
+  router.post('/private-trading/testnet/orders', handle(async (req) => testnet.createOrder(testnetOrder.parse(req.body))));
+  router.post('/private-trading/testnet/orders/:id/cancel', handle(async (req) => {
+    const input = z.object({ symbol: testnetSymbol }).strict().parse(req.body);
+    return testnet.cancelOrder(input.symbol, testnetOrderId.parse(req.params.id));
+  }));
+  router.post('/private-trading/testnet/leverage', handle(async (req) => {
+    const input = z.object({ symbol: testnetSymbol, leverage: positive }).strict().parse(req.body);
+    return testnet.setLeverage(input.symbol, input.leverage);
+  }));
+  router.post('/private-trading/testnet/positions/:symbol/close', handle(async (req) => {
+    const input = z.object({ quantity: positive.optional() }).strict().parse(req.body ?? {});
+    return testnet.closePosition(testnetSymbol.parse(req.params.symbol), input.quantity);
+  }));
+
+  // Historical simulator remains available as a separate owner-only research tool.
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
   router.get('/private-trading/market', handle(async (req, res) => service.getMarket(actor(res), z.string().min(1).max(40).parse(req.query.symbol))));
   router.get('/private-trading/candles', handle(async (req, res) => {
@@ -102,6 +142,7 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   router.get('/private-trading/cards/:id', handle(async (req, res) => service.getCard(actor(res), req.params.id)));
   router.use('/private-trading', (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
     if (error instanceof z.ZodError) return res.status(400).json({ code: 'invalid_request', error: 'Проверьте параметры запроса', fields: error.flatten().fieldErrors });
+    if (error instanceof BybitTestnetError) return res.status(error.status).json({ code: error.code, error: error.message });
     if (error instanceof PrivateTradingError) return res.status(error.status).json({ code: error.code, error: error.message });
     if (error instanceof PrivateMarketDataError) return res.status(error.status === 400 ? 400 : 503).json({ code: error.code, error: 'Котировки временно недоступны. Обновите расчёт.' });
     return res.status(500).json({ code: 'private_trading_unavailable', error: 'Операция временно недоступна' });
