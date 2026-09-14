@@ -16,8 +16,19 @@ createRoot(document.getElementById('root')).render(<LanguageProvider><App/></Lan
 const bundle=esbuild.buildSync({stdin:{contents:entry,resolveDir:front,sourcefile:'reference-qa.tsx',loader:'tsx'},bundle:true,jsx:'automatic',write:false,outdir:tmp,format:'iife',alias:{'lightweight-charts':path.join(tmp,'native.mjs')},define:{'import.meta.env.VITE_API_URL':JSON.stringify('/api/v1'),'import.meta.env':'{}'}});
 const js=bundle.outputFiles.find(f=>f.path.endsWith('.js')).text,css=bundle.outputFiles.find(f=>f.path.endsWith('.css'))?.text||'';
 let server,browser;const report={fixtureOnly:true,scope:'Actual React table, native chart coordinates, callbacks and confirmation; not production or exact reference-font/feature parity.',checks:[]};
-// Native scale updates and the DOM label each paint on animation frames; require convergence, not a sleep or relaxed tolerance.
-async function aligned(page){await page.waitForFunction(()=>{const el=document.querySelector('[data-position-line]');if(!el||!window.__qaSeries)return false;const r=el.getBoundingClientRect(),c=window.__qaChart.chartElement().getBoundingClientRect(),expected=window.__qaSeries.priceToCoordinate(77736.2);return expected!==null&&Math.abs(r.top+r.height/2-c.top-expected)<=.75;},null,{timeout:3000});}
+// Preserve one same-frame measurement after eight stable frames. No relaxed tolerance, fixed coordinates or mocked chart.
+async function aligned(page){
+ await page.evaluate(()=>{window.__alignment={key:'',frames:0};});
+ const handle=await page.waitForFunction(()=>{
+  const el=document.querySelector('[data-position-line]');if(!el||!window.__qaSeries)return false;
+  const r=el.getBoundingClientRect(),c=window.__qaChart.chartElement().getBoundingClientRect();
+  const expected=window.__qaSeries.priceToCoordinate(77736.2),actual=r.top+r.height/2-c.top;
+  const key=JSON.stringify([expected,actual,c.width,c.height]);const state=window.__alignment;
+  state.frames=expected!==null&&Math.abs(actual-expected)<=.75&&state.key===key?state.frames+1:0;state.key=key;
+  return state.frames>=8?{actual,expected,color:getComputedStyle(el).getPropertyValue('--line').trim()}:false;
+ },null,{timeout:5000});
+ const result=await handle.jsonValue();await handle.dispose();return result;
+}
 async function main(){
  server=http.createServer((r,s)=>{s.setHeader('Cache-Control','no-store');if(r.url==='/'){s.setHeader('Content-Type','text/html; charset=utf-8');s.end(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/bundle.css"><style>html,body{margin:0;background:#101014}#root{width:min(100vw,1384px)}</style><div id="root"></div><script>window.__fixture=${JSON.stringify(fixture)};localStorage.setItem('exchange_lang','ru');</script><script src="/bundle.js"></script>`);}else if(r.url==='/bundle.js'){s.setHeader('Content-Type','application/javascript');s.end(js);}else if(r.url==='/bundle.css'){s.setHeader('Content-Type','text/css');s.end(css);}else{s.writeHead(403);s.end();}});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const origin=`http://127.0.0.1:${server.address().port}`;browser=await chromium.launch({headless:true});
@@ -25,15 +36,14 @@ async function main(){
   const context=await browser.newContext({viewport:{width,height:922},deviceScaleFactor:width===1664?2048/1664:1});await context.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());
   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(origin);await page.locator('.private-reference-table').waitFor();await page.waitForFunction(()=>window.__qaSeries?.data().length>0);await page.evaluate(()=>window.__qaChart.timeScale().fitContent());
   try{
-   await page.locator('[data-position-line]').waitFor();await aligned(page);
+   await page.locator('[data-position-line]').waitFor();let measured=await aligned(page);
    const table=page.locator('.private-reference-table');assert.equal(await table.locator('thead th').count(),10);assert(await table.innerText().then(t=>t.includes('77,736.20')&&t.includes('78,123.20')&&t.includes('191.9520')&&t.includes('-7.7114')));assert.equal(await page.getByRole('button',{name:'Лимитный',exact:true}).isDisabled(),true);
-   const measure=()=>page.evaluate(()=>{const e=document.querySelector('[data-position-line]'),rect=e.getBoundingClientRect(),pane=window.__qaChart.chartElement().getBoundingClientRect();return{actual:rect.top+rect.height/2-pane.top,expected:window.__qaSeries.priceToCoordinate(77736.2),color:getComputedStyle(e).getPropertyValue('--line').trim()};});
-   let measured=await measure();assert(Math.abs(measured.actual-measured.expected)<=.75,JSON.stringify(measured));assert.equal(measured.color,'#13ad75');report.checks.push({name:`native-entry-alignment-${width}`,passed:true,measurement:measured});
+   assert(Math.abs(measured.actual-measured.expected)<=.75,JSON.stringify(measured));assert.equal(measured.color,'#13ad75');report.checks.push({name:`native-entry-alignment-${width}`,passed:true,measurement:measured});
    await page.screenshot({path:path.join(out,`terminal-${width}.png`),fullPage:true});await page.locator('.private-reference-panel').screenshot({path:path.join(out,`positions-${width}.png`)});
    await page.getByRole('button',{name:'Открыть карточку BTCUSDT'}).click();assert(await page.evaluate(()=>window.__events.some(e=>e.kind==='card'&&e.id==='qa-private-reference')));
    await page.getByRole('button',{name:'Закрыть позицию BTCUSDT',exact:true}).click();await page.locator('dialog[open]').waitFor();assert(!(await page.evaluate(()=>window.__events.some(e=>e.kind==='confirm'))));await page.getByRole('button',{name:'Закрыть',exact:true}).click();
-   await page.evaluate(()=>window.__qaChart.priceScale('right').applyOptions({scaleMargins:{top:.3,bottom:.05}}));await aligned(page);measured=await measure();assert(Math.abs(measured.actual-measured.expected)<=.75);
-   await page.evaluate(()=>window.__setPosition({side:'SHORT',unrealizedPnl:'-25.20',netPnl:'-26.20'}));await page.waitForFunction(()=>document.querySelector('[data-position-line]')?.classList.contains('short'));await aligned(page);assert.equal((await measure()).color,'#f33b57');
+   await page.evaluate(()=>window.__qaChart.priceScale('right').applyOptions({scaleMargins:{top:.3,bottom:.05}}));measured=await aligned(page);assert(Math.abs(measured.actual-measured.expected)<=.75);
+   await page.evaluate(()=>window.__setPosition({side:'SHORT',unrealizedPnl:'-25.20',netPnl:'-26.20'}));await page.waitForFunction(()=>document.querySelector('[data-position-line]')?.classList.contains('short'));assert.equal((await aligned(page)).color,'#f33b57');
    await page.evaluate(()=>window.__setPosition({dataStatus:'UNAVAILABLE'}));await page.waitForFunction(()=>!document.querySelector('[data-position-line]'));assert(await page.getByRole('button',{name:'Открыть карточку BTCUSDT'}).isDisabled());
    await page.evaluate(()=>window.__setPosition({dataStatus:'LIVE',status:'CLOSED',quantity:'0'}));await page.waitForTimeout(100);assert.equal(await page.locator('[data-position-line]').count(),0);assert.deepEqual(errors,[]);report.checks.push({name:`table-share-confirmation-short-stale-closed-${width}`,passed:true});
   }catch(error){await page.screenshot({path:path.join(out,`failed-${width}.png`),fullPage:true});fs.writeFileSync(path.join(out,`failed-${width}.json`),JSON.stringify({message:error.message,errors,state:await page.evaluate(()=>{const label=document.querySelector('[data-position-line]'),chart=window.__qaChart.chartElement();return{coordinate:window.__qaSeries.priceToCoordinate(77736.2),pane:window.__qaChart.panes()[0].getHeight(),label:label?.getBoundingClientRect().toJSON(),labelTop:label?.style.top,overlay:label?.parentElement.getBoundingClientRect().toJSON(),chart:chart.getBoundingClientRect().toJSON(),labels:document.querySelectorAll('[data-position-line]').length};})},null,2));throw error;}
