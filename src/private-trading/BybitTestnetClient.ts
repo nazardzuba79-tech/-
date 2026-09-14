@@ -144,9 +144,9 @@ export class BybitTestnetClient {
     const entries = Object.entries(input)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .sort(([a], [b]) => a.localeCompare(b));
-    const query = method === 'GET'
-      ? new URLSearchParams(entries.map(([key, value]) => [key, String(value)])).toString()
-      : '';
+    const params = new URLSearchParams();
+    for (const [name, value] of entries) params.append(name, String(value));
+    const query = method === 'GET' ? params.toString() : '';
     const body = method === 'POST' ? JSON.stringify(Object.fromEntries(entries)) : '';
     const plaintext = `${timestamp}${this.apiKey}${RECV_WINDOW}${method === 'GET' ? query : body}`;
     const signature = bybitHmacSignature(this.apiSecret, plaintext);
