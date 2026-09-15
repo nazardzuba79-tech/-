@@ -301,6 +301,21 @@ body {
 .nav-item.nav-secondary:hover {
   color: var(--h-text-2);
 }
+/* The card mark carries its own gold, so it must not follow the row's
+   muted text colour. Held slightly back at rest so it accents the entry
+   without competing with the active tab, and brought to full on hover and
+   while the page is open. */
+.vx-nav-card-icon {
+  opacity: 0.88;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+.nav-item:hover .vx-nav-card-icon,
+.nav-item.nav-active .vx-nav-card-icon {
+  opacity: 1;
+}
+.nav-item:hover .vx-nav-card-icon {
+  transform: translateY(-0.5px);
+}
 .nav-item.nav-admin {
   color: var(--h-admin);
 }

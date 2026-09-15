@@ -1,6 +1,6 @@
 import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowUpRight, ChevronDown, CreditCard, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Landmark, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { api, clearToken, getToken } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { useAdminAlertSound } from '../lib/useAdminAlerts';
@@ -9,6 +9,58 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { BottomNav } from './BottomNav';
 import { DepositModal } from './DepositModal';
 import { TopGainersTicker } from './TopGainersTicker';
+
+/**
+ * The Crypto Card mark.
+ *
+ * Lucide's CreditCard was a flat grey outline in the nav's dimmest text
+ * tone — at 14px it read as a heavy grey box, and it is the only icon in
+ * the bar, so looking like an afterthought was costly. This is the product
+ * instead: the card's silhouette in the brand gold, with a lit band and a
+ * chip, filled just enough to have depth without becoming a solid blob.
+ *
+ * The gradient is declared inside the SVG rather than in CSS because a
+ * stroke cannot take a CSS gradient. Both call sites render the same `id`;
+ * a document that contains two identical definitions resolves every
+ * reference to the first, which is the same gradient either way.
+ */
+function CryptoCardIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      className="vx-nav-card-icon"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="vxNavCard" x1="1" y1="3" x2="15" y2="13" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#f7d06a" />
+          <stop offset="55%" stopColor="#f0c43f" />
+          <stop offset="100%" stopColor="#c8912f" />
+        </linearGradient>
+      </defs>
+      {/* Body: a wash of gold rather than a hollow outline, so the shape
+          still reads at 14-15px where a 1px stroke alone goes muddy. */}
+      <rect x="1" y="3.25" width="14" height="9.5" rx="2" fill="url(#vxNavCard)" fillOpacity="0.16" />
+      <rect
+        x="1"
+        y="3.25"
+        width="14"
+        height="9.5"
+        rx="2"
+        stroke="url(#vxNavCard)"
+        strokeWidth="1.2"
+      />
+      {/* Magnetic band — the one detail that makes it a card and not a
+          rounded rectangle. */}
+      <path d="M1 6.4h14" stroke="url(#vxNavCard)" strokeWidth="1.5" />
+      {/* Chip. */}
+      <rect x="3.3" y="9" width="3" height="2.1" rx="0.6" fill="url(#vxNavCard)" fillOpacity="0.85" />
+    </svg>
+  );
+}
 
 /**
  * Shared top navigation, used on every page after login. `middle` renders
@@ -191,7 +243,7 @@ export function Nav({
           to="/card"
           className={`nav-item nav-secondary top-nav-link${active === '/card' ? ' nav-active is-active' : ''}`}
         >
-          <CreditCard size={14} />
+          <CryptoCardIcon />
           {t('nav.card')}
         </Link>
         <Link to="/otc" className={`nav-item nav-secondary top-nav-link${active === '/otc' ? ' nav-active is-active' : ''}`}>
@@ -276,7 +328,7 @@ export function Nav({
           </Fragment>
         ))}
         <Link to="/card" style={{ ...styles.mobileLink, ...styles.cardLink, ...(active === '/card' ? styles.linkActive : {}) }}>
-          <CreditCard size={14} />
+          <CryptoCardIcon />
           {t('nav.card')}
         </Link>
         <Link to="/otc" style={{ ...styles.mobileLink, ...(active === '/otc' ? styles.linkActive : {}) }}>
