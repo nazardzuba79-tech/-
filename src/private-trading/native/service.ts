@@ -5,6 +5,7 @@ import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, NATIVE_DEMO_MODEL } from './engine';
+import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
@@ -45,7 +46,42 @@ export class NativeDemoService {
       orders:row.snapshot.orders,events:row.snapshot.events,source:row.source,asOf:row.snapshot.time,
       entries:row.commands.filter((c):c is Extract<NativeInstruction,{kind:'OPEN'}>=>c.kind==='OPEN').map(c=>({positionId:c.order.id,candle:c.candle??null}))};
   }
-  async state(actor:OwnerSession){const row=await this.repository.read(actor);return{...this.view(row),demoAvailable:row?null:await this.repository.available(actor)};}
+  /**
+   * WHAT THE WHOLE WALLET IS WORTH, as the Cross collateral base.
+   *
+   * Every asset the owner holds is priced in the settle asset from the SAME
+   * market data the terminal trades on — one price source, no second table
+   * of numbers to disagree with the first. An asset whose quote cannot be
+   * fetched comes back UNPRICED and named: the valuation says so and stays
+   * `complete: false`, rather than pretending the holding is worth nothing.
+   * A caller that needs a collateral figure must read `complete`.
+   *
+   * No total is written into the code. The figure is whatever the owner's
+   * rows and the live quotes make it.
+   */
+  async collateral(actor:OwnerSession):Promise<CollateralValuation>{
+    const holdings=await this.repository.holdings(actor);
+    const settle='USDT';
+    const prices=await Promise.all(holdings
+      .filter(h=>h.asset!==settle)
+      .map(async(h):Promise<CollateralPrice>=>{
+        try{
+          const quote=await this.market.freshQuote(`${h.asset}${settle}`);
+          // Mark, not last: the collateral is valued the way the positions
+          // it backs are valued, so the two cannot drift apart.
+          return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
+        }catch{
+          // A contract that does not exist and a provider that is down are
+          // the same answer here: we do not know what this is worth.
+          return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
+        }
+      }));
+    return valueCollateral(holdings,prices,settle);
+  }
+  async state(actor:OwnerSession){
+    const row=await this.repository.read(actor);
+    return{...this.view(row),demoAvailable:row?null:await this.repository.available(actor)};
+  }
   /**
    * The contract's own trading rules, for the terminal's order form.
    *

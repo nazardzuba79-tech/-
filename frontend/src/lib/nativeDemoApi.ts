@@ -24,6 +24,20 @@ export interface NativeContract{
   minLeverage:string;maxLeverage:string;leverageStep:string;
   riskTiers:{maxNotional:string;maintenanceRate:string;deduction:string;maxLeverage:string}[];takerFeeRate:string;makerFeeRate:string;
 }
+/**
+ * The Cross collateral base: the whole wallet priced in the settle asset.
+ *
+ * `price`/`value` are `null` for an asset whose quote could not be obtained.
+ * That is not a zero and must never be rendered as one — `unpriced` names
+ * those assets and `complete` says whether `priced` is the whole wallet.
+ */
+export interface NativeCollateralLine{
+  asset:string;quantity:string;price:string|null;value:string|null;
+  status:'SETTLE'|'PRICED'|'UNPRICED';source:string|null;asOf:number|null;
+}
+export interface NativeCollateral{
+  settleAsset:string;lines:NativeCollateralLine[];priced:string;unpriced:string[];complete:boolean;asOf:number|null;
+}
 export type NativeDraft=
  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
@@ -50,6 +64,8 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     /** The contract's own trading rules — what the engine will accept as a
      *  quantity. The order form sizes against these instead of guessing. */
     contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
+    /** The whole wallet as Cross collateral, valued at the same marks the positions use. */
+    collateral:(signal?:AbortSignal)=>request<NativeCollateral>('/native/collateral',undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),

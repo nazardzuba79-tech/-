@@ -15,6 +15,9 @@ class MemoryRepository implements NativeRepository{
   constructor(private clock:Clock){}
   async read(){return this.row?structuredClone(this.row):null;}
   async available(){return this.row?null:'10000000';}
+  /** A multi-asset wallet: the settle row, one asset with a quote, one without. */
+  wallet=[{asset:'USDT',available:'10000000',locked:'0'},{asset:'BTC',available:'2',locked:'0'},{asset:'XYZ',available:'7',locked:'0'}];
+  async holdings(){return this.wallet;}
   async revision(_a:OwnerSession,r:number){const v=this.revisions.get(r);return v?structuredClone(v):null;}
   async prior(_a:OwnerSession,key:string,hash:string){const v=this.keys.get(key);if(!v)return null;if(v.hash!==hash)throw new PrivateTradingError('idempotency_conflict','conflict',409);return structuredClone(v.row);}
   async initialize(_a:OwnerSession,key:string){
@@ -170,5 +173,64 @@ describe('native demo service (fixture market, in-memory persistence)',()=>{
     f.clock.t+=5_000;
     const v=await f.service.command(actor,{kind:'CLOSE',positionId:f.repo.row!.snapshot.positions[0].id,idempotencyKey:key()});
     expect(v.history).toHaveLength(1);expect(f.repo.row!.checkpoint!.digest).not.toBe('corrupted');
+  });
+});
+
+describe('the Cross collateral base is the whole wallet, priced or named',()=>{
+  test('prices every asset it can and NAMES the one it cannot, instead of valuing it at 0',async()=>{
+    const f=setup();
+    // The fixture market answers every symbol, so make one genuinely fail —
+    // exactly what an unlisted asset or a provider outage looks like.
+    const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{
+      if(symbol==='XYZUSDT')throw new Error('NO_SUCH_CONTRACT');
+      return answer(symbol);
+    }) as typeof f.market.freshQuote;
+
+    const v=await f.service.collateral(actor);
+    // 10 000 000 USDT + 2 BTC at the fixture mark of 50 000.
+    expect(v.priced).toBe('10100000');
+    expect(v.unpriced).toEqual(['XYZ']);
+    expect(v.complete).toBe(false);
+    const xyz=v.lines.find(l=>l.asset==='XYZ')!;
+    expect(xyz.value).toBeNull();
+    expect(xyz.price).toBeNull();
+    // 7 XYZ are still 7 XYZ; only their worth is unknown.
+    expect(xyz.quantity).toBe('7');
+  });
+
+  test('values collateral at the MARK, the same price the positions it backs use',async()=>{
+    const f=setup();
+    f.market.quote={...f.market.quote,mark:'60000',last:'12345'};
+    const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{
+      if(symbol==='XYZUSDT')throw new Error('NO_SUCH_CONTRACT');
+      return answer(symbol);
+    }) as typeof f.market.freshQuote;
+    const v=await f.service.collateral(actor);
+    expect(v.lines.find(l=>l.asset==='BTC')!.price).toBe('60000');
+    expect(v.priced).toBe('10120000');
+  });
+
+  test('a complete wallet reports complete, and the total is the wallet — not a number written in the code',async()=>{
+    const f=setup();
+    f.repo.wallet=[{asset:'USDT',available:'1234.5',locked:'0.5'},{asset:'BTC',available:'1',locked:'0'}];
+    const v=await f.service.collateral(actor);
+    expect(v.complete).toBe(true);
+    expect(v.unpriced).toEqual([]);
+    expect(v.priced).toBe('51235');
+    // Change the wallet, and the figure changes with it.
+    f.repo.wallet=[{asset:'USDT',available:'7',locked:'0'}];
+    expect((await f.service.collateral(actor)).priced).toBe('7');
+  });
+
+  test('the settle row needs no quote, so a total outage still values the USDT the owner holds',async()=>{
+    const f=setup();
+    f.repo.wallet=[{asset:'USDT',available:'900',locked:'0'},{asset:'BTC',available:'3',locked:'0'}];
+    f.market.freshQuote=(async()=>{throw new Error('PROVIDER_DOWN');}) as typeof f.market.freshQuote;
+    const v=await f.service.collateral(actor);
+    expect(v.priced).toBe('900');
+    expect(v.unpriced).toEqual(['BTC']);
+    expect(v.complete).toBe(false);
   });
 });

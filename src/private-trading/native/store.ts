@@ -4,6 +4,7 @@ import { assertOwner, privateTradingConfig, PrivateTradingConfig } from '../acce
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { emptyDemoState, DemoState } from './engine';
 import { NativeCheckpoint, NativeInstruction } from './replay';
+import { CollateralHolding } from './collateral';
 
 export interface NativeAccount {
   revision:number; deposit:string; commands:NativeInstruction[]; snapshot:DemoState;
@@ -18,6 +19,11 @@ export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.st
 export interface NativeRepository {
   read(actor:OwnerSession):Promise<NativeAccount|null>;
   available(actor:OwnerSession):Promise<string|null>;
+  /**
+   * EVERY asset the owner holds, not the settle row alone — Cross margin is
+   * backed by the whole wallet, so the whole wallet has to be readable.
+   */
+  holdings(actor:OwnerSession):Promise<CollateralHolding[]>;
   revision(actor:OwnerSession,revision:number):Promise<NativeAccount|null>;
   initialize(actor:OwnerSession,key:string):Promise<NativeAccount>;
   prior(actor:OwnerSession,key:string,hash:string):Promise<NativeAccount|null>;
@@ -29,6 +35,14 @@ export class PrismaNativeRepository implements NativeRepository {
   private owner(db:PrismaClient|Prisma.TransactionClient,actor:OwnerSession){return assertOwner(db,actor,this.config);}
   async read(actor:OwnerSession){await this.owner(this.db,actor);const row=await this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}});await this.owner(this.db,actor);return row?row.payload as unknown as NativeAccount:null;}
   async available(actor:OwnerSession){await this.owner(this.db,actor);const b=await this.db.demoBalance.findUnique({where:{userId_asset:{userId:actor.userId,asset:'USDT'}}});await this.owner(this.db,actor);return b?b.available.toString():null;}
+  async holdings(actor:OwnerSession){
+    await this.owner(this.db,actor);
+    const rows=await this.db.demoBalance.findMany({where:{userId:actor.userId},orderBy:{asset:'asc'}});
+    await this.owner(this.db,actor);
+    // Both columns travel: locked quantity still backs this account and
+    // leaving it out would understate the collateral.
+    return rows.map(r=>({asset:r.asset,available:r.available.toString(),locked:r.locked.toString()}));
+  }
   async revision(actor:OwnerSession,revision:number){await this.owner(this.db,actor);const row=await this.db.nativeDemoRevision.findUnique({where:{userId_revision:{userId:actor.userId,revision}}});await this.owner(this.db,actor);return row?row.payload as unknown as NativeAccount:null;}
   async prior(actor:OwnerSession,key:string,hash:string){
     await this.owner(this.db,actor);const row=await this.db.nativeDemoRevision.findUnique({where:{userId_requestKey:{userId:actor.userId,requestKey:key}}});

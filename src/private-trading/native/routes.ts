@@ -58,6 +58,9 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   // The terminal's order form sizes against these. Without them the client
   // can only guess a quantity and let the engine refuse it, which is exactly
   // how a slider-sized order used to fail on the contract's quantity step.
+  // The Cross collateral base: every wallet asset priced in the settle
+  // asset, with the unpriced ones named rather than silently valued at 0.
+  r.get('/collateral',handle((_req,res)=>service.collateral(actor(res))));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
   r.post('/commands',handle((req,res)=>service.command(actor(res),nativeCommandSchema.parse(req.body) as NativeCommand)));
