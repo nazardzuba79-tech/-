@@ -1,92 +1,37 @@
-name: Apply locked copy-trader catalogue list
+name: Apply locked copy trader list
 on:
   push:
-    branches: ['codex/copy-trading-locked-list']
-    paths: ['.github/workflows/apply-copy-locked-list.yml']
+    branches:
+      - codex/copy-trading-locked-list
+    paths:
+      - .github/workflows/apply-copy-locked-list.yml
 permissions:
   contents: write
 jobs:
   apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    env:
-      EXPECTED_MAIN: 54a410ef52c8c50932d95b53e90d5d88446cd165
-      BRANCH: codex/copy-trading-locked-list
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
           fetch-depth: 0
-      - name: Refuse drift and apply exact edits
+      - name: Verify base
         run: |
-          git fetch origin main "$BRANCH"
-          test "$(git rev-parse origin/main)" = "$EXPECTED_MAIN"
-          test "$(git rev-parse origin/$BRANCH)" = "$GITHUB_SHA"
-          python <<'PY'
-          from pathlib import Path
-          p=Path('frontend/src/pages/copy-trading-bolt/components.tsx')
-          s=p.read_text()
-          old='''  LineChart,\n  Search,'''
-          new='''  LineChart,\n  LockKeyhole,\n  Search,'''
-          assert old in s
-          s=s.replace(old,new,1)
-          old="""import { LiveMetric } from './LiveMetric';\n"""
-          new="""import { LiveMetric } from './LiveMetric';\nimport './LockedTraderList.css';\n"""
-          assert old in s
-          s=s.replace(old,new,1)
-          marker='''export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = kseniaTraderShell, kseniaSynthetic, availability }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null; availability?: CopyMarketplaceState }) {'''
-          assert marker in s
-          locked=r'''function LockedTraderList({ traders, period }: { traders: Trader[]; period: Period }) {
-  const whitelistNotice = (trader: Trader) => toast.warning(
-    'Только пользователи из белого списка могут подписаться на этого Мастера трейдинга.',
-    { description: `Свяжитесь с Мастером трейдинга ${trader.name}, чтобы получить приглашение.`, duration: 5500 }
-  );
-  return <>
-    <div className="locked-trader-list" role="table" aria-label="Закрытый каталог Мастеров трейдинга">
-      <div className="locked-trader-list-head" role="row">
-        <span>Мастер трейдинга</span><span>{PERIOD_LABEL_RU[period]} ROI</span><span>Винрейт</span><span>Макс. просадка</span><span>Подписчики</span><span>★</span><span>Действие</span>
-      </div>
-      {traders.map((trader) => {
-        const roi = getRoiForPeriod(trader, period);
-        return <div className="locked-trader-row" role="row" key={trader.id} data-trader-id={trader.id}>
-          <div className="locked-trader-identity">
-            <Avatar trader={trader} />
-            <div>
-              <div className="locked-trader-name"><span>{trader.name}</span><span className="locked-trader-lock" title="Только по приглашению"><LockKeyhole size={14} /></span></div>
-              <div className="locked-trader-subtitle">{trader.strategy} · {trader.region}</div>
-            </div>
-          </div>
-          <div className={`locked-trader-metric ${roiClass(roi)}`}><LiveMetric value={formatPercent(roi)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.winRate)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.drawdown)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={Number.isFinite(trader.copiers) ? Math.round(trader.copiers).toLocaleString('ru-RU') : '—'} /></div>
-          <div><FavoriteButton trader={trader} /></div>
-          <div className="locked-trader-action"><button className="locked-copy-button" type="button" onClick={() => whitelistNotice(trader)}>Копировать</button></div>
-        </div>;
-      })}
-    </div>
-    <p className="locked-list-note">Профили этого каталога закрыты. Подключение доступно только по приглашению Мастера трейдинга.</p>
-  </>;
-}
-
-'''
-          s=s.replace(marker,locked+marker,1)
-          old='''  const currentPage = Math.min(page, totalPages);\n  const pageTraders = visibleTraders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);'''
-          new='''  const currentPage = Math.min(page, totalPages);\n  const pageTraders = visibleTraders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);\n  // Keep the curated first page as the existing rich cards. The mass catalogue\n  // is deliberately lightweight and non-navigable: All Traders always uses it,\n  // and leaderboard pagination switches to it from page 2 onward.\n  const lockedListMode = tab === 'all' || (tab === 'leaderboard' && currentPage > 1);'''
-          assert old in s
-          s=s.replace(old,new,1)
-          old='''        <div className="trader-grid">\n          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}\n        </div>'''
-          new='''        {lockedListMode\n          ? <LockedTraderList traders={pageTraders} period={period} />\n          : <div className="trader-grid">\n              {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}\n            </div>}'''
-          assert old in s
-          s=s.replace(old,new,1)
-          p.write_text(s)
-          PY
-          git diff --check
+          git fetch origin main codex/copy-trading-locked-list
+          test "$(git rev-parse origin/main)" = "54a410ef52c8c50932d95b53e90d5d88446cd165"
+          test "$(git rev-parse origin/codex/copy-trading-locked-list)" = "$GITHUB_SHA"
+      - name: Apply exact source transform
+        run: python scripts/apply-copy-locked-list.py
+      - name: Build frontend
+        run: |
           npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
           npm run build --prefix frontend
-          git rm .github/workflows/apply-copy-locked-list.yml
-          git config user.name 'VOLTEX copy catalogue update'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Commit final source and remove one-shot helpers
+        run: |
+          git diff --check
+          git rm .github/workflows/apply-copy-locked-list.yml scripts/apply-copy-locked-list.py
           git add frontend/src/pages/copy-trading-bolt/components.tsx frontend/src/pages/copy-trading-bolt/LockedTraderList.css
-          git commit -m 'Use lightweight whitelist list beyond featured copy traders'
-          git push origin "HEAD:refs/heads/$BRANCH"
+          git config user.name "VOLTEX copy catalogue update"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Use lightweight whitelist list beyond featured copy traders"
+          git push origin HEAD:refs/heads/codex/copy-trading-locked-list
