@@ -28,7 +28,6 @@ import { useCopyMarketplace } from '../lib/useCopyMarketplace';
 export function CopyTradingPage() {
   const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
   const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
-  const [profileReady, setProfileReady] = useState(true);
   const [depositUsd, setDepositUsd] = useState(0);
   const marketplace = useCopyMarketplace();
   const { nazar: synthetic, ksenia, identities } = marketplace;
@@ -56,31 +55,19 @@ export function CopyTradingPage() {
 
   const visibleTrader = selectedTrader.id === nazarTrader.id ? liveNazara : selectedTrader.id === KSENIA_TRADER_ID ? liveKsenia : selectedTrader;
 
-  // The two featured profiles carry substantially more analytics than an
-  // ordinary catalogue card. Render a tiny profile shell first, let the
-  // browser paint it, then mount the heavy analytics on the next frame.
-  // This makes the click itself immediate even on a cold first open.
-  useEffect(() => {
-    if (view !== 'profile' || profileReady) return;
-    const frame = window.requestAnimationFrame(() => setProfileReady(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, [view, profileReady, selectedTrader.id]);
-
   function openProfile(trader: Trader) {
     setSelectedTrader(trader);
-    setProfileReady(false);
     setView('profile');
     window.scrollTo(0, 0);
   }
 
   function backToMarketplace() {
-    setProfileReady(true);
     setView('marketplace');
     window.scrollTo(0, 0);
   }
 
-  // Profile styling is scoped separately so its compact analytical layout
-  // can evolve without changing the approved marketplace surface.
+  // The profile itself renders its identity/header immediately and defers
+  // the heavier charts/tables until after the first browser paint.
   return (
     <div className={`copytrading-bolt-root ${view === 'profile' ? 'profile-view' : ''}`}>
       <Nav active="/copy-trading" />
@@ -90,15 +77,7 @@ export function CopyTradingPage() {
             <FeaturedAvatarProvider ownerAvatar={identities.find(i => i.traderId === nazarTrader.id)?.avatarUrl ?? null}>
               {view === 'marketplace'
                 ? <Marketplace onOpen={openProfile} nazara={liveNazara} synthetic={synthetic} ksenia={liveKsenia} kseniaSynthetic={ksenia} availability={marketplace} />
-                : profileReady
-                  ? <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />
-                  : <main className="page-shell copy-profile profile-opening-shell" role="status" aria-live="polite">
-                      <button className="profile-opening-back" type="button" onClick={backToMarketplace}>← Назад к трейдерам</button>
-                      <section className="profile-opening-card">
-                        <div className={`avatar avatar-${visibleTrader.tone}`}>{visibleTrader.initials}</div>
-                        <div><span>MASTER TRADER</span><h1>{visibleTrader.name}</h1><p>Открываем профиль…</p></div>
-                      </section>
-                    </main>}
+                : <Profile trader={visibleTrader} onBack={backToMarketplace} synthetic={visibleTrader.id === KSENIA_TRADER_ID ? ksenia : synthetic} />}
             </FeaturedAvatarProvider>
           </CopyEligibilityProvider>
         </div>
