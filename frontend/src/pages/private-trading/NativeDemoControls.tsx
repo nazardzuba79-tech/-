@@ -69,7 +69,7 @@ export function NativeDemoTicket({controller:c,symbol,pickedPrice,pickedSequence
       <dl>
         <dt>Обеспечение</dt><dd>{privateNumber(a?.equity)} USDT</dd>
         <dt>Нереализованный P&amp;L</dt><dd className={sign(a?.unrealizedPnl)}>{privateNumber(a?.unrealizedPnl)} USDT</dd>
-        <dt>Использовано</dt><dd>{privateNumber(a?.usedMargin)} USDT</dd>
+        <dt>Использовано</dt><dd>{privateNumber(a?.initialMargin)} USDT</dd>
         <dt>Резерв ордеров</dt><dd>{privateNumber(a?.orderReserve)} USDT</dd>
         <dt>Поддерживающая маржа</dt><dd>{privateNumber(a?.maintenanceMargin)} USDT</dd>
         <dt>Funding</dt><dd>{fundingRates(c)}</dd>
@@ -132,7 +132,7 @@ export function NativeDemoPanel({controller:c}:{controller:NativeDemoController}
         {[...s.events].reverse().filter(e=>e.kind!=='PROTECTION'&&e.kind!=='LEVERAGE').map(e=><tr key={e.id}><td>{privateUtc(e.time)}</td><td>{e.symbol}</td><td>{e.kind}</td><td>{privateNumber(e.price)}</td><td>{privateNumber(e.quantity,3)}</td><td>{privateNumber(e.fee,6)}</td><td className={sign(e.cashflow)}>{privateNumber(e.cashflow,6)}</td></tr>)}
         {!s.events.length&&<tr><td colSpan={7}>Сделок нет</td></tr>}</tbody></table>}
       {tab==='assets'&&<table><thead><tr><th>Актив</th><th>Баланс</th><th>Доступно</th><th>Использовано</th><th>Резерв ордеров</th><th>Нереализованный P&amp;L</th></tr></thead><tbody>
-        <tr><td><b>USDT</b></td><td>{privateNumber(s.account?.equity)}</td><td>{privateNumber(s.account?.available)}</td><td>{privateNumber(s.account?.usedMargin)}</td><td>{privateNumber(s.account?.orderReserve)}</td>
+        <tr><td><b>USDT</b></td><td>{privateNumber(s.account?.equity)}</td><td>{privateNumber(s.account?.available)}</td><td>{privateNumber(s.account?.initialMargin)}</td><td>{privateNumber(s.account?.orderReserve)}</td>
           <td className={sign(s.account?.unrealizedPnl)}>{privateNumber(s.account?.unrealizedPnl)}</td></tr></tbody></table>}
     </div>}
   </div>;

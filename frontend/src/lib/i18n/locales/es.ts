@@ -956,6 +956,10 @@ export const ES: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': 'Entiendo y acepto los riesgos del trading con margen',
   'futures.riskDisclaimerAccept': 'Aceptar y continuar',
   'futures.newAccountLimitNotice': 'Las cuentas nuevas están limitadas a {max}x de apalancamiento durante los primeros {days} días',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': 'Sin precio para {assets}. El saldo mostrado es un límite inferior.',
   'futures.placeOrderError': 'No se pudo colocar la orden',
   // El motivo del rechazo, con su nombre: la falta de fondos nunca se
   // presenta como un límite del contrato, ni al revés.

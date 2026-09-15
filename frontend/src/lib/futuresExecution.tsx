@@ -37,8 +37,22 @@ import type { FuturesContractRules } from './futuresMath';
  * position the simulation engine had already priced under its own risk
  * tiers.
  */
+/**
+ * The account, exactly as the server computed it.
+ *
+ * This is a TRANSCRIPT, not an input to another calculation. Every field
+ * here is the server's single answer, and nothing in the interface may
+ * re-derive one of them from the others or from the position list — two
+ * derivations of one figure are two figures, and that is how the
+ * maintenance margin once came out as 0.00%.
+ */
 export interface FuturesAccountAggregate {
-  walletBalance: string;
+  /** The simulation ledger's settle-asset balance. */
+  settleBalance: string;
+  /** The rest of the wallet, valued at mark. Only the part that COULD be valued. */
+  walletCollateral: string;
+  /** settleBalance + walletCollateral. */
+  collateral: string;
   equity: string;
   unrealizedPnl: string;
   /** Initial margin held by open positions. */
@@ -49,7 +63,18 @@ export interface FuturesAccountAggregate {
   available: string;
   /** `null` when there is no position to measure a ratio against. */
   maintenanceRatio: string | null;
-  liquidatable: boolean;
+  /**
+   * `null` means the question could not be answered, because part of the
+   * collateral has no price. It is NOT `false`, and it is NOT `true`:
+   * rendering either would be inventing a verdict.
+   */
+  liquidatable: boolean | null;
+  /** False when `equity` is a floor rather than the account. */
+  collateralComplete: boolean;
+  /** The assets behind an incomplete valuation, so the interface can name them. */
+  unpricedAssets: string[];
+  /** The stalest price behind `walletCollateral`. */
+  collateralAsOf: number | null;
 }
 
 export interface FuturesExecution {

@@ -956,6 +956,10 @@ export const HI: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': 'मैं मार्जिन ट्रेडिंग के जोखिमों को समझता हूं और स्वीकार करता हूं',
   'futures.riskDisclaimerAccept': 'स्वीकार करें और जारी रखें',
   'futures.newAccountLimitNotice': 'नए अकाउंट पहले {days} दिनों के लिए {max}x लीवरेज तक सीमित हैं',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': '{assets} के लिए कीमत उपलब्ध नहीं है। दिखाया गया बैलेंस न्यूनतम सीमा है।',
   'futures.placeOrderError': 'ऑर्डर नहीं दिया जा सका',
   // ऑर्डर अस्वीकृति का असली कारण: धनराशि की कमी को कॉन्ट्रैक्ट सीमा
   // बताकर नहीं दिखाया जाता, और न ही इसके विपरीत।

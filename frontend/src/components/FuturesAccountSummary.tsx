@@ -115,6 +115,14 @@ export function FuturesAccountSummary({
         <span>{t(account.balances.failed ? 'trade.loadAssetsError' : 'futures.loadPositionsError')}</span>
         <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => refreshFuturesAccount(failedResources)}>{t('trade.retry')}</button>
       </div>}
+      {aggregate && !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 && (
+        // An incomplete valuation understates collateral. Saying so is the
+        // only honest option: a total that silently omits an asset reads
+        // exactly like a smaller account.
+        <div className="futures-account-state" role="status" style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.35 }}>
+          {t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })}
+        </div>
+      )}
       <div className="futures-account-pnl" style={styles.headerRight}>
         <span>{t('futures.unrealizedPnl')}</span>
         <span

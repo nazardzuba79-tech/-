@@ -956,6 +956,10 @@ export const KO: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': '증거금 거래의 위험을 이해하고 수락합니다',
   'futures.riskDisclaimerAccept': '수락하고 계속하기',
   'futures.newAccountLimitNotice': '신규 계정은 처음 {days}일 동안 레버리지가 {max}배로 제한됩니다',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': '{assets}의 가격을 확인할 수 없습니다. 표시된 잔액은 하한값입니다.',
   'futures.placeOrderError': '주문을 실행할 수 없습니다',
   // 주문 거부 사유를 있는 그대로: 자금 부족을 계약 한도로, 계약 한도를
   // 자금 부족으로 바꿔 말하지 않는다.

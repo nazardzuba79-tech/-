@@ -6,6 +6,8 @@ import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, NATIVE_DEMO_MODEL } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
+import { crossAccount, CrossAccount } from './accountModel';
+import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
@@ -78,9 +80,50 @@ export class NativeDemoService {
       }));
     return valueCollateral(holdings,prices,settle);
   }
+  /**
+   * ONE ACCOUNT OBJECT, WHATEVER ASKED FOR IT.
+   *
+   * `view()` projects the engine's own settle-denominated figures. Every
+   * response the terminal receives — a state poll, an order, a close, a
+   * refresh — replaces that with the AUTHORITATIVE account: the same
+   * engine figures folded together with the wallet's other collateral by
+   * `crossAccount`, plus the ledger that explains the balance.
+   *
+   * Going through one helper is the point. When the poll and the order
+   * response each built their own account, a trader could place an order
+   * and watch available margin disagree with itself for five seconds.
+   */
+  private async authoritative<T extends ReturnType<NativeDemoService['view']>>(actor:OwnerSession,view:T,row:NativeAccount|null){
+    if(!row||!view.initialized)return{...view,ledger:null};
+    const valuation=await this.collateral(actor);
+    const open=row.snapshot.positions.some(p=>p.status==='OPEN');
+    return{...view,account:crossAccount(demoAccount(row.snapshot),valuation,open),ledger:accountLedger(row.snapshot)};
+  }
+  /**
+   * THE AUTHORITATIVE ACCOUNT — one computation, server-side.
+   *
+   * Equity, available margin, both margins, the liquidation verdict and the
+   * ledger all come from here. Nothing downstream recomputes any of them:
+   * two derivations of one figure are two figures, and the terminal has
+   * already been bitten once by exactly that (a maintenance margin derived
+   * a second time from the real tier table read 0.00%).
+   *
+   * The collateral valuation is folded in here rather than in the engine
+   * because the engine is denominated in the settle asset and knows nothing
+   * about the owner's other holdings. Keeping it out of the engine also
+   * keeps replay deterministic: the journal does not depend on what BTC was
+   * worth when the account happened to be read.
+   */
+  async account(actor:OwnerSession):Promise<{account:CrossAccount;ledger:AccountLedger}|null>{
+    const row=await this.repository.read(actor);
+    if(!row)return null;
+    const view=await this.authoritative(actor,this.view(row),row);
+    return{account:view.account as CrossAccount,ledger:view.ledger as AccountLedger};
+  }
   async state(actor:OwnerSession){
     const row=await this.repository.read(actor);
-    return{...this.view(row),demoAvailable:row?null:await this.repository.available(actor)};
+    const view=await this.authoritative(actor,this.view(row),row);
+    return{...view,demoAvailable:row?null:await this.repository.available(actor)};
   }
   /**
    * The contract's own trading rules, for the terminal's order form.
@@ -99,7 +142,7 @@ export class NativeDemoService {
     return{...contractRules(instrument),riskTiers:simulationProfile(instrument).riskTiers,
       takerFeeRate:simulationProfile(instrument).takerFeeRate,makerFeeRate:simulationProfile(instrument).makerFeeRate};
   }
-  async initialize(actor:OwnerSession,key:string){return this.view(await this.repository.initialize(actor,key));}
+  async initialize(actor:OwnerSession,key:string){const row=await this.repository.initialize(actor,key);return this.authoritative(actor,this.view(row),row);}
   private async bars(request:BarRequest):Promise<ReplayBar[]>{
     const history=await this.market.history({symbol:request.symbol,startTime:request.start,endTime:request.end,intervalMinutes:(request.intervalMs/MINUTE) as 1|15|60,omitProviderFunding:true});
     if(!history.complete)throw new DemoEngineError('HISTORY_GAP');
@@ -114,14 +157,14 @@ export class NativeDemoService {
     return edge==='START'?bar.mark.open:bar.mark.close;
   }
   async command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean}={}){
-    const hash=commandHash(request),prior=await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.view(prior);
+    const hash=commandHash(request),prior=await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
     if(this.busy.has(actor.userId))throw new PrivateTradingError('native_busy','Расчёт уже выполняется',409);
     this.busy.add(actor.userId);
     try {
       const row=await this.repository.read(actor);if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
       const instruction=await this.instruction(row,request);
       const commands=structuredClone(instruction?[...row.commands,instruction]:row.commands);
-      if(!commands.length&&!options.persist)return this.view(row);
+      if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row);
       // Backdated trades re-simulate the scenario from the beginning; everything else continues the
       // canonical checkpoint, so outcomes already shown are never recomputed away.
       const incremental=row.checkpoint&&(!instruction||instruction.at>=row.checkpoint.time)?row.checkpoint:null;
@@ -133,8 +176,9 @@ export class NativeDemoService {
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
       const changed=!!instruction||!!result.observed||outcome(result.snapshot)!==outcome(row.snapshot);
       const stale=!row.checkpoint||result.checkpoint.time-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
-      if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale)return this.view({...next,revision:row.revision});
-      return this.view(await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash));
+      if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged);}
+      const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
+      return this.authoritative(actor,this.view(committed),committed);
     }finally{this.busy.delete(actor.userId);}
   }
   private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null):Promise<ReplayResult>{

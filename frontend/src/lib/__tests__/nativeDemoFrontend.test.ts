@@ -37,7 +37,7 @@ function hooksReact(){
 const position=(extra:object={})=>({id:'native-p1',symbol:'BTCUSDT',side:'LONG',quantity:'2',entryPrice:'50000',markPrice:'51000',lastPrice:'51000',leverage:'20',status:'OPEN',openedAt:1_700_000_000_000,closedAt:null,historical:false,
   unrealizedPnl:'2000',realizedPnl:'-55',netPnl:'1945',roiPercent:'40',roiBasis:'5000',closedRoiBasis:'0',fundingNet:'0',protection:{takeProfit:null,stopLoss:null,quantity:null,triggerBy:'MARK'},liquidationPrice:null,liquidationStatus:'ACCOUNT_CROSS_ESTIMATE',...extra});
 const state=(extra:object={})=>({initialized:true,revision:7,source:'DEMO_BALANCE',asOf:1_700_000_100_000,model:{version:'VOLTEX_NATIVE_CROSS_V2',funding:{longCashflow:'-0.001',shortCashflow:'0.004',unit:'FRACTION',intervalMs:28_800_000}},
-  account:{walletBalance:'10000000',initialDeposit:'10000000',unrealizedPnl:'2000',equity:'10002000',usedMargin:'5100',orderReserve:'0',available:'9996900',maintenanceMargin:'1122',maintenanceRatio:'0.0001',liquidatable:false,deficit:'0'},
+  account:{settleBalance:'10000000',walletCollateral:'0',collateral:'10000000',unrealizedPnl:'2000',equity:'10002000',initialMargin:'5100',orderReserve:'0',available:'9996900',maintenanceMargin:'1122',maintenanceRatio:'0.0001',liquidatable:false,collateralComplete:true,unpricedAssets:[],collateralAsOf:null},
   positions:[position()],history:[],orders:[],events:[],entries:[],...extra});
 function controller(extra:object={}){
   const calls:any[]=[];

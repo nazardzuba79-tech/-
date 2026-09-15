@@ -95,7 +95,9 @@ describe('large financial values in the positions table and account totals', () 
     unrealizedPnl: '0', realizedPnl: '0', netPnl: '0', roiPercent: '0', roiBasis: '1250000', closedRoiBasis: '1250000', fundingNet: '-48250.75', protection: { takeProfit: null, stopLoss: null, quantity: null, triggerBy: 'MARK' }, liquidationPrice: '1875000.5', liquidationStatus: 'ACCOUNT_CROSS_ESTIMATE', ...extra });
   const state = (extra: object = {}) => ({ initialized: true, revision: 9, source: 'DEMO_BALANCE', asOf: 1_700_000_100_000,
     model: { version: 'VOLTEX_NATIVE_CROSS_V2', funding: { longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28_800_000 } },
-    account: { walletBalance: '10000000', initialDeposit: '10000000', unrealizedPnl: '10000000', equity: '20000000', usedMargin: '1250000', orderReserve: '0', available: '18750000', maintenanceMargin: '275000.5', maintenanceRatio: '0.0001', liquidatable: false, deficit: '0' },
+    // The authoritative account shape: the settle ledger and the rest of
+    // the wallet are separate figures whose sum is the collateral.
+    account: { settleBalance: '10000000', walletCollateral: '0', collateral: '10000000', unrealizedPnl: '10000000', equity: '20000000', initialMargin: '1250000', orderReserve: '0', available: '18750000', maintenanceMargin: '275000.5', maintenanceRatio: '0.0001', liquidatable: false, collateralComplete: true, unpricedAssets: [], collateralAsOf: null },
     positions: [], history: [], orders: [], events: [], entries: [], ...extra });
   const controller = (extra: object = {}) => ({ requested: true, allowed: true, checked: true, state: state(), error: '', busy: false, card: null, setCard() {}, dialog: null, setDialog() {}, candle: null, setCandle() {}, exitId: null, setExitId() {}, selectedId: null,
     run: async () => true, initialize() {}, showCard() {}, interaction: {}, loader() {}, selectEntry() {}, exitOnChart() {}, fail() {}, pickEntry() {}, ...extra });

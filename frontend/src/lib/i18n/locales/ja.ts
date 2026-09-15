@@ -956,6 +956,10 @@ export const JA: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': '証拠金取引のリスクを理解し、受け入れます',
   'futures.riskDisclaimerAccept': '同意して続行',
   'futures.newAccountLimitNotice': '新規アカウントは最初の{days}日間、レバレッジが{max}倍までに制限されます',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': '{assets} の価格が取得できません。表示されている残高は下限値です。',
   'futures.placeOrderError': '注文を発注できませんでした',
   // 注文が拒否された理由をそのまま伝える：資金不足を銘柄の制限として、
   // 銘柄の制限を資金不足として示すことはしない。

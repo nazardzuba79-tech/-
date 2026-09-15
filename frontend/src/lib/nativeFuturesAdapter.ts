@@ -174,7 +174,7 @@ export function nativeBalances(state: NativeState): FuturesBalance[] {
   return [{
     asset: 'USDT',
     available: account.available,
-    locked: addDecimalStrings(account.usedMargin, account.orderReserve),
+    locked: addDecimalStrings(account.initialMargin, account.orderReserve),
   }];
 }
 

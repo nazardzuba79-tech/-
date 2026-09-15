@@ -985,6 +985,10 @@ export const EN: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': 'I understand and accept the risks of margin trading',
   'futures.riskDisclaimerAccept': 'Accept and continue',
   'futures.newAccountLimitNotice': 'New accounts are limited to {max}x leverage for the first {days} days',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': 'No price for {assets}. The balance shown is a lower bound.',
   'futures.placeOrderError': 'Failed to place order',
   // Why an order was refused, named as itself: a margin shortfall is never
   // reported as a contract limit, nor a contract limit as a shortfall.

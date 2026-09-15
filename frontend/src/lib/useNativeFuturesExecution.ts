@@ -73,18 +73,13 @@ export function useNativeFuturesExecution(
       ? { source: 'BYBIT_LINEAR' as const, interval: candle.interval, openTime: candle.openTime, pricePoint: 'CLOSE' as const }
       : null;
 
-    /** The engine's own aggregate, passed straight through. */
-    const aggregate = state?.account ? {
-      walletBalance: state.account.walletBalance,
-      equity: state.account.equity,
-      unrealizedPnl: state.account.unrealizedPnl,
-      initialMargin: state.account.usedMargin,
-      maintenanceMargin: state.account.maintenanceMargin,
-      orderReserve: state.account.orderReserve,
-      available: state.account.available,
-      maintenanceRatio: state.account.maintenanceRatio,
-      liquidatable: state.account.liquidatable,
-    } : null;
+    /**
+     * The server's account, passed straight through — not copied field by
+     * field, and not recombined. The shapes are identical on purpose: any
+     * transformation here would be a second place where the account's
+     * arithmetic lives.
+     */
+    const aggregate = state?.account ?? null;
 
     const refuse = async () => {
       throw new Error('Торговый счёт ещё не загружен');

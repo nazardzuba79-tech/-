@@ -15,9 +15,35 @@ export interface NativeEvent {id:string;kind:string;time:number;positionId:strin
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
   model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
-  account:null|{walletBalance:string;initialDeposit:string;unrealizedPnl:string;equity:string;usedMargin:string;orderReserve:string;available:string;maintenanceMargin:string;maintenanceRatio:string|null;liquidatable:boolean;deficit:string};
+  /**
+   * THE AUTHORITATIVE ACCOUNT, computed once on the server.
+   *
+   * `liquidatable` is `null` — not `false` — while any held asset could not
+   * be priced: an incomplete valuation understates collateral, and a
+   * liquidation verdict on an understated figure is worse than no verdict.
+   * `collateralComplete` and `unpricedAssets` say when that is the case.
+   */
+  account:null|NativeAccountAggregate;
+  /** Every change to the settle balance, with its source. `null` before the account exists. */
+  ledger:AccountLedgerView|null;
   positions:NativePosition[];history:NativePosition[];orders:NativeOrder[];events:NativeEvent[];
   entries?:{positionId:string;candle:NativeCandle|null}[];
+}
+export interface NativeAccountAggregate{
+  settleBalance:string;walletCollateral:string;collateral:string;unrealizedPnl:string;equity:string;
+  initialMargin:string;orderReserve:string;maintenanceMargin:string;available:string;
+  maintenanceRatio:string|null;liquidatable:boolean|null;
+  collateralComplete:boolean;unpricedAssets:string[];collateralAsOf:number|null;
+}
+export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUIDATION_FEE'|'REALIZED_PNL'|'FUNDING';
+export interface LedgerEntryView{
+  id:string;time:number;source:LedgerSource;kind:string;positionId:string|null;symbol:string|null;
+  quantity:string|null;price:string|null;amount:string;balanceAfter:string;
+}
+export interface AccountLedgerView{
+  entries:LedgerEntryView[];openingBalance:string;closingBalance:string;
+  totals:{realizedPnl:string;fees:string;funding:string;net:string};
+  walletBalance:string;reconciled:boolean;
 }
 export interface NativeContract{
   symbol:string;tickSize:string;qtyStep:string;minOrderQty:string;maxOrderQty:string;maxMarketOrderQty:string;minNotionalValue:string;

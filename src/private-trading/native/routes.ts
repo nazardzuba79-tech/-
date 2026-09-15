@@ -4,6 +4,7 @@ import { NativeCommand, NativeDemoService } from './service';
 import { OwnerSession } from '../serviceTypes';
 import { DemoEngineError, NATIVE_DEMO_MODEL } from './engine';
 import { ContractRuleError } from '../math';
+import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
@@ -60,6 +61,13 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   // how a slider-sized order used to fail on the contract's quantity step.
   // The Cross collateral base: every wallet asset priced in the settle
   // asset, with the unpriced ones named rather than silently valued at 0.
+  // The single authoritative account: equity, margins, the liquidation
+  // verdict and the ledger that explains every change to the balance.
+  r.get('/account',handle(async(_req,res)=>{
+    const result=await service.account(actor(res));
+    if(!result)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
+    return result;
+  }));
   r.get('/collateral',handle((_req,res)=>service.collateral(actor(res))));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));

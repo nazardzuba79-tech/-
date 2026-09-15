@@ -980,6 +980,10 @@ export const ZH: Record<Key, string> = {
   'futures.riskDisclaimerCheckbox': '我理解并接受保证金交易的风险',
   'futures.riskDisclaimerAccept': '接受并继续',
   'futures.newAccountLimitNotice': '新账户在前 {days} 天内最高杠杆为 {max}x',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': '{assets} 暂无价格。显示的余额为下限。',
   'futures.placeOrderError': '下单失败',
   // 拒单原因如实说明：保证金不足不会被说成合约限制，反之亦然。
   'futures.orderError.minOrderQty': '该合约的最小数量为 {allowed}。',

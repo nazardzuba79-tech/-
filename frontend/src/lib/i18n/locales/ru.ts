@@ -998,6 +998,10 @@ export const RU = {
   'futures.riskDisclaimerCheckbox': 'Я понимаю риски маржинальной торговли и принимаю их',
   'futures.riskDisclaimerAccept': 'Принять и продолжить',
   'futures.newAccountLimitNotice': 'Новым аккаунтам доступно плечо не выше {max}x первые {days} дней',
+  // Part of the collateral has no price, so the figure on screen is a
+  // floor, not the account. The unpriced assets are named rather than
+  // silently valued at zero.
+  'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',
   'futures.placeOrderError': 'Не удалось разместить ордер',
   // Причина отказа ордера, названная своим именем: нехватка средств не
   // выдаётся за лимит контракта, а лимит контракта — за нехватку средств.
