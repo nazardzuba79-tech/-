@@ -148,7 +148,7 @@ async function card(page, filename, width) {
 }
 async function accountSummary(page, state) {
   const g = await page.locator('.futures-account-summary').evaluate(e => ({ mode: e.querySelector('.futures-account-mode')?.innerText, balance: e.querySelector('.futures-account-balance .mono')?.textContent, available: [...e.querySelectorAll('.futures-account-stat:not(.futures-account-mode):not(.futures-account-balance) .mono')].map(x => x.textContent), risk: [...e.querySelectorAll('.futures-account-risk .mono')].map(x => x.textContent) }));
-  assert(g.mode?.includes('Cross'), 'Owner margin mode is not Cross');
+  assert(/(?:Cross|Кросс)/i.test(g.mode || ''), 'Owner margin mode is not Cross: ' + JSON.stringify(g));
   assert.equal(g.balance.trim(), Number(state.account.equity).toFixed(2) + ' USDT', 'Margin Balance differs from native equity');
   assert.deepEqual(g.available.map(x => x.trim()), [Number(state.account.available).toFixed(2) + ' USDT'], 'Available Balance differs from native state');
   const pct = key => (Number(state.account[key]) / Number(state.account.equity) * 100).toFixed(2) + '%';
@@ -182,6 +182,7 @@ async function normalFlow(width) {
     await check(`limit-close-prefill-no-submit-${width}`, async () => {
       const before = s.drafts.filter(x => x.kind !== 'REFRESH').length;
       await row.locator('.futures-position-close').nth(0).click();
+      await p.waitForFunction(() => document.querySelector('.fo-reduceOnlyRow input')?.checked === true);
       assert(await p.locator('.fo-reduceOnlyRow input').isChecked()); assert.equal(await qty(p).inputValue(), '7'); assert(await price(p).isVisible());
       await delay(200); assert.equal(s.drafts.filter(x => x.kind !== 'REFRESH').length, before, 'Limit-close button automatically sent a trade');
     });
