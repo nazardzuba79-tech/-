@@ -1,0 +1,55 @@
+name: Optimize copy profile first paint
+on:
+  push:
+    branches:
+      - codex/copy-trading-locked-list
+    paths:
+      - .github/workflows/optimize-copy-profile-first-paint.yml
+permissions:
+  contents: write
+jobs:
+  optimize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Verify fresh main
+        shell: bash
+        run: |
+          git fetch origin main codex/copy-trading-locked-list
+          test "$(git rev-parse origin/main)" = "54a410ef52c8c50932d95b53e90d5d88446cd165"
+      - name: Defer featured period calculations
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('frontend/src/pages/copy-trading-bolt/components.tsx')
+          s=p.read_text()
+          old="const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);"
+          new="const periodData = useMemo(() => detailsReady && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [detailsReady, liveSynthetic, period]);"
+          assert old in s
+          s=s.replace(old,new,1)
+          old="const strategyData = useMemo(() => simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [simpleReturn, liveSynthetic]);"
+          new="const strategyData = useMemo(() => detailsReady && simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [detailsReady, simpleReturn, liveSynthetic]);"
+          assert old in s
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+          git diff --check
+      - name: Frontend production build
+        shell: bash
+        run: |
+          npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+          npm run build --prefix frontend
+      - name: Commit and remove verifier
+        shell: bash
+        run: |
+          git rm .github/workflows/optimize-copy-profile-first-paint.yml
+          git config user.name "VOLTEX copy profile optimization"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/pages/copy-trading-bolt/components.tsx
+          git commit -m "Defer featured copy analytics until after first paint"
+          git push origin HEAD:refs/heads/codex/copy-trading-locked-list
