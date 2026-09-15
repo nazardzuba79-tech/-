@@ -1,0 +1,50 @@
+name: Production loading audit
+on:
+  pull_request:
+    paths:
+      - 'scripts/qa-production-loading.cjs'
+      - '.github/workflows/production-loading-audit.yml'
+      - 'frontend/src/**'
+      - 'src/api/routes/**'
+      - 'src/services/**'
+permissions:
+  contents: read
+concurrency:
+  group: production-loading-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Root dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Frontend dependencies
+        working-directory: frontend
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build current production frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: /api/v1
+        run: npm run build
+      - name: Install disposable Chromium
+        run: |
+          npm install --prefix /tmp/voltex-production-loading --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-production-loading/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Audit production market loading and route chunks
+        env:
+          VOLTEX_QA_PLAYWRIGHT: /tmp/voltex-production-loading/node_modules/playwright
+        run: node scripts/qa-production-loading.cjs
+      - name: Preserve audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-loading-audit
+          path: docs/qa/production-loading/
+          retention-days: 7
