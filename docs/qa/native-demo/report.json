@@ -37,8 +37,8 @@
       "name": "cross-liquidation-far-1440",
       "passed": true,
       "liquidation": [
-        "90414366.5",
-        "90414366.5"
+        "90487307.2",
+        "90487307.2"
       ]
     },
     {
@@ -48,9 +48,9 @@
     {
       "name": "native-historical-limit-wick-1440",
       "passed": true,
-      "limit": "50800.5",
-      "low": 50692.6,
-      "entry": "50800.5"
+      "limit": "50347.4",
+      "low": 49852.1,
+      "entry": "50347.4"
     },
     {
       "name": "native-chart-click-history-entry-pnl-exit-1440",
@@ -91,8 +91,8 @@
       "name": "cross-liquidation-far-390",
       "passed": true,
       "liquidation": [
-        "90414366.5",
-        "90414366.5"
+        "90487322",
+        "90487322"
       ]
     },
     {
@@ -102,9 +102,9 @@
     {
       "name": "native-historical-limit-wick-390",
       "passed": true,
-      "limit": "50680.5",
-      "low": 50605.5,
-      "entry": "50680.5"
+      "limit": "50545.5",
+      "low": 50131.4,
+      "entry": "50545.5"
     },
     {
       "name": "native-chart-click-history-entry-pnl-exit-390",

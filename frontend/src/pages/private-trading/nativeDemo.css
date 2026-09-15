@@ -22,6 +22,10 @@
    scrolls — but Close is the row's primary action and must never be the
    part that scrolls away. It stays pinned to the right edge. */
 .native-demo-panel th:last-child,.native-demo-panel td:last-child{position:sticky;right:0;background:var(--workspace-bg,#16181d);box-shadow:-9px 0 9px -9px #000c}
+/* Not on a phone. There the Close column is ~180px of a 390px screen, so
+   pinning it would permanently cover half the row it is meant to serve —
+   and it overlays whatever scrolls beneath it. The table scrolls instead. */
+@media (max-width:767px){.native-demo-panel th:last-child,.native-demo-panel td:last-child{position:static;box-shadow:none}}
 .native-demo-panel th,.native-demo-panel td{padding:10px 11px}
 .native-refresh{font-size:15px;line-height:1}
 
