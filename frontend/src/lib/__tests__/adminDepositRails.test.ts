@@ -48,8 +48,12 @@ test('Products admin surface is removed and overview remains lazy behind admin l
   expect(nav).not.toContain('/admin/products');
   expect(api).not.toMatch(/getAdminProducts|createProduct:|updateProduct:|deleteProduct:/);
   expect(existsSync(resolve(root, 'src/pages/admin/AdminProductsPage.tsx'))).toBe(false);
-  expect(app).toContain('const AdminOverviewPage = lazy(');
-  expect(app).toContain('<Route index element={<AdminOverviewPage />} />');
+  // The console has no overview step: /admin opens the Пользователи list an
+  // operator actually works from, and the page it used to open is gone.
+  expect(app).not.toContain('AdminOverviewPage');
+  expect(app).toContain('<Route index element={<Navigate to="users" replace />} />');
+  expect(nav).not.toContain("label: 'Обзор'");
+  expect(existsSync(resolve(root, 'src/pages/admin/AdminOverviewPage.tsx'))).toBe(false);
   expect(nav).toContain('useAdminGate()');
   expect(nav).toContain("status === 'denied'");
 });

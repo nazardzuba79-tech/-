@@ -171,8 +171,14 @@ export const styles: Record<string, CSSProperties> = {
     border: '1px solid var(--border)',
     borderRadius: 9,
     boxShadow: '0 1px 2px 0 rgba(16,24,40,0.04), 0 1px 3px 0 rgba(16,24,40,0.05)',
-    overflow: 'hidden',
-    overflowX: 'auto', maxHeight: '68vh',
+    // BOTH axes scroll. `overflow: 'hidden'` here used to set both and the
+    // `overflowX` line below only put X back, leaving overflow-y HIDDEN —
+    // so the 68vh cap clipped the last rows with no way to reach them. The
+    // rounded corners the `hidden` was for are kept by the radius plus
+    // `isolation`, which clips the painted content without a scroll trap.
+    isolation: 'isolate',
+    overflowX: 'auto', overflowY: 'auto', maxHeight: '68vh',
+    overscrollBehavior: 'contain',
   },
   tableHeader: {
     display: 'grid',
