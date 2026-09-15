@@ -119,9 +119,12 @@ export function FuturesPage() {
   const execution = nativeExecution ?? REAL_FUTURES_EXECUTION;
   // The simulation account polls its own authoritative state, so the real
   // futures account store must not poll for it. What decides that is the
-  // SERVER's answer, not a query parameter: `native.requested` is the
-  // access check's verdict, so the terminal stops polling as soon as it
-  // arrives and an ordinary user keeps the unchanged intervals.
+  // ENGINE SEAM itself, not a query parameter and not a second flag:
+  // `nativeExecution` is non-null exactly while this account is bound to the
+  // simulation engine — including while the server's verdict is still
+  // 'unknown', which is deliberately fail-closed. An ordinary user's binding
+  // resolves to 'ordinary', the seam goes null, and the unchanged intervals
+  // resume.
   const account = useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 });
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
