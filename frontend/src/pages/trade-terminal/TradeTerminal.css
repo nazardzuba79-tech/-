@@ -705,6 +705,24 @@
   display: flex; align-items: center; height: 24px; padding: 0 12px;
   font-size: 10px;
   position: relative; cursor: pointer; transition: background 0.1s;
+  /* NEVER COMPRESS A ROW.
+     `.orderbook-asks` is a flex container (column-reverse, so the book
+     builds upward from the spread) while `.orderbook-bids` is an ordinary
+     block. A flex child defaults to `flex-shrink: 1`, so once the asks
+     overflowed — 15 rows at 26px into a 234px column — the browser
+     squeezed every ask row down to its line-height, 17.4px, while the
+     bids kept their full 26px and simply clipped.
+
+     The two sides then showed different row counts at different densities:
+     ~14 asks against ~9 bids, which reads as "the sells use a smaller
+     font". They do not; the font is 12px on both. The ROW was collapsing.
+
+     With shrink off, an overflowing ask row is clipped exactly the way an
+     overflowing bid row is, and both sides show the same number of levels
+     at the same height. Clipping lands on the correct end on each side:
+     column-reverse fills from the spread upward, so the levels lost are
+     the ones furthest from it — same as the bids. */
+  flex-shrink: 0;
 }
 .trade-terminal .ob-row:hover { background: #202c38; }
 /* tabular-nums so changing digits never shift the Price/Amount/Sum column
