@@ -66,8 +66,8 @@ export function CopyTradingPage() {
     window.scrollTo(0, 0);
   }
 
-  // Profile styling is scoped separately so its compact analytical layout
-  // can evolve without changing the approved marketplace surface.
+  // The profile itself renders its identity/header immediately and defers
+  // the heavier charts/tables until after the first browser paint.
   return (
     <div className={`copytrading-bolt-root ${view === 'profile' ? 'profile-view' : ''}`}>
       <Nav active="/copy-trading" />

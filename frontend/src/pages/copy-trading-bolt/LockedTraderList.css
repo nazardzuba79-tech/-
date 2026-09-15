@@ -1,0 +1,152 @@
+.copytrading-bolt-root .locked-trader-list {
+  border: 1px solid #262a30;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #08090b;
+}
+
+.copytrading-bolt-root .locked-trader-list-head,
+.copytrading-bolt-root .locked-trader-row {
+  display: grid;
+  grid-template-columns: minmax(280px, 1.7fr) minmax(180px, .8fr) minmax(118px, .55fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.copytrading-bolt-root .locked-trader-list-head {
+  min-height: 44px;
+  padding: 0 18px;
+  color: #7f8792;
+  background: #121419;
+  border-bottom: 1px solid #24272d;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.copytrading-bolt-root .locked-trader-row {
+  min-height: 66px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #1b1e23;
+  color: #e8eaf0;
+}
+
+.copytrading-bolt-root .locked-trader-row:last-child { border-bottom: 0; }
+.copytrading-bolt-root .locked-trader-row:hover { background: #0d0f12; }
+
+.copytrading-bolt-root .locked-trader-identity {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 12px;
+}
+
+.copytrading-bolt-root .locked-trader-identity .avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+
+.copytrading-bolt-root .locked-trader-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #f4f5f7;
+}
+
+.copytrading-bolt-root .locked-trader-name > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copytrading-bolt-root .locked-trader-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff9f1a;
+  flex: 0 0 auto;
+}
+
+.copytrading-bolt-root .locked-trader-subtitle {
+  margin-top: 3px;
+  color: #7d8490;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.copytrading-bolt-root .locked-trader-metric {
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.copytrading-bolt-root .locked-trader-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.copytrading-bolt-root .locked-copy-button {
+  min-width: 108px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 18px;
+  border: 1px solid #a85b12;
+  background: transparent;
+  color: #ff9f1a;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copytrading-bolt-root .locked-copy-button:hover {
+  border-color: #ff9f1a;
+  background: rgba(255,159,26,.08);
+}
+
+.copytrading-bolt-root .locked-list-note {
+  margin: 12px 2px 0;
+  color: #767d88;
+  font-size: 11px;
+}
+
+@media (max-width: 980px) {
+  .copytrading-bolt-root .locked-trader-list { overflow-x: auto; }
+  .copytrading-bolt-root .locked-trader-list-head,
+  .copytrading-bolt-root .locked-trader-row { min-width: 900px; }
+}
+
+@media (max-width: 640px) {
+  .copytrading-bolt-root .locked-trader-list {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+  }
+}
+
+.copytrading-bolt-root .locked-access {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #aeb4bd;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.copytrading-bolt-root .locked-access svg { color: #ff9f1a; }
+.copytrading-bolt-root .page-gap { color: #707680; padding: 0 4px; font-size: 13px; }
+.copytrading-bolt-root .profile-detail-loading {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  color: #7f8792;
+  font-size: 12px;
+  border: 1px solid #20242a;
+  border-radius: 12px;
+  background: #0a0c0f;
+}
