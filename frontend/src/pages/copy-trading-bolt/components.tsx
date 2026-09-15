@@ -56,6 +56,7 @@ import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
 import { LiveMetric } from './LiveMetric';
 import './LockedTraderList.css';
+import { lockedCatalogueTraders } from './lockedCatalogue';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -666,6 +667,7 @@ function FollowersPanel({ trader, metrics, synthetic, period }: { trader: Trader
 }
 
 export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack: () => void; synthetic?: SyntheticCopyTradingResponse | null }) {
+  const [detailsReady, setDetailsReady] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('statistics');
   const [period, setPeriod] = useState<Period>('90D');
   const [chartMode, setChartMode] = useState<ProfileChartMode>('ROI');
@@ -682,6 +684,15 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   const heroDrawdown = liveSynthetic?.economics?.periods.ALL.maximumDrawdown ?? liveSynthetic?.analytics.allTime.maximumDrawdown ?? demoAll?.maximumDrawdown ?? trader.drawdown;
   const heroAum = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).reduce((sum, follower) => sum + follower.allocatedCapital, 0) : trader.aum;
   const heroFollowers = liveSynthetic ? liveSynthetic.followers.filter(follower => follower.active).length : trader.copiers;
+
+  useEffect(() => {
+    setDetailsReady(false);
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => setDetailsReady(true));
+    });
+    return () => { window.cancelAnimationFrame(firstFrame); if (secondFrame) window.cancelAnimationFrame(secondFrame); };
+  }, [trader.id]);
 
   return (
     <main className="page-shell profile-page trader-profile-page">
@@ -705,7 +716,7 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
         <div className="profile-periods" aria-label="Период">{PERIODS.map((item) => <button key={item} className={period === item ? 'active' : ''} onClick={() => setPeriod(item)}>{item}</button>)}</div>
       </nav>
 
-      {activeTab === 'statistics' ? <>
+      {!detailsReady ? <div className="profile-detail-loading" role="status" aria-live="polite"><span>Загрузка аналитики…</span></div> : activeTab === 'statistics' ? <>
         <div className="profile-analytics-workspace">
           <aside><MetricsPanel metrics={strategyData ?? metrics} period={strategyData ? 'ALL' : period} compact={simpleReturn} /><TradingProfilePanel trader={trader} metrics={strategyData ?? metrics} periodData={periodData} strategyTrades={liveSynthetic?.trades} strategyMainMarkets={liveSynthetic?.mainMarkets} /></aside>
           <div className="profile-chart-column"><ProfilePerformanceChart trader={trader} period={period} mode={chartMode} onMode={setChartMode} periodData={periodData} /><DailyReturnChart data={periodData} /></div>
@@ -793,7 +804,7 @@ function MarketplaceBottom() {
   );
 }
 
-function LockedTraderList({ traders, period }: { traders: Trader[]; period: Period }) {
+function LockedTraderList({ traders }: { traders: Trader[] }) {
   const whitelistNotice = (trader: Trader) => toast.warning(
     'Только пользователи из белого списка могут подписаться на этого Мастера трейдинга.',
     { description: `Свяжитесь с Мастером трейдинга ${trader.name}, чтобы получить приглашение.`, duration: 5500 }
@@ -801,29 +812,53 @@ function LockedTraderList({ traders, period }: { traders: Trader[]; period: Peri
   return <>
     <div className="locked-trader-list" role="table" aria-label="Закрытый каталог Мастеров трейдинга">
       <div className="locked-trader-list-head" role="row">
-        <span>Мастер трейдинга</span><span>{PERIOD_LABEL_RU[period]} ROI</span><span>Винрейт</span><span>Макс. просадка</span><span>Подписчики</span><span>★</span><span>Действие</span>
+        <span>Мастер трейдинга</span><span>Доступ</span><span>Действие</span>
       </div>
-      {traders.map((trader) => {
-        const roi = getRoiForPeriod(trader, period);
-        return <div className="locked-trader-row" role="row" key={trader.id} data-trader-id={trader.id}>
+      {traders.map((trader) => (
+        <div
+          className="locked-trader-row"
+          role="button"
+          tabIndex={0}
+          key={trader.id}
+          data-trader-id={trader.id}
+          onClick={() => whitelistNotice(trader)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              whitelistNotice(trader);
+            }
+          }}
+        >
           <div className="locked-trader-identity">
             <Avatar trader={trader} />
             <div>
               <div className="locked-trader-name"><span>{trader.name}</span><span className="locked-trader-lock" title="Только по приглашению"><LockKeyhole size={14} /></span></div>
-              <div className="locked-trader-subtitle">{trader.strategy} · {trader.region}</div>
+              <div className="locked-trader-subtitle">Master Trader · {trader.region}</div>
             </div>
           </div>
-          <div className={`locked-trader-metric ${roiClass(roi)}`}><LiveMetric value={formatPercent(roi)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.winRate)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.drawdown)} /></div>
-          <div className="locked-trader-metric"><LiveMetric value={Number.isFinite(trader.copiers) ? Math.round(trader.copiers).toLocaleString('ru-RU') : '—'} /></div>
-          <div><FavoriteButton trader={trader} /></div>
-          <div className="locked-trader-action"><button className="locked-copy-button" type="button" onClick={() => whitelistNotice(trader)}>Копировать</button></div>
-        </div>;
-      })}
+          <div className="locked-access"><LockKeyhole size={14} /><span>Только по приглашению</span></div>
+          <div className="locked-trader-action"><button className="locked-copy-button" type="button" onClick={(event) => { event.stopPropagation(); whitelistNotice(trader); }}>Копировать</button></div>
+        </div>
+      ))}
     </div>
-    <p className="locked-list-note">Профили этого каталога закрыты. Подключение доступно только по приглашению Мастера трейдинга.</p>
+    <p className="locked-list-note">Профили закрыты. Для подключения свяжитесь с выбранным Мастером трейдинга и получите приглашение.</p>
   </>;
+}
+
+type PaginationItem = number | 'gap-left' | 'gap-right';
+function paginationWindow(current: number, total: number): PaginationItem[] {
+  if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1);
+  const pages = new Set<number>([1, total, current - 1, current, current + 1]);
+  if (current <= 4) [2, 3, 4, 5].forEach(page => pages.add(page));
+  if (current >= total - 3) [total - 4, total - 3, total - 2, total - 1].forEach(page => pages.add(page));
+  const sorted = [...pages].filter(page => page >= 1 && page <= total).sort((a, b) => a - b);
+  const result: PaginationItem[] = [];
+  sorted.forEach((page, index) => {
+    const previous = sorted[index - 1];
+    if (previous && page - previous > 1) result.push(previous === 1 ? 'gap-left' : 'gap-right');
+    result.push(page);
+  });
+  return result;
 }
 
 export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = kseniaTraderShell, kseniaSynthetic, availability }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null; availability?: CopyMarketplaceState }) {
@@ -836,43 +871,51 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
   const [period, setPeriod] = useState<Period>('90D');
   const [page, setPage] = useState(1);
 
-  // Both operator identities have permanent slots, even before their first
-  // successful response. Search/favorites still operate on that same roster.
+  // Featured traders keep the existing rich cards. The invitation-only
+  // directory is a separate lightweight roster with no performance payloads.
   const dynamicRoster = useMemo(() => [nazara, ksenia, ...marketplaceTraders], [nazara, ksenia]);
+  const lockedRoster = lockedCatalogueTraders;
   const tabRoster = useMemo(() => {
     switch (tab) {
       case 'favorites': return dynamicRoster.filter((t) => favorites.has(t.id));
       case 'following': return dynamicRoster.filter((t) => following.has(t.id));
-      case 'all': return dynamicRoster;
+      case 'all': return lockedRoster;
       default: return dynamicRoster;
     }
-  }, [tab, favorites, following, dynamicRoster]);
+  }, [tab, favorites, following, dynamicRoster, lockedRoster]);
 
+  const lockedVisible = useMemo(() => searchTraders(lockedRoster, query), [lockedRoster, query]);
   const visibleTraders = useMemo(() => {
+    if (tab === 'all') return lockedVisible;
     let result = searchTraders(tabRoster, query).map(item => preserveModeledSource(item, { ...item, drawdown: item.id === nazara.id
       ? synthetic ? selectSyntheticPeriod(synthetic, period).maximumDrawdown : item.drawdown
       : item.id === ksenia.id ? kseniaSynthetic ? selectSyntheticPeriod(kseniaSynthetic, period).maximumDrawdown : item.drawdown : selectDemoPerformance(item, period).maximumDrawdown }));
     if (tab === 'leaderboard' || sortBy === 'Top Performance') {
-      // Curated slots are identity-based, never a score manufactured for an
-      // unavailable metric. Exclude them BEFORE sorting the ordinary roster:
-      // a NaN comparator must not perturb the surrounding cards either.
       const featured = [nazara.id, ksenia.id].flatMap(id => result.filter(item => item.id === id));
       result = [...featured, ...sortTraders(result.filter(item => item.id !== nazara.id && item.id !== ksenia.id), sortBy, period)];
     } else {
       result = sortTraders(result, sortBy, period);
     }
     return result;
-  }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic, ksenia, kseniaSynthetic]);
+  }, [tabRoster, query, sortBy, period, tab, nazara.id, synthetic, ksenia, kseniaSynthetic, lockedVisible]);
 
-  const totalPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
+  const featuredPageCount = Math.min(PAGE_SIZE, visibleTraders.length);
+  const ordinaryPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
+  const lockedPages = Math.max(1, Math.ceil(lockedVisible.length / PAGE_SIZE));
+  const totalPages = tab === 'leaderboard' ? 1 + lockedPages : tab === 'all' ? lockedPages : ordinaryPages;
   const currentPage = Math.min(page, totalPages);
-  const pageTraders = visibleTraders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  // Preserve rich featured cards on leaderboard page 1. The mass catalogue is
-  // lightweight and non-navigable: All Traders uses it immediately, and the
-  // leaderboard switches to it from page 2 onward.
   const lockedListMode = tab === 'all' || (tab === 'leaderboard' && currentPage > 1);
-  const startIdx = visibleTraders.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const endIdx = Math.min(currentPage * PAGE_SIZE, visibleTraders.length);
+  const pageTraders = tab === 'all'
+    ? lockedVisible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+    : tab === 'leaderboard' && currentPage > 1
+      ? lockedVisible.slice((currentPage - 2) * PAGE_SIZE, (currentPage - 1) * PAGE_SIZE)
+      : visibleTraders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalVisibleCount = tab === 'leaderboard' ? featuredPageCount + lockedVisible.length : visibleTraders.length;
+  const startIdx = totalVisibleCount === 0 ? 0 : tab === 'leaderboard' && currentPage > 1
+    ? featuredPageCount + (currentPage - 2) * PAGE_SIZE + 1
+    : (currentPage - 1) * PAGE_SIZE + 1;
+  const endIdx = Math.min(startIdx + Math.max(0, pageTraders.length - 1), totalVisibleCount);
+  const paginationItems = useMemo(() => paginationWindow(currentPage, totalPages), [currentPage, totalPages]);
 
   useEffect(() => { setPage(1); }, [tab, query, sortBy, period]);
 
@@ -907,26 +950,26 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
           </div>
           <div className="market-search-sort">
             <div className="search-box"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Поиск трейдеров" /></div>
-            <div className={`sort-button ${sortOpen ? 'sort-open' : ''}`} onClick={() => setSortOpen(!sortOpen)} onBlur={() => setTimeout(() => setSortOpen(false), 150)} tabIndex={0}>
+            {tab !== 'all' && <div className={`sort-button ${sortOpen ? 'sort-open' : ''}`} onClick={() => setSortOpen(!sortOpen)} onBlur={() => setTimeout(() => setSortOpen(false), 150)} tabIndex={0}>
               <span><b>{SORT_LABEL_RU[sortBy] ?? sortBy}</b></span><ChevronDown size={14} className={sortOpen ? 'chevron-up' : ''} />
               {sortOpen && (
                 <div className="filter-dropdown sort-dropdown" onClick={(e) => e.stopPropagation()}>
                   {sortOptions.map((opt) => <button key={opt} className={sortBy === opt ? 'active' : ''} onClick={() => { setSortBy(opt); setSortOpen(false); }}>{SORT_LABEL_RU[opt] ?? opt}{sortBy === opt && <Check size={13} />}</button>)}
                 </div>
               )}
-            </div>
+            </div>}
           </div>
         </div>
 
-        <div className="ranking-controls">
+        {tab !== 'all' && <div className="ranking-controls">
           <div className="ranking-filters">
             {RANKING_FILTERS.map((filter) => (
               <button key={filter.label} className={sortBy === filter.sort ? 'active' : ''} onClick={() => setSortBy(filter.sort)}>{filter.label}</button>
             ))}
           </div>
           <div className="period-group">{PERIODS.map((p) => <button key={p} className={period === p ? 'active' : ''} onClick={() => setPeriod(p)}>{PERIOD_LABEL_RU[p]}</button>)}</div>
-        </div>
-        <p className="ranking-copy">Трейдеры с оптимальным соотношением прибыли и риска.</p>
+        </div>}
+        {tab !== 'all' && <p className="ranking-copy">Трейдеры с оптимальным соотношением прибыли и риска.</p>}
       </section>
 
       <section className="marketplace-section">
@@ -935,10 +978,10 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
             <span className="eyebrow">{MARKET_TABS.find((t) => t.id === tab)?.label}</span>
             <h2>{tab === 'favorites' ? 'Избранные трейдеры' : tab === 'following' ? 'Вы копируете' : 'Профессиональные трейдеры'}</h2>
           </div>
-          <span className="results-count">Трейдеров: {visibleTraders.length}</span>
+          <span className="results-count">Трейдеров: {totalVisibleCount}</span>
         </div>
         {lockedListMode
-          ? <LockedTraderList traders={pageTraders} period={period} />
+          ? <LockedTraderList traders={pageTraders} />
           : <div className="trader-grid">
               {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}
             </div>}
@@ -958,7 +1001,9 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
             <span className="pagination-info">Показано {startIdx}–{endIdx} из {visibleTraders.length} трейдеров</span>
             <div className="pagination-controls">
               <button className="page-button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}><ChevronLeft size={16} /> Назад</button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => <button key={p} className={`page-number ${p === currentPage ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>)}
+              {paginationItems.map((item) => typeof item === 'number'
+                ? <button key={item} className={`page-number ${item === currentPage ? 'active' : ''}`} onClick={() => setPage(item)}>{item}</button>
+                : <span key={item} className="page-gap" aria-hidden="true">…</span>)}
               <button className="page-button" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Далее <ChevronRight size={16} /></button>
             </div>
           </div>
