@@ -1,5 +1,5 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
-import { NativeDemoSwitch,NativeDemoTicket,NativeDemoPanel,NativeDemoDialogs } from './private-trading/NativeDemoControls';
+import { NativeDemoTicket,NativeDemoPanel,NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -67,8 +67,6 @@ export function FuturesPage() {
   const { t } = useLanguage();
   const reference = useFuturesReference();
   const [initialParams] = useSearchParams();
-  const nativeRequested = initialParams.get('demo')==='1'||initialParams.get('privateTrading')==='1';
-  const account = useFuturesAccount(nativeRequested?{}:{ orders: 5000, positions: 4000 });
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
@@ -79,6 +77,12 @@ export function FuturesPage() {
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const native = useNativeDemo(symbol,setSymbol);
+  // The simulation account polls its own authoritative state, so the real
+  // futures account store must not poll for it. What decides that is the
+  // SERVER's answer, not a query parameter: `native.requested` is the
+  // access check's verdict, so the terminal stops polling as soon as it
+  // arrives and an ordinary user keeps the unchanged intervals.
+  const account = useFuturesAccount(native.requested?{}:{ orders: 5000, positions: 4000 });
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
@@ -215,7 +219,6 @@ export function FuturesPage() {
 
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
-            <NativeDemoSwitch controller={native}/>
             {native.requested?<NativeDemoTicket key={symbol} controller={native} symbol={symbol} pickedPrice={pickedPrice?.symbol===symbol?pickedPrice.value:undefined} pickedSequence={pickedPrice?.seq}/>:<FuturesOrderForm
               key={symbol}
               symbol={symbol}

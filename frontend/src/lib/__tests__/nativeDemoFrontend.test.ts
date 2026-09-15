@@ -73,17 +73,28 @@ describe('native demo frontend',()=>{
     token='owner-token';
     expect(()=>client.getCard('native:1:../../admin')).toThrow();
   });
-  test('Real/Demo switch lives inside the terminal trading panel, not in the crowded global header',()=>{
+  test('there is no Real/Demo switch, and no demo wording, anywhere in the terminal',()=>{
+    // The owner's account trades the native engine because the SERVER says
+    // so — there is no mode to enter and nothing to disclose on every
+    // screen. This used to assert the switch existed; it now asserts the
+    // opposite, and more: none of the test/demo/preview furniture survives
+    // in either the page or the panel it renders.
     const page=readFileSync(resolve(frontend,'src/pages/FuturesPage.tsx'),'utf8');
-    expect(page).toContain('rightExtra={native.allowed?undefined:<PrivateTradingEntry/>}');
-    const formArea=page.slice(page.indexOf('<div className="order-form-area">'),page.indexOf('<div className="bottom-panel"'));
-    expect(formArea).toContain('<NativeDemoSwitch controller={native}/>');
-    const {module}=controls();const {c,calls}=controller();
-    const tree=module.NativeDemoSwitch({controller:c});
-    const [real,demo]=nodes(tree).filter(n=>n.type==='button');
-    expect([real.props['aria-pressed'],demo.props['aria-pressed']]).toEqual([false,true]);
-    real.props.onClick();expect(calls).toEqual([['toggle',false]]);
-    expect(module.NativeDemoSwitch({controller:{...c,allowed:false}})).toBeNull();
+    const panel=readFileSync(resolve(frontend,'src/pages/private-trading/NativeDemoControls.tsx'),'utf8');
+    expect(page).not.toContain('NativeDemoSwitch');
+    expect(panel).not.toContain('NativeDemoSwitch');
+    for(const banned of ['Demo · Cross','Тестовый баланс','Условия Demo','Сервер рассчитывает','Historical Test','PREVIEW_FIXTURE','isolatedPreview','productionVerified','Ревизия']){
+      expect(panel).not.toContain(banned);
+    }
+    // The mode is not in the URL either: no query parameter gates the
+    // terminal, so a shared link cannot land the owner on the wrong one.
+    const hook=readFileSync(resolve(frontend,'src/pages/private-trading/useNativeDemo.tsx'),'utf8');
+    expect(hook).not.toContain("params.get('demo')");
+    expect(hook).not.toContain('toggle');
+    expect(hook).toContain('const requested=allowed;');
+    // And the client only believes the terminal is native when the SERVER
+    // states this account is simulation-only.
+    expect(hook).toContain('a.simulationOnly===true');
   });
   test('positions show the Cross liquidation estimate, or — when collateral makes it unreachable',()=>{
     const {module,h}=controls();
@@ -94,21 +105,26 @@ describe('native demo frontend',()=>{
     const rows=nodes(tree).filter(n=>n.type==='tr').slice(1).map(r=>nodes(r).filter(n=>n.type==='td').map(text));
     const liqColumn=header.indexOf('Цена ликв.');
     expect(rows.map(r=>r[liqColumn])).toEqual(['—','47,692.20']);
-    expect(text(tree)).toContain('Ревизия 7');
+    // The server revision is internal bookkeeping, not something a trader
+    // reads off the positions table.
+    expect(text(tree)).not.toContain('Ревизия');
   });
   test('closed history uses the recorded exit price and the closed margin basis',()=>{
     const {module,h}=controls();
     const closed=position({status:'CLOSED',closedAt:1_700_000_050_000,netPnl:'-1109.45',roiPercent:'-22.189',roiBasis:'0',closedRoiBasis:'5000',historical:true});
     const {c}=controller({state:state({positions:[],history:[closed],events:[{id:'e2',kind:'STOP_LOSS',time:1_700_000_050_000,positionId:'native-p1',orderId:null,symbol:'BTCUSDT',quantity:'2',price:'49500',fee:'54.45',cashflow:'-1054.45',pricing:'OHLC_PATH_MODEL'}]})});
     h.reset();const first=expand(module.NativeDemoPanel({controller:c}));
-    const tab=nodes(first).find(n=>n.type==='button'&&text(n)==='История позиций');tab.props.onClick();
+    const tab=nodes(first).find(n=>n.type==='button'&&text(n)==='P&L');tab.props.onClick();
     h.reset();const tree=expand(module.NativeDemoPanel({controller:c}));
     const header=nodes(tree).filter(n=>n.type==='th').map(text);
     const row=nodes(nodes(tree).filter(n=>n.type==='tr')[1]).filter(n=>n.type==='td').map(text);
     expect(row[header.indexOf('Цена выхода')]).toBe('49,500.00');
     expect(row[header.indexOf('Маржа')]).toBe('5,000.00');
     expect(row[header.indexOf('Закрыть')]).toBe('Закрыта');
-    expect(row[0]).toContain('Historical Test');
+    // The row states WHEN the historical entry was, and nothing about it
+    // being a test: the account is the owner's and he knows what it is.
+    expect(row[0]).toContain('BTCUSDT');
+    expect(row[0]).not.toContain('Historical Test');
   });
   test('a limit placed on a selected historical candle is sent with the candle open (owner wick rule) and decimal strings only',async()=>{
     const {module,h}=controls();
@@ -125,12 +141,23 @@ describe('native demo frontend',()=>{
     expect(calls).toEqual([['run',{kind:'OPEN',symbol:'BTC/USDT',side:'LONG',type:'LIMIT',margin:'5000',leverage:'10',price:'49000.5',
       candle:{source:'BYBIT_LINEAR',interval:'1h',openTime:1_700_000_000_000,pricePoint:'OPEN'},protection:{takeProfit:null,stopLoss:null}}]]);
   });
-  test('ticket discloses the custom funding model and never calls it Bybit funding',()=>{
+  test('the ticket states the funding rate as a rate, and never claims it is Bybit funding',()=>{
+    // The rates themselves are unchanged and still come from the server
+    // model — only the paragraph explaining that this is a demo is gone.
     const {module,h}=controls();const {c}=controller();
     h.reset();const tree=module.NativeDemoTicket({controller:c,symbol:'BTC/USDT'});
     const all=text(tree);
-    expect(all).toContain('Long −0.1%, Short +0.4% от стоимости позиции каждые 8 ч UTC');
-    expect(all).toContain('не исторический funding Bybit');
+    expect(all).toContain('Long −0.1% / Short +0.4%');
+    expect(all).not.toContain('Bybit');
+    expect(all).not.toContain('демо');
     expect(all).toContain('Поддерживающая маржа');
+    // The normal trading controls a terminal is expected to have.
+    expect(all).toContain('Cross');
+    expect(all).toContain('Рыночный');
+    expect(all).toContain('Лимитный');
+    expect(all).toContain('Long');
+    expect(all).toContain('Short');
+    expect(all).toContain('TP/SL');
+    expect(all).toContain('Доступно');
   });
 });

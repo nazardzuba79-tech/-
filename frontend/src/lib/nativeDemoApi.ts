@@ -35,7 +35,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     if(data===null)throw new PrivateTradingError('Сервер не подтвердил результат',502);return data;
   }
   return{
-    access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean}>('/access',undefined,signal),
+    access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),

@@ -5,8 +5,15 @@ import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition } f
 import { PrivateTradingError,privateTradingApi,type PrivateResultCard } from '../../lib/privateTradingApi';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
-  const[params,setParams]=useSearchParams(),requested=params.get('demo')==='1'||params.get('privateTrading')==='1';
+  /** THE SERVER DECIDES, NOT THE URL.
+   *  This account has no Real/Demo switch and needs no `?demo=1`: the access
+   *  endpoint states that it trades the native engine, and the real futures
+   *  routes refuse it on the same pinned configuration. `requested` is kept
+   *  as the single name the rest of the terminal reads, so nothing below had
+   *  to learn that the mode is gone. */
+  const[params]=useSearchParams();
   const[allowed,setAllowed]=useState(false),[checked,setChecked]=useState(false),[state,setState]=useState<NativeState|null>(null);
+  const requested=allowed;
   const[error,setError]=useState(''),[busy,setBusy]=useState(false),[card,setCard]=useState<PrivateResultCard|null>(null);
   const[selecting,setSelecting]=useState<'entry'|'exit'|null>(null),[candle,setCandle]=useState<ChartTradeCandle|null>(null),[exitId,setExitId]=useState<string|null>(null);
   const[selectedId,setSelectedId]=useState<string|null>(null),[focus,setFocus]=useState<{tradeId:string;time:number;sequence:number}|null>(null);
@@ -16,7 +23,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
   const revoke=useCallback(()=>{setAllowed(false);setState(null);setCard(null);setDialog(null);setCandle(null);setSelecting(null);},[]);
   const fail=useCallback((e:unknown)=>{if(!alive.current)return;if(e instanceof PrivateTradingError&&[401,403].includes(e.status))revoke();setError(e instanceof Error?e.message:'Операция не подтверждена');},[revoke]);
   useEffect(()=>{alive.current=true;const controller=new AbortController();let cancelled=false;
-    async function check(){try{if(!getToken()){revoke();return;}const a=await nativeDemoApi.access(controller.signal);if(!cancelled)setAllowed(a.allowed===true&&a.nativeAvailable===true);}catch(e){if(!cancelled)revoke();}finally{if(!cancelled)setChecked(true);}}
+    async function check(){try{if(!getToken()){revoke();return;}const a=await nativeDemoApi.access(controller.signal);if(!cancelled)setAllowed(a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true);}catch(e){if(!cancelled)revoke();}finally{if(!cancelled)setChecked(true);}}
     void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{revoke();void check();});
     return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);off();};
   },[revoke]);
@@ -55,10 +62,10 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     onCandleSelect:c=>{setCandle(c);setSelecting(null);},onCancelSelection:()=>{setCandle(null);setSelecting(null);setExitId(null);},onTradeSelect:setSelectedId,
     onTradeClose:id=>{const p=positions.find(p=>p.id===id&&p.status==='OPEN');if(p)setDialog({kind:'close',position:p});},
     onSelectionModeChange:mode=>{setSelecting(mode);setCandle(null);if(mode==='entry')setExitId(null);}};
-  const toggle=(demo:boolean)=>{const next=new URLSearchParams(params);next.delete('privateTrading');next.delete('nativeCard');if(demo)next.set('demo','1');else next.delete('demo');setParams(next);};
+
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
-  return{requested,allowed,checked,state,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,toggle,run,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+  return{requested,allowed,checked,state,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
     pickEntry:()=>{setCandle(null);setExitId(null);setSelecting('entry');}};
 }
 export type NativeDemoController=ReturnType<typeof useNativeDemo>;

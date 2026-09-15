@@ -30,7 +30,13 @@ function brand(): string {
 // The actual supplied Canva ribbon is retained as raster artwork. These bags are decorative only.
 function warmArtwork(): string {
   const bag = (x:number,y:number,scale:number) => `<g transform="translate(${x} ${y}) scale(${scale})"><path d="M52 75C40 44 35 34 45 27c14-10 23 11 30 10 10-23 27-25 35-3 17-22 42-19 37 0-3 12-15 26-21 41" fill="#fff8e9" stroke="#4b3726" stroke-width="3"/><path d="M53 95C27 121 3 155 8 196c5 48 163 50 174 0 8-35-14-69-56-101Z" fill="#fffaf0" stroke="#4b3726" stroke-width="3"/><rect x="47" y="70" width="88" height="22" rx="11" fill="#f9ae37" stroke="#4b3726" stroke-width="3"/><text x="94" y="193" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="114" fill="#292522">$</text></g>`;
-  return `<g data-artwork="warm-rise" aria-hidden="true"><image href="${privateCardArtwork}" x="0" y="0" width="1080" height="1440"/><g data-artwork="money-bags">${bag(888,890,.90)}${bag(639,1144,.74)}</g></g>`;
+  // Money bags read a little small against the 1080x1440 portrait, so they
+  // are ~17% larger. Scale grows a bag down and to the right from its own
+  // anchor, so each anchor moves back by roughly half the growth to keep the
+  // composition and the right/bottom margins exactly where they were.
+  // Nothing else about the card changes: same artwork, same layout, same
+  // typography, same ROI block, same two-decimal prices.
+  return `<g data-artwork="warm-rise" aria-hidden="true"><image href="${privateCardArtwork}" x="0" y="0" width="1080" height="1440"/><g data-artwork="money-bags">${bag(872,876,1.055)}${bag(627,1133,.866)}</g></g>`;
 }
 
 
