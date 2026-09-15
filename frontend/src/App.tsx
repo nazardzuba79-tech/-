@@ -31,7 +31,6 @@ const AdminUserDetailPage = lazy(() => import('./pages/admin/AdminUserDetailPage
 const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) => ({ default: m.AdminKycPage })));
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
-const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
 
 function usePrefetchLikelyRoutes() {
@@ -88,7 +87,9 @@ export function App() {
         <Route path="/legal/:doc" element={<LegalPage />} />
         <Route path="/:code" element={<ReferralRedirectPage />} />
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminOverviewPage />} />
+          {/* No overview step: the console opens on the list an operator
+              actually works from. */}
+          <Route index element={<Navigate to="users" replace />} />
           <Route path="wallets" element={<AdminWalletsPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="users/:id" element={<AdminUserDetailPage />} />
