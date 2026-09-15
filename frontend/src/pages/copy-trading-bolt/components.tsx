@@ -11,6 +11,7 @@ import {
   CircleHelp,
   Crown,
   LineChart,
+  LockKeyhole,
   Search,
   ShieldCheck,
   Star,
@@ -54,6 +55,7 @@ import { CopyDepositDialog } from './CopyDepositDialog';
 import { kseniaTraderShell } from '../../lib/kseniaCopyTrading';
 import type { CopyMarketplaceState } from '../../lib/copyMarketplaceStore';
 import { LiveMetric } from './LiveMetric';
+import './LockedTraderList.css';
 
 // Ported 1:1 from the approved Bolt.new archive's src/App.tsx — same
 // components, same markup, same CSS classes. Two kinds of change
@@ -791,6 +793,39 @@ function MarketplaceBottom() {
   );
 }
 
+function LockedTraderList({ traders, period }: { traders: Trader[]; period: Period }) {
+  const whitelistNotice = (trader: Trader) => toast.warning(
+    'Только пользователи из белого списка могут подписаться на этого Мастера трейдинга.',
+    { description: `Свяжитесь с Мастером трейдинга ${trader.name}, чтобы получить приглашение.`, duration: 5500 }
+  );
+  return <>
+    <div className="locked-trader-list" role="table" aria-label="Закрытый каталог Мастеров трейдинга">
+      <div className="locked-trader-list-head" role="row">
+        <span>Мастер трейдинга</span><span>{PERIOD_LABEL_RU[period]} ROI</span><span>Винрейт</span><span>Макс. просадка</span><span>Подписчики</span><span>★</span><span>Действие</span>
+      </div>
+      {traders.map((trader) => {
+        const roi = getRoiForPeriod(trader, period);
+        return <div className="locked-trader-row" role="row" key={trader.id} data-trader-id={trader.id}>
+          <div className="locked-trader-identity">
+            <Avatar trader={trader} />
+            <div>
+              <div className="locked-trader-name"><span>{trader.name}</span><span className="locked-trader-lock" title="Только по приглашению"><LockKeyhole size={14} /></span></div>
+              <div className="locked-trader-subtitle">{trader.strategy} · {trader.region}</div>
+            </div>
+          </div>
+          <div className={`locked-trader-metric ${roiClass(roi)}`}><LiveMetric value={formatPercent(roi)} /></div>
+          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.winRate)} /></div>
+          <div className="locked-trader-metric"><LiveMetric value={formatPercent(trader.drawdown)} /></div>
+          <div className="locked-trader-metric"><LiveMetric value={Number.isFinite(trader.copiers) ? Math.round(trader.copiers).toLocaleString('ru-RU') : '—'} /></div>
+          <div><FavoriteButton trader={trader} /></div>
+          <div className="locked-trader-action"><button className="locked-copy-button" type="button" onClick={() => whitelistNotice(trader)}>Копировать</button></div>
+        </div>;
+      })}
+    </div>
+    <p className="locked-list-note">Профили этого каталога закрыты. Подключение доступно только по приглашению Мастера трейдинга.</p>
+  </>;
+}
+
 export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = kseniaTraderShell, kseniaSynthetic, availability }: { onOpen: (trader: Trader) => void; nazara?: Trader; synthetic?: SyntheticCopyTradingResponse | null; ksenia?: Trader; kseniaSynthetic?: SyntheticCopyTradingResponse | null; availability?: CopyMarketplaceState }) {
   const { favorites } = useFavorites();
   const { following } = useFollowing();
@@ -832,6 +867,10 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
   const totalPages = Math.max(1, Math.ceil(visibleTraders.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageTraders = visibleTraders.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  // Preserve rich featured cards on leaderboard page 1. The mass catalogue is
+  // lightweight and non-navigable: All Traders uses it immediately, and the
+  // leaderboard switches to it from page 2 onward.
+  const lockedListMode = tab === 'all' || (tab === 'leaderboard' && currentPage > 1);
   const startIdx = visibleTraders.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const endIdx = Math.min(currentPage * PAGE_SIZE, visibleTraders.length);
 
@@ -898,9 +937,11 @@ export function Marketplace({ onOpen, nazara = nazarTrader, synthetic, ksenia = 
           </div>
           <span className="results-count">Трейдеров: {visibleTraders.length}</span>
         </div>
-        <div className="trader-grid">
-          {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}
-        </div>
+        {lockedListMode
+          ? <LockedTraderList traders={pageTraders} period={period} />
+          : <div className="trader-grid">
+              {pageTraders.map((trader) => <TraderCard key={trader.id} trader={trader} period={period} onOpen={onOpen} synthetic={trader.id === ksenia?.id ? kseniaSynthetic : synthetic} />)}
+            </div>}
         {visibleTraders.length === 0 && (
           <div className="empty-state">
             {tab === 'favorites' && favorites.size === 0 && !query ? (
