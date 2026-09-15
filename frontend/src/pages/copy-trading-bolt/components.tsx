@@ -676,8 +676,8 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
   // values load. No financial methodology or value is inferred from the shell.
   const simpleReturn = liveSynthetic ? liveSynthetic.economics?.methodology === 'CASH_FLOW_ADJUSTED_SIMPLE_RETURN'
     : trader.id === nazarTrader.id || trader.id === 'VX-KSENIA';
-  const periodData = useMemo(() => liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [liveSynthetic, period]);
-  const strategyData = useMemo(() => simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [simpleReturn, liveSynthetic]);
+  const periodData = useMemo(() => detailsReady && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, period) : undefined, [detailsReady, liveSynthetic, period]);
+  const strategyData = useMemo(() => detailsReady && simpleReturn && liveSynthetic ? selectSyntheticPeriod(liveSynthetic, 'ALL') : undefined, [detailsReady, simpleReturn, liveSynthetic]);
   const metrics = useMemo<ProfileMetrics>(() => periodData ?? fallbackMetrics(trader, period), [periodData, period, trader]);
   const demoAll = trader.id === nazarTrader.id || trader.id === 'VX-KSENIA' ? null : selectDemoPerformance(trader, 'ALL');
   const allTradingDays = liveSynthetic?.economics?.periods.ALL.activeTradingDays ?? liveSynthetic?.analytics.allTime.tradingDays ?? demoAll?.tradingDays ?? trader.activeMonths * 30;
