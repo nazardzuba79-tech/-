@@ -1008,6 +1008,7 @@ export const RU = {
   'futures.spotWallet': 'Спот-кошелёк',
   'futures.futuresWallet': 'Фьючерсный кошелёк',
   'futures.availableMargin': 'Доступная маржа',
+  'futures.insufficientMargin': 'Недостаточно маржи: этот размер требует {required} {asset}, доступно {available} {asset}.',
   'futures.lockedMargin': 'В марже',
   'futures.myOrders': 'Мои ордера',
   'trade.lastPriceBtn': 'Посл. цена',

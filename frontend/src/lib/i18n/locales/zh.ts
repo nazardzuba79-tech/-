@@ -990,6 +990,7 @@ export const ZH: Record<Key, string> = {
   'futures.spotWallet': '现货钱包',
   'futures.futuresWallet': '合约钱包',
   'futures.availableMargin': '可用保证金',
+  'futures.insufficientMargin': '保证金不足：该数量需要 {required} {asset}，可用 {available} {asset}。',
   'futures.lockedMargin': '占用保证金',
   'futures.myOrders': '我的订单',
   'trade.lastPriceBtn': '最新价',

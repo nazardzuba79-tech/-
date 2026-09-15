@@ -966,6 +966,7 @@ export const ES: Record<Key, string> = {
   'futures.spotWallet': 'Billetera spot',
   'futures.futuresWallet': 'Billetera de futuros',
   'futures.availableMargin': 'Margen disponible',
+  'futures.insufficientMargin': 'Margen insuficiente: este tamaño requiere {required} {asset}, disponible {available} {asset}.',
   'futures.lockedMargin': 'En margen',
   'futures.myOrders': 'Mis órdenes',
   'trade.lastPriceBtn': 'Último precio',

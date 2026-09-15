@@ -6,7 +6,14 @@ import { FuturesMarginLeverage } from './FuturesMarginLeverage';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
-import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
+import {
+  getLeverageTier,
+  previewLiquidationPrice,
+  projectFuturesExposureNotional,
+  maxAffordableNotional,
+  floorToDecimals,
+  QUANTITY_DECIMALS,
+} from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 
@@ -50,7 +57,18 @@ export function FuturesOrderForm({
   }, [pickedPrice, pickedPriceSequence]);
   const [quantity, setQuantity] = useState('');
   const [percent, setPercent] = useState(0);
-  const [leverage, setLeverage] = useState(10);
+  /**
+   * The leverage the TRADER asked for. What the order actually uses is
+   * `leverage` below — this capped by the live tier ceiling.
+   *
+   * Holding the request separately is what stops the ceiling from being a
+   * one-way ratchet. When the clamp wrote back into this value, a single
+   * large size permanently rewrote a 100x selection to 50x: shrink the
+   * order again and the ceiling rose, but the selection did not, so the
+   * panel went on sizing and charging at a leverage the trader had never
+   * chosen and could not get back without reloading the page.
+   */
+  const [requestedLeverage, setRequestedLeverage] = useState(10);
   const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
   const [reduceOnly, setReduceOnly] = useState(false);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
@@ -98,7 +116,6 @@ export function FuturesOrderForm({
 
   const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
-  const requiredMargin = leverage > 0 ? notional / leverage : 0;
   /**
    * Whether Order Value and Required Margin describe a real order.
    *
@@ -145,6 +162,16 @@ export function FuturesOrderForm({
     }))
     .filter((order) => Number.isFinite(order.remainingQuantity) && Number.isFinite(order.price));
 
+  /** The position as the projection wants it — one mapping, read by both
+   *  the exposure projection and the sizing below. */
+  const exposurePosition = currentPosition
+    ? {
+        side: currentPosition.side,
+        size: Number(currentPosition.size),
+        entryPrice: Number(currentPosition.entryPrice),
+      }
+    : null;
+
   /** `null` = cannot be projected because the account state is unknown.
    *  `0` is a REAL zero: a reduce-only order, nothing typed yet, or an
    *  account that genuinely answered with no position and no orders. */
@@ -152,17 +179,24 @@ export function FuturesOrderForm({
     ? 0
     : exposureInputsKnown
       ? projectFuturesExposureNotional({
-          position: currentPosition
-            ? {
-                side: currentPosition.side,
-                size: Number(currentPosition.size),
-                entryPrice: Number(currentPosition.entryPrice),
-              }
-            : null,
+          position: exposurePosition,
           activeOrders: pendingExposureOrders,
           candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
         })
       : null;
+
+  /** The same projection with the candidate taken OUT — the exposure a new
+   *  order has to be sized around. The projection drops any leg with no
+   *  remaining quantity, so a zero candidate is exactly "everything else".
+   *  `null` while positions or orders are still unknown; sizing refuses
+   *  rather than guessing an empty account, which is the optimistic guess. */
+  const baseExposure: number | null = exposureInputsKnown
+    ? projectFuturesExposureNotional({
+        position: exposurePosition,
+        activeOrders: pendingExposureOrders,
+        candidate: { side, remainingQuantity: 0, price: effectivePrice },
+      })
+    : null;
   const resultingTier = config && projectedExposure !== null && projectedExposure > 0
     ? getLeverageTier(config.leverageTiers, projectedExposure)
     : null;
@@ -175,9 +209,15 @@ export function FuturesOrderForm({
   const effectiveMaxLeverage = config && exposureKnown
     ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
     : null;
-  useEffect(() => {
-    if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
-  }, [effectiveMaxLeverage, leverage]);
+  /** The leverage this order will really use: the request, under the live
+   *  ceiling. Derived rather than clamped in an effect, so it rises again
+   *  by itself when the size — and with it the ceiling — comes back down. */
+  const leverage = effectiveMaxLeverage === null
+    ? requestedLeverage
+    : Math.min(requestedLeverage, effectiveMaxLeverage);
+  /** Margin this order locks. Same expression it always was; it moved
+   *  below `leverage` because that is now derived rather than stored. */
+  const requiredMargin = leverage > 0 ? notional / leverage : 0;
   // `freeBalance` only enters the formula for CROSS margin (it is the
   // backstop ratio; ISOLATED ignores it entirely — see futuresMath). So an
   // unknown balance suppresses the preview for CROSS, where it would
@@ -206,19 +246,67 @@ export function FuturesOrderForm({
   const liqPreviewLong = liqPreviewFor('LONG');
   const liqPreviewShort = liqPreviewFor('SHORT');
 
-  // % slider spends a share of available margin, scaled up by leverage —
-  // spending 100% of margin at 10x opens a 10x-larger notional than at 1x,
-  // same as every real exchange's position-size slider.
-  function applyPercent(pct: number) {
+  /**
+   * The % slider spends a share of available margin, scaled up by leverage
+   * — spending 100% of margin at 10x opens a 10x-larger notional than at
+   * 1x, same as every real exchange's position-size slider.
+   *
+   * It is `maxAffordableNotional` that does the scaling, not
+   * `margin × leverage`, because the selected leverage is not necessarily
+   * the leverage the resulting position may use: past a tier boundary the
+   * ceiling drops, `leverage` is capped to it, and the raw product would
+   * leave a quantity sized at 100x being charged margin at 50x. That is
+   * what rejected a 100 000 / 500 000 / 1 000 000 USDT order
+   * with "Insufficient USDT margin balance" on an account that had asked
+   * for exactly 100% of its margin. See lib/futuresMath.
+   *
+   * The budget is measured against the REQUESTED leverage, not the derived
+   * one: the derived value is capped by a ceiling computed from the size
+   * that is about to be replaced, so reading it here would let one large
+   * order shrink every size offered afterwards. `atLeverage` is a
+   * parameter for the same reason — the leverage control calls this with
+   * the value it is about to request, and a `setRequestedLeverage`
+   * scheduled in the same event is not readable here.
+   */
+  function applyPercent(pct: number, atLeverage: number = requestedLeverage) {
     setPercent(pct);
     if (!effectivePrice || effectivePrice <= 0) return;
-    // An unknown available margin sizes nothing. Previously this read a
-    // fake 0 and produced a quantity of 0; refusing to size is the same
-    // outcome without writing a misleading number into the field.
-    if (availableMargin === null) return;
-    const marginToSpend = availableMargin * (pct / 100);
-    setQuantity(((marginToSpend * leverage) / effectivePrice).toFixed(8));
+    if (reduceOnly) {
+      // A reduce-only order locks no margin and can never be larger than
+      // the position it closes, so the free balance is the wrong budget
+      // for it entirely: sizing from it offers a quantity the server
+      // rejects as "would exceed the current position size".
+      if (positions === null) return;
+      const closable = exposurePosition ? exposurePosition.size : 0;
+      setQuantity(floorToDecimals(closable * (pct / 100), QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS));
+      return;
+    }
+    // An unknown available margin or an unknown existing exposure sizes
+    // nothing. Previously this read a fake 0 and produced a quantity of 0;
+    // refusing to size is the same outcome without writing a misleading
+    // number into the field.
+    if (availableMargin === null || baseExposure === null || !config) return;
+    const { notional } = maxAffordableNotional({
+      tiers: config.leverageTiers,
+      freeMargin: availableMargin * (pct / 100),
+      selectedLeverage: atLeverage,
+      existingExposure: baseExposure,
+    });
+    setQuantity(floorToDecimals(notional / effectivePrice, QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS));
   }
+
+  /**
+   * Whether this order asks for more margin than the account has free.
+   *
+   * Deliberately narrow. Reduce-only is exempt because it locks nothing,
+   * and an unknown balance is exempt because a `null` there means "not
+   * answered yet", never "zero" — blocking on either would block the
+   * orders that matter most during an outage.
+   */
+  const marginShortfall = !reduceOnly
+    && orderSizeKnown
+    && availableMargin !== null
+    && requiredMargin > availableMargin;
 
   /** The side is an ARGUMENT, not a read of state. The button that starts
    *  this is also the button that decides the direction, and a `setSide`
@@ -272,17 +360,28 @@ export function FuturesOrderForm({
    *   - the high-leverage confirmation stays inside `handleSubmit`: it is a
    *     prompt to answer, not a precondition to meet, and disabling the
    *     button on it would make high leverage unusable rather than guarded;
-   *   - no balance, order or exposure requirement is added. In particular a
-   *     REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even when
-   *     positions and orders are unknown (PR #14: the projection
+   *   - a REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even
+   *     when positions and orders are unknown (PR #14: the projection
    *     short-circuits before reading them), so risk-reducing orders stay
    *     submittable during an outage — which is when they matter most.
+   *
+   * `effectiveMaxLeverage !== null` remains: a null ceiling means the
+   * account state behind it is unknown, and the panel does not submit a
+   * leverage it cannot justify. The separate `leverage <= ceiling` test it
+   * used to sit beside is gone because `leverage` is now DERIVED as the
+   * minimum of the two — it cannot exceed the ceiling.
+   *
+   * `marginShortfall` is the one requirement added since: an order whose
+   * margin the account cannot cover is rejected by the server every time,
+   * so letting the button fire it only turns a visible ceiling into a
+   * round trip and a red banner. It carries the same two exemptions —
+   * reduce-only, and a balance that has not been answered yet.
    */
   const canSubmit = Boolean(config)
     && executionEnabled
     && connectedFamily
     && effectiveMaxLeverage !== null
-    && leverage <= effectiveMaxLeverage
+    && !marginShortfall
     && !submitting;
 
   /** Same guard, same confirmation, same order of checks as before — only
@@ -320,7 +419,14 @@ export function FuturesOrderForm({
           marginType={marginType}
           onMarginTypeChange={setMarginType}
           leverage={leverage}
-          onLeverageChange={setLeverage}
+          onLeverageChange={(next) => {
+            setRequestedLeverage(next);
+            // A size chosen as a PERCENTAGE of the account has to follow
+            // the leverage that pays for it; leaving the quantity behind
+            // is what made the displayed % and the real margin disagree.
+            // A hand-typed quantity sets `percent` to 0 and is left alone.
+            if (percent > 0) applyPercent(percent, next);
+          }}
           min={config?.minLeverage ?? 1}
           max={config ? effectiveMaxLeverage : null}
           warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
@@ -437,6 +543,15 @@ export function FuturesOrderForm({
         </div>
 
         {error && <div className="fo-error">{error}</div>}
+        {marginShortfall && !error && (
+          <div className="fo-error" role="status">
+            {t('futures.insufficientMargin', {
+              required: requiredMargin.toFixed(2),
+              available: availableMargin!.toFixed(2),
+              asset: quoteAsset,
+            })}
+          </div>
+        )}
         {!executionEnabled && <div className="fo-error" role="status">{t('analytics.unavailable')}</div>}
 
         {/* The shared terminal CTA, same as spot — this used to be a

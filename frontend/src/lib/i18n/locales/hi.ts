@@ -966,6 +966,7 @@ export const HI: Record<Key, string> = {
   'futures.spotWallet': 'स्पॉट वॉलेट',
   'futures.futuresWallet': 'फ्यूचर्स वॉलेट',
   'futures.availableMargin': 'उपलब्ध मार्जिन',
+  'futures.insufficientMargin': 'मार्जिन अपर्याप्त: इस आकार के लिए {required} {asset} चाहिए, उपलब्ध {available} {asset}।',
   'futures.lockedMargin': 'मार्जिन में',
   'futures.myOrders': 'मेरे ऑर्डर',
   'trade.lastPriceBtn': 'लास्ट प्राइस',

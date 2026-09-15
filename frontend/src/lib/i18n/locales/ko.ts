@@ -966,6 +966,7 @@ export const KO: Record<Key, string> = {
   'futures.spotWallet': '현물 지갑',
   'futures.futuresWallet': '선물 지갑',
   'futures.availableMargin': '사용 가능 증거금',
+  'futures.insufficientMargin': '증거금 부족: 이 수량에는 {required} {asset}이 필요합니다(사용 가능 {available} {asset}).',
   'futures.lockedMargin': '증거금으로 사용 중',
   'futures.myOrders': '내 주문',
   'trade.lastPriceBtn': '최종 가격',

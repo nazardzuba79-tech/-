@@ -995,6 +995,7 @@ export const EN: Record<Key, string> = {
   'futures.spotWallet': 'Spot wallet',
   'futures.futuresWallet': 'Futures wallet',
   'futures.availableMargin': 'Available margin',
+  'futures.insufficientMargin': 'Insufficient margin: this size needs {required} {asset}, {available} {asset} available.',
   'futures.lockedMargin': 'In margin',
   'futures.myOrders': 'My orders',
   'trade.lastPriceBtn': 'Last price',

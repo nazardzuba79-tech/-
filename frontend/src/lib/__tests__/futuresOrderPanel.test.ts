@@ -866,3 +866,128 @@ test('every new selector is scoped to the futures terminal', () => {
   }
   expect(selectors.some((s) => s.includes('fo-mlPopover'))).toBe(true);
 });
+
+// ── Position sizing against the leverage tier that will actually apply ──
+//
+// The size slider used to compute `margin × leverage`, then let the tier
+// ceiling clamp the leverage underneath a quantity already sized for the
+// higher one. 100% of the margin at 100x therefore asked for a notional
+// that fell in a 50x / 20x / 10x tier and needed two, five or ten times
+// the margin the account had — the server refused it every time.
+//
+// The arithmetic itself is covered end-to-end against the real order
+// route in src/futures/__tests__/orderSizing.test.ts; these tests are
+// about the PANEL: that it calls the sizing with the right budget, that a
+// percentage-chosen size follows the leverage that pays for it, and that
+// an unaffordable order is stopped here rather than at the server.
+
+describe('the size slider sizes for the leverage the order will really use', () => {
+  const MARK = '50000';
+  /** Drive the panel to a priced order and return its live controls. */
+  async function sizingForm(over: Record<string, any> = {}) {
+    const f = await orderForm(over);
+    f.change(f.tree, '0.00', MARK);
+    await tick();
+    const tree = () => f.render();
+    const slider = (t: any) => nodes(t).find((n: any) => n.type === f.form.components.PercentSlider);
+    const leverageControl = (t: any) => nodes(t).find((n: any) => n.type === f.form.components.FuturesMarginLeverage);
+    const quantity = (t: any) =>
+      Number(nodes(t).find((n: any) => n.type === 'input' && n.props.placeholder === '0.00000').props.value);
+    return { ...f, tree, slider, leverageControl, quantity };
+  }
+  const margin = (available: string) =>
+    ({ account: accountState({ balances: resource([{ asset: 'USDT', available, locked: '0' }]) }) });
+
+  test.each([
+    // free margin, leverage, the notional the raw product would have asked for
+    [500, 100, 50_000],
+    [1_000, 100, 100_000],
+    [5_000, 100, 500_000],
+    [10_000, 100, 1_000_000],
+  ])('100%% of %d USDT at %sx never asks for more margin than the account has', async (free, leverage, naive) => {
+    const f = await sizingForm(margin(String(free)));
+    f.leverageControl(f.tree()).props.onLeverageChange(leverage);
+    f.slider(f.tree()).props.onChange(100);
+    const tree = f.tree();
+
+    const notional = f.quantity(tree) * Number(MARK);
+    // The naive product is exactly what the slider used to produce.
+    expect(naive).toBe(free * leverage);
+    // Whatever tier the size lands in, its margin fits the account.
+    const tier = futuresMath.getLeverageTier(tierConfig.leverageTiers, notional)!;
+    expect(notional / Math.min(leverage, tier.maxLeverage)).toBeLessThanOrEqual(free);
+    // And both submit buttons stay live — this is a valid order.
+    expect(byClass(tree, 'submit-btn').every((b: any) => b.props.disabled)).toBe(false);
+  });
+
+  test('the size is floored, never rounded up past the margin that bought it', async () => {
+    // 10 000 / 60 000 rounds to 0.16666667 and costs 10 000.0002.
+    const f = await sizingForm({ ...margin('10000'), extraApi: {} });
+    f.change(f.tree(), '0.00', '60000');
+    f.leverageControl(f.tree()).props.onLeverageChange(1);
+    f.slider(f.tree()).props.onChange(100);
+    const quantity = f.quantity(f.tree());
+    expect(quantity * 60000).toBeLessThanOrEqual(10_000);
+    expect(quantity).toBeCloseTo(10_000 / 60_000, 7);
+  });
+
+  test('changing leverage re-sizes a percentage-chosen order, and only that', async () => {
+    const f = await sizingForm(margin('1000'));
+    f.leverageControl(f.tree()).props.onLeverageChange(5);
+    f.slider(f.tree()).props.onChange(50);
+    const atFive = f.quantity(f.tree());
+    f.leverageControl(f.tree()).props.onLeverageChange(10);
+    // 50% of 1 000 USDT at 10x is twice the notional it was at 5x, and the
+    // quantity followed rather than staying sized for 5x.
+    expect(f.quantity(f.tree())).toBeCloseTo(atFive * 2, 8);
+
+    // A hand-typed quantity is the trader's number, not a percentage —
+    // leverage must not rewrite it.
+    f.change(f.tree(), '0.00000', '0.004');
+    f.leverageControl(f.tree()).props.onLeverageChange(20);
+    expect(f.quantity(f.tree())).toBe(0.004);
+  });
+
+  test('an order the account cannot margin is stopped here, not at the server', async () => {
+    const f = await sizingForm(margin('100'));
+    f.leverageControl(f.tree()).props.onLeverageChange(1);
+    f.change(f.tree(), '0.00000', '1'); // 50 000 USDT of notional on 100 USDT
+    const tree = f.tree();
+    expect(byClass(tree, 'submit-btn').every((b: any) => b.props.disabled)).toBe(true);
+    expect(text(tree)).toContain('futures.insufficientMargin');
+    byClass(tree, 'submit-btn').forEach((b: any) => b.props.onClick());
+    await tick();
+    expect(f.placed).not.toHaveBeenCalled();
+  });
+
+  test('a balance that has not answered yet blocks nothing', async () => {
+    // `null` there means UNKNOWN, never zero — see PR #14. Sizing refuses
+    // rather than writing a misleading quantity, and the guard stays quiet.
+    const f = await sizingForm({ account: accountState({ balances: resource(null) }) });
+    f.change(f.tree(), '0.00000', '1');
+    const tree = f.tree();
+    expect(text(tree)).not.toContain('futures.insufficientMargin');
+    expect(byClass(tree, 'submit-btn').every((b: any) => b.props.disabled)).toBe(false);
+  });
+
+  test('a reduce-only size comes from the position, not from the free balance', async () => {
+    const position = {
+      symbol: 'BTC/USDT', marginType: 'ISOLATED', side: 'LONG',
+      size: '0.4', entryPrice: '50000', leverage: 10,
+    };
+    const f = await sizingForm({
+      ...margin('1000'),
+      account: accountState({
+        balances: resource([{ asset: 'USDT', available: '1000', locked: '2000' }]),
+        positions: resource([position]),
+      }),
+    });
+    nodes(f.tree()).find((n: any) => n.type === 'input' && n.props.type === 'checkbox')
+      .props.onChange({ target: { checked: true } });
+    f.slider(f.tree()).props.onChange(100);
+    // The whole position, and nothing the free balance would have implied.
+    expect(f.quantity(f.tree())).toBeCloseTo(0.4, 8);
+    f.slider(f.tree()).props.onChange(50);
+    expect(f.quantity(f.tree())).toBeCloseTo(0.2, 8);
+  });
+});

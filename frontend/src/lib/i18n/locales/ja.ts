@@ -966,6 +966,7 @@ export const JA: Record<Key, string> = {
   'futures.spotWallet': '現物ウォレット',
   'futures.futuresWallet': '先物ウォレット',
   'futures.availableMargin': '利用可能証拠金',
+  'futures.insufficientMargin': '証拠金不足：この数量には {required} {asset} が必要です（利用可能 {available} {asset}）。',
   'futures.lockedMargin': '証拠金として使用中',
   'futures.myOrders': '自分の注文',
   'trade.lastPriceBtn': '最終価格',
