@@ -1,10 +1,19 @@
 import type { LiveQuote, LiveState } from './liveMarketTypes';
+import { readLiveQuoteCache, writeLiveQuoteCache } from './terminalWarmCache';
 
 type Source = Pick<EventSource, 'addEventListener' | 'close' | 'onerror'>;
+const WARM_CACHE_WRITE_INTERVAL_MS = 30_000;
+
 /** Reference-only store. Existing marketDataStore continues polling Kraken
- * for existing consumers; no execution-adjacent quote is overwritten. */
+ * for existing consumers; no execution-adjacent quote is overwritten.
+ *
+ * Production may opt into a short-lived browser warm cache. That cache is
+ * read locally, every row is forced to `stale: true`, and the normal SSE
+ * connection still starts immediately. It therefore improves first paint
+ * without adding a request or changing execution/reference boundaries.
+ */
 export class LiveMarketStore {
-  private state: LiveState = { status: 'connecting', rows: new Map(), revision: 0 };
+  private state: LiveState;
   private listeners = new Set<(state: LiveState) => void>();
   private source: Source | null = null;
   private retry: ReturnType<typeof setTimeout> | null = null;
@@ -13,7 +22,15 @@ export class LiveMarketStore {
   private wireRevision = -1;
   private lastMessage = 0;
   private attempts = 0;
-  constructor(private createSource: () => Source) {}
+  private lastWarmCacheWriteAt = 0;
+
+  constructor(private createSource: () => Source, private useWarmCache = false) {
+    const warm = useWarmCache ? readLiveQuoteCache() : null;
+    this.state = warm
+      ? { status: 'stale', rows: new Map(warm.map(row => [row.id, row])), revision: 0 }
+      : { status: 'connecting', rows: new Map(), revision: 0 };
+  }
+
   getState = (): LiveState => this.state;
   subscribe = (listener: (state: LiveState) => void): (() => void) => {
     this.listeners.add(listener); listener(this.state);
@@ -59,8 +76,17 @@ export class LiveMarketStore {
               ? { ...previous, stale: true } : row);
           }
           initialized = true; this.epoch = frame.epoch; this.wireRevision = frame.revision;
-          this.lastMessage = Date.now(); if (Date.now() - connectedAt >= 60_000) this.attempts = 0;
+          const now = Date.now();
+          this.lastMessage = now; if (now - connectedAt >= 60_000) this.attempts = 0;
           this.state = { rows, status: frame.status, revision: this.state.revision + 1 }; this.emit();
+
+          // Local browser write only. The SSE connection/cadence is
+          // unchanged, so this path costs Render exactly zero requests.
+          if (this.useWarmCache && frame.status === 'live' && rows.size > 0
+              && now - this.lastWarmCacheWriteAt >= WARM_CACHE_WRITE_INTERVAL_MS) {
+            this.lastWarmCacheWriteAt = now;
+            writeLiveQuoteCache(rows.values(), undefined, now);
+          }
         } catch { this.failed(); }
       };
       for (const name of ['snapshot','delta','state']) source.addEventListener(name, receive);
