@@ -35,7 +35,30 @@ async function main(){
   await page.getByRole('tab',{name:/^Открытые ордера/}).click();s=await command(page,()=>page.getByRole('button',{name:'Отменить',exact:true}).click());assert(!s.orders.some(o=>o.status==='OPEN'));
   await page.getByRole('tab',{name:/^Позиции/}).click();const row=page.locator('.native-demo-panel tbody tr').filter({hasText:'LONG'});await row.getByRole('button',{name:'TP/SL',exact:true}).click();await page.getByLabel('Цена TP',{exact:true}).fill('100000');s=await command(page,()=>page.locator('.native-action-dialog').getByRole('button',{name:'Подтвердить',exact:true}).click());assert.equal(s.positions.find(p=>p.id===longId).protection.takeProfit,'100000');
   await row.getByRole('button',{name:'Рыночный',exact:true}).click();await page.getByLabel('Количество закрытия',{exact:true}).fill('0.1');s=await command(page,()=>page.locator('.native-action-dialog').getByRole('button',{name:'Подтвердить',exact:true}).click());assert(s.events.some(e=>e.kind==='CLOSE'&&e.quantity==='0.1'));
-  await row.getByRole('button',{name:'P&L Card · BTCUSDT',exact:true}).click();const download=page.waitForEvent('download');await page.getByRole('button',{name:'Сохранить PNG',exact:true}).click();await(await download).saveAs(path.join(out,`card-${width}.png`));await page.locator('.private-card-dialog').getByRole('button',{name:'Закрыть',exact:true}).click();
+  await row.getByRole('button',{name:'P&L Card · BTCUSDT',exact:true}).click();
+  await page.locator('.private-card-dialog img').waitFor();
+  // A share card, not a poster: the whole card visible, ~330px wide, well inside the window.
+  const card=await page.evaluate(()=>{const i=document.querySelector('.private-card-dialog img'),d=document.querySelector('.private-card-dialog');
+   const r=i.getBoundingClientRect(),b=d.getBoundingClientRect();
+   return{imgW:Math.round(r.width),imgH:Math.round(r.height),dialogH:Math.round(b.height),top:Math.round(b.top),bottom:Math.round(b.bottom),vh:innerHeight,vw:innerWidth,
+     clipped:d.scrollHeight>d.clientHeight+1,alt:i.alt,
+     text:d.innerText,href:d.querySelector('a').getAttribute('href')};});
+  assert(!card.clipped,'card dialog is clipped');
+  assert(card.top>=0&&card.bottom<=card.vh,`card dialog outside the viewport: ${card.top}..${card.bottom} of ${card.vh}`);
+  assert(card.dialogH<=card.vh*0.9,'card dialog taller than the window allows');
+  if(width>=1024)assert(card.imgW>=318&&card.imgW<=342,`desktop card width ${card.imgW}px is outside 320-340`);
+  assert(Math.abs(card.imgH/card.imgW-1215/1080)<0.02,`card aspect ${card.imgW}x${card.imgH} is not 1080x1215`);
+  for(const banned of ['Симуляция','Simulation','Demo','Historical Test','Preview','fixture'])
+   assert(!card.text.includes(banned)&&!card.alt.includes(banned),`card dialog still says ${banned}`);
+  assert(!card.href.includes('privateTrading=1'),'card link still uses the privateTrading=1 pattern');
+  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Сохранить PNG',exact:true}).click();
+  const saved=await download;const file=path.join(out,`card-${width}.png`);await saved.saveAs(file);
+  // The deliverable is the FILE: read its IHDR rather than trusting the canvas.
+  const png=fs.readFileSync(file),pngW=png.readUInt32BE(16),pngH=png.readUInt32BE(20);
+  assert(pngW===1080&&pngH===1215,`exported PNG is ${pngW}x${pngH}, expected 1080x1215`);
+  assert(!saved.suggestedFilename().toLowerCase().includes('simulation'),`download filename ${saved.suggestedFilename()}`);
+  report.checks.push({name:`pnl-card-${width}`,passed:true,exported:`${pngW}x${pngH}`,filename:saved.suggestedFilename(),onScreen:`${card.imgW}x${card.imgH}`,dialogHeight:card.dialogH,viewport:card.vh});
+  await page.locator('.private-card-dialog').getByRole('button',{name:'Закрыть',exact:true}).click();
   const before=(await state(page)).revision;await page.reload();await page.locator('.native-demo-controls form').waitFor();assert((await state(page)).revision>=before);assert.equal((await state(page)).positions.length,2);
   // No mode switch anywhere and no demo/test wording: this account has one
   // trading backend and the UI never says so. Header links must not collide

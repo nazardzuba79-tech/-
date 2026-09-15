@@ -24,15 +24,17 @@ export function PrivateResultCardDialog({snapshot,onClose,onError,loadSnapshot=p
       // Rendering can outlive role/session revocation. Authorize delivery too.
       await loadSnapshot(snapshot.id);if(!alive.current)return;
       const anchor=document.createElement('a');anchor.href=pngUrl;
-      anchor.download=`VOLTEX-${authorized.symbol.replace(/[^A-Za-z0-9]/g,'')}-${authorized.mode==='HISTORICAL_REPLAY'?'historical':'simulation'}.png`;
+      // The file leaves the app and lands in someone's downloads folder, so
+      // its name is an ordinary P&L card name — no simulation/demo/test word.
+      anchor.download=`VOLTEX-${authorized.symbol.replace(/[^A-Za-z0-9]/g,'')}-${authorized.mode==='HISTORICAL_REPLAY'?'historical':'pnl'}.png`;
       anchor.hidden=true;document.body.append(anchor);
       try{anchor.click();}finally{anchor.remove();}
     }catch(e){if(alive.current){setError(privateErrorText(e));onError(e);}}finally{if(alive.current)setBusy(false);}
   }
   return <dialog ref={dialog} className="private-card-dialog" aria-label="Карточка результата VOLTEX" onCancel={onClose} onClick={e=>{if(e.target===e.currentTarget)onClose();}}>
     <header><strong>Карточка результата</strong><button type="button" aria-label="Закрыть" onClick={onClose}><X size={20}/></button></header>
-    {url?<img src={url} alt={`Симуляция: ${snapshot.symbol}, Прибыль ${privateCardPnl(snapshot)??'—'} USDT`}/>:<p role="status">Подготовка карточки…</p>}
+    {url?<img src={url} alt={`${snapshot.symbol} · P&L ${privateCardPnl(snapshot)??'—'} USDT`}/>:<p role="status">Подготовка карточки…</p>}
     {error&&<p role="alert">{error}</p>}
-    <footer><a href={openHref??`/futures?privateTrading=1&card=${encodeURIComponent(snapshot.id)}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Открыть</a><button type="button" className="primary" onClick={()=>void exportCard()} disabled={!url||busy}><Download size={16}/>Сохранить PNG</button></footer>
+    <footer><a href={openHref??`/futures?card=${encodeURIComponent(snapshot.id)}`} target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/>Открыть</a><button type="button" className="primary" onClick={()=>void exportCard()} disabled={!url||busy}><Download size={16}/>Сохранить PNG</button></footer>
   </dialog>;
 }

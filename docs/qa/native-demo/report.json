@@ -3,6 +3,15 @@
   "productionVerified": false,
   "checks": [
     {
+      "name": "pnl-card-1440",
+      "passed": true,
+      "exported": "1080x1215",
+      "filename": "VOLTEX-BTCUSDT-pnl.png",
+      "onScreen": "330x371",
+      "dialogHeight": 504,
+      "viewport": 1000
+    },
+    {
       "name": "layout-1440",
       "passed": true,
       "layout": {
@@ -28,8 +37,8 @@
       "name": "cross-liquidation-far-1440",
       "passed": true,
       "liquidation": [
-        "90377902.5",
-        "90377902.5"
+        "90414366.5",
+        "90414366.5"
       ]
     },
     {
@@ -46,6 +55,15 @@
     {
       "name": "native-chart-click-history-entry-pnl-exit-1440",
       "passed": true
+    },
+    {
+      "name": "pnl-card-390",
+      "passed": true,
+      "exported": "1080x1215",
+      "filename": "VOLTEX-BTCUSDT-pnl.png",
+      "onScreen": "352x396",
+      "dialogHeight": 521,
+      "viewport": 1000
     },
     {
       "name": "layout-390",
@@ -73,8 +91,8 @@
       "name": "cross-liquidation-far-390",
       "passed": true,
       "liquidation": [
-        "90377912.8",
-        "90377912.8"
+        "90414366.5",
+        "90414366.5"
       ]
     },
     {

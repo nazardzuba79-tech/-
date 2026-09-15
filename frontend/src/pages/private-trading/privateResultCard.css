@@ -6,9 +6,14 @@ dialog.private-card-dialog {
      a top-layer <dialog> already escapes every parent's overflow and
      stacking context, and these bounds keep the artwork inside the window
      instead of running off the bottom of a short laptop screen. */
-  width: min(560px, calc(100vw - 32px));
+  /* A SHARE CARD, NOT A POSTER.
+     Bybit shows its P&L card at roughly a phone's width even on a desktop,
+     so the artwork reads at a glance instead of filling the screen. 360px of
+     dialog minus 2x14 padding puts the card itself at ~332px wide, ~374px
+     tall at its 1080:1215 aspect — the whole card visible, never clipped. */
+  width: min(360px, calc(100vw - 32px));
   max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
+  max-height: min(88dvh, calc(100dvh - 32px));
   margin: auto;                 /* centred both ways in the top layer */
   padding: 14px;
   overflow: auto;               /* a very short window scrolls rather than clips */
@@ -27,8 +32,9 @@ dialog.private-card-dialog img {
   width: 100%;
   height: auto;
   /* The header and the action row below the artwork are part of the same
-     budget, so the image gets the rest of the viewport, never more. */
-  max-height: calc(100dvh - 150px);
+     budget, so the image gets the rest of the viewport, never more. The
+     75dvh cap is what keeps the card whole on a short laptop window. */
+  max-height: min(75dvh, calc(100dvh - 150px));
   object-fit: contain;
   margin-inline: auto;
   border-radius: 8px;
@@ -76,7 +82,7 @@ dialog.private-card-dialog footer .primary { color: #131d26; background: #eac365
 dialog.private-card-dialog [role=alert] { color: #ffaeb9; font-size: 12px; }
 @media (max-width: 480px) {
   dialog.private-card-dialog { width: calc(100vw - 16px); max-width: calc(100vw - 16px); padding: 10px; }
-  dialog.private-card-dialog img { max-height: calc(100dvh - 130px); }
+  dialog.private-card-dialog img { max-height: min(72dvh, calc(100dvh - 130px)); }
   dialog.private-card-dialog footer { justify-content: stretch; }
   dialog.private-card-dialog footer :is(button, a) { flex: 1; justify-content: center; }
 }
