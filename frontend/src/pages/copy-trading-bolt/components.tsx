@@ -687,11 +687,12 @@ export function Profile({ trader, onBack, synthetic }: { trader: Trader; onBack:
 
   useEffect(() => {
     setDetailsReady(false);
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => setDetailsReady(true));
-    });
-    return () => { window.cancelAnimationFrame(firstFrame); if (secondFrame) window.cancelAnimationFrame(secondFrame); };
+    // Use a normal task instead of requestAnimationFrame. rAF can be throttled
+    // or paused by some browser/tab states, which left featured profiles on
+    // the loading shell indefinitely. A short timer still lets the identity
+    // header paint first, then deterministically mounts the analytics.
+    const timer = window.setTimeout(() => setDetailsReady(true), 16);
+    return () => window.clearTimeout(timer);
   }, [trader.id]);
 
   return (
