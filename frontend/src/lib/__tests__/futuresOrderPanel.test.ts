@@ -157,6 +157,33 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string, p?: any) => (p ? `${key}:${JSON.stringify(p)}` : key) }) };
     if (name === '../lib/toast') return { useToast: () => ({ success: jest.fn(), error: jest.fn() }) };
     if (name === '../lib/futuresMath') return futuresMath;
+    /**
+     * The engine seam (PR: original terminal + account/execution adapter).
+     *
+     * Outside a provider the real components use REAL_FUTURES_EXECUTION,
+     * which is the `api` call each one used to make inline — so a test that
+     * passes no `execution` drives exactly the path it always drove. A test
+     * that passes one drives the SAME components against that engine, which
+     * is how the native path is covered without a second order form.
+     */
+    if (name === '../lib/futuresExecution') {
+      const real = {
+        engine: 'REAL', ready: true, account: null, marginType: null, candle: null, contract: null,
+        placeOrder: (p: any) => api.placeFuturesOrder(p),
+        cancelOrder: (id: string) => api.cancelFuturesOrder(id),
+        closePosition: (id: string) => api.closeFuturesPosition(id),
+        setProtection: (id: string, b: any) => api.setFuturesPositionProtection(id, b),
+        clearProtection: (id: string) => api.clearFuturesPositionProtection(id),
+        refresh: (keys?: string[]) => { refreshes.push(keys ?? ['*']); },
+      };
+      const value = { ...real, ...(overrides.execution ?? {}) };
+      return {
+        REAL_FUTURES_EXECUTION: real,
+        useFuturesExecution: () => value,
+        FuturesExecutionProvider: ({ children }: any) => children,
+      };
+    }
+    if (name === '../lib/futuresAccountSource') return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
     if (name.endsWith('.css')) return {};
     if (name === './OrderFamilyPresentation') {
       components.OrderFamilyTabs ??= () => null;

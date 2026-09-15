@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { NativeCommand, NativeDemoService } from './service';
 import { OwnerSession } from '../serviceTypes';
 import { DemoEngineError, NATIVE_DEMO_MODEL } from './engine';
+import { ContractRuleError } from '../math';
 import BigNumber from 'bignumber.js';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
@@ -31,10 +32,21 @@ const NATIVE_INPUT_ERROR_TEXT:Record<string,string>={
   INVALID_PRICE_STEP:'Цена не кратна шагу цены контракта.',INVALID_LEVERAGE:'Недопустимое плечо для контракта.',TIER_LEVERAGE_EXCEEDED:'Плечо выше допустимого для такого размера позиции.',
   RISK_LIMIT_EXCEEDED:'Позиция превышает лимит риска контракта.',INVALID_QUANTITY:'Маржа слишком мала для минимального количества.',INVALID_AMOUNT:'Проверьте числовые значения.',INVALID_PRICE:'Проверьте цену.',
 };
+/** The contract limits by their own names, so a refusal quotes the rule the
+ *  exchange publishes rather than a paraphrase of it. */
+const LIMIT_TEXT:Record<string,string>={
+  qtyStep:'Шаг количества',tickSize:'Шаг цены',minOrderQty:'Минимальное количество',maxOrderQty:'Максимальное количество лимитного ордера',
+  maxMarketOrderQty:'Максимальное количество рыночного ордера',minNotionalValue:'Минимальная стоимость ордера, USDT',
+  minLeverage:'Минимальное плечо',maxLeverage:'Максимальное плечо',leverageStep:'Шаг плеча',tierMaxLeverage:'Максимальное плечо для этого размера позиции',
+};
 /** Mount ONLY below the existing authenticated owner+ADMIN+session middleware. */
 export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=>OwnerSession){
   const r=Router();const handle=(run:(req:Request,res:Response)=>Promise<unknown>)=>(req:Request,res:Response,next:NextFunction)=>void run(req,res).then(result=>res.json(result)).catch(next);
   r.get('/state',handle((_req,res)=>service.state(actor(res))));
+  // The terminal's order form sizes against these. Without them the client
+  // can only guess a quantity and let the engine refuse it, which is exactly
+  // how a slider-sized order used to fail on the contract's quantity step.
+  r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
   r.post('/commands',handle((req,res)=>service.command(actor(res),nativeCommandSchema.parse(req.body) as NativeCommand)));
   r.post('/cards',handle((req,res)=>service.card(actor(res),z.object({positionId:key}).strict().parse(req.body).positionId)));
@@ -42,6 +54,10 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
   r.use((e:unknown,_req:Request,res:Response,next:NextFunction)=>{
     if(e instanceof DemoEngineError)return res.status(409).json({code:e.code,error:NATIVE_ERROR_TEXT[e.code]??`Расчёт остановлен: ${e.code}`});
     // Contract-rule violations from the shared decimal validators are the owner's input, not a server fault.
+    // A refusal names the limit it hit and the value that limit allows: without
+    // them "вне лимитов контракта" tells the trader nothing they can act on.
+    if(e instanceof ContractRuleError)return res.status(400).json({code:e.message,limit:e.detail.limit,allowed:e.detail.allowed,actual:e.detail.actual,
+      error:`${NATIVE_INPUT_ERROR_TEXT[e.message]??'Ордер отклонён контрактом.'} ${LIMIT_TEXT[e.detail.limit]??e.detail.limit}: ${e.detail.allowed}. Запрошено: ${e.detail.actual}.`});
     if(e instanceof Error&&Object.prototype.hasOwnProperty.call(NATIVE_INPUT_ERROR_TEXT,e.message))return res.status(400).json({code:e.message,error:NATIVE_INPUT_ERROR_TEXT[e.message]});
     next(e);
   });return r;

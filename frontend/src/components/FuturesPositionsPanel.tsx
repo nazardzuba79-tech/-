@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api, ApiError } from '../lib/api';
+import { ApiError } from '../lib/api';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
@@ -37,6 +38,7 @@ export function FuturesPositionsPanel({
   // position closes, so it is loaded when its tab becomes active and
   // refreshed explicitly on the events that can change it.
   const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : {});
+  const execution = useFuturesExecution();
 
   /** `null` = not known yet, or the request failed. It is deliberately NOT
    *  coerced to `[]`: an empty array is the server saying "you have none",
@@ -65,7 +67,7 @@ export function FuturesPositionsPanel({
     setError(null);
     setClosingId(positionId);
     try {
-      await api.closeFuturesPosition(positionId);
+      await execution.closePosition(positionId);
       // A close changes the open list, the history AND the margin the
       // position was holding, so all three are refreshed at once instead of
       // only this panel's own list.
@@ -162,7 +164,7 @@ export function FuturesPositionsPanel({
                       <Td className="mono">{p.size}</Td>
                       <Td className="mono">{p.entryPrice}</Td>
                       <Td className="mono">{p.markPrice ?? '—'}</Td>
-                      <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice}</Td>
+                      <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice ?? '—'}</Td>
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{pnl !== null ? pnl.toFixed(2) : '—'}</Td>
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</Td>
                       <Td>

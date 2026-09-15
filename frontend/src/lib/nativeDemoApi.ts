@@ -19,6 +19,11 @@ export interface NativeState {
   positions:NativePosition[];history:NativePosition[];orders:NativeOrder[];events:NativeEvent[];
   entries?:{positionId:string;candle:NativeCandle|null}[];
 }
+export interface NativeContract{
+  symbol:string;tickSize:string;qtyStep:string;minOrderQty:string;maxOrderQty:string;maxMarketOrderQty:string;minNotionalValue:string;
+  minLeverage:string;maxLeverage:string;leverageStep:string;
+  riskTiers:{maxNotional:string;maintenanceRate:string;deduction:string;maxLeverage:string}[];takerFeeRate:string;makerFeeRate:string;
+}
 export type NativeDraft=
  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
@@ -37,6 +42,9 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
   return{
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
+    /** The contract's own trading rules — what the engine will accept as a
+     *  quantity. The order form sizes against these instead of guessing. */
+    contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),

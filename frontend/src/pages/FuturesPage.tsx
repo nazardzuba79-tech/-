@@ -1,5 +1,5 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
-import { NativeDemoTicket,NativeDemoPanel,NativeDemoDialogs } from './private-trading/NativeDemoControls';
+import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -14,6 +14,13 @@ import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
+import { FuturesAccountSourceContext } from '../lib/futuresAccountSource';
+import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
+import { nativeDemoApi } from '../lib/nativeDemoApi';
+import { pairToNativeSymbol } from '../lib/nativeFuturesAdapter';
+import type { FuturesContractRules } from '../lib/futuresMath';
+import { ChartTradingToggle } from '../components/ChartTradingToggle';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
@@ -77,12 +84,43 @@ export function FuturesPage() {
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const native = useNativeDemo(symbol,setSymbol);
+  /**
+   * The selected contract's quantity rules, from the engine that will
+   * enforce them. Loaded once per symbol — they are static instrument
+   * metadata, not a quote — and left null for a contract that has not
+   * answered, which makes the order form fall back to nothing rather than
+   * to a guessed step.
+   */
+  const [nativeContract, setNativeContract] = useState<FuturesContractRules | null>(null);
+  useEffect(() => {
+    if (!native.allowed) { setNativeContract(null); return; }
+    let cancelled = false;
+    const controller = new AbortController();
+    setNativeContract(null);
+    nativeDemoApi.contract(pairToNativeSymbol(symbol), controller.signal)
+      .then(rules => { if (!cancelled) setNativeContract(rules); })
+      .catch(() => { if (!cancelled) setNativeContract(null); });
+    return () => { cancelled = true; controller.abort(); };
+  }, [symbol, native.allowed]);
+  /**
+   * THE TERMINAL DOES NOT CHANGE — ITS ENGINE DOES.
+   *
+   * There is one order form, one positions table, one orders table and one
+   * assets table on this page, and they are the same components for every
+   * account. For the owner whose access verdict pins them to the
+   * simulation engine, `useNativeFuturesExecution` supplies the account
+   * state those components read and the commands their buttons send; for
+   * everybody else it is null and the real execution is used, which is the
+   * `api` call each component used to make inline. See lib/futuresExecution.
+   */
+  const nativeExecution = useNativeFuturesExecution(native, nativeContract);
+  const execution = nativeExecution ?? REAL_FUTURES_EXECUTION;
   // The simulation account polls its own authoritative state, so the real
   // futures account store must not poll for it. What decides that is the
   // SERVER's answer, not a query parameter: `native.requested` is the
   // access check's verdict, so the terminal stops polling as soon as it
   // arrives and an ordinary user keeps the unchanged intervals.
-  const account = useFuturesAccount(native.requested?{}:{ orders: 5000, positions: 4000 });
+  const account = useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 });
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
@@ -94,6 +132,15 @@ export function FuturesPage() {
   );
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
+  /**
+   * "Торговля с графика" — a CHART TOOL switch, not an account switch.
+   *
+   * On: a bar can be picked and the pick prices the ordinary order form.
+   * Off: the pickers are hidden and any unsent pick is dropped. Nothing
+   * about the account, its positions, its orders or its history depends on
+   * it, and it is not persisted anywhere — it is the state of a toolbar.
+   */
+  const [chartTrading, setChartTrading] = useState(false);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -181,7 +228,7 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
-        rightExtra={native.allowed?undefined:<PrivateTradingEntry/>}
+        rightExtra={nativeExecution?undefined:<PrivateTradingEntry/>}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -189,7 +236,9 @@ export function FuturesPage() {
         futuresReference={reference}
       />
 
-      <div className="terminal" data-account-compact={native.requested?false:accountPanel.compact}>
+      <FuturesExecutionProvider value={execution}>
+      <FuturesAccountSourceContext.Provider value={execution.account}>
+      <div className="terminal" data-account-compact={accountPanel.compact}>
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
@@ -198,7 +247,22 @@ export function FuturesPage() {
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} privateTrading={native.requested&&native.allowed?native.interaction:undefined} candleLoader={native.requested&&native.allowed?native.loader:undefined} />
+            {nativeExecution && <ChartTradingToggle
+              enabled={chartTrading}
+              onChange={next => {
+                setChartTrading(next);
+                // Turning the tools off discards an UNSENT historical
+                // selection, so the next ordinary order cannot silently
+                // open in the past. Positions, orders, balance and history
+                // are account state and are not touched.
+                if (!next) native.interaction.onCancelSelection();
+              }}
+              picking={native.interaction.selecting !== null}
+              onPick={native.pickEntry}
+            />}
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+              privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
+              candleLoader={nativeExecution?native.loader:undefined} />
           </div>
 
           <div className="orderbook-area repaired-futures-book">
@@ -219,20 +283,22 @@ export function FuturesPage() {
 
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
-            {native.requested?<NativeDemoTicket key={symbol} controller={native} symbol={symbol} pickedPrice={pickedPrice?.symbol===symbol?pickedPrice.value:undefined} pickedSequence={pickedPrice?.seq}/>:<FuturesOrderForm
+            <FuturesOrderForm
               key={symbol}
               symbol={symbol}
-              executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}
+              /* The simulation engine lists every contract the terminal
+                 discovers, so its universe is not the real engine's
+                 execution whitelist. */
+              executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}
               onPlaced={handleOrderPlaced}
-              onOpenTransfer={() => setShowTransfer(true)}
+              onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
-            />}
+            />
           </div>
         </div>
 
-        <div className="bottom-panel" data-account-compact={native.requested?false:accountPanel.compact}>
-          {native.requested?<NativeDemoPanel controller={native}/>:<>
+        <div className="bottom-panel" data-account-compact={accountPanel.compact}>
           <div className="terminal-account-header">
           <div className="bottom-tabs" role="tablist" aria-label={t('futures.positions')}>
             {BOTTOM_TABS.map((tab) => (
@@ -263,9 +329,11 @@ export function FuturesPage() {
             {bottomTab === 'orders' && <FuturesOrdersPanel refreshKey={positionsRefreshKey} />}
             {bottomTab === 'orderHistory' && <FuturesOrdersPanel history refreshKey={positionsRefreshKey} />}
             {bottomTab === 'assets' && <AssetsPanel wallet="futures" refreshKey={positionsRefreshKey} />}
-          </div></>}
+          </div>
         </div>
       </div>
+      </FuturesAccountSourceContext.Provider>
+      </FuturesExecutionProvider>
 
       {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
         onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
@@ -276,7 +344,7 @@ export function FuturesPage() {
           <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
       </dialog>}
-      {native.requested&&<NativeDemoDialogs controller={native}/>}
+      {nativeExecution&&<NativeDemoDialogs controller={native}/>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );

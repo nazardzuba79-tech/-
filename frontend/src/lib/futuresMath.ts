@@ -176,3 +176,88 @@ export function maxAffordableNotional(params: {
   const tier = getLeverageTier(tiers, existingExposure + notional);
   return { notional, leverage: Math.min(selectedLeverage, tier?.maxLeverage ?? selectedLeverage) };
 }
+
+// ---------------------------------------------------------------------------
+// Contract rules
+//
+// A contract does not accept an arbitrary quantity. It has a step, a floor,
+// a ceiling (a different one for MARKET than for LIMIT) and a minimum
+// order value, and an order that misses any of them is refused outright.
+// Sizing that ignores them produces a number the engine can only reject —
+// which is exactly how a slider-sized order failed with "Количество не
+// кратно шагу контракта" on the simulation engine while passing every test
+// written against an engine that enforces no step at all.
+// ---------------------------------------------------------------------------
+
+export interface FuturesContractRules {
+  qtyStep: string;
+  minOrderQty: string;
+  maxOrderQty: string;
+  maxMarketOrderQty: string;
+  minNotionalValue: string;
+}
+
+/** Decimal places a step implies: '0.001' -> 3, '1' -> 0, '10' -> 0. */
+export function stepDecimals(step: string): number {
+  const dot = step.indexOf('.');
+  return dot === -1 ? 0 : step.length - dot - 1;
+}
+
+export interface ContractSizing {
+  /** The quantity to submit. 0 when nothing valid fits. */
+  quantity: number;
+  /** Which rule bound the result, when one did — for a message that names it. */
+  cappedBy: 'maxOrderQty' | 'maxMarketOrderQty' | null;
+  /** The rule this quantity still violates, if any. */
+  rejectedBy: 'minOrderQty' | 'minNotionalValue' | null;
+  /** That rule's own value, so a message can quote it. */
+  limit: string | null;
+}
+
+/**
+ * Fit a desired quantity to what the contract will actually accept.
+ *
+ * Down, never up, at every step: the quantity is floored to a whole number
+ * of `qtyStep`s and then clamped to the ceiling, so a size that fitted the
+ * margin before still fits it after. What it cannot do is raise a quantity
+ * to `minOrderQty` or to `minNotionalValue` — that would spend margin the
+ * trader did not offer — so those are reported rather than applied.
+ *
+ * The step arithmetic runs on integers scaled by the step's own decimal
+ * width, so `0.1 + 0.2` never decides whether an order is a multiple of
+ * the step.
+ */
+export function fitQuantityToContract(
+  quantity: number,
+  price: number,
+  rules: FuturesContractRules,
+  options: { market: boolean },
+): ContractSizing {
+  const none: ContractSizing = { quantity: 0, cappedBy: null, rejectedBy: null, limit: null };
+  if (!Number.isFinite(quantity) || quantity <= 0) return none;
+
+  const decimals = stepDecimals(rules.qtyStep);
+  const step = Number(rules.qtyStep);
+  if (!(step > 0)) return none;
+
+  const scale = 10 ** decimals;
+  const steps = Math.floor(Number((quantity / step).toFixed(6)));
+  let fitted = Number((steps * step).toFixed(decimals));
+
+  const ceiling = Number(options.market ? rules.maxMarketOrderQty : rules.maxOrderQty);
+  let cappedBy: ContractSizing['cappedBy'] = null;
+  if (Number.isFinite(ceiling) && fitted > ceiling) {
+    // The ceiling itself has to land on the step, so floor it too.
+    fitted = Math.floor(Number((ceiling * scale).toFixed(6))) / scale;
+    fitted = Number((Math.floor(Number((fitted / step).toFixed(6))) * step).toFixed(decimals));
+    cappedBy = options.market ? 'maxMarketOrderQty' : 'maxOrderQty';
+  }
+
+  if (!(fitted > 0) || fitted < Number(rules.minOrderQty)) {
+    return { quantity: 0, cappedBy, rejectedBy: 'minOrderQty', limit: rules.minOrderQty };
+  }
+  if (price > 0 && fitted * price < Number(rules.minNotionalValue)) {
+    return { quantity: 0, cappedBy, rejectedBy: 'minNotionalValue', limit: rules.minNotionalValue };
+  }
+  return { quantity: fitted, cappedBy, rejectedBy: null, limit: cappedBy === null ? null : String(ceiling) };
+}

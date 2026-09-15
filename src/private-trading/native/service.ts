@@ -39,6 +39,23 @@ export class NativeDemoService {
       entries:row.commands.filter((c):c is Extract<NativeInstruction,{kind:'OPEN'}>=>c.kind==='OPEN').map(c=>({positionId:c.order.id,candle:c.candle??null}))};
   }
   async state(actor:OwnerSession){const row=await this.repository.read(actor);return{...this.view(row),demoAvailable:row?null:await this.repository.available(actor)};}
+  /**
+   * The contract's own trading rules, for the terminal's order form.
+   *
+   * These are the numbers `validateContractOrder` enforces. Publishing them
+   * is what lets the form SIZE to the contract — snap to `qtyStep`, stop at
+   * `maxMarketOrderQty`, refuse below `minNotionalValue` — instead of
+   * sending a quantity the engine then has to refuse. The rules are the
+   * instrument service's cached Bybit values; nothing here invents or
+   * relaxes one. `actor` is required so this stays behind the same
+   * owner+ADMIN+session gate as every other native route.
+   */
+  async contract(actor:OwnerSession,symbol:string){
+    void actor;
+    const instrument=await this.market.instrument(symbol);
+    return{...contractRules(instrument),riskTiers:simulationProfile(instrument).riskTiers,
+      takerFeeRate:simulationProfile(instrument).takerFeeRate,makerFeeRate:simulationProfile(instrument).makerFeeRate};
+  }
   async initialize(actor:OwnerSession,key:string){return this.view(await this.repository.initialize(actor,key));}
   private async bars(request:BarRequest):Promise<ReplayBar[]>{
     const history=await this.market.history({symbol:request.symbol,startTime:request.start,endTime:request.end,intervalMinutes:(request.intervalMs/MINUTE) as 1|15|60,omitProviderFunding:true});

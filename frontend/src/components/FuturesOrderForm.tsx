@@ -5,13 +5,16 @@ import { useToast } from '../lib/toast';
 import { FuturesMarginLeverage } from './FuturesMarginLeverage';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import {
   getLeverageTier,
   previewLiquidationPrice,
   projectFuturesExposureNotional,
   maxAffordableNotional,
   floorToDecimals,
+  fitQuantityToContract,
+  stepDecimals,
   QUANTITY_DECIMALS,
 } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -20,6 +23,13 @@ import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFam
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
 const SIZE_PRESETS = [0, 25, 50, 75, 100];
+
+/** The contract rule a refusal names, in the trader's language. */
+const CONTRACT_LIMIT_LABEL = {
+  minOrderQty: 'futures.limitMinQty',
+  minNotionalValue: 'futures.limitMinNotional',
+  qtyStep: 'futures.limitQtyStep',
+} as const;
 
 export function FuturesOrderForm({
   symbol,
@@ -69,7 +79,7 @@ export function FuturesOrderForm({
    * chosen and could not get back without reloading the page.
    */
   const [requestedLeverage, setRequestedLeverage] = useState(10);
-  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
+  const [chosenMarginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
   const [reduceOnly, setReduceOnly] = useState(false);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +90,17 @@ export function FuturesOrderForm({
   // three `setInterval`s that used to live in this file are gone; so is the
   // second copy of /futures/balances and the third of /futures/positions.
   const account = useFuturesAccount({ balances: 5000, positions: 5000, orders: 5000 });
+  /**
+   * Which engine takes this order, and where the account state came from.
+   *
+   * Outside a provider this is the real engine and the real `api` call the
+   * form used to make inline, so nothing about an ordinary account's path
+   * changes. See lib/futuresExecution.
+   */
+  const execution = useFuturesExecution();
+  /** An engine that settles in one margin mode is not offering a choice.
+   *  `null` — every ordinary account — leaves the toggle the trader's. */
+  const marginType = execution.marginType ?? chosenMarginType;
   // The leverage bounds and the tier table come from the one shared read of
   // /futures/config rather than this form's own copy — same values, same
   // `null`-until-known semantics, one request for the page instead of three.
@@ -278,7 +299,7 @@ export function FuturesOrderForm({
       // rejects as "would exceed the current position size".
       if (positions === null) return;
       const closable = exposurePosition ? exposurePosition.size : 0;
-      setQuantity(floorToDecimals(closable * (pct / 100), QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS));
+      setQuantity(contractSized(closable * (pct / 100)));
       return;
     }
     // An unknown available margin or an unknown existing exposure sizes
@@ -292,8 +313,40 @@ export function FuturesOrderForm({
       selectedLeverage: atLeverage,
       existingExposure: baseExposure,
     });
-    setQuantity(floorToDecimals(notional / effectivePrice, QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS));
+    setQuantity(contractSized(notional / effectivePrice));
   }
+
+  /**
+   * A quantity the CONTRACT will accept, not merely one the margin covers.
+   *
+   * When the engine publishes its rules, the size is floored onto the
+   * contract's quantity step and clamped to its ceiling — both downward, so
+   * a size that fitted the margin still fits it. Without rules (every real
+   * account, and a contract that has not answered yet) this is the plain
+   * 8-decimal floor the form has always used.
+   */
+  function contractSized(raw: number): string {
+    const rules = execution.contract;
+    if (!rules) return floorToDecimals(raw, QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS);
+    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET' });
+    return fitted.quantity.toFixed(stepDecimals(rules.qtyStep));
+  }
+
+  /**
+   * The contract rule this order breaks, if any — checked here so the
+   * refusal is visible before a round trip, and named so it can be acted
+   * on. The ENGINE remains the authority: this never relaxes a rule, it
+   * only reports the same one the engine would.
+   */
+  const contractCheck = execution.contract && orderSizeKnown && !reduceOnly
+    ? fitQuantityToContract(parseFloat(quantity), effectivePrice, execution.contract, { market: type === 'MARKET' })
+    : null;
+  const contractBreach = contractCheck && (
+    contractCheck.rejectedBy !== null
+      // A quantity the fitter had to change is a quantity the contract
+      // would have refused as typed.
+      || Math.abs(contractCheck.quantity - parseFloat(quantity)) > Number(execution.contract!.qtyStep) / 2
+  ) ? contractCheck : null;
 
   /**
    * Whether this order asks for more margin than the account has free.
@@ -318,7 +371,7 @@ export function FuturesOrderForm({
     setSubmitting(true);
     setSide(orderSide);
     try {
-      await api.placeFuturesOrder({
+      await execution.placeOrder({
         symbol,
         side: orderSide,
         type,
@@ -334,7 +387,7 @@ export function FuturesOrderForm({
       // The account really did change: refresh it now rather than waiting
       // for whichever poll fires next. Balances too — placing an order
       // locks margin, and that figure used to lag by up to five seconds.
-      refreshFuturesAccount(['balances', 'positions', 'orders']);
+      execution.refresh(['balances', 'positions', 'orders']);
       onPlaced();
       toast.success(t('trade.orderPlaced'));
     } catch (err) {
@@ -378,10 +431,14 @@ export function FuturesOrderForm({
    * reduce-only, and a balance that has not been answered yet.
    */
   const canSubmit = Boolean(config)
+    // An engine whose access verdict or account state is not known yet
+    // takes no orders. It never falls back to the other engine.
+    && execution.ready
     && executionEnabled
     && connectedFamily
     && effectiveMaxLeverage !== null
     && !marginShortfall
+    && !contractBreach
     && !submitting;
 
   /** Same guard, same confirmation, same order of checks as before — only
@@ -417,7 +474,8 @@ export function FuturesOrderForm({
             effectiveMaxLeverage, and config.highLeverageWarningThreshold. */}
         <FuturesMarginLeverage
           marginType={marginType}
-          onMarginTypeChange={setMarginType}
+          onMarginTypeChange={execution.marginType ? () => {} : setMarginType}
+          marginTypeLocked={execution.marginType !== null}
           leverage={leverage}
           onLeverageChange={(next) => {
             setRequestedLeverage(next);
@@ -543,7 +601,17 @@ export function FuturesOrderForm({
         </div>
 
         {error && <div className="fo-error">{error}</div>}
-        {marginShortfall && !error && (
+        {contractBreach && !error && (
+          <div className="fo-error" role="status">
+            {t('futures.contractLimit', {
+              limit: t(CONTRACT_LIMIT_LABEL[contractBreach.rejectedBy ?? 'qtyStep']),
+              allowed: contractBreach.rejectedBy !== null
+                ? contractBreach.limit!
+                : `${contractBreach.quantity} ${baseAsset}`,
+            })}
+          </div>
+        )}
+        {marginShortfall && !contractBreach && !error && (
           <div className="fo-error" role="status">
             {t('futures.insufficientMargin', {
               required: requiredMargin.toFixed(2),
