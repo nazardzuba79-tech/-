@@ -1,0 +1,35 @@
+name: Native demo public preview check
+on:
+  push:
+    branches: ['codex/private-cross-demo-bybit-model']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-demo-preview-check
+  cancel-in-progress: true
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      # Isolated review service only (synthetic demo capital, public mainnet prices). Never production.
+      # Waits for the service to serve exactly this commit, then exercises the real API end to end.
+      - name: Check the isolated preview serving this commit
+        env:
+          PREVIEW_ORIGIN: https://voltex-native-demo-review.onrender.com
+          EXPECTED_COMMIT: ${{ github.sha }}
+          WAIT_FOR_COMMIT_MS: '1200000'
+        run: node scripts/check-native-demo-preview.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-demo-public-preview
+          path: preview-report.json
+          retention-days: 7

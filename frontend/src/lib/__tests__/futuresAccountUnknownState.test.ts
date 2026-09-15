@@ -124,6 +124,28 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === 'react') return react;
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn() };
     if (name === '../lib/api') return { api, ApiError: Error };
+    if (name === '../lib/futuresExecution') {
+      // The engine seam. Outside a provider the real components use
+      // REAL_FUTURES_EXECUTION, which is the `api` call each one used to
+      // make inline — so these suites drive exactly the path they drove
+      // before the seam existed.
+      const real = {
+        engine: 'REAL', ready: true, account: null, marginType: null, candle: null, contract: null,
+        placeOrder: (p: any) => api.placeFuturesOrder(p),
+        cancelOrder: (id: string) => api.cancelFuturesOrder(id),
+        closePosition: (id: string) => api.closeFuturesPosition(id),
+        setProtection: (id: string, b: any) => api.setFuturesPositionProtection(id, b),
+        clearProtection: (id: string) => api.clearFuturesPositionProtection(id),
+        // The real default delegates to refreshFuturesAccount, so the stub
+        // records into the same list this harness already watches.
+        refresh: (keys?: string[]) => { refreshes.push(keys ?? ['*']); },
+      };
+      return { REAL_FUTURES_EXECUTION: real, useFuturesExecution: () => real,
+        FuturesExecutionProvider: ({ children }: any) => children };
+    }
+    if (name === '../lib/futuresAccountSource') {
+      return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
+    }
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
@@ -215,7 +237,10 @@ describe('position history is loaded, never polled', () => {
       }]) }),
     });
     const tree = panel.render({ refreshKey: 0, tab: 'open' });
-    const closeButton = nodes(tree).find((n) => n.type === 'button' && n.props.children === 'futures.close');
+    // Closing is now offered BY METHOD, as on the reference: the market
+    // close keeps the same handler and the same refresh, under the label
+    // for the method it uses.
+    const closeButton = nodes(tree).find((n) => n.type === 'button' && n.props.className === 'futures-position-close');
     expect(closeButton).toBeDefined();
 
     await closeButton.props.onClick();

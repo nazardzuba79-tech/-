@@ -156,3 +156,31 @@
 /* A last-good figure served past its TTL reads as dimmer rather than
    silently identical to a live one. */
 .futures-terminal .ticker-item .value.is-stale { opacity: .62; }
+
+/* ── "Торговля с графика" — a chart TOOL switch ──────────────────────
+   It sits on the chart's own chrome, at the density of the drawing rail
+   it shares an edge with, and states a tool mode. It is deliberately not
+   styled as a mode banner: nothing about the account changes with it. */
+.futures-terminal .chart-trading-toggle {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+  background: var(--surface-2, rgba(255,255,255,.02));
+  font-size: 11px;
+}
+.futures-terminal .chart-trading-switch {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--text-secondary); cursor: pointer; user-select: none;
+}
+.futures-terminal .chart-trading-switch input { accent-color: #e9c578; cursor: pointer; margin: 0; }
+.futures-terminal .chart-trading-pick {
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  background: transparent; color: var(--text-secondary);
+  border-radius: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+.futures-terminal .chart-trading-pick:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
+.futures-terminal .chart-trading-pick.active { border-color: #e9c578; color: #e9c578; background: rgba(233,197,120,.1); }
+@media (max-width: 600px) {
+  .futures-terminal .chart-trading-toggle { padding: 6px 10px; gap: 8px; }
+}

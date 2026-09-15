@@ -1349,9 +1349,19 @@ export const api = {
         leverage: number;
         marginType: 'ISOLATED' | 'CROSS';
         initialMargin: string;
-        liquidationPrice: string;
+        /** `null` when no liquidation price is reachable with the account's
+         *  current collateral — a Cross position fully hedged by another, or
+         *  one whose whole balance backs it. The real endpoint always sends
+         *  a figure; the type allows the absence so a consumer renders a
+         *  dash for it rather than an empty cell. */
+        liquidationPrice: string | null;
         markPrice: string | null;
         unrealizedPnl: string | null;
+        /** Already banked on this position — partial closes and anything
+         *  else settled into it. A SEPARATE figure from `unrealizedPnl`:
+         *  the two are never summed, because the size that produced this
+         *  is no longer part of the size that produces that. */
+        realizedPnl: string;
         roe: string | null;
         openedAt: string;
         /** Real, server-held TP/SL for this position. `null` on a side is

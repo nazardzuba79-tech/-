@@ -169,7 +169,10 @@ test('real terminal pages preserve tab navigation and mounted readers while the 
   expect(spot).toContain('onAccountCount={setAccountOpenOrderCount}');
   expect(spot).toContain('<div className="account-tab-content" hidden={bottomTab !== \'open\'}>');
   expect(spot).toContain('accountPanel.reveal(`spot:${pair}:${tab.id}`)');
-  expect(futures).toContain('useFuturesAccount({ orders: 5000, positions: 4000 })');
+  // Public/Real futures keeps the same readers; only the owner's simulation view (which never shows
+  // the real account panel) skips polling the real account. The server decides which it is, so the
+  // suppression now reads the access verdict instead of a `?demo=1` query parameter.
+  expect(futures).toContain('useFuturesAccount(native.requested?{}:{ orders: 5000, positions: 4000 })');
   expect(futures).toContain('accountPanel.reveal(`futures:${tab.id}`)');
   for (const page of [spot, futures]) expect(page).toContain('hidden={accountPanel.compact}');
 });

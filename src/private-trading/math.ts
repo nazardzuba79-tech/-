@@ -113,15 +113,57 @@ export function closePositionAllocation(input: { side: Side; quantity: string; c
   const openAllocated = nonnegative(input.openingFeesRemaining ?? '0', 'opening_fees').times(ratio), fundingAllocated = decimal(input.fundingRemaining ?? '0').times(ratio);
   return { remainingQuantity: amount(q.minus(closed)), releasedMargin: amount(margin.times(ratio)), remainingMargin: amount(margin.times(new D(1).minus(ratio))), closingFee: amount(fee), realizedGross: amount(gross), allocatedOpeningFees: amount(openAllocated), allocatedFunding: amount(fundingAllocated), netRealized: amount(gross.minus(fee).minus(openAllocated).plus(fundingAllocated)) };
 }
+/**
+ * A contract rule the order broke, with the rule's own number.
+ *
+ * `message` is still the bare code, so every existing catch, error map and
+ * test that matches on it is unaffected. What is added is `detail`: WHICH
+ * limit, what it allows, and what the order asked for — because "Размер
+ * ордера вне лимитов контракта" names none of the three, and a trader who
+ * cannot see the number cannot pick a size that satisfies it.
+ */
+export class ContractRuleError extends Error {
+  constructor(code: string, readonly detail: { limit: string; allowed: string; actual: string }) {
+    super(code);
+    this.name = 'ContractRuleError';
+  }
+}
+
 export function validateContractOrder(input: { rules: ContractRules; quantity: string; price: string; leverage: string; market: boolean; profile: ModelProfile }): void {
   const { rules } = input, q = decimal(input.quantity, 'quantity', true), p = decimal(input.price, 'price', true), l = decimal(input.leverage, 'leverage', true);
-  if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) throw new Error('INVALID_QUANTITY_STEP');
-  if (!input.market && !p.mod(decimal(rules.tickSize, 'price_step', true)).isZero()) throw new Error('INVALID_PRICE_STEP');
-  if (q.lt(rules.minOrderQty) || q.gt(input.market ? rules.maxMarketOrderQty : rules.maxOrderQty) || q.times(p).lt(rules.minNotionalValue)) throw new Error('INVALID_ORDER_SIZE');
-  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) throw new Error('INVALID_LEVERAGE');
+  if (!q.mod(decimal(rules.qtyStep, 'quantity_step', true)).isZero()) {
+    throw new ContractRuleError('INVALID_QUANTITY_STEP', { limit: 'qtyStep', allowed: rules.qtyStep, actual: input.quantity });
+  }
+  if (!input.market && !p.mod(decimal(rules.tickSize, 'price_step', true)).isZero()) {
+    throw new ContractRuleError('INVALID_PRICE_STEP', { limit: 'tickSize', allowed: rules.tickSize, actual: input.price });
+  }
+  // Split into the three distinct rules it always was, so the refusal can
+  // say which one bound — a MARKET order over maxMarketOrderQty and an
+  // order under minNotionalValue are different problems with different fixes.
+  if (q.lt(rules.minOrderQty)) {
+    throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minOrderQty', allowed: rules.minOrderQty, actual: input.quantity });
+  }
+  const maxQty = input.market ? rules.maxMarketOrderQty : rules.maxOrderQty;
+  if (q.gt(maxQty)) {
+    throw new ContractRuleError('INVALID_ORDER_SIZE', {
+      limit: input.market ? 'maxMarketOrderQty' : 'maxOrderQty', allowed: maxQty, actual: input.quantity,
+    });
+  }
+  if (q.times(p).lt(rules.minNotionalValue)) {
+    throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minNotionalValue', allowed: rules.minNotionalValue, actual: amount(q.times(p)) });
+  }
+  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) {
+    throw new ContractRuleError('INVALID_LEVERAGE', {
+      limit: l.gt(rules.maxLeverage) ? 'maxLeverage' : l.lt(rules.minLeverage) ? 'minLeverage' : 'leverageStep',
+      allowed: l.gt(rules.maxLeverage) ? rules.maxLeverage : l.lt(rules.minLeverage) ? rules.minLeverage : rules.leverageStep,
+      actual: input.leverage,
+    });
+  }
   validateProfile(input.profile);
   const tier = selectRiskTier(amount(q.times(p)), input.profile);
-  if (tier.maxLeverage && l.gt(tier.maxLeverage)) throw new Error('TIER_LEVERAGE_EXCEEDED');
+  if (tier.maxLeverage && l.gt(tier.maxLeverage)) {
+    throw new ContractRuleError('TIER_LEVERAGE_EXCEEDED', { limit: 'tierMaxLeverage', allowed: tier.maxLeverage, actual: input.leverage });
+  }
 }
 export interface BookLevel { price: string; quantity: string }
 export function consumeBook(side: 'BUY' | 'SELL', quantity: string, book: { bids: BookLevel[]; asks: BookLevel[] }, limitPrice?: string) {

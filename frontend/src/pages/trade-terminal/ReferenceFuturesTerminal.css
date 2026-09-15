@@ -306,3 +306,109 @@
   .futures-reference .rb-tabs button, .futures-reference .rb-modes button,
   .futures-reference .fo-mlTrigger, .futures-reference .futures-account-actions button { transition:background-color .12s, border-color .12s, color .12s; }
 }
+
+/* ── One field shape, used twice ─────────────────────────────────────
+   Price and quantity must be the same control with different contents.
+   Every box property is set ONCE here, on `.fo-field`, so the two cannot
+   drift apart: same outer width and height, same padding, background,
+   border and radius, flush left and right edges, same text size.
+
+   What differs between them — "Последняя" on price, the asset unit on
+   quantity — lives in `.fo-fieldTrailing` INSIDE the box. It is
+   `flex: 0 0 auto` next to an input that is `flex: 1 1 0` with
+   `min-width: 0`, so whatever it contains it takes space from the input
+   and never from the box. The caption is absolutely positioned, so a
+   longer label cannot add a line either.
+
+   Selector weight matches the block above (`.trade-terminal.trade-terminal
+   .futures-reference`) so this wins over the per-field heights it
+   replaces, and the studio/graphite variants keep their own colours. */
+.trade-terminal.trade-terminal.futures-reference .fo-field { position: relative; gap: 0; }
+.trade-terminal.trade-terminal.futures-reference .fo-field > .fo-fieldCaption {
+  position: absolute; top: 7px; left: 12px; z-index: 1;
+  font-size: 11px; line-height: 14px; font-weight: 400; pointer-events: none;
+  color: var(--text-secondary);
+}
+.trade-terminal.trade-terminal.futures-reference .fo-field .fo-fieldRow {
+  display: flex; align-items: stretch; gap: 0; width: 100%; box-sizing: border-box;
+  height: 52px; min-height: 52px;
+  background: #212329; border: 1px solid transparent; border-radius: 4px; overflow: hidden;
+}
+.trade-terminal.trade-terminal.futures-reference .fo-field .fo-fieldRow:focus-within { border-color: var(--accent-yellow); }
+/* The input carries no box of its own — the row IS the box. */
+.trade-terminal.trade-terminal.futures-reference .fo-field .fo-input {
+  flex: 1 1 0; min-width: 0; width: auto;
+  height: auto; min-height: 0;
+  padding: 23px 0 6px 12px; line-height: 21px; font-size: 14px;
+  background: transparent; border: 0; border-radius: 0;
+}
+.trade-terminal.trade-terminal.futures-reference .fo-field .fo-input:focus { border-color: transparent; }
+.trade-terminal.trade-terminal.futures-reference .fo-fieldTrailing {
+  flex: 0 0 auto; display: flex; align-items: center; align-self: stretch;
+  padding-right: 12px; padding-left: 8px; max-width: 45%;
+}
+.trade-terminal.trade-terminal.futures-reference .fo-fieldTrailing:empty { padding: 0; }
+.trade-terminal.trade-terminal.futures-reference .fo-fieldTrailing .fo-unit {
+  position: static; right: auto; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); white-space: nowrap;
+}
+.trade-terminal.trade-terminal.futures-reference .fo-fieldTrailing .fo-lastPriceBtn {
+  border: 0; background: transparent; padding: 0; margin: 0;
+  font-size: 12px; font-weight: 500; white-space: nowrap; color: var(--accent-yellow); cursor: pointer;
+}
+.trade-terminal.trade-terminal.futures-reference .fo-fieldTrailing .fo-lastPriceBtn:hover { text-decoration: underline; }
+/* A MARKET price is read-only text, but it is the SAME box. */
+.trade-terminal.trade-terminal.futures-reference .fo-field .fo-markPrice {
+  display: flex; align-items: flex-end; color: #aeb9c4;
+}
+/* A message is a sibling of the fields, never a child, so it can never
+   stretch one relative to the other. */
+.trade-terminal.trade-terminal.futures-reference .fo-error { width: 100%; box-sizing: border-box; overflow-wrap: anywhere; }
+/* Long and Short are one size. */
+.trade-terminal.trade-terminal.futures-reference .fo-submitPair { display: flex; gap: 8px; }
+.trade-terminal.trade-terminal.futures-reference .fo-submitPair .submit-btn {
+  flex: 1 1 0; min-width: 0; height: 40px; min-height: 40px; padding: 0 12px;
+}
+
+/* ── Positions row ───────────────────────────────────────────────────
+   One line per position at the reference's density, with the contract
+   carrying Cross and the leverage under it, and the unrealized figure
+   carrying ROI under it. Realized P&L is its OWN column, never summed
+   with the unrealized one.
+
+   The horizontal scroll lives on the table's own container, so a wide
+   row scrolls inside the panel and the PAGE never does — which is also
+   why nothing here is allowed to truncate a number: a large P&L widens
+   the table and the container scrolls. */
+.trade-terminal.trade-terminal.futures-reference .futures-positions-scroll { overflow: auto; overscroll-behavior-x: contain; }
+.trade-terminal.trade-terminal.futures-reference .futures-positions-table { min-width: max-content; font-size: 12px; }
+.trade-terminal.trade-terminal.futures-reference .futures-positions-table th { padding: 8px 12px; white-space: nowrap; font-size: 11px; }
+.trade-terminal.trade-terminal.futures-reference .futures-positions-table td { padding: 8px 12px; white-space: nowrap; vertical-align: middle; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-row { border-top: 1px solid #2a2a31; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-row:hover { background: #ffffff05; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-contract { display: flex; flex-direction: column; gap: 2px; line-height: 15px; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-contract b { font-size: 12px; font-weight: 600; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-contract small { font-size: 10px; font-weight: 500; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-unit { color: var(--text-tertiary); font-size: 11px; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-pnl { display: flex; flex-direction: column; gap: 2px; line-height: 15px; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-pnl small { font-size: 10px; opacity: .85; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-actions { display: flex; align-items: center; gap: 6px; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-close {
+  border: 1px solid #3b3b46; background: transparent; color: var(--text-secondary);
+  border-radius: 4px; padding: 4px 9px; font-size: 11px; line-height: 16px; cursor: pointer; white-space: nowrap;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.trade-terminal.trade-terminal.futures-reference .futures-position-close:hover:not(:disabled) { border-color: var(--accent-yellow); color: var(--accent-yellow); }
+.trade-terminal.trade-terminal.futures-reference .futures-position-close:disabled { opacity: .55; cursor: default; }
+.trade-terminal.trade-terminal.futures-reference .futures-position-card {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex: 0 0 auto;
+  border: 1px solid #3b3b46; border-radius: 4px; background: transparent;
+  color: var(--text-secondary); cursor: pointer; transition: border-color .14s, color .14s, background .14s;
+}
+.trade-terminal.trade-terminal.futures-reference .futures-position-card:hover { border-color: var(--accent-yellow); color: var(--accent-yellow); background: #f7a6000f; }
+@media (max-width: 767px) {
+  .trade-terminal.trade-terminal.futures-reference .futures-positions-table th,
+  .trade-terminal.trade-terminal.futures-reference .futures-positions-table td { padding: 8px 10px; }
+  .trade-terminal.trade-terminal.futures-reference .futures-position-actions { gap: 4px; }
+}

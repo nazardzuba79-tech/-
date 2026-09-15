@@ -77,7 +77,7 @@ test.each([
   // admin Product methods. Prefix before admin methods and support suffix are
   // byte-identical to main ab564ae; all Futures/Spot/request/auth code is intact.
   ['frontend/src/lib/api.ts', '3454afc56ed400c3b97dbed268e5851330e34ffca1e37726f1354d2c9df0cef4'],
-  ['src/api/routes/futures.ts', '57f05eb3cb0aad13eec2ef6658c93311cb179133f6907e9952f8b16560cfd831'],
+  ['src/api/routes/futures.ts', 'f4de032c9cf2f064e6054462c8cb4c9345bcc9648877f6fffd53314534765af9'],
   ['frontend/src/components/TickerBar.tsx', 'f0ec1548e89eb9abb5841a4196bd4ae1e4dbe8680f5a00645995029d71d26c27'],
   // api.ts re-taken for Analytics Live V1: purely ADDITIVE (+57/-0) —
   // getAnalyticsOverview and its response types. Every futures method,
@@ -143,6 +143,18 @@ test.each([
   // the trailing comma already noted above. The follow-up adds the 409
   // PROTECTION_TRIGGERING / 503 MARK_PRICE_UNAVAILABLE contract and nothing
   // else touching this suite's subject.
+  //
+  // Re-taken again for the simulation-only guard. futures.ts gains exactly
+  // two things: an import of `isSimulationOnlyUser`, and a module-scope
+  // `refuseSimulationOnly(req,res)` called as the FIRST line of the six
+  // routes that can move money or rest liquidity — POST /futures/orders,
+  // DELETE /futures/orders/:orderId, POST .../close, PUT and DELETE
+  // .../protection, POST /futures/transfer. It returns 403 for the pinned
+  // private-trading owner and false for everyone else, so no other user's
+  // path changes by a single branch.
+  //
+  // It is a WRITE guard. Not one read this suite protects is inside it, and
+  // the routes below are untouched.
   //
   // Every read this suite exists to protect is untouched in both files:
   // getFuturesMarkPrice / GET /futures/mark-price/:symbol,

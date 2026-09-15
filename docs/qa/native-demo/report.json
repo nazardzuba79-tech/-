@@ -1,0 +1,116 @@
+{
+  "fixtureOnly": true,
+  "productionVerified": false,
+  "checks": [
+    {
+      "name": "pnl-card-1440",
+      "passed": true,
+      "exported": "1080x1215",
+      "filename": "VOLTEX-BTCUSDT-pnl.png",
+      "onScreen": "330x371",
+      "dialogHeight": 504,
+      "viewport": 1000
+    },
+    {
+      "name": "layout-1440",
+      "passed": true,
+      "layout": {
+        "overlaps": 0,
+        "switches": 0,
+        "leaks": [],
+        "modeChip": "Cross",
+        "cardButtons": 2,
+        "tabs": [
+          "Открытые ордера (0)",
+          "Позиции (2)",
+          "История ордеров",
+          "История торговли",
+          "Активы",
+          "P&L"
+        ],
+        "scrollWidth": 1440,
+        "width": 1440,
+        "liquidationHeader": true
+      }
+    },
+    {
+      "name": "cross-liquidation-far-1440",
+      "passed": true,
+      "liquidation": [
+        "90487307.2",
+        "90487307.2"
+      ]
+    },
+    {
+      "name": "long-short-limit-cancel-tpsl-partial-close-png-reload-1440",
+      "passed": true
+    },
+    {
+      "name": "native-historical-limit-wick-1440",
+      "passed": true,
+      "limit": "50347.4",
+      "low": 49852.1,
+      "entry": "50347.4"
+    },
+    {
+      "name": "native-chart-click-history-entry-pnl-exit-1440",
+      "passed": true
+    },
+    {
+      "name": "pnl-card-390",
+      "passed": true,
+      "exported": "1080x1215",
+      "filename": "VOLTEX-BTCUSDT-pnl.png",
+      "onScreen": "352x396",
+      "dialogHeight": 521,
+      "viewport": 1000
+    },
+    {
+      "name": "layout-390",
+      "passed": true,
+      "layout": {
+        "overlaps": 0,
+        "switches": 0,
+        "leaks": [],
+        "modeChip": "Cross",
+        "cardButtons": 2,
+        "tabs": [
+          "Открытые ордера (0)",
+          "Позиции (2)",
+          "История ордеров",
+          "История торговли",
+          "Активы",
+          "P&L"
+        ],
+        "scrollWidth": 390,
+        "width": 390,
+        "liquidationHeader": true
+      }
+    },
+    {
+      "name": "cross-liquidation-far-390",
+      "passed": true,
+      "liquidation": [
+        "90487322",
+        "90487322"
+      ]
+    },
+    {
+      "name": "long-short-limit-cancel-tpsl-partial-close-png-reload-390",
+      "passed": true
+    },
+    {
+      "name": "native-historical-limit-wick-390",
+      "passed": true,
+      "limit": "50545.5",
+      "low": 50131.4,
+      "entry": "50545.5"
+    },
+    {
+      "name": "native-chart-click-history-entry-pnl-exit-390",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

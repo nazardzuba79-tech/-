@@ -94,7 +94,12 @@ describe('the futures market list scales', () => {
     expect(page).toContain('useFuturesConfig()');
     expect(page).toContain('discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe)');
     expect(page).toContain('api.getFuturesUniverse()');
-    expect(page).toContain('executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}');
+    // The backend listing still governs what the REAL engine will execute.
+    // The simulation engine lists every contract the terminal discovers, so
+    // it is the one account that does not read this whitelist — which is a
+    // second branch, not a local symbol list.
+    expect(page).toContain('(futuresConfig?.symbols.includes(symbol) ?? false)');
+    expect(page).toContain('executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}');
     expect(page).toContain('setSymbols(listed)');
     // And it does not go back to fetching the endpoint itself.
     expect(page).not.toContain('getFuturesConfig');
