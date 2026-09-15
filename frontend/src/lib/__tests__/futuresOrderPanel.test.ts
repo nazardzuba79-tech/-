@@ -183,6 +183,13 @@ function mount(file: string, overrides: Record<string, any> = {}) {
         FuturesExecutionProvider: ({ children }: any) => children,
       };
     }
+    // The real localizer has its own suite (futuresOrderErrors.test.ts).
+    // Here it stands in as the identity on the fallback — exactly what
+    // these components showed before it existed, so what these suites
+    // assert about error text is unchanged.
+    if (name === '../lib/futuresOrderErrors') {
+      return { futuresOrderErrorMessage: (_e: unknown, _t: unknown, fallback: string) => fallback };
+    }
     if (name === '../lib/futuresAccountSource') return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
     if (name.endsWith('.css')) return {};
     if (name === './OrderFamilyPresentation') {

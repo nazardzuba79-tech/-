@@ -7,6 +7,7 @@ import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
+import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import {
   getLeverageTier,
   previewLiquidationPrice,
@@ -408,7 +409,14 @@ export function FuturesOrderForm({
       onPlaced();
       toast.success(t('trade.orderPlaced'));
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : t('futures.placeOrderError');
+      // The refusal is localized from the engine's own reason code, so a
+      // margin shortfall reads as a margin shortfall rather than borrowing
+      // whichever contract limit happened to be nearby.
+      const message = futuresOrderErrorMessage(
+        err,
+        t,
+        err instanceof ApiError ? err.message : t('futures.placeOrderError'),
+      );
       setError(message);
       toast.error(message);
     } finally {

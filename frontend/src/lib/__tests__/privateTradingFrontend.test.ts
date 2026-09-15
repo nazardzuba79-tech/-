@@ -13,7 +13,7 @@ function load(file:string,imports:Record<string,unknown>={}){
   new Function('require','exports',code)((name:string)=>name in imports?imports[name]:name.endsWith('.css')?{}:req(name),output);
   return output;
 }
-const api=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>null}});
+const api=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>null},'./privateTradingError':load('lib/privateTradingError.ts')});
 const cardRenderer=load('lib/privateResultCard.ts',{'./privateTradingApi':api,'./privateCardArtwork':load('lib/privateCardArtwork.ts')});
 const reply=(body:unknown,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body}) as Response;
 

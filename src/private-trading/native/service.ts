@@ -9,7 +9,14 @@ import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, Native
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
   | {kind:'REFRESH'}
-  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<DemoProtection>}
+  /**
+   * `reduceOnly` + `positionId` make this a REDUCING order that keeps its
+   * own type. A reduce-only LIMIT is a resting close at a price — the
+   * engine has always supported it (`placeDemoOrder` validates the side
+   * and size against the position) — and it must NOT be collapsed into a
+   * CLOSE, which prices at the book instead of at the price the trader set.
+   */
+  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<DemoProtection>;reduceOnly?:boolean;positionId?:string}
   | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
   | {kind:'CANCEL';orderId:string}
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
@@ -122,7 +129,10 @@ export class NativeDemoService {
       profile.assumptions=['Cross USDT-only demo; gross hedge maintenance; not Bybit matching.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
       const size=(price:string)=>request.quantity??new BigNumber(request.margin!).times(request.leverage).div(price).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
-      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),historical:!!request.candle});
+      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
+        // A reducing order keeps its type and its price; the engine checks
+        // the side and the size against the named position itself.
+        ...(request.reduceOnly?{reduceOnly:true,positionId:request.positionId}:{}),historical:!!request.candle});
       if(request.candle){
         const selected=await this.market.resolveCandle({...request.candle,symbol}),candle=request.candle;
         if(request.type==='LIMIT'){

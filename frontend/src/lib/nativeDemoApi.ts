@@ -25,7 +25,7 @@ export interface NativeContract{
   riskTiers:{maxNotional:string;maintenanceRate:string;deduction:string;maxLeverage:string}[];takerFeeRate:string;makerFeeRate:string;
 }
 export type NativeDraft=
- | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>}
+ | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
  | {kind:'CANCEL';orderId:string}
  | {kind:'PROTECTION';positionId:string;protection:Partial<NativeProtection>}
@@ -36,7 +36,12 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     const bearer=token();if(!bearer)throw new PrivateTradingError('Войдите в аккаунт',401);
     const response=await fetcher(`${base.replace(/\/$/,'')}/private-trading${path}`,{method:body===undefined?'GET':'POST',signal,cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${bearer}`},...(body===undefined?{}:{body:JSON.stringify(body)})});
     const data=await response.json().catch(()=>null);if(token()!==bearer)throw new PrivateTradingError('Сессия завершена',401);
-    if(!response.ok)throw new PrivateTradingError(typeof data?.error==='string'?data.error:'Демо-счёт временно недоступен',response.status);
+    if(!response.ok)throw new PrivateTradingError(
+      typeof data?.error==='string'?data.error:'Счёт временно недоступен',
+      response.status,
+      typeof data?.code==='string'?data.code:undefined,
+      {limit:data?.limit,allowed:data?.allowed,actual:data?.actual},
+    );
     if(data===null)throw new PrivateTradingError('Сервер не подтвердил результат',502);return data;
   }
   return{

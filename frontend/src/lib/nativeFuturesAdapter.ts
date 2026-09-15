@@ -231,6 +231,8 @@ export function terminalOrderToNativeDraft(params: {
   quantity: string;
   leverage: number;
   reduceOnly?: boolean;
+  /** The position a reducing order reduces. Required when `reduceOnly`. */
+  positionId?: string;
   candle?: NativeCandle | null;
   protection?: { takeProfit: string | null; stopLoss: string | null };
 }): NativeDraft {
@@ -242,6 +244,10 @@ export function terminalOrderToNativeDraft(params: {
     quantity: params.quantity,
     leverage: String(params.leverage),
     ...(params.type === 'LIMIT' && params.price ? { price: params.price } : {}),
+    // A reducing order stays the order it is. Collapsing a reduce-only
+    // LIMIT into a CLOSE would price it at the book instead of at the price
+    // the trader set, which is a different trade.
+    ...(params.reduceOnly && params.positionId ? { reduceOnly: true as const, positionId: params.positionId } : {}),
     ...(params.candle ? { candle: params.candle } : {}),
     ...(params.protection ? { protection: params.protection } : {}),
   };

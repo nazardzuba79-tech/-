@@ -27,7 +27,7 @@ function load(file: string, imports: Record<string, unknown> = {}) {
   new Function('require', 'exports', code)((name: string) => name in imports ? imports[name] : name.endsWith('.css') ? {} : req(name), output);
   return output;
 }
-const privateApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => 'owner-token' } });
+const privateApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => 'owner-token' }, './privateTradingError': load('lib/privateTradingError.ts') });
 const nativeApi = load('lib/nativeDemoApi.ts', { './api': { getToken: () => 'owner-token' }, './privateTradingApi': privateApi });
 const cardRenderer = load('lib/privateResultCard.ts', { './privateTradingApi': privateApi, './privateCardArtwork': load('lib/privateCardArtwork.ts') });
 

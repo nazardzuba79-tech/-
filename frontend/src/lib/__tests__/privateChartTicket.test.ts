@@ -13,7 +13,7 @@ function load(file: string, imports: Record<string, unknown> = {}, expose?: stri
   new Function('require', 'exports', compiled + (expose ? `\nexports.${expose} = ${expose};` : ''))((name: string) => name in imports ? imports[name] : name.endsWith('.css') ? {} : req(name), output);
   return output;
 }
-const actualApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => null } });
+const actualApi = load('lib/privateTradingApi.ts', { './api': { getToken: () => null }, './privateTradingError': load('lib/privateTradingError.ts') });
 const { privateChartOverlays } = load('lib/privateChartPresentation.ts', { './privateTradingApi': actualApi });
 const { refreshPrivateScenario } = load('lib/usePrivateScenarioRefresh.ts', { './privateTradingApi': actualApi });
 const tick = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };

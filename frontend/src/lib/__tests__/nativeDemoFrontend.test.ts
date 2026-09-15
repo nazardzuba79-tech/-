@@ -14,7 +14,7 @@ function load(file:string,imports:Record<string,unknown>={}){
   return output;
 }
 let token:string|null='owner-token';
-const privateApi=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>token}});
+const privateApi=load('lib/privateTradingApi.ts',{'./api':{getToken:()=>token},'./privateTradingError':load('lib/privateTradingError.ts')});
 const nativeApi=load('lib/nativeDemoApi.ts',{'./api':{getToken:()=>token},'./privateTradingApi':privateApi});
 const reply=(body:unknown,status=200)=>({ok:status>=200&&status<300,status,json:async()=>body}) as Response;
 function nodes(node:any):any[]{return !node||typeof node!=='object'?[]:Array.isArray(node)?node.flatMap(nodes):[node,...nodes(node.props?.children)];}
@@ -91,7 +91,12 @@ describe('native demo frontend',()=>{
     const hook=readFileSync(resolve(frontend,'src/pages/private-trading/useNativeDemo.tsx'),'utf8');
     expect(hook).not.toContain("params.get('demo')");
     expect(hook).not.toContain('toggle');
-    expect(hook).toContain('const requested=allowed;');
+    // `requested` is derived from the SERVER's verdict about this account,
+    // never from a control the trader can flip. Until that verdict arrives
+    // the binding is 'unknown', which trades nowhere rather than falling
+    // through to the real account.
+    expect(hook).toContain("const requested=binding==='owner'||binding==='unknown';");
+    expect(hook).toContain("useState<'unknown'|'owner'|'ordinary'>('unknown')");
     // And the client only believes the terminal is native when the SERVER
     // states this account is simulation-only.
     expect(hook).toContain('a.simulationOnly===true');

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ApiError } from '../lib/api';
 import { useFuturesExecution } from '../lib/futuresExecution';
+import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
@@ -78,7 +79,11 @@ export function FuturesPositionsPanel({
       // only this panel's own list.
       execution.refresh(['positions', 'positionHistory', 'balances']);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('futures.closePositionError'));
+      setError(futuresOrderErrorMessage(
+        err,
+        t,
+        err instanceof ApiError ? err.message : t('futures.closePositionError'),
+      ));
     } finally {
       setClosingId(null);
     }

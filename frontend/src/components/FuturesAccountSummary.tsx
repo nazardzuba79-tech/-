@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
 
 type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
@@ -35,6 +36,20 @@ export function FuturesAccountSummary({
   // independently timed copies of it. The 5s cadence is the one this card
   // always used.
   const account = useFuturesAccount({ balances: 5000, positions: 5000 });
+  /**
+   * ONE SOURCE FOR EVERY FIGURE ON THIS CARD.
+   *
+   * When the engine publishes its own account aggregate, this card stops
+   * calculating and starts displaying: equity, both margins, the order
+   * reserve and the available balance are the server's single computation,
+   * not a second one performed here from positions and a tier table. Two
+   * derivations of one figure are two figures, and that is exactly how the
+   * maintenance margin came out as 0.00% — the REAL engine's tier table
+   * applied to a position the simulation engine had priced under its own.
+   *
+   * `null` — every real account — leaves the derivation below untouched.
+   */
+  const aggregate = useFuturesExecution().account_aggregate;
   const failedResources = (['balances', 'positions'] as const).filter(key => account[key].failed);
   const retrying = failedResources.some(key => account[key].loading || account[key].refreshing);
 
@@ -43,22 +58,32 @@ export function FuturesAccountSummary({
   // balance request simply failed is the exact fake zero VOLTEX forbids,
   // and it is what this card used to do.
   const row = account.balances.data?.find((x) => x.asset === quoteAsset);
-  const available = account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
+  const available = aggregate
+    ? Number(aggregate.available)
+    : account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
   const locked = account.balances.data ? (row ? parseFloat(row.locked) : 0) : null;
   const positions = account.positions.data;
 
-  const marginBalance = available !== null && locked !== null ? available + locked : null;
+  const marginBalance = aggregate
+    ? Number(aggregate.equity)
+    : available !== null && locked !== null ? available + locked : null;
 
   // Every figure below is derived exactly as before — same reduce, same
   // leverage tier lookup, same maintenance-margin rate. The only change is
   // that an unknown positions list yields null rather than a total of 0.
-  const pnl = positions
-    ? positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0)
-    : null;
-  const initialMargin = positions
-    ? positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0)
-    : null;
-  const maintenanceMargin = positions && config
+  const pnl = aggregate
+    ? Number(aggregate.unrealizedPnl)
+    : positions
+      ? positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0)
+      : null;
+  const initialMargin = aggregate
+    ? Number(aggregate.initialMargin) + Number(aggregate.orderReserve)
+    : positions
+      ? positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0)
+      : null;
+  const maintenanceMargin = aggregate
+    ? Number(aggregate.maintenanceMargin)
+    : positions && config
     ? positions.reduce((sum, p) => {
         const notional = parseFloat(p.size) * parseFloat(p.markPrice ?? p.entryPrice);
         const tier = getLeverageTier(config.leverageTiers, notional);

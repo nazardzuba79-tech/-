@@ -167,7 +167,14 @@ describe('3. the account summary under the order buttons', () => {
     // `show` renders '—' for null and the formatted number otherwise; null
     // is never coerced to 0 on the way in.
     expect(SUMMARY).toContain("value === null ? '—' : mask(format(value))");
-    expect(SUMMARY).toContain('const available = account.balances.data ? (row ? parseFloat(row.available) : 0) : null;');
+    // The real account's derivation is unchanged — it is now the branch
+    // taken when the engine publishes no aggregate of its own.
+    expect(SUMMARY).toContain(': account.balances.data ? (row ? parseFloat(row.available) : 0) : null;');
+    // …and when it does publish one, this card DISPLAYS it rather than
+    // computing a second maintenance margin from the real tier table. That
+    // second derivation is what showed 0.00% on a simulated position.
+    expect(SUMMARY).toContain('const aggregate = useFuturesExecution().account_aggregate;');
+    expect(SUMMARY).toContain('Number(aggregate.maintenanceMargin)');
     expect(SUMMARY).toContain('marginBalance > 0 ? (part / marginBalance) * 100 : 0');
   });
 

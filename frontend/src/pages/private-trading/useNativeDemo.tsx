@@ -13,18 +13,52 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
    *  to learn that the mode is gone. */
   const[params]=useSearchParams();
   const[allowed,setAllowed]=useState(false),[checked,setChecked]=useState(false),[state,setState]=useState<NativeState|null>(null);
-  const requested=allowed;
+  /**
+   * WHICH ENGINE THIS ACCOUNT BELONGS TO — a THREE-state answer, and the
+   * reason the owner cannot fall through to real trading.
+   *
+   * 'unknown'  the access verdict has not arrived. Nobody trades, and the
+   *            real account store is NOT polled — because at this moment we
+   *            do not yet know that polling it is allowed.
+   * 'owner'    the server said this account trades the simulation engine.
+   *            STICKY for the session: a later failure of `/access` is an
+   *            outage, not a demotion, so it can never turn into 'ordinary'
+   *            and hand the owner the real engine.
+   * 'ordinary' the server said this is a normal account. Only this answer
+   *            releases the real path.
+   *
+   * `allowed` still means "the simulation engine is usable right now", and
+   * it does go false on an outage — that blocks trading. `binding` is what
+   * decides WHICH engine, and it never moves back.
+   */
+  const[binding,setBinding]=useState<'unknown'|'owner'|'ordinary'>('unknown');
+  const requested=binding==='owner'||binding==='unknown';
   const[error,setError]=useState(''),[busy,setBusy]=useState(false),[card,setCard]=useState<PrivateResultCard|null>(null);
   const[selecting,setSelecting]=useState<'entry'|'exit'|null>(null),[candle,setCandle]=useState<ChartTradeCandle|null>(null),[exitId,setExitId]=useState<string|null>(null);
   const[selectedId,setSelectedId]=useState<string|null>(null),[focus,setFocus]=useState<{tradeId:string;time:number;sequence:number}|null>(null);
   const pendingExit=useRef<string|null>(null);
   const pending=useRef(false),alive=useRef(true),attempt=useRef<{fingerprint:string;key:string}|null>(null);
   const[dialog,setDialog]=useState<{kind:'close'|'protection'|'leverage';position:NativePosition}|null>(null);
+  /** Drops the simulation SESSION, never the engine binding: an owner whose
+   *  access call just failed is still an owner. Only a real session change
+   *  (below) resets the binding to 'unknown'. */
   const revoke=useCallback(()=>{setAllowed(false);setState(null);setCard(null);setDialog(null);setCandle(null);setSelecting(null);},[]);
   const fail=useCallback((e:unknown)=>{if(!alive.current)return;if(e instanceof PrivateTradingError&&[401,403].includes(e.status))revoke();setError(e instanceof Error?e.message:'Операция не подтверждена');},[revoke]);
   useEffect(()=>{alive.current=true;const controller=new AbortController();let cancelled=false;
-    async function check(){try{if(!getToken()){revoke();return;}const a=await nativeDemoApi.access(controller.signal);if(!cancelled)setAllowed(a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true);}catch(e){if(!cancelled)revoke();}finally{if(!cancelled)setChecked(true);}}
-    void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{revoke();void check();});
+    async function check(){try{
+      if(!getToken()){revoke();setBinding('ordinary');return;}
+      const a=await nativeDemoApi.access(controller.signal);
+      if(cancelled)return;
+      const owner=a.allowed===true&&a.nativeAvailable===true&&a.simulationOnly===true;
+      setAllowed(owner);
+      // An answer moves the binding; a FAILURE below never does.
+      setBinding(current=>owner?'owner':current==='owner'?'owner':'ordinary');
+    }catch(e){
+      // Outage, not a verdict. The session is dropped so nothing trades,
+      // but an account already known to be the owner's stays the owner's.
+      if(!cancelled)revoke();
+    }finally{if(!cancelled)setChecked(true);}}
+    void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{revoke();setBinding('unknown');setChecked(false);void check();});
     return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);off();};
   },[revoke]);
   const refreshOnLoad=useRef(false);
@@ -65,7 +99,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
 
   function selectEntry(p:NativePosition){onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));setSelectedId(p.id);setFocus(f=>({tradeId:p.id,time:p.openedAt,sequence:(f?.sequence??0)+1}));}
   function exitOnChart(p:NativePosition){if(p.symbol!==normalized){pendingExit.current=p.id;onSymbol?.(p.symbol.replace(/USDT$/,'/USDT'));}setSelectedId(p.id);setExitId(p.id);setCandle(null);setSelecting('exit');}
-  return{requested,allowed,checked,state,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
+  return{requested,allowed,checked,binding,state,error,busy,card,setCard,dialog,setDialog,candle,setCandle,exitId,setExitId,selectedId,run,initialize,showCard,interaction,loader,selectEntry,exitOnChart,fail,
     pickEntry:()=>{setCandle(null);setExitId(null);setSelecting('entry');}};
 }
 export type NativeDemoController=ReturnType<typeof useNativeDemo>;

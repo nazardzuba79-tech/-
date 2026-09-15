@@ -22,6 +22,36 @@ import type { FuturesContractRules } from './futuresMath';
  * behaviour, so an ordinary user's path is unchanged by construction
  * rather than by a branch somebody has to remember to keep symmetric.
  */
+/**
+ * The account aggregate, as the ENGINE computed it.
+ *
+ * Every figure here is one number from one server-side calculation
+ * (`demoAccount` in the native engine): equity, both margins, the order
+ * reserve and what is left available. When an engine publishes these, the
+ * summary card DISPLAYS them — it does not re-derive margin from positions
+ * and a leverage-tier table the way it must for an engine that publishes
+ * no aggregate, because two derivations of the same figure are two figures.
+ *
+ * That re-derivation is what reported a maintenance margin of 0.00% on the
+ * owner's account: it was applying the REAL engine's tier table to a
+ * position the simulation engine had already priced under its own risk
+ * tiers.
+ */
+export interface FuturesAccountAggregate {
+  walletBalance: string;
+  equity: string;
+  unrealizedPnl: string;
+  /** Initial margin held by open positions. */
+  initialMargin: string;
+  maintenanceMargin: string;
+  /** Margin reserved behind working orders. */
+  orderReserve: string;
+  available: string;
+  /** `null` when there is no position to measure a ratio against. */
+  maintenanceRatio: string | null;
+  liquidatable: boolean;
+}
+
 export interface FuturesExecution {
   /** REAL = our matching engine and the real futures ledger.
    *  NATIVE = the simulation engine; no real order, no real wallet write. */
@@ -49,6 +79,9 @@ export interface FuturesExecution {
    *  them. `null` — every real account — means the terminal enforces no
    *  per-contract step or ceiling of its own, which is what it always did. */
   contract: FuturesContractRules | null;
+  /** The engine's own account aggregate, when it publishes one. `null` —
+   *  every real account — leaves the summary deriving as it always has. */
+  account_aggregate: FuturesAccountAggregate | null;
   placeOrder(params: {
     symbol: string;
     side: 'BUY' | 'SELL';
@@ -77,6 +110,7 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   marginType: null,
   candle: null,
   contract: null,
+  account_aggregate: null,
   placeOrder: async (params) => { await api.placeFuturesOrder(params); },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
   closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },

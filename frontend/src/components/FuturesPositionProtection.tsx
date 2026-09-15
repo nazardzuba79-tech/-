@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError, type FuturesProtectionTrigger } from '../lib/api';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { useLanguage } from '../lib/i18n';
+import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 
 /** The editor's own box, in CSS pixels. Used to decide whether it fits
  *  below the trigger before it is rendered, so it never opens off screen. */
@@ -196,7 +197,14 @@ export function FuturesPositionProtectionCell({
       setError(t('futures.protectionNoMarkPrice'));
       return;
     }
-    setError(err instanceof ApiError ? err.message : t('futures.protectionError'));
+    // The simulation engine answers with its own reason codes rather than
+    // an ApiError body, so it is localized here by the same table the
+    // order form uses.
+    setError(futuresOrderErrorMessage(
+      err,
+      t,
+      err instanceof ApiError ? err.message : t('futures.protectionError'),
+    ));
   }
 
   const hasAny = Boolean(tp || sl);
