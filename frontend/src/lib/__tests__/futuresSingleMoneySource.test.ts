@@ -92,3 +92,37 @@ describe('the account has a single authoritative source', () => {
     ]) expect(`${path}: ${/58[,._ ]?454[,._ ]?972/.test(server(path))}`).toBe(`${path}: false`);
   });
 });
+
+describe('the Wallet page reports the SAME account as the terminal', () => {
+  const card = () => src('components/WalletFuturesAccountCard.tsx');
+
+  it('reads the authoritative endpoint instead of recomputing from wallet rows', () => {
+    expect(card()).toContain('nativeDemoApi');
+    expect(card()).toContain('.account(');
+    // No arithmetic: the card prints fields, it does not combine them.
+    expect(card()).not.toMatch(/parseFloat|Number\(|\.plus\(|\.times\(|[^/*]\s\+\s[a-z]+\.(equity|available)/);
+  });
+
+  it('prints the same figures the terminal summary prints', () => {
+    const text = card();
+    for (const field of ['equity', 'settleBalance', 'walletCollateral', 'unrealizedPnl', 'initialMargin', 'available']) {
+      expect(`${field}: ${text.includes(`a.${field}`)}`).toBe(`${field}: true`);
+    }
+  });
+
+  it('shows nothing at all for an account that is not bound to the simulation engine', () => {
+    // An ordinary user's wallet page must be unchanged, so the card renders
+    // null both before the answer arrives and when it says "not yours".
+    expect(card()).toContain("if (state.kind !== 'ready') return null;");
+    expect(card()).toContain("setState({ kind: 'absent' })");
+  });
+
+  it('carries the SAME incomplete-collateral sentence as the terminal', () => {
+    expect(card()).toContain("t('futures.collateralIncomplete'");
+    expect(card()).toContain('a.unpricedAssets.join');
+  });
+
+  it('is mounted on the wallet page', () => {
+    expect(src('pages/WalletPage.tsx')).toContain('<WalletFuturesAccountCard hidden={hidden} />');
+  });
+});

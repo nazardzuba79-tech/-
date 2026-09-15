@@ -960,6 +960,11 @@ export const KO: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets}의 가격을 확인할 수 없습니다. 표시된 잔액은 하한값입니다.',
+  'wallet.futuresAccount': '선물 계좌',
+  'futures.settleBalance': '결제 자산 잔액',
+  'futures.walletCollateral': '지갑 담보',
+  'futures.equity': '계좌 순자산',
+  'futures.usedMargin': '사용 중 증거금',
   'futures.placeOrderError': '주문을 실행할 수 없습니다',
   // 주문 거부 사유를 있는 그대로: 자금 부족을 계약 한도로, 계약 한도를
   // 자금 부족으로 바꿔 말하지 않는다.

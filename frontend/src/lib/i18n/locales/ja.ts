@@ -960,6 +960,11 @@ export const JA: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} の価格が取得できません。表示されている残高は下限値です。',
+  'wallet.futuresAccount': '先物口座',
+  'futures.settleBalance': '決済資産残高',
+  'futures.walletCollateral': 'ウォレット担保',
+  'futures.equity': '口座資産',
+  'futures.usedMargin': '使用中証拠金',
   'futures.placeOrderError': '注文を発注できませんでした',
   // 注文が拒否された理由をそのまま伝える：資金不足を銘柄の制限として、
   // 銘柄の制限を資金不足として示すことはしない。

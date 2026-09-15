@@ -989,6 +989,11 @@ export const EN: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': 'No price for {assets}. The balance shown is a lower bound.',
+  'wallet.futuresAccount': 'Futures account',
+  'futures.settleBalance': 'Settle-asset balance',
+  'futures.walletCollateral': 'Wallet collateral',
+  'futures.equity': 'Account equity',
+  'futures.usedMargin': 'Used margin',
   'futures.placeOrderError': 'Failed to place order',
   // Why an order was refused, named as itself: a margin shortfall is never
   // reported as a contract limit, nor a contract limit as a shortfall.

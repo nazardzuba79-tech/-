@@ -960,6 +960,11 @@ export const HI: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} के लिए कीमत उपलब्ध नहीं है। दिखाया गया बैलेंस न्यूनतम सीमा है।',
+  'wallet.futuresAccount': 'फ्यूचर्स खाता',
+  'futures.settleBalance': 'सेटल एसेट बैलेंस',
+  'futures.walletCollateral': 'वॉलेट कोलैटरल',
+  'futures.equity': 'खाता इक्विटी',
+  'futures.usedMargin': 'उपयोग किया गया मार्जिन',
   'futures.placeOrderError': 'ऑर्डर नहीं दिया जा सका',
   // ऑर्डर अस्वीकृति का असली कारण: धनराशि की कमी को कॉन्ट्रैक्ट सीमा
   // बताकर नहीं दिखाया जाता, और न ही इसके विपरीत।

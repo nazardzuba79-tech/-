@@ -162,3 +162,50 @@
   outline: 1px solid #d9a441;
   outline-offset: 2px;
 }
+
+/* The owner's futures account, rendered from the futures endpoint so the
+   two pages cannot disagree. Sits in the same card language as the rest of
+   the page; it is a panel of figures, not a new visual idea. */
+.vx-wallet .wallet-futures-account {
+  border: 1px solid var(--wallet-border, rgba(17, 24, 39, 0.08));
+  border-radius: 14px;
+  background: var(--wallet-surface, #fff);
+  padding: 18px 20px;
+}
+.vx-wallet .wallet-futures-account-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--wallet-ink, #111827);
+}
+.vx-wallet .wallet-futures-account-grid {
+  margin: 0;
+  display: grid;
+  gap: 10px 24px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.vx-wallet .wallet-futures-account-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+.vx-wallet .wallet-futures-account-row dt {
+  font-size: 12px;
+  color: var(--wallet-muted, #6b7280);
+}
+.vx-wallet .wallet-futures-account-row dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  /* A long figure wraps inside its own cell instead of widening the page. */
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.vx-wallet .wallet-futures-account-note {
+  margin: 12px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--wallet-muted, #6b7280);
+}

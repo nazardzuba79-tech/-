@@ -90,6 +90,12 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     /** The contract's own trading rules — what the engine will accept as a
      *  quantity. The order form sizes against these instead of guessing. */
     contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
+    /**
+     * The authoritative account: the one object the terminal, the wallet
+     * card and the P&L card all read. Whoever renders a figure from
+     * anywhere else is showing a second answer.
+     */
+    account:(signal?:AbortSignal)=>request<{account:NativeAccountAggregate;ledger:AccountLedgerView}>('/native/account',undefined,signal),
     /** The whole wallet as Cross collateral, valued at the same marks the positions use. */
     collateral:(signal?:AbortSignal)=>request<NativeCollateral>('/native/collateral',undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),

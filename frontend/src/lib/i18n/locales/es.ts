@@ -960,6 +960,11 @@ export const ES: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': 'Sin precio para {assets}. El saldo mostrado es un límite inferior.',
+  'wallet.futuresAccount': 'Cuenta de futuros',
+  'futures.settleBalance': 'Saldo del activo de liquidación',
+  'futures.walletCollateral': 'Garantía de la cartera',
+  'futures.equity': 'Patrimonio de la cuenta',
+  'futures.usedMargin': 'Margen utilizado',
   'futures.placeOrderError': 'No se pudo colocar la orden',
   // El motivo del rechazo, con su nombre: la falta de fondos nunca se
   // presenta como un límite del contrato, ni al revés.

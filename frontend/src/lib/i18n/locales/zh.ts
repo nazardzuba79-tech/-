@@ -984,6 +984,11 @@ export const ZH: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} 暂无价格。显示的余额为下限。',
+  'wallet.futuresAccount': '合约账户',
+  'futures.settleBalance': '结算资产余额',
+  'futures.walletCollateral': '钱包抵押品',
+  'futures.equity': '账户权益',
+  'futures.usedMargin': '已用保证金',
   'futures.placeOrderError': '下单失败',
   // 拒单原因如实说明：保证金不足不会被说成合约限制，反之亦然。
   'futures.orderError.minOrderQty': '该合约的最小数量为 {allowed}。',

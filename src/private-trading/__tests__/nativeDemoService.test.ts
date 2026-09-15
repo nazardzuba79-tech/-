@@ -234,3 +234,143 @@ describe('the Cross collateral base is the whole wallet, priced or named',()=>{
     expect(v.complete).toBe(false);
   });
 });
+
+describe('the P&L card and the account come from the same numbers',()=>{
+  test('the card reports the position AFTER fees and funding, not a separate estimate',async()=>{
+    const f=setup();await f.service.initialize(actor,'card-init');
+    await f.service.command(actor,long());
+    f.clock.t+=60_000;f.market.quote={...f.market.quote,mark:'55000',last:'55000',bid:'54999.9',ask:'55000.1'};
+    const state=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    const position=state.positions[0];
+    const card=await f.service.card(actor,position.id);
+
+    // Same figures, not similar ones.
+    expect(card.unrealizedPnl).toBe(position.unrealizedPnl);
+    expect(card.roiPercent).toBe(position.roiPercent);
+    expect(card.entryPrice).toBe(position.entryPrice);
+    // netPnl carries the realized side — fees and funding included ONCE.
+    expect(card.netPnl).toBe(position.netPnl);
+    // An open position's headline figure is the unrealized one.
+    expect(card.pnl).toBe(position.unrealizedPnl);
+    expect(card.status).toBe('OPEN');
+  });
+
+  test('the account the card was taken from is the authoritative one',async()=>{
+    const f=setup();await f.service.initialize(actor,'card-init-2');
+    await f.service.command(actor,long());
+    const authoritative=(await f.service.account(actor))!;
+    const state=await f.service.state(actor);
+
+    // One account object, two ways of asking for it.
+    expect(state.account).toEqual(authoritative.account);
+    expect(state.ledger).toEqual(authoritative.ledger);
+    // And the ledger reconciles against the engine it was projected from.
+    expect(authoritative.ledger.reconciled).toBe(true);
+    expect(authoritative.ledger.closingBalance).toBe(authoritative.account.settleBalance);
+  });
+
+  test('equity = settle ledger + wallet collateral + unrealized P&L, every time',async()=>{
+    const f=setup();await f.service.initialize(actor,'equation-init');
+    // Only the settle row is left in the wallet after initialization moved
+    // it; give the account a second asset so both halves are non-zero.
+    f.repo.wallet=[{asset:'BTC',available:'2',locked:'0'}];
+    await f.service.command(actor,long());
+    f.clock.t+=60_000;f.market.quote={...f.market.quote,mark:'55000',last:'55000',bid:'54999.9',ask:'55000.1'};
+    await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+
+    const a=(await f.service.account(actor))!.account;
+    const sum=new BigNumber(a.settleBalance).plus(a.walletCollateral).plus(a.unrealizedPnl);
+    expect(sum.toFixed()).toBe(a.equity);
+    expect(new BigNumber(a.settleBalance).plus(a.walletCollateral).toFixed()).toBe(a.collateral);
+    // 2 BTC priced at the live mark, not at a written-in number.
+    expect(a.walletCollateral).toBe('110000');
+    expect(a.collateralComplete).toBe(true);
+    // available = equity - initialMargin - orderReserve
+    expect(new BigNumber(a.equity).minus(a.initialMargin).minus(a.orderReserve).toFixed()).toBe(a.available);
+  });
+
+  test('an unpriceable wallet asset makes the account incomplete and the verdict unknown',async()=>{
+    const f=setup();await f.service.initialize(actor,'incomplete-init');
+    f.repo.wallet=[{asset:'BTC',available:'2',locked:'0'},{asset:'XYZ',available:'5',locked:'0'}];
+    const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{
+      if(symbol==='XYZUSDT')throw new Error('NO_SUCH_CONTRACT');
+      return answer(symbol);
+    }) as typeof f.market.freshQuote;
+    await f.service.command(actor,long());
+
+    const a=(await f.service.account(actor))!.account;
+    expect(a.collateralComplete).toBe(false);
+    expect(a.unpricedAssets).toEqual(['XYZ']);
+    expect(a.liquidatable).toBeNull();
+    // The priced part is still reported, as a floor.
+    expect(a.walletCollateral).toBe('100000');
+  });
+});
+
+describe('a repeated request never trades twice',()=>{
+  test('the same key twice opens ONE position and charges ONE fee',async()=>{
+    const f=setup();await f.service.initialize(actor,'idem-init');
+    const request=long();
+    const first=await f.service.command(actor,request);
+    const second=await f.service.command(actor,request);
+
+    expect(second.revision).toBe(first.revision);
+    expect(second.positions).toHaveLength(1);
+    expect(second.account).toEqual(first.account);
+    // One opening fee in the ledger, not two.
+    const fees=second.ledger!.entries.filter(e=>e.source==='OPENING_FEE');
+    expect(fees).toHaveLength(1);
+    expect(second.ledger!.totals.fees).toBe(first.ledger!.totals.fees);
+    expect(second.ledger!.reconciled).toBe(true);
+  });
+
+  test('a retry of the same key with DIFFERENT parameters is refused, not silently applied',async()=>{
+    const f=setup();await f.service.initialize(actor,'idem-init-2');
+    const request=long();
+    await f.service.command(actor,request);
+    await expect(f.service.command(actor,{...request,margin:'6000'}))
+      .rejects.toMatchObject({status:409});
+    // And the account is untouched by the refusal.
+    const state=await f.service.state(actor);
+    expect(state.positions).toHaveLength(1);
+    expect(state.ledger!.entries.filter(e=>e.source==='OPENING_FEE')).toHaveLength(1);
+  });
+
+  test('a repeated CLOSE closes once and books one closing fee',async()=>{
+    const f=setup();await f.service.initialize(actor,'idem-init-3');
+    const opened=await f.service.command(actor,long());
+    const id=opened.positions[0].id;
+    f.clock.t+=60_000;f.market.quote={...f.market.quote,mark:'55000',last:'55000',bid:'54999.9',ask:'55000.1'};
+    const close={kind:'CLOSE' as const,positionId:id,idempotencyKey:key()};
+    const first=await f.service.command(actor,close);
+    const second=await f.service.command(actor,close);
+
+    expect(second.revision).toBe(first.revision);
+    expect(second.positions).toHaveLength(0);
+    expect(second.ledger!.entries.filter(e=>e.source==='CLOSING_FEE')).toHaveLength(1);
+    expect(second.ledger!.entries.filter(e=>e.source==='REALIZED_PNL')).toHaveLength(1);
+    expect(second.account).toEqual(first.account);
+  });
+
+  test('a reload between the two attempts changes nothing: the key still wins',async()=>{
+    const f=setup();await f.service.initialize(actor,'idem-init-4');
+    const request=long();
+    const first=await f.service.command(actor,request);
+    // A reload is a fresh state read followed by the retried command.
+    await f.service.state(actor);
+    const retried=await f.service.command(actor,request);
+    expect(retried.revision).toBe(first.revision);
+    expect(retried.positions).toHaveLength(1);
+    expect(retried.ledger!.totals.fees).toBe(first.ledger!.totals.fees);
+  });
+
+  test('two in-flight commands do not interleave: the second is refused while the first runs',async()=>{
+    const f=setup();await f.service.initialize(actor,'idem-init-5');
+    const slow=f.service.command(actor,long());
+    await expect(f.service.command(actor,long())).rejects.toMatchObject({status:409});
+    await slow;
+    const state=await f.service.state(actor);
+    expect(state.positions).toHaveLength(1);
+  });
+});

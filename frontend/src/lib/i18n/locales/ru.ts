@@ -1002,6 +1002,11 @@ export const RU = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',
+  'wallet.futuresAccount': 'Фьючерсный счёт',
+  'futures.settleBalance': 'Баланс расчётного актива',
+  'futures.walletCollateral': 'Обеспечение из кошелька',
+  'futures.equity': 'Капитал счёта',
+  'futures.usedMargin': 'Использованная маржа',
   'futures.placeOrderError': 'Не удалось разместить ордер',
   // Причина отказа ордера, названная своим именем: нехватка средств не
   // выдаётся за лимит контракта, а лимит контракта — за нехватку средств.
