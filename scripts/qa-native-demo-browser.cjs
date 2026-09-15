@@ -1,112 +1,336 @@
-/** Actual Futures route and NativeDemoService, disposable market/account fixtures only. */
-const fs=require('fs'),path=require('path'),os=require('os'),assert=require('assert/strict'),{spawn}=require('child_process');
-const root=path.resolve(__dirname,'..'),front=path.join(root,'frontend'),out=path.join(root,'docs/qa/native-demo');fs.mkdirSync(out,{recursive:true});
-const report={fixtureOnly:true,productionVerified:false,checks:[],errors:[]};
-let browser,server,activePage;
-async function main(){
- const chartModule=path.join(front,'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
- const shim=path.join(os.tmpdir(),'native-demo-chart-observer.mjs');
- fs.writeFileSync(shim,`export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};export function createChart(...a){const c=original(...a);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);if(type===CandlestickSeries)window.__nativeQaSeries=s;return s;};return c;}`);
- const {build}=await import(path.join(front,'node_modules/vite/dist/node/index.js'));
- await build({root:front,resolve:{alias:{'lightweight-charts':shim}},define:{'import.meta.env.VITE_API_URL':JSON.stringify('/api/v1')}});
- server=spawn(process.execPath,['scripts/serve-native-demo-review.cjs'],{cwd:root,env:{...process.env,PORT:'4178',NATIVE_PREVIEW_FIXTURE:'1'},stdio:['ignore','pipe','pipe']});
- const log=fs.createWriteStream(path.join(out,'server.log'));server.stdout.pipe(log);server.stderr.pipe(log);
- const origin='http://127.0.0.1:4178';for(let i=0;i<60;i++){try{if((await fetch(origin+'/health')).ok)break;}catch{}await new Promise(r=>setTimeout(r,500));}
- const {chromium}=require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT||'playwright');browser=await chromium.launch({headless:true});
- async function newPage(width){const context=await browser.newContext({viewport:{width,height:1000},acceptDownloads:true,locale:'ru-RU',timezoneId:'UTC'});await context.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());await context.routeWebSocket('**/*',ws=>ws.close());const page=await context.newPage();activePage=page;page.setDefaultTimeout(25000);page.on('pageerror',e=>report.errors.push(e.message));await page.goto(origin+'/futures');await page.locator('.native-demo-controls').getByRole('button',{name:'Начать торговлю',exact:true}).click();await page.locator('.native-demo-controls form').waitFor();await page.waitForFunction(()=>window.__nativeQaSeries?.data().length>10);return{page,context};}
- async function state(page){return page.evaluate(async()=>{const r=await fetch('/api/v1/private-trading/native/state',{headers:{Authorization:'Bearer '+localStorage.getItem('exchange_token')}});if(!r.ok)throw Error('state '+r.status);return r.json();});}
- async function command(page,click){const pending=page.waitForResponse(r=>r.url().endsWith('/native/commands')&&r.request().method()==='POST');await click();const r=await pending;const body=await r.json();assert(r.ok(),JSON.stringify(body));await page.waitForFunction(()=>!document.querySelector('.native-demo-controls button[type=submit]')?.disabled);return body;}
- async function chooseCandle(page,after){
-  await page.locator('.chart-area').scrollIntoViewIfNeeded();
-  const points=await page.evaluate(after=>{const c=window.__nativeQaChart,s=window.__nativeQaSeries,r=c.chartElement().getBoundingClientRect();
-   const rows=s.data().slice(0,-3).filter(x=>typeof x.time==='number'&&x.open!==undefined&&(!after||x.time*1000>after+3600000));
-   const visible=rows.map(x=>({...x,x:c.timeScale().timeToCoordinate(x.time)})).filter(x=>x.x>35&&x.x<r.width-90);
-   return [.35,.55,.75].flatMap(f=>{const x=visible[Math.floor(visible.length*f)];return x?[.85,.15,.5].map(h=>({time:x.time,x:r.left+x.x,y:r.top+s.priceToCoordinate(x.low+(x.high-x.low)*h)})):[];});},after??null);
-  assert(points.length,'No visible closed candle');
-  for(const p of points){await page.mouse.click(p.x,p.y);try{await page.locator('.native-candle').waitFor({timeout:700});return p;}catch{}}
-  throw Error('Native chart candle selection did not accept a visible wick/body click');
- }
- for(const width of [1440,390]){
-  const{page,context}=await newPage(width),ticket=page.locator('.native-demo-controls');
-  // Direction IS the submit button: the ticket carries Long and Short, no side selector.
-  let s=await command(page,()=>ticket.getByRole('button',{name:'Long',exact:true}).click());assert.equal(s.positions.length,1);assert.equal(s.positions[0].side,'LONG');assert(s.events.some(e=>e.kind==='OPEN'));const longId=s.positions[0].id;
-  s=await command(page,()=>ticket.getByRole('button',{name:'Short',exact:true}).click());assert.equal(s.positions.length,2);assert.equal(s.positions[1].side,'SHORT');
-  await ticket.getByRole('tab',{name:'Лимитный',exact:true}).click();await ticket.getByLabel('Лимитная цена',{exact:true}).fill('100000');s=await command(page,()=>ticket.getByRole('button',{name:'Short',exact:true}).click());assert(s.orders.some(o=>o.status==='OPEN'));
-  await page.getByRole('tab',{name:/^Открытые ордера/}).click();s=await command(page,()=>page.getByRole('button',{name:'Отменить',exact:true}).click());assert(!s.orders.some(o=>o.status==='OPEN'));
-  await page.getByRole('tab',{name:/^Позиции/}).click();const row=page.locator('.native-demo-panel tbody tr').filter({hasText:'LONG'});await row.getByRole('button',{name:'TP/SL',exact:true}).click();await page.getByLabel('Цена TP',{exact:true}).fill('100000');s=await command(page,()=>page.locator('.native-action-dialog').getByRole('button',{name:'Подтвердить',exact:true}).click());assert.equal(s.positions.find(p=>p.id===longId).protection.takeProfit,'100000');
-  await row.getByRole('button',{name:'Рыночный',exact:true}).click();await page.getByLabel('Количество закрытия',{exact:true}).fill('0.1');s=await command(page,()=>page.locator('.native-action-dialog').getByRole('button',{name:'Подтвердить',exact:true}).click());assert(s.events.some(e=>e.kind==='CLOSE'&&e.quantity==='0.1'));
-  await row.getByRole('button',{name:'P&L Card · BTCUSDT',exact:true}).click();
-  await page.locator('.private-card-dialog img').waitFor();
-  // A share card, not a poster: the whole card visible, ~330px wide, well inside the window.
-  const card=await page.evaluate(()=>{const i=document.querySelector('.private-card-dialog img'),d=document.querySelector('.private-card-dialog');
-   const r=i.getBoundingClientRect(),b=d.getBoundingClientRect();
-   return{imgW:Math.round(r.width),imgH:Math.round(r.height),dialogH:Math.round(b.height),top:Math.round(b.top),bottom:Math.round(b.bottom),vh:innerHeight,vw:innerWidth,
-     clipped:d.scrollHeight>d.clientHeight+1,alt:i.alt,
-     text:d.innerText,href:d.querySelector('a').getAttribute('href')};});
-  assert(!card.clipped,'card dialog is clipped');
-  assert(card.top>=0&&card.bottom<=card.vh,`card dialog outside the viewport: ${card.top}..${card.bottom} of ${card.vh}`);
-  assert(card.dialogH<=card.vh*0.9,'card dialog taller than the window allows');
-  if(width>=1024)assert(card.imgW>=318&&card.imgW<=342,`desktop card width ${card.imgW}px is outside 320-340`);
-  assert(Math.abs(card.imgH/card.imgW-1215/1080)<0.02,`card aspect ${card.imgW}x${card.imgH} is not 1080x1215`);
-  for(const banned of ['Симуляция','Simulation','Demo','Historical Test','Preview','fixture'])
-   assert(!card.text.includes(banned)&&!card.alt.includes(banned),`card dialog still says ${banned}`);
-  assert(!card.href.includes('privateTrading=1'),'card link still uses the privateTrading=1 pattern');
-  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Сохранить PNG',exact:true}).click();
-  const saved=await download;const file=path.join(out,`card-${width}.png`);await saved.saveAs(file);
-  // The deliverable is the FILE: read its IHDR rather than trusting the canvas.
-  const png=fs.readFileSync(file),pngW=png.readUInt32BE(16),pngH=png.readUInt32BE(20);
-  assert(pngW===1080&&pngH===1215,`exported PNG is ${pngW}x${pngH}, expected 1080x1215`);
-  assert(!saved.suggestedFilename().toLowerCase().includes('simulation'),`download filename ${saved.suggestedFilename()}`);
-  report.checks.push({name:`pnl-card-${width}`,passed:true,exported:`${pngW}x${pngH}`,filename:saved.suggestedFilename(),onScreen:`${card.imgW}x${card.imgH}`,dialogHeight:card.dialogH,viewport:card.vh});
-  await page.locator('.private-card-dialog').getByRole('button',{name:'Закрыть',exact:true}).click();
-  const before=(await state(page)).revision;await page.reload();await page.locator('.native-demo-controls form').waitFor();assert((await state(page)).revision>=before);assert.equal((await state(page)).positions.length,2);
-  // No mode switch anywhere and no demo/test wording: this account has one
-  // trading backend and the UI never says so. Header links must not collide
-  // with header actions, and nothing may overflow the viewport.
-  const layout=await page.evaluate(()=>{
-   const box=e=>{const r=e.getBoundingClientRect();return{l:r.left,r:r.right,t:r.top,b:r.bottom,w:r.width,h:r.height};};
-   const actions=document.querySelector('.global-header .header-actions'),a=actions&&box(actions);
-   const visible=[...document.querySelectorAll('.global-header .main-nav .nav-item')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').map(box).filter(b=>b.w>0&&b.h>0);
-   const overlaps=a?visible.filter(b=>b.r>a.l+1&&b.l<a.r-1&&b.b>a.t&&b.t<a.b).length:0;
-   const banned=['Demo · Cross','Тестовый баланс','Условия Demo','Сервер рассчитывает','Historical Test','PREVIEW_FIXTURE','isolatedPreview','productionVerified','Ревизия'];
-   const text=['.order-form-area','.bottom-panel','.chart-area'].map(q=>document.querySelector(q)?.innerText??'').join('\n');
-   return{overlaps,switches:document.querySelectorAll('.native-mode-switch').length,leaks:banned.filter(w=>text.includes(w)),
-     modeChip:document.querySelector('.native-mode-row .native-mode-chip')?.textContent??null,
-     cardButtons:document.querySelectorAll('.native-card-btn').length,
-     tabs:[...document.querySelectorAll('.bottom-tabs [role=tab]')].map(t=>t.textContent),
-     scrollWidth:document.documentElement.scrollWidth,width:innerWidth,
-     liquidationHeader:[...document.querySelectorAll('.native-demo-panel th')].some(th=>th.textContent==='Цена ликв.')};
-  });
-  report.checks.push({name:`layout-${width}`,passed:true,layout});
-  assert.equal(layout.overlaps,0,'header navigation overlaps header actions');
-  assert.equal(layout.switches,0,'a Real/Demo switch is still rendered');
-  assert.deepEqual(layout.leaks,[],'demo/test wording is still rendered');
-  assert.equal(layout.modeChip,'Cross');assert(layout.cardButtons>0,'no P&L card button');
-  assert.deepEqual(layout.tabs.map(t=>t.replace(/ \(\d+\)$/,'')),['Открытые ордера','Позиции','История ордеров','История торговли','Активы','P&L']);
-  assert(!(await page.url()).includes('demo=1'),'the terminal still depends on ?demo=1');
-  assert(layout.scrollWidth<=layout.width+1,'page scrolls horizontally');assert(layout.liquidationHeader);
-  // 10M shared collateral: a net-short BTC book liquidates only at an absurd price, a net long never.
-  const liqCells=await page.locator('.native-demo-panel tbody tr').evaluateAll(rows=>rows.map(r=>r.children[4]?.textContent));
-  const liq=(await state(page)).positions.map(p=>p.liquidationPrice);
-  assert(liqCells.length===liq.length&&liq.every(v=>v===null||Number(v)>500000),'10M collateral liquidation estimate: '+liqCells.join());
-  report.checks.push({name:`cross-liquidation-far-${width}`,passed:true,liquidation:liq});
-  await page.screenshot({path:path.join(out,`terminal-${width}.png`),fullPage:true});report.checks.push({name:`long-short-limit-cancel-tpsl-partial-close-png-reload-${width}`,passed:true});await context.close();
-  const h=await newPage(width),p=h.page,t=p.locator('.native-demo-controls');await t.getByRole('button',{name:'Выбрать вход на графике',exact:true}).click();const picked=await chooseCandle(p);let hs=await command(p,()=>t.getByRole('button',{name:'Long',exact:true}).click());assert.equal(hs.positions.length,1);assert(hs.positions[0].historical);assert(hs.positions[0].unrealizedPnl!==null);assert(hs.events.some(e=>e.pricing==='SELECTED_POINT'));await p.locator('[data-position-line]').waitFor();
-  await p.locator('.native-demo-panel').getByRole('button',{name:'На графике',exact:true}).click();await chooseCandle(p,picked.time*1000);hs=await command(p,()=>t.getByRole('button',{name:'Закрыть на выбранной свече',exact:true}).click());assert.equal(hs.history.length,1);assert.equal(hs.positions.length,0);assert(hs.history[0].netPnl!==null);
-  await t.getByRole('tab',{name:'Лимитный',exact:true}).click();await t.getByRole('button',{name:'Выбрать вход на графике',exact:true}).click();
-  await chooseCandle(p);
-  // Use the candle the terminal actually selected (narrow mobile bars can resolve to a neighbour).
-  const selectedTime=Number(await p.locator('.native-candle').getAttribute('data-open-time'))/1000;
-  const bar=await p.evaluate(time=>window.__nativeQaSeries.data().find(x=>x.time===time),selectedTime);
-  const limit=(Math.ceil(((bar.low+bar.open)/2)*10)/10).toFixed(1);
-  assert(await t.getByText('Buy исполняется, если Low ≤ цены').isVisible());
-  await t.getByLabel('Лимитная цена',{exact:true}).fill(limit);
-  hs=await command(p,()=>t.getByRole('button',{name:'Long',exact:true}).click());
-  const limitPosition=hs.positions.find(x=>x.historical);assert(limitPosition,'historical wick limit did not fill');
-  assert(Number(limitPosition.entryPrice)<=Number(limit));assert.equal(hs.entries.find(e=>e.positionId===limitPosition.id).candle.pricePoint,'OPEN');
-  report.checks.push({name:`native-historical-limit-wick-${width}`,passed:true,limit,low:bar.low,entry:limitPosition.entryPrice});
-  await p.getByRole('tab',{name:'P&L',exact:true}).click();await p.screenshot({path:path.join(out,`history-${width}.png`),fullPage:true});report.checks.push({name:`native-chart-click-history-entry-pnl-exit-${width}`,passed:true});await h.context.close();
- }
- assert.deepEqual(report.errors,[]);report.passed=true;
+/** Original /futures owner flow. Disposable fixture server ONLY; never production QA.
+ * Trade actions use the normal form/tables and the actual NativeDemoService.
+ * Layout fixtures are explicitly synthetic and only intercept this local server.
+ * A failed product invariant stays red; no legacy UI is restored or mocked in.
+ */
+const fs = require('node:fs');
+const path = require('node:path');
+const os = require('node:os');
+const assert = require('node:assert/strict');
+const { spawn } = require('node:child_process');
+const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
+const largeOnly = process.env.NATIVE_QA_LARGE_ONLY === '1';
+const out = path.join(root, 'docs/qa/native-demo', largeOnly ? 'large-numbers' : '');
+fs.mkdirSync(out, { recursive: true });
+const origin = 'http://127.0.0.1:4178';
+const report = { fixtureOnly: true, productionVerified: false, scope: largeOnly ? 'original terminal / synthetic layout values' : 'original terminal / isolated native engine', checks: [], errors: [] };
+let browser, server, activePage, shim;
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const rows = page => page.locator('.futures-positions-table tbody tr');
+const qty = page => page.locator('.fo-qtyInputRow input');
+const price = page => page.locator('.fo-priceInputRow input');
+const button = (page, side) => page.locator(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`);
+const positionRow = (page, side) => rows(page).filter({ has: page.locator(`.futures-position-contract .text-${side === 'LONG' ? 'buy' : 'sell'}`) });
+function realAccountRequest(request) {
+  const p = new URL(request.url()).pathname;
+  return p.startsWith('/api/v1/futures/') &&
+    (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) || /^\/api\/v1\/futures\/(balances|positions|orders|trades|fills|account|funding-history|transfers)(?:\/|$)/.test(p));
 }
-main().catch(async e=>{report.passed=false;report.failure=String(e.stack||e);if(activePage&&!activePage.isClosed())await activePage.screenshot({path:path.join(out,'failed.png'),fullPage:true}).catch(()=>{});console.error(e);process.exitCode=1;}).finally(async()=>{fs.writeFileSync(path.join(out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));await browser?.close();server?.kill('SIGTERM');});
+async function check(name, fn) {
+  try { const evidence = await fn(); report.checks.push({ name, passed: true, ...(evidence === undefined ? {} : { evidence }) }); return true; }
+  catch (error) {
+    report.checks.push({ name, passed: false, error: String(error.stack || error) });
+    console.error(`[FAIL] ${name}: ${error.message}`);
+    if (activePage && !activePage.isClosed()) await activePage.screenshot({ path: path.join(out, `${name.replace(/[^a-z0-9-]/gi, '-')}-failed.png`), fullPage: true }).catch(() => {});
+    return false;
+  }
+}
+async function startServer() {
+  server = spawn(process.execPath, ['scripts/serve-native-demo-review.cjs'], { cwd: root, env: { ...process.env, PORT: '4178', NATIVE_PREVIEW_FIXTURE: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const log = fs.createWriteStream(path.join(out, 'server.log'), { flags: 'a' });
+  server.stdout.pipe(log, { end: false }); server.stderr.pipe(log, { end: false });
+  server.once('exit', () => log.end());
+  for (let i = 0; i < 60; i++) {
+    if (server.exitCode !== null) throw Error(`Fixture server exited: ${server.exitCode}`);
+    try { const r = await fetch(origin + '/health'); const h = await r.json(); if (r.ok && h.fixtureMarket === true && h.kind === 'isolated-native-demo-preview') return; } catch {}
+    await delay(500);
+  }
+  throw Error('Local isolated fixture server did not become healthy');
+}
+async function stopServer() {
+  if (!server || server.exitCode !== null) return;
+  const child = server;
+  await new Promise(resolve => { const timer = setTimeout(() => child.kill('SIGKILL'), 5000); child.once('exit', () => { clearTimeout(timer); resolve(); }); child.kill('SIGTERM'); });
+}
+async function api(context, token, endpoint, body) {
+  const options = { headers: { Authorization: 'Bearer ' + token }, ...(body === undefined ? {} : { data: body }) };
+  const r = await context.request[body === undefined ? 'get' : 'post'](origin + '/api/v1/private-trading/native/' + endpoint, options);
+  const data = await r.json(); assert(r.ok(), `${endpoint}: ${r.status()} ${JSON.stringify(data)}`); return data;
+}
+async function session(width, configure) {
+  const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 1000 }, acceptDownloads: true, locale: 'ru-RU', timezoneId: 'UTC' });
+  // Provision a disposable, pre-existing owner fixture, not a second product account.
+  // This deliberately does NOT claim to test production login or first-run initialization.
+  const html = await (await context.request.get(origin + '/futures')).text();
+  const match = /localStorage\.setItem\("exchange_token",("[a-f0-9]{48}")\)/.exec(html);
+  assert(match, 'Isolated preview did not provide its fixture session');
+  const token = JSON.parse(match[1]);
+  let initial = await api(context, token, 'state');
+  if (!initial.initialized) initial = await api(context, token, 'initialize', { acceptedModel: initial.model.version, idempotencyKey: 'qa-initialize-existing-fixture' });
+  assert(initial.initialized && initial.account, 'Fixture initialization was not confirmed');
+  await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+  await context.routeWebSocket('**/*', socket => socket.close());
+  const realRequests = [], drafts = [];
+  const page = await context.newPage(); activePage = page; page.setDefaultTimeout(25000);
+  page.on('pageerror', error => report.errors.push(error.message));
+  page.on('dialog', dialog => dialog.accept());
+  page.on('request', request => {
+    if (realAccountRequest(request)) realRequests.push({ method: request.method(), path: new URL(request.url()).pathname });
+    if (request.url().endsWith('/native/commands') && request.method() === 'POST') drafts.push(request.postDataJSON());
+  });
+  const s = { context, page, token, initial, realRequests, drafts };
+  if (configure) await configure(s);
+  await page.goto(origin + '/futures'); await page.locator('.fo-form').waitFor();
+  return s;
+}
+async function ready(s) {
+  await s.page.locator('.chart-trading-toggle').waitFor();
+  await s.page.waitForFunction(() => { const b = document.querySelector('.fo-submitPair .buy'); return b && !b.disabled; });
+}
+async function family(page, type) {
+  await page.locator('.fo-panel .order-family-tabs [role=tab]').nth(type === 'MARKET' ? 1 : 0).click();
+  await page.locator(type === 'MARKET' ? '.fo-markPrice' : '.fo-priceInputRow input').waitFor();
+}
+async function command(s, kind, action) {
+  const waiting = s.page.waitForResponse(r => r.url().endsWith('/native/commands') && r.request().method() === 'POST' && r.request().postDataJSON()?.kind === kind);
+  await action(); const response = await waiting; const state = await response.json();
+  assert(response.ok(), `${kind}: ${response.status()} ${JSON.stringify(state)}`);
+  assert(state.initialized && state.account, `${kind} did not return an authoritative account`);
+  await s.page.waitForFunction(() => { const b = document.querySelector('.fo-submitPair .buy'); return b && !b.disabled; });
+  return { state, draft: response.request().postDataJSON() };
+}
+async function open(s, side, quantity) {
+  await family(s.page, 'MARKET'); await qty(s.page).fill(quantity);
+  const result = await command(s, 'OPEN', () => button(s.page, side).click());
+  assert.equal(result.draft.side, side); assert.equal(result.draft.quantity, quantity); assert.equal(result.draft.type, 'MARKET'); return result.state;
+}
+async function geometry(page) {
+  const g = await page.evaluate(() => {
+    const rect = e => { const r = e.getBoundingClientRect(); return { width: r.width, height: r.height, left: r.left, right: r.right, top: r.top, bottom: r.bottom }; };
+    const p = document.querySelector('.fo-priceField'), q = document.querySelector('.fo-qtyInputRow').closest('.fo-field');
+    return { price: rect(p), quantity: rect(q), long: rect(document.querySelector('.fo-submitPair .buy')), short: rect(document.querySelector('.fo-submitPair .sell')), trailing: [p, q].map(e => ({ outer: rect(e), inner: rect(e.querySelector('.fo-fieldTrailing')) })) };
+  });
+  for (const k of ['width', 'height', 'left', 'right']) assert(Math.abs(g.price[k] - g.quantity[k]) <= 0.1, `Price/Quantity ${k} differs: ${g.price[k]} vs ${g.quantity[k]}`);
+  assert(Math.abs(g.long.width - g.short.width) <= 0.1, 'Long/Short widths differ');
+  for (const { outer, inner } of g.trailing) assert(inner.left >= outer.left && inner.right <= outer.right && inner.top >= outer.top && inner.bottom <= outer.bottom, 'Trailing unit/button is outside field');
+  return g;
+}
+async function tableLayout(page, width) {
+  const g = await page.evaluate(() => {
+    const panel = document.querySelector('.futures-positions-panel'), scroller = document.querySelector('.futures-positions-scroll') || panel?.querySelector('table')?.parentElement;
+    const cells = [...(panel?.querySelectorAll('tbody td') || [])];
+    const clipped = cells.filter(e => e.scrollWidth > e.clientWidth + 1).map(e => e.innerText);
+    const overlap = [...(panel?.querySelectorAll('tbody tr') || [])].flatMap(tr => [...tr.children].slice(1).flatMap((e, i) => { const a = tr.children[i].getBoundingClientRect(), b = e.getBoundingClientRect(); return a.right > b.left + 1 ? [i] : []; }));
+    const old = document.querySelectorAll('.native-demo-controls,.native-demo-panel,.native-mode-switch').length;
+    return { pageWidth: document.documentElement.scrollWidth, viewport: innerWidth, clipped, overlap, old, headers: [...(panel?.querySelectorAll('th') || [])].map(e => e.innerText), text: panel?.innerText || '', scroll: scroller ? { client: scroller.clientWidth, full: scroller.scrollWidth, overflow: getComputedStyle(scroller).overflowX } : null };
+  });
+  assert(g.pageWidth <= g.viewport + 1, `Page horizontal overflow: ${g.pageWidth} > ${g.viewport}`);
+  assert.equal(g.old, 0, 'Legacy terminal UI was rendered'); assert.deepEqual(g.clipped, [], 'Table cell clipping'); assert.deepEqual(g.overlap, [], 'Table cell overlap');
+  assert(!/NaN|Infinity|\d[eE][+-]?\d/.test(g.text), 'Invalid/scientific financial value');
+  assert(g.scroll, 'No internal table scroller');
+  if (g.scroll.full > g.scroll.client + 1) assert(['auto', 'scroll'].includes(g.scroll.overflow), 'Wide table is not internally scrollable');
+  if (width === 390) assert(g.scroll.full > g.scroll.client, 'Phone table unexpectedly lost its columns');
+  return g;
+}
+async function card(page, filename, width) {
+  const dialog = page.locator('.private-card-dialog'); await dialog.locator('img').waitFor();
+  const g = await dialog.evaluate(d => { const i = d.querySelector('img'), r = i.getBoundingClientRect(), b = d.getBoundingClientRect(); return { width: r.width, height: r.height, top: b.top, bottom: b.bottom, dialogHeight: b.height, vh: innerHeight, clipped: d.scrollHeight > d.clientHeight + 1, text: d.innerText, alt: i.alt, href: d.querySelector('a')?.getAttribute('href') || '' }; });
+  assert(!g.clipped && g.top >= 0 && g.bottom <= g.vh && g.dialogHeight <= g.vh * .9, 'P&L modal is clipped/outside viewport');
+  if (width >= 1024) assert(g.width >= 318 && g.width <= 342, `P&L width ${g.width}`);
+  assert(Math.abs(g.height / g.width - 1215 / 1080) < .02, 'P&L portrait aspect ratio changed');
+  assert(!/Симуляция|Simulation|Demo|Historical Test|Preview|fixture/i.test(g.text + g.alt), 'P&L leaks fixture/mode wording');
+  assert(!g.href.includes('privateTrading=1'), 'P&L uses legacy URL');
+  const download = page.waitForEvent('download'); await dialog.getByRole('button', { name: 'Сохранить PNG', exact: true }).click();
+  const saved = await download; const file = path.join(out, filename); await saved.saveAs(file);
+  const png = fs.readFileSync(file); assert.equal(png.subarray(1, 4).toString(), 'PNG'); assert.equal(png.readUInt32BE(16), 1080); assert.equal(png.readUInt32BE(20), 1215);
+  assert(!/simulation|preview|demo/i.test(saved.suggestedFilename()), 'PNG filename leaks mode wording');
+  await dialog.getByRole('button', { name: 'Закрыть', exact: true }).click(); return { ...g, exported: '1080x1215' };
+}
+async function accountSummary(page, state) {
+  const g = await page.locator('.futures-account-summary').evaluate(e => ({ mode: e.querySelector('.futures-account-mode')?.innerText, balance: e.querySelector('.futures-account-balance .mono')?.textContent, available: [...e.querySelectorAll('.futures-account-stat:not(.futures-account-mode):not(.futures-account-balance) .mono')].map(x => x.textContent), risk: [...e.querySelectorAll('.futures-account-risk .mono')].map(x => x.textContent) }));
+  assert(g.mode?.includes('Cross'), 'Owner margin mode is not Cross');
+  assert.equal(g.balance.trim(), Number(state.account.equity).toFixed(2) + ' USDT', 'Margin Balance differs from native equity');
+  assert.deepEqual(g.available.map(x => x.trim()), [Number(state.account.available).toFixed(2) + ' USDT'], 'Available Balance differs from native state');
+  const pct = key => (Number(state.account[key]) / Number(state.account.equity) * 100).toFixed(2) + '%';
+  assert.deepEqual(g.risk, [pct('usedMargin'), pct('maintenanceMargin')], 'IM/MM summary differs from authoritative native account');
+  return g;
+}
+async function normalFlow(width) {
+  const s = await session(width), p = s.page;
+  try {
+    await ready(s); await family(p, 'LIMIT'); await check(`fields-limit-${width}`, () => geometry(p));
+    await p.locator('#futures-tab-positions').click();
+    let state = await open(s, 'LONG', '5'); const longId = state.positions.find(x => x.side === 'LONG')?.id; assert(longId);
+    state = await open(s, 'SHORT', '3'); assert.equal(state.positions.length, 2);
+    state = await open(s, 'LONG', '2'); assert.equal(state.positions.find(x => x.id === longId).quantity, '7');
+    await rows(p).first().waitFor();
+    await check(`positions-remain-visible-${width}`, async () => { assert(await p.locator('#futures-bottom-content').isVisible(), 'Opening a position hid the lower panel'); assert.equal(await rows(p).count(), 2); });
+    await check(`fields-market-${width}`, () => geometry(p));
+    await check(`account-summary-${width}`, () => accountSummary(p, state));
+    await check(`position-table-${width}`, () => tableLayout(p, width));
+    const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1);
+    await family(p, 'LIMIT'); await price(p).fill(limit); await qty(p).fill('1');
+    state = (await command(s, 'OPEN', () => button(p, 'SHORT').click())).state; assert(state.orders.some(x => x.status === 'OPEN'));
+    await p.locator('#futures-tab-orders').click();
+    state = (await command(s, 'CANCEL', () => p.locator('#futures-bottom-content').getByRole('button', { name: 'Отменить', exact: true }).click())).state;
+    assert(!state.orders.some(x => ['OPEN', 'PARTIALLY_FILLED'].includes(x.status)));
+    await p.locator('#futures-tab-positions').click();
+    const row = positionRow(p, 'LONG'); await row.locator('.fut-tpslTrigger').click();
+    await p.locator('.fut-tpslInput').nth(0).fill(limit);
+    state = (await command(s, 'PROTECTION', () => p.locator('.fut-tpslSave').click())).state;
+    assert.equal(state.positions.find(x => x.id === longId).protection.takeProfit, limit.replace(/\.0$/, ''));
+    await check(`limit-close-prefill-no-submit-${width}`, async () => {
+      const before = s.drafts.filter(x => x.kind !== 'REFRESH').length;
+      await row.locator('.futures-position-close').nth(0).click();
+      assert(await p.locator('.fo-reduceOnlyRow input').isChecked()); assert.equal(await qty(p).inputValue(), '7'); assert(await price(p).isVisible());
+      await delay(200); assert.equal(s.drafts.filter(x => x.kind !== 'REFRESH').length, before, 'Limit-close button automatically sent a trade');
+    });
+    // Partial close through the ORIGINAL reduce-only market form.
+    await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('2');
+    state = (await command(s, 'CLOSE', () => button(p, 'SHORT').click())).state;
+    assert.equal(state.positions.find(x => x.id === longId).quantity, '5');
+    await row.locator('.futures-position-card').click(); await check(`pnl-card-${width}`, () => card(p, `card-${width}.png`, width));
+    const before = await api(s.context, s.token, 'state'), identity = before.positions.map(x => [x.id, x.quantity]);
+    await p.reload(); await ready(s); await p.locator('#futures-tab-positions').click(); await rows(p).first().waitFor();
+    const after = await api(s.context, s.token, 'state'); assert(after.revision >= before.revision); assert.deepEqual(after.positions.map(x => [x.id, x.quantity]), identity);
+    // File-backed isolated repository persistence, NOT a PostgreSQL/re-login claim.
+    if (width === 1440) { await stopServer(); await startServer(); await p.reload(); await ready(s); assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), identity); }
+    await p.locator('#futures-tab-positions').click();
+    state = (await command(s, 'CLOSE', () => positionRow(p, 'SHORT').locator('.futures-position-close').nth(1).click())).state;
+    assert(!state.positions.some(x => x.side === 'SHORT')); assert(state.history.some(x => x.side === 'SHORT'));
+    await check(`owner-no-real-account-requests-${width}`, () => { assert.deepEqual(s.realRequests, [], 'Owner requested real Futures account endpoints'); });
+    await p.screenshot({ path: path.join(out, `terminal-${width}.png`), fullPage: true });
+    return { openLongShort: true, add: true, cancel: true, protection: true, partialClose: true, fullClose: true, reload: true, fixtureRestart: width === 1440 };
+  } finally { await s.context.close(); }
+}
+async function outage(width, endpoint) {
+  const s = await session(width, async ({ context }) => {
+    await context.route(`**/private-trading/${endpoint}`, route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'QA injected native outage' }) }));
+  });
+  try {
+    await family(s.page, 'MARKET'); await qty(s.page).fill('1'); await s.page.locator('.fo-markPrice').waitFor(); await delay(1000);
+    assert(await button(s.page, 'LONG').isDisabled() && await button(s.page, 'SHORT').isDisabled(), 'Native unavailable but normal order form can submit');
+    assert.deepEqual(s.realRequests, [], 'Native failure fell back to real Futures account endpoints');
+    assert.equal(s.drafts.filter(x => x.kind === 'OPEN').length, 0);
+    assert((await s.page.locator('.futures-account-balance').innerText()).includes('—'), 'Unknown native balance was rendered as a number');
+  } finally { await s.context.close(); }
+}
+async function limitCloseContract(width) {
+  const s = await session(width);
+  try {
+    await ready(s); const state = await open(s, 'LONG', '1'); await s.page.locator('#futures-tab-positions').click();
+    await positionRow(s.page, 'LONG').locator('.futures-position-close').nth(0).click();
+    const limit = (Number(state.positions[0].markPrice) * 2).toFixed(1); await price(s.page).fill(limit);
+    const response = s.page.waitForResponse(r => r.url().endsWith('/native/commands') && r.request().method() === 'POST' && r.request().postDataJSON()?.kind !== 'REFRESH');
+    await button(s.page, 'SHORT').click(); const r = await response; const draft = r.request().postDataJSON(); const next = await r.json();
+    assert(r.ok(), JSON.stringify(next)); assert.equal(draft.type, 'LIMIT', `Reduce-only LIMIT silently changed execution: ${JSON.stringify(draft)}`);
+    assert.equal(Number(draft.price), Number(limit)); assert(next.positions.some(x => x.id === state.positions[0].id), 'Nonmarketable limit close filled immediately');
+  } finally { await s.context.close(); }
+}
+async function chartFlow(width) {
+  const s = await session(width), p = s.page;
+  try {
+    await ready(s); await family(p, 'MARKET'); await qty(p).fill('1');
+    await p.locator('.chart-trading-switch input').check(); await p.locator('.chart-trading-pick').click();
+    await p.waitForFunction(() => window.__nativeQaSeries?.data().length > 10); await p.locator('.chart-area').scrollIntoViewIfNeeded();
+    const points = await p.evaluate(() => { const c = window.__nativeQaChart, series = window.__nativeQaSeries, r = c.chartElement().getBoundingClientRect(); return series.data().slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined).map(x => ({ ...x, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x > 35 && x.x < r.width - 90).filter((_, i) => i % 7 === 0).map(x => ({ x: r.left + x.x, y: r.top + series.priceToCoordinate((x.high + x.low) / 2) })); });
+    let picked = false;
+    for (const point of points) { await p.mouse.click(point.x, point.y); await delay(100); if (await p.locator('.chart-trading-pick').getAttribute('aria-pressed') === 'false') { picked = true; break; } }
+    assert(picked, 'Original chart did not accept a closed-candle pick');
+    const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
+    assert(draft.candle && Number.isFinite(draft.candle.openTime), 'Selected candle did not reach native execution');
+    assert.equal(state.positions.length, 1); assert(state.positions[0].historical); assert(state.entries.some(x => x.positionId === state.positions[0].id && x.candle.openTime === draft.candle.openTime));
+    const before = state.positions.map(x => [x.id, x.quantity]);
+    await p.locator('.chart-trading-switch input').uncheck(); assert.equal(await p.locator('.chart-trading-pick').count(), 0);
+    assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), before, 'Tool Off reset account positions');
+    await p.locator('.chart-trading-switch input').check(); await p.locator('[data-position-line]').first().waitFor();
+    await p.locator('.chart-trading-switch input').uncheck(); await qty(p).fill('1');
+    const live = await command(s, 'OPEN', () => button(p, 'SHORT').click()); assert.equal(live.draft.candle, undefined, 'Tool Off retained the unsent historical selection');
+  } finally { await s.context.close(); }
+}
+const CASES = [
+  { id: 'profit-1_2m', pnl: '1200000', roi: '2400' }, { id: 'profit-10m', pnl: '10000000', roi: '20000' },
+  { id: 'loss-1_2m', pnl: '-1200000', roi: '-2400' }, { id: 'roi-20000', pnl: '250000', roi: '20000' },
+  { id: 'roi-128450', pnl: '4820000.5', roi: '128450.75' }, { id: 'roi-negative-99999', pnl: '-8750000.25', roi: '-99999.99' },
+  { id: 'real-zero', pnl: '0', roi: '0' },
+];
+function intersects(a, b) { return a.right > b.left + 1 && b.right > a.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1; }
+async function cardGlyphs(page, model) {
+  const g = await page.evaluate(model => {
+    const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-20000px;top:0;width:1080px'; document.body.append(host);
+    try {
+      host.innerHTML = window.__nativeQaCardRenderer.privateResultCardSvg(model);
+      const svg = host.querySelector('svg');
+      const rect = e => { const b = e.getBBox(), m = e.getCTM(); const points = [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]].map(([x, y]) => new DOMPoint(x, y).matrixTransform(m)); return { left: Math.min(...points.map(x => x.x)), right: Math.max(...points.map(x => x.x)), top: Math.min(...points.map(x => x.y)), bottom: Math.max(...points.map(x => x.y)) }; };
+      return { fields: [...svg.querySelectorAll('[data-field]')].map(e => ({ name: e.dataset.field, text: e.textContent, ...rect(e) })), bags: [...svg.querySelectorAll('[data-artwork="money-bags"] > g')].map(rect), text: svg.textContent };
+    } finally { host.remove(); }
+  }, model);
+  assert(g.fields.length, 'Card renderer did not expose measurable fields'); assert(!/NaN|Infinity|\d[eE][+-]?\d/.test(g.text));
+  for (const b of [...g.fields, ...g.bags]) assert(b.left >= 0 && b.right <= 1080 && b.top >= 0 && b.bottom <= 1215, `Card field/artwork outside canvas: ${JSON.stringify(b)}`);
+  for (const f of g.fields) for (const b of g.bags) assert(!intersects(f, b), `Card field ${f.name} overlaps artwork`);
+  for (let i = 0; i < g.fields.length; i++) for (let j = i + 1; j < g.fields.length; j++) {
+    const a = g.fields[i], b = g.fields[j];
+    if ([a.name, b.name].some(x => ['roi-line', 'profit-line', 'side', 'leverage'].includes(x))) continue;
+    if (['roi-', 'profit-'].some(prefix => a.name.startsWith(prefix) && b.name.startsWith(prefix))) continue;
+    assert(!intersects(a, b), `Card text overlap: ${a.name}/${b.name}`);
+  }
+  return g;
+}
+async function largeValues(width) {
+  let current, cardModel;
+  const s = await session(width, async s => {
+    const base = await api(s.context, s.token, 'commands', { kind: 'OPEN', symbol: 'BTCUSDT', side: 'LONG', type: 'MARKET', quantity: '1', leverage: '10', idempotencyKey: 'qa-layout-seed-position' });
+    const baseCard = await api(s.context, s.token, 'cards', { positionId: base.positions[0].id });
+    s.base = base; s.baseCard = baseCard; current = structuredClone(base); cardModel = structuredClone(baseCard);
+    await s.context.route('**/native/state', route => route.fulfill({ json: current }));
+    await s.context.route('**/native/commands', route => route.request().postDataJSON()?.kind === 'REFRESH' ? route.fulfill({ json: current }) : route.fulfill({ status: 405, json: { error: 'Layout fixture cannot execute trades' } }));
+    await s.context.route('**/native/cards', route => route.fulfill({ json: cardModel }));
+  });
+  try {
+    for (const example of CASES) {
+      current = structuredClone(s.base);
+      Object.assign(current.positions[0], { quantity: '1250.5', entryPrice: '1875000.5', markPrice: '1999999.99', unrealizedPnl: example.pnl, realizedPnl: example.pnl, roiPercent: example.roi });
+      current.account.unrealizedPnl = example.pnl;
+      cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
+      await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positions').click(); await rows(s.page).first().waitFor();
+      await check(`large-table-${example.id}-${width}`, async () => {
+        assert.equal((await s.page.locator('.futures-position-pnl > span').innerText()).trim(), Number(example.pnl).toFixed(2));
+        assert.equal((await s.page.locator('.futures-position-pnl > small').innerText()).trim(), Number(example.roi).toFixed(2) + '%');
+        return tableLayout(s.page, width);
+      });
+      await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));
+      await check(`large-card-png-${example.id}-${width}`, async () => { await s.page.locator('.futures-position-card').click(); return card(s.page, `card-${example.id}-${width}.png`, width); });
+      const completed = { ...current.positions[0], status: 'CLOSED', closedAt: current.asOf, netPnl: example.pnl, liquidationPrice: null };
+      current = { ...current, positions: [], history: [completed] };
+      await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positionHistory').click();
+      await s.page.locator('.futures-positions-panel tbody tr').waitFor();
+      await check(`large-history-${example.id}-${width}`, async () => {
+        assert((await s.page.locator('.futures-positions-panel').innerText()).includes(Number(example.pnl).toFixed(2)), 'Closed P&L not rendered in full');
+        return tableLayout(s.page, width);
+      });
+    }
+    await s.page.screenshot({ path: path.join(out, `terminal-${width}.png`), fullPage: true });
+  } finally { await s.context.close(); }
+}
+async function main() {
+  // Observation only: no components, layout, prices or routing are replaced by the build shim.
+  const chartModule = path.join(front, 'node_modules/lightweight-charts/dist/lightweight-charts.production.mjs');
+  shim = path.join(os.tmpdir(), `voltex-native-observer-${process.pid}.mjs`);
+  fs.writeFileSync(shim, `export * from ${JSON.stringify(chartModule)};import{createChart as original,CandlestickSeries}from ${JSON.stringify(chartModule)};import * as renderer from ${JSON.stringify(path.join(front, 'src/lib/privateResultCard.ts'))};window.__nativeQaCardRenderer=renderer;export function createChart(...args){const c=original(...args);window.__nativeQaChart=c;const add=c.addSeries.bind(c);c.addSeries=(type,...rest)=>{const s=add(type,...rest);if(type===CandlestickSeries)window.__nativeQaSeries=s;return s;};return c;}`);
+  const { build } = await import(path.join(front, 'node_modules/vite/dist/node/index.js'));
+  await build({ root: front, resolve: { alias: { 'lightweight-charts': shim } }, define: { 'import.meta.env.VITE_API_URL': JSON.stringify('/api/v1') } });
+  await startServer(); const { chromium } = require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT || 'playwright'); browser = await chromium.launch({ headless: true });
+  for (const width of [1440, 390]) {
+    if (largeOnly) { await check(`large-values-${width}`, () => largeValues(width)); continue; }
+    await check(`normal-owner-flow-${width}`, () => normalFlow(width));
+    await check(`access-outage-no-real-fallback-${width}`, () => outage(width, 'access'));
+    await check(`state-outage-no-real-fallback-${width}`, () => outage(width, 'native/state'));
+    await check(`reduce-only-limit-contract-${width}`, () => limitCloseContract(width));
+    await check(`chart-tool-selection-${width}`, () => chartFlow(width));
+  }
+  assert.deepEqual(report.errors, [], 'Browser runtime errors');
+  assert(report.checks.every(x => x.passed), `${report.checks.filter(x => !x.passed).length} QA checks failed; see report.json`);
+  report.passed = true;
+}
+main().catch(error => { report.passed = false; report.failure = String(error.stack || error); console.error(error); process.exitCode = 1; })
+  .finally(async () => { fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2)); console.log(JSON.stringify(report, null, 2)); await browser?.close(); await stopServer(); if (shim) fs.rmSync(shim, { force: true }); });
