@@ -1,4 +1,5 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 
 type RulerVisual = {
   left: number;
@@ -44,15 +45,16 @@ function intervalSeconds(value: string | null): number {
   return unit ? map[unit] ?? 0 : 0;
 }
 
-function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return '0m';
+function formatDuration(seconds: number, russian = false): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return russian ? '0м' : '0m';
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
+  const units = russian ? { d: 'д', h: 'ч', m: 'м' } : { d: 'd', h: 'h', m: 'm' };
   const parts: string[] = [];
-  if (days) parts.push(`${days}d`);
-  if (hours) parts.push(`${hours}h`);
-  if (minutes || parts.length === 0) parts.push(`${minutes}m`);
+  if (days) parts.push(`${days}${units.d}`);
+  if (hours) parts.push(`${hours}${units.h}`);
+  if (minutes || parts.length === 0) parts.push(`${minutes}${units.m}`);
   return parts.slice(0, 2).join(' ');
 }
 
@@ -109,10 +111,12 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
     if (!root) return;
     const groups = rulerGroups(root);
     for (const item of groups) {
-      item.group.style.visibility = 'hidden';
-      item.group.dataset.voltexNativeRulerHidden = 'true';
+      // Guard these writes: MutationObserver watches the subtree, so writing
+      // the same attributes every scan would create a redraw loop.
+      if (item.group.style.visibility !== 'hidden') item.group.style.visibility = 'hidden';
+      if (item.group.dataset.voltexNativeRulerHidden !== 'true') item.group.dataset.voltexNativeRulerHidden = 'true';
     }
-    const chosen = groups.find((item) => item.pending) ?? groups.at(-1);
+    const chosen = groups.find((item) => item.pending) ?? groups[groups.length - 1];
     const svg = root.querySelector<SVGSVGElement>('svg.drawing-overlay');
     if (!chosen || !svg) {
       setVisual((previous) => (previous === null ? previous : null));
@@ -141,7 +145,7 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
     const barsText = detailParts[1] ?? '';
     const bars = Number.parseInt(barsText, 10);
     const activeInterval = root.querySelector<HTMLButtonElement>('.chart-tab[aria-pressed="true"]')?.textContent ?? null;
-    const duration = Number.isFinite(bars) ? formatDuration(bars * intervalSeconds(activeInterval)) : '';
+    const duration = Number.isFinite(bars) ? formatDuration(bars * intervalSeconds(activeInterval), /бар/i.test(barsText)) : '';
     const primary = priceDiff ? `${priceDiff} (${pct})` : pct;
     const secondary = duration ? `${barsText}, ${duration}` : barsText;
     const labelWidth = Math.max(128, Math.min(260, Math.max(primary.length, secondary.length) * 6.5 + 20));
@@ -186,7 +190,6 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
       if (lock) { lock.click(); await frames(1); }
 
       const eraser = root.querySelector<HTMLButtonElement>('button[data-drawing-tool="erase"]');
-      const cursor = root.querySelector<HTMLButtonElement>('button[data-drawing-tool="cursor"]');
       if (!eraser) { setVisual(null); return; }
       eraser.click();
       await frames(2);
@@ -196,7 +199,7 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
         const currentRoot = hostRef.current;
         if (!currentRoot) break;
         const committed = rulerGroups(currentRoot).filter((item) => !item.pending);
-        const target = committed.at(-1);
+        const target = committed[committed.length - 1];
         const svg = currentRoot.querySelector<SVGSVGElement>('svg.drawing-overlay');
         if (!target || !svg) break;
         const x1 = numberAttr(target.line, 'x1');
@@ -218,7 +221,7 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
         lockAgain?.click();
         await frames(1);
       }
-      cursor?.click();
+      root.querySelector<HTMLButtonElement>('button[data-drawing-tool="cursor"]')?.click();
       setVisual(null);
       scheduleScan();
     } finally {
@@ -250,7 +253,8 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && rulerGroups(hostRef.current as HTMLElement).some((item) => !item.pending)) void clearNativeRulers();
+      const root = hostRef.current;
+      if (event.key === 'Escape' && root && rulerGroups(root).some((item) => !item.pending)) void clearNativeRulers();
     };
     window.addEventListener('keydown', onEscape);
     return () => window.removeEventListener('keydown', onEscape);
@@ -265,7 +269,12 @@ export function TradingViewRulerLayer({ children }: { children: ReactNode }) {
     event.stopPropagation();
     void clearNativeRulers().then(async () => {
       replayRulerClickRef.current = true;
-      try { target.click(); await frames(1); } finally { replayRulerClickRef.current = false; }
+      try {
+        hostRef.current?.querySelector<HTMLButtonElement>('button[data-drawing-tool="ruler"]')?.click();
+        await frames(1);
+      } finally {
+        replayRulerClickRef.current = false;
+      }
     });
   }, [clearNativeRulers]);
 
