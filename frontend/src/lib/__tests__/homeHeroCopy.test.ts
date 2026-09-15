@@ -71,3 +71,35 @@ test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('%s renders one headline a
   expect(html.match(/data-preview="tape"/g)).toHaveLength(1);
   expect(html).not.toContain('data-preview="phone"');
 });
+
+test('instrument names are English in every language, and cannot be translated per-locale', () => {
+  // Gold and Oil name traded instruments, like BTC/USDT — and the pill
+  // already prints "XAU/USD" untranslated right under the title. The
+  // Russian build read "ЗОЛОТО · Справочная котировка · XAU/USD", which is
+  // one card speaking two languages about the same thing.
+  const req2 = createRequire(resolve(frontend, 'package.json'));
+  const compiled = ts.transpileModule(read('src/pages/home/globalHeroCopy.ts'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const out: any = {};
+  new Function('require', 'exports', compiled)(req2, out);
+  const copy = out.globalHeroCopy;
+
+  const langs = Object.keys(copy);
+  expect(langs).toHaveLength(7);
+  for (const lang of langs) {
+    expect(copy[lang].gold).toBe('Gold');
+    expect(copy[lang].oil).toBe('Oil');
+  }
+
+  // Single-sourced, not seven copies that happen to agree today: a
+  // per-locale literal is what lets one language drift back.
+  const src = read('src/pages/home/globalHeroCopy.ts');
+  expect(src.match(/gold: '/g)).toHaveLength(1);
+  expect(src.match(/oil: '/g)).toHaveLength(1);
+  expect(src).toMatch(/const instruments = \{ gold: 'Gold', oil: 'Oil' \}/);
+  // Everything else in the file stays translated — this is not a licence
+  // to leave the rest of the hero in English.
+  expect(copy.ru.quote).not.toBe(copy.en.quote);
+  expect(copy.ru.unavailable).not.toBe(copy.en.unavailable);
+});
