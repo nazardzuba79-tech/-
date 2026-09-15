@@ -5,14 +5,16 @@ export interface NativeProtection {takeProfit:string|null;stopLoss:string|null;q
 export interface NativePosition {
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
-  unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;fundingNet:string;
-  protection:NativeProtection;liquidationPrice:null;liquidationStatus:string;
+  unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
+  protection:NativeProtection;
+  /** Account-level Cross estimate (other contracts frozen). null = not reachable with current collateral, or fully hedged. */
+  liquidationPrice:string|null;liquidationStatus:string;
 }
 export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number}
 export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string}
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
-  model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number}};
+  model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
   account:null|{walletBalance:string;initialDeposit:string;unrealizedPnl:string;equity:string;usedMargin:string;orderReserve:string;available:string;maintenanceMargin:string;maintenanceRatio:string|null;liquidatable:boolean;deficit:string};
   positions:NativePosition[];history:NativePosition[];orders:NativeOrder[];events:NativeEvent[];
   entries?:{positionId:string;candle:NativeCandle|null}[];
@@ -42,3 +44,11 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
   };
 }
 export const nativeDemoApi=createNativeDemoClient(import.meta.env.VITE_API_URL||'/api/v1',getToken);
+/** Signed fraction string -> percent text by decimal shifting (no floating point): '-0.001' -> '−0.1%'. */
+export function nativeFundingPercent(value:string):string{
+  const m=/^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value);if(!m)return '—';
+  const frac=`${m[3]??''}00`,whole=`${m[2]}${frac.slice(0,2)}`.replace(/^0+(?=\d)/,''),rest=frac.slice(2).replace(/0+$/,'');
+  const body=rest?`${whole}.${rest}`:whole;
+  if(/^0(?:\.0*)?$/.test(body))return '0%';
+  return `${m[1]==='-'?'−':'+'}${body}%`;
+}

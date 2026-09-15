@@ -2279,6 +2279,14 @@ a:hover > .nav-card-icon {
 @media (max-width: 1024px) {
   .trade-terminal.terminal-studio .nav-mobile-menu { top:56px; max-height:calc(100dvh - 56px); }
 }
+/* The admin link adds ~110px: measured collision with the account actions up to 1514px. */
+@media (min-width: 1440px) and (max-width: 1519px) {
+  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .main-nav,
+  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .brand-separator { display: none; }
+  .trade-terminal.terminal-studio .global-header:has(.nav-admin) .mobile-menu { display: grid; }
+  .trade-terminal.terminal-studio .nav-mobile-menu.open { display: flex; }
+  .trade-terminal.terminal-studio .nav-mobile-menu { top:48px; max-height:calc(100dvh - 48px); }
+}
 
 /* Owner's Futures reference: header styling stays in the eager shell. */
 :is(.futures-reference,.market-reference) > .global-header { background:#1b1b23; border-bottom:1px solid #2b2b35; box-shadow:none; }

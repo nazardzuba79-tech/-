@@ -1,13 +1,17 @@
 import BigNumber from 'bignumber.js';
 import { amount, calculatePosition, decimal } from './math';
 import type { Candle, ModelProfile, Side } from './types';
+import { NATIVE_DEMO_MODEL } from './native/engine';
 
 const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_HALF_EVEN, EXPONENTIAL_AT: 100 });
 
-/** Owner-requested demo funding cash-flow rates per settlement. */
+/**
+ * Owner-set custom demo funding cash-flow per 8h settlement (signed fraction of position value).
+ * Single source of truth: the native engine model. Not provider/Bybit funding.
+ */
 export const DEMO_FUNDING_CASHFLOW_RATE = {
-  LONG: '-0.0001',
-  SHORT: '0.001',
+  LONG: NATIVE_DEMO_MODEL.funding.longCashflow,
+  SHORT: NATIVE_DEMO_MODEL.funding.shortCashflow,
 } as const;
 
 export interface CrossDemoPositionInput {

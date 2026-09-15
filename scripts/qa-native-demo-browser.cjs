@@ -13,7 +13,7 @@ async function main(){
  const log=fs.createWriteStream(path.join(out,'server.log'));server.stdout.pipe(log);server.stderr.pipe(log);
  const origin='http://127.0.0.1:4178';for(let i=0;i<60;i++){try{if((await fetch(origin+'/health')).ok)break;}catch{}await new Promise(r=>setTimeout(r,500));}
  const {chromium}=require(process.env.PRIVATE_CARD_QA_PLAYWRIGHT||'playwright');browser=await chromium.launch({headless:true});
- async function newPage(width){const context=await browser.newContext({viewport:{width,height:1000},acceptDownloads:true});await context.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());await context.routeWebSocket('**/*',ws=>ws.close());const page=await context.newPage();activePage=page;page.setDefaultTimeout(25000);page.on('pageerror',e=>report.errors.push(e.message));await page.goto(origin+'/futures?demo=1');await page.getByRole('button',{name:'Использовать демо-средства',exact:true}).click();await page.locator('.native-demo-controls form').waitFor();await page.waitForFunction(()=>window.__nativeQaSeries?.data().length>10);return{page,context};}
+ async function newPage(width){const context=await browser.newContext({viewport:{width,height:1000},acceptDownloads:true,locale:'ru-RU',timezoneId:'UTC'});await context.route('**/*',r=>r.request().url().startsWith(origin+'/')?r.continue():r.abort());await context.routeWebSocket('**/*',ws=>ws.close());const page=await context.newPage();activePage=page;page.setDefaultTimeout(25000);page.on('pageerror',e=>report.errors.push(e.message));await page.goto(origin+'/futures?demo=1');await page.getByRole('button',{name:'Использовать демо-средства',exact:true}).click();await page.locator('.native-demo-controls form').waitFor();await page.waitForFunction(()=>window.__nativeQaSeries?.data().length>10);return{page,context};}
  async function state(page){return page.evaluate(async()=>{const r=await fetch('/api/v1/private-trading/native/state',{headers:{Authorization:'Bearer '+localStorage.getItem('exchange_token')}});if(!r.ok)throw Error('state '+r.status);return r.json();});}
  async function command(page,click){const pending=page.waitForResponse(r=>r.url().endsWith('/native/commands')&&r.request().method()==='POST');await click();const r=await pending;const body=await r.json();assert(r.ok(),JSON.stringify(body));await page.waitForFunction(()=>!document.querySelector('.native-demo-controls button[type=submit]')?.disabled);return body;}
  async function chooseCandle(page,after){
@@ -36,9 +36,44 @@ async function main(){
   await row.getByRole('button',{name:'Рыночный',exact:true}).click();await page.getByLabel('Количество закрытия',{exact:true}).fill('0.1');s=await command(page,()=>page.locator('.native-action-dialog').getByRole('button',{name:'Подтвердить',exact:true}).click());assert(s.events.some(e=>e.kind==='CLOSE'&&e.quantity==='0.1'));
   await row.getByRole('button',{name:'Карточка BTCUSDT',exact:true}).click();const download=page.waitForEvent('download');await page.getByRole('button',{name:'Сохранить PNG',exact:true}).click();await(await download).saveAs(path.join(out,`card-${width}.png`));await page.locator('.private-card-dialog').getByRole('button',{name:'Закрыть',exact:true}).click();
   const before=(await state(page)).revision;await page.reload();await page.locator('.native-demo-controls form').waitFor();assert((await state(page)).revision>=before);assert.equal((await state(page)).positions.length,2);
+  // Owner switch sits in the trading panel; header links never collide with header actions; no page overflow.
+  const layout=await page.evaluate(()=>{
+   const box=e=>{const r=e.getBoundingClientRect();return{l:r.left,r:r.right,t:r.top,b:r.bottom,w:r.width,h:r.height};};
+   const actions=document.querySelector('.global-header .header-actions'),a=actions&&box(actions);
+   const visible=[...document.querySelectorAll('.global-header .main-nav .nav-item')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').map(box).filter(b=>b.w>0&&b.h>0);
+   const overlaps=a?visible.filter(b=>b.r>a.l+1&&b.l<a.r-1&&b.b>a.t&&b.t<a.b).length:0;
+   const sw=document.querySelector('.order-form-area > .native-mode-switch');
+   return{overlaps,switchInPanel:!!sw,switchInHeader:!!document.querySelector('.global-header .native-mode-switch'),scrollWidth:document.documentElement.scrollWidth,width:innerWidth,
+     liquidationHeader:[...document.querySelectorAll('.native-demo-panel th')].some(th=>th.textContent==='Цена ликв.')};
+  });
+  report.checks.push({name:`layout-${width}`,passed:true,layout});
+  assert.equal(layout.overlaps,0,'header navigation overlaps header actions');assert(layout.switchInPanel);assert(!layout.switchInHeader);
+  assert(layout.scrollWidth<=layout.width+1,'page scrolls horizontally');assert(layout.liquidationHeader);
+  // 10M shared collateral: a net-short BTC book liquidates only at an absurd price, a net long never.
+  const liqCells=await page.locator('.native-demo-panel tbody tr').evaluateAll(rows=>rows.map(r=>r.children[4]?.textContent));
+  const liq=(await state(page)).positions.map(p=>p.liquidationPrice);
+  assert(liqCells.length===liq.length&&liq.every(v=>v===null||Number(v)>500000),'10M collateral liquidation estimate: '+liqCells.join());
+  report.checks.push({name:`cross-liquidation-far-${width}`,passed:true,liquidation:liq});
+  await page.locator('.order-form-area .native-mode-switch').getByRole('button',{name:'Real',exact:true}).click();
+  await page.locator('.order-form-area .native-demo-controls').waitFor({state:'detached'});
+  assert(!(await page.url()).includes('demo=1'));
+  await page.locator('.order-form-area .native-mode-switch').getByRole('button',{name:'Demo',exact:true}).click();
+  await page.locator('.native-demo-controls form').waitFor();
   await page.screenshot({path:path.join(out,`terminal-${width}.png`),fullPage:true});report.checks.push({name:`long-short-limit-cancel-tpsl-partial-close-png-reload-${width}`,passed:true});await context.close();
   const h=await newPage(width),p=h.page,t=p.locator('.native-demo-controls');await t.getByRole('button',{name:'Выбрать вход на графике',exact:true}).click();const picked=await chooseCandle(p);let hs=await command(p,()=>t.getByRole('button',{name:'Открыть историческую сделку',exact:true}).click());assert.equal(hs.positions.length,1);assert(hs.positions[0].historical);assert(hs.positions[0].unrealizedPnl!==null);assert(hs.events.some(e=>e.pricing==='SELECTED_POINT'));await p.locator('[data-position-line]').waitFor();
   await p.locator('.native-demo-panel').getByRole('button',{name:'На графике',exact:true}).click();await chooseCandle(p,picked.time*1000);hs=await command(p,()=>t.getByRole('button',{name:'Закрыть на выбранной свече',exact:true}).click());assert.equal(hs.history.length,1);assert.equal(hs.positions.length,0);assert(hs.history[0].netPnl!==null);
+  await t.getByRole('button',{name:'Лимитный',exact:true}).click();await t.getByRole('button',{name:'Выбрать вход на графике',exact:true}).click();
+  await chooseCandle(p);
+  // Use the candle the terminal actually selected (narrow mobile bars can resolve to a neighbour).
+  const selectedTime=Number(await p.locator('.native-candle').getAttribute('data-open-time'))/1000;
+  const bar=await p.evaluate(time=>window.__nativeQaSeries.data().find(x=>x.time===time),selectedTime);
+  const limit=(Math.ceil(((bar.low+bar.open)/2)*10)/10).toFixed(1);
+  assert(await t.getByText('Buy исполняется, если Low ≤ цены').isVisible());
+  await t.getByLabel('Лимитная цена',{exact:true}).fill(limit);
+  hs=await command(p,()=>t.getByRole('button',{name:'Открыть историческую сделку',exact:true}).click());
+  const limitPosition=hs.positions.find(x=>x.historical);assert(limitPosition,'historical wick limit did not fill');
+  assert(Number(limitPosition.entryPrice)<=Number(limit));assert.equal(hs.entries.find(e=>e.positionId===limitPosition.id).candle.pricePoint,'OPEN');
+  report.checks.push({name:`native-historical-limit-wick-${width}`,passed:true,limit,low:bar.low,entry:limitPosition.entryPrice});
   await p.getByRole('tab',{name:'История позиций',exact:true}).click();await p.screenshot({path:path.join(out,`history-${width}.png`),fullPage:true});report.checks.push({name:`native-chart-click-history-entry-pnl-exit-${width}`,passed:true});await h.context.close();
  }
  assert.deepEqual(report.errors,[]);report.passed=true;

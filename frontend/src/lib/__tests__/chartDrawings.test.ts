@@ -518,7 +518,10 @@ describe('the rail is shared, and every button does something', () => {
   const trade = fs.readFileSync(path.resolve(__dirname, '../../pages/TradePage.tsx'), 'utf8');
 
   test('Futures opts into the SAME implementation Spot uses', () => {
-    expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />');
+    // The owner-only native demo may pass its private overlay/loader props to the
+    // very same chart; the shared drawing rail props must stay unchanged.
+    expect(futures).toMatch(/<PriceChart pair=\{symbol\} chrome="terminal" drawingTools market="futures" compactTools=\{studio\}(?: privateTrading=\{[^}]+\}| candleLoader=\{[^}]+\})* \/>/);
+    expect(futures.match(/<PriceChart\b/g)).toHaveLength(1);
     expect(trade).toContain('<PriceChart pair={pair} chrome="terminal" drawingTools market="spot" compactTools />');
     // One implementation, not two: there is a single chart component and a
     // single rail, and both pages reach it through the same prop.

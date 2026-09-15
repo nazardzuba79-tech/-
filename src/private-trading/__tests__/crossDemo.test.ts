@@ -23,9 +23,9 @@ describe('private cross demo account math',()=>{
     expect(Number(price)).toBeLessThan(70000);
   });
 
-  test('owner fixed demo funding is negative for long and positive for short',()=>{
-    expect(crossDemoFundingCashflow('LONG','2','50000')).toBe('-10');
-    expect(crossDemoFundingCashflow('SHORT','2','50000')).toBe('100');
+  test('owner custom demo funding (-0.001 long / +0.004 short per 8h) matches the native engine model',()=>{
+    expect(crossDemoFundingCashflow('LONG','2','50000')).toBe('-100');
+    expect(crossDemoFundingCashflow('SHORT','2','50000')).toBe('400');
   });
 
   test('historical buy limit fills on low wick and uses a better gap-open price',()=>{

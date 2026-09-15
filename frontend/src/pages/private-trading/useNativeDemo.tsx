@@ -20,8 +20,9 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     void check();const timer=window.setInterval(check,15000),off=onSessionChange(()=>{revoke();void check();});
     return()=>{cancelled=true;alive.current=false;controller.abort();clearInterval(timer);off();};
   },[revoke]);
+  const refreshOnLoad=useRef(false);
   useEffect(()=>{if(!requested||!allowed)return;let cancelled=false;const controller=new AbortController();
-    nativeDemoApi.state(controller.signal).then(s=>{if(!cancelled)setState(s);}).catch(e=>{if(!cancelled)fail(e);});
+    nativeDemoApi.state(controller.signal).then(s=>{if(cancelled)return;setState(s);refreshOnLoad.current=s.initialized;}).catch(e=>{if(!cancelled)fail(e);});
     return()=>{cancelled=true;controller.abort();};
   },[requested,allowed,fail]);
   useEffect(()=>{setCandle(null);setSelecting(pendingExit.current?'exit':null);setExitId(pendingExit.current);pendingExit.current=null;},[symbol,requested]);
@@ -31,6 +32,8 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     try{const next=await nativeDemoApi.command(draft,attempt.current.key);attempt.current=null;if(alive.current)setState(next);return true;}
     catch(e){fail(e);return false;}finally{pending.current=false;if(alive.current)setBusy(false);}
   },[allowed,fail]);
+  // The stored revision may be older than the live quote: revalue once right after loading.
+  useEffect(()=>{if(refreshOnLoad.current&&state?.initialized&&requested&&allowed){refreshOnLoad.current=false;void run({kind:'REFRESH'});}},[state,requested,allowed,run]);
   useEffect(()=>{if(!requested||!allowed||!state?.initialized)return;
     const timer=window.setInterval(()=>{if(!document.hidden&&!pending.current&&!dialog&&!candle)void run({kind:'REFRESH'});},30000);
     return()=>clearInterval(timer);
@@ -44,7 +47,7 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     const entry=state?.entries?.find(e=>e.positionId===p.id)?.candle;
     return{id:p.id,symbol:p.symbol,side:p.side,leverage:Number(p.leverage),entryPrice:Number(p.entryPrice),quantity:Number(p.quantity),pnl:Number(p.status==='OPEN'?p.unrealizedPnl:p.netPnl),status:p.status,
       entryTime:p.openedAt,entryCandleOpenTime:entry?.openTime,entryInterval:entry?.interval,entryModel:entry?.pricePoint,
-      takeProfit:p.protection.takeProfit===null?null:Number(p.protection.takeProfit),stopLoss:p.protection.stopLoss===null?null:Number(p.protection.stopLoss),liquidationPrice:null,
+      takeProfit:p.protection.takeProfit===null?null:Number(p.protection.takeProfit),stopLoss:p.protection.stopLoss===null?null:Number(p.protection.stopLoss),liquidationPrice:p.status==='OPEN'&&p.liquidationPrice!==null?Number(p.liquidationPrice):null,
       exits:(state?.events??[]).filter(e=>e.positionId===p.id&&['CLOSE','TAKE_PROFIT','STOP_LOSS','LIQUIDATION'].includes(e.kind)).map(e=>({time:e.time,price:Number(e.price),kind:e.kind,quantity:Number(e.quantity)}))};
   });
   const loader=useCallback<ChartCandleLoader>((pair,interval,limit,signal,endTime)=>privateTradingApi.candles(pair,interval,limit,signal,endTime),[]);

@@ -177,7 +177,7 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
-        rightExtra={<><NativeDemoSwitch controller={native}/>{!native.allowed&&<PrivateTradingEntry/>}</>}
+        rightExtra={native.allowed?undefined:<PrivateTradingEntry/>}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -215,6 +215,7 @@ export function FuturesPage() {
 
           <div className="order-form-area">
             <h2 className="reference-order-heading">{t('nav.trade')}</h2>
+            <NativeDemoSwitch controller={native}/>
             {native.requested?<NativeDemoTicket key={symbol} controller={native} symbol={symbol} pickedPrice={pickedPrice?.symbol===symbol?pickedPrice.value:undefined} pickedSequence={pickedPrice?.seq}/>:<FuturesOrderForm
               key={symbol}
               symbol={symbol}

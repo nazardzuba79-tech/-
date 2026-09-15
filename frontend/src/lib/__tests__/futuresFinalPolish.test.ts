@@ -156,6 +156,12 @@ function mount(file: string, overrides: Record<string, any> = {}) {
     if (name === './SpotOrdersView') return { SpotAssetsView: () => null };
     if (name === '../lib/futuresDepth') return { subscribeFuturesDepth: (symbol: string, callback: any) => overrides.socket.subscribeBook(symbol, callback) };
     if (name === '../lib/tradingMode') return { rememberTradingMode: jest.fn() };
+    // The owner-only native demo is server-gated; an ordinary account keeps the public terminal.
+    if (name === './private-trading/useNativeDemo') return { useNativeDemo: () => ({ requested: false, allowed: false, checked: true }) };
+    if (name === './private-trading/NativeDemoControls') {
+      for (const label of ['NativeDemoSwitch', 'NativeDemoTicket', 'NativeDemoPanel', 'NativeDemoDialogs']) components[label] ??= () => null;
+      return { NativeDemoSwitch: components.NativeDemoSwitch, NativeDemoTicket: components.NativeDemoTicket, NativeDemoPanel: components.NativeDemoPanel, NativeDemoDialogs: components.NativeDemoDialogs };
+    }
     if (name === 'react-router-dom') return { useNavigate: () => jest.fn(), useSearchParams: () => [overrides.params] };
     if (name.endsWith('.css')) return {};
     if (name.startsWith('./') || name.startsWith('../components/')) {

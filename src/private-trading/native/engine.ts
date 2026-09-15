@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { createHash } from 'crypto';
 import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
 import type { ContractRules, ModelProfile, Side } from '../types';
 
@@ -8,9 +9,15 @@ const out = (x: BigNumber) => amount(x);
 const positive = (x: string) => decimal(x, 'amount', true);
 const active = (o: DemoOrder) => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED';
 export const NATIVE_DEMO_MODEL = Object.freeze({
-  version: 'VOLTEX_NATIVE_CROSS_V1', marginMode: 'CROSS', settlementAsset: 'USDT',
+  version: 'VOLTEX_NATIVE_CROSS_V2', marginMode: 'CROSS', settlementAsset: 'USDT',
+  /** Owner-set custom demo cash-flow per 8h UTC settlement (signed fraction of position value). NOT provider funding. */
   funding: Object.freeze({ longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28_800_000 }),
+  fundingSource: 'CUSTOM_DEMO_MODEL',
   historicalPath: 'OPEN_LOW_HIGH_CLOSE', simulated: true,
+  historicalLimit: 'BUY_IF_LOW_LTE_LIMIT_SELL_IF_HIGH_GTE_LIMIT',
+  /** Assumed candle path resolution by age at calculation time: ≤7d 1m, ≤45d 15m, older 1h. */
+  historyResolution: Object.freeze(['1m<=7d', '15m<=45d', '1h']),
+  liquidation: 'ACCOUNT_EQUITY_LTE_MAINTENANCE_AT_MARK',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
@@ -93,7 +100,8 @@ export function demoPositionView(s: DemoState,p: DemoPosition) {
   const net = out(n(unrealized).plus(realized));
   return { ...p, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net,
     roiPercent: n(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).gt(0) ? out(n(p.status==='OPEN'?unrealized:net).div(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).times(100)) : null,
-    liquidationPrice: null, liquidationStatus: 'ACCOUNT_MMR', marginMode: 'CROSS' as const };
+    liquidationPrice: p.status === 'OPEN' ? estimateDemoLiquidationPrice(s,p.id) : null,
+    liquidationStatus: 'ACCOUNT_CROSS_ESTIMATE' as const, marginMode: 'CROSS' as const };
 }
 function validateProtection(s: DemoState, p: {symbol:string;side:Side;quantity:string}, protection: DemoProtection, price: string) {
   if (!['MARK','LAST'].includes(protection.triggerBy)) throw new DemoEngineError('INVALID_TRIGGER_SOURCE');
@@ -162,8 +170,10 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     const p=getPosition(s,o.positionId!);quantity=out(D.minimum(quantity,p.quantity));
     settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker);
   } else {
-    // Same symbol+direction increases one position, opposite direction remains a hedge.
-    let p=s.positions.find(p=>p.status==='OPEN'&&p.symbol===o.symbol&&p.side===o.side);
+    // Same symbol+direction increases one LIVE position, opposite direction remains a hedge.
+    // Each historical test entry stays its own position (own entry marker, P&L and card).
+    let p=o.historical?undefined:s.positions.find(p=>p.status==='OPEN'&&!p.historical&&p.symbol===o.symbol&&p.side===o.side);
+    if(o.historical)p=s.positions.find(p=>p.id===o.id&&p.status==='OPEN');
     if(p && p.leverage!==o.leverage)throw new DemoEngineError('SET_EXISTING_POSITION_LEVERAGE_FIRST');
     const prof=instrument(s,o.symbol).profile,fee=n(quantity).times(price).times(maker?prof.makerFeeRate:prof.takerFeeRate);
     const nextReserve=out(n(o.remaining).minus(quantity).times(o.price??price).times(new D(1).div(o.leverage).plus(n(prof.takerFeeRate).times(2))));
@@ -239,12 +249,46 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
 export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number},time:number){
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
-  const key=`${o.symbol}:${book.timestamp}`,fingerprint=JSON.stringify([book.bids,book.asks]);
+  // Stored books are truncated to the depth each command needs, so the snapshot identity includes its content.
+  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${o.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
   let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
   used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
   const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:out(D.maximum(0,n(x.quantity).minus(used[side][out(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
   const direction=o.side==='LONG'?'BUY':'SELL',result=consumeBook(direction,o.remaining,{bids:levels('bids'),asks:levels('asks')},o.price??undefined);
   for(const f of result.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');const side=direction==='BUY'?'asks':'bids',p=out(n(f.price));used[side][p]=out(n(used[side][p]??'0').plus(f.quantity));}
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
-  for(const k of Object.keys(s.bookConsumption))if(Number(k.slice(k.lastIndexOf(':')+1))<time-5000)delete s.bookConsumption[k];
+  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+}
+/**
+ * Cross-margin liquidation reference for one position: the Mark price of ITS contract at which the
+ * whole account reaches equity <= maintenance, with every other contract frozen at its current Mark.
+ * Same-contract hedges move together. null = the shared collateral keeps the account solvent for
+ * every price in the adverse direction (or the contract is fully hedged).
+ */
+export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):string|null{
+  const p=s.positions.find(x=>x.id===positionId&&x.status==='OPEN');if(!p)return null;
+  const current=s.marks[p.symbol];if(!current)return null;
+  const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol);
+  const net=same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
+  if(net.isZero())return null;
+  const health=(price:BigNumber)=>{
+    const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
+    const a=demoAccount(probe);return n(a.equity).minus(a.maintenanceMargin);
+  };
+  const m0=n(current.mark);if(health(m0).lte(0))return current.mark;
+  const tick=n(instrument(s,p.symbol).rules.tickSize);
+  let lo:BigNumber,hi:BigNumber;
+  if(net.gt(0)){
+    lo=tick;hi=m0;if(health(lo).gt(0))return null;
+  }else{
+    lo=m0;hi=m0.times(2);let i=0;
+    while(health(hi).gt(0)){if(++i>60)return null;hi=hi.times(2);}
+  }
+  for(let i=0;i<200&&hi.minus(lo).gt(tick.div(100));i++){
+    const mid=lo.plus(hi).div(2),h=health(mid);
+    if(net.gt(0)){if(h.lte(0))lo=mid;else hi=mid;}else{if(h.gt(0))lo=mid;else hi=mid;}
+  }
+  // Round toward the current price so the reference is never later than the model boundary.
+  const value=net.gt(0)?hi.div(tick).integerValue(BigNumber.ROUND_CEIL).times(tick):lo.div(tick).integerValue(BigNumber.ROUND_FLOOR).times(tick);
+  return value.gt(0)?out(value):null;
 }

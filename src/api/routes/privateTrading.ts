@@ -63,7 +63,8 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   const handle = (run: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
     void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
   };
-  const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma), service.market) : null;
+  // Same pinned owner configuration as the route gate; every repository read/write re-checks it.
+  const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma, service.store?.config), service.market) : null;
   router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: !!native })));
   if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor));
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
