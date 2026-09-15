@@ -32,6 +32,7 @@ import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { discoverFuturesSymbols, type FuturesUniverse } from '../lib/futuresDiscovery';
+import { readFuturesSymbolCache, writeFuturesSymbolCache } from '../lib/terminalWarmCache';
 import './trade-terminal/TradeTerminal.css';
 import './trade-terminal/FuturesTerminal.css';
 import './trade-terminal/ProfessionalTerminal.css';
@@ -43,10 +44,10 @@ import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
 
-// Until /futures/config answers. Deliberately the same three contracts the
-// backend guarantees are always listed (CORE_FUTURES_SYMBOLS), so the first
-// paint shows real markets rather than an empty panel — the full listing
-// replaces this as soon as the request lands.
+// Hard fallback only for a browser that has never loaded Futures before.
+// Returning visitors paint the last real discovered universe immediately
+// from localStorage and then reconcile it with the same network calls that
+// already existed — no extra request is introduced.
 const CORE_SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'];
 
 // Orders and their history share /futures/orders/me with different filters.
@@ -80,7 +81,8 @@ export function FuturesPage() {
   const design = ['studio', 'graphite', 'focus'].includes(requestedDesign ?? '') ? requestedDesign : 'studio';
   const studio = design !== null;
   // Discover all real USDT perpetuals; execution remains restricted by config.
-  const [symbols, setSymbols] = useState<string[]>(CORE_SYMBOLS);
+  // A warm symbol list is display-only and cannot grant execution permission.
+  const [symbols, setSymbols] = useState<string[]>(() => readFuturesSymbolCache() ?? CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
   const native = useNativeDemo(symbol,setSymbol);
@@ -177,10 +179,22 @@ export function FuturesPage() {
   }, []);
 
   useEffect(() => {
-    const listed = discoverFuturesSymbols(futuresConfig?.symbols ?? CORE_SYMBOLS, universe);
+    const executable = futuresConfig?.symbols ?? CORE_SYMBOLS;
+
+    if (!universe?.available) {
+      // Do not replace a warm full catalogue with CORE_SYMBOLS while the
+      // existing universe request is still in flight. If config arrives
+      // first, only merge its executable symbols into what is already on
+      // screen. Execution is STILL checked separately by FuturesOrderForm.
+      if (futuresConfig) setSymbols(current => [...new Set([...executable, ...current])]);
+      return;
+    }
+
+    const listed = discoverFuturesSymbols(executable, universe);
     setSymbols(listed);
+    writeFuturesSymbolCache(listed);
     // Only a successfully loaded catalogue can invalidate a discovery deep link.
-    if (universe?.available) setSymbol((current) => (listed.includes(current) ? current : listed[0]));
+    setSymbol((current) => (listed.includes(current) ? current : listed[0]));
   }, [futuresConfig, universe]);
 
   // Same reason as the spot terminal: this page is not remounted when only

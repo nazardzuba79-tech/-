@@ -1,5 +1,6 @@
 import { api } from './api';
 import type { MarketTicker, GlobalMarketSnapshot } from './api';
+import { readSpotWarmCache, writeSpotWarmCache } from './terminalWarmCache';
 
 /**
  * ONE market-data poll for the whole browser tab.
@@ -35,6 +36,11 @@ import type { MarketTicker, GlobalMarketSnapshot } from './api';
  * section arrives as `available: false` with no value-carrying fields.
  * Components render a dash for that. **Nothing in this file turns a failed
  * request into a zero, an empty array, or a default price.**
+ *
+ * First paint is warmed from a short-lived browser cache. That cache is
+ * explicitly marked stale and NEVER suppresses the normal first refresh:
+ * it changes zero Render/API request counts, it only avoids a blank panel
+ * while the existing request is in flight after a reload/deploy.
  */
 
 export interface EnvelopeMeta {
@@ -78,20 +84,38 @@ const EMPTY_STATE: MarketState = {
   loaded: false,
 };
 
+function initialState(): MarketState {
+  const warm = readSpotWarmCache();
+  if (!warm) return { ...EMPTY_STATE, tickers: new Map() };
+  return {
+    ...EMPTY_STATE,
+    status: 'ready',
+    loaded: true,
+    tickers: new Map(warm.tickers.map(ticker => [ticker.pair, ticker])),
+    // Browser cache is only a first-paint bridge. It is never represented
+    // as live, even when it was written a few seconds ago.
+    tickersMeta: { source: warm.source, fetchedAt: warm.fetchedAt, stale: true },
+  };
+}
+
 /** Floor on the shared cadence. The backend ticker cache has a 5s TTL, so
  *  polling faster than this cannot return fresher data — it would only
  *  cost VOLTEX requests. 3s preserves the terminal's existing feel while
  *  staying just under that TTL. */
 const MIN_INTERVAL_MS = 3_000;
 const DEFAULT_INTERVAL_MS = 5_000;
+const WARM_CACHE_WRITE_INTERVAL_MS = 30_000;
 
 type Listener = (state: MarketState) => void;
 
 class MarketDataStore {
-  private state: MarketState = EMPTY_STATE;
-  /** When the last successful snapshot landed, so a late subscriber can be
-   *  served from memory instead of triggering another request. */
+  private state: MarketState = initialState();
+  /** When the last successful NETWORK snapshot landed, so a late subscriber
+   *  can be served from memory instead of triggering another request.
+   *  Warm-cache hydration deliberately leaves this at zero, which forces
+   *  the ordinary first refresh to happen exactly as before. */
   private lastLoadedAt = 0;
+  private lastWarmCacheWriteAt = 0;
   private listeners = new Map<symbol, { listener: Listener; intervalMs: number }>();
   private timer: ReturnType<typeof setInterval> | null = null;
   private currentIntervalMs = DEFAULT_INTERVAL_MS;
@@ -110,7 +134,8 @@ class MarketDataStore {
     this.listeners.set(key, { listener, intervalMs: Math.max(MIN_INTERVAL_MS, intervalMs) });
 
     // A late subscriber gets the current snapshot immediately rather than
-    // waiting a full interval to render anything.
+    // waiting a full interval to render anything. This also paints a warm
+    // stale snapshot immediately after a hard reload.
     if (this.state.loaded) listener(this.state);
 
     this.retimeAndStart();
@@ -119,6 +144,8 @@ class MarketDataStore {
     // measured in browser QA, a page whose components mount in sequence
     // was otherwise issuing one snapshot request per subscriber (five on
     // the terminal) before the first interval had even elapsed.
+    // A browser warm cache never counts as a network load, because
+    // lastLoadedAt remains zero until apply() sees a real response.
     if (this.needsRefresh()) void this.refresh();
 
     return () => {
@@ -131,10 +158,10 @@ class MarketDataStore {
     };
   }
 
-  /** True when the held snapshot is missing or older than the current
-   *  poll cadence. */
+  /** True when the held NETWORK snapshot is missing or older than the
+   *  current poll cadence. */
   private needsRefresh(): boolean {
-    return !this.state.loaded || Date.now() - this.lastLoadedAt >= this.currentIntervalMs;
+    return this.lastLoadedAt === 0 || Date.now() - this.lastLoadedAt >= this.currentIntervalMs;
   }
 
   /**
@@ -161,7 +188,8 @@ class MarketDataStore {
   }
 
   private apply(snapshot: MarketSnapshotResponse): void {
-    this.lastLoadedAt = Date.now();
+    const now = Date.now();
+    this.lastLoadedAt = now;
     const next: MarketState = { ...this.state, status: 'ready', loaded: true };
 
     if (snapshot.tickers.available) {
@@ -169,6 +197,17 @@ class MarketDataStore {
       for (const ticker of snapshot.tickers.value) map.set(ticker.pair, ticker);
       next.tickers = map;
       next.tickersMeta = { source: snapshot.tickers.source, fetchedAt: snapshot.tickers.fetchedAt, stale: snapshot.tickers.stale };
+
+      // Browser-only write, throttled. No HTTP request, no Render CPU and no
+      // provider call is introduced by this path.
+      if (now - this.lastWarmCacheWriteAt >= WARM_CACHE_WRITE_INTERVAL_MS) {
+        this.lastWarmCacheWriteAt = now;
+        writeSpotWarmCache({
+          tickers: snapshot.tickers.value,
+          source: snapshot.tickers.source,
+          fetchedAt: snapshot.tickers.fetchedAt,
+        }, undefined, now);
+      }
     } else if (!this.state.loaded) {
       // Unavailable on a cold store: an empty map, and `tickersMeta`
       // stays null so a consumer can tell "no data" from "a market with
@@ -226,9 +265,10 @@ class MarketDataStore {
   _resetForTests(): void {
     this.stop();
     this.listeners.clear();
-    this.state = EMPTY_STATE;
+    this.state = { ...EMPTY_STATE, tickers: new Map() };
     this.inFlight = null;
     this.lastLoadedAt = 0;
+    this.lastWarmCacheWriteAt = 0;
     this.currentIntervalMs = DEFAULT_INTERVAL_MS;
   }
 
