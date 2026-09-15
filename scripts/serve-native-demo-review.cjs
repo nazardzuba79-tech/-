@@ -9,6 +9,7 @@ const{nativeDemoRoutes}=require('../dist/private-trading/native/routes');
 const{emptyDemoState}=require('../dist/private-trading/native/engine');
 const{commandHash}=require('../dist/private-trading/native/store');
 const{PrivateTradingMarketData,CollectorPrivateTradingSource}=require('../dist/private-trading/marketData');
+const{CopyPerformanceService}=require('../dist/services/copyTrading/CopyPerformanceService');
 const root=path.resolve(__dirname,'..'),dist=path.join(root,'frontend/dist');
 const fixture=process.env.NATIVE_PREVIEW_FIXTURE==='1';
 const dataDir=path.join(os.tmpdir(),'voltex-native-demo-review');fs.mkdirSync(dataDir,{recursive:true});
@@ -47,6 +48,7 @@ const market=new PrivateTradingMarketData({collector:{url:'http://127.0.0.1',tok
 const sessions=new Map();
 function session(token){if(!/^[a-f0-9]{48}$/.test(token??''))return null;let s=sessions.get(token);if(s)return s;const file=path.join(dataDir,token+'.json');if(fs.existsSync(file)){try{s=JSON.parse(fs.readFileSync(file,'utf8'));sessions.set(token,s);return s;}catch{}}return null;}
 function save(token,s){sessions.set(token,s);const file=path.join(dataDir,token+'.json'),tmp=file+'.tmp';fs.writeFileSync(tmp,JSON.stringify(s));fs.renameSync(tmp,file);}
+function requestSession(req){const token=req.headers.authorization?.replace(/^Bearer /,'');return session(token);}
 class ReviewRepository{
   account(actor){const s=session(actor.sessionId);if(!s||s.userId!==actor.userId)throw new Error('Denied');return s;}
   async read(actor){return structuredClone(this.account(actor).row);}
@@ -56,6 +58,16 @@ class ReviewRepository{
   async initialize(actor,key){const s=this.account(actor);if(s.row)return structuredClone(s.row);const t=now(),row={revision:1,deposit:'10000000',commands:[],snapshot:emptyDemoState('10000000',t),createdAt:t,source:'PREVIEW_FIXTURE'};s.row=row;s.revisions[1]=row;s.commands[key]={hash:commandHash({kind:'INITIALIZE'}),row};save(actor.sessionId,s);return structuredClone(row);}
   async commit(actor,expected,next,key,hash){const s=this.account(actor),prior=await this.prior(actor,key,hash);if(prior)return prior;if(s.row?.revision!==expected)throw new Error('ACCOUNT_CHANGED');const row=structuredClone({...next,revision:expected+1});s.row=row;s.revisions[row.revision]=row;s.commands[key]={hash,row};save(actor.sessionId,s);return structuredClone(row);}
 }
+// Copy Trading preview uses the exact canonical synthetic performance service,
+// but an in-memory persistence adapter: no production DB, users, balances,
+// copy execution or admin data are reachable from this review server.
+const performanceRows=new Map();
+const performanceDb={copyPerformanceScenario:{
+  async findUnique({where}){const row=performanceRows.get(where.id);return row?structuredClone(row):null;},
+  async create({data}){if(performanceRows.has(data.id)){const e=new Error('duplicate');e.code='P2002';throw e;}const row={...data,revision:0};performanceRows.set(data.id,row);return structuredClone(row);},
+  async updateMany({where,data}){const row=performanceRows.get(where.id);if(!row||row.revision!==where.revision)return{count:0};performanceRows.set(where.id,{...row,revision:row.revision+1,stateText:data.stateText,simulatedAt:data.simulatedAt});return{count:1};},
+}};
+const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
 const service=new NativeDemoService(new ReviewRepository(),market);
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,commit:process.env.RENDER_GIT_COMMIT??null}));
@@ -85,6 +97,11 @@ app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();co
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));
 app.get('/api/v1/me',(_req,res)=>res.json({id:'preview-only',email:'preview.invalid',displayName:'Demo Preview',phone:null,country:null,avatarUrl:null,isAdmin:true,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:new Date(started).toISOString()}));
+app.get('/api/v1/copy-trading/marketplace',asyncRoute(async(req,res)=>{
+  if(!requestSession(req))return res.status(401).json({error:'Preview session required'});
+  const[nazar,ksenia]=await Promise.all([copyPerformance.get('nazar'),copyPerformance.get('ksenia')]);
+  res.json({nazar,ksenia,identities:[null,null],generatedAt:new Date().toISOString(),errors:{}});
+}));
 // The preview cannot reach any real account writes.
 app.use('/api',(_req,res)=>res.status(403).json({error:'Endpoint unavailable in isolated preview'}));
 app.use(express.static(dist,{index:false,maxAge:0}));
