@@ -294,6 +294,12 @@ export function futuresRouter(
           liquidationPrice: p.liquidationPrice.toString(),
           markPrice: markPrice?.toString() ?? null,
           unrealizedPnl: unrealizedPnl?.toString() ?? null,
+          // What this position has ALREADY banked — partial closes and
+          // anything else settled into it. Reported alongside the
+          // unrealized figure, never merged into it: they are different
+          // money, and adding them would double-count a partial close that
+          // is already out of the remaining size.
+          realizedPnl: p.realizedPnl.toString(),
           roe: roe ? roe.times(100).toString() : null,
           openedAt: p.openedAt,
           // Real, persisted trigger state — never an echo of something the

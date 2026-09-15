@@ -172,6 +172,19 @@ describe('the adapter projects native state into the terminal shapes', () => {
     expect(JSON.stringify(draft)).not.toContain('"price"');
   });
 
+  test('the chart marker and the table row are the SAME position', () => {
+    // The adapter keeps the engine's own position id, and the chart overlay
+    // is built from the same id (useNativeDemo -> interaction.trades), so a
+    // marker on the chart and a row in the table cannot refer to different
+    // positions. The card button is keyed by that id too.
+    expect(adapter.nativePositionToTerminal(position).id).toBe(position.id);
+    const hook = readFileSync(resolve(frontend, 'src/pages/private-trading/useNativeDemo.tsx'), 'utf8');
+    expect(hook).toContain('trades:ChartTradeOverlay[]');
+    expect(hook).toMatch(/\.map\(p=>\{[\s\S]{0,400}id:p\.id,/);
+    const exec = readFileSync(resolve(frontend, 'src/lib/useNativeFuturesExecution.ts'), 'utf8');
+    expect(exec).toContain('showPnlCard: (positionId: string) => { void native.showCard(positionId); }');
+  });
+
   test('symbols round-trip between the two namings', () => {
     for (const pair of ['BTC/USDT', 'ETH/USDT', '1000PEPE/USDT', 'SOL/USDT']) {
       expect(adapter.nativeSymbolToPair(adapter.pairToNativeSymbol(pair))).toBe(pair);

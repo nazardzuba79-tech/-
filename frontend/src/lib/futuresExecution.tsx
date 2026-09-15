@@ -63,6 +63,9 @@ export interface FuturesExecution {
   closePosition(positionId: string): Promise<void>;
   setProtection(positionId: string, body: { takeProfit: string | null; stopLoss: string | null }): Promise<void>;
   clearProtection(positionId: string): Promise<void>;
+  /** Open this position's P&L card. Absent where no card service exists,
+   *  so the button is not rendered rather than rendered dead. */
+  showPnlCard?: (positionId: string) => void;
   /** Tell whichever source backs this terminal that the account changed. */
   refresh(resources?: ResourceKey[]): void;
 }

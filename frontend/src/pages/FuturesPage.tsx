@@ -141,6 +141,9 @@ export function FuturesPage() {
    * it, and it is not persisted anywhere — it is the state of a toolbar.
    */
   const [chartTrading, setChartTrading] = useState(false);
+  /** A reduce-only close the trader started from the positions table. The
+   *  form fills itself from it; nothing is placed until they submit. */
+  const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number } | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -294,6 +297,7 @@ export function FuturesPage() {
               onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
+              closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
             />
           </div>
         </div>
@@ -323,7 +327,19 @@ export function FuturesPage() {
 
           <div className="bottom-content" id="futures-bottom-content" role="tabpanel" aria-labelledby={`futures-tab-${bottomTab}`} hidden={accountPanel.compact}>
             {bottomTab === 'positions' && (
-              <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />
+              <FuturesPositionsPanel
+                refreshKey={positionsRefreshKey}
+                tab="open"
+                /* "Лимитный" hands the position to the ORDINARY order form
+                   as a reduce-only ticket, priced at the level the trader
+                   then types. It is the form that places it, so this is a
+                   real limit close and not a second order path. */
+                onLimitClose={(position) => {
+                  setSymbol(position.symbol);
+                  pickedSeq.current += 1;
+                  setCloseTicket({ symbol: position.symbol, side: position.side, size: position.size, seq: pickedSeq.current });
+                }}
+              />
             )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
             {bottomTab === 'orders' && <FuturesOrdersPanel refreshKey={positionsRefreshKey} />}

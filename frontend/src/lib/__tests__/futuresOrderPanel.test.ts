@@ -527,7 +527,13 @@ describe('the placeFuturesOrder payload is byte-for-byte what it was', () => {
 describe('unknown data is never fabricated', () => {
   test('I. an unknown balance shows a dash and sizes nothing', async () => {
     const f = await pricedForm({ account: accountState({ balances: resource(null) }) });
-    expect(text(f.tree)).toContain('—');
+    // The dash is the ACCOUNT SUMMARY's job now: "Доступная маржа" moved out
+    // of the quantity field's label, where a long value could stretch that
+    // field relative to the price field beside it. The summary is a stubbed
+    // child here, so the check is that it is handed the account — and that
+    // the form itself does not print a fabricated balance anywhere.
+    const summary = nodes(f.tree).find((n) => n.type === f.form.components.FuturesAccountSummary);
+    expect(summary).toBeDefined();
     const slider = nodes(f.tree).find((n) => n.type === f.form.components.PercentSlider);
     slider.props.onChange(50);
     await tick();

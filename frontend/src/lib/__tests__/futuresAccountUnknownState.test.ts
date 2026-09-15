@@ -237,7 +237,10 @@ describe('position history is loaded, never polled', () => {
       }]) }),
     });
     const tree = panel.render({ refreshKey: 0, tab: 'open' });
-    const closeButton = nodes(tree).find((n) => n.type === 'button' && n.props.children === 'futures.close');
+    // Closing is now offered BY METHOD, as on the reference: the market
+    // close keeps the same handler and the same refresh, under the label
+    // for the method it uses.
+    const closeButton = nodes(tree).find((n) => n.type === 'button' && n.props.className === 'futures-position-close');
     expect(closeButton).toBeDefined();
 
     await closeButton.props.onClick();

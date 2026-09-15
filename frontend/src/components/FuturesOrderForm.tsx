@@ -38,6 +38,7 @@ export function FuturesOrderForm({
   pickedPrice,
   pickedPriceSequence,
   executionEnabled = true,
+  closeTicket,
 }: {
   symbol: string;
   onPlaced: () => void;
@@ -49,6 +50,11 @@ export function FuturesOrderForm({
   pickedPriceSequence?: number;
   /** Discovery is broader than the server's execution whitelist. */
   executionEnabled?: boolean;
+  /** A reduce-only close started from the positions table: the form fills
+   *  in the direction and the quantity, and the trader prices it. Nothing
+   *  is placed until they press the button, exactly as for any other
+   *  order. */
+  closeTicket?: { side: 'LONG' | 'SHORT'; size: string; seq: number };
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -66,6 +72,17 @@ export function FuturesOrderForm({
     }
   }, [pickedPrice, pickedPriceSequence]);
   const [quantity, setQuantity] = useState('');
+  /** A close requested from the positions table fills the ticket in, in
+   *  reduce-only LIMIT, sized at the position. The trader still types the
+   *  price and still presses the button. */
+  useEffect(() => {
+    if (!closeTicket) return;
+    setType('LIMIT');
+    setFamily('LIMIT');
+    setReduceOnly(true);
+    setQuantity(closeTicket.size);
+    setPercent(0);
+  }, [closeTicket?.seq]);
   const [percent, setPercent] = useState(0);
   /**
    * The leverage the TRADER asked for. What the order actually uses is
@@ -491,10 +508,19 @@ export function FuturesOrderForm({
         />
 
         <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={quoteAsset} />
+        {/* PRICE AND QUANTITY ARE ONE FIELD SHAPE, TWICE.
+            Both are `fo-field`: the same outer box, the same caption inside
+            at the top left, the same trailing element inside at the right.
+            Neither the "Последняя" button nor the unit changes the box —
+            they sit in a fixed-width trailing slot inside it, which is what
+            keeps the two fields' outer width and height equal to the pixel
+            whatever either one contains. The caption used to sit ABOVE the
+            quantity field and INSIDE the price field, which is exactly why
+            the two were different heights. */}
         {family === 'LIMIT' ? (
-          <label className="fo-label fo-priceField">
+          <label className="fo-label fo-field fo-priceField">
             <span className="fo-fieldCaption">{t('trade.price')}</span>
-            <div className="fo-priceInputRow">
+            <div className="fo-fieldRow fo-priceInputRow">
               <input
                 className="mono fo-input"
                 type="number"
@@ -504,35 +530,34 @@ export function FuturesOrderForm({
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
               />
-              {markPrice !== null && (
-                <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
-                  {t('trade.lastPriceBtn')}
-                </button>
-              )}
+              <span className="fo-fieldTrailing">
+                {markPrice !== null && (
+                  <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
+                    {t('trade.lastPriceBtn')}
+                  </button>
+                )}
+              </span>
             </div>
           </label>
         ) : family === 'MARKET' ? (
-          <label className="fo-label fo-priceField">
+          <label className="fo-label fo-field fo-priceField">
             <span className="fo-fieldCaption">{t('futures.markPrice')}</span>
-            <div className="mono fo-input fo-markPrice">
-              {markPrice !== null ? `≈ ${markPrice}` : '—'} {quoteAsset}
+            <div className="fo-fieldRow fo-priceInputRow">
+              <div className="mono fo-input fo-markPrice">
+                {markPrice !== null ? `≈ ${markPrice}` : '—'}
+              </div>
+              <span className="fo-fieldTrailing"><span className="fo-unit">{quoteAsset}</span></span>
             </div>
           </label>
         ) : null}
 
-        <label className="fo-label">
-          <span className="fo-qtyLabelRow">
-            {t('trade.quantity')}
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
-              {t('futures.availableMargin')}: {availableMargin === null ? '—' : availableMargin.toFixed(2)} {quoteAsset}
-            </span>
-          </span>
-          {/* The unit sits INSIDE the field, as on every derivatives panel.
-              It is a label, not a selector: this form trades one contract,
-              the one the page is on, so a dropdown here would offer a
-              choice that does not exist. Changing the pair is the pair
-              list's job. */}
-          <div className="fo-qtyInputRow">
+        <label className="fo-label fo-field">
+          <span className="fo-fieldCaption">{t('trade.quantity')}</span>
+          {/* The unit is a label, not a selector: this form trades one
+              contract, the one the page is on, so a dropdown here would
+              offer a choice that does not exist. Changing the pair is the
+              pair list's job. */}
+          <div className="fo-fieldRow fo-qtyInputRow">
             <input
               className="mono fo-input"
               type="number"
@@ -545,7 +570,7 @@ export function FuturesOrderForm({
               }}
               placeholder="0.00000"
             />
-            <span className="fo-unit">{baseAsset}</span>
+            <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
         </label>
 
@@ -658,7 +683,12 @@ export function FuturesOrderForm({
         </div>
       </form>
 
-      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
+      {/* The compact account summary sits directly under the order buttons,
+          and it is the ONE place the account's margin figures are stated —
+          which is why "Доступная маржа" no longer rides along in the
+          quantity field's label, where it could stretch that field
+          relative to the price field beside it. */}
+      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} marginType={marginType} onOpenTransfer={onOpenTransfer} />
 
       {config && (
         <details className="fo-tiersBox">

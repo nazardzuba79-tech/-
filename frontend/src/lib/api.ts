@@ -1357,6 +1357,11 @@ export const api = {
         liquidationPrice: string | null;
         markPrice: string | null;
         unrealizedPnl: string | null;
+        /** Already banked on this position — partial closes and anything
+         *  else settled into it. A SEPARATE figure from `unrealizedPnl`:
+         *  the two are never summed, because the size that produced this
+         *  is no longer part of the size that produces that. */
+        realizedPnl: string;
         roe: string | null;
         openedAt: string;
         /** Real, server-held TP/SL for this position. `null` on a side is

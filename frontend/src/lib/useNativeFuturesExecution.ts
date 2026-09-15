@@ -119,11 +119,13 @@ export function useNativeFuturesExecution(
         const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: null, stopLoss: null } });
         if (!ok) throw new Error(native.error || 'TP/SL не сняты');
       },
+      // The frozen result snapshot this account already produces.
+      showPnlCard: (positionId: string) => { void native.showCard(positionId); },
       // The native engine answers every command with the WHOLE account, so
       // a command has already refreshed what a real refresh would fetch.
       // An explicit refresh is still honoured — it is how the panel's own
       // reload button and the terminal's post-trade nudge reach the engine.
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [requested, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, contract]);
+  }, [requested, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, contract, native.showCard]);
 }

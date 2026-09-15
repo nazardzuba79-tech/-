@@ -490,9 +490,10 @@ describe('futures-only, and wired into the positions table', () => {
     const panelSource = source(PANEL);
     expect(panelSource).toContain('FuturesPositionProtectionCell');
     expect(panelSource).toContain('protection={p.protection ?? null}');
-    // The refresh after a mutation goes through the shared store, so no new
-    // polling is introduced anywhere.
-    expect(panelSource).toContain("refreshFuturesAccount(['positions'])");
+    // The refresh after a mutation goes through the terminal's execution
+    // adapter, whose REAL implementation is the shared store's own
+    // refreshFuturesAccount — so no new polling is introduced anywhere.
+    expect(panelSource).toContain("onSaved={() => execution.refresh(['positions'])}");
     expect(panelSource).not.toContain('setInterval');
   });
 

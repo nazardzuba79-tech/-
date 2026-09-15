@@ -106,6 +106,11 @@ export function nativePositionToTerminal(position: NativePosition): FuturesPosit
     liquidationPrice: position.liquidationPrice,
     markPrice: position.markPrice,
     unrealizedPnl: position.unrealizedPnl,
+    // The engine already reports these apart; they stay apart. `netPnl` is
+    // deliberately NOT used for an open row — it is the closed result, and
+    // it already contains the fees and funding the realized figure carries,
+    // so showing it here would count them twice.
+    realizedPnl: position.realizedPnl,
     roe: position.roiPercent,
     openedAt: new Date(position.openedAt).toISOString(),
     // The native engine keeps TP/SL as prices on the position rather than
