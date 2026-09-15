@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useContext } from 'react';
 import { futuresAccountStore, type FuturesAccountState, type ResourceKey } from './futuresAccountStore';
+import { FuturesAccountSourceContext } from './futuresAccountSource';
 
 /**
  * Read authenticated Futures account state from the one shared store.
@@ -15,6 +16,17 @@ import { futuresAccountStore, type FuturesAccountState, type ResourceKey } from 
  * does not keep a timer alive for it.
  */
 export function useFuturesAccount(wants: Partial<Record<ResourceKey, number>>): FuturesAccountState {
+  /**
+   * An account whose terminal is backed by something other than the real
+   * futures endpoints supplies its own state through this context (see
+   * lib/futuresExecution). It is read FIRST and the store is then not
+   * subscribed to at all, so the real endpoints are never polled for such
+   * an account — not merely ignored after the fact.
+   *
+   * `null`, which is what every ordinary account sees, leaves this hook
+   * exactly as it was.
+   */
+  const override = useContext(FuturesAccountSourceContext);
   const [state, setState] = useState<FuturesAccountState>(() => futuresAccountStore.getState());
 
   // The caller writes `{ positions: 4000 }` inline, so identity changes on
@@ -25,9 +37,12 @@ export function useFuturesAccount(wants: Partial<Record<ResourceKey, number>>): 
 
   const stable = useMemo(() => JSON.parse(key) as Partial<Record<ResourceKey, number>>, [key]);
 
-  useEffect(() => futuresAccountStore.subscribe(setState, stable), [stable]);
+  useEffect(() => {
+    if (override) return;
+    return futuresAccountStore.subscribe(setState, stable);
+  }, [stable, override]);
 
-  return state;
+  return override ?? state;
 }
 
 /** Refresh account resources now — call after an action that really did

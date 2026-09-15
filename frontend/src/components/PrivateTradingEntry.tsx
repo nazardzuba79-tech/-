@@ -13,5 +13,5 @@ export function PrivateTradingEntry(){
     const stop=onSessionChange(()=>{active=false;controller.abort();setAllowed(false);clearInterval(timer);});
     return()=>{active=false;controller.abort();clearInterval(timer);stop();};
   },[]);
-  return allowed?<Link to="/futures?privateTrading=1" title="Приватный режим" aria-label="Открыть приватный режим" style={{display:'inline-flex',alignItems:'center',gap:6,color:'#e9c578',fontSize:12,textDecoration:'none'}}><LockKeyhole size={15}/><span>Приватный</span></Link>:null;
+  return allowed?<Link to="/futures?demo=1" title="Приватный режим" aria-label="Открыть приватный режим" style={{display:'inline-flex',alignItems:'center',gap:6,color:'#e9c578',fontSize:12,textDecoration:'none'}}><LockKeyhole size={15}/><span>Приватный</span></Link>:null;
 }

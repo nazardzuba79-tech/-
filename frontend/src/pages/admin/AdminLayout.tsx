@@ -11,7 +11,6 @@ import {
   ShieldCheckIcon,
   ArrowUpCircleIcon,
   ArrowDownCircleIcon,
-  LayoutDashboardIcon,
   ScrollTextIcon,
   BellIcon,
   MenuIcon,
@@ -20,7 +19,7 @@ import {
 } from './AdminIcons';
 
 const SECTIONS = [
-  { to: '/admin', label: 'Обзор', icon: LayoutDashboardIcon, group: 'Обзор' },
+  // No Обзор section: /admin opens Пользователи directly (see App.tsx).
   { to: '/admin/users', label: 'Пользователи', icon: UsersIcon, group: 'Управление' },
   { to: '/admin/wallets', label: 'Адреса пополнения', icon: WalletIcon, group: 'Средства' },
   { to: '/admin/deposits', label: 'Пополнения', icon: ArrowDownCircleIcon, group: 'Средства' },
@@ -44,7 +43,7 @@ export function AdminLayout() {
   if (status === 'loading') return <div style={styles.loadingScreen} />;
   if (status === 'denied') return <Navigate to="/" replace />;
 
-  const activeSection = SECTIONS.find((s) => (s.to === '/admin' ? location.pathname === s.to : location.pathname.startsWith(s.to)));
+  const activeSection = SECTIONS.find((s) => location.pathname.startsWith(s.to));
   const identity = me?.displayName || me?.email?.split('@')[0] || 'Admin';
   const initials = identity
     .split(/[\s._-]+/)

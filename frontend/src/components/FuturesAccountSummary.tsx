@@ -15,10 +15,15 @@ type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
 export function FuturesAccountSummary({
   quoteAsset,
   config,
+  marginType,
   onOpenTransfer,
 }: {
   quoteAsset: string;
   config: FuturesConfig;
+  /** The margin mode this account actually settles in. Stated here because
+   *  it is the first thing the summary has to say about the account: the
+   *  margin figures below mean different things under Cross and Isolated. */
+  marginType?: 'ISOLATED' | 'CROSS';
   onOpenTransfer?: () => void;
 }) {
   const { t } = useLanguage();
@@ -98,6 +103,11 @@ export function FuturesAccountSummary({
           {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
         </span>
       </div>
+
+      {marginType && <div className="futures-account-stat futures-account-mode" style={styles.statRow}>
+        <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginType')}</span>
+        <span>{t(marginType === 'ISOLATED' ? 'futures.isolated' : 'futures.cross')}</span>
+      </div>}
 
       <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>

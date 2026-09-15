@@ -7,6 +7,6 @@ const PrivateTradingPage=lazy(()=>import('./private-trading/PrivateTradingPage')
 export function FuturesRoute(){
   const[params]=useSearchParams();
   return <Suspense fallback={<div role="status">Загрузка…</div>}>
-    {params.get('privateTrading')==='1'?<PrivateTradingPage/>:<FuturesPage/>}
+    {params.get('card')?<PrivateTradingPage/>:<FuturesPage/>}
   </Suspense>;
 }

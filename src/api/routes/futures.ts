@@ -16,6 +16,7 @@ import {
   FUNDING_INTERVAL_HOURS,
 } from '../../config/futuresConfig';
 import { requireAuthOrApiKey, requireTradePermission, ApiAuthedRequest } from '../middleware/apiKeyAuth';
+import { isSimulationOnlyUser } from '../../private-trading/access';
 
 const placeOrderSchema = z
   .object({
@@ -71,6 +72,30 @@ const transferSchema = z.object({
  * separate underneath (own tables, own MatchingEngine instance, own
  * services) per FuturesOrder/FuturesBalance's schema comments.
  */
+
+/**
+ * A SIMULATION-ONLY ACCOUNT NEVER REACHES THIS ENGINE.
+ *
+ * The pinned private-trading owner trades against the NativeDemo engine,
+ * and that is decided on the server — there is no mode to switch and no
+ * query parameter to drop, so a hand-written request or an edited frontend
+ * must land here and be refused.
+ *
+ * It guards every route that can move money or rest liquidity: placing and
+ * cancelling orders, closing positions, protection writes and transfers.
+ * Reads are untouched — the account still sees the same public market data
+ * everyone else does.
+ *
+ * Deliberately BEFORE the body is parsed and before any service call, so a
+ * refusal cannot have written anything. Every other user passes straight
+ * through.
+ */
+const refuseSimulationOnly = (req: ApiAuthedRequest, res: Response): boolean => {
+  if (!isSimulationOnlyUser(req.userId)) return false;
+  res.status(403).json({ error: 'Этот аккаунт торгует только в симуляции' });
+  return true;
+};
+
 export function futuresRouter(
   prisma: PrismaClient,
   engine: MatchingEngine,
@@ -97,6 +122,7 @@ export function futuresRouter(
   });
 
   router.post('/futures/orders', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     const parsed = placeOrderSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -133,6 +159,7 @@ export function futuresRouter(
   });
 
   router.delete('/futures/orders/:orderId', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     const cancelled = await positionService.cancelOrder(req.userId!, req.params.orderId);
     if (!cancelled) return res.status(404).json({ error: 'Order not found or not cancellable' });
     res.status(204).send();
@@ -267,6 +294,12 @@ export function futuresRouter(
           liquidationPrice: p.liquidationPrice.toString(),
           markPrice: markPrice?.toString() ?? null,
           unrealizedPnl: unrealizedPnl?.toString() ?? null,
+          // What this position has ALREADY banked — partial closes and
+          // anything else settled into it. Reported alongside the
+          // unrealized figure, never merged into it: they are different
+          // money, and adding them would double-count a partial close that
+          // is already out of the remaining size.
+          realizedPnl: p.realizedPnl.toString(),
           roe: roe ? roe.times(100).toString() : null,
           openedAt: p.openedAt,
           // Real, persisted trigger state — never an echo of something the
@@ -304,6 +337,7 @@ export function futuresRouter(
   // remaining size in the closing direction. Uses the same order-placement
   // path as everything else — no separate "force close" code path to trust.
   router.post('/futures/positions/:positionId/close', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     const position = await prisma.futuresPosition.findUnique({ where: { id: req.params.positionId } });
     if (!position || position.userId !== req.userId || position.status !== 'OPEN') {
       return res.status(404).json({ error: 'Position not found or not open' });
@@ -352,6 +386,7 @@ export function futuresRouter(
   });
 
   router.put('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     const parsed = protectionSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { takeProfit, stopLoss } = parsed.data;
@@ -367,6 +402,7 @@ export function futuresRouter(
   });
 
   router.delete('/futures/positions/:positionId/protection', requireAuthOrApiKey(prisma), requireTradePermission, async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     try {
       await protectionService.clearProtection(req.userId!, req.params.positionId);
       res.status(204).send();
@@ -384,6 +420,7 @@ export function futuresRouter(
   // the user always chooses when collateral crosses between the two
   // wallets (see FuturesBalance's schema comment on why they're separate).
   router.post('/futures/transfer', requireAuthOrApiKey(prisma), async (req: ApiAuthedRequest, res) => {
+    if (refuseSimulationOnly(req, res)) return;
     const parsed = transferSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const { asset, amount, direction } = parsed.data;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { api, ApiError, type FuturesProtectionTrigger } from '../lib/api';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import { useLanguage } from '../lib/i18n';
 
 /** The editor's own box, in CSS pixels. Used to decide whether it fits
@@ -39,6 +40,7 @@ export function FuturesPositionProtectionCell({
   protection: PositionProtection | null;
   onSaved: () => void;
 }) {
+  const execution = useFuturesExecution();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [takeProfit, setTakeProfit] = useState('');
@@ -138,7 +140,7 @@ export function FuturesPositionProtectionCell({
     try {
       // An empty field is an explicit "no trigger on this side". PUT
       // replaces the whole protection, so this is how one leg is removed.
-      await api.setFuturesPositionProtection(positionId, {
+      await execution.setProtection(positionId, {
         takeProfit: takeProfit.trim() === '' ? null : takeProfit.trim(),
         stopLoss: stopLoss.trim() === '' ? null : stopLoss.trim(),
       });
@@ -158,7 +160,7 @@ export function FuturesPositionProtectionCell({
     setSaving(true);
     setError(null);
     try {
-      await api.clearFuturesPositionProtection(positionId);
+      await execution.clearProtection(positionId);
       setOpen(false);
       onSaved();
     } catch (err) {

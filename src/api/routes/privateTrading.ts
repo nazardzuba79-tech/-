@@ -1,3 +1,6 @@
+import { NativeDemoService } from '../../private-trading/native/service';
+import { PrismaNativeRepository } from '../../private-trading/native/store';
+import { nativeDemoRoutes } from '../../private-trading/native/routes';
 import { Router, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';
@@ -8,6 +11,7 @@ import { requireAuth, AuthedRequest } from '../middleware/auth';
 import { PrivateTradingService } from '../../private-trading/service';
 import { OwnerSession, PrivateTradingError, TradeRequest } from '../../private-trading/serviceTypes';
 import { PrivateMarketDataError } from '../../private-trading/marketData';
+import { isSimulationOnlyUser } from '../../private-trading/access';
 
 const signed = z.string().max(60).regex(/^-?\d{1,18}(?:\.\d{1,18})?$/).refine(v => new BigNumber(v).isFinite());
 const positive = signed.refine(v => new BigNumber(v).gt(0));
@@ -60,7 +64,18 @@ export function privateTradingRouter(prisma: PrismaClient, service: PrivateTradi
   const handle = (run: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) => {
     void run(req, res).then(result => { if (!res.headersSent) res.json(result); }).catch(next);
   };
-  router.get('/private-trading/access', handle(async () => ({ allowed: true, mode: 'PRIVATE_SIMULATION' })));
+  // Same pinned owner configuration as the route gate; every repository read/write re-checks it.
+  const native = service.market ? new NativeDemoService(new PrismaNativeRepository(prisma, service.store?.config), service.market) : null;
+  // `simulationOnly` is what lets the terminal render as an ordinary Futures
+  // page with no mode switch: the SERVER states that this account trades the
+  // native engine, so the client never has to be told by a query parameter.
+  // It is the same pinned configuration the real futures routes refuse on, so
+  // the two can never disagree.
+  router.get('/private-trading/access', handle(async (_req, res) => ({
+    allowed: true, mode: 'PRIVATE_SIMULATION', nativeAvailable: !!native,
+    simulationOnly: !!native && isSimulationOnlyUser(actor(res).userId),
+  })));
+  if (native) router.use('/private-trading/native', nativeDemoRoutes(native, actor));
   router.get('/private-trading/state', handle(async (_req, res) => service.state(actor(res))));
   router.get('/private-trading/market', handle(async (req, res) => service.getMarket(actor(res), z.string().min(1).max(40).parse(req.query.symbol))));
   router.get('/private-trading/candles', handle(async (req, res) => {

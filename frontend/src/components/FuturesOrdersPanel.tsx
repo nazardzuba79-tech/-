@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { api } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { refreshFuturesAccount, useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import { formatOrderDecimal, formatOrderDifference, spotOrderStatus } from './spotOrderPresentation';
 
 /** Account-wide orders. History is the endpoint's latest 100 orders, not fills. */
 export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: boolean; refreshKey: number }) {
   const { t } = useLanguage();
   const account = useFuturesAccount(history ? {} : { orders: 5000 });
+  const execution = useFuturesExecution();
   const key = history ? 'orderHistory' : 'orders';
   const resource = account[key];
   const [cancelling, setCancelling] = useState<string | null>(null);
@@ -21,8 +22,8 @@ export function FuturesOrdersPanel({ history = false, refreshKey }: { history?: 
     setCancelling(id);
     setCancelFailed(false);
     try {
-      await api.cancelFuturesOrder(id);
-      refreshFuturesAccount(['orders', 'orderHistory', 'balances']);
+      await execution.cancelOrder(id);
+      execution.refresh(['orders', 'orderHistory', 'balances']);
     } catch { setCancelFailed(true); }
     finally { setCancelling(null); }
   }

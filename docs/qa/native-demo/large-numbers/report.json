@@ -1,0 +1,48 @@
+{
+  "fixtureOnly": true,
+  "scope": "synthetic large financial values through the actual terminal components",
+  "checks": [
+    {
+      "name": "tables-and-totals-1440",
+      "passed": true,
+      "cases": 12
+    },
+    {
+      "name": "card-geometry-1440",
+      "passed": true,
+      "cases": 6,
+      "bags": [
+        {
+          "w": 186,
+          "h": 226
+        },
+        {
+          "w": 153,
+          "h": 185
+        }
+      ]
+    },
+    {
+      "name": "tables-and-totals-390",
+      "passed": true,
+      "cases": 12
+    },
+    {
+      "name": "card-geometry-390",
+      "passed": true,
+      "cases": 6,
+      "bags": [
+        {
+          "w": 186,
+          "h": 226
+        },
+        {
+          "w": 153,
+          "h": 185
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "passed": true
+}

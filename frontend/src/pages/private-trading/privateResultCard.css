@@ -1,9 +1,88 @@
 /* Portrait preview only; exported PNG dimensions are fixed by the renderer. */
 dialog.private-card-dialog {
-  width: min(600px, calc(100vw - 32px));
+  /* THE CARD MUST FIT THE SCREEN, WHOLE.
+     It is a tall portrait image opened from a terminal whose panels are
+     themselves scroll containers, so it is laid out against the VIEWPORT:
+     a top-layer <dialog> already escapes every parent's overflow and
+     stacking context, and these bounds keep the artwork inside the window
+     instead of running off the bottom of a short laptop screen. */
+  /* A SHARE CARD, NOT A POSTER.
+     Bybit shows its P&L card at roughly a phone's width even on a desktop,
+     so the artwork reads at a glance instead of filling the screen. 360px of
+     dialog minus 2x14 padding puts the card itself at ~332px wide, ~374px
+     tall at its 1080:1215 aspect — the whole card visible, never clipped. */
+  width: min(360px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: min(88dvh, calc(100dvh - 32px));
+  margin: auto;                 /* centred both ways in the top layer */
+  padding: 14px;
+  overflow: auto;               /* a very short window scrolls rather than clips */
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  background: #16161a;
+  color: #eaecef;
+  box-sizing: border-box;
+}
+dialog.private-card-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(2px);
 }
 dialog.private-card-dialog img {
+  display: block;
+  width: 100%;
   height: auto;
-  max-height: calc(100dvh - 190px);
+  /* The header and the action row below the artwork are part of the same
+     budget, so the image gets the rest of the viewport, never more. The
+     75dvh cap is what keeps the card whole on a short laptop window. */
+  max-height: min(75dvh, calc(100dvh - 150px));
   object-fit: contain;
+  margin-inline: auto;
+  border-radius: 8px;
+}
+/* The dialog is opened from the Futures terminal as well as from the
+   private page, and only THIS stylesheet travels with the component: its
+   chrome has to be laid out here, or the title and the close button pile up
+   on top of each other wherever privateTrading.css is not loaded. Values
+   match that stylesheet, so the private page renders the same either way. */
+dialog.private-card-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+dialog.private-card-dialog header button {
+  display: flex;
+  background: none;
+  border: 0;
+  color: #cedce8;
+  cursor: pointer;
+  padding: 5px;
+}
+dialog.private-card-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+dialog.private-card-dialog footer :is(button, a) {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 15px;
+  border: 1px solid #3b5063;
+  border-radius: 7px;
+  background: #20313f;
+  color: #dce8f2;
+  text-decoration: none;
+  cursor: pointer;
+}
+dialog.private-card-dialog footer .primary { color: #131d26; background: #eac365; }
+dialog.private-card-dialog [role=alert] { color: #ffaeb9; font-size: 12px; }
+@media (max-width: 480px) {
+  dialog.private-card-dialog { width: calc(100vw - 16px); max-width: calc(100vw - 16px); padding: 10px; }
+  dialog.private-card-dialog img { max-height: min(72dvh, calc(100dvh - 130px)); }
+  dialog.private-card-dialog footer { justify-content: stretch; }
+  dialog.private-card-dialog footer :is(button, a) { flex: 1; justify-content: center; }
 }

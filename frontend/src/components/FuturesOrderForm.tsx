@@ -5,14 +5,31 @@ import { useToast } from '../lib/toast';
 import { FuturesMarginLeverage } from './FuturesMarginLeverage';
 import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
-import { getLeverageTier, previewLiquidationPrice, projectFuturesExposureNotional } from '../lib/futuresMath';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesExecution } from '../lib/futuresExecution';
+import {
+  getLeverageTier,
+  previewLiquidationPrice,
+  projectFuturesExposureNotional,
+  maxAffordableNotional,
+  floorToDecimals,
+  fitQuantityToContract,
+  stepDecimals,
+  QUANTITY_DECIMALS,
+} from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
 import { OrderFamilyTabs, OrderFamilyFields, type OrderFamily } from './OrderFamilyPresentation';
 
 /** Owner-approved position-size presets. The track still snaps to 0 as
  *  well, so the size can be dragged back to nothing. */
 const SIZE_PRESETS = [0, 25, 50, 75, 100];
+
+/** The contract rule a refusal names, in the trader's language. */
+const CONTRACT_LIMIT_LABEL = {
+  minOrderQty: 'futures.limitMinQty',
+  minNotionalValue: 'futures.limitMinNotional',
+  qtyStep: 'futures.limitQtyStep',
+} as const;
 
 export function FuturesOrderForm({
   symbol,
@@ -21,6 +38,7 @@ export function FuturesOrderForm({
   pickedPrice,
   pickedPriceSequence,
   executionEnabled = true,
+  closeTicket,
 }: {
   symbol: string;
   onPlaced: () => void;
@@ -32,6 +50,11 @@ export function FuturesOrderForm({
   pickedPriceSequence?: number;
   /** Discovery is broader than the server's execution whitelist. */
   executionEnabled?: boolean;
+  /** A reduce-only close started from the positions table: the form fills
+   *  in the direction and the quantity, and the trader prices it. Nothing
+   *  is placed until they press the button, exactly as for any other
+   *  order. */
+  closeTicket?: { side: 'LONG' | 'SHORT'; size: string; seq: number };
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -49,9 +72,31 @@ export function FuturesOrderForm({
     }
   }, [pickedPrice, pickedPriceSequence]);
   const [quantity, setQuantity] = useState('');
+  /** A close requested from the positions table fills the ticket in, in
+   *  reduce-only LIMIT, sized at the position. The trader still types the
+   *  price and still presses the button. */
+  useEffect(() => {
+    if (!closeTicket) return;
+    setType('LIMIT');
+    setFamily('LIMIT');
+    setReduceOnly(true);
+    setQuantity(closeTicket.size);
+    setPercent(0);
+  }, [closeTicket?.seq]);
   const [percent, setPercent] = useState(0);
-  const [leverage, setLeverage] = useState(10);
-  const [marginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
+  /**
+   * The leverage the TRADER asked for. What the order actually uses is
+   * `leverage` below — this capped by the live tier ceiling.
+   *
+   * Holding the request separately is what stops the ceiling from being a
+   * one-way ratchet. When the clamp wrote back into this value, a single
+   * large size permanently rewrote a 100x selection to 50x: shrink the
+   * order again and the ceiling rose, but the selection did not, so the
+   * panel went on sizing and charging at a leverage the trader had never
+   * chosen and could not get back without reloading the page.
+   */
+  const [requestedLeverage, setRequestedLeverage] = useState(10);
+  const [chosenMarginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
   const [reduceOnly, setReduceOnly] = useState(false);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +107,17 @@ export function FuturesOrderForm({
   // three `setInterval`s that used to live in this file are gone; so is the
   // second copy of /futures/balances and the third of /futures/positions.
   const account = useFuturesAccount({ balances: 5000, positions: 5000, orders: 5000 });
+  /**
+   * Which engine takes this order, and where the account state came from.
+   *
+   * Outside a provider this is the real engine and the real `api` call the
+   * form used to make inline, so nothing about an ordinary account's path
+   * changes. See lib/futuresExecution.
+   */
+  const execution = useFuturesExecution();
+  /** An engine that settles in one margin mode is not offering a choice.
+   *  `null` — every ordinary account — leaves the toggle the trader's. */
+  const marginType = execution.marginType ?? chosenMarginType;
   // The leverage bounds and the tier table come from the one shared read of
   // /futures/config rather than this form's own copy — same values, same
   // `null`-until-known semantics, one request for the page instead of three.
@@ -98,7 +154,6 @@ export function FuturesOrderForm({
 
   const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
   const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
-  const requiredMargin = leverage > 0 ? notional / leverage : 0;
   /**
    * Whether Order Value and Required Margin describe a real order.
    *
@@ -145,6 +200,16 @@ export function FuturesOrderForm({
     }))
     .filter((order) => Number.isFinite(order.remainingQuantity) && Number.isFinite(order.price));
 
+  /** The position as the projection wants it — one mapping, read by both
+   *  the exposure projection and the sizing below. */
+  const exposurePosition = currentPosition
+    ? {
+        side: currentPosition.side,
+        size: Number(currentPosition.size),
+        entryPrice: Number(currentPosition.entryPrice),
+      }
+    : null;
+
   /** `null` = cannot be projected because the account state is unknown.
    *  `0` is a REAL zero: a reduce-only order, nothing typed yet, or an
    *  account that genuinely answered with no position and no orders. */
@@ -152,17 +217,24 @@ export function FuturesOrderForm({
     ? 0
     : exposureInputsKnown
       ? projectFuturesExposureNotional({
-          position: currentPosition
-            ? {
-                side: currentPosition.side,
-                size: Number(currentPosition.size),
-                entryPrice: Number(currentPosition.entryPrice),
-              }
-            : null,
+          position: exposurePosition,
           activeOrders: pendingExposureOrders,
           candidate: { side, remainingQuantity: Number(quantity), price: effectivePrice },
         })
       : null;
+
+  /** The same projection with the candidate taken OUT — the exposure a new
+   *  order has to be sized around. The projection drops any leg with no
+   *  remaining quantity, so a zero candidate is exactly "everything else".
+   *  `null` while positions or orders are still unknown; sizing refuses
+   *  rather than guessing an empty account, which is the optimistic guess. */
+  const baseExposure: number | null = exposureInputsKnown
+    ? projectFuturesExposureNotional({
+        position: exposurePosition,
+        activeOrders: pendingExposureOrders,
+        candidate: { side, remainingQuantity: 0, price: effectivePrice },
+      })
+    : null;
   const resultingTier = config && projectedExposure !== null && projectedExposure > 0
     ? getLeverageTier(config.leverageTiers, projectedExposure)
     : null;
@@ -175,9 +247,15 @@ export function FuturesOrderForm({
   const effectiveMaxLeverage = config && exposureKnown
     ? Math.min(config.maxLeverage, resultingTier?.maxLeverage ?? config.maxLeverage)
     : null;
-  useEffect(() => {
-    if (effectiveMaxLeverage !== null && leverage > effectiveMaxLeverage) setLeverage(effectiveMaxLeverage);
-  }, [effectiveMaxLeverage, leverage]);
+  /** The leverage this order will really use: the request, under the live
+   *  ceiling. Derived rather than clamped in an effect, so it rises again
+   *  by itself when the size — and with it the ceiling — comes back down. */
+  const leverage = effectiveMaxLeverage === null
+    ? requestedLeverage
+    : Math.min(requestedLeverage, effectiveMaxLeverage);
+  /** Margin this order locks. Same expression it always was; it moved
+   *  below `leverage` because that is now derived rather than stored. */
+  const requiredMargin = leverage > 0 ? notional / leverage : 0;
   // `freeBalance` only enters the formula for CROSS margin (it is the
   // backstop ratio; ISOLATED ignores it entirely — see futuresMath). So an
   // unknown balance suppresses the preview for CROSS, where it would
@@ -206,19 +284,99 @@ export function FuturesOrderForm({
   const liqPreviewLong = liqPreviewFor('LONG');
   const liqPreviewShort = liqPreviewFor('SHORT');
 
-  // % slider spends a share of available margin, scaled up by leverage —
-  // spending 100% of margin at 10x opens a 10x-larger notional than at 1x,
-  // same as every real exchange's position-size slider.
-  function applyPercent(pct: number) {
+  /**
+   * The % slider spends a share of available margin, scaled up by leverage
+   * — spending 100% of margin at 10x opens a 10x-larger notional than at
+   * 1x, same as every real exchange's position-size slider.
+   *
+   * It is `maxAffordableNotional` that does the scaling, not
+   * `margin × leverage`, because the selected leverage is not necessarily
+   * the leverage the resulting position may use: past a tier boundary the
+   * ceiling drops, `leverage` is capped to it, and the raw product would
+   * leave a quantity sized at 100x being charged margin at 50x. That is
+   * what rejected a 100 000 / 500 000 / 1 000 000 USDT order
+   * with "Insufficient USDT margin balance" on an account that had asked
+   * for exactly 100% of its margin. See lib/futuresMath.
+   *
+   * The budget is measured against the REQUESTED leverage, not the derived
+   * one: the derived value is capped by a ceiling computed from the size
+   * that is about to be replaced, so reading it here would let one large
+   * order shrink every size offered afterwards. `atLeverage` is a
+   * parameter for the same reason — the leverage control calls this with
+   * the value it is about to request, and a `setRequestedLeverage`
+   * scheduled in the same event is not readable here.
+   */
+  function applyPercent(pct: number, atLeverage: number = requestedLeverage) {
     setPercent(pct);
     if (!effectivePrice || effectivePrice <= 0) return;
-    // An unknown available margin sizes nothing. Previously this read a
-    // fake 0 and produced a quantity of 0; refusing to size is the same
-    // outcome without writing a misleading number into the field.
-    if (availableMargin === null) return;
-    const marginToSpend = availableMargin * (pct / 100);
-    setQuantity(((marginToSpend * leverage) / effectivePrice).toFixed(8));
+    if (reduceOnly) {
+      // A reduce-only order locks no margin and can never be larger than
+      // the position it closes, so the free balance is the wrong budget
+      // for it entirely: sizing from it offers a quantity the server
+      // rejects as "would exceed the current position size".
+      if (positions === null) return;
+      const closable = exposurePosition ? exposurePosition.size : 0;
+      setQuantity(contractSized(closable * (pct / 100)));
+      return;
+    }
+    // An unknown available margin or an unknown existing exposure sizes
+    // nothing. Previously this read a fake 0 and produced a quantity of 0;
+    // refusing to size is the same outcome without writing a misleading
+    // number into the field.
+    if (availableMargin === null || baseExposure === null || !config) return;
+    const { notional } = maxAffordableNotional({
+      tiers: config.leverageTiers,
+      freeMargin: availableMargin * (pct / 100),
+      selectedLeverage: atLeverage,
+      existingExposure: baseExposure,
+    });
+    setQuantity(contractSized(notional / effectivePrice));
   }
+
+  /**
+   * A quantity the CONTRACT will accept, not merely one the margin covers.
+   *
+   * When the engine publishes its rules, the size is floored onto the
+   * contract's quantity step and clamped to its ceiling — both downward, so
+   * a size that fitted the margin still fits it. Without rules (every real
+   * account, and a contract that has not answered yet) this is the plain
+   * 8-decimal floor the form has always used.
+   */
+  function contractSized(raw: number): string {
+    const rules = execution.contract;
+    if (!rules) return floorToDecimals(raw, QUANTITY_DECIMALS).toFixed(QUANTITY_DECIMALS);
+    const fitted = fitQuantityToContract(raw, effectivePrice, rules, { market: type === 'MARKET' });
+    return fitted.quantity.toFixed(stepDecimals(rules.qtyStep));
+  }
+
+  /**
+   * The contract rule this order breaks, if any — checked here so the
+   * refusal is visible before a round trip, and named so it can be acted
+   * on. The ENGINE remains the authority: this never relaxes a rule, it
+   * only reports the same one the engine would.
+   */
+  const contractCheck = execution.contract && orderSizeKnown && !reduceOnly
+    ? fitQuantityToContract(parseFloat(quantity), effectivePrice, execution.contract, { market: type === 'MARKET' })
+    : null;
+  const contractBreach = contractCheck && (
+    contractCheck.rejectedBy !== null
+      // A quantity the fitter had to change is a quantity the contract
+      // would have refused as typed.
+      || Math.abs(contractCheck.quantity - parseFloat(quantity)) > Number(execution.contract!.qtyStep) / 2
+  ) ? contractCheck : null;
+
+  /**
+   * Whether this order asks for more margin than the account has free.
+   *
+   * Deliberately narrow. Reduce-only is exempt because it locks nothing,
+   * and an unknown balance is exempt because a `null` there means "not
+   * answered yet", never "zero" — blocking on either would block the
+   * orders that matter most during an outage.
+   */
+  const marginShortfall = !reduceOnly
+    && orderSizeKnown
+    && availableMargin !== null
+    && requiredMargin > availableMargin;
 
   /** The side is an ARGUMENT, not a read of state. The button that starts
    *  this is also the button that decides the direction, and a `setSide`
@@ -230,7 +388,7 @@ export function FuturesOrderForm({
     setSubmitting(true);
     setSide(orderSide);
     try {
-      await api.placeFuturesOrder({
+      await execution.placeOrder({
         symbol,
         side: orderSide,
         type,
@@ -246,7 +404,7 @@ export function FuturesOrderForm({
       // The account really did change: refresh it now rather than waiting
       // for whichever poll fires next. Balances too — placing an order
       // locks margin, and that figure used to lag by up to five seconds.
-      refreshFuturesAccount(['balances', 'positions', 'orders']);
+      execution.refresh(['balances', 'positions', 'orders']);
       onPlaced();
       toast.success(t('trade.orderPlaced'));
     } catch (err) {
@@ -272,17 +430,32 @@ export function FuturesOrderForm({
    *   - the high-leverage confirmation stays inside `handleSubmit`: it is a
    *     prompt to answer, not a precondition to meet, and disabling the
    *     button on it would make high leverage unusable rather than guarded;
-   *   - no balance, order or exposure requirement is added. In particular a
-   *     REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even when
-   *     positions and orders are unknown (PR #14: the projection
+   *   - a REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even
+   *     when positions and orders are unknown (PR #14: the projection
    *     short-circuits before reading them), so risk-reducing orders stay
    *     submittable during an outage — which is when they matter most.
+   *
+   * `effectiveMaxLeverage !== null` remains: a null ceiling means the
+   * account state behind it is unknown, and the panel does not submit a
+   * leverage it cannot justify. The separate `leverage <= ceiling` test it
+   * used to sit beside is gone because `leverage` is now DERIVED as the
+   * minimum of the two — it cannot exceed the ceiling.
+   *
+   * `marginShortfall` is the one requirement added since: an order whose
+   * margin the account cannot cover is rejected by the server every time,
+   * so letting the button fire it only turns a visible ceiling into a
+   * round trip and a red banner. It carries the same two exemptions —
+   * reduce-only, and a balance that has not been answered yet.
    */
   const canSubmit = Boolean(config)
+    // An engine whose access verdict or account state is not known yet
+    // takes no orders. It never falls back to the other engine.
+    && execution.ready
     && executionEnabled
     && connectedFamily
     && effectiveMaxLeverage !== null
-    && leverage <= effectiveMaxLeverage
+    && !marginShortfall
+    && !contractBreach
     && !submitting;
 
   /** Same guard, same confirmation, same order of checks as before — only
@@ -318,19 +491,36 @@ export function FuturesOrderForm({
             effectiveMaxLeverage, and config.highLeverageWarningThreshold. */}
         <FuturesMarginLeverage
           marginType={marginType}
-          onMarginTypeChange={setMarginType}
+          onMarginTypeChange={execution.marginType ? () => {} : setMarginType}
+          marginTypeLocked={execution.marginType !== null}
           leverage={leverage}
-          onLeverageChange={setLeverage}
+          onLeverageChange={(next) => {
+            setRequestedLeverage(next);
+            // A size chosen as a PERCENTAGE of the account has to follow
+            // the leverage that pays for it; leaving the quantity behind
+            // is what made the displayed % and the real margin disagree.
+            // A hand-typed quantity sets `percent` to 0 and is left alone.
+            if (percent > 0) applyPercent(percent, next);
+          }}
           min={config?.minLeverage ?? 1}
           max={config ? effectiveMaxLeverage : null}
           warningThreshold={config?.highLeverageWarningThreshold ?? Infinity}
         />
 
         <OrderFamilyFields key={`${symbol}-${family}`} family={family} quote={quoteAsset} />
+        {/* PRICE AND QUANTITY ARE ONE FIELD SHAPE, TWICE.
+            Both are `fo-field`: the same outer box, the same caption inside
+            at the top left, the same trailing element inside at the right.
+            Neither the "Последняя" button nor the unit changes the box —
+            they sit in a fixed-width trailing slot inside it, which is what
+            keeps the two fields' outer width and height equal to the pixel
+            whatever either one contains. The caption used to sit ABOVE the
+            quantity field and INSIDE the price field, which is exactly why
+            the two were different heights. */}
         {family === 'LIMIT' ? (
-          <label className="fo-label fo-priceField">
+          <label className="fo-label fo-field fo-priceField">
             <span className="fo-fieldCaption">{t('trade.price')}</span>
-            <div className="fo-priceInputRow">
+            <div className="fo-fieldRow fo-priceInputRow">
               <input
                 className="mono fo-input"
                 type="number"
@@ -340,35 +530,34 @@ export function FuturesOrderForm({
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="0.00"
               />
-              {markPrice !== null && (
-                <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
-                  {t('trade.lastPriceBtn')}
-                </button>
-              )}
+              <span className="fo-fieldTrailing">
+                {markPrice !== null && (
+                  <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
+                    {t('trade.lastPriceBtn')}
+                  </button>
+                )}
+              </span>
             </div>
           </label>
         ) : family === 'MARKET' ? (
-          <label className="fo-label fo-priceField">
+          <label className="fo-label fo-field fo-priceField">
             <span className="fo-fieldCaption">{t('futures.markPrice')}</span>
-            <div className="mono fo-input fo-markPrice">
-              {markPrice !== null ? `≈ ${markPrice}` : '—'} {quoteAsset}
+            <div className="fo-fieldRow fo-priceInputRow">
+              <div className="mono fo-input fo-markPrice">
+                {markPrice !== null ? `≈ ${markPrice}` : '—'}
+              </div>
+              <span className="fo-fieldTrailing"><span className="fo-unit">{quoteAsset}</span></span>
             </div>
           </label>
         ) : null}
 
-        <label className="fo-label">
-          <span className="fo-qtyLabelRow">
-            {t('trade.quantity')}
-            <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>
-              {t('futures.availableMargin')}: {availableMargin === null ? '—' : availableMargin.toFixed(2)} {quoteAsset}
-            </span>
-          </span>
-          {/* The unit sits INSIDE the field, as on every derivatives panel.
-              It is a label, not a selector: this form trades one contract,
-              the one the page is on, so a dropdown here would offer a
-              choice that does not exist. Changing the pair is the pair
-              list's job. */}
-          <div className="fo-qtyInputRow">
+        <label className="fo-label fo-field">
+          <span className="fo-fieldCaption">{t('trade.quantity')}</span>
+          {/* The unit is a label, not a selector: this form trades one
+              contract, the one the page is on, so a dropdown here would
+              offer a choice that does not exist. Changing the pair is the
+              pair list's job. */}
+          <div className="fo-fieldRow fo-qtyInputRow">
             <input
               className="mono fo-input"
               type="number"
@@ -381,7 +570,7 @@ export function FuturesOrderForm({
               }}
               placeholder="0.00000"
             />
-            <span className="fo-unit">{baseAsset}</span>
+            <span className="fo-fieldTrailing"><span className="fo-unit">{baseAsset}</span></span>
           </div>
         </label>
 
@@ -437,6 +626,25 @@ export function FuturesOrderForm({
         </div>
 
         {error && <div className="fo-error">{error}</div>}
+        {contractBreach && !error && (
+          <div className="fo-error" role="status">
+            {t('futures.contractLimit', {
+              limit: t(CONTRACT_LIMIT_LABEL[contractBreach.rejectedBy ?? 'qtyStep']),
+              allowed: contractBreach.rejectedBy !== null
+                ? contractBreach.limit!
+                : `${contractBreach.quantity} ${baseAsset}`,
+            })}
+          </div>
+        )}
+        {marginShortfall && !contractBreach && !error && (
+          <div className="fo-error" role="status">
+            {t('futures.insufficientMargin', {
+              required: requiredMargin.toFixed(2),
+              available: availableMargin!.toFixed(2),
+              asset: quoteAsset,
+            })}
+          </div>
+        )}
         {!executionEnabled && <div className="fo-error" role="status">{t('analytics.unavailable')}</div>}
 
         {/* The shared terminal CTA, same as spot — this used to be a
@@ -475,7 +683,12 @@ export function FuturesOrderForm({
         </div>
       </form>
 
-      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
+      {/* The compact account summary sits directly under the order buttons,
+          and it is the ONE place the account's margin figures are stated —
+          which is why "Доступная маржа" no longer rides along in the
+          quantity field's label, where it could stretch that field
+          relative to the price field beside it. */}
+      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} marginType={marginType} onOpenTransfer={onOpenTransfer} />
 
       {config && (
         <details className="fo-tiersBox">

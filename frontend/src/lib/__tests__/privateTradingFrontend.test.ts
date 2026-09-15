@@ -127,22 +127,24 @@ describe('private snapshot display and dates',()=>{
     expect(visible).not.toMatch(/Simulation|Симуляция|snapshot|scenario net|Нереализованная|USD(?!T)/i);
     expect(svg).not.toContain('secret-resource-id');expect(svg).not.toContain(snapshot.asOf);expect(svg).not.toContain('-5.75');
   });
-  test('closed historical card visibly keeps the net result and exactly one Historical Test label',()=>{
+  test('closed historical card visibly keeps the net result and says nothing about the mode',()=>{
     const {field,doc,visible}=rendered({...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест',roiPercent:'-0.575'});
     expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
-    expect(field('valuation-label').textContent).toBe('Цена выхода');expect(field('historical-label').textContent).toBe('Historical Test');
-    expect(doc.querySelectorAll('[data-field="historical-label"]')).toHaveLength(1);
+    expect(field('valuation-label').textContent).toBe('Цена выхода');
+    // The badge is gone entirely — a replay card is drawn as an ordinary P&L card.
+    expect(doc.querySelectorAll('[data-field="historical-label"]')).toHaveLength(0);
     expect(visible).not.toMatch(/123\.45|scenario net|snapshot|Исторический тест|Симуляция/i);
   });
   test('open historical card uses frozen server scenario P&L, never the live unrealized value',()=>{
     const {field,visible}=rendered({...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест',pnl:'-5.75',pnlKind:'NET_SCENARIO',roiPercent:'-0.575'});
     expect(field('profit-number').textContent).toBe('-5.75');expect(field('roi-number').textContent).toBe('-0.58');
-    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('historical-label').textContent).toBe('Historical Test');
+    expect(field('valuation-label').textContent).toBe('Рыночная цена');expect(field('historical-label')).toBeNull();
     expect(visible).not.toContain('123.45');
   });
   test('portrait geometry uses equal-size baseline-aligned ROI percent and smaller USDT',()=>{
     const {doc,field}=rendered({...snapshot,pnl:'24580.00',roiPercent:'211.38'});const root=doc.documentElement;
-    expect(root.getAttribute('width')).toBe('1080');expect(root.getAttribute('height')).toBe('1440');expect(root.getAttribute('viewBox')).toBe('0 0 1080 1440');
+    expect(root.getAttribute('width')).toBe('1080');expect(root.getAttribute('height')).toBe('1215');expect(root.getAttribute('viewBox')).toBe('0 0 1080 1215');
+    expect(cardRenderer.PRIVATE_RESULT_CARD_WIDTH).toBe(1080);expect(cardRenderer.PRIVATE_RESULT_CARD_HEIGHT).toBe(1215);
     const digits=field('roi-number'),unit=field('roi-unit');
     expect(digits.textContent).toBe('+211.38');expect(unit.textContent).toBe('%');expect(digits).not.toBe(unit);
     const size=Number(digits.getAttribute('font-size')),ratio=Number(unit.getAttribute('font-size'))/size;
@@ -198,6 +200,32 @@ describe('private snapshot display and dates',()=>{
     const request={mode:'DEMO_LIVE',symbol:'ETHUSDT',side:'SHORT',type:'MARKET',quantity:'0.1',leverage:'3',idempotencyKey:'old-command',quote:{lastPrice:'9999'},profile:{fee:'0'}};
     expect(api.privateRefreshDraft({result:{request}})).toEqual({mode:'DEMO_LIVE',symbol:'ETHUSDT',side:'SHORT',type:'MARKET',quantity:'0.1',leverage:'3'});
     expect(api.privateRefreshDraft({result:{request:{...request,margin:'100'}}})).toEqual({mode:'DEMO_LIVE',symbol:'ETHUSDT',side:'SHORT',type:'MARKET',margin:'100',leverage:'3'});
+  });
+  test('nothing a viewer can read says Test, Demo, Simulation, Preview or fixture',()=>{
+    // Every mode and status, because the badge used to appear only for one of them.
+    for (const card of [snapshot,
+      {...snapshot,mode:'HISTORICAL_REPLAY',label:'Исторический тест'},
+      {...snapshot,status:'CLOSED',mode:'HISTORICAL_REPLAY',label:'Исторический тест'},
+      {...snapshot,status:'CLOSED'}]) {
+      const {svg,visible}=rendered(card);
+      expect(visible).not.toMatch(/simulation|demo|\btest\b|preview|fixture|симул|демо|тест/i);
+      // Not merely invisible: the words are not in the document at all.
+      expect(svg).not.toMatch(/Historical Test|Simulation|Симуляция|PREVIEW_FIXTURE/i);
+    }
+  });
+  test('the artwork is lifted, never squashed, and the bags keep their pixel size',()=>{
+    const {doc}=rendered(snapshot);
+    const image=doc.querySelector('image');
+    // Same 1080x1440 raster at its own aspect: the 225px come off the empty
+    // top, so nothing the artwork draws is cropped and nothing is distorted.
+    expect(image.getAttribute('width')).toBe('1080');expect(image.getAttribute('height')).toBe('1440');
+    expect(image.getAttribute('y')).toBe('-225');
+    const bags=[...doc.querySelectorAll('[data-artwork="money-bags"] > g')].map((g:any)=>g.getAttribute('transform'));
+    expect(bags).toHaveLength(2);
+    // Enlarged scales preserved; anchors moved by exactly the lift, so each
+    // bag stays glued to the ribbon at an unchanged pixel size.
+    expect(bags[0]).toBe('translate(872 651) scale(1.055)');
+    expect(bags[1]).toBe('translate(627 908) scale(0.866)');
   });
   test('card cannot omit simulation provenance and escapes server strings',()=>{
     expect(()=>cardRenderer.privateResultCardSvg({...snapshot,label:''})).toThrow();expect(()=>cardRenderer.privateResultCardSvg({...snapshot,mode:'REAL'})).toThrow();
@@ -283,7 +311,7 @@ describe('actual private forms',()=>{
     const snapshot={id:'card/owner?test',symbol:'ETHUSDT',label:'Симуляция',mode:'DEMO_LIVE',status:'OPEN'};
     const getCard=jest.fn();const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError:jest.fn()},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:async()=>new Blob(['png'],{type:'image/png'}),privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n'}});
     ui.render();await tick();await tick();const tree=ui.render(),link=find(tree,n=>n.type==='a'&&text(n)==='Открыть');
-    expect(link.props.href).toBe('/futures?privateTrading=1&card=card%2Fowner%3Ftest');expect(link.props.target).toBe('_blank');expect(link.props.rel).toContain('noopener');expect(link.props.onClick).toBeUndefined();expect(getCard).not.toHaveBeenCalled();
+    expect(link.props.href).toBe('/futures?card=card%2Fowner%3Ftest');expect(link.props.target).toBe('_blank');expect(link.props.rel).toContain('noopener');expect(link.props.onClick).toBeUndefined();expect(getCard).not.toHaveBeenCalled();
     expect(find(tree,n=>n.type==='img').props.src).toBe('data:image/png;base64,cG5n');
   });
   test('PNG save attaches its download anchor only after both owner checks and removes it after click',async()=>{
@@ -293,7 +321,7 @@ describe('actual private forms',()=>{
     try{
       const ui=mount('pages/private-trading/PrivateResultCardDialog.tsx','PrivateResultCardDialog',{snapshot,onClose:jest.fn(),onError},{'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}},'../../lib/privateResultCard':{privateResultCardPng:async()=>new Blob(['png'],{type:'image/png'}),privateResultCardDataUrl:async()=> 'data:image/png;base64,cG5n'}});
       ui.render();await tick();await tick();button(ui.render(),'Сохранить PNG').props.onClick();await tick();await tick();await tick();
-      expect(anchor.href).toBe('data:image/png;base64,cG5n');expect(anchor.download).toBe('VOLTEX-ETHUSDT-simulation.png');expect(anchor.click).toHaveBeenCalledTimes(1);expect(anchor.remove).toHaveBeenCalledTimes(1);expect(attached).toBe(false);expect(onError).not.toHaveBeenCalled();
+      expect(anchor.href).toBe('data:image/png;base64,cG5n');expect(anchor.download).toBe('VOLTEX-ETHUSDT-pnl.png');expect(anchor.click).toHaveBeenCalledTimes(1);expect(anchor.remove).toHaveBeenCalledTimes(1);expect(attached).toBe(false);expect(onError).not.toHaveBeenCalled();
     }finally{(globalThis as any).document=previous;}
   });
   test('linked card fetches the immutable snapshot and rejects a revoked owner before rendering it',async()=>{
@@ -301,7 +329,7 @@ describe('actual private forms',()=>{
     const getCard=jest.fn().mockResolvedValueOnce(snapshot).mockRejectedValueOnce(new api.PrivateTradingError('access_denied',403));
     const ui=mount('pages/private-trading/PrivateLinkedCard.tsx','PrivateLinkedCard',{id:'frozen',onDenied},{'react-router-dom':{Link:()=>null,useNavigate:()=>navigate},'./PrivateResultCardDialog':{PrivateResultCardDialog:Dialog},'../../lib/privateTradingApi':{...api,privateTradingApi:{getCard}}});
     let tree=ui.render();expect(nodes(tree).some(n=>n.type===Dialog)).toBe(false);await tick();tree=ui.render();expect(getCard).toHaveBeenCalledWith('frozen');expect(find(tree,n=>n.type===Dialog).props.snapshot).toBe(snapshot);
-    find(tree,n=>n.type===Dialog).props.onClose();expect(navigate).toHaveBeenCalledWith('/futures?privateTrading=1',{replace:true});
+    find(tree,n=>n.type===Dialog).props.onClose();expect(navigate).toHaveBeenCalledWith('/futures',{replace:true});
     ui.render({id:'revoked'});await tick();tree=ui.render();expect(onDenied).toHaveBeenCalledTimes(1);expect(nodes(tree).some(n=>n.type===Dialog)).toBe(false);
   });
   test('saved verified historical positions appear under chart, open history after closing, and never get live close actions',()=>{
