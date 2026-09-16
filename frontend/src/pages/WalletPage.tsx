@@ -3,13 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { Nav } from '../components/Nav';
 import { useLanguage } from '../lib/i18n';
 import { PortfolioStrip } from './wallet-v3/PortfolioStrip';
+import { EquityChart } from './wallet-v3/EquityChart';
 import { AssetLedger } from './wallet-v3/AssetLedger';
 import { PortfolioAllocation } from './wallet-v3/PortfolioAllocation';
 import { TransactionHistory } from './wallet-v3/TransactionHistory';
 import { DepositModal } from './wallet-v3/DepositModal';
 import { WithdrawModal } from './wallet-v3/WithdrawModal';
 import { TransferModal } from './wallet-v3/TransferModal';
-import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
+import { useWalletData } from './wallet-v3/useWalletData';
 import './wallet-v3/wallet.css';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
@@ -61,7 +62,6 @@ export function WalletPage() {
     return action === 'deposit' || action === 'withdraw' || action === 'transfer' ? action : null;
   });
   const [hidden, setHidden] = useState(() => loadFlag(HIDE_BALANCE_KEY));
-  const [period, setPeriod] = useState<PerformancePeriod>('7d');
   const historyRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -108,13 +108,9 @@ export function WalletPage() {
 
         <PortfolioStrip
           account={account}
-          performance={performance}
-          performanceLoading={performanceState === 'loading'}
           btcEquivalent={btcEquivalent}
           hidden={hidden}
           onToggleHidden={toggleHidden}
-          period={period}
-          onPeriodChange={setPeriod}
           unavailable={unavailable}
           onDeposit={() => setModal('deposit')}
           onWithdraw={() => setModal('withdraw')}
@@ -122,6 +118,18 @@ export function WalletPage() {
           onHistory={() => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
           onRefresh={refresh}
         />
+
+        {/* The account's own history, from its stored daily snapshots. Its
+            own card rather than a strip inside the header: an equity curve
+            is a section, not an ornament beside the balance. */}
+        <div className="mt-5">
+          <EquityChart
+            performance={performance}
+            loading={performanceState === 'loading'}
+            unavailable={performanceState === 'error'}
+            hidden={hidden}
+          />
+        </div>
 
         <div className="wallet-holdings-grid mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-6">
           <AssetLedger

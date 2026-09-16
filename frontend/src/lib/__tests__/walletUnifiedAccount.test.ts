@@ -16,6 +16,7 @@ import ts from 'typescript';
  * against a description of them.
  */
 
+const { renderToStaticMarkup } = createRequire(resolve(__dirname, '../../../..', 'frontend/package.json'))('react-dom/server');
 const root = resolve(__dirname, '../../../..');
 const frontend = resolve(root, 'frontend');
 const req = createRequire(resolve(frontend, 'package.json'));
@@ -329,6 +330,178 @@ describe('5. the page does not poll per asset', () => {
     // And no component below the hook fetches either.
     for (const file of ['PortfolioStrip.tsx', 'AssetLedger.tsx', 'PortfolioAllocation.tsx']) {
       expect(`${file}: ${/\bfetch\(|\bapi\./.test(read(`frontend/src/pages/wallet-v3/${file}`))}`).toBe(`${file}: false`);
+    }
+  });
+});
+
+
+// ── 6. The equity curve ────────────────────────────────────────────────────
+
+/** Renders EquityChart with hook stubs; effects run once, as a mount would. */
+function renderChart(props: Record<string, unknown>) {
+  const state: any[] = [];
+  const effects: (() => void)[] = [];
+  let cursor = 0;
+  const hooks = {
+    ...React,
+    useState(initial: any) {
+      const slot = cursor++;
+      if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial;
+      return [state[slot], (next: any) => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }];
+    },
+    useMemo: (factory: () => any) => factory(),
+    useEffect: (run: () => void) => { effects.push(run); },
+    useId: () => 'chart-gradient',
+  };
+  const { EquityChart } = evaluate('frontend/src/pages/wallet-v3/EquityChart.tsx', {
+    react: hooks,
+    'lucide-react': new Proxy({}, { get: (_t, name) => () => React.createElement('svg', { 'data-icon': String(name) }) }),
+    '../../lib/i18n': { useLanguage: () => ({ lang: 'ru', t: (k: string) => k }) },
+    './format': fmtModule,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+  });
+  const render = () => { cursor = 0; effects.length = 0; return EquityChart(props as any); };
+  render();
+  for (const run of effects) run();
+  return { render, html: () => renderToStaticMarkup(render()) };
+}
+
+const fmtModule = (() => {
+  const code = ts.transpileModule(read('frontend/src/pages/wallet-v3/format.ts'), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS },
+  }).outputText;
+  const out: Record<string, any> = {};
+  new Function('exports', 'require', code)(out, () => ({ localeOf: () => 'ru' }));
+  return out;
+})();
+
+/** A real stored series: daily points, as /wallet/performance returns them. */
+const series = (n: number, from = 1000) =>
+  Array.from({ length: n }, (_, i) => ({
+    date: new Date(Date.UTC(2026, 7, 1 + i)).toISOString().slice(0, 10),
+    equity: from * (1 + i * 0.01),
+  }));
+
+const performanceWith = (overrides: Record<string, any>) => ({
+  periods: {
+    '7d': { period: '7d', available: false, startDate: null, endDate: null, startEquity: null, endEquity: null, absolutePnl: null, percent: null, points: [] },
+    '30d': { period: '30d', available: false, startDate: null, endDate: null, startEquity: null, endEquity: null, absolutePnl: null, percent: null, points: [] },
+    '90d': { period: '90d', available: false, startDate: null, endDate: null, startEquity: null, endEquity: null, absolutePnl: null, percent: null, points: [] },
+    '1y': { period: '1y', available: false, startDate: null, endDate: null, startEquity: null, endEquity: null, absolutePnl: null, percent: null, points: [] },
+    all: { period: 'all', available: false, startDate: null, endDate: null, startEquity: null, endEquity: null, absolutePnl: null, percent: null, points: [] },
+    ...overrides,
+  },
+  ageDays: 0,
+  startedOn: null,
+});
+
+describe('6. the equity curve is the account own stored history', () => {
+  it('draws the line from the points the server returned, and nothing else', () => {
+    const points = series(10);
+    const performance = {
+      ...performanceWith({
+        all: { period: 'all', available: true, startDate: points[0].date, endDate: points[9].date,
+          startEquity: points[0].equity, endEquity: points[9].equity,
+          absolutePnl: points[9].equity - points[0].equity, percent: 9, points },
+      }),
+      ageDays: 9,
+      startedOn: points[0].date,
+    };
+    const chart = renderChart({ performance, loading: false, unavailable: false, hidden: false });
+    const html = chart.html();
+
+    // One path for the line and one for its fill, both built from the ten
+    // points — a curve with more vertices than the series has days would
+    // mean something was interpolated into it.
+    const line = /<path d="M([^"]+)" fill="none"/.exec(html);
+    expect(line).not.toBeNull();
+    expect(line![1].split(' L')).toHaveLength(points.length);
+    // The section, the real age, and the real first day.
+    expect(html).toContain('wallet-equity-chart');
+    expect(html).toContain('wallet.historyDays');
+    expect(html).toContain(points[0].date);
+    expect(html).toContain(points[9].date);
+    // No empty state over a real series.
+    expect(html).not.toContain('wallet-equity-empty');
+  });
+
+  it('KEEPS the card, with an explanation inside the plot, when there is no history', () => {
+    const chart = renderChart({ performance: performanceWith({}), loading: false, unavailable: false, hidden: false });
+    const html = chart.html();
+
+    // The section survives — this is the regression being guarded.
+    expect(html).toContain('wallet-equity-chart');
+    expect(html).toContain('wallet-equity-plot');
+    // The frame is still drawn, the period tabs are still there...
+    expect(html).toContain('wallet-equity-periods');
+    // ...and the explanation is INSIDE the plot rather than replacing it.
+    expect(html).toContain('wallet-equity-empty');
+    expect(html).toContain('wallet.chartNoHistory');
+    // Nothing is drawn: no line, no fake flat baseline standing in for one.
+    expect(html).not.toMatch(/<path d="M[^"]+" fill="none"/);
+  });
+
+  it('opens on the widest window the account can actually answer', () => {
+    const points = series(40);
+    const performance = performanceWith({
+      '7d': { period: '7d', available: true, startDate: points[33].date, endDate: points[39].date,
+        startEquity: points[33].equity, endEquity: points[39].equity, absolutePnl: 60, percent: 6, points: points.slice(33) },
+      '30d': { period: '30d', available: true, startDate: points[9].date, endDate: points[39].date,
+        startEquity: points[9].equity, endEquity: points[39].equity, absolutePnl: 300, percent: 27, points: points.slice(9) },
+    });
+    const chart = renderChart({ performance, loading: false, unavailable: false, hidden: false });
+    const html = chart.html();
+
+    // 30D is the widest available, so that is what opens — a young account
+    // must not land on an empty 7D and never find the curve it does have.
+    const pressed = [...html.matchAll(/aria-pressed="true"[^>]*>([^<]+)</g)].map((m) => m[1]);
+    expect(pressed).toEqual(['wallet.period30d']);
+    // The windows the series cannot cover are disabled and say why.
+    expect(html).toMatch(/disabled=""[^>]*title="wallet.periodUnavailable"/);
+  });
+
+  it('masks the curve with the balance rather than leaving it on screen', () => {
+    const points = series(10);
+    const performance = performanceWith({
+      all: { period: 'all', available: true, startDate: points[0].date, endDate: points[9].date,
+        startEquity: points[0].equity, endEquity: points[9].equity, absolutePnl: 90, percent: 9, points },
+    });
+    const html = renderChart({ performance, loading: false, unavailable: false, hidden: true }).html();
+    expect(html).not.toMatch(/<path d="M[^"]+" fill="none"/);
+    expect(html).toContain(fmtModule.MASK);
+  });
+
+  it('says the history could not be loaded rather than drawing an empty account', () => {
+    const html = renderChart({ performance: null, loading: false, unavailable: true, hidden: false }).html();
+    expect(html).toContain('wallet-equity-chart');
+    expect(html).toContain('wallet.chartUnavailable');
+    expect(html).not.toMatch(/<path d="M[^"]+" fill="none"/);
+  });
+
+  it('is fed by /wallet/performance and by nothing else', () => {
+    const source = read('frontend/src/pages/wallet-v3/EquityChart.tsx');
+    // No fetching, no generation, no randomness, no clock-derived shape.
+    expect(source).not.toMatch(/\bfetch\(|\bapi\.|nativeDemoApi/);
+    expect(source).not.toMatch(/Math\.random|Math\.exp|Math\.log|Math\.sin/);
+    // Every point plotted comes from the server's own array.
+    expect(source).toContain('selected!.points');
+    expect(read('frontend/src/pages/WalletPage.tsx')).toContain('performance={performance}');
+    expect(read('frontend/src/pages/wallet-v3/useWalletData.ts')).toContain('api.getWalletPerformance');
+  });
+
+  it('has no generated return curve left anywhere in the app', () => {
+    // The anchors of the deleted curve: +28% / +132% / +317% / +1926% and
+    // its all-time +2115%, as growth multiples and as percentages.
+    const banned = [
+      /multiple:\s*1\.28/, /multiple:\s*2\.32/, /multiple:\s*4\.17/, /multiple:\s*20\.26/, /multiple:\s*22\.15/,
+      /ANCHORS/, /futureStep/, /historicalLog/, /adminEquityIndex/, /adminPerformanceSeries/,
+      /PROFILE_REFERENCE_DAY/, /PROFILE_START_DAY/,
+    ];
+    for (const file of [...sources('src', 'frontend/src')]) {
+      const text = readFileSync(file, 'utf8');
+      for (const pattern of banned) {
+        expect(`${file} ${pattern}: ${pattern.test(text)}`).toBe(`${file} ${pattern}: false`);
+      }
     }
   });
 });

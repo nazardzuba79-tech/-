@@ -19,6 +19,7 @@ const express = require('express');
 const fs = require('node:fs');
 const path = require('node:path');
 const { NativeDemoService } = require('../dist/private-trading/native/service');
+const { buildAdjustedSeries, computeAllPeriods, seriesAgeDays } = require('../dist/services/PortfolioPerformanceEngine');
 const { nativeDemoRoutes } = require('../dist/private-trading/native/routes');
 const { emptyDemoState } = require('../dist/private-trading/native/store') || {};
 const { emptyDemoState: emptyState } = require('../dist/private-trading/native/engine');
@@ -55,6 +56,8 @@ const state = {
   revisions: {},
   commands: {},
   unpriced: false,
+  /** Days of stored daily snapshots this review account has. 0 = a new account. */
+  historyDays: 45,
 };
 
 const market = {
@@ -121,10 +124,11 @@ app.get('/__mode/:value', asyncRoute(async (req, res) => {
     state.row = null; state.revisions = {}; state.commands = {};
     state.holdings.find((h) => h.asset === 'USDT').available = '5000000';
   }
+  if (req.query.history !== undefined) state.historyDays = Number(req.query.history) || 0;
   if (req.query.opened === '1' && !state.row) {
     await service.initialize({ userId: 'review-owner', sessionId: 'review', expiresAt: now() + 3600000 }, 'review-open-account');
   }
-  res.json({ mode, unpriced: state.unpriced, opened: Boolean(state.row) });
+  res.json({ mode, unpriced: state.unpriced, opened: Boolean(state.row), historyDays: state.historyDays });
 }));
 
 app.use('/api/v1/private-trading', (_req, res, next) => {
@@ -153,8 +157,45 @@ app.get('/api/v1/wallet/overview', (_req, res) => {
     btcPriceUsd: 100000,
   });
 });
-app.get('/api/v1/wallet/performance', (_req, res) =>
-  res.json({ periods: {}, ageDays: 0, startedOn: null }));
+/**
+ * The performance series, through the REAL engine.
+ *
+ * The stand supplies stored daily snapshot rows — the exact shape the
+ * `PortfolioSnapshot` table holds — and `buildAdjustedSeries` /
+ * `computeAllPeriods` do the same work they do in production. Nothing here
+ * shapes the curve: the rows are a plain compounding walk and one day
+ * carries a deposit, so the flow-removal path is exercised rather than
+ * described. `?history=0` gives the account no stored days at all, which is
+ * the insufficient-history state the chart has to keep its card for.
+ */
+app.get('/api/v1/wallet/performance', (_req, res) => {
+  const days = state.historyDays;
+  if (days < 2) return res.json({ periods: computeAllPeriods([]), ageDays: 0, startedOn: null });
+
+  const start = Date.now() - (days - 1) * 86400000;
+  const raw = [];
+  let running = 12000;
+  for (let i = 0; i < days; i += 1) {
+    // A deterministic walk, not a designed return: the point is that the
+    // engine gets rows shaped like stored snapshots, not that the curve
+    // has any particular shape.
+    running *= 1 + ((((i * 37) % 23) - 10) / 1000);
+    const deposit = i === Math.floor(days / 2) ? 2500 : 0;
+    running += deposit;
+    raw.push({
+      date: new Date(start + i * 86400000).toISOString().slice(0, 10),
+      totalValueUsd: running,
+      netFlowUsd: deposit,
+    });
+  }
+
+  const series = buildAdjustedSeries(raw);
+  res.json({
+    periods: computeAllPeriods(series),
+    ageDays: seriesAgeDays(series),
+    startedOn: series.length > 0 ? series[0].date : null,
+  });
+});
 app.post('/api/v1/wallet/portfolio-snapshot', (_req, res) => res.json({ recorded: false }));
 app.get('/api/v1/market/external/rankings', (_req, res) => res.json({ rankings: [
   { symbol: 'BTC', name: 'Bitcoin', price: 100000, changePercent24h: 1.24 },

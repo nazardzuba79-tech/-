@@ -36,7 +36,7 @@ async function run() {
         // The owner's margin account has to exist for the header to be one:
         // before initialization there is no Cross account, and the page
         // correctly falls back to the ordinary ledger (checked separately).
-        await setMode(mode, mode === 'owner' ? '?opened=1' : '');
+        await setMode(mode, mode === 'owner' ? '?opened=1&history=45' : '?history=45');
         const context = await browser.newContext({
           viewport: { width: vp.width, height: vp.height },
           hasTouch: vp.touch,
@@ -73,6 +73,32 @@ async function run() {
           check(`${tag}: header reports a spot account`, modeChip === 'Спотовый счёт', modeChip);
           check(`${tag}: no invented margin metrics`, !metrics.some((m) => /маржа/i.test(m)), metrics.join(' | '));
         }
+
+        // ── The equity curve is present and drawn from real history ────
+        const chart = await page.locator('.wallet-equity-chart').count();
+        check(`${tag}: the equity chart section is present`, chart === 1, String(chart));
+        const curve = await page.evaluate(() => {
+          const el = document.querySelector('.wallet-equity-chart');
+          if (!el) return null;
+          const line = el.querySelector('path[fill="none"]');
+          const box = el.getBoundingClientRect();
+          return {
+            vertices: line ? line.getAttribute('d').split(' L').length : 0,
+            height: Math.round(box.height),
+            empty: Boolean(el.querySelector('.wallet-equity-empty')),
+            periods: [...el.querySelectorAll('.wallet-equity-periods button')].map((b) => ({
+              label: b.textContent.trim(), pressed: b.getAttribute('aria-pressed'), disabled: b.disabled,
+            })),
+            axis: el.querySelector('.wallet-equity-axis')?.textContent?.trim() ?? null,
+            age: el.querySelector('.wallet-equity-age')?.textContent?.trim() ?? null,
+          };
+        });
+        check(`${tag}: the curve is drawn from many real daily points`, curve.vertices > 10, String(curve.vertices));
+        check(`${tag}: the chart is a real section, not a strip`, curve.height > 220, `${curve.height}px`);
+        check(`${tag}: no empty state over a real series`, curve.empty === false);
+        check(`${tag}: windows the history cannot cover are disabled`, curve.periods.some((p) => p.disabled), JSON.stringify(curve.periods.map((p) => p.label + (p.disabled ? '(off)' : ''))));
+        check(`${tag}: the chart states how much real history it has`, /\d/.test(curve.age ?? ''), curve.age ?? '');
+        check(`${tag}: the axis carries real dates`, /\d{4}-\d{2}-\d{2}/.test(curve.axis ?? ''), curve.axis ?? '');
 
         // ── The asset table ────────────────────────────────────────────
         if (vp.label === '1440') {
@@ -128,6 +154,39 @@ async function run() {
         await context.close();
       }
     }
+
+    // ── A brand-new account: the chart KEEPS its card ──────────────────
+    for (const vp of VIEWPORTS) {
+      await setMode('ordinary', '?history=0');
+      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch });
+      const page = await context.newPage();
+      await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-equity-chart', { timeout: 15000 });
+      const tag = `no-history-${vp.label}`;
+
+      const shape = await page.evaluate(() => {
+        const el = document.querySelector('.wallet-equity-chart');
+        return {
+          present: Boolean(el),
+          height: Math.round(el.getBoundingClientRect().height),
+          plot: Boolean(el.querySelector('.wallet-equity-plot')),
+          empty: Boolean(el.querySelector('.wallet-equity-empty')),
+          periods: el.querySelectorAll('.wallet-equity-periods button').length,
+          line: Boolean(el.querySelector('path[fill="none"]')),
+          text: el.querySelector('.wallet-equity-empty')?.textContent?.trim() ?? '',
+        };
+      });
+      // This is the regression under guard: the feature is explained, not deleted.
+      check(`${tag}: the chart card is still on the page`, shape.present && shape.height > 220, `${shape.height}px`);
+      check(`${tag}: the plot frame is kept`, shape.plot);
+      check(`${tag}: the period tabs are kept`, shape.periods === 5, String(shape.periods));
+      check(`${tag}: the empty state is INSIDE the plot`, shape.empty, shape.text);
+      check(`${tag}: nothing is drawn through points that do not exist`, shape.line === false);
+
+      await page.screenshot({ path: `${OUT}/wallet-${tag}.png`, fullPage: true });
+      await context.close();
+    }
+    await setMode('ordinary', '?history=45');
 
     // ── The owner BEFORE the margin account exists ─────────────────────
     {

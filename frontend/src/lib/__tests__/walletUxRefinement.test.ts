@@ -302,8 +302,7 @@ test.each([
   [false, true, fmt.EM_DASH],
 ])('full-width total retains original authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
-    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
   });
   // The header renders an ACCOUNT now, not a wallet overview: the same
   // total, but taken from whichever source is authoritative for the
@@ -314,9 +313,8 @@ test.each([
     spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
   };
   const before = JSON.stringify(account), onToggleHidden = jest.fn();
-  const tree = PortfolioStrip({ account, performance: null, performanceLoading: false,
-    btcEquivalent: 153.459124, hidden, unavailable, onToggleHidden,
-    period: '7d', onPeriodChange: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
+  const tree = PortfolioStrip({ account, btcEquivalent: 153.459124, hidden, unavailable, onToggleHidden,
+    onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
     onHistory: jest.fn(), onRefresh: jest.fn() });
   const totals = byClass(tree, 'wallet-total-value');
   expect(totals).toHaveLength(1);
@@ -341,8 +339,7 @@ test.each([
 
 test('the account header reports unknown margin figures as dashes, never as zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
-    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
   });
   // An ordinary ledger has no margin account. Its margin fields are UNKNOWN
   // — not zero — and the header has to say so, because "no margin is
@@ -352,9 +349,8 @@ test('the account header reports unknown margin figures as dashes, never as zero
     initialMarginUsd: null, maintenanceMarginUsd: null, orderReserveUsd: null,
     spotUsd: 250, futuresUsd: 50, valuationComplete: false, unpricedAssets: ['EUR'], settleAsset: 'USDT',
   };
-  const tree = PortfolioStrip({ account, performance: null, performanceLoading: false,
-    btcEquivalent: null, hidden: false, unavailable: false, onToggleHidden: jest.fn(),
-    period: '7d', onPeriodChange: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
+  const tree = PortfolioStrip({ account, btcEquivalent: null, hidden: false, unavailable: false,
+    onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
     onHistory: jest.fn(), onRefresh: jest.fn() });
   // Rendered rather than walked: the metrics are a child component, so the
   // element tree alone would not show what a reader actually sees.
@@ -373,12 +369,10 @@ test('the account header reports unknown margin figures as dashes, never as zero
 
 test('Convert is offered as unavailable rather than wired to nothing', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
-    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
   });
-  const tree = PortfolioStrip({ account: null, performance: null, performanceLoading: false,
-    btcEquivalent: null, hidden: false, unavailable: false, onToggleHidden: jest.fn(),
-    period: '7d', onPeriodChange: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
+  const tree = PortfolioStrip({ account: null, btcEquivalent: null, hidden: false, unavailable: false,
+    onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
     onHistory: jest.fn(), onRefresh: jest.fn() });
   const convert = byClass(tree, 'wallet-action-convert');
   expect(convert).toHaveLength(1);

@@ -8,9 +8,9 @@ import {
   RepeatIcon,
   ScrollTextIcon,
 } from 'lucide-react';
-import { Key, useLanguage } from '../../lib/i18n';
-import { EM_DASH, MASK, btcEquivalentDecimals, formatAmount, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
-import { PERFORMANCE_PERIODS, PerformancePeriod, UnifiedAccount, WalletPerformance } from './useWalletData';
+import { useLanguage } from '../../lib/i18n';
+import { EM_DASH, MASK, btcEquivalentDecimals, formatAmount, formatSignedUsd, formatUsd, toneOf } from './format';
+import { UnifiedAccount } from './useWalletData';
 
 /**
  * THE UNIFIED TRADING ACCOUNT HEADER.
@@ -26,45 +26,11 @@ import { PERFORMANCE_PERIODS, PerformancePeriod, UnifiedAccount, WalletPerforman
  * UNKNOWN and renders as an em dash; it is never coerced to 0, because a
  * margin requirement of zero and an unanswered one are different facts and
  * only one of them is safe to act on.
+ *
+ * The equity curve is NOT here. It used to be a 40px sparkline wedged into
+ * a side column, which is no place for the account's history; it now has
+ * its own card directly below — see `EquityChart`.
  */
-
-/** Short period labels; abbreviations differ by language, so they are keys. */
-const PERIOD_LABEL_KEY: Record<PerformancePeriod, Key> = {
-  '7d': 'wallet.period7d',
-  '30d': 'wallet.period30d',
-  '90d': 'wallet.period90d',
-  '1y': 'wallet.period1y',
-  all: 'wallet.periodAll',
-};
-
-function Sparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  if (points.length < 2) return null;
-  const width = 320;
-  const height = 40;
-  const pad = 4;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = max - min || 1;
-  const stepX = width / (points.length - 1);
-  const d = points
-    .map((v, i) => `${(i * stepX).toFixed(2)},${(pad + (1 - (v - min) / span) * (height - pad * 2)).toFixed(2)}`)
-    .join(' L');
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
-      <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="currentColor" strokeWidth="1" opacity="0.25" vectorEffect="non-scaling-stroke" />
-      <path
-        d={`M${d}`}
-        fill="none"
-        stroke={positive ? 'var(--w-pos)' : 'var(--w-neg)'}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
 
 /**
  * One account metric. `value` is already formatted — including the dash an
@@ -82,91 +48,15 @@ function Metric({ label, value, hidden, tone }: { label: string; value: string; 
   );
 }
 
-function Performance({
-  performance,
-  period,
-  onPeriodChange,
-  hidden,
-  loading,
-}: {
-  performance: WalletPerformance | null;
-  period: PerformancePeriod;
-  onPeriodChange: (p: PerformancePeriod) => void;
-  hidden: boolean;
-  loading: boolean;
-}) {
-  const { t, lang } = useLanguage();
-  const selected = performance?.periods?.[period] ?? null;
-  const available = Boolean(selected?.available);
-  const percent = selected?.percent ?? null;
-  const pnl = selected?.absolutePnl ?? null;
-  const positive = (percent ?? 0) >= 0;
-
-  return (
-    <div className="w-full">
-      <div className="mb-1.5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[11.5px] font-medium uppercase leading-4 tracking-[0.04em] text-ink-4">{t('wallet.pnl')}</p>
-          <p className={`num mt-1 text-[18px] font-semibold leading-6 ${toneOf(percent)}`}>
-            {hidden ? MASK : available ? formatSignedUsd(pnl, lang) : EM_DASH}
-          </p>
-          <p className={`num text-[12.5px] font-medium leading-5 ${toneOf(percent)}`}>
-            {available ? formatPercent(percent, lang) : EM_DASH}
-          </p>
-        </div>
-      </div>
-      <div className="h-10 w-full border-b border-hair-soft text-ink-4">
-        {loading ? null : available && !hidden ? (
-          <Sparkline points={selected!.points.map((pt) => pt.equity)} positive={positive} />
-        ) : (
-          <div className="flex h-full items-center justify-center text-[12px] text-ink-4">
-            {/* Honest: this period has no history behind it yet, so no
-                percentage is invented to fill the space. */}
-            {hidden ? MASK : t('wallet.notEnoughHistory')}
-          </div>
-        )}
-      </div>
-      {/* Its own row rather than sharing the heading's: five labels in seven
-          languages never fit beside the figure, and widening this column to
-          make them fit would let the return crowd the balance. */}
-      <div
-        className="mt-2 flex flex-wrap items-center justify-between gap-1"
-        role="group"
-        aria-label={t('wallet.pnlPeriod')}
-      >
-        {PERFORMANCE_PERIODS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPeriodChange(p)}
-            aria-pressed={p === period}
-            className={`h-7 rounded-wsm border px-1.5 text-[12px] transition-colors duration-150 ease-exp ${
-              p === period
-                ? 'border-hair-strong bg-panel-3 font-semibold text-ink'
-                : 'border-transparent font-medium text-ink-3 hover:bg-panel-2 hover:text-ink-2'
-            }`}
-          >
-            {t(PERIOD_LABEL_KEY[p])}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 const ACTION_BASE =
   'flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-w px-2 py-2 text-[12.5px] font-medium leading-5 transition-colors duration-150 ease-exp sm:min-h-[38px] sm:flex-row sm:gap-1.5 sm:px-3 sm:py-0';
 const ACTION_SECONDARY = `${ACTION_BASE} border border-hair bg-panel-2 text-ink-2 hover:border-hair-strong hover:bg-panel-3 hover:text-ink`;
 
 export function PortfolioStrip({
   account,
-  performance,
-  performanceLoading,
   btcEquivalent,
   hidden,
   onToggleHidden,
-  period,
-  onPeriodChange,
   unavailable,
   onDeposit,
   onWithdraw,
@@ -175,13 +65,9 @@ export function PortfolioStrip({
   onRefresh,
 }: {
   account: UnifiedAccount | null;
-  performance: WalletPerformance | null;
-  performanceLoading: boolean;
   btcEquivalent: number | null;
   hidden: boolean;
   onToggleHidden: () => void;
-  period: PerformancePeriod;
-  onPeriodChange: (p: PerformancePeriod) => void;
   unavailable: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
@@ -284,16 +170,6 @@ export function PortfolioStrip({
           )}
         </div>
 
-        <div className="hidden w-[228px] shrink-0 border-l border-hair pl-6 lg:block xl:w-[248px]">
-          <Performance
-            performance={performance}
-            period={period}
-            onPeriodChange={onPeriodChange}
-            hidden={hidden}
-            loading={performanceLoading}
-          />
-        </div>
-
         <div className="min-w-0 border-t border-hair pt-4 lg:w-[188px] lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
             <button
@@ -331,16 +207,6 @@ export function PortfolioStrip({
             </button>
           </div>
         </div>
-      </div>
-
-      <div className="border-t border-hair-soft px-5 py-4 lg:hidden">
-        <Performance
-          performance={performance}
-          period={period}
-          onPeriodChange={onPeriodChange}
-          hidden={hidden}
-          loading={performanceLoading}
-        />
       </div>
     </section>
   );
