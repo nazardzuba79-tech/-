@@ -609,7 +609,7 @@ test.each([
   // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
   // and are deliberately left untouched.
   [wallet + 'TransferModal.tsx', '81d78430c88e2b691e8bbeecc81aca8f077d16580231581df248c370e6b2fc0d'],
-  [wallet + 'ui.tsx', 'b23415fc704a89bab6592ec2148e4869f3fcbbc5d4980e31bd1dd9e8e30f153e'],
+  [wallet + 'ui.tsx', 'a59be22e81e7e6ca4fc9271c440d08382710c9cf5a3071fcbe3799448ce5fae8'],
   [wallet + 'TransactionHistory.tsx', '3650f07956b54e5451e945d6d3e4561cfa0247bfd00d3549d6770374545037d5'],
   ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],
   // Re-taken for the same change, on the server side: the presentation
