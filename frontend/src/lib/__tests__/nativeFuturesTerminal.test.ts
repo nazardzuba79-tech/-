@@ -116,6 +116,7 @@ describe('the adapter projects native state into the terminal shapes', () => {
     roiBasis: '1500', closedRoiBasis: '0', fundingNet: '-1.2',
     protection: { takeProfit: '65000', stopLoss: null, quantity: null, triggerBy: 'MARK' as const },
     liquidationPrice: '57000', liquidationStatus: 'OK',
+    marginMode: 'CROSS' as const, isolatedMargin: '0',
   };
 
   test('a position becomes the row the ORIGINAL positions table reads', () => {
@@ -126,9 +127,20 @@ describe('the adapter projects native state into the terminal shapes', () => {
       liquidationPrice: '57000', markPrice: '61000', unrealizedPnl: '500', roe: '33.33',
     });
     expect(row.openedAt).toBe(new Date(1_728_000_000_000).toISOString());
-    // Cross is what the engine settles in; the row says so rather than
-    // labelling itself Изолированная.
+    // The row reports the bucket the ENGINE settled this position in. It is
+    // read off the position, not assumed — the engine settles both now.
     expect(row.marginType).toBe('CROSS');
+  });
+
+  test('an isolated position reports its own posted margin, not its cross basis', () => {
+    const row = adapter.nativePositionToTerminal({
+      ...position, marginMode: 'ISOLATED' as const, isolatedMargin: '900', roiBasis: '1500',
+      liquidationStatus: 'ISOLATED_POSITION_ESTIMATE',
+    });
+    expect(row.marginType).toBe('ISOLATED');
+    // What actually backs it is what was posted against it, which is the
+    // only figure an isolated position can be liquidated on.
+    expect(row.initialMargin).toBe('900');
   });
 
   test('TP/SL becomes a trigger row without inventing retry bookkeeping', () => {
@@ -144,7 +156,7 @@ describe('the adapter projects native state into the terminal shapes', () => {
   });
 
   test('an order is renamed by DIRECTION, which is how the terminal names it', () => {
-    const order = { id: 'o1', symbol: 'ETHUSDT', side: 'SHORT', type: 'LIMIT', quantity: '2', remaining: '0.5', filled: '1.5', averagePrice: '2500', price: '2500', leverage: '10', status: 'PARTIALLY_FILLED', createdAt: 1_728_000_000_000 };
+    const order = { id: 'o1', symbol: 'ETHUSDT', side: 'SHORT', type: 'LIMIT', quantity: '2', remaining: '0.5', filled: '1.5', averagePrice: '2500', price: '2500', leverage: '10', status: 'PARTIALLY_FILLED', createdAt: 1_728_000_000_000, marginType: 'CROSS' as const };
     expect(adapter.nativeOrderToTerminal(order)).toMatchObject({
       symbol: 'ETH/USDT', side: 'SELL', originalQuantity: '2', remainingQuantity: '0.5', leverage: 10, marginType: 'CROSS',
     });
@@ -171,7 +183,7 @@ describe('the adapter projects native state into the terminal shapes', () => {
       model: { version: 'v', funding: { longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28800000 } },
       account: { settleBalance: '10000', walletCollateral: '0', collateral: '10000', unrealizedPnl: '500', equity: '10500', initialMargin: '1500', orderReserve: '200', available: '8300', maintenanceMargin: '150', initialMarginRatio: null, maintenanceRatio: null, liquidatable: false, collateralComplete: true, unpricedAssets: [], collateralAsOf: null },
       positions: [position], history: [{ ...position, status: 'CLOSED' as const, closedAt: 1_728_000_100_000 }],
-      orders: [{ id: 'o1', symbol: 'BTCUSDT', side: 'LONG', type: 'LIMIT', quantity: '1', remaining: '1', filled: '0', averagePrice: null, price: '59000', leverage: '20', status: 'OPEN', createdAt: 1 }],
+      orders: [{ id: 'o1', symbol: 'BTCUSDT', side: 'LONG', type: 'LIMIT', quantity: '1', remaining: '1', filled: '0', averagePrice: null, price: '59000', leverage: '20', status: 'OPEN', createdAt: 1, marginType: 'CROSS' as const }],
       events: [],
     }, { loading: false, failed: false, fetchedAt: 5 });
 
@@ -188,7 +200,17 @@ describe('the adapter projects native state into the terminal shapes', () => {
     const draft = adapter.terminalOrderToNativeDraft({
       symbol: 'BTC/USDT', side: 'SELL', type: 'LIMIT', price: '60000', quantity: '0.5', leverage: 20,
     });
-    expect(draft).toEqual({ kind: 'OPEN', symbol: 'BTCUSDT', side: 'SHORT', type: 'LIMIT', quantity: '0.5', leverage: '20', price: '60000' });
+    // The bucket travels with the order. Omitting it from the call means
+    // Cross, and the draft says so explicitly rather than leaving the
+    // server to assume it.
+    expect(draft).toEqual({ kind: 'OPEN', symbol: 'BTCUSDT', side: 'SHORT', type: 'LIMIT', quantity: '0.5', leverage: '20', price: '60000', marginType: 'CROSS' });
+  });
+
+  test('an isolated order asks for the isolated bucket, not a relabelled cross one', () => {
+    const draft = adapter.terminalOrderToNativeDraft({
+      symbol: 'BTC/USDT', side: 'BUY', type: 'MARKET', quantity: '0.5', leverage: 10, marginType: 'ISOLATED',
+    });
+    expect(draft).toMatchObject({ kind: 'OPEN', marginType: 'ISOLATED' });
   });
 
   test('a picked historical bar travels as the bar IDENTITY, never as a price', () => {

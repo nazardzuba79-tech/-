@@ -76,7 +76,16 @@ describe('the account has a single authoritative source', () => {
     expect(model).toContain('const collateral = settleBalance.plus(walletCollateral);');
     expect(model).toContain('const equity = collateral.plus(unrealizedPnl);');
     // Liquidation is refused, not guessed, while the wallet is under-valued.
-    expect(model).toContain('liquidatable: valuation.complete ? hasOpenPositions && equity.lte(maintenanceMargin) : null,');
+    // The verdict is also asked on CROSS money only: margin posted to an
+    // isolated position, and that position's P&L, are subtracted back out
+    // because neither backs the shared account — the engine liquidates an
+    // isolated position on its own post instead.
+    expect(model).toContain('liquidatable: valuation.complete');
+    expect(model).toContain('? hasOpenPositions && equity.minus(isolatedMargin).minus(isolatedPnl).lte(maintenanceMargin)');
+    expect(model).toContain(': null,');
+    // And the isolated post is still INSIDE the settle balance, so ring
+    // fencing a position never shrinks the account the Wallet reports.
+    expect(model).toContain("const settleBalance = n(engine.walletBalance).plus(isolatedMargin);");
   });
 
   it('no sanity-check total is written into the code', () => {

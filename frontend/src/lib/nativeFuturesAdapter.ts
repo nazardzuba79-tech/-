@@ -99,10 +99,11 @@ export function nativePositionToTerminal(position: NativePosition): FuturesPosit
     size: position.quantity,
     entryPrice: position.entryPrice,
     leverage: Number(position.leverage),
-    // The native engine settles this account in Cross. Reporting ISOLATED
-    // here would label the row with a mode the engine is not using.
-    marginType: 'CROSS',
-    initialMargin: position.roiBasis,
+    // The mode the ENGINE settled this position in, not an assumption made
+    // here. An isolated row is backed by its own posted margin, so that is
+    // the margin the row reports.
+    marginType: position.marginMode,
+    initialMargin: position.marginMode === 'ISOLATED' ? position.isolatedMargin : position.roiBasis,
     liquidationPrice: position.liquidationPrice,
     markPrice: position.markPrice,
     unrealizedPnl: position.unrealizedPnl,
@@ -131,7 +132,7 @@ export function nativePositionToHistoryRow(position: NativePosition): FuturesPos
     symbol: nativeSymbolToPair(position.symbol),
     side: position.side,
     leverage: Number(position.leverage),
-    marginType: 'CROSS',
+    marginType: position.marginMode,
     entryPrice: position.entryPrice,
     realizedPnl: position.netPnl,
     status: position.status,
@@ -154,7 +155,7 @@ export function nativeOrderToTerminal(order: NativeOrder): FuturesOrder {
     status: order.status,
     reduceOnly: false,
     leverage: Number(order.leverage),
-    marginType: 'CROSS',
+    marginType: order.marginType,
     createdAt: new Date(order.createdAt).toISOString(),
   };
 }
@@ -254,6 +255,8 @@ export function terminalOrderToNativeDraft(params: {
   positionId?: string;
   candle?: NativeCandle | null;
   protection?: { takeProfit: string | null; stopLoss: string | null };
+  /** The risk bucket the trader chose. The engine validates it again. */
+  marginType?: 'CROSS' | 'ISOLATED';
 }): NativeDraft {
   return {
     kind: 'OPEN',
@@ -262,6 +265,7 @@ export function terminalOrderToNativeDraft(params: {
     type: params.type,
     quantity: params.quantity,
     leverage: String(params.leverage),
+    marginType: params.marginType ?? 'CROSS',
     ...(params.type === 'LIMIT' && params.price ? { price: params.price } : {}),
     // A reducing order stays the order it is. Collapsing a reduce-only
     // LIMIT into a CLOSE would price it at the book instead of at the price

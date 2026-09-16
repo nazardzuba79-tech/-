@@ -107,7 +107,9 @@ export function useNativeFuturesExecution(
         engine: 'NATIVE' as const,
         ready: false,
         account,
-        marginType: 'CROSS' as const,
+        // null = "the trader chooses". Even here: an unopened account has no
+        // position in either bucket, so there is nothing to pin.
+        marginType: null,
         candle: pickedCandle,
         contract,
         account_aggregate: aggregate,
@@ -127,7 +129,12 @@ export function useNativeFuturesExecution(
       account,
       // The engine settles this account in Cross. The terminal states that
       // rather than offering a toggle whose other position does nothing.
-      marginType: 'CROSS' as const,
+      // THE TRADER CHOOSES. The engine settles both buckets for real — an
+      // isolated position posts its own margin out of the wallet, is
+      // liquidated on that margin alone and cannot cost the account more
+      // than it — so pinning this to CROSS would now be the interface
+      // refusing a mode the account actually has.
+      marginType: null,
       candle: pickedCandle,
       contract,
       account_aggregate: aggregate,

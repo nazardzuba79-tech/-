@@ -7,10 +7,20 @@ export interface NativePosition {
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
   protection:NativeProtection;
-  /** Account-level Cross estimate (other contracts frozen). null = not reachable with current collateral, or fully hedged. */
+  /**
+   * The estimate on the basis that applies to THIS position, named by
+   * `liquidationStatus`: an account-level Cross estimate with other
+   * contracts frozen, or an Isolated estimate against the position's own
+   * posted margin. null = not reachable with the backing it has, or fully
+   * hedged.
+   */
   liquidationPrice:string|null;liquidationStatus:string;
+  /** Which bucket backs it. Reported by the engine, not assumed here. */
+  marginMode:'CROSS'|'ISOLATED';
+  /** ISOLATED only: the margin posted against this position. '0' for Cross. */
+  isolatedMargin:string;
 }
-export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number}
+export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED'}
 export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string}
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
@@ -34,6 +44,12 @@ export interface NativeAccountAggregate{
   initialMargin:string;orderReserve:string;maintenanceMargin:string;available:string;
   initialMarginRatio:string|null;maintenanceRatio:string|null;liquidatable:boolean|null;
   collateralComplete:boolean;unpricedAssets:string[];collateralAsOf:number|null;
+  /**
+   * Included in `initialMargin` and in `settleBalance` above — reported
+   * separately so the terminal can say how much of the account is ring
+   * fenced without subtracting anything itself.
+   */
+  isolatedMargin?:string;
 }
 export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUIDATION_FEE'|'REALIZED_PNL'|'FUNDING';
 export interface LedgerEntryView{
@@ -88,7 +104,7 @@ export interface NativeWallet{
   rows:NativeWalletRow[];
 }
 export type NativeDraft=
- | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string}
+ | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED'}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
  | {kind:'CANCEL';orderId:string}
  | {kind:'PROTECTION';positionId:string;protection:Partial<NativeProtection>}
