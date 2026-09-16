@@ -173,7 +173,13 @@ describe('3. the account summary under the order buttons', () => {
     // …and when it does publish one, this card DISPLAYS it rather than
     // computing a second maintenance margin from the real tier table. That
     // second derivation is what showed 0.00% on a simulated position.
-    expect(SUMMARY).toContain('const aggregate = useFuturesExecution().account_aggregate;');
+    // The card holds the execution itself now, because it also refreshes
+    // THROUGH it — calling the global account store directly is what made
+    // the owner's tab poll the real futures endpoints.
+    expect(SUMMARY).toContain('const execution = useFuturesExecution();');
+    expect(SUMMARY).toContain('const aggregate = execution.account_aggregate;');
+    expect(SUMMARY).toContain('onClick={() => execution.refresh(failedResources)}');
+    expect(SUMMARY).not.toContain('refreshFuturesAccount(');
     expect(SUMMARY).toContain('Number(aggregate.maintenanceMargin)');
     expect(SUMMARY).toContain('marginBalance > 0 ? (part / marginBalance) * 100 : 0');
   });
