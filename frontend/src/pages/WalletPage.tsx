@@ -80,7 +80,6 @@ export function WalletPage() {
     account,
     accountResolved,
     rows,
-    rankingsLoaded,
     btcEquivalent,
     refresh,
   } = useWalletData();
@@ -139,7 +138,7 @@ export function WalletPage() {
                     rows={rows}
                     hidden={hidden}
                     unavailable={unavailable}
-                    loading={loading || !rankingsLoaded}
+                    loading={loading}
                     onDeposit={() => setModal('deposit')}
                     onWithdraw={() => setModal('withdraw')}
                     onTransfer={() => setModal('transfer')}
