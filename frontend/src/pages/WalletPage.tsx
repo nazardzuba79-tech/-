@@ -11,6 +11,7 @@ import { WithdrawModal } from './wallet-v3/WithdrawModal';
 import { TransferModal } from './wallet-v3/TransferModal';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
 import './wallet-v3/wallet.css';
+import { WalletFuturesAccountCard } from '../components/WalletFuturesAccountCard';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
 
@@ -117,6 +118,13 @@ export function WalletPage() {
           <div className="wallet-allocation-column min-w-0 lg:pt-[48px]">
             <PortfolioAllocation rows={rows} hidden={hidden} unavailable={unavailable} loading={loading} />
           </div>
+        </div>
+
+        {/* The owner's futures account, read from the futures endpoint so
+            the two pages cannot report different equity. Renders nothing
+            for everyone else. */}
+        <div className="mt-6">
+          <WalletFuturesAccountCard hidden={hidden} />
         </div>
 
         <div className="mt-6">

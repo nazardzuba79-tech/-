@@ -82,6 +82,33 @@ function mount(file: string, overrides: Record<string, any> = {}) {
   new Function('require', 'exports', 'window', 'document', compiled)((name: string) => {
     if (name === 'react') return react;
     if (name === '../lib/api') return { api, ApiError };
+    if (name === '../lib/futuresExecution') {
+      // The engine seam. Outside a provider the real components use
+      // REAL_FUTURES_EXECUTION, which is the `api` call each one used to
+      // make inline — so these suites drive exactly the path they drove
+      // before the seam existed.
+      const real = {
+        engine: 'REAL', ready: true, account: null, marginType: null, candle: null, contract: null,
+        placeOrder: (p: any) => api.placeFuturesOrder(p),
+        cancelOrder: (id: string) => api.cancelFuturesOrder(id),
+        closePosition: (id: string) => api.closeFuturesPosition(id),
+        setProtection: (id: string, b: any) => api.setFuturesPositionProtection(id, b),
+        clearProtection: (id: string) => api.clearFuturesPositionProtection(id),
+        refresh: () => {},
+      };
+      return { REAL_FUTURES_EXECUTION: real, useFuturesExecution: () => real,
+        FuturesExecutionProvider: ({ children }: any) => children };
+    }
+    // The real localizer has its own suite (futuresOrderErrors.test.ts).
+    // Here it stands in as the identity on the fallback — exactly what
+    // these components showed before it existed, so what these suites
+    // assert about error text is unchanged.
+    if (name === '../lib/futuresOrderErrors') {
+      return { futuresOrderErrorMessage: (_e: unknown, _t: unknown, fallback: string) => fallback };
+    }
+    if (name === '../lib/futuresAccountSource') {
+      return { FuturesAccountSourceContext: { Provider: ({ children }: any) => children } };
+    }
     if (name === '../lib/useFuturesAccount') return futuresAccountModule;
     if (name === '../lib/i18n') return { useLanguage: () => ({ t: (key: string) => key }) };
     if (name.endsWith('.css')) return {};
@@ -434,10 +461,15 @@ describe('futures-only, and wired into the positions table', () => {
     for (const spot of ['PENDING_TRIGGER', 'updateOrderTrigger', 'getMyOrders', 'placeOrder', 'ocoGroupId', 'cancelOrder']) {
       expect(code).not.toContain(spot);
     }
-    // Exactly the two futures protection mutations, and nothing else.
-    expect(code).toContain('api.setFuturesPositionProtection');
-    expect(code).toContain('api.clearFuturesPositionProtection');
-    expect(code.match(/api\.[a-zA-Z]+\(/g)).toEqual(['api.setFuturesPositionProtection(', 'api.clearFuturesPositionProtection(']);
+    // Exactly the two futures protection mutations, and nothing else. They
+    // now go through the terminal's execution adapter rather than an inline
+    // `api` call — the adapter's REAL implementation is those same two
+    // endpoints (lib/futuresExecution), so the endpoint contract is
+    // unchanged; what moved is WHICH engine answers for the owner.
+    expect(code).toContain('execution.setProtection');
+    expect(code).toContain('execution.clearProtection');
+    expect(code.match(/execution\.[a-zA-Z]+\(/g)).toEqual(['execution.setProtection(', 'execution.clearProtection(']);
+    expect(code.match(/api\.[a-zA-Z]+\(/g)).toBeNull();
   });
 
   it('the editor follows its row rather than snapping shut on a scroll', () => {
@@ -465,9 +497,10 @@ describe('futures-only, and wired into the positions table', () => {
     const panelSource = source(PANEL);
     expect(panelSource).toContain('FuturesPositionProtectionCell');
     expect(panelSource).toContain('protection={p.protection ?? null}');
-    // The refresh after a mutation goes through the shared store, so no new
-    // polling is introduced anywhere.
-    expect(panelSource).toContain("refreshFuturesAccount(['positions'])");
+    // The refresh after a mutation goes through the terminal's execution
+    // adapter, whose REAL implementation is the shared store's own
+    // refreshFuturesAccount — so no new polling is introduced anywhere.
+    expect(panelSource).toContain("onSaved={() => execution.refresh(['positions'])}");
     expect(panelSource).not.toContain('setInterval');
   });
 

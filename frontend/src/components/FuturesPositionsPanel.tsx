@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { api, ApiError } from '../lib/api';
+import { ApiError } from '../lib/api';
+import { useFuturesExecution } from '../lib/futuresExecution';
+import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
 
 type Tab = 'open' | 'history';
@@ -10,8 +12,13 @@ export function FuturesPositionsPanel({
   refreshKey,
   tab: controlledTab,
   onCount,
+  onLimitClose,
 }: {
   refreshKey: number;
+  /** Hand this position to the order form as a reduce-only LIMIT ticket.
+   *  Absent means the terminal offers no limit close, and the button is
+   *  not rendered rather than rendered dead. */
+  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string }) => void;
   /** When the page owns the tab row (the futures terminal does, so there is
    *  one row of tabs rather than two stacked), pass the active tab here and
    *  this panel renders content only. Left out, it keeps its own tabs and
@@ -37,6 +44,7 @@ export function FuturesPositionsPanel({
   // position closes, so it is loaded when its tab becomes active and
   // refreshed explicitly on the events that can change it.
   const account = useFuturesAccount(tab === 'open' ? { positions: 4000 } : {});
+  const execution = useFuturesExecution();
 
   /** `null` = not known yet, or the request failed. It is deliberately NOT
    *  coerced to `[]`: an empty array is the server saying "you have none",
@@ -48,13 +56,13 @@ export function FuturesPositionsPanel({
 
   // The one history load, on tab activation.
   useEffect(() => {
-    if (tab === 'history') refreshFuturesAccount(['positionHistory']);
+    if (tab === 'history') execution.refresh(['positionHistory']);
   }, [tab]);
 
   // `refreshKey` still means "the page says the account changed" — it now
   // asks the shared store rather than issuing this panel's own request.
   useEffect(() => {
-    if (refreshKey > 0) refreshFuturesAccount(tab === 'open' ? ['positions'] : ['positionHistory']);
+    if (refreshKey > 0) execution.refresh(tab === 'open' ? ['positions'] : ['positionHistory']);
   }, [refreshKey, tab]);
 
   useEffect(() => {
@@ -65,13 +73,17 @@ export function FuturesPositionsPanel({
     setError(null);
     setClosingId(positionId);
     try {
-      await api.closeFuturesPosition(positionId);
+      await execution.closePosition(positionId);
       // A close changes the open list, the history AND the margin the
       // position was holding, so all three are refreshed at once instead of
       // only this panel's own list.
-      refreshFuturesAccount(['positions', 'positionHistory', 'balances']);
+      execution.refresh(['positions', 'positionHistory', 'balances']);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('futures.closePositionError'));
+      setError(futuresOrderErrorMessage(
+        err,
+        t,
+        err instanceof ApiError ? err.message : t('futures.closePositionError'),
+      ));
     } finally {
       setClosingId(null);
     }
@@ -92,7 +104,7 @@ export function FuturesPositionsPanel({
       </svg>
       <span>{message}</span>
       {failed && <button type="button" disabled={resource.loading || resource.refreshing}
-        onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
+        onClick={() => execution.refresh([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
     </div></>;
   }
 
@@ -117,7 +129,7 @@ export function FuturesPositionsPanel({
       {activeResource.failed && !!activeResource.data?.length && <div className="terminal-account-state" role="alert" aria-busy={activeResource.refreshing}>
         <span>{t('futures.loadPositionsError')}</span>
         <button type="button" className="terminal-account-retry" disabled={activeResource.loading || activeResource.refreshing}
-          onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
+          onClick={() => execution.refresh([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
       </div>}
 
       {tab === 'open' ? (
@@ -128,20 +140,20 @@ export function FuturesPositionsPanel({
         ) : positions.length === 0 ? (
           renderState(t(account.positions.failed ? 'futures.loadPositionsError' : 'futures.noPositions'), account.positions.failed)
         ) : (
-          <div style={styles.tableWrap}>
-            <table style={styles.table}>
+          <div className="futures-positions-scroll" style={styles.tableWrap}>
+            <table className="futures-positions-table" style={styles.table}>
               <thead>
                 <tr>
                   <Th>{t('trade.market')}</Th>
-                  <Th>{t('futures.side')}</Th>
                   <Th>{t('futures.size')}</Th>
+                  <Th>{t('futures.positionValue')}</Th>
                   <Th>{t('futures.entryPrice')}</Th>
                   <Th>{t('futures.markPrice')}</Th>
                   <Th>{t('futures.liqPrice')}</Th>
                   <Th>{t('futures.unrealizedPnl')}</Th>
-                  <Th>{t('futures.roe')}</Th>
+                  <Th>{t('futures.realizedPnl')}</Th>
                   <Th>{t('futures.tpsl')}</Th>
-                  <Th></Th>
+                  <Th>{t('futures.closeBy')}</Th>
                 </tr>
               </thead>
               <tbody>
@@ -149,22 +161,47 @@ export function FuturesPositionsPanel({
                   const pnl = p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : null;
                   const roe = p.roe !== null ? parseFloat(p.roe) : null;
                   const positive = (pnl ?? 0) >= 0;
+                  // Position value is the size at the price the position is
+                  // currently marked at — the same two server figures the
+                  // row already shows, multiplied. Unknown mark, unknown
+                  // value: it is NOT silently valued at entry instead.
+                  const markNumber = p.markPrice === null ? null : parseFloat(p.markPrice);
+                  const value = markNumber === null ? null : parseFloat(p.size) * markNumber;
+                  // Realized and unrealized are shown APART and never added:
+                  // the size that banked the realized figure is no longer in
+                  // the size that carries the unrealized one, and the fees
+                  // and funding already inside the realized figure would be
+                  // counted a second time by a total.
+                  const realized = parseFloat(p.realizedPnl);
                   return (
-                    <tr key={p.id}>
+                    <tr key={p.id} className="futures-position-row">
+                      {/* Contract, with Cross and the leverage under it. */}
                       <Td>
-                        {p.symbol} <span style={{ color: 'var(--text-tertiary)' }}>{p.leverage}x {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}</span>
+                        <div className="futures-position-contract">
+                          <b>{p.symbol}</b>
+                          <small className={p.side === 'LONG' ? 'text-buy' : 'text-sell'}>
+                            {p.side === 'LONG' ? t('futures.long') : t('futures.short')}
+                            {' · '}
+                            {p.marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')} {p.leverage}x
+                          </small>
+                        </div>
                       </Td>
-                      <Td>
-                        <span className={p.side === 'LONG' ? 'text-buy' : 'text-sell'} style={{ fontWeight: 700 }}>
-                          {p.side === 'LONG' ? t('futures.long') : t('futures.short')}
-                        </span>
-                      </Td>
-                      <Td className="mono">{p.size}</Td>
+                      <Td className="mono">{p.size} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span></Td>
+                      <Td className="mono">{value === null ? '—' : `${value.toFixed(2)} ${p.symbol.split('/')[1] ?? ''}`}</Td>
                       <Td className="mono">{p.entryPrice}</Td>
                       <Td className="mono">{p.markPrice ?? '—'}</Td>
-                      <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice}</Td>
-                      <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{pnl !== null ? pnl.toFixed(2) : '—'}</Td>
-                      <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</Td>
+                      <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice ?? '—'}</Td>
+                      {/* Unrealized, with ROI under it — one cell, two facts
+                          about the same open exposure. */}
+                      <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
+                        <div className="futures-position-pnl">
+                          <span>{pnl !== null ? pnl.toFixed(2) : '—'}</span>
+                          <small>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
+                        </div>
+                      </Td>
+                      <Td className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
+                        {Number.isFinite(realized) ? realized.toFixed(2) : '—'}
+                      </Td>
                       <Td>
                         {/* Real server-held protection, carried on the same
                             positions payload this table already reads — no
@@ -172,17 +209,48 @@ export function FuturesPositionsPanel({
                         <FuturesPositionProtectionCell
                           positionId={p.id}
                           protection={p.protection ?? null}
-                          onSaved={() => refreshFuturesAccount(['positions'])}
+                          onSaved={() => execution.refresh(['positions'])}
                         />
                       </Td>
                       <Td>
-                        <button
-                          onClick={() => handleClose(p.id)}
-                          disabled={closingId === p.id}
-                          style={styles.closeBtn}
-                        >
-                          {closingId === p.id ? t('futures.closing') : t('futures.close')}
-                        </button>
+                        <div className="futures-position-actions">
+                          {/* "Лимитный" is only offered where a limit close
+                              really exists — it hands the order form a
+                              reduce-only ticket for this position. Without
+                              that handler it is not rendered at all, because
+                              a button that does nothing is worse than an
+                              absent one. */}
+                          {onLimitClose && (
+                            <button type="button" className="futures-position-close" onClick={() => onLimitClose(p)}>
+                              {t('trade.limit')}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="futures-position-close"
+                            onClick={() => handleClose(p.id)}
+                            disabled={closingId === p.id}
+                          >
+                            {closingId === p.id ? t('futures.closing') : t('trade.market')}
+                          </button>
+                          {/* The P&L card, as a compact icon button with a
+                              name — only where a card service exists. */}
+                          {execution.showPnlCard && (
+                            <button
+                              type="button"
+                              className="futures-position-card"
+                              title={t('futures.pnlCard')}
+                              aria-label={`${t('futures.pnlCard')} · ${p.symbol}`}
+                              onClick={() => execution.showPnlCard!(p.id)}
+                            >
+                              <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none"
+                                stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" />
+                                <path d="M8 15l3-3.5 2.4 2.4L16.5 10" />
+                              </svg>
+                            </button>
+                          )}
+                        </div>
                       </Td>
                     </tr>
                   );

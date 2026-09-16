@@ -1,0 +1,193 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+/**
+ * The three areas of the reference: the two entry fields, the positions
+ * row, and the account summary under the order buttons.
+ *
+ * The pixel equality of the price and quantity fields is asserted in the
+ * BROWSER, where a box can actually be measured (scripts/qa — Δ width,
+ * height, left and right all 0.00px at 1440 and at 390). What is asserted
+ * here is the thing that makes that equality structural rather than lucky:
+ * one shared class carries every box property, and the differing contents
+ * sit in a trailing slot INSIDE it.
+ */
+
+const frontend = resolve(__dirname, '../../..');
+const source = (path: string) => readFileSync(resolve(frontend, 'src', path), 'utf8');
+const FORM = source('components/FuturesOrderForm.tsx');
+const PANEL = source('components/FuturesPositionsPanel.tsx');
+const SUMMARY = source('components/FuturesAccountSummary.tsx');
+const CSS = source('pages/trade-terminal/ReferenceFuturesTerminal.css');
+
+describe('1. price and quantity are one field shape, used twice', () => {
+  test('both are the same class, with the caption and the extra INSIDE', () => {
+    // Two `fo-field` labels: price (or mark price) and quantity.
+    expect(FORM.match(/className="fo-label fo-field/g)!.length).toBe(3); // LIMIT price, MARKET price, quantity
+    // Each carries its caption as the same element, inside the field.
+    expect(FORM.match(/className="fo-fieldCaption"/g)!.length).toBe(3);
+    // Each row is the same element, and the differing trailing content is
+    // in the same slot inside it.
+    expect(FORM.match(/className="fo-fieldRow/g)!.length).toBe(3);
+    expect(FORM.match(/className="fo-fieldTrailing"/g)!.length).toBe(3);
+    // "Последняя" and the unit live in that slot, not beside the field.
+    expect(FORM).toMatch(/fo-fieldTrailing[\s\S]{0,200}fo-lastPriceBtn/);
+    expect(FORM).toMatch(/fo-fieldTrailing[\s\S]{0,120}fo-unit/);
+  });
+
+  test('the quantity label no longer carries the account balance', () => {
+    // That is what could stretch one field relative to the other; it is the
+    // account summary's line now.
+    expect(FORM).not.toContain('fo-qtyLabelRow');
+    expect(FORM).not.toMatch(/availableMargin[^\n]*toFixed\(2\)[^\n]*quoteAsset/);
+  });
+
+  test('every box property is set ONCE, on the shared class', () => {
+    const row = CSS.match(/\.fo-field \.fo-fieldRow \{[^}]+\}/)![0];
+    for (const property of ['height', 'min-height', 'background', 'border', 'border-radius', 'box-sizing', 'width']) {
+      expect(row).toContain(`${property}:`);
+    }
+    // The trailing slot takes its space from the input, never from the box.
+    const trailing = CSS.match(/\.fo-fieldTrailing \{[^}]+\}/)![0];
+    expect(trailing).toContain('flex: 0 0 auto');
+    const input = CSS.match(/\.fo-field \.fo-input \{[^}]+\}/)![0];
+    expect(input).toContain('flex: 1 1 0');
+    expect(input).toContain('min-width: 0');
+    // And the input carries no box of its own that could disagree.
+    expect(input).toContain('border: 0');
+  });
+
+  test('one size slider with presets, and equally sized Long/Short', () => {
+    // One slider element in the panel (the other match is the import).
+    expect(FORM.match(/<PercentSlider/g)!.length).toBe(1);
+    expect(FORM).toContain('presets={SIZE_PRESETS}');
+    expect(FORM).toContain('const SIZE_PRESETS = [0, 25, 50, 75, 100];');
+    // The LAST rule is the one that applies; it makes both buttons share
+    // the row equally and gives them one explicit height.
+    const blocks = CSS.match(/\.fo-submitPair \.submit-btn \{[^}]+\}/g)!;
+    const pair = blocks[blocks.length - 1];
+    expect(pair).toContain('flex: 1 1 0');
+    expect(pair).toContain('height: 40px');
+    expect(pair).toContain('min-height: 40px');
+  });
+
+  test('a message is a sibling of the fields, never inside one', () => {
+    // A hint that grew inside a field would stretch it; these sit after the
+    // info box, outside both labels.
+    expect(FORM).toMatch(/<\/div>\s*\n\s*\{error && <div className="fo-error"/);
+    expect(FORM).not.toMatch(/fo-field[\s\S]{0,400}fo-error/);
+  });
+});
+
+describe('2. the positions row carries the reference columns', () => {
+  test('contract with Cross and leverage under it', () => {
+    expect(PANEL).toContain('futures-position-contract');
+    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,400}futures\.cross/);
+    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,400}\{p\.leverage\}x/);
+  });
+
+  test('quantity with its unit, and the position value in the quote asset', () => {
+    expect(PANEL).toContain('futures-position-unit');
+    expect(PANEL).toContain("futures.positionValue");
+    // Value is size at the MARK, and unknown when the mark is unknown — it
+    // is never silently valued at the entry price instead.
+    expect(PANEL).toContain('const value = markNumber === null ? null : parseFloat(p.size) * markNumber;');
+    expect(PANEL).toContain("{value === null ? '—' :");
+  });
+
+  test('entry, mark and liquidation prices each have their own column', () => {
+    for (const key of ['futures.entryPrice', 'futures.markPrice', 'futures.liqPrice']) {
+      expect(PANEL).toContain(key);
+    }
+  });
+
+  test('unrealized carries ROI under it, and realized is its OWN column', () => {
+    expect(PANEL).toContain('futures-position-pnl');
+    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,300}roe\.toFixed\(2\)/);
+    expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
+    // The two are NEVER summed: adding them would double-count the fees and
+    // funding already inside the realized figure, on a size that is no
+    // longer part of the open one.
+    expect(PANEL).not.toMatch(/realized\s*\+\s*pnl|pnl\s*\+\s*realized/);
+  });
+
+  test('TP/SL, both close methods and the P&L card button', () => {
+    expect(PANEL).toContain('FuturesPositionProtectionCell');
+    expect(PANEL).toContain("t('trade.limit')");
+    expect(PANEL).toContain("t('trade.market')");
+    expect(PANEL).toContain('futures-position-card');
+    // Neither extra is rendered where it would do nothing.
+    expect(PANEL).toContain('{onLimitClose && (');
+    expect(PANEL).toContain('{execution.showPnlCard && (');
+  });
+
+  test('the horizontal scroll is the TABLE\'s, and no number is truncated', () => {
+    const scroll = CSS.match(/\.futures-positions-scroll \{[^}]+\}/)![0];
+    expect(scroll).toContain('overflow: auto');
+    const table = CSS.match(/\.futures-positions-table \{[^}]+\}/)![0];
+    // `max-content` is what lets a large P&L widen the table and the
+    // container scroll, instead of the cell clipping it.
+    expect(table).toContain('min-width: max-content');
+    expect(CSS).not.toMatch(/\.futures-position(-row)? [^{]*\{[^}]*text-overflow: ellipsis/);
+  });
+
+  test('the tab counters come from the account, not from a constant', () => {
+    const page = source('pages/FuturesPage.tsx');
+    expect(page).toContain("account.positions.data?.length ?? '—'");
+    expect(page).toContain("account.orders.data?.length ?? '—'");
+  });
+
+  test('an open position keeps the panel from auto-collapsing', () => {
+    const page = source('pages/FuturesPage.tsx');
+    // The panel only collapses when orders AND positions are VERIFIED empty,
+    // so a row that exists is never hidden by the collapse.
+    expect(page).toContain('isVerifiedEmptyAccountResource(account.orders)');
+    expect(page).toContain('isVerifiedEmptyAccountResource(account.positions)');
+  });
+});
+
+describe('3. the account summary under the order buttons', () => {
+  test('margin mode, both margins, margin balance and available balance', () => {
+    expect(SUMMARY).toContain("t('futures.marginType')");
+    expect(SUMMARY).toContain("t('futures.initialMarginPct')");
+    expect(SUMMARY).toContain("t('futures.maintenanceMarginPct')");
+    expect(SUMMARY).toContain("t('futures.marginBalance')");
+    expect(SUMMARY).toContain("t('futures.availableMargin')");
+  });
+
+  test('it reads the SAME account source as the form and the tables', () => {
+    // One `useFuturesAccount`, which the terminal's execution adapter can
+    // replace wholesale — so form, slider, tables and summary cannot be
+    // reading two different accounts.
+    expect(SUMMARY).toContain('useFuturesAccount({ balances: 5000, positions: 5000 })');
+    expect(source('lib/useFuturesAccount.ts')).toContain('FuturesAccountSourceContext');
+  });
+
+  test('unknown is a dash and a real zero is a zero', () => {
+    // `show` renders '—' for null and the formatted number otherwise; null
+    // is never coerced to 0 on the way in.
+    expect(SUMMARY).toContain("value === null ? '—' : mask(format(value))");
+    // The real account's derivation is unchanged — it is now the branch
+    // taken when the engine publishes no aggregate of its own.
+    expect(SUMMARY).toContain(': account.balances.data ? (row ? parseFloat(row.available) : 0) : null;');
+    // …and when it does publish one, this card DISPLAYS it rather than
+    // computing a second maintenance margin from the real tier table. That
+    // second derivation is what showed 0.00% on a simulated position.
+    // The card holds the execution itself now, because it also refreshes
+    // THROUGH it — calling the global account store directly is what made
+    // the owner's tab poll the real futures endpoints.
+    expect(SUMMARY).toContain('const execution = useFuturesExecution();');
+    expect(SUMMARY).toContain('const aggregate = execution.account_aggregate;');
+    expect(SUMMARY).toContain('onClick={() => execution.refresh(failedResources)}');
+    expect(SUMMARY).not.toContain('refreshFuturesAccount(');
+    expect(SUMMARY).toContain('Number(aggregate.maintenanceMargin)');
+    expect(SUMMARY).toContain('marginBalance > 0 ? (part / marginBalance) * 100 : 0');
+  });
+
+  test('it invents no wallet and converts no asset into margin', () => {
+    // Only the quote asset's own row is read. Nothing here values BTC/ETH
+    // into USDT or counts them as collateral.
+    expect(SUMMARY).toContain("account.balances.data?.find((x) => x.asset === quoteAsset)");
+    expect(SUMMARY).not.toMatch(/getTicker|price\s*\*|marketData|convert/i);
+  });
+});

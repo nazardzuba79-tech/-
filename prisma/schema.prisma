@@ -991,3 +991,25 @@ model PrivateTradingCard {
   createdAt DateTime @default(now())
   @@index([userId, createdAt])
 }
+
+
+/// Native private demo has no relationships to real orders, fills or wallet balances.
+model NativeDemoAccount {
+  userId    String @id
+  revision  Int @default(0)
+  payload   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Append-only complete simulation revisions. Backdated trades never overwrite old evidence.
+model NativeDemoRevision {
+  userId      String
+  revision    Int
+  requestKey  String
+  requestHash String
+  payload     Json
+  createdAt   DateTime @default(now())
+  @@id([userId, revision])
+  @@unique([userId, requestKey])
+}

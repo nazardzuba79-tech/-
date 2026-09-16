@@ -37,6 +37,7 @@ export function FuturesMarginLeverage({
   min,
   max,
   warningThreshold,
+  marginTypeLocked = false,
 }: {
   marginType: 'ISOLATED' | 'CROSS';
   onMarginTypeChange: (v: 'ISOLATED' | 'CROSS') => void;
@@ -46,6 +47,11 @@ export function FuturesMarginLeverage({
   /** null = the effective ceiling is not known yet. */
   max: number | null;
   warningThreshold: number;
+  /** The engine backing this terminal settles in ONE margin mode, so the
+   *  chip states which one rather than offering a choice that does not
+   *  exist. The trigger still shows the real mode — it just does not open
+   *  a popover whose only outcome would be to re-pick the same value. */
+  marginTypeLocked?: boolean;
 }) {
   const { t } = useLanguage();
   /** Which popover is open — at most one, so the two never overlap. */
@@ -106,15 +112,16 @@ export function FuturesMarginLeverage({
           ref={triggerRef}
           type="button"
           className="fo-mlTrigger"
-          aria-haspopup="dialog"
-          aria-expanded={open === 'margin'}
+          aria-haspopup={marginTypeLocked ? undefined : 'dialog'}
+          aria-expanded={marginTypeLocked ? undefined : open === 'margin'}
+          aria-disabled={marginTypeLocked || undefined}
           disabled={disabled}
-          onClick={() => setOpen((v) => (v === 'margin' ? null : 'margin'))}
+          onClick={() => { if (!marginTypeLocked) setOpen((v) => (v === 'margin' ? null : 'margin')); }}
         >
           <span className="fo-mlTriggerText">
             {marginType === 'ISOLATED' ? t('futures.isolated') : t('futures.cross')}
           </span>
-          <span className="fo-mlChevron" aria-hidden="true">▾</span>
+          {!marginTypeLocked && <span className="fo-mlChevron" aria-hidden="true">▾</span>}
         </button>
 
         <button
@@ -134,7 +141,7 @@ export function FuturesMarginLeverage({
         </button>
       </div>
 
-      {open === 'margin' && max !== null && (
+      {open === 'margin' && max !== null && !marginTypeLocked && (
         <div className="fo-mlPopover" role="dialog" aria-label={t('futures.marginType')}>
           <div className="fo-mlSection">
             <div className="fo-mlSectionTitle">{t('futures.marginType')}</div>

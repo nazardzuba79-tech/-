@@ -67,14 +67,20 @@ jobs:
         env:
           VITE_API_URL: /api/v1
         run: npm run build
-      - name: Initialize disposable integration database
-        run: npx prisma db push --skip-generate
+      - name: Initialize disposable integration database from the committed migrations
+        run: npx prisma migrate deploy
       - name: Private trading, access isolation and chart regressions
         env:
           PRIVATE_TRADING_DB_TESTS: '1'
         run: >-
           npm test -- --runInBand --silent --json --outputFile=private-trading-tests.json
           --runTestsByPath
+          src/private-trading/__tests__/crossDemo.test.ts
+          src/private-trading/__tests__/nativeDemoEngine.test.ts
+          src/private-trading/__tests__/nativeDemoReplay.test.ts
+          src/private-trading/__tests__/nativeDemoService.test.ts
+          src/private-trading/__tests__/nativeDemo.integration.test.ts
+          src/api/routes/__tests__/nativeDemoAccess.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
           src/private-trading/__tests__/liveEngine.test.ts
           src/private-trading/__tests__/marketData.test.ts

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesExecution } from '../lib/futuresExecution';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
 
 type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
@@ -15,10 +16,15 @@ type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
 export function FuturesAccountSummary({
   quoteAsset,
   config,
+  marginType,
   onOpenTransfer,
 }: {
   quoteAsset: string;
   config: FuturesConfig;
+  /** The margin mode this account actually settles in. Stated here because
+   *  it is the first thing the summary has to say about the account: the
+   *  margin figures below mean different things under Cross and Isolated. */
+  marginType?: 'ISOLATED' | 'CROSS';
   onOpenTransfer?: () => void;
 }) {
   const { t } = useLanguage();
@@ -30,6 +36,21 @@ export function FuturesAccountSummary({
   // independently timed copies of it. The 5s cadence is the one this card
   // always used.
   const account = useFuturesAccount({ balances: 5000, positions: 5000 });
+  /**
+   * ONE SOURCE FOR EVERY FIGURE ON THIS CARD.
+   *
+   * When the engine publishes its own account aggregate, this card stops
+   * calculating and starts displaying: equity, both margins, the order
+   * reserve and the available balance are the server's single computation,
+   * not a second one performed here from positions and a tier table. Two
+   * derivations of one figure are two figures, and that is exactly how the
+   * maintenance margin came out as 0.00% — the REAL engine's tier table
+   * applied to a position the simulation engine had priced under its own.
+   *
+   * `null` — every real account — leaves the derivation below untouched.
+   */
+  const execution = useFuturesExecution();
+  const aggregate = execution.account_aggregate;
   const failedResources = (['balances', 'positions'] as const).filter(key => account[key].failed);
   const retrying = failedResources.some(key => account[key].loading || account[key].refreshing);
 
@@ -38,22 +59,32 @@ export function FuturesAccountSummary({
   // balance request simply failed is the exact fake zero VOLTEX forbids,
   // and it is what this card used to do.
   const row = account.balances.data?.find((x) => x.asset === quoteAsset);
-  const available = account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
+  const available = aggregate
+    ? Number(aggregate.available)
+    : account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
   const locked = account.balances.data ? (row ? parseFloat(row.locked) : 0) : null;
   const positions = account.positions.data;
 
-  const marginBalance = available !== null && locked !== null ? available + locked : null;
+  const marginBalance = aggregate
+    ? Number(aggregate.equity)
+    : available !== null && locked !== null ? available + locked : null;
 
   // Every figure below is derived exactly as before — same reduce, same
   // leverage tier lookup, same maintenance-margin rate. The only change is
   // that an unknown positions list yields null rather than a total of 0.
-  const pnl = positions
-    ? positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0)
-    : null;
-  const initialMargin = positions
-    ? positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0)
-    : null;
-  const maintenanceMargin = positions && config
+  const pnl = aggregate
+    ? Number(aggregate.unrealizedPnl)
+    : positions
+      ? positions.reduce((sum, p) => sum + (p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : 0), 0)
+      : null;
+  const initialMargin = aggregate
+    ? Number(aggregate.initialMargin) + Number(aggregate.orderReserve)
+    : positions
+      ? positions.reduce((sum, p) => sum + parseFloat(p.initialMargin), 0)
+      : null;
+  const maintenanceMargin = aggregate
+    ? Number(aggregate.maintenanceMargin)
+    : positions && config
     ? positions.reduce((sum, p) => {
         const notional = parseFloat(p.size) * parseFloat(p.markPrice ?? p.entryPrice);
         const tier = getLeverageTier(config.leverageTiers, notional);
@@ -83,8 +114,16 @@ export function FuturesAccountSummary({
       </div>
       {failedResources.length > 0 && <div className="terminal-account-state" role="alert" aria-busy={retrying}>
         <span>{t(account.balances.failed ? 'trade.loadAssetsError' : 'futures.loadPositionsError')}</span>
-        <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => refreshFuturesAccount(failedResources)}>{t('trade.retry')}</button>
+        <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => execution.refresh(failedResources)}>{t('trade.retry')}</button>
       </div>}
+      {aggregate && !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 && (
+        // An incomplete valuation understates collateral. Saying so is the
+        // only honest option: a total that silently omits an asset reads
+        // exactly like a smaller account.
+        <div className="futures-account-state" role="status" style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.35 }}>
+          {t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })}
+        </div>
+      )}
       <div className="futures-account-pnl" style={styles.headerRight}>
         <span>{t('futures.unrealizedPnl')}</span>
         <span
@@ -98,6 +137,11 @@ export function FuturesAccountSummary({
           {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
         </span>
       </div>
+
+      {marginType && <div className="futures-account-stat futures-account-mode" style={styles.statRow}>
+        <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginType')}</span>
+        <span>{t(marginType === 'ISOLATED' ? 'futures.isolated' : 'futures.cross')}</span>
+      </div>}
 
       <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>

@@ -103,6 +103,25 @@ test('legacy shared MACD is unchanged unless explicitly opted in by the Spot cha
   // from quietly changing its MACD too.
   expect(chart).toContain("const spotChartRefinements = terminal && market === 'spot'");
   expect(chart).toContain('computeMACD(res.candles, 12, 26, 9, { warmupFromValidMacd: spotChartRefinements })');
-  expect(futures).toContain('<PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" />');
+  // THE INVARIANT IS THE `market` PROP, NOT THE WHOLE LINE.
+  //
+  // This used to pin the entire `<PriceChart …/>` element verbatim, which
+  // made every unrelated prop added to the Futures chart look like a MACD
+  // regression: `compactTools` broke it on main, and the native demo's
+  // `privateTrading`/`candleLoader` broke it again. Neither touches the
+  // warm-up gate.
+  //
+  // What must stay true is that Futures asks for `market="futures"`, so
+  // `spotChartRefinements` above stays false for it and the legacy MACD is
+  // what Futures gets. That is asserted directly, together with the two
+  // props the rail itself needs, and with the negative that actually
+  // matters: Futures never claims to be the Spot chart.
+  const chartElement = futures.match(/<PriceChart[\s\S]*?\/>/)?.[0] ?? '';
+  expect(chartElement).toContain('pair={symbol}');
+  expect(chartElement).toContain('chrome="terminal"');
+  expect(chartElement).toContain('drawingTools');
+  expect(chartElement).toContain('market="futures"');
+  expect(chartElement).not.toContain('market="spot"');
+  expect(futures.match(/<PriceChart/g)).toHaveLength(1);
   expect(futures).not.toContain('market="spot"');
 });

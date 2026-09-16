@@ -58,9 +58,11 @@ export interface PrivateHistoricalData {
   symbol: string; tradeCandles: PrivateCandle[]; markCandles: PrivateCandle[];
   fundingEvents: PrivateFundingEvent[]; expectedFundingTimestamps: number[];
   intervalMs: number; complete: boolean; issues: string[]; fetchedAt: number;
-  fundingScheduleModel: 'CURRENT_INTERVAL_GRID_V1'; instrument: PrivateInstrument;
+  fundingScheduleModel: 'CURRENT_INTERVAL_GRID_V1' | 'NATIVE_DEMO_FIXED_FUNDING_V1'; instrument: PrivateInstrument;
 }
 export interface PrivateHistoryRequest {
+  /** Server-only native demo chooses its own disclosed settlement schedule. */
+  omitProviderFunding?: boolean;
   symbol: string; startTime: number; endTime: number; intervalMinutes?: 1 | 5 | 15 | 60;
   signal?: AbortSignal; onProgress?: (progress: { stage: 'trade' | 'mark' | 'funding'; pages: number; rows: number }) => void;
 }
@@ -443,6 +445,7 @@ export class PrivateTradingMarketData {
       };
       // Sequential pages cap collector pressure; cancellation propagates through every request.
       const tradeCandles = await loadCandles('trade'), markCandles = await loadCandles('mark');
+      if (request.omitProviderFunding) return { symbol: contract, tradeCandles, markCandles, fundingEvents: [], expectedFundingTimestamps: [], intervalMs, complete: !issues.length, issues, instrument, fetchedAt: this.now(), fundingScheduleModel: 'NATIVE_DEMO_FIXED_FUNDING_V1' };
       const funding = new Map<number, { timestamp: number; rate: string }>(); let end = request.endTime - 1, pages = 0;
       for (; pages < 100 && end >= request.startTime; pages++) {
         const page = read(fundingPageSchema, await this.get(`funding/${contract}?${new URLSearchParams({ startTime: String(request.startTime), endTime: String(end) })}`, request.signal));

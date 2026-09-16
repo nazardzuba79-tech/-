@@ -70,7 +70,12 @@ async function main() {
     await page.goto(origin);
     const image = page.locator('dialog.private-card-dialog img');
     await image.waitFor(); await page.waitForFunction(() => document.querySelector('dialog img')?.complete);
-    assert.deepEqual(await image.evaluate(img => [img.naturalWidth, img.naturalHeight]), [1080, 1440]);
+    // ONE PLACE PINS THE SIZE. The renderer's own constants are the contract;
+    // the preview and the downloaded file are then both checked against them,
+    // so a future change to the card cannot leave a stale number behind here.
+    const exportSize = await page.evaluate(() => [window.__cardRenderer.PRIVATE_RESULT_CARD_WIDTH, window.__cardRenderer.PRIVATE_RESULT_CARD_HEIGHT]);
+    assert.deepEqual(exportSize, [1080, 1215], 'P&L card export contract is 1080x1215');
+    assert.deepEqual(await image.evaluate(img => [img.naturalWidth, img.naturalHeight]), exportSize);
     const geometry = await page.evaluate(() => {
       const dialog = document.querySelector('dialog'), image = dialog.querySelector('img'), footer = dialog.querySelector('footer');
       return { modal: dialog.matches(':modal'), dialog: dialog.getBoundingClientRect().toJSON(), image: image.getBoundingClientRect().toJSON(), footer: footer.getBoundingClientRect().toJSON(), width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth };
@@ -124,7 +129,8 @@ async function main() {
     const download = await downloadPromise;
     const target = path.join(out, `export-${width}.png`); await download.saveAs(target);
     const bytes = fs.readFileSync(target);
-    assert.equal(bytes.readUInt32BE(16), 1080); assert.equal(bytes.readUInt32BE(20), 1440);
+    assert.deepEqual([bytes.readUInt32BE(16), bytes.readUInt32BE(20)], exportSize,
+      `downloaded PNG is ${bytes.readUInt32BE(16)}x${bytes.readUInt32BE(20)}`);
     assert.equal(bytes.compare(preview), 0, 'Preview and export must use identical frozen snapshot bytes');
     assert.equal(reads, 2, 'Actual export must authorize both rendering and delivery');
     assert.equal(download.suggestedFilename(), 'VOLTEX-BTCUSDT-historical.png');

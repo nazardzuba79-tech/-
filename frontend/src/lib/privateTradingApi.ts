@@ -1,4 +1,5 @@
 import { getToken } from './api';
+import { PrivateTradingError } from './privateTradingError';
 
 export type PrivateMode = 'DEMO_LIVE' | 'HISTORICAL_REPLAY';
 export type PrivateSide = 'LONG' | 'SHORT';
@@ -54,9 +55,7 @@ export interface PrivateMarket {
   providerTimestamp:number;fetchedAt:number;
   instrument:{symbol:string;tickSize:string;qtyStep:string;minOrderQty:string;maxOrderQty:string;maxMarketOrderQty:string;minNotionalValue:string;minLeverage:string;maxLeverage:string;leverageStep:string};
 }
-export class PrivateTradingError extends Error {
-  constructor(message:string,readonly status:number){super(message);this.name='PrivateTradingError';}
-}
+export { PrivateTradingError } from './privateTradingError';
 
 /** This client cannot target production order, wallet or copy-trading routes. */
 export function createPrivateTradingClient(base:string,token:()=>string|null,fetcher:typeof fetch=fetch){

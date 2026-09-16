@@ -1,3 +1,5 @@
+import { useNativeDemo } from './private-trading/useNativeDemo';
+import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
@@ -12,6 +14,13 @@ import { FuturesOrderForm } from '../components/FuturesOrderForm';
 import { FuturesPositionsPanel } from '../components/FuturesPositionsPanel';
 import { FuturesOrdersPanel } from '../components/FuturesOrdersPanel';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
+import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
+import { FuturesAccountSourceContext } from '../lib/futuresAccountSource';
+import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
+import { nativeDemoApi } from '../lib/nativeDemoApi';
+import { pairToNativeSymbol } from '../lib/nativeFuturesAdapter';
+import type { FuturesContractRules } from '../lib/futuresMath';
+import { ChartTradingToggle } from '../components/ChartTradingToggle';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
@@ -65,7 +74,7 @@ const BOTTOM_TABS: { id: BottomTab; labelKey: 'trade.tabOpenOrders' | 'trade.tab
 export function FuturesPage() {
   const { t } = useLanguage();
   const reference = useFuturesReference();
-  const account = useFuturesAccount({ orders: 5000, positions: 4000 });
+  const [initialParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const requestedDesign = searchParams.get('terminalDesign');
@@ -76,6 +85,47 @@ export function FuturesPage() {
   const [symbols, setSymbols] = useState<string[]>(() => readFuturesSymbolCache() ?? CORE_SYMBOLS);
   const [universe, setUniverse] = useState<FuturesUniverse | null>(null);
   const [symbol, setSymbol] = useState(() => searchParams.get('pair') || 'BTC/USDT');
+  const native = useNativeDemo(symbol,setSymbol);
+  /**
+   * The selected contract's quantity rules, from the engine that will
+   * enforce them. Loaded once per symbol — they are static instrument
+   * metadata, not a quote — and left null for a contract that has not
+   * answered, which makes the order form fall back to nothing rather than
+   * to a guessed step.
+   */
+  const [nativeContract, setNativeContract] = useState<FuturesContractRules | null>(null);
+  useEffect(() => {
+    if (!native.allowed) { setNativeContract(null); return; }
+    let cancelled = false;
+    const controller = new AbortController();
+    setNativeContract(null);
+    nativeDemoApi.contract(pairToNativeSymbol(symbol), controller.signal)
+      .then(rules => { if (!cancelled) setNativeContract(rules); })
+      .catch(() => { if (!cancelled) setNativeContract(null); });
+    return () => { cancelled = true; controller.abort(); };
+  }, [symbol, native.allowed]);
+  /**
+   * THE TERMINAL DOES NOT CHANGE — ITS ENGINE DOES.
+   *
+   * There is one order form, one positions table, one orders table and one
+   * assets table on this page, and they are the same components for every
+   * account. For the owner whose access verdict pins them to the
+   * simulation engine, `useNativeFuturesExecution` supplies the account
+   * state those components read and the commands their buttons send; for
+   * everybody else it is null and the real execution is used, which is the
+   * `api` call each component used to make inline. See lib/futuresExecution.
+   */
+  const nativeExecution = useNativeFuturesExecution(native, nativeContract);
+  const execution = nativeExecution ?? REAL_FUTURES_EXECUTION;
+  // The simulation account polls its own authoritative state, so the real
+  // futures account store must not poll for it. What decides that is the
+  // ENGINE SEAM itself, not a query parameter and not a second flag:
+  // `nativeExecution` is non-null exactly while this account is bound to the
+  // simulation engine — including while the server's verdict is still
+  // 'unknown', which is deliberately fail-closed. An ordinary user's binding
+  // resolves to 'ordinary', the seam goes null, and the unchanged intervals
+  // resume.
+  const account = useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 });
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
@@ -87,6 +137,18 @@ export function FuturesPage() {
   );
   const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
+  /**
+   * "Торговля с графика" — a CHART TOOL switch, not an account switch.
+   *
+   * On: a bar can be picked and the pick prices the ordinary order form.
+   * Off: the pickers are hidden and any unsent pick is dropped. Nothing
+   * about the account, its positions, its orders or its history depends on
+   * it, and it is not persisted anywhere — it is the state of a toolbar.
+   */
+  const [chartTrading, setChartTrading] = useState(false);
+  /** A reduce-only close the trader started from the positions table. The
+   *  form fills itself from it; nothing is placed until they submit. */
+  const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number } | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -186,7 +248,7 @@ export function FuturesPage() {
           space on every page of the site. */}
       <Nav
         active="/futures"
-        rightExtra={<PrivateTradingEntry />}
+        rightExtra={nativeExecution?undefined:<PrivateTradingEntry/>}
         onTickerSelect={handleTickerSelect}
         staticTicker
         tickerSymbols={symbols}
@@ -194,6 +256,8 @@ export function FuturesPage() {
         futuresReference={reference}
       />
 
+      <FuturesExecutionProvider value={execution}>
+      <FuturesAccountSourceContext.Provider value={execution.account}>
       <div className="terminal" data-account-compact={accountPanel.compact}>
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
@@ -203,7 +267,22 @@ export function FuturesPage() {
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio} />
+            {nativeExecution && <ChartTradingToggle
+              enabled={chartTrading}
+              onChange={next => {
+                setChartTrading(next);
+                // Turning the tools off discards an UNSENT historical
+                // selection, so the next ordinary order cannot silently
+                // open in the past. Positions, orders, balance and history
+                // are account state and are not touched.
+                if (!next) native.interaction.onCancelSelection();
+              }}
+              picking={native.interaction.selecting !== null}
+              onPick={native.pickEntry}
+            />}
+            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+              privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
+              candleLoader={nativeExecution?native.loader:undefined} />
           </div>
 
           <div className="orderbook-area repaired-futures-book">
@@ -227,11 +306,15 @@ export function FuturesPage() {
             <FuturesOrderForm
               key={symbol}
               symbol={symbol}
-              executionEnabled={futuresConfig?.symbols.includes(symbol) ?? false}
+              /* The simulation engine lists every contract the terminal
+                 discovers, so its universe is not the real engine's
+                 execution whitelist. */
+              executionEnabled={nativeExecution ? true : (futuresConfig?.symbols.includes(symbol) ?? false)}
               onPlaced={handleOrderPlaced}
-              onOpenTransfer={() => setShowTransfer(true)}
+              onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
+              closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
             />
           </div>
         </div>
@@ -261,7 +344,19 @@ export function FuturesPage() {
 
           <div className="bottom-content" id="futures-bottom-content" role="tabpanel" aria-labelledby={`futures-tab-${bottomTab}`} hidden={accountPanel.compact}>
             {bottomTab === 'positions' && (
-              <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="open" />
+              <FuturesPositionsPanel
+                refreshKey={positionsRefreshKey}
+                tab="open"
+                /* "Лимитный" hands the position to the ORDINARY order form
+                   as a reduce-only ticket, priced at the level the trader
+                   then types. It is the form that places it, so this is a
+                   real limit close and not a second order path. */
+                onLimitClose={(position) => {
+                  setSymbol(position.symbol);
+                  pickedSeq.current += 1;
+                  setCloseTicket({ symbol: position.symbol, side: position.side, size: position.size, seq: pickedSeq.current });
+                }}
+              />
             )}
             {bottomTab === 'positionHistory' && <FuturesPositionsPanel refreshKey={positionsRefreshKey} tab="history" />}
             {bottomTab === 'orders' && <FuturesOrdersPanel refreshKey={positionsRefreshKey} />}
@@ -270,6 +365,8 @@ export function FuturesPage() {
           </div>
         </div>
       </div>
+      </FuturesAccountSourceContext.Provider>
+      </FuturesExecutionProvider>
 
       {!desktopMarkets && <dialog className="reference-market-dialog" ref={marketDialogRef} aria-label={t('nav.markets')}
         onClick={event => { if (event.target === event.currentTarget) event.currentTarget.close(); }}>
@@ -280,6 +377,7 @@ export function FuturesPage() {
           <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={next => { setSymbol(next); marketDialogRef.current?.close(); }} />
         </div>
       </dialog>}
+      {nativeExecution&&<NativeDemoDialogs controller={native}/>}
       {showTransfer && <FuturesTransferModal onClose={() => setShowTransfer(false)} />}
     </div>
   );
