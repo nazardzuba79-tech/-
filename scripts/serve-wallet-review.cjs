@@ -147,6 +147,9 @@ app.get('/api/v1/wallet/overview', (_req, res) => {
   const spot = [
     { asset: 'USDT', available: '250', locked: '0', priceUsd: 1, valueUsd: 250 },
     { asset: 'BTC', available: '0.00412', locked: '0', priceUsd: 100000, valueUsd: 412 },
+    // A third priced asset, so the first-viewport density check has more than
+    // two rows to prove itself against on the ordinary ledger too.
+    { asset: 'ETH', available: '0.31', locked: '0', priceUsd: 3000, valueUsd: 930 },
     ...(state.unpriced ? [{ asset: 'EUR', available: '700000', locked: '0', priceUsd: null, valueUsd: null }] : []),
   ];
   const spotValueUsd = spot.reduce((sum, b) => sum + (b.valueUsd ?? 0), 0);

@@ -94,10 +94,11 @@ function ledgerFixture(options: Record<string, any> = {}, lang = 'ru') {
 test('desktop ledger has exactly the seven requested columns and original quantity/USD meaning', () => {
   const fixture = ledgerFixture();
   const headings = nodes(fixture.render(), node => node.type === 'th').map(text);
-  // `В использовании` was promoted out of a footnote under Available into a
-  // column of its own for the Unified Trading Account: on a margin account
-  // committed quantity is a fact a reader checks, not an aside.
-  expect(headings).toEqual(['Актив', 'Баланс', 'Доступно', 'В использовании', '24ч', 'Стоимость', 'Действия']);
+  // The reference account's own column set. `В использовании` was promoted
+  // out of a footnote under Available into a column of its own: on a margin
+  // account committed quantity is a fact a reader checks, not an aside. The
+  // 24h move moved under the ticker so the row stays one line.
+  expect(headings).toEqual(['Актив', 'Активы', 'Баланс кошелька', 'В использовании', 'Доступно', 'Стоимость', 'Действия']);
   expect(nodes(fixture.render(), node => node.type === 'col')).toHaveLength(7);
   for (const row of fixture.tableRows()) expect(nodes(row, node => node.type === 'td')).toHaveLength(7);
   const html = fixture.html();
@@ -124,9 +125,11 @@ test('committed balance is its own column, on every row, with zero shown as the 
   const btc = rowsRendered.find(row => text(row).includes('Bitcoin'));
   const cells = nodes(btc, node => node.type === 'td');
   expect(byClass(cells[3], 'wallet-ledger-locked')).toHaveLength(1);
-  expect(normalize(text(cells[3]))).toBe('2,5 BTC');
+  // The unit is carried once, by the `Активы` column; repeating it in four
+  // more columns is noise in a dense grid.
+  expect(normalize(text(cells[3]))).toBe('2,5');
   const usdt = rowsRendered.find(row => text(row).includes('Tether'));
-  expect(normalize(text(nodes(usdt, node => node.type === 'td')[3]))).toBe('0 USDT');
+  expect(normalize(text(nodes(usdt, node => node.type === 'td')[3]))).toBe('0');
 });
 
 test('an asset with no price is reported unknown, never as a holding worth nothing', () => {
@@ -166,6 +169,7 @@ test('mobile primary quantity has its symbol and secondary estimated USD; expans
   expect(normalize(text(detail))).toContain('268,5 BTC');
   expect(normalize(text(detail))).toContain('В использовании');
   expect(normalize(text(detail))).toContain('2,5 BTC');
+  expect(normalize(text(detail))).not.toContain('NaN');
   expect(byClass(detail, 'wallet-ledger-row-actions')).toHaveLength(1);
 });
 
@@ -189,10 +193,10 @@ test('actual search, hide-zero and sort handlers preserve original filtering and
   const hideZero = nodes(fixture.render(), node => node.type === 'button' && node.props['aria-pressed'] !== undefined)[0];
   hideZero.props.onClick();
   expect(fixture.tableRows().map(row => row.key)).toContain('SOL');
-  const balanceHeader = nodes(fixture.render(), node => node.type === 'th').find(node => text(node) === 'Баланс');
+  const balanceHeader = nodes(fixture.render(), node => node.type === 'th').find(node => text(node) === 'Активы');
   nodes(balanceHeader, node => node.type === 'button')[0].props.onClick();
   expect(fixture.tableRows().map(row => row.key)).toEqual(['USDT', 'XRP', 'BTC', 'ETH', 'SOL']);
-  nodes(nodes(fixture.render(), node => node.type === 'th').find(node => text(node) === 'Баланс'), node => node.type === 'button')[0].props.onClick();
+  nodes(nodes(fixture.render(), node => node.type === 'th').find(node => text(node) === 'Активы'), node => node.type === 'button')[0].props.onClick();
   expect(fixture.tableRows().map(row => row.key)).toEqual(['SOL', 'ETH', 'BTC', 'XRP', 'USDT']);
   expect(JSON.stringify(rows)).toBe(before);
 });
@@ -218,8 +222,9 @@ test('row actions invoke existing callbacks, generic Trade route and menu keyboa
   };
   try {
     fixture.render();
-    byClass(fixture.render(), 'wallet-ledger-transfer')[0].props.onClick();
-    expect(fixture.callbacks.onTransfer).toHaveBeenCalledTimes(1);
+    // `Перевести` moved into the row menu: a wrapped three-action stack was
+    // inflating every row and clipping the column. It is still one click
+    // away and still calls the same callback.
     expect(byClass(fixture.render(), 'wallet-ledger-trade').every(node => node.props.to === '/trade')).toBe(true);
     fixture.refs[0].current = { closest: () => null };
     fixture.refs[1].current = { querySelector: () => ({ focus: firstFocus }) };
@@ -234,7 +239,7 @@ test('row actions invoke existing callbacks, generic Trade route and menu keyboa
     expect(preventDefault).toHaveBeenCalledTimes(1); expect(triggerFocus).toHaveBeenCalledTimes(1);
     expect(byClass(fixture.render(), 'wallet-ledger-action-menu')).toHaveLength(0);
     cleanup();
-    for (const [index, callback] of [[0, 'onDeposit'], [1, 'onWithdraw']] as const) {
+    for (const [index, callback] of [[0, 'onDeposit'], [1, 'onWithdraw'], [2, 'onTransfer']] as const) {
       byClass(fixture.render(), 'wallet-ledger-more')[0].props.onClick({ currentTarget: trigger });
       const buttons = nodes(byClass(fixture.render(), 'wallet-ledger-action-menu')[0], node => node.props.role === 'menuitem');
       buttons[index].props.onClick();
@@ -300,58 +305,112 @@ test.each([
   [false, false, '$12 345 678,91'],
   [true, false, fmt.MASK],
   [false, true, fmt.EM_DASH],
-])('full-width total retains original authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
+])('the headline figures retain their authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
-  // The header renders an ACCOUNT now, not a wallet overview: the same
-  // total, but taken from whichever source is authoritative for the
-  // account, with the margin figures beside it. See useWalletData.
+  // The header renders an ACCOUNT, taken from whichever source is
+  // authoritative for it, with BOTH margin ratios answered by the server so
+  // nothing here divides one figure by another. See useWalletData.
   const account = {
-    mode: 'CROSS', totalEquityUsd: 12345678.91, availableUsd: 1.25, unrealizedPnlUsd: -2.75,
+    mode: 'CROSS', collateralUsd: 12345678.91, totalEquityUsd: 12345678.91,
+    availableUsd: 1.25, unrealizedPnlUsd: -2.75,
     initialMarginUsd: 3.5, maintenanceMarginUsd: 0.5, orderReserveUsd: 0,
+    initialMarginRatio: 0.0005, maintenanceMarginRatio: 0,
     spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
   };
   const before = JSON.stringify(account), onToggleHidden = jest.fn();
-  const tree = PortfolioStrip({ account, btcEquivalent: 153.459124, hidden, unavailable, onToggleHidden,
-    onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
-    onHistory: jest.fn(), onRefresh: jest.fn() });
-  const totals = byClass(tree, 'wallet-total-value');
-  expect(totals).toHaveLength(1);
-  expect(normalize(text(totals[0]))).toBe(expected);
-  expect(totals[0].type).toBe('p');
-  expect(nodes(totals[0], node => node.type === 'button')).toHaveLength(0);
-  const totalParent = nodes(tree, node => Array.isArray(node.props?.children) && node.props.children.includes(totals[0]));
-  expect(totalParent).toHaveLength(1);
-  const headingRow = totalParent[0].props.children[0];
-  expect(nodes(headingRow, node => node.type === 'h2')).toHaveLength(1);
-  const toggle = nodes(headingRow, node => node.type === 'button' && node.props['aria-pressed'] !== undefined);
-  expect(toggle).toHaveLength(1);
-  expect(toggle[0].props['aria-pressed']).toBe(hidden);
+  const tree = PortfolioStrip({ account, performance: null, performanceLoading: false,
+    period: '7d', onPeriodChange: jest.fn(), hidden, unavailable, onToggleHidden,
+    onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(), onHistory: jest.fn() });
+
+  const rendered = normalize(renderToStaticMarkup(tree));
+  // `Активы` is what the account holds; the identical figure under
+  // `Баланс маржи` is that plus a zero P&L, not a second derivation.
+  expect(rendered).toContain('Активы');
+  expect(rendered).toContain('Баланс маржи');
+  expect(rendered).toContain(normalize(expected));
+  if (!hidden && !unavailable) {
+    // Three headline figures, no more: the account's own, never a fourth
+    // invented from them.
+    // The exact class, not its container `wallet-account-metrics`.
+    expect([...rendered.matchAll(/class="wallet-account-metric /g)]).toHaveLength(3);
+  }
+
+  const heading = nodes(tree, node => node.type === 'h2');
+  expect(heading).toHaveLength(1);
+  const toggle = nodes(tree, node => node.type === 'button' && node.props['aria-pressed'] === hidden && node.props['aria-label']);
+  expect(toggle.length).toBeGreaterThanOrEqual(1);
   toggle[0].props.onClick();
   expect(onToggleHidden).toHaveBeenCalledTimes(1);
   expect(JSON.stringify(account)).toBe(before);
-  if (!hidden) {
-    const btc = `${fmt.formatAmount(153.459124, 'ru', fmt.btcEquivalentDecimals(153.459124))} BTC`;
-    expect(normalize(text(tree))).toContain(normalize(btc));
-  }
+});
+
+test('margin usage prints the ratios the SERVER answered, never a division done here', () => {
+  const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+  });
+  const account = {
+    mode: 'CROSS', collateralUsd: 1000, totalEquityUsd: 1000, availableUsd: 600, unrealizedPnlUsd: 0,
+    initialMarginUsd: 250, maintenanceMarginUsd: 100, orderReserveUsd: 0,
+    initialMarginRatio: 0.25, maintenanceMarginRatio: 0.1,
+    spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
+  };
+  const rendered = normalize(renderToStaticMarkup(PortfolioStrip({ account, performance: null,
+    performanceLoading: false, period: '7d', onPeriodChange: jest.fn(), hidden: false, unavailable: false,
+    onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(), onHistory: jest.fn() })));
+
+  expect(rendered).toContain('25,00%');
+  expect(rendered).toContain('10,00%');
+  // The source divides nothing: both ratios arrive on `account`.
+  const source = read(wallet + 'PortfolioStrip.tsx');
+  expect(source).toContain('account!.initialMarginRatio');
+  expect(source).not.toMatch(/initialMargin[A-Za-z]*\s*\/\s*|\/\s*totalEquityUsd/);
+});
+
+test('an unknown ratio is a dash, and a real zero is a zero', () => {
+  const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
+  });
+  const base = {
+    mode: 'CROSS', collateralUsd: 0, totalEquityUsd: 0, availableUsd: 0, unrealizedPnlUsd: 0,
+    initialMarginUsd: 0, maintenanceMarginUsd: 0, orderReserveUsd: 0,
+    spotUsd: null, futuresUsd: null, valuationComplete: true, unpricedAssets: [], settleAsset: 'USDT',
+  };
+  const render = (account: any) => normalize(renderToStaticMarkup(PortfolioStrip({ account, performance: null,
+    performanceLoading: false, period: '7d', onPeriodChange: jest.fn(), hidden: false, unavailable: false,
+    onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(), onHistory: jest.fn() })));
+
+  // Equity is not positive, so the server answered `null`: the ratio of an
+  // empty account is undefined, and a dash is the only honest rendering.
+  const unknown = render({ ...base, initialMarginRatio: null, maintenanceMarginRatio: null });
+  expect(unknown).toContain(fmt.EM_DASH);
+  // A real zero ratio is a real answer and prints as one.
+  const zero = render({ ...base, totalEquityUsd: 1000, initialMarginRatio: 0, maintenanceMarginRatio: 0 });
+  expect(zero).toContain('0,00%');
 });
 
 test('the account header reports unknown margin figures as dashes, never as zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   // An ordinary ledger has no margin account. Its margin fields are UNKNOWN
   // — not zero — and the header has to say so, because "no margin is
   // committed" and "we did not ask" are different claims.
   const account = {
-    mode: 'SPOT', totalEquityUsd: 300, availableUsd: null, unrealizedPnlUsd: null,
+    mode: 'SPOT', collateralUsd: 300, totalEquityUsd: 300, availableUsd: null, unrealizedPnlUsd: null,
     initialMarginUsd: null, maintenanceMarginUsd: null, orderReserveUsd: null,
+    initialMarginRatio: null, maintenanceMarginRatio: null,
     spotUsd: 250, futuresUsd: 50, valuationComplete: false, unpricedAssets: ['EUR'], settleAsset: 'USDT',
   };
-  const tree = PortfolioStrip({ account, btcEquivalent: null, hidden: false, unavailable: false,
+  const tree = PortfolioStrip({ account, performance: null, performanceLoading: false,
+    period: '7d', onPeriodChange: jest.fn(), hidden: false, unavailable: false,
     onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
-    onHistory: jest.fn(), onRefresh: jest.fn() });
+    onHistory: jest.fn() });
   // Rendered rather than walked: the metrics are a child component, so the
   // element tree alone would not show what a reader actually sees.
   const rendered = normalize(renderToStaticMarkup(tree));
@@ -360,7 +419,9 @@ test('the account header reports unknown margin figures as dashes, never as zero
   expect(rendered).toContain('$250,00');
   expect(rendered).toContain('Фьючерсы');
   expect(rendered).toContain('$50,00');
+  // No margin row at all on a plain ledger — and no IM/MM bars either.
   expect(rendered).not.toMatch(/Начальная маржа|Поддерживающая маржа|Доступная маржа/);
+  expect(rendered).not.toContain('wallet-margin-usage');
   // And it says the total is a floor, in the terminal's own words.
   expect(rendered).toContain('wallet-valuation-note');
   expect(rendered).toContain('EUR');
@@ -369,11 +430,13 @@ test('the account header reports unknown margin figures as dashes, never as zero
 
 test('Convert is offered as unavailable rather than wired to nothing', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
-    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt, './useWalletData': {},
+    '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
-  const tree = PortfolioStrip({ account: null, btcEquivalent: null, hidden: false, unavailable: false,
+  const tree = PortfolioStrip({ account: null, performance: null, performanceLoading: false,
+    period: '7d', onPeriodChange: jest.fn(), hidden: false, unavailable: false,
     onToggleHidden: jest.fn(), onDeposit: jest.fn(), onWithdraw: jest.fn(), onTransfer: jest.fn(),
-    onHistory: jest.fn(), onRefresh: jest.fn() });
+    onHistory: jest.fn() });
   const convert = byClass(tree, 'wallet-action-convert');
   expect(convert).toHaveLength(1);
   // Disabled and labelled, with no onClick at all: there is no convert flow
@@ -527,9 +590,12 @@ test.each([
   // `account`. The ordinary-ledger row derivation, the price join, the poll
   // intervals and the keep-last-good error handling are unchanged. What was
   // REMOVED is the branch that rendered a hardcoded holdings profile; there
-  // is no such list any more, on the server or here. No format, rounding,
-  // currency or masking rule in this file changed.
-  [wallet + 'useWalletData.ts', '642de837c16304bc6268effec672923bf3f035748b8e7fd70bc4c1266c95d9fb'],
+  // is no such list any more, on the server or here. Re-taken again for the
+  // reference layout: the view model gained `collateralUsd`, both margin
+  // ratios (ANSWERED BY THE SERVER, never divided here) and a per-row
+  // `walletBalance`, all pass-throughs. No format, rounding, currency or
+  // masking rule in this file changed.
+  [wallet + 'useWalletData.ts', '5da69390d6944e665b8d562654398b843acc0793f82dac375212c3feee907dba'],
   [wallet + 'format.ts', '2ffab4fe344b95d04379ac3a85663ffde5a94cf5fbe171a80973c67494d846a0'],
   [wallet + 'DepositModal.tsx', '1db97b349fe86b39fd81c8a35129ebfc319d47b866b0572963483ef76c8d61e4'],
   [wallet + 'WithdrawModal.tsx', 'fe3a8d9fa872116f18ccd03aa530f3bf82787ab7652634e88af6efa977dc4220'],

@@ -32,7 +32,7 @@ export interface NativeState {
 export interface NativeAccountAggregate{
   settleBalance:string;walletCollateral:string;collateral:string;unrealizedPnl:string;equity:string;
   initialMargin:string;orderReserve:string;maintenanceMargin:string;available:string;
-  maintenanceRatio:string|null;liquidatable:boolean|null;
+  initialMarginRatio:string|null;maintenanceRatio:string|null;liquidatable:boolean|null;
   collateralComplete:boolean;unpricedAssets:string[];collateralAsOf:number|null;
 }
 export type LedgerSource='INITIAL_COLLATERAL'|'OPENING_FEE'|'CLOSING_FEE'|'LIQUIDATION_FEE'|'REALIZED_PNL'|'FUNDING';

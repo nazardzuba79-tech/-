@@ -15,6 +15,12 @@ export interface LedgerRow {
   name: string;
   /** Total units held. */
   total: number;
+  /**
+   * What the wallet row itself holds. On a margin account `total` also
+   * carries the balance already moved into the trading ledger, so the two
+   * are different facts and the table shows both.
+   */
+  walletBalance: number;
   available: number;
   /**
    * Held against the account's own orders and positions, so not spendable.
@@ -46,12 +52,25 @@ export interface LedgerRow {
 export interface UnifiedAccount {
   /** 'CROSS' for the authoritative margin account; 'SPOT' for a plain ledger. */
   mode: 'CROSS' | 'SPOT';
+  /**
+   * What the account HOLDS, before P&L: the settle ledger plus every priced
+   * wallet asset. `totalEquityUsd` is this plus unrealized P&L, which is
+   * what actually backs margin.
+   */
+  collateralUsd: number | null;
   totalEquityUsd: number | null;
   availableUsd: number | null;
   unrealizedPnlUsd: number | null;
   initialMarginUsd: number | null;
   maintenanceMarginUsd: number | null;
   orderReserveUsd: number | null;
+  /**
+   * Both margin requirements as a fraction of equity, ANSWERED BY THE
+   * SERVER on the same equity — never divided here. Null when equity is not
+   * positive: the ratio of an empty account is undefined, not zero.
+   */
+  initialMarginRatio: number | null;
+  maintenanceMarginRatio: number | null;
   /** The two ledger subtotals, for the accounts that actually have two. */
   spotUsd: number | null;
   futuresUsd: number | null;
@@ -185,12 +204,15 @@ export function useWalletData() {
       const a = unified.account;
       return {
         mode: 'CROSS',
+        collateralUsd: finite(a.collateral),
         totalEquityUsd: finite(a.equity),
         availableUsd: finite(a.available),
         unrealizedPnlUsd: finite(a.unrealizedPnl),
         initialMarginUsd: finite(a.initialMargin),
         maintenanceMarginUsd: finite(a.maintenanceMargin),
         orderReserveUsd: finite(a.orderReserve),
+        initialMarginRatio: finite(a.initialMarginRatio),
+        maintenanceMarginRatio: finite(a.maintenanceRatio),
         // A Cross account has one pool, not a spot half and a futures half.
         // Reporting a split it does not have would be an invention.
         spotUsd: null,
@@ -203,6 +225,10 @@ export function useWalletData() {
     if (!overview) return null;
     return {
       mode: 'SPOT',
+      // A plain ledger holds exactly what it is worth: there is no P&L
+      // between the two, so they are the same figure rather than a second
+      // one derived from it.
+      collateralUsd: overview.real.totalValueUsd,
       totalEquityUsd: overview.real.totalValueUsd,
       // Spendable cash is a per-asset fact on a plain ledger, shown in the
       // rows. There is no single account-level "available margin" to report,
@@ -212,6 +238,8 @@ export function useWalletData() {
       initialMarginUsd: null,
       maintenanceMarginUsd: null,
       orderReserveUsd: null,
+      initialMarginRatio: null,
+      maintenanceMarginRatio: null,
       spotUsd: overview.real.spotValueUsd,
       futuresUsd: overview.real.futuresValueUsd,
       valuationComplete: overview.valuationComplete,
@@ -261,6 +289,7 @@ export function useWalletData() {
           symbol: r.asset,
           name: ranking?.name ?? r.asset,
           total,
+          walletBalance: Number(r.walletQuantity),
           available: Number(r.available),
           locked: Number(r.inUse),
           priceUsd: finite(r.price),
@@ -293,6 +322,9 @@ export function useWalletData() {
         symbol,
         name: ranking?.name ?? symbol,
         total,
+        // A plain ledger has no trading ledger behind it, so the wallet row
+        // IS the whole holding.
+        walletBalance: total,
         available,
         locked,
         priceUsd,

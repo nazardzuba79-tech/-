@@ -8,7 +8,7 @@ import { EmptyState } from './ui';
 import { MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
 import { LedgerRow } from './useWalletData';
 
-type SortKey = 'symbol' | 'total' | 'available' | 'inUse' | 'price' | 'change' | 'value';
+type SortKey = 'symbol' | 'total' | 'wallet' | 'available' | 'inUse' | 'price' | 'change' | 'value';
 type SortDir = 'asc' | 'desc';
 
 /**
@@ -64,6 +64,7 @@ export function AssetLedger({
     return [...filtered].sort((a, b) => {
       if (sortKey === 'symbol') return a.symbol.localeCompare(b.symbol) * dir;
       if (sortKey === 'total') return (a.total - b.total) * dir;
+      if (sortKey === 'wallet') return (a.walletBalance - b.walletBalance) * dir;
       if (sortKey === 'available') return (a.available - b.available) * dir;
       if (sortKey === 'inUse') return (a.locked - b.locked) * dir;
       if (sortKey === 'price') return (num(a.priceUsd) - num(b.priceUsd)) * dir;
@@ -99,11 +100,13 @@ export function AssetLedger({
   }, [query, hideZero, sortKey, sortDir, unavailable, loading]);
 
   function rowActions(row: LedgerRow) {
-    return <div className="wallet-ledger-row-actions flex flex-wrap items-center justify-end gap-x-2 gap-y-1 text-[13px] font-medium">
+    // One line, never wrapping: a wrapped action stack was inflating every
+    // row to ~110px and clipping the column. `Торговать` is the one action
+    // worth a click of its own; the rest live in the menu.
+    return <div className="wallet-ledger-row-actions flex flex-nowrap items-center justify-end gap-1 text-[12.5px] font-medium">
       {/* Rows include a market-wide catalogue, not a supported-pair list.
           Open the real terminal without inventing an ASSET/USDT market. */}
-      <Link to="/trade" className="wallet-ledger-trade rounded-wsm py-1 text-gold-deep transition-colors hover:text-ink">{t('wallet.tradeAction')}</Link>
-      <button type="button" onClick={onTransfer} className="wallet-ledger-transfer rounded-wsm py-1 text-ink-3 transition-colors hover:text-ink">{t('wallet.transfer')}</button>
+      <Link to="/trade" className="wallet-ledger-trade rounded-wsm px-1 py-1 text-gold-deep transition-colors hover:text-ink">{t('wallet.tradeAction')}</Link>
       <button type="button" aria-label={`${t('wallet.actions')} · ${row.symbol}`} aria-haspopup="menu" aria-expanded={menu?.symbol === row.symbol}
         className="wallet-ledger-more flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors hover:bg-surface-1 hover:text-ink"
         onClick={event => {
@@ -111,7 +114,7 @@ export function AssetLedger({
           menuTrigger.current = event.currentTarget;
           const rect = event.currentTarget.getBoundingClientRect();
           setMenu({ symbol: row.symbol, left: Math.max(12, Math.min(rect.right - 168, window.innerWidth - 180)),
-            top: rect.bottom + 108 > window.innerHeight ? Math.max(12, rect.top - 104) : rect.bottom + 6 });
+            top: rect.bottom + 140 > window.innerHeight ? Math.max(12, rect.top - 136) : rect.bottom + 6 });
         }}><EllipsisIcon className="h-4 w-4" strokeWidth={1.8} /></button>
     </div>;
   }
@@ -125,11 +128,11 @@ export function AssetLedger({
   };
 
   const columns: { key: SortKey | null; label: string; align: 'left' | 'right'; sep?: boolean }[] = [
-    { key: 'symbol', label: t('wallet.colAsset'), align: 'left' },
-    { key: 'total', label: t('wallet.colBalance'), align: 'right' },
+    { key: 'symbol', label: t('wallet.asset'), align: 'left' },
+    { key: 'total', label: t('wallet.assetsTotal'), align: 'right' },
+    { key: 'wallet', label: t('wallet.colWalletBalance'), align: 'right' },
+    { key: 'inUse', label: t('wallet.colCollateral'), align: 'right' },
     { key: 'available', label: t('wallet.colAvailable'), align: 'right' },
-    { key: 'inUse', label: t('wallet.colInUse'), align: 'right' },
-    { key: 'change', label: t('wallet.col24h'), align: 'right' },
     { key: 'value', label: t('wallet.colValue'), align: 'right', sep: true },
     { key: null, label: t('wallet.actions'), align: 'right' },
   ];
@@ -139,8 +142,8 @@ export function AssetLedger({
 
   return (
     <section ref={sectionRef} aria-label={t('wallet.assets')} className="wallet-asset-ledger min-w-0">
-      <div className="mb-3 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-[16px] font-semibold tracking-normal text-ink">
+      <div className="mb-2.5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-[15px] font-semibold tracking-normal text-ink">
           {t('wallet.assets')}
           {!unavailable && !empty && <span className="num ml-2 text-[12px] font-medium text-ink-4">{visible.length}</span>}
         </h2>
@@ -181,7 +184,7 @@ export function AssetLedger({
                 }`}
               />
             </span>
-            <span className="whitespace-nowrap">{t('wallet.hideZero')}</span>
+            <span className="whitespace-nowrap">{t('wallet.hideSmall')}</span>
           </button>
         </div>
       </div>
@@ -211,15 +214,18 @@ export function AssetLedger({
         ) : (
           <>
             <div className="wallet-ledger-desktop hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[880px] table-fixed">
+              <table className="w-full min-w-[720px] table-fixed">
+                {/* An eight-figure USD value is the longest cell on this
+                    table; `Стоимость` and the action cell are sized for it
+                    so neither can spill into the other. */}
                 <colgroup>
-                  <col className="w-[16%]" />
+                  <col className="w-[18%]" />
                   <col className="w-[15%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[8%]" />
-                  <col className="w-[15%]" />
-                  <col className="w-[16%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[17%]" />
+                  <col className="w-[14%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-hair bg-surface-1">
@@ -230,7 +236,7 @@ export function AssetLedger({
                           key={col.label}
                           scope="col"
                           aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                          className={`px-3 py-3 text-[12px] font-medium normal-case tracking-normal first:pl-4 sm:first:pl-5 ${
+                          className={`px-3 py-2.5 text-[11.5px] font-medium normal-case tracking-normal first:pl-4 sm:first:pl-5 ${
                             col.align === 'right' ? 'text-right' : 'text-left'
                           } ${col.sep ? 'border-l border-hair-soft' : ''} ${active ? 'text-ink-2' : 'text-ink-3'}`}
                         >
@@ -266,31 +272,42 @@ export function AssetLedger({
                         key={r.symbol}
                         className="group border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2"
                       >
-                        <td className="py-3 pl-4 pr-3 sm:pl-5">
+                        <td className="py-2.5 pl-4 pr-3 sm:pl-5">
                           <div className="flex items-center gap-2.5">
-                            <CryptoIcon symbol={r.symbol} size={30} />
+                            <CryptoIcon symbol={r.symbol} size={26} />
                             <div className="min-w-0">
-                              <p className="text-[14px] font-semibold leading-5 tracking-normal text-ink">{r.symbol}</p>
-                              <p className="truncate text-[12px] leading-4 text-ink-4">{r.name}</p>
+                              <p className="text-[13.5px] font-semibold leading-5 tracking-normal text-ink">{r.symbol}</p>
+                              <p className="truncate text-[11.5px] leading-4 text-ink-4">
+                                {r.name}
+                                {r.changePercent24h !== null && (
+                                  <span className={`num ml-1.5 ${toneOf(r.changePercent24h)}`}>
+                                    {formatPercent(r.changePercent24h, lang)}
+                                  </span>
+                                )}
+                              </p>
                             </div>
                           </div>
                         </td>
-                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-2">
+                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-2">
                           <span className="wallet-ledger-quantity">{hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}</span>
                         </td>
-                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-3">
-                          <span className="wallet-ledger-available">{hidden ? MASK : `${formatAmount(r.available, lang, dp)} ${r.symbol}`}</span>
+                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
+                          {/* The wallet row on its own: on a margin account
+                              the trading ledger's balance is folded into
+                              `total` above, so showing both is what makes
+                              the two legible. */}
+                          <span className="wallet-ledger-wallet">{hidden ? MASK : formatAmount(r.walletBalance, lang, dp)}</span>
                         </td>
-                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-3">
+                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
                           {/* A zero here is a real answer — nothing of this
                               asset is committed — so it is shown as 0 and
                               not dashed out. */}
-                          <span className="wallet-ledger-locked">{hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</span>
+                          <span className="wallet-ledger-locked">{hidden ? MASK : formatAmount(r.locked, lang, dp)}</span>
                         </td>
-                        <td className={`num px-3 py-3 text-right text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>
-                          {formatPercent(r.changePercent24h, lang)}
+                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
+                          <span className="wallet-ledger-available">{hidden ? MASK : formatAmount(r.available, lang, dp)}</span>
                         </td>
-                        <td className="wallet-ledger-value border-l border-hair-soft bg-panel-2 px-3 py-3 text-right group-hover:bg-transparent">
+                        <td className="wallet-ledger-value border-l border-hair-soft bg-panel-2 px-3 py-2.5 text-right group-hover:bg-transparent">
                           <span
                             className={`num text-[14px] font-semibold tracking-[-0.01em] ${
                               r.valueUsd && r.valueUsd > 0 ? 'text-ink' : 'text-ink-4'
@@ -306,7 +323,7 @@ export function AssetLedger({
                             </small>
                           )}
                         </td>
-                        <td className="px-3 py-3 sm:pr-5">{rowActions(r)}</td>
+                        <td className="px-3 py-2.5 sm:pr-5">{rowActions(r)}</td>
                       </tr>
                     );
                   })}
@@ -381,7 +398,7 @@ export function AssetLedger({
               : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
             items[next]?.focus();
           }}>
-          {[[t('wallet.deposit'), onDeposit], [t('wallet.withdraw'), onWithdraw]].map(([label, action]) => (
+          {[[t('wallet.deposit'), onDeposit], [t('wallet.withdraw'), onWithdraw], [t('wallet.transfer'), onTransfer]].map(([label, action]) => (
             <button key={label as string} type="button" role="menuitem" className="block w-full rounded-wsm px-3 py-2 text-left text-[13px] text-ink-2 hover:bg-surface-1"
               onClick={() => { setMenu(null); menuTrigger.current?.focus(); (action as () => void)(); }}>{label as string}</button>
           ))}

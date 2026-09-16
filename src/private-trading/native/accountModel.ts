@@ -56,6 +56,8 @@ export interface CrossAccount {
   maintenanceMargin: string;
   /** equity - initialMargin - orderReserve, floored at 0. */
   available: string;
+  /** initialMargin / equity, or null when equity is not positive. */
+  initialMarginRatio: string | null;
   /** maintenanceMargin / equity, or null when equity is not positive. */
   maintenanceRatio: string | null;
   /**
@@ -100,6 +102,11 @@ export function crossAccount(
     orderReserve: out(orderReserve),
     maintenanceMargin: out(maintenanceMargin),
     available: out(D.maximum(0, equity.minus(initialMargin).minus(orderReserve))),
+    // Both ratios are answered HERE, on the same equity, so an interface
+    // can print them without dividing anything itself. Null rather than 0
+    // when equity is not positive: a ratio of an empty account is not zero,
+    // it is undefined.
+    initialMarginRatio: equity.gt(0) ? out(initialMargin.div(equity)) : null,
     maintenanceRatio: equity.gt(0) ? out(maintenanceMargin.div(equity)) : null,
     // The whole point: never liquidate against collateral we know is short.
     liquidatable: valuation.complete ? hasOpenPositions && equity.lte(maintenanceMargin) : null,

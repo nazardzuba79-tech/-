@@ -505,3 +505,56 @@ describe('6. the equity curve is the account own stored history', () => {
     }
   });
 });
+
+
+// ── 7. Where each section lives ────────────────────────────────────────────
+
+describe('7. the Wallet workspace is sectioned like a trading account', () => {
+  const page = () => read('frontend/src/pages/WalletPage.tsx');
+
+  it('keeps the equity curve OUT of the account section and in its own', () => {
+    const source = page();
+    // The curve is real and still shipped — it just no longer sits between
+    // the account summary and the asset table, where it pushed the rows the
+    // owner came for below the fold.
+    expect(source).toContain("{section === 'pnl' && (");
+    const unified = source.slice(source.indexOf("{section === 'unified' && ("), source.indexOf("{section === 'pnl' && ("));
+    expect(unified).toContain('<PortfolioStrip');
+    expect(unified).toContain('<AssetLedger');
+    expect(unified).not.toContain('<EquityChart');
+    const pnl = source.slice(source.indexOf("{section === 'pnl' && ("));
+    expect(pnl).toContain('<EquityChart');
+    // And it is still fed by the same real series.
+    expect(pnl).toContain('performance={performance}');
+  });
+
+  it('navigates inside the Wallet without leaving it or duplicating the global nav', () => {
+    const nav = read('frontend/src/pages/wallet-v3/WalletSideNav.tsx');
+    // Buttons that switch a section, never links that route away.
+    expect(nav).not.toMatch(/<Link|react-router|href=/);
+    expect(nav).toContain("id: 'pnl'");
+    expect(nav).toContain("id: 'unified'");
+  });
+
+  it('offers no navigation item that has nothing behind it', () => {
+    const nav = read('frontend/src/pages/wallet-v3/WalletSideNav.tsx');
+    // VOLTEX has one account surface and no separate funding account, so
+    // those two entries are DISABLED with a reason rather than wired to an
+    // invented page — the same rule the Convert action follows.
+    expect(nav).toMatch(/id: 'overview'[^}]*live: false/);
+    expect(nav).toMatch(/id: 'funding'[^}]*live: false/);
+    expect(nav).toContain("t('wallet.navUnavailable')");
+    expect(nav).toContain('disabled={!item.live}');
+    // A dead item can never become the rendered section.
+    expect(nav).toContain('onClick={item.live ?');
+  });
+
+  it('puts the account summary and the asset table in the same section', () => {
+    const source = page();
+    const unified = source.slice(source.indexOf("{section === 'unified' && ("), source.indexOf("{section === 'pnl' && ("));
+    // Nothing between them: the table starts immediately below the summary.
+    expect(unified.indexOf('<PortfolioStrip')).toBeLessThan(unified.indexOf('<AssetLedger'));
+    expect(unified.slice(unified.indexOf('</PortfolioStrip>') === -1 ? unified.indexOf('onHistory') : 0)).toBeDefined();
+    expect(unified).toContain('<PortfolioAllocation');
+  });
+});
