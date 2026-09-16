@@ -168,7 +168,11 @@ function mount(file: string, overrides: Record<string, any> = {}) {
      */
     if (name === '../lib/futuresExecution') {
       const real = {
-        engine: 'REAL', ready: true, account: null, marginType: null, candle: null, contract: null,
+        engine: 'REAL', ready: true, account: null, marginType: null,
+        // The mode the REAL engine opens on, mirroring
+        // REAL_FUTURES_EXECUTION. `marginType: null` leaves the toggle
+        // live; this is only where that live toggle starts.
+        defaultMarginType: 'ISOLATED', candle: null, contract: null,
         placeOrder: (p: any) => api.placeFuturesOrder(p),
         cancelOrder: (id: string) => api.cancelFuturesOrder(id),
         closePosition: (id: string) => api.closeFuturesPosition(id),

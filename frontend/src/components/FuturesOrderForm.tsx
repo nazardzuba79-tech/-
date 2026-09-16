@@ -125,7 +125,26 @@ export function FuturesOrderForm({
    * chosen and could not get back without reloading the page.
    */
   const [requestedLeverage, setRequestedLeverage] = useState(10);
-  const [chosenMarginType, setMarginType] = useState<'ISOLATED' | 'CROSS'>('ISOLATED');
+  /**
+   * CROSS IS THE DEFAULT, because this account is a Cross account.
+   *
+   * The Wallet calls it `Единый торговый счёт` under a `Кросс-маржа` chip,
+   * and the engine backs every position from the shared collateral until
+   * the trader says otherwise. Opening the panel on Isolated would ring
+   * fence the first order by accident and contradict the header on the
+   * other page. Isolated is a choice the trader makes, not a state they
+   * arrive in.
+   */
+  /**
+   * The bucket the TRADER picked, or `null` for "hasn't picked one".
+   *
+   * Not seeded from the engine's default, because the engine binding is
+   * resolved asynchronously: a value latched at mount would be whichever
+   * engine happened to be bound one render early. `null` lets the default
+   * below follow the engine that actually ends up backing this terminal,
+   * and stops following it the moment the trader touches the control.
+   */
+  const [chosenMarginType, setMarginType] = useState<'ISOLATED' | 'CROSS' | null>(null);
   const [reduceOnly, setReduceOnly] = useState(false);
   const [markPrice, setMarkPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +165,7 @@ export function FuturesOrderForm({
   const execution = useFuturesExecution();
   /** An engine that settles in one margin mode is not offering a choice.
    *  `null` — every ordinary account — leaves the toggle the trader's. */
-  const marginType = execution.marginType ?? chosenMarginType;
+  const marginType = execution.marginType ?? chosenMarginType ?? execution.defaultMarginType;
   // The leverage bounds and the tier table come from the one shared read of
   // /futures/config rather than this form's own copy — same values, same
   // `null`-until-known semantics, one request for the page instead of three.

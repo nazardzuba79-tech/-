@@ -84,6 +84,27 @@ describe('the terminal is the terminal, for every account', () => {
     expect(page).toContain('useEffect(() => { setChartMenu(null); }, [symbol]);');
   });
 
+  test('the double click is decided by the state the gesture STARTED in', () => {
+    // The guard exists: with the picker armed, the chart owns the gesture
+    // and the menu does not open over it.
+    expect(page).toContain('if (pickingAtGestureStart.current) return;');
+    // And it is read from a ref recorded on the first press, NOT from
+    // `selecting` as it stands when the second click is handled. By then
+    // the gesture's own first click has already picked a bar and disarmed
+    // the picker, so reading the live value decided the same double click
+    // differently depending on whether React had re-rendered in between —
+    // under load it had not, and the gesture silently did nothing.
+    expect(page).toContain('onPointerDownCapture');
+    expect(page).toContain('pickingAtGestureStart.current = native.interaction.selecting !== null;');
+    expect(page).not.toMatch(/onDoubleClick[\s\S]{0,900}?if \(native\.interaction\.selecting !== null\) return;/);
+    // A ref, not state: a state update scheduled by the first click is not
+    // guaranteed to have rendered before the second click is handled.
+    expect(page).toContain('const pickingAtGestureStart = useRef(false);');
+    // Only the first press of a gesture records it; the second must not
+    // overwrite it with the value its own first click just produced.
+    expect(page).toMatch(/onPointerDownCapture[\s\S]{0,200}?if \(event\.detail > 1\) return;/);
+  });
+
   test('the account card, not a second terminal, opens the simulation account', () => {
     // The old NativeDemoTicket/NativePanel are not coming back: the one
     // ordinary account panel carries the balance and the one action.

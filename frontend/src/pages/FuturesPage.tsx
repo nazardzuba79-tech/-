@@ -159,6 +159,14 @@ export function FuturesPage() {
    */
   const [chartMenu, setChartMenu] = useState<ChartMenuAnchor | null>(null);
   const closeChartMenu = useCallback(() => setChartMenu(null), []);
+  /**
+   * Was the entry picker armed when the current pointer gesture began?
+   *
+   * A ref, not state: it must be true at the instant the second click of a
+   * double click is handled, and a state update scheduled by the first
+   * click is not guaranteed to have been rendered by then.
+   */
+  const pickingAtGestureStart = useRef(false);
   // A menu anchored to a point on one contract's chart means nothing on
   // another's, and must not survive leaving the page either.
   useEffect(() => { setChartMenu(null); }, [symbol]);
@@ -309,6 +317,14 @@ export function FuturesPage() {
                  cursor rule, a QA run — can tell that a click on the chart
                  is currently a selection rather than a pan. */
               data-chart-picking={nativeExecution && native.interaction.selecting !== null ? native.interaction.selecting : undefined}
+              /* THE GESTURE IS JUDGED BY THE STATE IT STARTED IN.
+                 Recorded on the first press, in capture, so a control
+                 inside the chart that stops the event still cannot hide
+                 the gesture from this guard. */
+              onPointerDownCapture={nativeExecution ? (event) => {
+                if (event.detail > 1) return;
+                pickingAtGestureStart.current = native.interaction.selecting !== null;
+              } : undefined}
               onDoubleClick={nativeExecution ? (event) => {
                 // Controls inside the chart (the drawing rail, the interval
                 // and indicator buttons) keep their own double-click
@@ -321,7 +337,16 @@ export function FuturesPage() {
                 // changed underneath it. The control stays reachable: the
                 // compact trigger appears for exactly as long as the picker
                 // is armed (see .chart-tools-trigger), and Esc still cancels.
-                if (native.interaction.selecting !== null) return;
+                //
+                // This reads the state the GESTURE began in rather than
+                // `selecting` as it stands now, because by now the
+                // gesture's own first click has already picked a bar and
+                // disarmed the picker. Deciding on the live value made the
+                // same double click open the menu or not depending on
+                // whether React had re-rendered between the two clicks —
+                // under load it had not, and the gesture silently did
+                // nothing.
+                if (pickingAtGestureStart.current) return;
                 event.preventDefault();
                 event.stopPropagation();
                 setChartMenu({ x: event.clientX, y: event.clientY });
