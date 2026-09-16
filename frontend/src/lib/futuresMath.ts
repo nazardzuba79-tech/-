@@ -73,10 +73,27 @@ export function previewLiquidationPrice(params: {
   const initialMarginRatio = 1 / leverage;
   const backstopRatio = marginType === 'CROSS' && notional > 0 ? freeBalance / notional : 0;
 
-  if (side === 'LONG') {
-    return entryPrice * (1 - initialMarginRatio - backstopRatio + maintenanceMarginRate);
-  }
-  return entryPrice * (1 + initialMarginRatio + backstopRatio - maintenanceMarginRate);
+  const price = side === 'LONG'
+    ? entryPrice * (1 - initialMarginRatio - backstopRatio + maintenanceMarginRate)
+    : entryPrice * (1 + initialMarginRatio + backstopRatio - maintenanceMarginRate);
+
+  /**
+   * A PRICE AT OR BELOW ZERO IS NOT A PRICE.
+   *
+   * On a Cross position the account itself is the backstop, so a large
+   * balance behind a small order pushes the formula's long result straight
+   * through zero and out the other side: a 10 000 000 balance against a
+   * 5 000 notional printed `-100 948 106.00` in the panel. It is not a
+   * liquidation price the trader can be liquidated at — it is the formula
+   * saying the adverse move does not exist, because the collateral outlasts
+   * the contract.
+   *
+   * `null` is how this function already says "no answer", and it is what
+   * the server's own estimator returns in the same situation. The panel
+   * renders it as a dash. A negative number rendered as a price is the one
+   * outcome that reads as information and is not.
+   */
+  return Number.isFinite(price) && price > 0 ? price : null;
 }
 
 // ---------------------------------------------------------------------------

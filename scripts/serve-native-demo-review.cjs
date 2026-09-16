@@ -108,7 +108,14 @@ app.get('/api/v1/market/universe',asyncRoute(async(_req,res)=>{
   const rows=await tickers();
   res.json({available:true,value:{instruments:rows.map(r=>({symbol:r.symbol,marketType:'linear_perpetual',quoteAsset:'USDT',settleAsset:'USDT',status:'Trading'}))}});
 }));
-app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,leverageTiers:[]});}));
+/* The risk tiers travel, projected from the SAME instrument the engine
+   prices against. They were an empty array here, which silently disabled
+   every tier-dependent control in the order panel — the liquidation
+   preview among them — so the stand could not show what the real backend
+   shows. The shape is the client's LeverageTier; the values are the
+   instrument's own. */
+app.get('/api/v1/futures/config',asyncRoute(async(_req,res)=>{await tickers();const i=await market.instrument('BTCUSDT');res.json({symbols:symbols.map(s=>s.replace(/USDT$/,'/USDT')),minLeverage:Number(i.leverage.min),maxLeverage:Number(i.leverage.max),fundingIntervalHours:null,highLeverageWarningThreshold:null,
+  leverageTiers:(i.riskTiers??[]).map((t,idx,all)=>({notionalCap:idx===all.length-1?null:Number(t.riskLimitValue),maxLeverage:Number(t.maxLeverage),maintenanceMarginRate:Number(t.maintenanceMarginRate),maintenanceAmount:Number(t.maintenanceDeduction??0)}))});}));
 app.get('/api/v1/futures/mark-price/:pair',asyncRoute(async(req,res)=>{const symbol=req.params.pair.replace('-',''),q=await market.freshQuote(symbol);res.json({symbol,markPrice:q.markPrice,indexPrice:null});}));
 app.get('/api/v1/market/external/tickers',asyncRoute(async(_req,res)=>res.json(await tickers())));
 app.get('/api/v1/me',(_req,res)=>res.json({id:'preview-only',email:'preview.invalid',displayName:'Demo Preview',phone:null,country:null,avatarUrl:null,isAdmin:true,kycStatus:'NOT_STARTED',twoFactorEnabled:false,createdAt:new Date(started).toISOString()}));

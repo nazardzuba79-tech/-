@@ -198,7 +198,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     let text = state.dict?.[key] ?? key;
     if (params) {
       for (const [name, value] of Object.entries(params)) {
-        text = text.replace(`{${name}}`, String(value));
+        // EVERY occurrence, not the first. `String.replace` with a string
+        // pattern substitutes once, so a sentence naming the same
+        // parameter twice — "needs {required} {asset}, {available} {asset}
+        // available" — printed the placeholder verbatim the second time.
+        // `split`/`join` avoids `replaceAll`'s pattern rules entirely: a
+        // value containing `$&` or `$1` is inserted as written, which a
+        // formatted number or an asset code could well be.
+        text = text.split(`{${name}}`).join(String(value));
       }
     }
     return text;
