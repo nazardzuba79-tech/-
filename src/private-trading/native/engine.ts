@@ -8,8 +8,10 @@ const n = (x: string) => decimal(x);
 const out = (x: BigNumber) => amount(x);
 const positive = (x: string) => decimal(x, 'amount', true);
 const active = (o: DemoOrder) => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED';
+export type DemoMarginType = 'CROSS' | 'ISOLATED';
+const marginTypeOf = (value: { marginType?: DemoMarginType }): DemoMarginType => value.marginType === 'ISOLATED' ? 'ISOLATED' : 'CROSS';
 export const NATIVE_DEMO_MODEL = Object.freeze({
-  version: 'VOLTEX_NATIVE_CROSS_V2', marginMode: 'CROSS', settlementAsset: 'USDT',
+  version: 'VOLTEX_NATIVE_MARGIN_V3', marginModes: Object.freeze(['CROSS', 'ISOLATED'] as const), settlementAsset: 'USDT',
   /** Owner-set custom demo cash-flow per 8h UTC settlement (signed fraction of position value). NOT provider funding. */
   funding: Object.freeze({ longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28_800_000 }),
   fundingSource: 'CUSTOM_DEMO_MODEL',
@@ -17,7 +19,7 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   historicalLimit: 'BUY_IF_LOW_LTE_LIMIT_SELL_IF_HIGH_GTE_LIMIT',
   /** Assumed candle path resolution by age at calculation time: ≤7d 1m, ≤45d 15m, older 1h. */
   historyResolution: Object.freeze(['1m<=7d', '15m<=45d', '1h']),
-  liquidation: 'ACCOUNT_EQUITY_LTE_MAINTENANCE_AT_MARK',
+  liquidation: 'CROSS_ACCOUNT_OR_ISOLATED_POSITION_MARGIN_AT_MARK',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
@@ -27,6 +29,8 @@ export interface DemoOrder {
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
   status: 'OPEN' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED'; createdAt: number;
   positionId: string | null; reduceOnly: boolean; protection: DemoProtection; historical: boolean;
+  /** Optional only for replay compatibility with persisted V2 rows; missing means CROSS. */
+  marginType?: DemoMarginType;
 }
 export interface DemoPosition {
   id: string; symbol: string; side: Side; quantity: string; entryPrice: string; leverage: string;
@@ -34,6 +38,8 @@ export interface DemoPosition {
   markPrice: string; lastPrice: string; entryNotional: string; realizedGross: string;
   openingFees: string; closingFees: string; fundingNet: string; roiBasis: string; closedRoiBasis: string;
   protection: DemoProtection; historical: boolean; lastFundingAt: number;
+  /** Optional only for replay compatibility with persisted V2 rows; missing means CROSS. */
+  marginType?: DemoMarginType;
 }
 export interface DemoEvent {
   id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION';
@@ -51,6 +57,7 @@ export interface DemoState {
 export interface DemoOrderInput {
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; leverage: string;
   price?: string; reduceOnly?: boolean; positionId?: string; protection?: Partial<DemoProtection>; historical?: boolean;
+  marginType?: DemoMarginType;
 }
 export const noProtection = (): DemoProtection => ({ takeProfit: null, stopLoss: null, triggerBy: 'MARK', quantity: null });
 export function emptyDemoState(balance: string, time: number): DemoState {
@@ -68,40 +75,74 @@ function instrument(s: DemoState, symbol: string): DemoInstrument {
 export function registerDemoInstrument(s: DemoState, i: DemoInstrument) {
   validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i);
 }
-function exposure(s: DemoState, symbol: string, mark: string) {
-  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
-    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
+function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMarginType) {
+  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol && marginTypeOf(p) === marginType).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
+    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol && marginTypeOf(o) === marginType).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
 }
-/** A single shared account, not one copy of the collateral per position. */
+function positionMaintenance(s: DemoState, p: DemoPosition, mark = p.markPrice) {
+  const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark), mode = marginTypeOf(p);
+  const same = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && marginTypeOf(x) === mode);
+  const total = same.reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
+  const tier = selectRiskTier(out(total), profile);
+  const deduction = total.gt(0) ? n(tier.deduction).times(value).div(total) : new D(0);
+  return D.maximum(0,value.times(tier.maintenanceRate).minus(deduction)).plus(value.times(profile.takerFeeRate));
+}
+function isolatedHealth(s: DemoState, p: DemoPosition, mark = p.markPrice) {
+  return n(p.roiBasis).plus(linearPnl(p.side,p.quantity,p.entryPrice,mark)).minus(positionMaintenance(s,p,mark));
+}
+function crossRisk(s: DemoState) {
+  let upl = new D(0), mm = new D(0), isolatedCommitted = new D(0);
+  let hasCross = false;
+  for (const p of s.positions.filter(p => p.status === 'OPEN')) {
+    if (marginTypeOf(p) === 'ISOLATED') { isolatedCommitted = isolatedCommitted.plus(p.roiBasis); continue; }
+    hasCross = true;
+    upl = upl.plus(linearPnl(p.side,p.quantity,p.entryPrice,p.markPrice));
+    mm = mm.plus(positionMaintenance(s,p));
+  }
+  for (const o of s.orders.filter(o => active(o) && marginTypeOf(o) === 'ISOLATED')) isolatedCommitted = isolatedCommitted.plus(o.reserved);
+  const equity = n(s.walletBalance).minus(isolatedCommitted).plus(upl);
+  return { equity, maintenance: mm, liquidatable: hasCross && equity.lte(mm) };
+}
+function globalSpendable(s: DemoState) {
+  let crossUpl = new D(0), im = new D(0), reserve = new D(0);
+  for (const p of s.positions.filter(p => p.status === 'OPEN')) {
+    const value = n(p.quantity).times(p.markPrice), profile = instrument(s,p.symbol).profile;
+    im = im.plus(value.div(p.leverage)).plus(value.times(profile.takerFeeRate));
+    if (marginTypeOf(p) === 'CROSS') crossUpl = crossUpl.plus(linearPnl(p.side,p.quantity,p.entryPrice,p.markPrice));
+  }
+  for (const o of s.orders.filter(active)) reserve = reserve.plus(o.reserved);
+  return n(s.walletBalance).plus(crossUpl).minus(im).minus(reserve);
+}
+/** One account projection; risk itself is bucketed by margin mode. */
 export function demoAccount(s: DemoState) {
   let upl = new D(0), mm = new D(0), im = new D(0), reserve = new D(0);
   for (const p of s.positions.filter(p => p.status === 'OPEN')) {
     const mark = s.marks[p.symbol]?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
     const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark);
-    const tier = selectRiskTier(out(s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol).reduce((v,x)=>v.plus(n(x.quantity).times(mark)),new D(0))), profile);
-    // Allocate the continuous tier deduction in proportion to same-symbol open notional.
-    const total = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol).reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
-    const deduction = n(tier.deduction).times(value).div(total);
-    mm = mm.plus(D.maximum(0,value.times(tier.maintenanceRate).minus(deduction))).plus(value.times(profile.takerFeeRate));
+    mm = mm.plus(positionMaintenance(s,p,mark));
     im = im.plus(value.div(p.leverage)).plus(value.times(profile.takerFeeRate));
     upl = upl.plus(linearPnl(p.side,p.quantity,p.entryPrice,mark));
   }
   for (const o of s.orders.filter(active)) reserve = reserve.plus(o.reserved);
   const equity = n(s.walletBalance).plus(upl);
+  const isolatedLiquidatable = s.positions.some(p => p.status === 'OPEN' && marginTypeOf(p) === 'ISOLATED' && isolatedHealth(s,p).lte(0));
+  const cross = crossRisk(s);
   return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity),
-    usedMargin: out(im), orderReserve: out(reserve), available: out(D.maximum(0,equity.minus(im).minus(reserve))),
+    usedMargin: out(im), orderReserve: out(reserve), available: out(D.maximum(0,globalSpendable(s))),
     maintenanceMargin: out(mm), maintenanceRatio: equity.gt(0) ? out(mm.div(equity)) : null,
-    liquidatable: s.positions.some(p => p.status === 'OPEN') && equity.lte(mm),
+    liquidatable: isolatedLiquidatable || cross.liquidatable,
     deficit: out(D.maximum(0,n(s.walletBalance).negated())) };
 }
 export function demoPositionView(s: DemoState,p: DemoPosition) {
   const unrealized = p.status === 'OPEN' ? linearPnl(p.side,p.quantity,p.entryPrice,p.markPrice) : '0';
   const realized = out(n(p.realizedGross).minus(p.openingFees).minus(p.closingFees).plus(p.fundingNet));
   const net = out(n(unrealized).plus(realized));
-  return { ...p, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net,
+  const marginMode = marginTypeOf(p);
+  return { ...p, marginType: marginMode, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net,
     roiPercent: n(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).gt(0) ? out(n(p.status==='OPEN'?unrealized:net).div(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).times(100)) : null,
     liquidationPrice: p.status === 'OPEN' ? estimateDemoLiquidationPrice(s,p.id) : null,
-    liquidationStatus: 'ACCOUNT_CROSS_ESTIMATE' as const, marginMode: 'CROSS' as const };
+    liquidationStatus: marginMode === 'ISOLATED' ? 'POSITION_ISOLATED_ESTIMATE' as const : 'ACCOUNT_CROSS_ESTIMATE' as const,
+    marginMode };
 }
 function validateProtection(s: DemoState, p: {symbol:string;side:Side;quantity:string}, protection: DemoProtection, price: string) {
   if (!['MARK','LAST'].includes(protection.triggerBy)) throw new DemoEngineError('INVALID_TRIGGER_SOURCE');
@@ -130,20 +171,22 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   const price = input.type === 'LIMIT' ? input.price : quote.last;
   if (!price) throw new DemoEngineError('LIMIT_PRICE_REQUIRED');
   validateContractOrder({rules:rules.rules, profile:rules.profile, quantity:input.quantity,price,leverage:input.leverage,market:input.type==='MARKET'});
+  let marginType: DemoMarginType = input.marginType === 'ISOLATED' ? 'ISOLATED' : 'CROSS';
   if (input.reduceOnly) {
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
-    if (p.symbol!==input.symbol || p.side===input.side) throw new DemoEngineError('INVALID_REDUCE_SIDE');
+    if (input.marginType === undefined) marginType = marginTypeOf(p);
+    if (p.symbol!==input.symbol || p.side===input.side || marginTypeOf(p)!==marginType) throw new DemoEngineError('INVALID_REDUCE_SIDE');
     if (n(input.quantity).gt(p.quantity)) throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
   }
   const protection = {...noProtection(),...input.protection};
   if (input.reduceOnly && (protection.takeProfit!==null || protection.stopLoss!==null)) throw new DemoEngineError('REDUCE_ORDER_PROTECTION');
   validateProtection(s,{...input,quantity:input.quantity},protection,price);
-  const o:DemoOrder = {...input, reduceOnly:!!input.reduceOnly, historical:!!input.historical, price:input.type==='LIMIT'?price:null,
+  const o:DemoOrder = {...input, marginType, reduceOnly:!!input.reduceOnly, historical:!!input.historical, price:input.type==='LIMIT'?price:null,
     remaining:input.quantity, filled:'0', averagePrice:null, reserved:'0', status:'OPEN', createdAt:time, positionId:input.positionId??null,protection};
   o.reserved=reserveFor(s,o,price);
   if (!o.reduceOnly && (demoAccount(s).liquidatable || n(o.reserved).gt(demoAccount(s).available))) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');
-  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
+  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark,marginType).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
   if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
@@ -170,9 +213,9 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     const p=getPosition(s,o.positionId!);quantity=out(D.minimum(quantity,p.quantity));
     settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker);
   } else {
-    // Same symbol+direction increases one LIVE position, opposite direction remains a hedge.
-    // Each historical test entry stays its own position (own entry marker, P&L and card).
-    let p=o.historical?undefined:s.positions.find(p=>p.status==='OPEN'&&!p.historical&&p.symbol===o.symbol&&p.side===o.side);
+    const mode=marginTypeOf(o);
+    // Same symbol+direction+margin mode increases one LIVE position. Each historical test entry stays separate.
+    let p=o.historical?undefined:s.positions.find(p=>p.status==='OPEN'&&!p.historical&&p.symbol===o.symbol&&p.side===o.side&&marginTypeOf(p)===mode);
     if(o.historical)p=s.positions.find(p=>p.id===o.id&&p.status==='OPEN');
     if(p && p.leverage!==o.leverage)throw new DemoEngineError('SET_EXISTING_POSITION_LEVERAGE_FIRST');
     const prof=instrument(s,o.symbol).profile,fee=n(quantity).times(price).times(maker?prof.makerFeeRate:prof.takerFeeRate);
@@ -182,7 +225,7 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     if(!p) {
       p={id:o.id,symbol:o.symbol,side:o.side,quantity:'0',entryPrice:price,leverage:o.leverage,status:'OPEN',openedAt:time,closedAt:null,
         markPrice:s.marks[o.symbol].mark,lastPrice:s.marks[o.symbol].last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
-        fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time};s.positions.push(p);
+        fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time,marginType:mode};s.positions.push(p);
     }
     p.entryPrice=weightedEntry([{quantity:p.quantity,price:p.entryPrice},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
     p.quantity=out(n(p.quantity).plus(quantity));p.entryNotional=out(n(p.entryNotional).plus(n(quantity).times(price)));
@@ -213,10 +256,9 @@ export function setDemoLeverage(s:DemoState,id:string,leverage:string,time:numbe
   requireTime(s,time);const p=getPosition(s,id),i=instrument(s,p.symbol);
   validateContractOrder({rules:i.rules,profile:i.profile,quantity:p.quantity,price:p.entryPrice,leverage,market:true});
   if(s.orders.some(o=>active(o)&&o.positionId===id))throw new DemoEngineError('CANCEL_ORDERS_BEFORE_LEVERAGE');
-  const before=p.leverage;p.leverage=leverage;
-  const a=demoAccount(s);if(n(a.equity).lt(n(a.usedMargin).plus(a.orderReserve))){p.leverage=before;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
-  // Leverage changes margin requirements, NEVER quantity, entry or absolute P&L.
-  p.roiBasis=out(n(p.quantity).times(p.entryPrice).div(leverage));s.time=time;
+  const before=p.leverage,basis=p.roiBasis;p.leverage=leverage;p.roiBasis=out(n(p.quantity).times(p.entryPrice).div(leverage));
+  if(globalSpendable(s).lt(0)){p.leverage=before;p.roiBasis=basis;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
+  s.time=time;
   emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
 }
 export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number) {
@@ -235,10 +277,17 @@ export function settleDemoFunding(s:DemoState,time:number) {
 }
 export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL') {
   requireTime(s,time);
-  if(demoAccount(s).liquidatable){
-    for(const o of s.orders.filter(active))cancelDemoOrder(s,o.id,time);
-    for(const p of s.positions.filter(p=>p.status==='OPEN'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
-  } else for(const p of s.positions.filter(p=>p.status==='OPEN')) {
+  // Isolated positions carry their own margin bucket; one liquidation must never close an unrelated position.
+  for(const p of [...s.positions].filter(p=>p.status==='OPEN'&&marginTypeOf(p)==='ISOLATED'&&isolatedHealth(s,p).lte(0))){
+    for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id))cancelDemoOrder(s,o.id,time);
+    settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
+  }
+  // Cross positions share only the collateral not committed to isolated positions/orders.
+  if(crossRisk(s).liquidatable){
+    for(const o of s.orders.filter(o=>active(o)&&marginTypeOf(o)==='CROSS'))cancelDemoOrder(s,o.id,time);
+    for(const p of s.positions.filter(p=>p.status==='OPEN'&&marginTypeOf(p)==='CROSS'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
+  }
+  for(const p of s.positions.filter(p=>p.status==='OPEN')) {
     const v=n(p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice),{takeProfit:tp,stopLoss:sl}=p.protection;
     const stop=sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl));
     const profit=tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp));
@@ -249,7 +298,6 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
 export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number},time:number){
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
-  // Stored books are truncated to the depth each command needs, so the snapshot identity includes its content.
   const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${o.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
   let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
   used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
@@ -259,26 +307,29 @@ export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;q
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
   for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
 }
-/**
- * Cross-margin liquidation reference for one position: the Mark price of ITS contract at which the
- * whole account reaches equity <= maintenance, with every other contract frozen at its current Mark.
- * Same-contract hedges move together. null = the shared collateral keeps the account solvent for
- * every price in the adverse direction (or the contract is fully hedged).
- */
+/** Backend-authoritative liquidation reference for the position's actual margin mode. */
 export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):string|null{
   const p=s.positions.find(x=>x.id===positionId&&x.status==='OPEN');if(!p)return null;
   const current=s.marks[p.symbol];if(!current)return null;
-  const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol);
-  const net=same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
-  if(net.isZero())return null;
-  const health=(price:BigNumber)=>{
-    const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
-    const a=demoAccount(probe);return n(a.equity).minus(a.maintenanceMargin);
-  };
-  const m0=n(current.mark);if(health(m0).lte(0))return current.mark;
-  const tick=n(instrument(s,p.symbol).rules.tickSize);
+  const mode=marginTypeOf(p),tick=n(instrument(s,p.symbol).rules.tickSize),m0=n(current.mark);
+  let adverse:'DOWN'|'UP';
+  let health:(price:BigNumber)=>BigNumber;
+  if(mode==='ISOLATED'){
+    adverse=p.side==='LONG'?'DOWN':'UP';
+    health=(price)=>isolatedHealth(s,p,out(price));
+  }else{
+    const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol&&marginTypeOf(x)==='CROSS');
+    const net=same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
+    if(net.isZero())return null;
+    adverse=net.gt(0)?'DOWN':'UP';
+    health=(price)=>{
+      const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol&&marginTypeOf(x)==='CROSS'?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
+      const risk=crossRisk(probe);return risk.equity.minus(risk.maintenance);
+    };
+  }
+  if(health(m0).lte(0))return current.mark;
   let lo:BigNumber,hi:BigNumber;
-  if(net.gt(0)){
+  if(adverse==='DOWN'){
     lo=tick;hi=m0;if(health(lo).gt(0))return null;
   }else{
     lo=m0;hi=m0.times(2);let i=0;
@@ -286,9 +337,8 @@ export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):stri
   }
   for(let i=0;i<200&&hi.minus(lo).gt(tick.div(100));i++){
     const mid=lo.plus(hi).div(2),h=health(mid);
-    if(net.gt(0)){if(h.lte(0))lo=mid;else hi=mid;}else{if(h.gt(0))lo=mid;else hi=mid;}
+    if(adverse==='DOWN'){if(h.lte(0))lo=mid;else hi=mid;}else{if(h.gt(0))lo=mid;else hi=mid;}
   }
-  // Round toward the current price so the reference is never later than the model boundary.
-  const value=net.gt(0)?hi.div(tick).integerValue(BigNumber.ROUND_CEIL).times(tick):lo.div(tick).integerValue(BigNumber.ROUND_FLOOR).times(tick);
+  const value=adverse==='DOWN'?hi.div(tick).integerValue(BigNumber.ROUND_CEIL).times(tick):lo.div(tick).integerValue(BigNumber.ROUND_FLOOR).times(tick);
   return value.gt(0)?out(value):null;
 }
