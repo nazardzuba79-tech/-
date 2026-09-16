@@ -121,6 +121,16 @@ export interface FuturesExecution {
   /** The margin mode the engine actually settles in, when it is not the
    *  trader's to choose. `null` leaves the terminal's own toggle live. */
   marginType: 'ISOLATED' | 'CROSS' | null;
+  /**
+   * Which bucket the panel STARTS on when the trader has not chosen one.
+   *
+   * Distinct from `marginType`, which pins the mode and takes the choice
+   * away. This only decides the opening position of a live control, so the
+   * panel can open on the bucket that account is actually run in — a
+   * unified Cross account should not open on Isolated — without any engine
+   * silently changing another engine's default order.
+   */
+  defaultMarginType: 'ISOLATED' | 'CROSS';
   /** A historical bar the trader picked on the chart, to be priced by the
    *  server. `null` means "trade at the current book", which is every
    *  ordinary order. */
@@ -171,6 +181,9 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   ready: true,
   account: null,
   marginType: null,
+  // Unchanged: this is the mode the real Futures engine has always opened
+  // on, and its order payload is pinned byte-for-byte on it.
+  defaultMarginType: 'ISOLATED',
   candle: null,
   contract: null,
   account_aggregate: null,

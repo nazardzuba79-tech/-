@@ -107,13 +107,25 @@ async function openChartMenu(p) {
   }
   await menu.waitFor();
 }
+/** The switch alone. Closing is Esc in BOTH directions: the menu's primary
+ *  action is "pick an entry on the chart", which also ARMS the picker, so
+ *  using it to dismiss the menu armed a tool this caller never asked for —
+ *  and left the next gesture racing that tool's own first click. */
 async function setChartTools(p, on) {
   await openChartMenu(p);
   const input = p.locator('.chart-tools-menu .chart-tools-switch input');
   if (on) await input.check(); else await input.uncheck();
-  if (on) { await p.locator('.chart-tools-action').click(); }
-  else { await p.keyboard.press('Escape'); }
+  await p.keyboard.press('Escape');
   await p.locator('.chart-tools-menu').waitFor({ state: 'detached' });
+}
+/** Turn the tools on AND arm the entry picker, the way the menu's primary
+ *  action does — which is what a trader presses to choose a bar. */
+async function armChartPicker(p) {
+  await openChartMenu(p);
+  await p.locator('.chart-tools-menu .chart-tools-switch input').check();
+  await p.locator('.chart-tools-action').click();
+  await p.locator('.chart-tools-menu').waitFor({ state: 'detached' });
+  await p.locator('.chart-surface[data-chart-picking]').waitFor();
 }
 async function family(page, type) {
   await page.locator('.fo-panel .order-family-tabs [role=tab]').nth(type === 'MARKET' ? 1 : 0).click();
@@ -269,7 +281,7 @@ async function chartFlow(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s); await family(p, 'MARKET'); await qty(p).fill('1');
-    await setChartTools(p, true);
+    await armChartPicker(p);
     await p.waitForFunction(() => window.__nativeQaSeries?.data().length > 10); await p.locator('.chart-area').scrollIntoViewIfNeeded();
     const points = await p.evaluate(() => { const c = window.__nativeQaChart, series = window.__nativeQaSeries, r = c.chartElement().getBoundingClientRect(); return series.data().slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined).map(x => ({ ...x, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x > 35 && x.x < r.width - 90).filter((_, i) => i % 7 === 0).map(x => ({ x: r.left + x.x, y: r.top + series.priceToCoordinate((x.high + x.low) / 2) })); });
     let picked = false;

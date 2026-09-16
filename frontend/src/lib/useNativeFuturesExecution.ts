@@ -110,6 +110,7 @@ export function useNativeFuturesExecution(
         // null = "the trader chooses". Even here: an unopened account has no
         // position in either bucket, so there is nothing to pin.
         marginType: null,
+        defaultMarginType: 'CROSS' as const,
         candle: pickedCandle,
         contract,
         account_aggregate: aggregate,
@@ -135,6 +136,11 @@ export function useNativeFuturesExecution(
       // than it — so pinning this to CROSS would now be the interface
       // refusing a mode the account actually has.
       marginType: null,
+      // ...but it OPENS on Cross, because that is how this account is run:
+      // one unified pool of collateral, which is what the Wallet header
+      // says and what every position here has been backed by until now.
+      // Isolated is a deliberate choice, not the state you land in.
+      defaultMarginType: 'CROSS' as const,
       candle: pickedCandle,
       contract,
       account_aggregate: aggregate,
@@ -143,11 +149,23 @@ export function useNativeFuturesExecution(
       activation,
       async placeOrder(params) {
         const reducing = params.reduceOnly || Boolean(exitId);
-        const target = !reducing ? undefined : exitId ?? state.positions.find(
-          (p) => p.symbol === pairToNativeSymbol(params.symbol)
+        const targetPosition = !reducing ? undefined : state.positions.find(
+          (p) => (exitId ? p.id === exitId : true)
+            && p.symbol === pairToNativeSymbol(params.symbol)
             && p.side === (params.side === 'SELL' ? 'LONG' : 'SHORT'),
-        )?.id;
+        );
+        const target = !reducing ? undefined : exitId ?? targetPosition?.id;
         if (reducing && !target) throw new Error('Нет позиции для сокращения');
+        /**
+         * A REDUCING ORDER BELONGS TO THE POSITION IT REDUCES.
+         *
+         * Its bucket is the position's, never the panel's current
+         * selection: a trader closing an isolated position while the form
+         * happens to show Cross is closing THAT position, and the engine
+         * rightly refuses an order that crosses buckets. Taking the mode
+         * from the row makes the close mean what the click meant.
+         */
+        const reduceMarginType = targetPosition?.marginMode;
 
         /**
          * A MARKET reduce is a close at the book, which is what CLOSE means.
@@ -168,7 +186,7 @@ export function useNativeFuturesExecution(
         }
         const ok = await run(terminalOrderToNativeDraft({
           ...params,
-          ...(reducing ? { reduceOnly: true, positionId: target } : {}),
+          ...(reducing ? { reduceOnly: true, positionId: target, marginType: reduceMarginType } : {}),
           candle: pickedCandle,
         }));
         if (!ok) throw new Error(native.error || 'Операция не подтверждена');
