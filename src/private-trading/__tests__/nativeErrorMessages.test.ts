@@ -35,7 +35,10 @@ describe('native engine refusals reaching the client', () => {
     const res = await state(new DemoEngineError('INSUFFICIENT_DEMO_MARGIN'));
     expect(res.status).toBe(409);
     expect(res.body.code).toBe('INSUFFICIENT_DEMO_MARGIN');
-    expect(res.body.error).toBe('Недостаточно средств для размещения этого ордера.');
+    // The owner's own wording for this refusal. It names the money, in the
+    // second person, so the trader reads what is wrong with THEIR order
+    // rather than a status about the system.
+    expect(res.body.error).toBe('Вам не хватает средств для размещения этого ордера.');
     // Not a size limit, and not the word "demo" in front of the owner.
     expect(res.body.error).not.toMatch(/количеств|MARKET|демо/i);
   });
