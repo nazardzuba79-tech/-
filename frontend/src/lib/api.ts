@@ -9,7 +9,7 @@ const TOKEN_KEY = 'exchange_token';
 // VITE_API_URL (at build time) to the backend's full URL + /api/v1 in that
 // case. Falls back to the relative path when unset, so nothing changes for
 // the single-domain deployment.
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+export const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);

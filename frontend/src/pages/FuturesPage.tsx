@@ -2,7 +2,7 @@ import { useNativeDemo } from './private-trading/useNativeDemo';
 import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Nav } from '../components/Nav';
 import { PrivateTradingEntry } from '../components/PrivateTradingEntry';
@@ -26,7 +26,7 @@ import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
 import { useCompactAccountPanel } from '../lib/useCompactAccountPanel';
 import { isVerifiedEmptyAccountResource } from '../lib/terminalAccountPanel';
-import { subscribeFuturesDepth, type FuturesTrade } from '../lib/futuresDepth';
+import { subscribeFuturesDepth, setFuturesDepthFallbackBase, type FuturesTrade, type FuturesDepthStatus } from '../lib/futuresDepth';
 
 import { useFuturesReference } from '../lib/useFuturesReference';
 import { rememberTradingMode } from '../lib/tradingMode';
@@ -135,7 +135,11 @@ export function FuturesPage() {
       && isVerifiedEmptyAccountResource(account.positions),
     `futures:${bottomTab}`,
   );
-  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[] }>({ symbol, bids: [], asks: [] });
+  // `status` rides with the levels so the panel can tell "this is the book"
+  // from "this WAS the book" from "we do not know" — three different things
+  // that all used to render as an empty table.
+  const [book, setBook] = useState<{ symbol: string; bids: any[]; asks: any[]; status: FuturesDepthStatus }>(
+    { symbol, bids: [], asks: [], status: 'connecting' });
   const [tape, setTape] = useState<{symbol:string;rows:FuturesTrade[]}>({symbol,rows:[]});
   /**
    * "Торговля с графика" — a CHART TOOL switch, not an account switch.
@@ -212,6 +216,10 @@ export function FuturesPage() {
   // trading mode — see lib/tradingMode.
   useEffect(() => rememberTradingMode('futures'), []);
 
+  // The depth module stays free of `import.meta` so it can be tested outside
+  // the bundler; the page hands it the API origin the rest of the app uses.
+  useEffect(() => { setFuturesDepthFallbackBase(API_BASE); }, []);
+
   useEffect(() => subscribeFuturesDepth(symbol, snapshot => setBook({ symbol, ...snapshot }), incoming => {
     setTape(previous => ({symbol,rows:incoming.length ? [...incoming,...(previous.symbol===symbol?previous.rows:[])]
       .filter((row,index,all)=>all.findIndex(other=>other.id===row.id)===index)
@@ -286,11 +294,14 @@ export function FuturesPage() {
           </div>
 
           <div className="orderbook-area repaired-futures-book">
+            {/* No `key` here on purpose. Remounting on every contract switch
+                threw away the trader's own choices — the Trades tab, the
+                bids-only view, the grouping step — and forced a fresh DOM
+                tree for a panel that already handles a pair change itself. */}
             <FuturesReferenceBook
-              key={symbol}
               lastPrice={reference.get(symbol)?.lastPrice ?? null}
               trades={tape.symbol===symbol?tape.rows:[]}
-
+              status={book.symbol === symbol ? book.status : 'connecting'}
               bids={book.symbol === symbol ? book.bids : []}
               asks={book.symbol === symbol ? book.asks : []}
               pair={symbol}

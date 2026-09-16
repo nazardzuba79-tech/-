@@ -34,6 +34,24 @@ const INSTRUMENTS_TTL_MS = 15 * 60_000;
 const INSTRUMENTS_STALE_MS = 24 * 60 * 60_000;
 const TICKERS_TTL_MS = 5_000;
 const TICKERS_STALE_MS = 120_000;
+/**
+ * Depth TTLs.
+ *
+ * One second, because this is the FALLBACK book: it only runs for visitors
+ * whose browser cannot hold a Bybit socket, and it is what they see instead
+ * of nothing. The TTL is the whole load story — `ProviderCache.fetch`
+ * coalesces concurrent readers onto one in-flight request, so a thousand
+ * fallback clients polling BTCUSDT cost this process ONE upstream request
+ * per second in total, not a thousand.
+ *
+ * The stale budget is deliberately short. A book is a price: serving a
+ * ten-second-old one as if it were current is worse than saying so, and the
+ * `stale` flag rides out to the client either way.
+ */
+const DEPTH_TTL_MS = 1_000;
+const DEPTH_STALE_MS = 10_000;
+/** Bybit's documented maximum for linear/inverse orderbook. */
+const DEPTH_LIMIT = 200;
 
 /**
  * Cursor pagination bounds.
@@ -55,6 +73,17 @@ interface BybitEnvelope {
   retCode?: unknown;
   retMsg?: unknown;
   result?: { list?: unknown; nextPageCursor?: unknown } | null;
+}
+
+/** One side of a book, exactly as Bybit sends it: [price, size] strings. */
+export interface DepthLevel { price: string; quantity: string }
+export interface DepthBook {
+  symbol: string;
+  bids: DepthLevel[];
+  asks: DepthLevel[];
+  /** Bybit's own update id and its own clock. Never compared to ours. */
+  updateId: number;
+  providerTime: number | null;
 }
 
 /** A finite number, or null. Never 0 as a stand-in for "absent". */
@@ -140,6 +169,7 @@ export class BybitMarketDataService {
   private readonly baseUrl: string;
   private readonly instrumentsCache: ProviderCache<NormalizedInstrument[]>;
   private readonly tickersCache: ProviderCache<NormalizedTicker[]>;
+  private readonly depthCache: ProviderCache<DepthBook>;
   /** Upstream HTTP requests this process has made. Used by the tests that
    *  prove the universe is not built one-request-per-instrument. */
   private requestCount = 0;
@@ -174,6 +204,16 @@ export class BybitMarketDataService {
       ttlMs: TICKERS_TTL_MS,
       maxStaleMs: TICKERS_STALE_MS,
       maxEntries: 8,
+      now: options.now,
+    });
+    // Bounded on purpose. A fallback book is only ever fetched for a
+    // contract someone is actually looking at, and capping the entries
+    // stops a crafted request stream from turning this into an unbounded
+    // per-symbol fan-out against the venue.
+    this.depthCache = new ProviderCache<DepthBook>({
+      ttlMs: DEPTH_TTL_MS,
+      maxStaleMs: DEPTH_STALE_MS,
+      maxEntries: 32,
       now: options.now,
     });
   }
@@ -414,6 +454,66 @@ export class BybitMarketDataService {
           return { ...row, marketType: i?.marketType ?? row.marketType, providerEventAt: eventAt,
             ...(i ? {volumeAsset:i.quoteAsset,turnoverAsset:i.baseAsset} : {}) };
         });
+    });
+  }
+
+  /**
+   * The order book for ONE contract, for visitors whose browser cannot keep
+   * a Bybit socket open.
+   *
+   * This exists because the terminal's primary depth path runs in the
+   * visitor's own browser and costs this process nothing. When that path is
+   * blocked — a network that drops WebSockets, a jurisdiction Bybit refuses
+   * — the alternative was a permanently empty book. This is the alternative
+   * to that, and it is deliberately the SECOND choice: the client stops
+   * asking the moment its socket delivers a frame.
+   *
+   * Everything about it is bounded. `ProviderCache.fetch` coalesces
+   * concurrent callers onto one in-flight upstream request and holds the
+   * answer for a second, so cost scales with the number of CONTRACTS being
+   * watched, not with the number of people watching them. It shares the
+   * circuit breaker and the local request budget with every other Bybit
+   * call in this process, so a venue outage trips once for all of them.
+   */
+  async getOrderBook(category: BybitCategory, providerSymbol: string): Promise<CachedValue<DepthBook>> {
+    if (!/^[A-Z0-9]{2,32}$/.test(providerSymbol)) {
+      throw new BybitMarketDataError(`Unsupported symbol ${providerSymbol}`);
+    }
+    return this.depthCache.fetch(`orderbook:${category}:${providerSymbol}`, async () => {
+      const body = (await this.http.getJson(
+        `${this.baseUrl}/v5/market/orderbook?category=${category}&symbol=${providerSymbol}&limit=${DEPTH_LIMIT}`
+      )) as (BybitEnvelope & { result?: Record<string, unknown> | null }) | null;
+      if (!body || typeof body !== 'object') throw new BybitMarketDataError('Bybit returned a malformed response');
+      const code = num(body.retCode);
+      if (code !== 0) throw new BybitMarketDataError(`Bybit returned retCode ${String(body.retCode)}: ${String(body.retMsg ?? '')}`);
+      const result = body.result as Record<string, unknown> | null | undefined;
+      if (!result || typeof result !== 'object') throw new BybitMarketDataError('Bybit response carried no order book');
+      if (str(result.s) !== providerSymbol) throw new BybitMarketDataError('Bybit returned a book for a different symbol');
+      const updateId = num(result.u);
+      if (updateId === null || !Number.isSafeInteger(updateId)) throw new BybitMarketDataError('Bybit book carried no update id');
+      const side = (raw: unknown): DepthLevel[] => {
+        if (!Array.isArray(raw)) throw new BybitMarketDataError('Bybit book carried a malformed side');
+        if (raw.length > DEPTH_LIMIT) throw new BybitMarketDataError('Bybit book exceeded the requested depth');
+        return raw.map((level) => {
+          // A level that does not parse is not rounded, defaulted or
+          // dropped to zero — the whole book is refused, because a book
+          // with a silently missing level is a book that lies about depth.
+          if (!Array.isArray(level) || level.length < 2) throw new BybitMarketDataError('Bybit book carried a malformed level');
+          const [price, quantity] = level as unknown[];
+          if (typeof price !== 'string' || typeof quantity !== 'string' ||
+              !/^\d+(?:\.\d+)?$/.test(price) || !/^\d+(?:\.\d+)?$/.test(quantity) ||
+              !(Number(price) > 0) || !(Number(quantity) >= 0)) {
+            throw new BybitMarketDataError('Bybit book carried a malformed level');
+          }
+          return { price, quantity };
+        }).filter((level) => Number(level.quantity) > 0);
+      };
+      const bids = side(result.b);
+      const asks = side(result.a);
+      if (bids.length && asks.length && Number(bids[0].price) >= Number(asks[0].price)) {
+        throw new BybitMarketDataError('Bybit returned a crossed book');
+      }
+      return { symbol: providerSymbol, bids, asks, updateId, providerTime: epoch(result.ts) ?? epoch(body.time) };
     });
   }
 

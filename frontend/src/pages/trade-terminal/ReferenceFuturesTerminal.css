@@ -235,38 +235,48 @@
 .trade-terminal.trade-terminal.futures-reference .voltex-chart-ticker { flex:0 0 26px; display:flex; align-items:center; padding:0 12px; font-size:12px; font-weight:600; color:#d9d9df; border-bottom:1px solid #24242c; }
 /* Bybit-reference depth layout, isolated from Spot's book presentation. */
 .trade-terminal.trade-terminal.futures-reference .reference-book { display:flex; flex-direction:column; flex:1; height:100%; min-height:0; min-width:0; background:#101014; overflow:hidden; }
-.futures-reference .rb-tabs { display:flex; align-items:stretch; gap:18px; padding:0 12px; height:40px; flex:0 0 40px; border-bottom:1px solid #24242c; }
-.futures-reference .rb-tabs button { appearance:none; background:none; border:0; border-bottom:2px solid transparent; border-radius:0; padding:0; color:#92929e; font-size:14px; font-weight:500; cursor:pointer; }
+.futures-reference .rb-tabs { display:flex; align-items:stretch; gap:16px; padding:0 10px; height:34px; flex:0 0 34px; border-bottom:1px solid #24242c; }
+.futures-reference .rb-tabs button { appearance:none; background:none; border:0; border-bottom:2px solid transparent; border-radius:0; padding:0; color:#92929e; font-size:13px; font-weight:500; cursor:pointer; }
 .futures-reference .rb-tabs button[aria-selected=true] { border-bottom-color:#f5a600; color:#f4f4f6; }
-.futures-reference .rb-controls { display:flex; align-items:center; justify-content:space-between; padding:4px 12px; flex:0 0 36px; box-sizing:border-box; }
-.futures-reference .rb-modes { display:flex; gap:8px; }
-.futures-reference .rb-modes button { appearance:none; display:grid; place-items:center; width:23px; height:26px; padding:0; border:0; border-radius:2px; background:transparent; color:#6b6b76; opacity:.5; cursor:pointer; }
+.futures-reference .rb-controls { display:flex; align-items:center; justify-content:space-between; padding:2px 10px; flex:0 0 30px; box-sizing:border-box; }
+.futures-reference .rb-modes { display:flex; gap:4px; }
+.futures-reference .rb-modes button { appearance:none; display:grid; place-items:center; width:22px; height:22px; padding:0; border:0; border-radius:3px; background:transparent; color:#6b6b76; opacity:.5; cursor:pointer; }
 .futures-reference .rb-modes button[aria-pressed=true], .futures-reference .rb-modes button:hover { opacity:1; color:#bcbcc5; }
-.futures-reference .rb-modes svg { width:22px; height:18px; }
-.futures-reference .rb-controls select { width:88px; height:26px; padding:2px 10px; background:#212329; border:0; border-radius:4px; color:#e9e9ef; font-size:12px; cursor:pointer; }
-.futures-reference .rb-columns, .futures-reference .rb-row { display:grid; grid-template-columns:minmax(0,1.18fr) minmax(0,1fr) minmax(0,1fr); column-gap:7px; padding:0 12px; box-sizing:border-box; }
-.futures-reference .rb-columns { flex:0 0 36px; align-items:center; font-size:11px; line-height:14px; color:#a4abb7; }
+.futures-reference .rb-modes svg { width:18px; height:15px; }
+.futures-reference .rb-controls select { width:82px; height:22px; padding:0 8px; background:#212329; border:0; border-radius:4px; color:#e9e9ef; font-size:11px; font-variant-numeric:tabular-nums; cursor:pointer; }
+/* Fixed proportions, never content-derived: a column that resized itself
+   around the widest number currently on screen is exactly how a book
+   twitches sideways on every tick. */
+.futures-reference .rb-columns, .futures-reference .rb-row { display:grid; grid-template-columns:minmax(0,1.02fr) minmax(0,1fr) minmax(0,1.08fr); column-gap:6px; padding:0 10px; box-sizing:border-box; font-variant-numeric:tabular-nums; }
+.futures-reference .rb-columns { flex:0 0 22px; align-items:center; font-size:10px; line-height:14px; color:#8b93a1; }
 .futures-reference .rb-columns span { white-space:nowrap; text-align:right; }
 .futures-reference .rb-columns span:first-child { text-align:left; }
-.futures-reference .rb-columns small { display:block; font:inherit; color:#858d9b; }
+.futures-reference .rb-columns small { font:inherit; color:#6f7684; }
 .futures-reference .rb-body { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
 .futures-reference .rb-stack { flex:1; min-height:0; display:flex; overflow:hidden; }
 .futures-reference .rb-asks { flex-direction:column-reverse; }
 .futures-reference .rb-bids { flex-direction:column; }
-.futures-reference .rb-row { position:relative; appearance:none; width:100%; flex:0 0 26px; height:26px; line-height:26px; margin:0; border:0; border-radius:0; background:transparent; color:#e4e7ec; font-size:13px; font-weight:400; font-variant-numeric:tabular-nums; text-align:right; }
+/* `referenceRowCount` divides the body height by REFERENCE_ROW_HEIGHT to
+   decide how many levels fit. That constant is 22 and this rule used to say
+   26, so the panel always asked for ~18% more rows than it had room for and
+   clipped the rest. Both sides now read the same variable. */
+.futures-reference .rb-row { position:relative; appearance:none; width:100%; flex:0 0 var(--book-row-height,22px); height:var(--book-row-height,22px); line-height:var(--book-row-height,22px); margin:0; border:0; border-radius:0; background:transparent; color:#dfe3ea; font-size:12px; font-weight:400; font-variant-numeric:tabular-nums; font-feature-settings:'tnum' 1; text-align:right; }
 .futures-reference button.rb-row { cursor:pointer; }
 .futures-reference button.rb-row:hover { background:#25252d; }
 .futures-reference .rb-row > span { position:relative; z-index:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
 .futures-reference .rb-row > span:first-of-type { text-align:left; }
 .futures-reference .rb-row.ask > span:first-of-type, .futures-reference .rb-center .down { color:#f04452; }
 .futures-reference .rb-row.bid > span:first-of-type, .futures-reference .rb-center .up { color:#00bb83; }
-.futures-reference .rb-depth { position:absolute; inset:0 0 0 auto; pointer-events:none; background:rgba(34,151,108,.16); }
-.futures-reference .rb-row.ask .rb-depth { background:rgba(179,61,68,.16); }
-.futures-reference .rb-center { flex:0 0 var(--book-center-height,36px); box-sizing:border-box; display:flex; align-items:center; flex-wrap:wrap; gap:0 9px; padding:3px 6px; }
-.futures-reference .rb-center strong { font-size:19px; font-weight:600; line-height:25px; letter-spacing:-.4px; }
+/* Full width, scaled down. Animating `transform` keeps the bar off the
+   layout path entirely, so depth can move every 300ms without the row it
+   lives in being measured again. */
+.futures-reference .rb-depth { position:absolute; inset:0; width:100%; transform-origin:100% 50%; will-change:transform; pointer-events:none; background:rgba(20,160,115,.15); transition:transform 260ms cubic-bezier(.22,.61,.36,1); }
+.futures-reference .rb-row.ask .rb-depth { background:rgba(200,64,74,.15); }
+.futures-reference .rb-center { flex:0 0 var(--book-center-height,36px); box-sizing:border-box; display:flex; align-items:center; flex-wrap:wrap; gap:0 8px; padding:2px 10px; font-variant-numeric:tabular-nums; }
+.futures-reference .rb-center strong { font-size:17px; font-weight:600; line-height:23px; letter-spacing:-.3px; font-variant-numeric:tabular-nums; }
 .futures-reference .rb-center > span { color:#92929f; font-size:10px; line-height:15px; white-space:nowrap; }
-.futures-reference .rb-ratio { position:relative; display:flex; justify-content:space-between; align-items:center; flex:0 0 25px; margin:8px 12px 10px; padding:0 5px; background:rgba(173,56,65,.2); font-size:12px; overflow:hidden; }
-.futures-reference .rb-ratio > i { position:absolute; inset:0 auto 0 0; background:#17372e; clip-path:polygon(0 0,100% 0,calc(100% - 13px) 100%,0 100%); }
+.futures-reference .rb-ratio { position:relative; display:flex; justify-content:space-between; align-items:center; flex:0 0 22px; margin:6px 10px 8px; padding:0 5px; background:rgba(173,56,65,.2); font-size:11px; font-variant-numeric:tabular-nums; overflow:hidden; }
+.futures-reference .rb-ratio > i { position:absolute; inset:0 auto 0 0; background:#17372e; clip-path:polygon(0 0,100% 0,calc(100% - 11px) 100%,0 100%); transition:width 260ms cubic-bezier(.22,.61,.36,1); }
 .futures-reference .rb-ratio span { position:relative; color:#ea454f; }
 .futures-reference .rb-ratio span:first-of-type { color:#00bb83; }
 .futures-reference .rb-ratio b { display:inline-block; padding:0 3px; border:1px solid currentColor; font-weight:500; line-height:17px; border-radius:2px; }
@@ -274,7 +284,7 @@
 .futures-reference .rb-empty { display:grid; place-items:center; min-height:160px; color:#92929f; }
 .futures-reference .reference-book button:focus-visible, .futures-reference .reference-book select:focus-visible { outline:1px solid #f5a600; outline-offset:-1px; }
 @media (min-width:1025px) and (max-width:1500px) {
-  .futures-reference .rb-row { font-size:11px; column-gap:5px; padding-inline:9px; }
+  .futures-reference .rb-row { font-size:11px; column-gap:4px; padding-inline:8px; }
   .futures-reference .rb-columns { font-size:10px; column-gap:5px; padding-inline:9px; }
   .futures-reference .rb-center strong { font-size:17px; }
 }
@@ -411,4 +421,18 @@
   .trade-terminal.trade-terminal.futures-reference .futures-positions-table th,
   .trade-terminal.trade-terminal.futures-reference .futures-positions-table td { padding: 8px 10px; }
   .trade-terminal.trade-terminal.futures-reference .futures-position-actions { gap: 4px; }
+}
+
+
+/* Feed state. The panel says which of the three things it is showing —
+   the book, a book that has stopped updating, or nothing — instead of
+   letting all three look like an empty table. */
+.futures-reference .rb-feed { flex:0 0 auto; margin:0 10px 4px; padding:3px 7px; border-radius:3px; font-size:10.5px; line-height:14px; letter-spacing:.1px; }
+.futures-reference .rb-feed[data-state=stale] { background:rgba(245,166,0,.12); color:#e0a53c; }
+.futures-reference .rb-feed[data-state=unavailable] { background:rgba(240,68,82,.12); color:#e4707b; }
+.futures-reference .rb-feed[data-state=connecting] { background:#1b1d24; color:#8b93a1; }
+/* Levels that are no longer updating read as history, not as a live book. */
+.futures-reference .rb-body[data-stale=true] { opacity:.62; }
+@media (prefers-reduced-motion: reduce) {
+  .futures-reference .rb-depth, .futures-reference .rb-ratio > i { transition:none; }
 }

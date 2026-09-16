@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
-import type { FuturesTrade } from '../lib/futuresDepth';
+import type { FuturesTrade, FuturesDepthStatus } from '../lib/futuresDepth';
 
 import { aggregateSpotBook, formatSpotBookNumber, spotBookMetrics, spotGroupSteps, spotLevelPrice,
   type SpotBookLevel, type SpotDepthLevel } from '../lib/spotOrderBook';
 import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_ROW_HEIGHT, REFERENCE_CENTER_HEIGHT } from '../lib/referenceBook';
 
 /** Exact-contract Futures presentation; price picking never submits an order. */
-export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [] }: {
-  bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; lastPrice?:number|null; trades?:FuturesTrade[]; onPickPrice: (price: string) => void;
+export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice = null, trades = [], status = 'live' }: {
+  bids: SpotBookLevel[]; asks: SpotBookLevel[]; pair: string; lastPrice?:number|null; trades?:FuturesTrade[];
+  /** What the feed says these levels currently are. See futuresDepth. */
+  status?: FuturesDepthStatus;
+  onPickPrice: (price: string) => void;
 }) {
   const { t } = useLanguage();
   const [base, quote] = pair.split('/');
@@ -43,6 +46,20 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
     else if (old.price !== null && old.price !== last) setDirection(last > old.price ? 'up' : 'down');
     previous.current = { pair, price: last };
   }, [pair, last]);
+  /**
+   * What the panel is allowed to say about itself.
+   *
+   * Three states that used to be one empty table. `stale` still draws the
+   * levels — a book from a few seconds ago is worth more than a blank panel
+   * during a reconnect — and says they are not updating. `unavailable`
+   * draws nothing, because there is nothing: an absent book is never shown
+   * as zero depth.
+   */
+  const feed = status === 'stale' ? t('trade.bookStale')
+    : status === 'unavailable' ? t('trade.bookUnavailable')
+    : status === 'connecting' && !bids.length && !asks.length ? t('trade.bookConnecting')
+    : null;
+
   useEffect(() => {
     if (!body.current || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => setHeight(entry.contentRect.height));
@@ -55,7 +72,10 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
     const price = referencePrice(level.price, step);
     return <button type="button" className={`rb-row ${side}`} key={exact}
       aria-label={`${side === 'bid' ? 'Bid' : 'Ask'} ${exact}`} onClick={() => onPickPrice(exact)}>
-      <i className="rb-depth" style={{ width: `${level.cumulative / maxDepth * 100}%` }} />
+      {/* scaleX, not width: a transform is composited, so a book updating
+          several times a second never re-lays-out the row it sits in. The
+          transition is short enough to read as motion rather than lag. */}
+      <i className="rb-depth" style={{ transform: `scaleX(${Math.min(1, level.cumulative / maxDepth)})` }} />
       <span title={exact}>{price}</span>
       <span title={`${level.quantity} ${base}`}>{referenceQuantity(level.quantity)}</span>
       <span title={`${level.cumulative} ${base}`}>{referenceQuantity(level.cumulative)}</span>
@@ -83,7 +103,8 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
         }}>{steps.map(value => <option key={value} value={value}>{spotLevelPrice(value, value)}</option>)}</select>
       </div>
       <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.quantity')}<small>({base})</small></span><span title="Cumulative base quantity">{t('trade.sum')}<small>({base})</small></span></div>
-      <div className={`rb-body rb-${mode}`} ref={body}>
+      {feed && <div className="rb-feed" role="status" data-state={status}>{feed}</div>}
+      <div className={`rb-body rb-${mode}`} data-stale={status === 'stale' || undefined} ref={body}>
         {mode !== 'bids' && <div className="rb-stack rb-asks">{rows(sell, 'ask')}</div>}
         <div className="rb-center">
           <strong className={last === null ? '' : direction} title={last === null ? 'Mid · (best bid + best ask) / 2' : t('trade.lastPrice')}>{last !== null ? `${direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}${referencePrice(last)}` : metrics.mid !== null ? referencePrice(metrics.mid) : '—'}</strong>

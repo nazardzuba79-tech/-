@@ -130,6 +130,13 @@ export class MarketUniverse {
     private readonly options: { refreshMs?: number; now?: () => number; includeInverse?: boolean } = {}
   ) {}
 
+  /** The venue adapter this universe was built from, so a sibling route can
+   *  reuse the SAME cache, circuit breaker and request budget rather than
+   *  constructing a second client against the same venue. */
+  get provider(): BybitMarketDataService {
+    return this.bybit;
+  }
+
   snapshot(): MarketUniverseSnapshot {
     return {
       instruments: this.instruments,
