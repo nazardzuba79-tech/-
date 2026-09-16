@@ -102,7 +102,10 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
           const next = Number(event.target.value); if (steps.includes(next)) setSelection({ pair, step: next });
         }}>{steps.map(value => <option key={value} value={value}>{spotLevelPrice(value, value)}</option>)}</select>
       </div>
-      <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.quantity')}<small>({base})</small></span><span title="Cumulative base quantity">{t('trade.sum')}<small>({base})</small></span></div>
+      {/* Short forms here, long ones everywhere else. Three headings and
+          three units share a ~215px panel, and "Количество(BTC)" simply
+          does not fit beside "Сумма(BTC)" — it overlapped its neighbour. */}
+      <div className="rb-columns"><span>{t('trade.price')}<small>({quote})</small></span><span>{t('trade.bookQty')}<small>({base})</small></span><span title="Cumulative base quantity">{t('trade.bookTotal')}<small>({base})</small></span></div>
       {feed && <div className="rb-feed" role="status" data-state={status}>{feed}</div>}
       <div className={`rb-body rb-${mode}`} data-stale={status === 'stale' || undefined} ref={body}>
         {mode !== 'bids' && <div className="rb-stack rb-asks">{rows(sell, 'ask')}</div>}

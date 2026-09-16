@@ -207,6 +207,8 @@ export const JA: Record<Key, string> = {
   'trade.bookStale': '更新が停止中 — 再接続しています',
   'trade.bookUnavailable': '板情報を取得できません',
   'trade.bookConnecting': '板情報に接続しています…',
+  'trade.bookQty': '数量',
+  'trade.bookTotal': '累計',
   'trade.loadingTrades': '約定履歴を読み込み中...',
   'trade.noTrades': 'このペアの約定履歴はまだありません。',
   'trade.noChartData': '{pair} のチャートデータがありません',

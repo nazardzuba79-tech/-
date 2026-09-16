@@ -212,6 +212,8 @@ export const RU = {
   'trade.bookStale': 'Данные не обновляются — переподключение',
   'trade.bookUnavailable': 'Стакан недоступен',
   'trade.bookConnecting': 'Подключение к стакану…',
+  'trade.bookQty': 'Кол-во',
+  'trade.bookTotal': 'Всего',
   'trade.loadingTrades': 'Загрузка сделок...',
   'trade.noTrades': 'Пока нет сделок по этой паре.',
   'trade.noChartData': 'Нет данных графика для {pair}',

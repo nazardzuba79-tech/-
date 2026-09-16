@@ -1,6 +1,6 @@
 import { useNativeDemo } from './private-trading/useNativeDemo';
 import { NativeDemoDialogs } from './private-trading/NativeDemoControls';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, API_BASE } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -226,6 +226,13 @@ export function FuturesPage() {
       .sort((a,b)=>b.time-a.time).slice(0,40) : []}));
   }), [symbol]);
 
+  /** Newest execution on the selected contract, or null while unknown. */
+  const tapeLastPrice = useMemo(() => {
+    if (tape.symbol !== symbol) return null;
+    const value = Number(tape.rows[0]?.price);
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }, [tape, symbol]);
+
   const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
 
   // A position can only ever be opened on a listed contract (the
@@ -327,8 +334,12 @@ export function FuturesPage() {
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
               /* The LAST TRADED price, which is what the button beside the
                  Limit field says it fills. Mark price stays where it
-                 belongs — valuing the position, not seeding an order. */
-              lastPrice={reference.get(symbol)?.lastPrice ?? null}
+                 belongs — valuing the position, not seeding an order.
+                 The execution tape for THIS contract is preferred over the
+                 shared ticker stream: it is the same quantity, arrives on
+                 the connection the book is already using, and so is
+                 available whenever the book is. */
+              lastPrice={tapeLastPrice ?? reference.get(symbol)?.lastPrice ?? null}
               closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
             />
           </div>

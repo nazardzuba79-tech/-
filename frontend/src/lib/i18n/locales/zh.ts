@@ -209,6 +209,8 @@ export const ZH: Record<Key, string> = {
   'trade.bookStale': '数据未更新 — 正在重新连接',
   'trade.bookUnavailable': '订单簿不可用',
   'trade.bookConnecting': '正在连接订单簿…',
+  'trade.bookQty': '数量',
+  'trade.bookTotal': '累计',
   'trade.loadingTrades': '加载成交记录...',
   'trade.noTrades': '该交易对暂无成交记录。',
   'trade.noChartData': '{pair} 暂无图表数据',

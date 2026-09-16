@@ -207,6 +207,8 @@ export const HI: Record<Key, string> = {
   'trade.bookStale': 'अपडेट नहीं हो रहा — फिर से जोड़ा जा रहा है',
   'trade.bookUnavailable': 'ऑर्डर बुक उपलब्ध नहीं',
   'trade.bookConnecting': 'ऑर्डर बुक से जुड़ रहा है…',
+  'trade.bookQty': 'मात्रा',
+  'trade.bookTotal': 'कुल',
   'trade.loadingTrades': 'ट्रेड्स लोड हो रहे हैं...',
   'trade.noTrades': 'इस पेयर के लिए अभी तक कोई ट्रेड नहीं है।',
   'trade.noChartData': '{pair} के लिए कोई चार्ट डेटा नहीं',

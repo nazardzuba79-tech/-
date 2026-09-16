@@ -209,6 +209,8 @@ export const EN: Record<Key, string> = {
   'trade.bookStale': 'Not updating — reconnecting',
   'trade.bookUnavailable': 'Order book unavailable',
   'trade.bookConnecting': 'Connecting to the order book…',
+  'trade.bookQty': 'Qty',
+  'trade.bookTotal': 'Total',
   'trade.loadingTrades': 'Loading trades...',
   'trade.noTrades': 'No trades for this pair yet.',
   'trade.noChartData': 'No chart data for {pair}',

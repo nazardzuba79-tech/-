@@ -249,7 +249,7 @@
    twitches sideways on every tick. */
 .futures-reference .rb-columns, .futures-reference .rb-row { display:grid; grid-template-columns:minmax(0,1.02fr) minmax(0,1fr) minmax(0,1.08fr); column-gap:6px; padding:0 10px; box-sizing:border-box; font-variant-numeric:tabular-nums; }
 .futures-reference .rb-columns { flex:0 0 22px; align-items:center; font-size:10px; line-height:14px; color:#8b93a1; }
-.futures-reference .rb-columns span { white-space:nowrap; text-align:right; }
+.futures-reference .rb-columns span { white-space:nowrap; text-align:right; overflow:hidden; text-overflow:clip; min-width:0; }
 .futures-reference .rb-columns span:first-child { text-align:left; }
 .futures-reference .rb-columns small { font:inherit; color:#6f7684; }
 .futures-reference .rb-body { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; }

@@ -213,7 +213,15 @@
  * collapsed to nothing and the borders drew a stray pale stroke beside
  * the pair name. `inline-block` is what makes it an actual chevron, and
  * the secondary colour is what stops it reading as an artifact. */
+/* `flex: 0 0 auto` is the half that actually removes the artifact.
+   `.pair-selector` is a 90px flex row, and "BTC/USDT" at this weight does
+   not fit in it, so the chevron — the only shrinkable item — was squashed
+   from 6px to ONE pixel. A 1px-wide, 6px-tall rotated border is precisely
+   the thin pale stroke that was showing beside the pair name. The
+   selector sizes to its content now, and the chevron cannot be shrunk. */
+.trade-terminal.trade-terminal.trade-terminal .pair-selector { width: auto; min-width: 0; }
 .trade-terminal .pair-arrow {
+  flex: 0 0 auto;
   display: inline-block;
   box-sizing: border-box;
   width: 6px; height: 6px;
