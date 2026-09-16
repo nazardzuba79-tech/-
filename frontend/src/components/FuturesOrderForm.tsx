@@ -78,13 +78,28 @@ export function FuturesOrderForm({
   const [family, setFamily] = useState<OrderFamily>('LIMIT');
   const connectedFamily = family === 'LIMIT' || family === 'MARKET';
   const [price, setPrice] = useState('');
+  const [priceEdited, setPriceEdited] = useState(false);
   useEffect(() => {
     if (pickedPrice) {
       setPrice(pickedPrice);
+      setPriceEdited(true);
       setType('LIMIT');
       setFamily('LIMIT');
     }
   }, [pickedPrice, pickedPriceSequence]);
+  /**
+   * A LIMIT order opens ready to calculate and trade at the current last
+   * price. The old form left `price` empty while painting a `0.00`
+   * placeholder, so entering only Quantity produced dashes and then sent an
+   * empty price to the engine. Once the trader edits the field (or picks a
+   * book level) we never overwrite that choice with a moving market price.
+   */
+  useEffect(() => {
+    if (family !== 'LIMIT' || priceEdited || price !== '') return;
+    if (lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0) {
+      setPrice(String(lastPrice));
+    }
+  }, [family, lastPrice, price, priceEdited]);
   const [quantity, setQuantity] = useState('');
   /** A close requested from the positions table fills the ticket in, in
    *  reduce-only LIMIT, sized at the position. The trader still types the
@@ -167,7 +182,8 @@ export function FuturesOrderForm({
   }, [symbol]);
 
   const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
-  const notional = effectivePrice && quantity ? effectivePrice * parseFloat(quantity) : 0;
+  const quantityNumber = parseFloat(quantity);
+  const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
   /**
    * Whether Order Value and Required Margin describe a real order.
    *
@@ -178,7 +194,7 @@ export function FuturesOrderForm({
    * than an unknown one.
    */
   const orderSizeKnown = Number.isFinite(effectivePrice) && effectivePrice > 0
-    && quantity !== '' && Number.isFinite(parseFloat(quantity));
+    && quantity !== '' && Number.isFinite(quantityNumber) && quantityNumber > 0;
 
   // Live liquidation-price preview — same formula the backend uses
   // (src/futures/marginMath.ts) to actually set it at fill time. Purely
@@ -370,13 +386,13 @@ export function FuturesOrderForm({
    * only reports the same one the engine would.
    */
   const contractCheck = execution.contract && orderSizeKnown && !reduceOnly
-    ? fitQuantityToContract(parseFloat(quantity), effectivePrice, execution.contract, { market: type === 'MARKET' })
+    ? fitQuantityToContract(quantityNumber, effectivePrice, execution.contract, { market: type === 'MARKET' })
     : null;
   const contractBreach = contractCheck && (
     contractCheck.rejectedBy !== null
       // A quantity the fitter had to change is a quantity the contract
       // would have refused as typed.
-      || Math.abs(contractCheck.quantity - parseFloat(quantity)) > Number(execution.contract!.qtyStep) / 2
+      || Math.abs(contractCheck.quantity - quantityNumber) > Number(execution.contract!.qtyStep) / 2
   ) ? contractCheck : null;
 
   /**
@@ -413,6 +429,7 @@ export function FuturesOrderForm({
         reduceOnly,
       });
       setPrice('');
+      setPriceEdited(false);
       setQuantity('');
       setPercent(0);
       // The account really did change: refresh it now rather than waiting
@@ -446,27 +463,16 @@ export function FuturesOrderForm({
    * ceiling was unknown — a CTA that looks pressable and silently does
    * nothing is the worst kind of control in a trading interface.
    *
-   * The conditions are EXACTLY the ones the guard already had, and
-   * deliberately no more:
-   *   - the high-leverage confirmation stays inside `handleSubmit`: it is a
-   *     prompt to answer, not a precondition to meet, and disabling the
-   *     button on it would make high leverage unusable rather than guarded;
-   *   - a REDUCE-ONLY order keeps a non-null `effectiveMaxLeverage` even
-   *     when positions and orders are unknown (PR #14: the projection
-   *     short-circuits before reading them), so risk-reducing orders stay
-   *     submittable during an outage — which is when they matter most.
+   * A valid price and positive quantity are part of that same guard. The
+   * old panel allowed a LIMIT button to look live with an empty price and
+   * then sent `price: ''` to the engine; the browser screenshot showed the
+   * exact symptom as `0.00` placeholder + dashes in the calculator.
    *
    * `effectiveMaxLeverage !== null` remains: a null ceiling means the
    * account state behind it is unknown, and the panel does not submit a
-   * leverage it cannot justify. The separate `leverage <= ceiling` test it
-   * used to sit beside is gone because `leverage` is now DERIVED as the
-   * minimum of the two — it cannot exceed the ceiling.
-   *
-   * `marginShortfall` is the one requirement added since: an order whose
-   * margin the account cannot cover is rejected by the server every time,
-   * so letting the button fire it only turns a visible ceiling into a
-   * round trip and a red banner. It carries the same two exemptions —
-   * reduce-only, and a balance that has not been answered yet.
+   * leverage it cannot justify. `marginShortfall` and `contractBreach` are
+   * still server-authoritative preflight mirrors, never substitutes for the
+   * engine's validation.
    */
   const canSubmit = Boolean(config)
     // An engine whose access verdict or account state is not known yet
@@ -474,6 +480,7 @@ export function FuturesOrderForm({
     && execution.ready
     && executionEnabled
     && connectedFamily
+    && orderSizeKnown
     && effectiveMaxLeverage !== null
     && !marginShortfall
     && !contractBreach
@@ -562,12 +569,18 @@ export function FuturesOrderForm({
                 step="any"
                 required
                 value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                onChange={(e) => {
+                  setPriceEdited(true);
+                  setPrice(e.target.value);
+                }}
                 placeholder="0.00"
               />
               <span className="fo-fieldTrailing">
                 {lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
-                  <button type="button" onClick={() => setPrice(String(lastPrice))} className="fo-lastPriceBtn">
+                  <button type="button" onClick={() => {
+                    setPriceEdited(true);
+                    setPrice(String(lastPrice));
+                  }} className="fo-lastPriceBtn">
                     {t('trade.lastPriceBtn')}
                   </button>
                 )}
