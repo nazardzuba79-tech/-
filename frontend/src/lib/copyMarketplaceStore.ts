@@ -32,6 +32,29 @@ const numbers = (value: unknown, keys: string) => record(value) && keys.split(' 
 const rows = (value: unknown, keys: string, dates: string[] = []) => Array.isArray(value)
   && value.every(row => numbers(row, keys) && dates.every(key => date(row[key])));
 
+const KSENIA_REPORTED_TRADE_ID = 'KS-REPORTED-20260916-BTC';
+function reportedKseniaTrade(value: unknown, strategyId: string): value is Record<string, any> {
+  if (strategyId !== 'VX-KSENIA' || !record(value) || value.id !== KSENIA_REPORTED_TRADE_ID
+    || value.source !== 'OWNER_REPORTED' || value.marketSymbol !== 'BTCUSDT' || value.side !== 'SHORT'
+    || value.result !== 'WIN' || value.leverage !== 10 || value.netPnl !== 1754 || value.returnPct !== 7.8
+    || value.openedOn !== '2026-09-15' || value.closedOn !== '2026-09-16') return false;
+  // Exact prices, size, intraday timestamps and holding duration were not
+  // supplied. They must stay absent so the existing formatters render “—”.
+  return ['entryPrice','exitPrice','quantity','holdingTimeMinutes','grossPnl','fees','funding','riskR']
+    .every(key => value[key] === undefined);
+}
+function visibleTrade(value: unknown, strategyId: string): value is Record<string, any> {
+  if (reportedKseniaTrade(value, strategyId)) return true;
+  return record(value)
+    && numbers(value, 'entryPrice exitPrice quantity leverage netPnl returnPct holdingTimeMinutes')
+    && date(value.openedAt) && date(value.closedAt)
+    && typeof value.id === 'string' && typeof value.symbol === 'string' && ['LONG','SHORT'].includes(value.side);
+}
+function closeTime(value: Record<string, any>): number {
+  if (value.id === KSENIA_REPORTED_TRADE_ID) return Date.parse(`${value.closedOn}T23:59:59.999Z`);
+  return Date.parse(value.closedAt);
+}
+
 /** Validate at the network boundary, before any projection/formatting. Never
  * coerce null, strings, missing arrays, or a different trader into real zeros.
  * Reject a malformed section independently, preserving its last-good value. */
@@ -48,20 +71,22 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     return numbers(metrics, 'roi masterPnl masterTradingVolume copiedTradingVolume grossFollowersPnl performanceFeeEarnings netFollowersPnl activeTradingDays calendarDays maximumDrawdown annualizedVolatility')
       && ['sharpe','sortino','profitFactor'].every(key => metrics[key] === null || finite(metrics[key]));
   })) return false;
-  // The visible trade rows: at most ten, newest first, each fully formed.
-  // Validated as strictly as the full array was — the array got shorter,
-  // not laxer. `tradeStats` is what the statistics are built from, so it is
-  // validated per period rather than trusted, and a payload carrying the
-  // ten rows WITHOUT it would silently make every trade-derived figure
-  // describe ten trades instead of thousands. That is rejected.
-  const visibleTrades = rows(value.trades, 'entryPrice exitPrice quantity leverage netPnl returnPct holdingTimeMinutes', ['openedAt','closedAt'])
+  // The visible trade rows: at most ten, newest first. Canonical rows remain
+  // fully formed. The single owner-reported Ksenia row is intentionally
+  // partial only where the operator did not provide the underlying facts.
+  const reportedPresent = Array.isArray(value.trades)
+    && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id));
+  const visibleTrades = Array.isArray(value.trades)
     && value.trades.length <= VISIBLE_TRADE_ROWS
-    && value.trades.every((trade: any) => typeof trade.id === 'string' && typeof trade.symbol === 'string' && ['LONG','SHORT'].includes(trade.side))
+    && value.trades.every((trade: unknown) => visibleTrade(trade, id))
     && value.trades.every((trade: any, index: number) => index === 0
-      || Date.parse(value.trades[index - 1].closedAt) >= Date.parse(trade.closedAt));
+      || closeTime(value.trades[index - 1]) >= closeTime(trade));
   const tradeStats = record(value.tradeStats)
-    && ['7D','30D','90D','ALL'].every(period => numbers((value.tradeStats as any)[period],
-      'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal holdingTimeTotalMinutes'))
+    && ['7D','30D','90D','ALL'].every(period => {
+      const stats = (value.tradeStats as any)[period];
+      return numbers(stats, 'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal')
+        && (finite(stats.holdingTimeTotalMinutes) || (reportedPresent && stats.holdingTimeTotalMinutes === undefined));
+    })
     // The real total must be at least what is shown, or the count under the
     // table would be smaller than the table.
     && finite(value.tradeHistoryCount) && (value.tradeHistoryCount as number) >= value.trades.length
@@ -92,8 +117,7 @@ function validIdentities(value: unknown): value is (PublicStrategyIdentity | nul
 
 /** Session-memory only, one request and one timer per mounted marketplace.
  * No economics are persisted across a reload or carried into another login.
- * Successful sections replace in place; failures retain their own fetchedAt.
- */
+ * Successful sections replace in place; failures retain their own fetchedAt. */
 export class CopyMarketplaceStore {
   private state = empty();
   private session: string | null = null;
