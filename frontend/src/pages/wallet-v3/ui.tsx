@@ -1,6 +1,6 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AlertCircleIcon, ChevronDownIcon, XIcon } from 'lucide-react';
+import { AlertCircleIcon, CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react';
 import { useLanguage } from '../../lib/i18n';
 
 /**
@@ -45,6 +45,8 @@ export function FieldLabel({ children, hint }: { children: ReactNode; hint?: Rea
   );
 }
 
+type SelectOption = { value: string; label: string; disabled?: boolean };
+
 export function Select({
   value,
   onChange,
@@ -54,29 +56,134 @@ export function Select({
 }: {
   value: string;
   onChange: (value: string) => void;
-  options: { value: string; label: string }[];
+  options: SelectOption[];
   id?: string;
   disabled?: boolean;
 }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const selectedIndex = options.findIndex((option) => option.value === value);
+  const selected = selectedIndex >= 0 ? options[selectedIndex] : null;
+
+  const focusOption = (start: number, direction: 1 | -1) => {
+    if (options.length === 0) return;
+    for (let step = 0; step < options.length; step += 1) {
+      const index = (start + direction * step + options.length) % options.length;
+      if (!options[index]?.disabled) {
+        optionRefs.current[index]?.focus();
+        return;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const initial = selectedIndex >= 0 && !options[selectedIndex]?.disabled ? selectedIndex : options.findIndex((option) => !option.disabled);
+    if (initial >= 0) optionRefs.current[initial]?.focus();
+  }, [open, options, selectedIndex]);
+
   return (
-    <div className="relative">
-      <select
+    <div ref={rootRef} className="relative">
+      <button
+        ref={triggerRef}
         id={id}
-        value={value}
+        type="button"
         disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-10 w-full appearance-none rounded-w border border-hair bg-panel pl-3 pr-9 text-[13px] font-medium text-ink transition-colors duration-150 ease-exp hover:border-hair-strong focus:border-gold disabled:cursor-not-allowed disabled:bg-panel-3 disabled:text-ink-4"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={id ? `${id}-listbox` : undefined}
+        onClick={() => setOpen((current) => !current)}
+        onKeyDown={(event) => {
+          if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          if (!open) setOpen(true);
+        }}
+        className="flex h-10 w-full items-center justify-between rounded-w border border-hair bg-panel px-3 text-left text-[13px] font-medium text-ink transition-colors duration-150 ease-exp hover:border-hair-strong focus:border-gold disabled:cursor-not-allowed disabled:bg-panel-3 disabled:text-ink-4"
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value} className="bg-white">
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDownIcon
-        className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-3"
-        strokeWidth={1.8}
-      />
+        <span className="min-w-0 truncate">{selected?.label ?? '—'}</span>
+        <ChevronDownIcon
+          className={`ml-3 h-3.5 w-3.5 shrink-0 text-ink-3 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          strokeWidth={1.8}
+        />
+      </button>
+
+      {open && !disabled && (
+        <div
+          id={id ? `${id}-listbox` : undefined}
+          role="listbox"
+          aria-label={selected?.label}
+          className="absolute left-0 right-0 top-[calc(100%+4px)] z-[80] max-h-60 overflow-y-auto rounded-w border border-hair bg-panel p-1 shadow-lift"
+        >
+          {options.map((option, index) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                ref={(node) => {
+                  optionRefs.current[index] = node;
+                }}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={option.disabled}
+                onClick={() => {
+                  if (option.disabled) return;
+                  onChange(option.value);
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    focusOption(index + 1, 1);
+                  } else if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    focusOption(index - 1, -1);
+                  } else if (event.key === 'Home') {
+                    event.preventDefault();
+                    focusOption(0, 1);
+                  } else if (event.key === 'End') {
+                    event.preventDefault();
+                    focusOption(options.length - 1, -1);
+                  }
+                }}
+                className={`flex min-h-9 w-full items-center gap-2 rounded-wsm px-2.5 py-2 text-left text-[13px] transition-colors duration-100 ${
+                  option.disabled
+                    ? 'cursor-not-allowed bg-panel text-ink-4'
+                    : isSelected
+                      ? 'bg-gold-wash font-semibold text-ink'
+                      : 'bg-panel text-ink-2 hover:bg-panel-2 hover:text-ink'
+                }`}
+              >
+                <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                {isSelected && <CheckIcon className="h-3.5 w-3.5 shrink-0 text-gold-deep" strokeWidth={2} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
