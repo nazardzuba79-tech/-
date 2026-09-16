@@ -1,9 +1,14 @@
 import { WalletPortfolioService } from '../WalletPortfolioService';
-import { ADMIN_PROFILE_EMAIL, PROFILE_REFERENCE_DAY } from '../AdminPortfolioProfile';
 
-const REFERENCE = new Date(`${PROFILE_REFERENCE_DAY}T12:00:00.000Z`);
+const REFERENCE = new Date('2026-09-04T12:00:00.000Z');
 
-const PROFILE_USER = { id: 'u-admin', role: 'ADMIN', email: ADMIN_PROFILE_EMAIL };
+/**
+ * The account that used to carry a hardcoded holdings profile. It is an
+ * ordinary admin here, and these tests exist to keep it one: the owner's
+ * authoritative figures come from the native account model, and nothing in
+ * this service may grow a second set of them again.
+ */
+const OWNER = { id: 'u-admin', role: 'ADMIN', email: 'voltex.crypto@gmail.com' };
 const OTHER_ADMIN = { id: 'u-admin2', role: 'ADMIN', email: 'ops@example.com' };
 const NORMAL_USER = { id: 'u-normal', role: 'USER', email: 'trader@example.com' };
 
@@ -14,9 +19,9 @@ const TICKERS = [
 ];
 
 /**
- * A ledger holding a deliberately small, ordinary balance. Whatever the
- * presentation profile shows, this is what the account can actually spend —
- * and these tests exist to prove nothing writes over it.
+ * A ledger holding a deliberately small, ordinary balance: what the account
+ * can actually spend. These tests exist to prove nothing writes over it and
+ * nothing reports a different number in its place.
  */
 function prismaStub(overrides: Partial<Record<string, any>> = {}) {
   const balances = [{ asset: 'USDT', available: '250', locked: '0' }];
@@ -54,80 +59,55 @@ function serviceFor(prisma: any, opts: { cfdConfigured?: boolean } = {}) {
   return { service: new WalletPortfolioService(prisma, marketData, cfdData), marketData, cfdData };
 }
 
-describe('wallet overview — the displayed Spot/Futures split', () => {
+describe('wallet overview — every account sees its own real ledger', () => {
   it('shows an ordinary account its own real ledger, untouched', async () => {
     const { service } = serviceFor(prismaStub());
     const o = await service.overview(NORMAL_USER);
 
     // 250 USDT spot + 50 USDT futures, pegged at 1.
-    expect(o.displayTotalUsd).toBeCloseTo(300, 6);
-    expect(o.displaySpotUsd).toBeCloseTo(250, 6);
-    expect(o.displayFuturesUsd).toBeCloseTo(50, 6);
-    expect(o.displaySpotUsd).toBe(o.real.spotValueUsd);
-    expect(o.displayFuturesUsd).toBe(o.real.futuresValueUsd);
-  });
-
-  it('splits the profile account 80/20 off its presentation total', async () => {
-    const { service } = serviceFor(prismaStub());
-    const o = await service.overview(PROFILE_USER);
-
-    expect(o.displayTotalUsd).toBeCloseTo(o.presentation!.totalValueUsd, 6);
-    expect(o.displaySpotUsd).toBeCloseTo(o.displayTotalUsd * 0.8, 6);
-    expect(o.displayFuturesUsd).toBeCloseTo(o.displayTotalUsd * 0.2, 6);
-  });
-
-  it('always adds back to exactly the displayed total', async () => {
-    const { service } = serviceFor(prismaStub());
-    for (const user of [PROFILE_USER, NORMAL_USER, OTHER_ADMIN]) {
-      const o = await service.overview(user);
-      expect(o.displaySpotUsd + o.displayFuturesUsd).toBeCloseTo(o.displayTotalUsd, 6);
-    }
-  });
-
-  it('never shows the profile account the legacy ledger figures underneath', async () => {
-    const { service } = serviceFor(prismaStub());
-    const o = await service.overview(PROFILE_USER);
-
-    // The bug this replaced: a multi-million presentation total sitting above
-    // a few hundred dollars of real spot and zero futures.
+    expect(o.real.totalValueUsd).toBeCloseTo(300, 6);
     expect(o.real.spotValueUsd).toBeCloseTo(250, 6);
-    expect(o.displaySpotUsd).not.toBeCloseTo(o.real.spotValueUsd, 6);
-    expect(o.displaySpotUsd).toBeGreaterThan(1_000_000);
-    expect(o.displayFuturesUsd).toBeGreaterThan(1_000_000);
+    expect(o.real.futuresValueUsd).toBeCloseTo(50, 6);
+  });
+
+  it.each([
+    ['the owner account', OWNER],
+    ['another admin', OTHER_ADMIN],
+    ['a normal user', NORMAL_USER],
+  ])('gives %s the same ledger treatment and no profile of any kind', async (_label, user) => {
+    const { service } = serviceFor(prismaStub());
+    const o = await service.overview(user);
+
+    // The bug this replaced: one account's Wallet total came from a list of
+    // holdings written into the source, so it read tens of millions above a
+    // ledger holding a few hundred dollars. There is no such list now, and
+    // no account gets a different answer from this service than its ledger.
+    expect(o.real.totalValueUsd).toBeCloseTo(300, 6);
+    expect(o.real.spotValueUsd + o.real.futuresValueUsd).toBeCloseTo(o.real.totalValueUsd, 6);
+    expect(Object.keys(o).sort()).toEqual(
+      ['btcPriceUsd', 'real', 'unpricedAssets', 'valuationComplete'].sort()
+    );
   });
 
   it('moves with live prices rather than any fixed amount', async () => {
-    const cheap = serviceFor(prismaStub());
-    const before = await cheap.service.overview(PROFILE_USER);
+    const cheap = serviceFor(prismaStub({ balance: { findMany: jest.fn().mockResolvedValue([{ asset: 'BTC', available: '2', locked: '0' }]) } }));
+    const before = await cheap.service.overview(NORMAL_USER);
 
-    // Same holdings, BTC doubled.
-    const dear = serviceFor(prismaStub());
+    const dear = serviceFor(prismaStub({ balance: { findMany: jest.fn().mockResolvedValue([{ asset: 'BTC', available: '2', locked: '0' }]) } }));
     dear.marketData.getTickers.mockResolvedValue(
       TICKERS.map((t) => (t.pair === 'BTC/USDT' ? { ...t, lastPrice: '212800' } : t))
     );
-    const after = await dear.service.overview(PROFILE_USER);
+    const after = await dear.service.overview(NORMAL_USER);
 
-    expect(after.displayTotalUsd).toBeGreaterThan(before.displayTotalUsd);
-    expect(after.displaySpotUsd).toBeCloseTo(after.displayTotalUsd * 0.8, 6);
-    expect(after.displayFuturesUsd).toBeCloseTo(after.displayTotalUsd * 0.2, 6);
-    // Not a constant: the split tracked the revaluation.
-    expect(after.displaySpotUsd).toBeGreaterThan(before.displaySpotUsd);
+    expect(before.real.spotValueUsd).toBeCloseTo(2 * 106400, 6);
+    expect(after.real.spotValueUsd).toBeCloseTo(2 * 212800, 6);
   });
 
-  it('leaves a different admin on the real ledger split', async () => {
-    const { service } = serviceFor(prismaStub());
-    const o = await service.overview(OTHER_ADMIN);
-    expect(o.presentation).toBeNull();
-    expect(o.displaySpotUsd).toBe(o.real.spotValueUsd);
-    expect(o.displayFuturesUsd).toBe(o.real.futuresValueUsd);
-  });
-
-  it('writes nothing while producing the split', async () => {
+  it('writes nothing while producing the overview', async () => {
     const prisma = prismaStub();
     const { service } = serviceFor(prisma);
-    await service.overview(PROFILE_USER);
+    await service.overview(OWNER);
 
-    // The 80/20 figures are computed for the response and nowhere else.
     expect(prisma.balance.update).not.toHaveBeenCalled();
     expect(prisma.balance.upsert).not.toHaveBeenCalled();
     expect(prisma.balance.create).not.toHaveBeenCalled();
@@ -139,57 +119,79 @@ describe('wallet overview — the displayed Spot/Futures split', () => {
   });
 });
 
-describe('wallet overview — who sees the presentation profile', () => {
-  it('gives a normal user no presentation holdings at all', async () => {
-    const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(NORMAL_USER);
-    expect(overview.presentation).toBeNull();
-    expect(overview.displayTotalUsd).toBeCloseTo(300, 6);
+describe('wallet overview — an unpriced holding is never a holding worth zero', () => {
+  const withEur = () =>
+    prismaStub({
+      balance: {
+        findMany: jest.fn().mockResolvedValue([
+          { asset: 'USDT', available: '250', locked: '0' },
+          { asset: 'EUR', available: '700000', locked: '0' },
+        ]),
+        update: jest.fn(), upsert: jest.fn(), create: jest.fn(), updateMany: jest.fn(),
+      },
+    });
+
+  it('values EUR from the CFD provider when one is configured', async () => {
+    const { service } = serviceFor(withEur());
+    const o = await service.overview(NORMAL_USER);
+    const eur = o.real.spot.find((b) => b.asset === 'EUR')!;
+    expect(eur.priceUsd).toBeCloseTo(1.08, 6);
+    expect(eur.valueUsd).toBeCloseTo(700_000 * 1.08, 6);
+    expect(o.valuationComplete).toBe(true);
+    expect(o.unpricedAssets).toEqual([]);
   });
 
-  it('gives a different admin no presentation holdings either', async () => {
-    const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(OTHER_ADMIN);
-    expect(overview.presentation).toBeNull();
-    expect(overview.displayTotalUsd).toBeCloseTo(300, 6);
-  });
+  it('reports EUR as unpriced, and the total as incomplete, when no provider is configured', async () => {
+    const { service } = serviceFor(withEur(), { cfdConfigured: false });
+    const o = await service.overview(NORMAL_USER);
+    const eur = o.real.spot.find((b) => b.asset === 'EUR')!;
 
-  it('gives the profile account its holdings, valued from live market data', async () => {
-    const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(PROFILE_USER);
-    expect(overview.presentation).not.toBeNull();
-    const bySymbol = new Map(overview.presentation!.holdings.map((h) => [h.asset, h]));
-    expect(bySymbol.get('BTC')!.valueUsd).toBeCloseTo(271 * 106400, 6);
-    expect(bySymbol.get('ETH')!.valueUsd).toBeCloseTo(561 * 3412, 6);
-    expect(bySymbol.get('XRP')!.valueUsd).toBeCloseTo(1_200_000 * 2.4713, 6);
-    expect(bySymbol.get('USDT')!.valueUsd).toBeCloseTo(32_726_245, 6);
-    expect(bySymbol.get('USDC')!.valueUsd).toBeCloseTo(1_200_000, 6);
-    expect(bySymbol.get('EUR')!.valueUsd).toBeCloseTo(700_000 * 1.08, 6);
-  });
-
-  it('reports EUR as unpriced rather than zero when no CFD provider is configured', async () => {
-    const { service } = serviceFor(prismaStub(), { cfdConfigured: false });
-    const overview = await service.overview(PROFILE_USER);
-    const eur = overview.presentation!.holdings.find((h) => h.asset === 'EUR')!;
     expect(eur.priceUsd).toBeNull();
     expect(eur.valueUsd).toBeNull();
+    // Left out of the total rather than added as 0 — and SAID so, which is
+    // the only thing that makes the total readable.
+    expect(o.real.spotValueUsd).toBeCloseTo(250, 6);
+    expect(o.valuationComplete).toBe(false);
+    expect(o.unpricedAssets).toEqual(['EUR']);
   });
 
   it('prices nothing at zero when the market feed is down', async () => {
-    const prisma = prismaStub();
+    const prisma = prismaStub({
+      balance: {
+        findMany: jest.fn().mockResolvedValue([{ asset: 'BTC', available: '2', locked: '0' }]),
+        update: jest.fn(), upsert: jest.fn(), create: jest.fn(), updateMany: jest.fn(),
+      },
+    });
     const marketData = { getTickers: jest.fn().mockRejectedValue(new Error('upstream down')) } as any;
     const cfdData = { isConfigured: () => false, getTickers: jest.fn() } as any;
     const service = new WalletPortfolioService(prisma, marketData, cfdData);
-    const overview = await service.overview(PROFILE_USER);
-    expect(overview.presentation!.holdings.find((h) => h.asset === 'BTC')!.priceUsd).toBeNull();
+    const o = await service.overview(NORMAL_USER);
+
+    expect(o.real.spot.find((b) => b.asset === 'BTC')!.priceUsd).toBeNull();
+    expect(o.real.spot.find((b) => b.asset === 'BTC')!.valueUsd).toBeNull();
+    expect(o.real.spotValueUsd).toBe(0);
+    expect(o.valuationComplete).toBe(false);
+    expect(o.unpricedAssets).toEqual(['BTC']);
+  });
+
+  it('does not call a zero balance unknown — there is no value to miss', async () => {
+    const prisma = prismaStub({
+      balance: {
+        findMany: jest.fn().mockResolvedValue([{ asset: 'DOGE', available: '0', locked: '0' }]),
+        update: jest.fn(), upsert: jest.fn(), create: jest.fn(), updateMany: jest.fn(),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const o = await service.overview(NORMAL_USER);
+    expect(o.valuationComplete).toBe(true);
+    expect(o.unpricedAssets).toEqual([]);
   });
 });
 
-describe('wallet overview — the presentation profile never touches the ledger', () => {
-  it('reports the real spendable balances unchanged alongside the profile', async () => {
+describe('wallet overview — the ledger is reported exactly as it stands', () => {
+  it('reports the real spendable balances, row by row, in agreement with the totals', async () => {
     const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(PROFILE_USER);
-    // Real ledger: $250 spot + $50 futures. Not the profile's tens of millions.
+    const overview = await service.overview(OWNER);
     expect(overview.real.spotValueUsd).toBeCloseTo(250, 6);
     expect(overview.real.futuresValueUsd).toBeCloseTo(50, 6);
     expect(overview.real.totalValueUsd).toBeCloseTo(300, 6);
@@ -210,8 +212,8 @@ describe('wallet overview — the presentation profile never touches the ledger'
   it('writes nothing to Balance', async () => {
     const prisma = prismaStub();
     const { service } = serviceFor(prisma);
-    await service.overview(PROFILE_USER);
-    await service.performance(PROFILE_USER, REFERENCE);
+    await service.overview(OWNER);
+    await service.performance(OWNER, REFERENCE);
     expect(prisma.balance.update).not.toHaveBeenCalled();
     expect(prisma.balance.upsert).not.toHaveBeenCalled();
     expect(prisma.balance.create).not.toHaveBeenCalled();
@@ -221,8 +223,8 @@ describe('wallet overview — the presentation profile never touches the ledger'
   it('writes nothing to FuturesBalance', async () => {
     const prisma = prismaStub();
     const { service } = serviceFor(prisma);
-    await service.overview(PROFILE_USER);
-    await service.performance(PROFILE_USER, REFERENCE);
+    await service.overview(OWNER);
+    await service.performance(OWNER, REFERENCE);
     expect(prisma.futuresBalance.update).not.toHaveBeenCalled();
     expect(prisma.futuresBalance.upsert).not.toHaveBeenCalled();
     expect(prisma.futuresBalance.create).not.toHaveBeenCalled();
@@ -231,21 +233,10 @@ describe('wallet overview — the presentation profile never touches the ledger'
 
   it('does not raise withdrawal capacity: withdrawable money is the ledger row', async () => {
     const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(PROFILE_USER);
+    const overview = await service.overview(OWNER);
     const spendableUsdt = Number(overview.real.spot.find((b) => b.asset === 'USDT')!.available);
     expect(spendableUsdt).toBe(250);
-    // The presentation profile claims 32,726,245 USDT; none of it is here.
     expect(overview.real.spot.some((b) => Number(b.available) > 1000)).toBe(false);
-  });
-
-  it('does not raise spot buying power or futures margin', async () => {
-    const { service } = serviceFor(prismaStub());
-    const overview = await service.overview(PROFILE_USER);
-    const spotPower = overview.real.spot.reduce((s, b) => s + Number(b.available), 0);
-    const futuresMargin = overview.real.futures.reduce((s, b) => s + Number(b.available), 0);
-    expect(spotPower).toBe(250);
-    expect(futuresMargin).toBe(50);
-    expect(overview.presentation!.totalValueUsd).toBeGreaterThan(1_000_000);
   });
 });
 
@@ -379,30 +370,29 @@ describe('wallet performance — a normal account', () => {
   });
 });
 
-describe('wallet performance — the profile account', () => {
-  it('runs the generated series through the same period mathematics', async () => {
+describe('wallet performance — no account gets a generated history', () => {
+  it.each([
+    ['the owner account', OWNER],
+    ['another admin', OTHER_ADMIN],
+  ])('leaves %s on its own real, empty history', async (_label, user) => {
     const { service } = serviceFor(prismaStub());
-    const perf = await service.performance(PROFILE_USER, REFERENCE);
-    expect(perf.periods['7d'].percent).toBeCloseTo(28, 1);
-    expect(perf.periods.all.percent).toBeCloseTo(2115, 1);
-    for (const p of Object.values(perf.periods)) {
-      expect(p.percent).toBeCloseTo((p.endEquity! / p.startEquity! - 1) * 100, 9);
-    }
-  });
-
-  it('ends the series at the profile’s live valuation, not a stored number', async () => {
-    const { service } = serviceFor(prismaStub());
-    const [overview, perf] = await Promise.all([
-      service.overview(PROFILE_USER),
-      service.performance(PROFILE_USER, REFERENCE),
-    ]);
-    expect(perf.periods.all.endEquity).toBeCloseTo(overview.presentation!.totalValueUsd, 4);
-  });
-
-  it('leaves a different admin on their own real, empty history', async () => {
-    const { service } = serviceFor(prismaStub());
-    const perf = await service.performance(OTHER_ADMIN, REFERENCE);
+    const perf = await service.performance(user, REFERENCE);
+    // A curve with returns written into the source used to stand in for one
+    // account's history here. A generated return is not a return.
     expect(perf.startedOn).toBeNull();
     for (const p of Object.values(perf.periods)) expect(p.available).toBe(false);
+  });
+
+  it('measures the owner off stored snapshots exactly like everyone else', async () => {
+    const snapshot = (date: string, value: string) => ({ createdAt: new Date(`${date}T09:00:00.000Z`), totalValueUsd: value });
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([snapshot('2026-08-28', '1000'), snapshot('2026-09-04', '1100')]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const perf = await service.performance(OWNER, REFERENCE);
+    expect(perf.periods['7d'].available).toBe(true);
+    expect(perf.periods['7d'].percent).toBeCloseTo(10, 6);
   });
 });

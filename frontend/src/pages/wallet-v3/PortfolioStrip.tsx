@@ -4,19 +4,28 @@ import {
   ArrowUpFromLineIcon,
   EyeIcon,
   EyeOffIcon,
+  RefreshCwIcon,
+  RepeatIcon,
+  ScrollTextIcon,
 } from 'lucide-react';
 import { Key, useLanguage } from '../../lib/i18n';
 import { EM_DASH, MASK, btcEquivalentDecimals, formatAmount, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
-import { PERFORMANCE_PERIODS, PerformancePeriod, WalletOverview, WalletPerformance } from './useWalletData';
+import { PERFORMANCE_PERIODS, PerformancePeriod, UnifiedAccount, WalletPerformance } from './useWalletData';
 
 /**
- * The single integrated portfolio panel: total value, the Spot/Futures
- * split, performance, and the three account actions — one white surface
- * rather than four separate dashboard cards.
+ * THE UNIFIED TRADING ACCOUNT HEADER.
  *
- * The total is the page's primary number and stays visually largest; the
- * PnL block sits beside it at a smaller weight, deliberately, so a return
- * never out-shouts the balance it was earned on.
+ * One panel: what the account is worth, what of it is free, what the open
+ * risk is doing to it, and the account actions. The total is the page's
+ * primary number and stays visually largest; everything beside it is a
+ * secondary reading of that same total, deliberately smaller, so a return
+ * or a margin figure never out-shouts the balance it was measured on.
+ *
+ * NOTHING HERE IS COMPUTED. Every figure arrives on `account`, which the
+ * server produced in one pass — see `useWalletData`. A `null` is an
+ * UNKNOWN and renders as an em dash; it is never coerced to 0, because a
+ * margin requirement of zero and an unanswered one are different facts and
+ * only one of them is safe to act on.
  */
 
 /** Short period labels; abbreviations differ by language, so they are keys. */
@@ -43,11 +52,11 @@ function Sparkline({ points, positive }: { points: number[]; positive: boolean }
 
   return (
     <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
-      <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#edeff3" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+      <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="currentColor" strokeWidth="1" opacity="0.25" vectorEffect="non-scaling-stroke" />
       <path
         d={`M${d}`}
         fill="none"
-        stroke={positive ? '#12a177' : '#d94a56'}
+        stroke={positive ? 'var(--w-pos)' : 'var(--w-neg)'}
         strokeWidth="1.6"
         strokeLinejoin="round"
         strokeLinecap="round"
@@ -57,11 +66,18 @@ function Sparkline({ points, positive }: { points: number[]; positive: boolean }
   );
 }
 
-function AccountBalance({ label, value, hidden }: { label: string; value: string; hidden: boolean }) {
+/**
+ * One account metric. `value` is already formatted — including the dash an
+ * unknown renders as — so this component cannot turn an unknown into a
+ * number by accident.
+ */
+function Metric({ label, value, hidden, tone }: { label: string; value: string; hidden: boolean; tone?: string }) {
   return (
-    <div className="min-w-0">
-      <p className="text-[13px] font-medium leading-5 text-ink-3">{label}</p>
-      <p className="num mt-1.5 break-words text-[19px] font-semibold leading-6 text-ink sm:text-[20px]">{hidden ? MASK : value}</p>
+    <div className="wallet-account-metric min-w-0">
+      <p className="text-[11.5px] font-medium uppercase leading-4 tracking-[0.04em] text-ink-4">{label}</p>
+      <p className={`num mt-1 break-words text-[15px] font-semibold leading-5 ${tone ?? 'text-ink'}`}>
+        {hidden ? MASK : value}
+      </p>
     </div>
   );
 }
@@ -90,20 +106,20 @@ function Performance({
     <div className="w-full">
       <div className="mb-1.5 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.pnl')}</p>
-          <p className={`num mt-1 text-[20px] font-semibold leading-7 ${toneOf(percent)}`}>
+          <p className="text-[11.5px] font-medium uppercase leading-4 tracking-[0.04em] text-ink-4">{t('wallet.pnl')}</p>
+          <p className={`num mt-1 text-[18px] font-semibold leading-6 ${toneOf(percent)}`}>
             {hidden ? MASK : available ? formatSignedUsd(pnl, lang) : EM_DASH}
           </p>
-          <p className={`num text-[13px] font-medium leading-5 ${toneOf(percent)}`}>
+          <p className={`num text-[12.5px] font-medium leading-5 ${toneOf(percent)}`}>
             {available ? formatPercent(percent, lang) : EM_DASH}
           </p>
         </div>
       </div>
-      <div className="h-10 w-full border-b border-hair-soft">
+      <div className="h-10 w-full border-b border-hair-soft text-ink-4">
         {loading ? null : available && !hidden ? (
           <Sparkline points={selected!.points.map((pt) => pt.equity)} positive={positive} />
         ) : (
-          <div className="flex h-full items-center justify-center text-[12px] text-ink-3">
+          <div className="flex h-full items-center justify-center text-[12px] text-ink-4">
             {/* Honest: this period has no history behind it yet, so no
                 percentage is invented to fill the space. */}
             {hidden ? MASK : t('wallet.notEnoughHistory')}
@@ -138,8 +154,12 @@ function Performance({
   );
 }
 
+const ACTION_BASE =
+  'flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-w px-2 py-2 text-[12.5px] font-medium leading-5 transition-colors duration-150 ease-exp sm:min-h-[38px] sm:flex-row sm:gap-1.5 sm:px-3 sm:py-0';
+const ACTION_SECONDARY = `${ACTION_BASE} border border-hair bg-panel-2 text-ink-2 hover:border-hair-strong hover:bg-panel-3 hover:text-ink`;
+
 export function PortfolioStrip({
-  overview,
+  account,
   performance,
   performanceLoading,
   btcEquivalent,
@@ -151,8 +171,10 @@ export function PortfolioStrip({
   onDeposit,
   onWithdraw,
   onTransfer,
+  onHistory,
+  onRefresh,
 }: {
-  overview: WalletOverview | null;
+  account: UnifiedAccount | null;
   performance: WalletPerformance | null;
   performanceLoading: boolean;
   btcEquivalent: number | null;
@@ -164,32 +186,56 @@ export function PortfolioStrip({
   onDeposit: () => void;
   onWithdraw: () => void;
   onTransfer: () => void;
+  onHistory: () => void;
+  onRefresh: () => void;
 }) {
   const { t, lang } = useLanguage();
 
-  // What the page shows as the portfolio. For an ordinary account this is
-  // the real ledger; the Spot/Futures split below is always the real ledger,
-  // because that is what those two wallets actually hold.
-  // All three come from the same backend fields, so the split under the
-  // header can never disagree with the header itself. The page does not know
-  // or ask what kind of account it is rendering — /wallet/overview decides
-  // that once (see WalletPortfolioService.displaySplit).
-  const totalUsd = overview?.displayTotalUsd ?? null;
-  const spotUsd = overview?.displaySpotUsd ?? null;
-  const futuresUsd = overview?.displayFuturesUsd ?? null;
+  const cross = account?.mode === 'CROSS';
+  const usd = (value: number | null | undefined) =>
+    unavailable || value === null || value === undefined ? EM_DASH : formatUsd(value, lang);
+
+  /**
+   * What sits beside the total. A Cross account reports margin; a plain
+   * ledger reports its two wallets. Neither is shown for the other kind of
+   * account, because the fields it does not have are not zeros.
+   */
+  const metrics: { label: string; value: string; tone?: string }[] = cross
+    ? [
+        { label: t('wallet.availableMargin'), value: usd(account!.availableUsd) },
+        {
+          label: t('wallet.unrealizedPnlLabel'),
+          value:
+            unavailable || account!.unrealizedPnlUsd === null
+              ? EM_DASH
+              : formatSignedUsd(account!.unrealizedPnlUsd, lang),
+          tone: toneOf(account!.unrealizedPnlUsd),
+        },
+        { label: t('wallet.initialMargin'), value: usd(account!.initialMarginUsd) },
+        { label: t('wallet.maintenanceMargin'), value: usd(account!.maintenanceMarginUsd) },
+      ]
+    : [
+        { label: t('wallet.spot'), value: usd(account?.spotUsd) },
+        { label: t('wallet.futures'), value: usd(account?.futuresUsd) },
+      ];
+
+  const incomplete = Boolean(account && !account.valuationComplete && account.unpricedAssets.length > 0);
 
   return (
     <section
-      aria-label={t('wallet.portfolio')}
-      className="relative overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel"
+      aria-label={t('wallet.unifiedAccount')}
+      className="wallet-account-panel relative overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel"
     >
       <span className="absolute left-0 top-0 h-[2px] w-14 bg-gold" aria-hidden="true" />
 
-      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-6 lg:p-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-5 2xl:flex-row 2xl:items-end 2xl:gap-7">
+      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-stretch lg:gap-6 lg:p-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.totalBalance')}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-[12.5px] font-medium leading-5 text-ink-3">{t('wallet.totalEquity')}</h2>
+              <span className="wallet-account-mode rounded-wsm border border-hair bg-panel-3 px-2 py-[2px] text-[11px] font-medium text-ink-3">
+                {t(cross ? 'wallet.accountCross' : 'wallet.accountSpot')}
+              </span>
               <button
                 type="button"
                 onClick={onToggleHidden}
@@ -199,27 +245,46 @@ export function PortfolioStrip({
               >
                 {hidden ? <EyeOffIcon className="h-4 w-4" strokeWidth={1.6} /> : <EyeIcon className="h-4 w-4" strokeWidth={1.6} />}
               </button>
+              <button
+                type="button"
+                onClick={onRefresh}
+                aria-label={t('wallet.refreshAccount')}
+                title={t('wallet.refreshAccount')}
+                className="wallet-account-refresh flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-4 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink-2"
+              >
+                <RefreshCwIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              </button>
             </div>
-            <p className="wallet-total-value num mt-2 min-w-0 break-words text-[32px] font-semibold leading-[1.15] text-ink sm:text-[40px]">
-              {hidden ? MASK : unavailable ? EM_DASH : formatUsd(totalUsd, lang)}
+            <p className="wallet-total-value num mt-2 min-w-0 break-words text-[30px] font-semibold leading-[1.15] text-ink sm:text-[38px]">
+              {hidden ? MASK : usd(account?.totalEquityUsd)}
             </p>
-            <p className="num mt-2 break-words text-[14px] leading-5 text-ink-3">
+            <p className="num mt-1.5 break-words text-[13px] leading-5 text-ink-3">
               ≈ {hidden ? MASK : btcEquivalent === null ? EM_DASH : `${formatAmount(btcEquivalent, lang, btcEquivalentDecimals(btcEquivalent))} BTC`}
             </p>
           </div>
 
-          <div className="flex min-w-0 gap-5 border-t border-hair pt-4 sm:gap-7 2xl:border-l 2xl:border-t-0 2xl:pb-1 2xl:pl-7 2xl:pt-0">
-            <AccountBalance label={t('wallet.spot')} value={unavailable ? EM_DASH : formatUsd(spotUsd, lang)} hidden={hidden} />
-            <span className="w-px self-stretch bg-hair" aria-hidden="true" />
-            <AccountBalance
-              label={t('wallet.futures')}
-              value={unavailable ? EM_DASH : formatUsd(futuresUsd, lang)}
-              hidden={hidden}
-            />
+          <div className="wallet-account-metrics grid min-w-0 grid-cols-2 gap-x-5 gap-y-4 border-t border-hair pt-4 sm:grid-cols-4 sm:gap-x-7">
+            {metrics.map((m) => (
+              <Metric key={m.label} label={m.label} value={m.value} hidden={hidden} tone={m.tone} />
+            ))}
           </div>
+
+          {incomplete && (
+            // The total above is a FLOOR while an asset has no quote. Saying
+            // so is the difference between an incomplete number and a wrong
+            // one — see the collateral model, which refuses to value an
+            // unpriced holding at zero for exactly this reason.
+            //
+            // Deliberately the TERMINAL's sentence, not a second wording of
+            // it: the same caveat about the same account should read the
+            // same on both pages.
+            <p className="wallet-valuation-note rounded-w border border-hair bg-panel-2 px-3 py-2 text-[12px] leading-4 text-ink-3" role="status">
+              {t('futures.collateralIncomplete', { assets: account!.unpricedAssets.join(', ') })}
+            </p>
+          )}
         </div>
 
-        <div className="hidden w-[236px] shrink-0 border-l border-hair pl-6 lg:block xl:w-[256px]">
+        <div className="hidden w-[228px] shrink-0 border-l border-hair pl-6 lg:block xl:w-[248px]">
           <Performance
             performance={performance}
             period={period}
@@ -229,31 +294,40 @@ export function PortfolioStrip({
           />
         </div>
 
-        <div className="min-w-0 border-t border-hair pt-4 lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
+        <div className="min-w-0 border-t border-hair pt-4 lg:w-[188px] lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
             <button
               type="button"
               onClick={onDeposit}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w bg-gold px-2 py-2 text-[13px] font-semibold leading-5 text-[#26190a] transition-colors duration-150 ease-exp hover:bg-gold-light sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
+              className={`${ACTION_BASE} bg-gold font-semibold text-[#26190a] hover:bg-gold-light`}
             >
               <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} />
               {t('wallet.deposit')}
             </button>
-            <button
-              type="button"
-              onClick={onWithdraw}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
-            >
+            <button type="button" onClick={onWithdraw} className={ACTION_SECONDARY}>
               <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
               {t('wallet.withdraw')}
             </button>
-            <button
-              type="button"
-              onClick={onTransfer}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
-            >
+            <button type="button" onClick={onTransfer} className={ACTION_SECONDARY}>
               <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
               {t('wallet.transfer')}
+            </button>
+            {/* Convert has no flow behind it on this exchange. It is shown
+                disabled and says why, rather than opening something that
+                pretends to succeed. */}
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title={t('wallet.convertUnavailable')}
+              className={`${ACTION_BASE} wallet-action-convert cursor-not-allowed border border-hair bg-panel-2 text-ink-4`}
+            >
+              <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {t('wallet.convert')}
+            </button>
+            <button type="button" onClick={onHistory} className={`${ACTION_SECONDARY} wallet-action-history`}>
+              <ScrollTextIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+              {t('wallet.openHistory')}
             </button>
           </div>
         </div>

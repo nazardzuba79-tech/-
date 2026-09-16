@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Nav } from '../components/Nav';
 import { useLanguage } from '../lib/i18n';
@@ -11,7 +11,6 @@ import { WithdrawModal } from './wallet-v3/WithdrawModal';
 import { TransferModal } from './wallet-v3/TransferModal';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
 import './wallet-v3/wallet.css';
-import { WalletFuturesAccountCard } from '../components/WalletFuturesAccountCard';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
 
@@ -34,20 +33,25 @@ function saveFlag(key: string, value: boolean) {
 type ActiveModal = 'deposit' | 'withdraw' | 'transfer' | null;
 
 /**
- * The Wallet workspace.
+ * The Unified Trading Account.
  *
- * Deliberately a *light* financial surface under the app's own dark global
- * header: the exchange chrome stays the dark terminal it is everywhere
- * else, and the account's books read as a ledger. That contrast is the
- * approved design, not an accident — see wallet-v3/wallet.css for how the
- * light area is scoped so it cannot leak into Trade, Futures or Admin.
+ * A dark terminal surface, in the same visual language as Futures and Spot
+ * rather than a white sheet under the app's black header. The palette lives
+ * entirely in wallet-v3/wallet.css, scoped so it cannot leak into Trade,
+ * Futures or Admin.
  *
- * Everything on the page is real: balances and valuations come from
- * /wallet/overview, performance from /wallet/performance, activity from the
- * account's own deposits, withdrawals and fills, and all three modals talk
- * to the same backends the previous Wallet used. Nothing from the design
- * archive's sample data — no example addresses, fees, transactions or
- * balances — reached this code.
+ * ONE SET OF BOOKS. The header's equity, available margin and margin
+ * requirements come from whichever source is authoritative for THIS
+ * account: the native Cross account model for the owner's margin account —
+ * the same object /futures prints — and /wallet/overview's valued ledger
+ * for everyone else. The page adds nothing to either. That is why there is
+ * no separate futures card below any more: a second panel of the same
+ * figures is a second chance to disagree with them.
+ *
+ * Everything shown is real: balances and valuations from the server,
+ * performance from the account's own stored daily series, activity from its
+ * own deposits, withdrawals and fills. An asset that could not be priced is
+ * reported as unknown and named, never valued at zero.
  */
 export function WalletPage() {
   const { t } = useLanguage();
@@ -58,9 +62,19 @@ export function WalletPage() {
   });
   const [hidden, setHidden] = useState(() => loadFlag(HIDE_BALANCE_KEY));
   const [period, setPeriod] = useState<PerformancePeriod>('7d');
+  const historyRef = useRef<HTMLDivElement>(null);
 
-  const { overview, overviewState, performance, performanceState, rows, rankingsLoaded, btcEquivalent, refresh } =
-    useWalletData();
+  const {
+    overviewState,
+    performance,
+    performanceState,
+    account,
+    accountResolved,
+    rows,
+    rankingsLoaded,
+    btcEquivalent,
+    refresh,
+  } = useWalletData();
 
   // Deep links from elsewhere in the app (Futures' transfer action, the
   // header's Пополнить) keep working across a query-string-only navigation,
@@ -70,8 +84,11 @@ export function WalletPage() {
     if (action === 'deposit' || action === 'withdraw' || action === 'transfer') setModal(action);
   }, [searchParams]);
 
-  const unavailable = overviewState === 'error';
-  const loading = overviewState === 'loading' || !overview;
+  // An error is only an error once the ordinary ledger failed AND no margin
+  // account answered: the owner's figures do not come from /wallet/overview,
+  // so a failure there must not blank a page that has authoritative numbers.
+  const unavailable = overviewState === 'error' && account === null;
+  const loading = !accountResolved || (account === null && overviewState === 'loading');
 
   function toggleHidden() {
     setHidden((v) => {
@@ -86,11 +103,11 @@ export function WalletPage() {
 
       <main className="wallet-workspace mx-auto w-full max-w-[1680px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h1 className="text-[26px] font-semibold tracking-normal text-ink sm:text-[28px]">{t('nav.wallet')}</h1>
+          <h1 className="text-[22px] font-semibold tracking-normal text-ink sm:text-[24px]">{t('nav.wallet')}</h1>
         </div>
 
         <PortfolioStrip
-          overview={overview}
+          account={account}
           performance={performance}
           performanceLoading={performanceState === 'loading'}
           btcEquivalent={btcEquivalent}
@@ -102,9 +119,11 @@ export function WalletPage() {
           onDeposit={() => setModal('deposit')}
           onWithdraw={() => setModal('withdraw')}
           onTransfer={() => setModal('transfer')}
+          onHistory={() => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+          onRefresh={refresh}
         />
 
-        <div className="wallet-holdings-grid mt-6 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_350px] xl:grid-cols-[minmax(0,1fr)_390px] xl:gap-6">
+        <div className="wallet-holdings-grid mt-5 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-6">
           <AssetLedger
             rows={rows}
             hidden={hidden}
@@ -115,19 +134,18 @@ export function WalletPage() {
             onTransfer={() => setModal('transfer')}
           />
 
-          <div className="wallet-allocation-column min-w-0 lg:pt-[48px]">
-            <PortfolioAllocation rows={rows} hidden={hidden} unavailable={unavailable} loading={loading} />
+          <div className="wallet-allocation-column min-w-0 lg:pt-[46px]">
+            <PortfolioAllocation
+              rows={rows}
+              hidden={hidden}
+              unavailable={unavailable}
+              loading={loading}
+              unpricedAssets={account?.unpricedAssets ?? []}
+            />
           </div>
         </div>
 
-        {/* The owner's futures account, read from the futures endpoint so
-            the two pages cannot report different equity. Renders nothing
-            for everyone else. */}
-        <div className="mt-6">
-          <WalletFuturesAccountCard hidden={hidden} />
-        </div>
-
-        <div className="mt-6">
+        <div className="mt-5" ref={historyRef}>
           <TransactionHistory hidden={hidden} />
         </div>
       </main>

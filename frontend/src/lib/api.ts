@@ -684,10 +684,13 @@ export const api = {
   // Wallet page's profit chart — the client already computes total
   // portfolio value (spot + futures), this just persists/reads it back.
   /**
-   * Everything the Wallet page needs about what the account is worth.
-   * `real` is always the spendable ledger; `presentation`, when present, is
-   * a display-only profile that no trading, margin or withdrawal path reads
-   * (see the backend's AdminPortfolioProfile).
+   * Everything the Wallet page needs about what the account is worth: the
+   * spendable ledger, valued once, server-side.
+   *
+   * An asset the account holds but nobody could price is LEFT OUT of the
+   * totals and named in `unpricedAssets`, never summed as zero — so
+   * `valuationComplete: false` means every total here is a floor, and an
+   * interface showing the total has to say so.
    */
   getWalletOverview: () =>
     request<{
@@ -698,15 +701,8 @@ export const api = {
         futuresValueUsd: number;
         totalValueUsd: number;
       };
-      presentation: {
-        holdings: { asset: string; quantity: string; priceUsd: number | null; valueUsd: number | null }[];
-        totalValueUsd: number;
-        startedOn: string;
-      } | null;
-      /** Rendered verbatim; `displaySpotUsd + displayFuturesUsd === displayTotalUsd`. */
-      displayTotalUsd: number;
-      displaySpotUsd: number;
-      displayFuturesUsd: number;
+      valuationComplete: boolean;
+      unpricedAssets: string[];
       btcPriceUsd: number | null;
     }>('/wallet/overview'),
 

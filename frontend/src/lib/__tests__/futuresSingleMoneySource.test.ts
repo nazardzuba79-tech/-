@@ -94,35 +94,51 @@ describe('the account has a single authoritative source', () => {
 });
 
 describe('the Wallet page reports the SAME account as the terminal', () => {
-  const card = () => src('components/WalletFuturesAccountCard.tsx');
+  const hook = () => src('pages/wallet-v3/useWalletData.ts');
+  const header = () => src('pages/wallet-v3/PortfolioStrip.tsx');
 
   it('reads the authoritative endpoint instead of recomputing from wallet rows', () => {
-    expect(card()).toContain('nativeDemoApi');
-    expect(card()).toContain('.account(');
-    // No arithmetic: the card prints fields, it does not combine them.
-    expect(card()).not.toMatch(/parseFloat|Number\(|\.plus\(|\.times\(|[^/*]\s\+\s[a-z]+\.(equity|available)/);
+    // The Wallet's account used to be a separate card calling
+    // `/native/account`; it is now the page header, reading `/native/wallet`
+    // — the same authoritative account, plus the rows it was computed from,
+    // in one request. Either way the rule is the same one: ASK, never derive.
+    expect(hook()).toContain('nativeDemoApi');
+    expect(hook()).toContain('.wallet(');
   });
 
   it('prints the same figures the terminal summary prints', () => {
-    const text = card();
-    for (const field of ['equity', 'settleBalance', 'walletCollateral', 'unrealizedPnl', 'initialMargin', 'available']) {
+    const text = hook();
+    for (const field of ['equity', 'available', 'unrealizedPnl', 'initialMargin', 'maintenanceMargin', 'orderReserve']) {
       expect(`${field}: ${text.includes(`a.${field}`)}`).toBe(`${field}: true`);
     }
   });
 
-  it('shows nothing at all for an account that is not bound to the simulation engine', () => {
-    // An ordinary user's wallet page must be unchanged, so the card renders
-    // null both before the answer arrives and when it says "not yours".
-    expect(card()).toContain("if (state.kind !== 'ready') return null;");
-    expect(card()).toContain("setState({ kind: 'absent' })");
+  it('does no arithmetic on the account it was handed', () => {
+    // `finite()` parses a decimal string into a number for formatting and
+    // refuses anything that is not one. Nothing else touches these fields:
+    // no addition, no subtraction, no second derivation of a figure the
+    // server already answered.
+    const account = hook().slice(hook().indexOf('const account: UnifiedAccount'), hook().indexOf('const rankingBySymbol'));
+    expect(account).not.toMatch(/a\.[a-zA-Z]+\s*[-+*/]\s*a\.[a-zA-Z]+/);
+    expect(account).not.toMatch(/\.plus\(|\.times\(|\.minus\(/);
+  });
+
+  it('shows an ordinary account its own ledger rather than an empty margin account', () => {
+    // No margin account is not a margin account worth zero: the hook falls
+    // back to the ordinary overview and reports the margin fields as
+    // unknown, which the header renders as a dash.
+    expect(hook()).toContain("mode: 'SPOT'");
+    expect(hook()).toContain('availableUsd: null');
+    expect(hook()).toContain('initialMarginUsd: null');
   });
 
   it('carries the SAME incomplete-collateral sentence as the terminal', () => {
-    expect(card()).toContain("t('futures.collateralIncomplete'");
-    expect(card()).toContain('a.unpricedAssets.join');
+    expect(header()).toContain("t('futures.collateralIncomplete'");
+    expect(header()).toContain('account!.unpricedAssets.join');
   });
 
   it('is mounted on the wallet page', () => {
-    expect(src('pages/WalletPage.tsx')).toContain('<WalletFuturesAccountCard hidden={hidden} />');
+    expect(src('pages/WalletPage.tsx')).toContain('<PortfolioStrip');
+    expect(src('pages/WalletPage.tsx')).toContain('account={account}');
   });
 });

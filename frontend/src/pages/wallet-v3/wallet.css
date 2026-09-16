@@ -1,3 +1,43 @@
+/* ── The Unified Trading Account palette ──────────────────────────────────
+   Every colour token the Wallet's Tailwind utilities resolve to is declared
+   here, and nowhere else. `tailwind.config.js` points the workspace-only
+   tokens at these variables with the previous light values as fallbacks, so
+   this block is the whole theme: no other page defines them, and no other
+   page can therefore be reached by changing them.
+
+   The values are a dark terminal surface, chosen so the Wallet sits in the
+   same visual language as the Futures and Spot terminals instead of being a
+   white sheet under a black header. The gold is VOLTEX's own accent,
+   lightened only enough to stay readable on a dark field — a brand colour
+   picked for white paper is not the same colour at 4.5:1 here. */
+.vx-wallet,
+.vx-wallet-modal-root {
+  --w-base: #0a0d11;
+  --w-panel: #12161c;
+  --w-panel-2: #171c24;
+  --w-panel-3: #1e242e;
+  --w-surface-0: #12161c;
+  --w-surface-1: #171c24;
+  --w-hair: #232a35;
+  --w-hair-strong: #323b49;
+  --w-hair-soft: #1b212a;
+  --w-ink: #eaecef;
+  --w-ink-2: #b5bcc7;
+  --w-ink-3: #818b99;
+  --w-ink-4: #5d6674;
+  /* The same up/down pair the terminals use, so a positive number is the
+     same green on both pages. */
+  --w-pos: #2ebd85;
+  --w-neg: #f0616d;
+  --w-gold: #d9a441;
+  --w-gold-light: #e8ba5c;
+  --w-gold-deep: #e3b451;
+  --w-gold-wash: rgba(217, 164, 65, 0.12);
+  --w-shadow-panel: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --w-shadow-lift: 0 2px 8px -2px rgba(0, 0, 0, 0.6);
+  --w-shadow-modal: 0 28px 72px -18px rgba(0, 0, 0, 0.75), 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+}
+
 /* Wallet workspace only.
    Every selector is prefixed `.vx-wallet`, because this file is imported
    globally like the rest of the app's CSS and names like `.num` are far too
@@ -5,14 +45,12 @@
    Copy Trading or Admin. */
 
 .vx-wallet {
-  background: #f6f7f9;
-  color: #111318;
+  background: var(--w-base);
+  color: var(--w-ink);
   font-family: 'Inter', var(--font-ui), system-ui, sans-serif;
   min-height: 100vh;
   width: 100%;
-  /* The page is a light financial workspace under the app's dark global
-     header; the two are deliberately different surfaces (see WalletPage).
-     Clip rather than grow a scrollbar if a wide table overshoots. */
+  /* Clip rather than grow a scrollbar if a wide table overshoots. */
   overflow-x: clip;
 }
 
@@ -117,7 +155,7 @@
 }
 
 .vx-wallet *:focus-visible {
-  outline: 1px solid #d9a441;
+  outline: 1px solid var(--w-gold);
   outline-offset: 2px;
 }
 
@@ -126,7 +164,7 @@
 .vx-wallet-modal-root {
   /* Keep the existing account actions above mobile navigation/support. */
   z-index: 1100;
-  color: #111318;
+  color: var(--w-ink);
   font-family: 'Inter', var(--font-ui), system-ui, sans-serif;
 }
 :where(.vx-wallet-modal-root) button,
@@ -159,53 +197,52 @@
   box-sizing: border-box;
 }
 .vx-wallet-modal-root *:focus-visible {
-  outline: 1px solid #d9a441;
+  outline: 1px solid var(--w-gold);
   outline-offset: 2px;
 }
 
-/* The owner's futures account, rendered from the futures endpoint so the
-   two pages cannot disagree. Sits in the same card language as the rest of
-   the page; it is a panel of figures, not a new visual idea. */
-.vx-wallet .wallet-futures-account {
-  border: 1px solid var(--wallet-border, rgba(17, 24, 39, 0.08));
-  border-radius: 14px;
-  background: var(--wallet-surface, #fff);
-  padding: 18px 20px;
-}
-.vx-wallet .wallet-futures-account-title {
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--wallet-ink, #111827);
-}
-.vx-wallet .wallet-futures-account-grid {
-  margin: 0;
-  display: grid;
-  gap: 10px 24px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-}
-.vx-wallet .wallet-futures-account-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+/* ── Unified account header ──────────────────────────────────────────────
+   The metric strip is a grid so every figure keeps its own column and a
+   long one wraps inside its cell rather than pushing the next one off the
+   row. Two columns on a phone, four from `sm` up. */
+.vx-wallet .wallet-account-metric {
   min-width: 0;
 }
-.vx-wallet .wallet-futures-account-row dt {
-  font-size: 12px;
-  color: var(--wallet-muted, #6b7280);
-}
-.vx-wallet .wallet-futures-account-row dd {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  /* A long figure wraps inside its own cell instead of widening the page. */
+.vx-wallet .wallet-account-metric p {
   overflow-wrap: anywhere;
-  text-align: right;
 }
-.vx-wallet .wallet-futures-account-note {
-  margin: 12px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--wallet-muted, #6b7280);
+
+/* The five account actions sit in one column beside the figures on a wide
+   screen and wrap into a grid below it; `Convert` is present but disabled,
+   so it must read as unavailable rather than merely quiet. */
+.vx-wallet .wallet-action-convert {
+  opacity: 0.55;
+}
+
+/* Between the stacked tablet layout and the full desktop one the actions
+   column would otherwise squeeze the figures. Give the panel its rows
+   back instead of letting either half collapse. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .vx-wallet .wallet-account-panel > div:first-of-type {
+    flex-wrap: wrap;
+  }
+}
+
+/* The ledger gains an In-use column, so the desktop table is wider than the
+   panel at laptop widths. It scrolls inside its own card — the page itself
+   never grows a horizontal scrollbar. */
+.vx-wallet .wallet-ledger-desktop {
+  scrollbar-width: thin;
+}
+
+/* A dark search field needs its own clear-button colour: the browser's
+   default cross is drawn for a light background and disappears here. */
+.vx-wallet input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--w-ink-4);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 1l10 10M11 1L1 11' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+  cursor: pointer;
 }

@@ -58,11 +58,34 @@ export interface NativeContract{
  * those assets and `complete` says whether `priced` is the whole wallet.
  */
 export interface NativeCollateralLine{
-  asset:string;quantity:string;price:string|null;value:string|null;
+  asset:string;available:string;locked:string;quantity:string;price:string|null;value:string|null;
   status:'SETTLE'|'PRICED'|'UNPRICED';source:string|null;asOf:number|null;
+}
+/**
+ * One row of the Wallet's asset table, projected server-side from the
+ * account and the collateral valuation. `value` is null — never 0 — for an
+ * asset that could not be priced.
+ */
+export interface NativeWalletRow{
+  asset:string;walletQuantity:string;tradingBalance:string;total:string;inUse:string;available:string;
+  price:string|null;value:string|null;status:'SETTLE'|'PRICED'|'UNPRICED';asOf:number|null;
 }
 export interface NativeCollateral{
   settleAsset:string;lines:NativeCollateralLine[];priced:string;unpriced:string[];complete:boolean;asOf:number|null;
+}
+/**
+ * The unified account, as the Wallet reads it.
+ *
+ * `account.settleBalance` is the part of the wallet that has already moved
+ * into the simulation ledger; `collateral.lines` is the part that has not.
+ * Initialization DEBITS the settle row it takes, so the two are disjoint
+ * and `account.collateral` is their sum without anything counted twice.
+ */
+export interface NativeWallet{
+  account:NativeAccountAggregate;
+  ledger:AccountLedgerView;
+  collateral:NativeCollateral;
+  rows:NativeWalletRow[];
 }
 export type NativeDraft=
  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string}
@@ -98,6 +121,14 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
     account:(signal?:AbortSignal)=>request<{account:NativeAccountAggregate;ledger:AccountLedgerView}>('/native/account',undefined,signal),
     /** The whole wallet as Cross collateral, valued at the same marks the positions use. */
     collateral:(signal?:AbortSignal)=>request<NativeCollateral>('/native/collateral',undefined,signal),
+    /**
+     * The Wallet page's ONE request: the authoritative account AND the
+     * per-asset collateral it was computed from, in a single valuation.
+     * Asking `/account` and `/collateral` separately would be two upstream
+     * valuations that can disagree — here the rows add up to the header by
+     * construction.
+     */
+    wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),

@@ -69,6 +69,15 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     return result;
   }));
   r.get('/collateral',handle((_req,res)=>service.collateral(actor(res))));
+  // The Wallet page's ONE request: the same authoritative account the
+  // terminal reads, together with the per-asset collateral it was computed
+  // from, so the two surfaces cannot report different equity and the page
+  // never needs a second round trip to fill in its rows.
+  r.get('/wallet',handle(async(_req,res)=>{
+    const result=await service.wallet(actor(res));
+    if(!result)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
+    return result;
+  }));
   r.get('/contracts/:symbol',handle((req,res)=>service.contract(actor(res),z.string().regex(/^[A-Z0-9]{1,32}USDT$/).parse(req.params.symbol))));
   r.post('/initialize',handle((req,res)=>{const input=z.object({idempotencyKey:key,acceptedModel:z.literal(NATIVE_DEMO_MODEL.version)}).strict().parse(req.body);return service.initialize(actor(res),input.idempotencyKey);}));
   r.post('/commands',handle((req,res)=>service.command(actor(res),nativeCommandSchema.parse(req.body) as NativeCommand)));

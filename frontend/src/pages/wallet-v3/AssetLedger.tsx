@@ -8,13 +8,21 @@ import { EmptyState } from './ui';
 import { MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
 import { LedgerRow } from './useWalletData';
 
-type SortKey = 'symbol' | 'total' | 'price' | 'change' | 'value';
+type SortKey = 'symbol' | 'total' | 'available' | 'inUse' | 'price' | 'change' | 'value';
 type SortDir = 'asc' | 'desc';
 
 /**
- * The asset ledger, in the approved V3 density: hairline rows, tabular
- * figures, the value column separated by its own rule. Search, sorting and
- * hide-zero are the same real controls the previous Wallet had.
+ * The asset ledger: hairline rows, tabular figures, the value column
+ * separated by its own rule. Search, sorting and hide-zero are the same
+ * real controls the previous Wallet had.
+ *
+ * `Total`, `Available` and `In use` are three columns rather than one
+ * column with a footnote, because on a margin account they are three
+ * different facts about the same holding and a reader checks them against
+ * each other. Every one of them arrives on the row; nothing is derived
+ * here. A row whose asset has no price shows its value as UNKNOWN and says
+ * why — it is never rendered as $0, which would read as a worthless
+ * holding rather than an unanswered one.
  */
 export function AssetLedger({
   rows,
@@ -56,6 +64,8 @@ export function AssetLedger({
     return [...filtered].sort((a, b) => {
       if (sortKey === 'symbol') return a.symbol.localeCompare(b.symbol) * dir;
       if (sortKey === 'total') return (a.total - b.total) * dir;
+      if (sortKey === 'available') return (a.available - b.available) * dir;
+      if (sortKey === 'inUse') return (a.locked - b.locked) * dir;
       if (sortKey === 'price') return (num(a.priceUsd) - num(b.priceUsd)) * dir;
       if (sortKey === 'change') return (num(a.changePercent24h) - num(b.changePercent24h)) * dir;
       return (num(a.valueUsd) - num(b.valueUsd)) * dir;
@@ -117,7 +127,8 @@ export function AssetLedger({
   const columns: { key: SortKey | null; label: string; align: 'left' | 'right'; sep?: boolean }[] = [
     { key: 'symbol', label: t('wallet.colAsset'), align: 'left' },
     { key: 'total', label: t('wallet.colBalance'), align: 'right' },
-    { key: null, label: t('wallet.colAvailable'), align: 'right' },
+    { key: 'available', label: t('wallet.colAvailable'), align: 'right' },
+    { key: 'inUse', label: t('wallet.colInUse'), align: 'right' },
     { key: 'change', label: t('wallet.col24h'), align: 'right' },
     { key: 'value', label: t('wallet.colValue'), align: 'right', sep: true },
     { key: null, label: t('wallet.actions'), align: 'right' },
@@ -200,14 +211,15 @@ export function AssetLedger({
         ) : (
           <>
             <div className="wallet-ledger-desktop hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[760px] table-fixed">
+              <table className="w-full min-w-[880px] table-fixed">
                 <colgroup>
-                  <col className="w-[17%]" />
-                  <col className="w-[17%]" />
-                  <col className="w-[17%]" />
-                  <col className="w-[9%]" />
                   <col className="w-[16%]" />
-                  <col className="w-[24%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[16%]" />
                 </colgroup>
                 <thead>
                   <tr className="border-b border-hair bg-surface-1">
@@ -268,12 +280,17 @@ export function AssetLedger({
                         </td>
                         <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-3">
                           <span className="wallet-ledger-available">{hidden ? MASK : `${formatAmount(r.available, lang, dp)} ${r.symbol}`}</span>
-                          {r.locked > 0 && <small className="wallet-ledger-locked mt-1 block text-[11.5px] font-normal text-ink-4">{t('wallet.colInOrders')}: {hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</small>}
+                        </td>
+                        <td className="num px-3 py-3 text-right text-[14px] font-medium text-ink-3">
+                          {/* A zero here is a real answer — nothing of this
+                              asset is committed — so it is shown as 0 and
+                              not dashed out. */}
+                          <span className="wallet-ledger-locked">{hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</span>
                         </td>
                         <td className={`num px-3 py-3 text-right text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>
                           {formatPercent(r.changePercent24h, lang)}
                         </td>
-                        <td className="wallet-ledger-value border-l border-hair-soft bg-[#fcfcfd] px-3 py-3 text-right group-hover:bg-transparent">
+                        <td className="wallet-ledger-value border-l border-hair-soft bg-panel-2 px-3 py-3 text-right group-hover:bg-transparent">
                           <span
                             className={`num text-[14px] font-semibold tracking-[-0.01em] ${
                               r.valueUsd && r.valueUsd > 0 ? 'text-ink' : 'text-ink-4'
@@ -281,6 +298,13 @@ export function AssetLedger({
                           >
                             {hidden ? MASK : formatUsd(r.valueUsd, lang)}
                           </span>
+                          {!r.priced && (
+                            // Says the dash is an unknown price, not a zero
+                            // balance. Without it the two read the same.
+                            <small className="wallet-ledger-unpriced mt-0.5 block text-[11px] font-normal leading-4 text-ink-4">
+                              {t('wallet.noQuote')}
+                            </small>
+                          )}
                         </td>
                         <td className="px-3 py-3 sm:pr-5">{rowActions(r)}</td>
                       </tr>
@@ -312,7 +336,7 @@ export function AssetLedger({
                           {hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}
                         </p>
                         <p className="wallet-ledger-mobile-value num text-[12px] leading-4 text-ink-3">
-                          {hidden ? MASK : `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}`}
+                          {hidden ? MASK : r.priced ? `${r.valueUsd !== null ? '≈ ' : ''}${formatUsd(r.valueUsd, lang)}` : t('wallet.noQuote')}
                         </p>
                       </div>
                       <ChevronDownIcon aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-ink-4 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -323,7 +347,10 @@ export function AssetLedger({
                         <div>
                           <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.colAvailable')}</dt>
                           <dd className="num mt-1 text-[14px] font-medium text-ink-2">{hidden ? MASK : `${formatAmount(r.available, lang, dp)} ${r.symbol}`}</dd>
-                          {r.locked > 0 && <dd className="wallet-ledger-locked num mt-1 text-[11.5px] text-ink-4">{t('wallet.colInOrders')}: {hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</dd>}
+                        </div>
+                        <div>
+                          <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.colInUse')}</dt>
+                          <dd className="wallet-ledger-locked num mt-1 text-[14px] font-medium text-ink-2">{hidden ? MASK : `${formatAmount(r.locked, lang, dp)} ${r.symbol}`}</dd>
                         </div>
                         <div>
                           <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.col24h')}</dt>
