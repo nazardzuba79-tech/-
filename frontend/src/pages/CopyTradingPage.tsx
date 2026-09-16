@@ -6,30 +6,13 @@ import { Footer } from '../components/Footer';
 import './copy-trading-bolt/CopyTradingBolt.css';
 import './copy-trading-bolt/CopyTradingRefinement.css';
 import './copy-trading-bolt/KseniaReview.css';
-import { type Trader, marketplaceTraders, nazarTrader } from './copy-trading-bolt/traders';
+import { type Trader, nazarTrader } from './copy-trading-bolt/traders';
 import { Marketplace, Profile } from './copy-trading-bolt/components';
 import { CopyEligibilityProvider } from './copy-trading-bolt/CopyEligibilityContext';
 import { FeaturedAvatarProvider } from './copy-trading-bolt/FeaturedAvatarContext';
 import { syntheticNazaraTrader } from '../lib/syntheticCopyTrading';
-import { kseniaTrader, kseniaTraderShell, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
+import { kseniaTrader, KSENIA_TRADER_ID, withStrategyIdentityVerification } from '../lib/kseniaCopyTrading';
 import { useCopyMarketplace } from '../lib/useCopyMarketplace';
-
-function traderFromLocation(): Trader | null {
-  if (typeof window === 'undefined') return null;
-  const id = new URLSearchParams(window.location.search).get('trader');
-  if (!id) return null;
-  if (id === nazarTrader.id) return nazarTrader;
-  if (id === KSENIA_TRADER_ID) return kseniaTraderShell;
-  return marketplaceTraders.find(trader => trader.id === id) ?? null;
-}
-
-function writeTraderLocation(traderId: string | null) {
-  if (typeof window === 'undefined') return;
-  const url = new URL(window.location.href);
-  if (traderId) url.searchParams.set('trader', traderId);
-  else url.searchParams.delete('trader');
-  window.history.pushState({}, '', `${url.pathname}${url.search}${url.hash}`);
-}
 
 // Integration of the approved Bolt.new Copy Trading / Marketplace archive
 // (see copy-trading-bolt/) — same Marketplace/Profile views, same trader
@@ -43,28 +26,11 @@ function writeTraderLocation(traderId: string | null) {
 // panel within minutes. Figures still move — once a UTC day, seeded, from
 // one place (see traders.ts) so every surface moves together.
 export function CopyTradingPage() {
-  const initialTrader = useMemo(() => traderFromLocation(), []);
-  const [view, setView] = useState<'marketplace' | 'profile'>(initialTrader ? 'profile' : 'marketplace');
-  const [selectedTrader, setSelectedTrader] = useState<Trader>(initialTrader ?? nazarTrader);
+  const [view, setView] = useState<'marketplace' | 'profile'>('marketplace');
+  const [selectedTrader, setSelectedTrader] = useState<Trader>(nazarTrader);
   const [depositUsd, setDepositUsd] = useState(0);
   const marketplace = useCopyMarketplace();
   const { nazar: synthetic, ksenia, identities } = marketplace;
-
-  // A trader profile is a real deep link. Reloading /copy-trading?trader=...
-  // restores the same profile, while browser Back/Forward follows history.
-  useEffect(() => {
-    const syncFromLocation = () => {
-      const trader = traderFromLocation();
-      if (trader) {
-        setSelectedTrader(trader);
-        setView('profile');
-      } else {
-        setView('marketplace');
-      }
-    };
-    window.addEventListener('popstate', syncFromLocation);
-    return () => window.removeEventListener('popstate', syncFromLocation);
-  }, []);
 
   // The archive hardcoded a USER_DEPOSIT constant to gate the deposit
   // threshold; this account's real deposit is the most recent portfolio
@@ -92,13 +58,11 @@ export function CopyTradingPage() {
   function openProfile(trader: Trader) {
     setSelectedTrader(trader);
     setView('profile');
-    writeTraderLocation(trader.id);
     window.scrollTo(0, 0);
   }
 
   function backToMarketplace() {
     setView('marketplace');
-    writeTraderLocation(null);
     window.scrollTo(0, 0);
   }
 
