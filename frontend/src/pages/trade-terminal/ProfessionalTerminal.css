@@ -5,9 +5,9 @@
 .trade-terminal.trade-terminal .ticker-bar .ticker-item, .trade-terminal.trade-terminal .cfd-ticker-metric { flex:1 1 auto; min-width:0; gap:4px; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item .label, .trade-terminal.trade-terminal .cfd-ticker-metric > :first-child { font-size:10px; white-space:normal; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item .value { font-size:12px; }
-.trade-terminal.trade-terminal .ticker-bar .ticker-item .value.price { font-size:19px; }
+.trade-terminal.trade-terminal .ticker-bar .ticker-item .value.price { font-size:var(--terminal-last-size); }
 .trade-terminal.trade-terminal .pair-selector { padding-right:12px; margin-right:0; }
-.trade-terminal.trade-terminal .pair-name, .trade-terminal.trade-terminal .cfd-symbol { font-size:17px; }
+.trade-terminal.trade-terminal .pair-name, .trade-terminal.trade-terminal .cfd-symbol { font-size:var(--terminal-pair-size); }
 .trade-terminal.trade-terminal .order-form-content, .trade-terminal.trade-terminal .fo-form, .trade-terminal.trade-terminal .cfd-form { padding:10px 12px 12px; gap:9px; }
 .trade-terminal.trade-terminal .order-form-tabs, .trade-terminal.trade-terminal .cfd-sideTabs { margin:8px 12px 0; min-height:34px; border-radius:4px; }
 .trade-terminal.trade-terminal .order-form-tab, .trade-terminal.trade-terminal .cfd-sideTab { padding:6px 2px; font-size:12px; border-radius:3px; }

@@ -325,6 +325,10 @@ export function FuturesPage() {
               onOpenTransfer={nativeExecution ? undefined : () => setShowTransfer(true)}
               pickedPrice={pickedPrice?.symbol === symbol ? pickedPrice.value : undefined}
               pickedPriceSequence={pickedPrice?.symbol === symbol ? pickedPrice.seq : undefined}
+              /* The LAST TRADED price, which is what the button beside the
+                 Limit field says it fills. Mark price stays where it
+                 belongs — valuing the position, not seeding an order. */
+              lastPrice={reference.get(symbol)?.lastPrice ?? null}
               closeTicket={closeTicket?.symbol === symbol ? closeTicket : undefined}
             />
           </div>

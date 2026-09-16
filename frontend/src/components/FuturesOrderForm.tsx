@@ -40,6 +40,7 @@ export function FuturesOrderForm({
   pickedPriceSequence,
   executionEnabled = true,
   closeTicket,
+  lastPrice = null,
 }: {
   symbol: string;
   onPlaced: () => void;
@@ -56,6 +57,18 @@ export function FuturesOrderForm({
    *  is placed until they press the button, exactly as for any other
    *  order. */
   closeTicket?: { side: 'LONG' | 'SHORT'; size: string; seq: number };
+  /**
+   * The last TRADED price for this contract.
+   *
+   * Separate from mark price on purpose. The button beside the Limit field
+   * is labelled "Последняя" and used to fill the MARK price, which is a
+   * different quantity — the fair price the engine values and liquidates
+   * positions at, not the price the market last traded at. On a contract
+   * with any basis the two differ, so the button filled a number the label
+   * did not describe. `null` means we do not know it, and the button is not
+   * offered rather than filled with something else.
+   */
+  lastPrice?: number | null;
 }) {
   const { t } = useLanguage();
   const toast = useToast();
@@ -539,8 +552,8 @@ export function FuturesOrderForm({
                 placeholder="0.00"
               />
               <span className="fo-fieldTrailing">
-                {markPrice !== null && (
-                  <button type="button" onClick={() => setPrice(String(markPrice))} className="fo-lastPriceBtn">
+                {lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 && (
+                  <button type="button" onClick={() => setPrice(String(lastPrice))} className="fo-lastPriceBtn">
                     {t('trade.lastPriceBtn')}
                   </button>
                 )}

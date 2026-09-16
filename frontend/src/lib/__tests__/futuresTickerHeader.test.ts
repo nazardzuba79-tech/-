@@ -164,12 +164,24 @@ test.each([
   // and every spot method. The protection routes are new paths under
   // /futures/positions and reach none of them.
 ])('%s remains intact (index API, internal OI, Spot)', (path, expected) => {
+  // TickerBar's pair-selector chevron stopped being a "\u25bc" glyph that CSS
+  // hid with `font-size:0`. On an inline <span> the width and height in that
+  // rule did not apply, so its two rotated borders drew a stray pale stroke
+  // beside the pair name — the artifact this header work was asked to
+  // remove. It is now drawn once, for every terminal, in
+  // TerminalPresentationPolish.css. Restoring the old element here keeps
+  // this fingerprint covering the BEHAVIOUR it exists for: any other change
+  // to this file, including anything that touches a read or a handler,
+  // still trips it.
+  const normalized = path === 'frontend/src/components/TickerBar.tsx'
+    ? read(path).replace('<span className="pair-arrow" aria-hidden="true" />', '<span className="pair-arrow">\u25bc</span>')
+    : read(path);
   // Only the CFD read-response TYPE changes: nullable price + quote metadata.
   // Restore that exact line for this fingerprint of all existing API behavior.
   const source = path === 'frontend/src/lib/api.ts' ? read(path).replace(
     "tickers: import('../components/CfdInstrumentList').CfdTickerRow[];",
     'tickers: { symbol: string; name: string; price: string; changePercent24h: string }[];'
-  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : read(path);
+  ).replace("  getFuturesUniverse: () =>\n    request<import('./futuresDiscovery').FuturesUniverse>('/market/universe?type=linear_perpetual'),\n\n", '') : normalized;
   expect(hash(source)).toBe(expected);
 });
 

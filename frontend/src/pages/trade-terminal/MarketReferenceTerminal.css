@@ -16,7 +16,7 @@
 .trade-terminal.trade-terminal.market-reference :is(.ticker-bar,.cfd-ticker-bar) { background:var(--workspace-bg); padding:10px 16px; gap:20px; min-height:64px; border-bottom:1px solid var(--border); }
 .trade-terminal.trade-terminal.market-reference :is(.ticker-item .label,.cfd-stat>span) { font-size:12px; line-height:17px; color:var(--text-secondary); }
 .trade-terminal.trade-terminal.market-reference .ticker-item .value { font-size:14px; line-height:20px; font-weight:600; }
-.trade-terminal.trade-terminal.market-reference .ticker-item .value.price { font-size:22px; line-height:28px; }
+.trade-terminal.trade-terminal.market-reference .ticker-item .value.price { font-size:var(--terminal-last-size); line-height:var(--terminal-last-line); }
 .trade-terminal.trade-terminal.market-reference :is(.left-panel,.pairs-section,.order-form-area,.orderbook-area,.bottom-panel,.cfd-bottom-panel,.cfd-instruments-area,.cfd-form-area) { background:var(--workspace-bg); border-color:var(--border); }
 .trade-terminal.trade-terminal.market-reference :is(.chart-area,.cfd-chart-area,.cfd-chart) { background:var(--chart-bg); }
 .trade-terminal.trade-terminal.market-reference .voltex-tradingview-chart__copyright { background:var(--chart-bg); border-top:1px solid var(--border); font-size:11px!important; line-height:22px!important; }

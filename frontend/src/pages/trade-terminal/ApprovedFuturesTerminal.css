@@ -36,7 +36,7 @@
   letter-spacing: -.5px;
 }
 .trade-terminal.trade-terminal.futures-terminal .futures-primary-price { min-width: 180px; }
-.trade-terminal.trade-terminal.futures-terminal .pair-name { font-size: 19px; }
+.trade-terminal.trade-terminal.futures-terminal .pair-name { font-size: var(--terminal-pair-size); }
 .trade-terminal.trade-terminal.futures-terminal .orderbook-col-headers {
   font-size: 12px;
   color: #a1b0c2;
