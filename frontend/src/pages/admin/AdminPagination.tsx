@@ -16,7 +16,9 @@ export function AdminPagination({
   itemLabel: string;
   onPageChange: (page: number) => void;
 }) {
-  if (total === 0) return null;
+  // A one-page result needs no pagination chrome or redundant "1–N из N"
+  // footer. Keep the control only when the list actually spans pages.
+  if (total === 0 || totalPages <= 1) return null;
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   const pages = buildPageList(page, totalPages);
