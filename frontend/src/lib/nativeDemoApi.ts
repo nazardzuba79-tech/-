@@ -6,25 +6,17 @@ export interface NativePosition {
   id:string;symbol:string;side:'LONG'|'SHORT';quantity:string;entryPrice:string;markPrice:string;lastPrice:string;leverage:string;
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
-  protection:NativeProtection;
-  /** Account-level Cross estimate (other contracts frozen). null = not reachable with current collateral, or fully hedged. */
+  protection:NativeProtection;marginType:'CROSS'|'ISOLATED';marginMode:'CROSS'|'ISOLATED';
+  /** Backend-authoritative liquidation estimate for this position's actual margin mode. */
   liquidationPrice:string|null;liquidationStatus:string;
 }
-export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number}
+export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType?:'CROSS'|'ISOLATED';reduceOnly?:boolean;positionId?:string|null}
 export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string}
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
-  model:{version:string;funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
-  /**
-   * THE AUTHORITATIVE ACCOUNT, computed once on the server.
-   *
-   * `liquidatable` is `null` — not `false` — while any held asset could not
-   * be priced: an incomplete valuation understates collateral, and a
-   * liquidation verdict on an understated figure is worse than no verdict.
-   * `collateralComplete` and `unpricedAssets` say when that is the case.
-   */
+  model:{version:string;marginModes?:readonly ('CROSS'|'ISOLATED')[];funding:{longCashflow:string;shortCashflow:string;unit:string;intervalMs:number};fundingSource?:string;historicalLimit?:string;historyResolution?:string[]};
+  /** THE AUTHORITATIVE ACCOUNT, computed once on the server. */
   account:null|NativeAccountAggregate;
-  /** Every change to the settle balance, with its source. `null` before the account exists. */
   ledger:AccountLedgerView|null;
   positions:NativePosition[];history:NativePosition[];orders:NativeOrder[];events:NativeEvent[];
   entries?:{positionId:string;candle:NativeCandle|null}[];
@@ -50,22 +42,10 @@ export interface NativeContract{
   minLeverage:string;maxLeverage:string;leverageStep:string;
   riskTiers:{maxNotional:string;maintenanceRate:string;deduction:string;maxLeverage:string}[];takerFeeRate:string;makerFeeRate:string;
 }
-/**
- * The Cross collateral base: the whole wallet priced in the settle asset.
- *
- * `price`/`value` are `null` for an asset whose quote could not be obtained.
- * That is not a zero and must never be rendered as one — `unpriced` names
- * those assets and `complete` says whether `priced` is the whole wallet.
- */
 export interface NativeCollateralLine{
   asset:string;available:string;locked:string;quantity:string;price:string|null;value:string|null;
   status:'SETTLE'|'PRICED'|'UNPRICED';source:string|null;asOf:number|null;
 }
-/**
- * One row of the Wallet's asset table, projected server-side from the
- * account and the collateral valuation. `value` is null — never 0 — for an
- * asset that could not be priced.
- */
 export interface NativeWalletRow{
   asset:string;walletQuantity:string;tradingBalance:string;total:string;inUse:string;available:string;
   price:string|null;value:string|null;status:'SETTLE'|'PRICED'|'UNPRICED';asOf:number|null;
@@ -73,14 +53,6 @@ export interface NativeWalletRow{
 export interface NativeCollateral{
   settleAsset:string;lines:NativeCollateralLine[];priced:string;unpriced:string[];complete:boolean;asOf:number|null;
 }
-/**
- * The unified account, as the Wallet reads it.
- *
- * `account.settleBalance` is the part of the wallet that has already moved
- * into the simulation ledger; `collateral.lines` is the part that has not.
- * Initialization DEBITS the settle row it takes, so the two are disjoint
- * and `account.collateral` is their sum without anything counted twice.
- */
 export interface NativeWallet{
   account:NativeAccountAggregate;
   ledger:AccountLedgerView;
@@ -88,7 +60,7 @@ export interface NativeWallet{
   rows:NativeWalletRow[];
 }
 export type NativeDraft=
- | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string}
+ | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType:'CROSS'|'ISOLATED'}
  | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
  | {kind:'CANCEL';orderId:string}
  | {kind:'PROTECTION';positionId:string;protection:Partial<NativeProtection>}
@@ -110,24 +82,9 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
   return{
     access:(signal?:AbortSignal)=>request<{allowed:boolean;nativeAvailable?:boolean;simulationOnly?:boolean}>('/access',undefined,signal),
     state:(signal?:AbortSignal)=>request<NativeState>('/native/state',undefined,signal),
-    /** The contract's own trading rules — what the engine will accept as a
-     *  quantity. The order form sizes against these instead of guessing. */
     contract:(symbol:string,signal?:AbortSignal)=>request<NativeContract>(`/native/contracts/${encodeURIComponent(symbol)}`,undefined,signal),
-    /**
-     * The authoritative account: the one object the terminal, the wallet
-     * card and the P&L card all read. Whoever renders a figure from
-     * anywhere else is showing a second answer.
-     */
     account:(signal?:AbortSignal)=>request<{account:NativeAccountAggregate;ledger:AccountLedgerView}>('/native/account',undefined,signal),
-    /** The whole wallet as Cross collateral, valued at the same marks the positions use. */
     collateral:(signal?:AbortSignal)=>request<NativeCollateral>('/native/collateral',undefined,signal),
-    /**
-     * The Wallet page's ONE request: the authoritative account AND the
-     * per-asset collateral it was computed from, in a single valuation.
-     * Asking `/account` and `/collateral` separately would be two upstream
-     * valuations that can disagree — here the rows add up to the header by
-     * construction.
-     */
     wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
