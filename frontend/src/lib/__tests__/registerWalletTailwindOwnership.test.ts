@@ -120,7 +120,10 @@ describe('/wallet does NOT own the utilities it uses', () => {
   it('but it does use them heavily, including responsive and arbitrary values', () => {
     const used = utilitiesIn(sources('src/pages/WalletPage.tsx', 'src/pages/wallet-v3'));
     expect(used.length).toBeGreaterThan(200);
-    for (const utility of ['flex-col', 'gap-5', 'rounded-wlg', 'text-ink-3', 'bg-panel', 'shadow-panel']) {
+    // A sample of the layer Wallet borrows, not a design decision. `gap-5`
+    // left this list when the workspace was tightened to the reference's
+    // density; `gap-4` is the spacing that replaced it.
+    for (const utility of ['flex-col', 'gap-4', 'rounded-wlg', 'text-ink-3', 'bg-panel', 'shadow-panel']) {
       expect(used).toContain(utility);
     }
     expect(used.some((c) => c.startsWith('xl:grid-cols-[minmax('))).toBe(true);

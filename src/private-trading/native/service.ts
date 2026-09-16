@@ -7,6 +7,7 @@ import { NativeAccount, NativeRepository, commandHash } from './store';
 import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, DemoState, NATIVE_DEMO_MODEL } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
+import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
 import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
@@ -107,9 +108,13 @@ export class NativeDemoService {
    * response each built their own account, a trader could place an order
    * and watch available margin disagree with itself for five seconds.
    */
-  private async authoritative(actor:OwnerSession,view:ReturnType<NativeDemoService['view']>,row:NativeAccount|null):Promise<ReturnType<NativeDemoService['view']>>{
+  private async authoritative(actor:OwnerSession,view:ReturnType<NativeDemoService['view']>,row:NativeAccount|null,valued?:CollateralValuation):Promise<ReturnType<NativeDemoService['view']>>{
     if(!row||!view.initialized)return view;
-    const valuation=await this.collateral(actor);
+    // `valued` lets a caller that already has THIS request's valuation pass
+    // it in instead of paying for a second one. It is the same object, so
+    // the account it produces is the same account — never a second reading
+    // of prices that could have moved between the two.
+    const valuation=valued??await this.collateral(actor);
     const open=row.snapshot.positions.some(p=>p.status==='OPEN');
     return{...view,account:crossAccount(demoAccount(row.snapshot),valuation,open),ledger:accountLedger(row.snapshot)};
   }
@@ -133,6 +138,38 @@ export class NativeDemoService {
     if(!row)return null;
     const view=await this.authoritative(actor,this.view(row),row);
     return{account:view.account as CrossAccount,ledger:view.ledger as AccountLedger};
+  }
+  /**
+   * THE WALLET, AS ONE ANSWER.
+   *
+   * The Wallet page needs the account (equity, margins, P&L) AND the
+   * per-asset breakdown that backs it. Asking `/account` and `/collateral`
+   * for those would be two requests, two valuations and — because
+   * `freshQuote` is deliberately uncached — two rounds of upstream quotes
+   * that can disagree with each other. One valuation is computed here and
+   * used for both, so the rows a reader sees ADD UP to the header above
+   * them by construction rather than by coincidence.
+   *
+   * Nothing is recomputed: `account` is the same `crossAccount()` the
+   * terminal reads and `collateral` the same `valueCollateral()` result it
+   * was built from. `settleBalance` is the part of the wallet that has
+   * already moved into the simulation ledger; the collateral lines are the
+   * part that has not. They are disjoint by construction — initialization
+   * DEBITS the settle row it takes — so a reader may add them without
+   * counting a unit of value twice.
+   *
+   * `null` when the account has not been opened yet: there is no equity to
+   * report, and reporting zero would be a different claim.
+   */
+  async wallet(actor:OwnerSession):Promise<{account:CrossAccount;ledger:AccountLedger;collateral:CollateralValuation;rows:UnifiedWalletRow[]}|null>{
+    const row=await this.repository.read(actor);
+    if(!row)return null;
+    const valuation=await this.collateral(actor);
+    const view=await this.authoritative(actor,this.view(row),row,valuation);
+    const account=view.account as CrossAccount;
+    // Projected from the account and the valuation above — the same two
+    // objects, so a row can never disagree with the header it sits under.
+    return{account,ledger:view.ledger as AccountLedger,collateral:valuation,rows:unifiedWalletRows(account,valuation)};
   }
   async state(actor:OwnerSession){
     const row=await this.repository.read(actor);

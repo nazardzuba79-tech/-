@@ -51,6 +51,11 @@ export type CollateralStatus = 'SETTLE' | 'PRICED' | 'UNPRICED';
 
 export interface CollateralLine {
   asset: string;
+  /** Free quantity, carried through so a reader can show it without a second read. */
+  available: string;
+  /** Quantity held against this account's own orders/positions. */
+  locked: string;
+  /** `available + locked` — what the valuation below is taken on. */
   quantity: string;
   price: string | null;
   value: string | null;
@@ -72,13 +77,13 @@ export interface CollateralValuation {
   asOf: number | null;
 }
 
-const quantityOf = (holding: CollateralHolding): BigNumber => {
+const partsOf = (holding: CollateralHolding): { available: BigNumber; locked: BigNumber; quantity: BigNumber } => {
   const available = decimal(holding.available, 'collateral_quantity');
   const locked = holding.locked === undefined ? new D(0) : decimal(holding.locked, 'collateral_quantity');
   if (available.lt(0) || locked.lt(0)) throw new Error('INVALID_COLLATERAL_QUANTITY');
   // Locked collateral is still collateral: it backs the account's own orders
   // and positions, and leaving it out would understate the wallet.
-  return available.plus(locked);
+  return { available, locked, quantity: available.plus(locked) };
 };
 
 /**
@@ -100,13 +105,15 @@ export function valueCollateral(
   let asOf: number | null = null;
 
   for (const holding of holdings) {
-    const quantity = quantityOf(holding);
+    const parts = partsOf(holding);
+    const quantity = parts.quantity;
+    const split = { available: amount(parts.available), locked: amount(parts.locked) };
 
     if (holding.asset === settleAsset) {
       // The settle asset is the unit of account. It needs no quote and can
       // never be unpriced, so it is never a reason to call a wallet unknown.
       priced = priced.plus(quantity);
-      lines.push({ asset: holding.asset, quantity: amount(quantity), price: '1', value: amount(quantity), status: 'SETTLE', source: null, asOf: null });
+      lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: '1', value: amount(quantity), status: 'SETTLE', source: null, asOf: null });
       continue;
     }
 
@@ -120,14 +127,14 @@ export function valueCollateral(
     if (price === null) {
       // A holding of nothing is not an unknown: there is no value to miss.
       if (quantity.gt(0)) unpriced.push(holding.asset);
-      lines.push({ asset: holding.asset, quantity: amount(quantity), price: null, value: null, status: 'UNPRICED', source: quote?.source ?? null, asOf: quote?.asOf ?? null });
+      lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: null, value: null, status: 'UNPRICED', source: quote?.source ?? null, asOf: quote?.asOf ?? null });
       continue;
     }
 
     const value = quantity.times(price);
     priced = priced.plus(value);
     if (quote!.asOf !== null && (asOf === null || quote!.asOf < asOf)) asOf = quote!.asOf;
-    lines.push({ asset: holding.asset, quantity: amount(quantity), price: amount(price), value: amount(value), status: 'PRICED', source: quote!.source, asOf: quote!.asOf });
+    lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: amount(price), value: amount(value), status: 'PRICED', source: quote!.source, asOf: quote!.asOf });
   }
 
   return { settleAsset, lines, priced: amount(priced), unpriced, complete: unpriced.length === 0, asOf };

@@ -14,7 +14,12 @@ import { LedgerRow } from './useWalletData';
  * Nothing neon; this is a financial workspace.
  *
  * Percentages are computed from the account's actual valuations, never
- * from the prototype's fixed 63.2 / 18.4 / 9.3 / 9.1.
+ * from a fixed set of shares.
+ *
+ * ONLY VALUED HOLDINGS ARE IN THE RING. An asset with no price is left out
+ * rather than drawn as a zero slice — a slice of zero would claim the
+ * holding is worthless — and `unpricedAssets` names what was left out, so
+ * the distribution is not read as the whole portfolio when it is not.
  */
 const SLICE_COLOR: Record<string, string> = {
   BTC: '#d99a22',
@@ -42,11 +47,14 @@ export function PortfolioAllocation({
   hidden,
   unavailable,
   loading,
+  unpricedAssets = [],
 }: {
   rows: LedgerRow[];
   hidden: boolean;
   unavailable: boolean;
   loading: boolean;
+  /** Held assets no quote could be obtained for; named under the ring. */
+  unpricedAssets?: string[];
 }) {
   const { t, lang } = useLanguage();
 
@@ -100,7 +108,7 @@ export function PortfolioAllocation({
           <div className="flex justify-center px-5 pb-2 pt-6">
             <div className="relative" style={{ width: size, height: size }}>
               <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" aria-hidden="true">
-                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#eff1f5" strokeWidth={stroke} />
+                <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--w-panel-3)" strokeWidth={stroke} />
                 {slices.list.map((s) => {
                   const len = (s.percent / 100) * c;
                   const visible = Math.max(len - gap, 1);
@@ -133,17 +141,26 @@ export function PortfolioAllocation({
 
           <ul className="px-4 pb-4 pt-3">
             {slices.list.map((s) => (
-              <li key={s.symbol} className="flex items-center gap-2.5 border-b border-hair-soft px-1 py-3 last:border-b-0">
+              <li key={s.symbol} className="flex items-center gap-2 border-b border-hair-soft px-1 py-2.5 last:border-b-0">
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.color }} aria-hidden="true" />
                 <CryptoIcon symbol={s.symbol} size={24} />
                 <span className="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink">{s.symbol}</span>
-                <span className="num w-[51px] shrink-0 text-right text-[14px] font-semibold text-ink-2">{s.percent.toFixed(1)}%</span>
-                <span className="num min-w-0 text-right text-[13px] text-ink-3">
+                <span className="num w-[46px] shrink-0 text-right text-[13px] font-semibold text-ink-2">{s.percent.toFixed(1)}%</span>
+                {/* `shrink-0` is load-bearing: an eight-figure holding is the
+                    longest thing in this row, and letting it shrink clipped
+                    the last digits of exactly the number a reader came for. */}
+                <span className="num shrink-0 whitespace-nowrap text-right text-[12.5px] text-ink-3">
                   {hidden ? MASK : formatUsdCompact(s.value, lang)}
                 </span>
               </li>
             ))}
           </ul>
+
+          {unpricedAssets.length > 0 && (
+            <p className="wallet-allocation-note border-t border-hair-soft px-5 py-3 text-[11.5px] leading-4 text-ink-4" role="status">
+              {t('wallet.allocationIncomplete', { assets: unpricedAssets.join(', ') })}
+            </p>
+          )}
         </>
       )}
     </section>

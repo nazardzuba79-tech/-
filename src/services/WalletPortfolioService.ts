@@ -3,12 +3,6 @@ import BigNumber from 'bignumber.js';
 import { KrakenMarketDataService } from './KrakenMarketDataService';
 import { CfdMarketDataService } from './CfdMarketDataService';
 import {
-  ADMIN_PROFILE_HOLDINGS,
-  PROFILE_START_DAY,
-  adminPerformanceSeries,
-  hasAdminPortfolioProfile,
-} from './AdminPortfolioProfile';
-import {
   PerformancePeriod,
   PerformancePoint,
   RawEquityDay,
@@ -22,17 +16,19 @@ import {
  * What the Wallet page reads: a valuation of what an account holds, and the
  * performance of that value over time.
  *
- * Two things are deliberately kept apart in here.
- *
- * The *ledger* — Balance and FuturesBalance — is what the account can spend,
- * trade, margin and withdraw. Nothing in this file writes to it, and every
+ * ONE LEDGER, ONE ANSWER. Balance and FuturesBalance are what the account
+ * can spend, trade, margin and withdraw, and they are the only thing this
+ * file reports. There used to be a second, display-only set of holdings
+ * written into the source for one operator account; it is gone, because a
+ * balance that lives in code is a balance that disagrees with the ledger
+ * the moment anything moves. Nothing here writes to the ledger, and every
  * other part of the exchange keeps reading it directly.
  *
- * The *presentation* holdings, which exist for exactly one operator account
- * (see AdminPortfolioProfile), are display-only. They are attached to the
- * response the Wallet page renders and to nothing else, and they are
- * reported separately from the real balances so no caller can mistake one
- * for the other.
+ * The owner's simulation account is NOT served from here at all. Its
+ * authoritative figures come from the native account model
+ * (`crossAccount()`), which the Futures terminal already reads — see
+ * `NativeDemoService.wallet()`. Two derivations of one equity are two
+ * equities, so there is only one.
  */
 
 /** A quote for one asset, or an honest null when none is available. */
@@ -40,18 +36,6 @@ export type PriceMap = Map<string, number | null>;
 
 /** Fiat and stable assets the exchange already treats as ~1 USD. */
 const USD_PEGGED = new Set(['USDT', 'USDC', 'USD', 'DAI', 'TUSD']);
-
-/**
- * How the presentation profile's total is shown split between the two
- * account views. PRESENTATION ONLY — see the header comment: these are
- * fractions of a display number, never balances. Nothing is written
- * anywhere, nothing becomes spendable, and the real ledger keeps deciding
- * every actual operation. They are fractions rather than fixed amounts so
- * the split tracks live prices: when the holdings revalue, so do both
- * figures, and they always still sum to the total.
- */
-const PRESENTATION_SPOT_SHARE = 0.8;
-const PRESENTATION_FUTURES_SHARE = 0.2;
 
 /**
  * A real ledger balance, valued with the same quote the totals are summed
@@ -85,32 +69,17 @@ export interface WalletOverview {
     totalValueUsd: number;
   };
   /**
-   * Display-only holdings for the one account that has the profile, absent
-   * for everyone else. Never spendable; see AdminPortfolioProfile.
-   */
-  presentation: {
-    holdings: ValuedHolding[];
-    totalValueUsd: number;
-    startedOn: string;
-  } | null;
-  /**
-   * What the Wallet page shows as the portfolio total, and how that total
-   * splits across the two account views.
+   * False when the account holds an asset no quote could be obtained for.
    *
-   * For an ordinary account these are simply the real ledger's own numbers,
-   * so the page keeps showing exactly what the account holds. For the one
-   * presentation profile they are derived from the presentation total, which
-   * is what keeps the header and the Spot/Futures figures under it telling
-   * the same story instead of mixing a presentation total with real ledger
-   * subtotals.
-   *
-   * Computed here, once, rather than in the frontend: the page renders these
-   * verbatim and never needs to know which kind of account it is looking at.
-   * `displaySpotUsd + displayFuturesUsd === displayTotalUsd` always holds.
+   * An unpriced holding is LEFT OUT of the totals above — it is never
+   * summed as zero, because "we do not know what this is worth" and "this
+   * is worth nothing" are different claims and only one of them is true.
+   * The consequence is that an incomplete valuation is a FLOOR, not the
+   * portfolio, and a caller that shows the total must show this too.
    */
-  displayTotalUsd: number;
-  displaySpotUsd: number;
-  displayFuturesUsd: number;
+  valuationComplete: boolean;
+  /** The assets behind a `false` above, so the interface can name them. */
+  unpricedAssets: string[];
   btcPriceUsd: number | null;
 }
 
@@ -120,29 +89,6 @@ export interface WalletPerformance {
   ageDays: number;
   /** Day the series begins, or null when there is no series at all. */
   startedOn: string | null;
-}
-
-/**
- * The three display figures, kept together so they cannot drift apart.
- *
- * An ordinary account shows its real ledger, untouched. The presentation
- * profile shows its presentation total split 80/20 — the futures share is
- * taken as the remainder rather than computed independently, so the two
- * always add back to exactly the total with no rounding gap.
- */
-function displaySplit(
-  total: number,
-  ctx: { presentation: boolean; realSpotUsd: number; realFuturesUsd: number }
-): { displayTotalUsd: number; displaySpotUsd: number; displayFuturesUsd: number } {
-  if (!ctx.presentation) {
-    return {
-      displayTotalUsd: total,
-      displaySpotUsd: ctx.realSpotUsd,
-      displayFuturesUsd: ctx.realFuturesUsd,
-    };
-  }
-  const spot = total * PRESENTATION_SPOT_SHARE;
-  return { displayTotalUsd: total, displaySpotUsd: spot, displayFuturesUsd: total - spot };
 }
 
 export class WalletPortfolioService {
@@ -213,16 +159,34 @@ export class WalletPortfolioService {
       this.prisma.futuresBalance.findMany({ where: { userId: user.id } }),
     ]);
 
-    const profile = hasAdminPortfolioProfile(user);
     const assets = new Set<string>([
       ...spot.map((b) => b.asset),
       ...futures.map((b) => b.asset),
       'BTC',
     ]);
-    if (profile) for (const h of ADMIN_PROFILE_HOLDINGS) assets.add(h.asset);
 
     const prices = await this.pricesFor([...assets]);
 
+    /**
+     * An asset the account actually holds but nobody could price.
+     *
+     * Collected once across both wallets and reported on the response, so
+     * the total above can be read for what it is. A zero quantity is not
+     * an unknown — there is no value to miss — which is why it does not
+     * land here.
+     */
+    const unpriced = new Set<string>();
+    const noteUnpriced = (rows: { asset: string; available: unknown; locked: unknown }[]) => {
+      for (const b of rows) {
+        if (prices.get(b.asset.toUpperCase()) !== null && prices.get(b.asset.toUpperCase()) !== undefined) continue;
+        if (new BigNumber(String(b.available)).plus(String(b.locked)).isGreaterThan(0)) unpriced.add(b.asset);
+      }
+    };
+    noteUnpriced(spot);
+    noteUnpriced(futures);
+
+    // Unpriced rows are skipped rather than added as 0 — see
+    // `valuationComplete`, which is what tells a reader that happened.
     const sum = (rows: { asset: string; available: unknown; locked: unknown }[]) =>
       rows.reduce((acc, b) => {
         const price = prices.get(b.asset.toUpperCase()) ?? null;
@@ -233,7 +197,6 @@ export class WalletPortfolioService {
 
     const spotValueUsd = sum(spot);
     const futuresValueUsd = sum(futures);
-    const realTotal = spotValueUsd + futuresValueUsd;
 
     const valued = (rows: { asset: string; available: unknown; locked: unknown }[]): RealBalance[] =>
       rows.map((b) => {
@@ -250,38 +213,16 @@ export class WalletPortfolioService {
         };
       });
 
-    let presentation: WalletOverview['presentation'] = null;
-    if (profile) {
-      const holdings: ValuedHolding[] = ADMIN_PROFILE_HOLDINGS.map((h) => {
-        const priceUsd = prices.get(h.asset.toUpperCase()) ?? null;
-        return {
-          asset: h.asset,
-          quantity: h.quantity,
-          priceUsd,
-          valueUsd: WalletPortfolioService.valueOf(h.quantity, priceUsd),
-        };
-      });
-      presentation = {
-        holdings,
-        totalValueUsd: holdings.reduce((acc, h) => acc + (h.valueUsd ?? 0), 0),
-        startedOn: PROFILE_START_DAY,
-      };
-    }
-
     return {
       real: {
         spot: valued(spot),
         futures: valued(futures),
         spotValueUsd,
         futuresValueUsd,
-        totalValueUsd: realTotal,
+        totalValueUsd: spotValueUsd + futuresValueUsd,
       },
-      presentation,
-      ...displaySplit(presentation ? presentation.totalValueUsd : realTotal, {
-        presentation: Boolean(presentation),
-        realSpotUsd: spotValueUsd,
-        realFuturesUsd: futuresValueUsd,
-      }),
+      valuationComplete: unpriced.size === 0,
+      unpricedAssets: [...unpriced].sort(),
       btcPriceUsd: prices.get('BTC') ?? null,
     };
   }
@@ -290,22 +231,14 @@ export class WalletPortfolioService {
    * The account's canonical equity series, then every period measured off
    * it. One series, five windows — never five separate calculations.
    *
-   * For a normal account the series is built from the stored daily
-   * PortfolioSnapshot values with that day's external flows removed, so a
-   * deposit raises the balance without registering as a gain. For the
-   * profile account it is the generated series, run through exactly the
-   * same period mathematics.
+   * The series is built from the stored daily PortfolioSnapshot values with
+   * that day's external flows removed, so a deposit raises the balance
+   * without registering as a gain. Every account is measured this way,
+   * including the owner's: a generated curve used to stand in for one
+   * account's history, and a generated return is not a return.
    */
   async performance(user: { id: string; role: string; email: string }, now = new Date()): Promise<WalletPerformance> {
-    let series: PerformancePoint[];
-
-    if (hasAdminPortfolioProfile(user)) {
-      const overview = await this.overview(user);
-      series = adminPerformanceSeries(overview.displayTotalUsd, now);
-    } else {
-      series = await this.realSeries(user.id, now);
-    }
-
+    const series = await this.realSeries(user.id, now);
     return {
       periods: computeAllPeriods(series, now),
       ageDays: seriesAgeDays(series),

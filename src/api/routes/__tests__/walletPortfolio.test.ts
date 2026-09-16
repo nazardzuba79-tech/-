@@ -4,7 +4,9 @@ import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { portfolioRouter } from '../portfolio';
-import { ADMIN_PROFILE_EMAIL } from '../../../services/AdminPortfolioProfile';
+
+/** The owner account, which is an ordinary account as far as this router is concerned. */
+const OWNER_EMAIL = 'voltex.crypto@gmail.com';
 
 function authHeader(userId: string) {
   return `Bearer ${jwt.sign({ sub: userId }, process.env.JWT_SECRET!)}`;
@@ -12,8 +14,8 @@ function authHeader(userId: string) {
 
 const OVERVIEW = {
   real: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 },
-  presentation: null,
-  displayTotalUsd: 0,
+  valuationComplete: true,
+  unpricedAssets: [],
   btcPriceUsd: 1,
 };
 
@@ -42,7 +44,7 @@ describe('wallet portfolio routes — access', () => {
   for (const path of ['/api/v1/wallet/overview', '/api/v1/wallet/performance']) {
     it(`refuses an anonymous caller on ${path}`, async () => {
       const service = serviceStub();
-      const res = await request(buildApp(prismaFor({ role: 'ADMIN', email: ADMIN_PROFILE_EMAIL }), service)).get(path);
+      const res = await request(buildApp(prismaFor({ role: 'ADMIN', email: OWNER_EMAIL }), service)).get(path);
       expect(res.status).toBe(401);
       expect(service.overview).not.toHaveBeenCalled();
       expect(service.performance).not.toHaveBeenCalled();
@@ -55,14 +57,15 @@ describe('wallet portfolio routes — access', () => {
       .get('/api/v1/wallet/overview')
       .set('Authorization', authHeader('u1'));
     expect(res.status).toBe(200);
-    expect(res.body.presentation).toBeNull();
+    expect(res.body.real.totalValueUsd).toBe(0);
+    expect(res.body).not.toHaveProperty('presentation');
   });
 
   it('reads role and email from the database, never from the token', async () => {
     const service = serviceStub();
-    // A token that *claims* to be the profile account changes nothing: the
+    // A token that *claims* to be the owner account changes nothing: the
     // row the server loads is what is passed to the service.
-    const forged = `Bearer ${jwt.sign({ sub: 'u1', role: 'ADMIN', email: ADMIN_PROFILE_EMAIL }, process.env.JWT_SECRET!)}`;
+    const forged = `Bearer ${jwt.sign({ sub: 'u1', role: 'ADMIN', email: OWNER_EMAIL }, process.env.JWT_SECRET!)}`;
     await request(buildApp(prismaFor({ role: 'USER', email: 'trader@example.com' }), service))
       .get('/api/v1/wallet/overview')
       .set('Authorization', forged);

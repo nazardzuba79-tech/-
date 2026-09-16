@@ -1,3 +1,39 @@
+/* ── The Unified Trading Account palette ──────────────────────────────────
+   Every colour token the Wallet's Tailwind utilities resolve to is declared
+   here, and nowhere else. `tailwind.config.js` points the workspace-only
+   tokens at these variables, so this block is the whole theme: no other page
+   defines them, and no other page can therefore be reached by changing them.
+
+   The Wallet is a LIGHT financial workspace — a warm off-white page, white
+   panels, hairline dividers, dark text — under the app's dark global header.
+   That contrast is deliberate: a ledger reads as a ledger. The accent is
+   VOLTEX's own gold, and green/red are reserved for financial state. */
+.vx-wallet,
+.vx-wallet-modal-root {
+  --w-base: #f6f7f9;
+  --w-panel: #ffffff;
+  --w-panel-2: #fafbfc;
+  --w-panel-3: #f2f4f7;
+  --w-surface-0: #ffffff;
+  --w-surface-1: #f8f9fb;
+  --w-hair: #e4e7ec;
+  --w-hair-strong: #d0d5dd;
+  --w-hair-soft: #edeff3;
+  --w-ink: #111318;
+  --w-ink-2: #3b4351;
+  --w-ink-3: #667085;
+  --w-ink-4: #98a2b3;
+  --w-pos: #168a65;
+  --w-neg: #d94a56;
+  --w-gold: #d9a441;
+  --w-gold-light: #e0a93f;
+  --w-gold-deep: #a87a22;
+  --w-gold-wash: #fbf4e6;
+  --w-shadow-panel: 0 1px 2px 0 rgba(16, 24, 40, 0.04);
+  --w-shadow-lift: 0 2px 6px -1px rgba(16, 24, 40, 0.07);
+  --w-shadow-modal: 0 24px 64px -16px rgba(16, 24, 40, 0.22), 0 2px 6px -1px rgba(16, 24, 40, 0.06);
+}
+
 /* Wallet workspace only.
    Every selector is prefixed `.vx-wallet`, because this file is imported
    globally like the rest of the app's CSS and names like `.num` are far too
@@ -5,14 +41,12 @@
    Copy Trading or Admin. */
 
 .vx-wallet {
-  background: #f6f7f9;
-  color: #111318;
+  background: var(--w-base);
+  color: var(--w-ink);
   font-family: 'Inter', var(--font-ui), system-ui, sans-serif;
   min-height: 100vh;
   width: 100%;
-  /* The page is a light financial workspace under the app's dark global
-     header; the two are deliberately different surfaces (see WalletPage).
-     Clip rather than grow a scrollbar if a wide table overshoots. */
+  /* Clip rather than grow a scrollbar if a wide table overshoots. */
   overflow-x: clip;
 }
 
@@ -97,27 +131,29 @@
   }
 }
 
-@media (min-width: 1280px) and (max-width: 1399px) {
-  .vx-wallet .wallet-ledger-desktop .wallet-ledger-row-actions {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 28px;
-    gap: 0 8px;
-    text-align: right;
-  }
-  .vx-wallet .wallet-ledger-desktop .wallet-ledger-trade,
-  .vx-wallet .wallet-ledger-desktop .wallet-ledger-transfer {
-    grid-column: 1;
-    justify-self: end;
-  }
-  .vx-wallet .wallet-ledger-desktop .wallet-ledger-more {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    align-self: center;
-  }
+/* The asset table is a dense financial grid: one line per row, one line of
+   actions, no wrapping that would turn a 44px row into a 110px one. */
+.vx-wallet .wallet-ledger-desktop tbody tr {
+  height: 48px;
+}
+.vx-wallet .wallet-ledger-row-actions {
+  white-space: nowrap;
+}
+/* Every ledger cell clips to its own column. Without this a long figure
+   silently overlaps its neighbour instead of the column being wrong in a
+   way anyone would notice. */
+.vx-wallet .wallet-ledger-desktop td {
+  overflow: hidden;
+}
+/* Headings wrap instead of clipping: a column label is the one thing that
+   must stay readable, and several of them are two words in every language. */
+.vx-wallet .wallet-ledger-desktop th {
+  white-space: normal;
+  line-height: 1.25;
 }
 
 .vx-wallet *:focus-visible {
-  outline: 1px solid #d9a441;
+  outline: 1px solid var(--w-gold);
   outline-offset: 2px;
 }
 
@@ -126,7 +162,7 @@
 .vx-wallet-modal-root {
   /* Keep the existing account actions above mobile navigation/support. */
   z-index: 1100;
-  color: #111318;
+  color: var(--w-ink);
   font-family: 'Inter', var(--font-ui), system-ui, sans-serif;
 }
 :where(.vx-wallet-modal-root) button,
@@ -159,53 +195,95 @@
   box-sizing: border-box;
 }
 .vx-wallet-modal-root *:focus-visible {
-  outline: 1px solid #d9a441;
+  outline: 1px solid var(--w-gold);
   outline-offset: 2px;
 }
 
-/* The owner's futures account, rendered from the futures endpoint so the
-   two pages cannot disagree. Sits in the same card language as the rest of
-   the page; it is a panel of figures, not a new visual idea. */
-.vx-wallet .wallet-futures-account {
-  border: 1px solid var(--wallet-border, rgba(17, 24, 39, 0.08));
-  border-radius: 14px;
-  background: var(--wallet-surface, #fff);
-  padding: 18px 20px;
-}
-.vx-wallet .wallet-futures-account-title {
-  margin: 0 0 14px;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--wallet-ink, #111827);
-}
-.vx-wallet .wallet-futures-account-grid {
-  margin: 0;
+/* ── The workspace shell ─────────────────────────────────────────────────
+   A Wallet-local sidebar beside the content on desktop, exactly as a
+   trading account's own navigation works: it is INSIDE the Wallet and does
+   not replace or duplicate the global VOLTEX top navigation. Below `lg` it
+   becomes a horizontal scroller of the same items. */
+.vx-wallet .wallet-shell {
   display: grid;
-  gap: 10px 24px;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr);
 }
-.vx-wallet .wallet-futures-account-row {
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-shell {
+    grid-template-columns: 188px minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+.vx-wallet .wallet-side-nav {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.vx-wallet .wallet-side-nav::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-side-nav {
+    position: sticky;
+    top: 16px;
+    flex-direction: column;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+}
+
+/* ── Unified account header ──────────────────────────────────────────────
+   Flat, not a boxed card: one white surface carrying the account identity,
+   its margin usage, the three headline figures and the actions, so the
+   asset table can start inside the first viewport. */
+.vx-wallet .wallet-im-bar {
+  /* The filled track is a ratio the SERVER answered; the element only
+     draws it. Width is clamped so a tiny ratio is still visible and a
+     ratio above 1 cannot overflow its track. */
+  height: 4px;
+  border-radius: 999px;
+  background: var(--w-hair);
+  overflow: hidden;
+}
+.vx-wallet .wallet-im-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--w-pos);
+}
+.vx-wallet .wallet-im-bar[data-tone='warn'] > span {
+  background: var(--w-gold);
+}
+.vx-wallet .wallet-account-metric {
   min-width: 0;
 }
-.vx-wallet .wallet-futures-account-row dt {
-  font-size: 12px;
-  color: var(--wallet-muted, #6b7280);
-}
-.vx-wallet .wallet-futures-account-row dd {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  /* A long figure wraps inside its own cell instead of widening the page. */
+.vx-wallet .wallet-account-metric p {
   overflow-wrap: anywhere;
-  text-align: right;
 }
-.vx-wallet .wallet-futures-account-note {
-  margin: 12px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-  color: var(--wallet-muted, #6b7280);
+
+/* `Конвертация` is present but has no flow behind it, so it must read as
+   unavailable rather than merely quiet — and it stays in the row. */
+.vx-wallet .wallet-action-convert {
+  opacity: 0.5;
+}
+
+/* The ledger is wider than the content column at laptop widths; it scrolls
+   inside its own card and the page never grows a horizontal scrollbar. */
+.vx-wallet .wallet-ledger-desktop {
+  scrollbar-width: thin;
+}
+
+/* A search field's default clear button is drawn for the host platform and
+   needs a deliberate colour to sit on this surface. */
+.vx-wallet input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--w-ink-4);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 1l10 10M11 1L1 11' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
+  cursor: pointer;
 }

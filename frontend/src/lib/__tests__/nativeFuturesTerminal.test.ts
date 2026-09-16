@@ -169,7 +169,7 @@ describe('the adapter projects native state into the terminal shapes', () => {
       initialized: true, revision: 3, source: 'DEMO_BALANCE', asOf: 1_728_000_000_000,
       ledger: null,
       model: { version: 'v', funding: { longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28800000 } },
-      account: { settleBalance: '10000', walletCollateral: '0', collateral: '10000', unrealizedPnl: '500', equity: '10500', initialMargin: '1500', orderReserve: '200', available: '8300', maintenanceMargin: '150', maintenanceRatio: null, liquidatable: false, collateralComplete: true, unpricedAssets: [], collateralAsOf: null },
+      account: { settleBalance: '10000', walletCollateral: '0', collateral: '10000', unrealizedPnl: '500', equity: '10500', initialMargin: '1500', orderReserve: '200', available: '8300', maintenanceMargin: '150', initialMarginRatio: null, maintenanceRatio: null, liquidatable: false, collateralComplete: true, unpricedAssets: [], collateralAsOf: null },
       positions: [position], history: [{ ...position, status: 'CLOSED' as const, closedAt: 1_728_000_100_000 }],
       orders: [{ id: 'o1', symbol: 'BTCUSDT', side: 'LONG', type: 'LIMIT', quantity: '1', remaining: '1', filled: '0', averagePrice: null, price: '59000', leverage: '20', status: 'OPEN', createdAt: 1 }],
       events: [],

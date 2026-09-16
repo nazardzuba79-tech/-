@@ -33,11 +33,17 @@ export default {
         // The numeric steps are the homepage's dark surfaces; DEFAULT/2/3/4
         // are the Wallet workspace's light text ramp. Different key shapes,
         // so the two palettes coexist in one theme without either shifting.
+        // DEFAULT/2/3/4 are the Wallet workspace's text ramp and are the
+        // only keys here that read a CSS variable: the Wallet is themed by
+        // `wallet-v3/wallet.css`, which redefines these under `.vx-wallet`.
+        // The fallback is the previous light value, so any surface that
+        // used one of these without the Wallet's theme block renders
+        // exactly as it did before.
         ink: {
-          DEFAULT: '#111318',
-          2: '#3b4351',
-          3: '#667085',
-          4: '#98a2b3',
+          DEFAULT: 'var(--w-ink, #111318)',
+          2: 'var(--w-ink-2, #3b4351)',
+          3: 'var(--w-ink-3, #667085)',
+          4: 'var(--w-ink-4, #98a2b3)',
           950: '#05070a',
           900: '#080b10',
           880: '#0b0f15',
@@ -51,19 +57,34 @@ export default {
           400: '#f0c45a',
           500: '#e0a93f',
           600: '#c08f2f',
-          // Wallet workspace gold — the approved V3 values.
-          DEFAULT: '#d9a441',
-          light: '#e0a93f',
-          deep: '#a87a22',
-          wash: '#fbf4e6',
+          // Wallet workspace gold — themed by wallet.css, light values as
+          // the fallback (see the note on `ink`).
+          DEFAULT: 'var(--w-gold, #d9a441)',
+          light: 'var(--w-gold-light, #e0a93f)',
+          deep: 'var(--w-gold-deep, #a87a22)',
+          wash: 'var(--w-gold-wash, #fbf4e6)',
         },
-        // --- Wallet V3 light workspace (src/pages/wallet-v3 only) ---
-        base: '#f6f7f9',
-        surface: { 0: '#ffffff', 1: '#f8f9fb' },
-        panel: { DEFAULT: '#ffffff', 2: '#fafbfc', 3: '#f2f4f7' },
-        hair: { DEFAULT: '#e4e7ec', strong: '#d0d5dd', soft: '#edeff3' },
-        pos: '#168a65',
-        neg: '#d94a56',
+        // --- Wallet workspace (src/pages/wallet-v3 only) ---
+        // Every one of these is a variable with the previous light value as
+        // its fallback. `wallet-v3/wallet.css` supplies the dark Unified
+        // Trading Account palette under `.vx-wallet`, so the workspace is
+        // retheming these tokens rather than rewriting every utility on
+        // every component — and nothing outside the Wallet can shift,
+        // because outside it the variables are simply not defined.
+        base: 'var(--w-base, #f6f7f9)',
+        surface: { 0: 'var(--w-surface-0, #ffffff)', 1: 'var(--w-surface-1, #f8f9fb)' },
+        panel: {
+          DEFAULT: 'var(--w-panel, #ffffff)',
+          2: 'var(--w-panel-2, #fafbfc)',
+          3: 'var(--w-panel-3, #f2f4f7)',
+        },
+        hair: {
+          DEFAULT: 'var(--w-hair, #e4e7ec)',
+          strong: 'var(--w-hair-strong, #d0d5dd)',
+          soft: 'var(--w-hair-soft, #edeff3)',
+        },
+        pos: 'var(--w-pos, #168a65)',
+        neg: 'var(--w-neg, #d94a56)',
         up: '#2ebd85',
         down: '#f0616d',
         faint: '#5b6675',
@@ -99,10 +120,10 @@ export default {
       boxShadow: {
         premium: 'var(--shadow-sm)',
         'premium-lg': 'var(--shadow-md)',
-        // Wallet V3.
-        panel: '0 1px 2px 0 rgba(16,24,40,0.04)',
-        lift: '0 2px 6px -1px rgba(16,24,40,0.07)',
-        modal: '0 24px 64px -16px rgba(16,24,40,0.22), 0 2px 6px -1px rgba(16,24,40,0.06)',
+        // Wallet workspace, themed the same way as its colours.
+        panel: 'var(--w-shadow-panel, 0 1px 2px 0 rgba(16,24,40,0.04))',
+        lift: 'var(--w-shadow-lift, 0 2px 6px -1px rgba(16,24,40,0.07))',
+        modal: 'var(--w-shadow-modal, 0 24px 64px -16px rgba(16,24,40,0.22), 0 2px 6px -1px rgba(16,24,40,0.06))',
       },
       borderRadius: {
         xl: '12px',

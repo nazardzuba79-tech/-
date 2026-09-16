@@ -4,22 +4,33 @@ import {
   ArrowUpFromLineIcon,
   EyeIcon,
   EyeOffIcon,
+  RepeatIcon,
+  ScrollTextIcon,
 } from 'lucide-react';
 import { Key, useLanguage } from '../../lib/i18n';
-import { EM_DASH, MASK, btcEquivalentDecimals, formatAmount, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
-import { PERFORMANCE_PERIODS, PerformancePeriod, WalletOverview, WalletPerformance } from './useWalletData';
+import { EM_DASH, MASK, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
+import { PERFORMANCE_PERIODS, PerformancePeriod, UnifiedAccount, WalletPerformance } from './useWalletData';
 
 /**
- * The single integrated portfolio panel: total value, the Spot/Futures
- * split, performance, and the three account actions — one white surface
- * rather than four separate dashboard cards.
+ * THE UNIFIED TRADING ACCOUNT HEADER.
  *
- * The total is the page's primary number and stays visually largest; the
- * PnL block sits beside it at a smaller weight, deliberately, so a return
- * never out-shouts the balance it was earned on.
+ * Flat and dense, not a boxed hero: the account's identity and margin mode,
+ * how much of its equity the open risk is using, the three headline figures,
+ * and the actions — all in one band, so the asset table starts inside the
+ * first viewport rather than below a screenful of padding.
+ *
+ * NOTHING HERE IS COMPUTED. Every figure arrives on `account`, which the
+ * server produced in one pass — including BOTH margin ratios, so this file
+ * never divides one authoritative number by another. A `null` is an UNKNOWN
+ * and renders as an em dash; it is never coerced to 0, because a margin
+ * requirement of zero and an unanswered one are different facts and only one
+ * of them is safe to act on.
+ *
+ * The full equity curve lives in the P&L section. What stays here is the
+ * compact P&L readout with its period tabs — the reading a trader wants
+ * beside the balance, not a screen of its own.
  */
 
-/** Short period labels; abbreviations differ by language, so they are keys. */
 const PERIOD_LABEL_KEY: Record<PerformancePeriod, Key> = {
   '7d': 'wallet.period7d',
   '30d': 'wallet.period30d',
@@ -28,246 +39,236 @@ const PERIOD_LABEL_KEY: Record<PerformancePeriod, Key> = {
   all: 'wallet.periodAll',
 };
 
-function Sparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  if (points.length < 2) return null;
-  const width = 320;
-  const height = 40;
-  const pad = 4;
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = max - min || 1;
-  const stepX = width / (points.length - 1);
-  const d = points
-    .map((v, i) => `${(i * stepX).toFixed(2)},${(pad + (1 - (v - min) / span) * (height - pad * 2)).toFixed(2)}`)
-    .join(' L');
+const ACTION_BASE =
+  'flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-w px-3 text-[12.5px] font-medium leading-5 transition-colors duration-150 ease-exp';
+const ACTION_PRIMARY = ACTION_BASE + ' bg-gold font-semibold text-[#26190a] hover:bg-gold-light';
+const ACTION_SECONDARY =
+  ACTION_BASE + ' border border-hair bg-panel text-ink-2 hover:border-hair-strong hover:bg-panel-2 hover:text-ink';
+const ACTION_OFF = ACTION_BASE + ' wallet-action-convert cursor-not-allowed border border-hair bg-panel-2 text-ink-4';
 
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" className="h-full w-full" aria-hidden="true">
-      <line x1="0" y1={height / 2} x2={width} y2={height / 2} stroke="#edeff3" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      <path
-        d={`M${d}`}
-        fill="none"
-        stroke={positive ? '#12a177' : '#d94a56'}
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
+const PERIOD_BASE = 'h-6 rounded-wsm border px-1.5 text-[11.5px] transition-colors duration-150 ease-exp';
+const PERIOD_ON = 'border-hair-strong bg-panel-3 font-semibold text-ink';
+const PERIOD_IDLE = 'border-transparent font-medium text-ink-3 hover:bg-panel-2 hover:text-ink-2';
 
-function AccountBalance({ label, value, hidden }: { label: string; value: string; hidden: boolean }) {
+/** One headline figure. `value` is already formatted, dash included. */
+function Metric({ label, value, hidden, tone }: { label: string; value: string; hidden: boolean; tone?: string }) {
   return (
-    <div className="min-w-0">
-      <p className="text-[13px] font-medium leading-5 text-ink-3">{label}</p>
-      <p className="num mt-1.5 break-words text-[19px] font-semibold leading-6 text-ink sm:text-[20px]">{hidden ? MASK : value}</p>
+    <div className="wallet-account-metric min-w-0">
+      <p className="text-[12px] leading-4 text-ink-3">{label}</p>
+      <p className={`num mt-1 break-words text-[20px] font-semibold leading-7 sm:text-[22px] ${tone ?? 'text-ink'}`}>
+        {hidden ? MASK : value}
+      </p>
     </div>
   );
 }
 
-function Performance({
-  performance,
-  period,
-  onPeriodChange,
+/**
+ * One margin-usage row: the server's ratio as a percentage, its own bar, and
+ * the requirement in settle-asset terms. `ratio` is a decimal fraction the
+ * server answered; the bar only draws it.
+ */
+function MarginRow({
+  label,
+  ratio,
+  value,
   hidden,
-  loading,
 }: {
-  performance: WalletPerformance | null;
-  period: PerformancePeriod;
-  onPeriodChange: (p: PerformancePeriod) => void;
+  label: string;
+  ratio: number | null;
+  value: string;
   hidden: boolean;
-  loading: boolean;
 }) {
-  const { t, lang } = useLanguage();
-  const selected = performance?.periods?.[period] ?? null;
-  const available = Boolean(selected?.available);
-  const percent = selected?.percent ?? null;
-  const pnl = selected?.absolutePnl ?? null;
-  const positive = (percent ?? 0) >= 0;
-
+  const { lang } = useLanguage();
+  // Clamped so a hair-thin ratio is still visible and one above 1 cannot
+  // overflow its track. The NUMBER beside it is never clamped.
+  const width = ratio === null ? 0 : Math.max(Math.min(ratio, 1) * 100, ratio > 0 ? 2 : 0);
   return (
-    <div className="w-full">
-      <div className="mb-1.5 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.pnl')}</p>
-          <p className={`num mt-1 text-[20px] font-semibold leading-7 ${toneOf(percent)}`}>
-            {hidden ? MASK : available ? formatSignedUsd(pnl, lang) : EM_DASH}
-          </p>
-          <p className={`num text-[13px] font-medium leading-5 ${toneOf(percent)}`}>
-            {available ? formatPercent(percent, lang) : EM_DASH}
-          </p>
-        </div>
-      </div>
-      <div className="h-10 w-full border-b border-hair-soft">
-        {loading ? null : available && !hidden ? (
-          <Sparkline points={selected!.points.map((pt) => pt.equity)} positive={positive} />
-        ) : (
-          <div className="flex h-full items-center justify-center text-[12px] text-ink-3">
-            {/* Honest: this period has no history behind it yet, so no
-                percentage is invented to fill the space. */}
-            {hidden ? MASK : t('wallet.notEnoughHistory')}
-          </div>
-        )}
-      </div>
-      {/* Its own row rather than sharing the heading's: five labels in seven
-          languages never fit beside the figure, and widening this column to
-          make them fit would let the return crowd the balance. */}
-      <div
-        className="mt-2 flex flex-wrap items-center justify-between gap-1"
-        role="group"
-        aria-label={t('wallet.pnlPeriod')}
-      >
-        {PERFORMANCE_PERIODS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => onPeriodChange(p)}
-            aria-pressed={p === period}
-            className={`h-7 rounded-wsm border px-1.5 text-[12px] transition-colors duration-150 ease-exp ${
-              p === period
-                ? 'border-hair-strong bg-panel-3 font-semibold text-ink'
-                : 'border-transparent font-medium text-ink-3 hover:bg-panel-2 hover:text-ink-2'
-            }`}
-          >
-            {t(PERIOD_LABEL_KEY[p])}
-          </button>
-        ))}
-      </div>
+    <div className="flex items-center gap-2.5">
+      <span className="w-[22px] shrink-0 text-[11.5px] font-medium uppercase tracking-[0.04em] text-ink-4">{label}</span>
+      <span className="wallet-im-bar w-[84px] shrink-0 sm:w-[110px]" data-tone={ratio !== null && ratio > 0.5 ? 'warn' : 'ok'} aria-hidden="true">
+        <span style={{ width: `${width}%` }} />
+      </span>
+      <span className="num w-[52px] shrink-0 text-[11.5px] font-semibold text-pos">
+        {ratio === null ? EM_DASH : formatPercent(ratio * 100, lang).replace('+', '')}
+      </span>
+      <span className="num text-[11.5px] text-ink-3">{hidden ? MASK : value}</span>
     </div>
   );
 }
 
 export function PortfolioStrip({
-  overview,
+  account,
   performance,
   performanceLoading,
-  btcEquivalent,
-  hidden,
-  onToggleHidden,
   period,
   onPeriodChange,
+  hidden,
+  onToggleHidden,
   unavailable,
   onDeposit,
   onWithdraw,
   onTransfer,
+  onHistory,
 }: {
-  overview: WalletOverview | null;
+  account: UnifiedAccount | null;
   performance: WalletPerformance | null;
   performanceLoading: boolean;
-  btcEquivalent: number | null;
-  hidden: boolean;
-  onToggleHidden: () => void;
   period: PerformancePeriod;
   onPeriodChange: (p: PerformancePeriod) => void;
+  hidden: boolean;
+  onToggleHidden: () => void;
   unavailable: boolean;
   onDeposit: () => void;
   onWithdraw: () => void;
   onTransfer: () => void;
+  onHistory: () => void;
 }) {
   const { t, lang } = useLanguage();
 
-  // What the page shows as the portfolio. For an ordinary account this is
-  // the real ledger; the Spot/Futures split below is always the real ledger,
-  // because that is what those two wallets actually hold.
-  // All three come from the same backend fields, so the split under the
-  // header can never disagree with the header itself. The page does not know
-  // or ask what kind of account it is rendering — /wallet/overview decides
-  // that once (see WalletPortfolioService.displaySplit).
-  const totalUsd = overview?.displayTotalUsd ?? null;
-  const spotUsd = overview?.displaySpotUsd ?? null;
-  const futuresUsd = overview?.displayFuturesUsd ?? null;
+  const cross = account?.mode === 'CROSS';
+  const usd = (value: number | null | undefined) =>
+    unavailable || value === null || value === undefined ? EM_DASH : formatUsd(value, lang);
+
+  /**
+   * The three headline figures. A Cross account reports what it holds, what
+   * backs its margin after P&L, and that P&L. A plain ledger has no margin
+   * balance to report, so it shows its two wallets instead of inventing one.
+   */
+  const metrics: { label: string; value: string; tone?: string }[] = cross
+    ? [
+        { label: t('wallet.assetsTotal'), value: usd(account!.collateralUsd) },
+        { label: t('wallet.marginBalance'), value: usd(account!.totalEquityUsd) },
+        {
+          label: t('wallet.unrealizedPnlLabel'),
+          value:
+            unavailable || account!.unrealizedPnlUsd === null
+              ? EM_DASH
+              : formatSignedUsd(account!.unrealizedPnlUsd, lang),
+          tone: toneOf(account!.unrealizedPnlUsd),
+        },
+      ]
+    : [
+        { label: t('wallet.assetsTotal'), value: usd(account?.totalEquityUsd) },
+        { label: t('wallet.spot'), value: usd(account?.spotUsd) },
+        { label: t('wallet.futures'), value: usd(account?.futuresUsd) },
+      ];
+
+  const incomplete = Boolean(account && !account.valuationComplete && account.unpricedAssets.length > 0);
+
+  const selected = performance?.periods?.[period] ?? null;
+  const pnlAvailable = Boolean(selected?.available);
+  const pnlPercent = selected?.percent ?? null;
 
   return (
-    <section
-      aria-label={t('wallet.portfolio')}
-      className="relative overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel"
-    >
-      <span className="absolute left-0 top-0 h-[2px] w-14 bg-gold" aria-hidden="true" />
+    <section aria-label={t('wallet.unifiedAccount')} className="wallet-account-panel min-w-0">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-[17px] font-semibold tracking-normal text-ink sm:text-[19px]">
+              {t('wallet.unifiedAccount')}
+            </h2>
+            <button
+              type="button"
+              onClick={onToggleHidden}
+              aria-label={hidden ? t('wallet.showBalance') : t('wallet.hideBalance')}
+              aria-pressed={hidden}
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink-2"
+            >
+              {hidden ? <EyeOffIcon className="h-4 w-4" strokeWidth={1.6} /> : <EyeIcon className="h-4 w-4" strokeWidth={1.6} />}
+            </button>
+            <span className="wallet-account-mode rounded-wsm border border-hair bg-panel-3 px-2 py-[2px] text-[11.5px] font-medium text-ink-2">
+              {t(cross ? 'wallet.accountCross' : 'wallet.accountSpot')}
+            </span>
+          </div>
 
-      <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:gap-6 lg:p-6">
-        <div className="flex min-w-0 flex-1 flex-col gap-5 2xl:flex-row 2xl:items-end 2xl:gap-7">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h2 className="text-[13px] font-medium leading-5 text-ink-3">{t('wallet.totalBalance')}</h2>
-              <button
-                type="button"
-                onClick={onToggleHidden}
-                aria-label={hidden ? t('wallet.showBalance') : t('wallet.hideBalance')}
-                aria-pressed={hidden}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink-2"
-              >
-                {hidden ? <EyeOffIcon className="h-4 w-4" strokeWidth={1.6} /> : <EyeIcon className="h-4 w-4" strokeWidth={1.6} />}
-              </button>
+          {cross && (
+            <div className="wallet-margin-usage mt-2.5 flex flex-col gap-1.5" aria-label={t('wallet.marginUsage')}>
+              <MarginRow
+                label={t('wallet.imShort')}
+                ratio={account!.initialMarginRatio}
+                value={usd(account!.initialMarginUsd)}
+                hidden={hidden}
+              />
+              <MarginRow
+                label={t('wallet.mmShort')}
+                ratio={account!.maintenanceMarginRatio}
+                value={usd(account!.maintenanceMarginUsd)}
+                hidden={hidden}
+              />
             </div>
-            <p className="wallet-total-value num mt-2 min-w-0 break-words text-[32px] font-semibold leading-[1.15] text-ink sm:text-[40px]">
-              {hidden ? MASK : unavailable ? EM_DASH : formatUsd(totalUsd, lang)}
-            </p>
-            <p className="num mt-2 break-words text-[14px] leading-5 text-ink-3">
-              ≈ {hidden ? MASK : btcEquivalent === null ? EM_DASH : `${formatAmount(btcEquivalent, lang, btcEquivalentDecimals(btcEquivalent))} BTC`}
-            </p>
-          </div>
-
-          <div className="flex min-w-0 gap-5 border-t border-hair pt-4 sm:gap-7 2xl:border-l 2xl:border-t-0 2xl:pb-1 2xl:pl-7 2xl:pt-0">
-            <AccountBalance label={t('wallet.spot')} value={unavailable ? EM_DASH : formatUsd(spotUsd, lang)} hidden={hidden} />
-            <span className="w-px self-stretch bg-hair" aria-hidden="true" />
-            <AccountBalance
-              label={t('wallet.futures')}
-              value={unavailable ? EM_DASH : formatUsd(futuresUsd, lang)}
-              hidden={hidden}
-            />
-          </div>
+          )}
         </div>
 
-        <div className="hidden w-[236px] shrink-0 border-l border-hair pl-6 lg:block xl:w-[256px]">
-          <Performance
-            performance={performance}
-            period={period}
-            onPeriodChange={onPeriodChange}
-            hidden={hidden}
-            loading={performanceLoading}
-          />
+        {/* Horizontal, top-right, in the reference's order. Convert has no
+            flow behind it and stays in the row as disabled rather than
+            being hidden or wired to something that pretends to work. */}
+        <div className="wallet-account-actions flex flex-wrap items-center gap-2 lg:justify-end">
+          <button type="button" onClick={onDeposit} className={ACTION_PRIMARY}>
+            <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} />
+            {t('wallet.deposit')}
+          </button>
+          <button type="button" disabled aria-disabled="true" title={t('wallet.convertUnavailable')} className={ACTION_OFF}>
+            <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {t('wallet.convert')}
+          </button>
+          <button type="button" onClick={onTransfer} className={ACTION_SECONDARY}>
+            <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {t('wallet.transfer')}
+          </button>
+          <button type="button" onClick={onWithdraw} className={ACTION_SECONDARY}>
+            <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {t('wallet.withdraw')}
+          </button>
+          <button type="button" onClick={onHistory} className={`${ACTION_SECONDARY} wallet-action-history`}>
+            <ScrollTextIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
+            {t('wallet.openHistory')}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-4 border-t border-hair-soft pt-4 xl:flex-row xl:items-start xl:justify-between xl:gap-8">
+        <div className="wallet-account-metrics grid min-w-0 flex-1 grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-3 sm:gap-x-10">
+          {metrics.map((m) => (
+            <Metric key={m.label} label={m.label} value={m.value} hidden={hidden} tone={m.tone} />
+          ))}
         </div>
 
-        <div className="min-w-0 border-t border-hair pt-4 lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
-          <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center lg:flex-col lg:items-stretch xl:flex-row xl:items-center">
-            <button
-              type="button"
-              onClick={onDeposit}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w bg-gold px-2 py-2 text-[13px] font-semibold leading-5 text-[#26190a] transition-colors duration-150 ease-exp hover:bg-gold-light sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
-            >
-              <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} />
-              {t('wallet.deposit')}
-            </button>
-            <button
-              type="button"
-              onClick={onWithdraw}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
-            >
-              <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
-              {t('wallet.withdraw')}
-            </button>
-            <button
-              type="button"
-              onClick={onTransfer}
-              className="flex min-h-[56px] min-w-0 flex-col items-center justify-center gap-1 rounded-w border border-hair bg-panel px-2 py-2 text-[13px] font-medium leading-5 text-ink-2 transition-colors duration-150 ease-exp hover:border-hair-strong hover:bg-panel-2 hover:text-ink sm:min-h-[40px] sm:flex-row sm:gap-1.5 sm:px-3.5 sm:py-0"
-            >
-              <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} />
-              {t('wallet.transfer')}
-            </button>
+        {/* The compact P&L readout, kept beside the balance. The full curve
+            is in the P&L section; this is the glance. */}
+        <div className="wallet-pnl-glance min-w-0 shrink-0 rounded-w border border-hair bg-panel-2 px-3 py-2.5 xl:w-[248px]">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-[12px] leading-4 text-ink-3">{t('wallet.pnl')}</p>
+            <p className={`num text-[12px] font-medium ${toneOf(pnlPercent)}`}>
+              {pnlAvailable ? formatPercent(pnlPercent, lang) : EM_DASH}
+            </p>
+          </div>
+          <p className={`num mt-0.5 text-[16px] font-semibold leading-6 ${toneOf(pnlPercent)}`}>
+            {hidden ? MASK : performanceLoading ? EM_DASH : pnlAvailable ? formatSignedUsd(selected!.absolutePnl, lang) : EM_DASH}
+          </p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1" role="group" aria-label={t('wallet.pnlPeriod')}>
+            {PERFORMANCE_PERIODS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onPeriodChange(p)}
+                aria-pressed={p === period}
+                className={PERIOD_BASE + ' ' + (p === period ? PERIOD_ON : PERIOD_IDLE)}
+              >
+                {t(PERIOD_LABEL_KEY[p])}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="border-t border-hair-soft px-5 py-4 lg:hidden">
-        <Performance
-          performance={performance}
-          period={period}
-          onPeriodChange={onPeriodChange}
-          hidden={hidden}
-          loading={performanceLoading}
-        />
-      </div>
+      {incomplete && (
+        // The totals above are a FLOOR while an asset has no quote, in the
+        // terminal's own sentence so the same caveat reads the same on both
+        // pages.
+        <p className="wallet-valuation-note mt-3 rounded-w border border-hair bg-panel-2 px-3 py-2 text-[12px] leading-4 text-ink-3" role="status">
+          {t('futures.collateralIncomplete', { assets: account!.unpricedAssets.join(', ') })}
+        </p>
+      )}
     </section>
   );
 }
