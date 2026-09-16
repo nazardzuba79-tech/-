@@ -164,9 +164,9 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10100366.63 USDT",
+        "balance": "10100813.79 USDT",
         "available": [
-          "10049767.66 USDT"
+          "10049989.39 USDT"
         ],
         "risk": [
           "0.50%",
@@ -195,7 +195,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t352255.40 USDT\t50322.3\t50322.2\t—\t\n-0.70\n-0.00%\n\t-193.74\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t150966.60 USDT\t50322.1\t50322.2\t—\t\n-0.30\n-0.00%\n\t-83.03\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t353824.80 USDT\t50546.5\t50546.4\t—\t\n-0.70\n-0.00%\n\t-194.60\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t151639.20 USDT\t50546.3\t50546.4\t—\t\n-0.30\n-0.00%\n\t-83.40\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 880,
           "full": 1199,
@@ -220,7 +220,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-719e1056-073b-4e84-9d6c-d71747dbaf8f",
+        "href": "/futures?nativeCard=native%3A9%3Anative-84169cbe-f3bd-4f45-bb63-390cafc0c427",
         "exported": "1080x1215"
       }
     },
@@ -419,9 +419,9 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10100397.94 USDT",
+        "balance": "10100813.79 USDT",
         "available": [
-          "10049783.18 USDT"
+          "10049989.39 USDT"
         ],
         "risk": [
           "0.50%",
@@ -450,7 +450,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t352365.30 USDT\t50338\t50337.9\t—\t\n-0.70\n-0.00%\n\t-193.80\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t151013.70 USDT\t50337.8\t50337.9\t—\t\n-0.30\n-0.00%\n\t-83.06\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t353824.80 USDT\t50546.5\t50546.4\t—\t\n-0.70\n-0.00%\n\t-194.60\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t151639.20 USDT\t50546.3\t50546.4\t—\t\n-0.30\n-0.00%\n\t-83.40\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 388,
           "full": 1195,
@@ -475,7 +475,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-c396397a-e371-4d88-8cf8-c4116ca8b6b9",
+        "href": "/futures?nativeCard=native%3A9%3Anative-5b6194d5-1494-4f90-8735-186693505fb6",
         "exported": "1080x1215"
       }
     },

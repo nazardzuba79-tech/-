@@ -45,7 +45,7 @@ jobs:
       - name: Actual native terminal interactive browser checks
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
-        run: node scripts/qa-native-demo-browser-current.cjs
+        run: node scripts/qa-native-demo-browser.cjs
       - name: Large financial values keep their layout (desktop and phone)
         if: ${{ !cancelled() && steps.browser-tooling.outcome == 'success' }}
         env:

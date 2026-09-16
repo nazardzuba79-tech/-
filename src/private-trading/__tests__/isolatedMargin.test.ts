@@ -1,6 +1,6 @@
 import {
   emptyDemoState, registerDemoInstrument, markDemoAccount, placeDemoOrder, fillDemoOrder,
-  demoAccount, demoPositionView, closeDemoPosition, setDemoLeverage, evaluateDemoRiskAndProtection,
+  demoAccount, demoPositionView, closeDemoPosition, setDemoLeverage, evaluateDemoRiskAndProtection, executeDemoBook,
   settleDemoFunding, migrateDemoState, DemoInstrument, DemoState, DemoEngineError,
 } from '../native/engine';
 import { crossAccount } from '../native/accountModel';
@@ -239,6 +239,48 @@ describe('orders stay inside their own bucket', () => {
     open(s, 'ISOLATED', 'i1', '0.1');
     expect(s.positions).toHaveLength(2);
     expect(s.positions.map((p) => p.marginType).sort()).toEqual(['CROSS', 'ISOLATED']);
+  });
+});
+
+describe('a replayed market close stays in the position\'s own bucket', () => {
+  /**
+   * REPLAY REBUILDS THE CLOSING ORDER, SO IT MUST REBUILD ITS BUCKET.
+   *
+   * A market CLOSE against a book is replayed by constructing a fresh
+   * reduce-only order and executing it. That reconstruction carried the
+   * symbol, side, quantity, leverage and position id — but not the margin
+   * type, so it defaulted to CROSS and the engine rightly refused to let a
+   * cross order reduce an isolated position. The replay of a perfectly
+   * ordinary close therefore threw, which for a deterministic engine means
+   * the account could not be rebuilt at all.
+   */
+  it('reduces an isolated position instead of refusing to replay it', () => {
+    const s = stand();
+    const p = open(s, 'ISOLATED', 'iso', '0.1');
+    expect(p.marginType).toBe('ISOLATED');
+    expect(demoAccount(s).isolatedMargin).toBe('500');
+
+    // Exactly what replay does for a market close against a book: rebuild
+    // the reduce-only order from the position, then execute it.
+    const order = placeDemoOrder(s, {
+      id:'c1', symbol:p.symbol, side:p.side === 'LONG' ? 'SHORT' : 'LONG', type:'MARKET',
+      quantity:p.quantity, leverage:p.leverage, reduceOnly:true, positionId:p.id,
+      marginType:p.marginType,
+    }, T + 1);
+    executeDemoBook(s, order.id, { timestamp:T + 1, bids:[{ price:'50000', quantity:'1' }], asks:[] }, T + 1);
+
+    expect(s.positions.find((x) => x.id === 'iso')!.status).toBe('CLOSED');
+    // And the post came back out of the ring fence, not out of nowhere.
+    expect(demoAccount(s).isolatedMargin).toBe('0');
+  });
+
+  it('and the same rebuild WITHOUT the bucket is what used to fail', () => {
+    const s = stand();
+    const p = open(s, 'ISOLATED', 'iso', '0.1');
+    expect(() => placeDemoOrder(s, {
+      id:'c1', symbol:p.symbol, side:'SHORT', type:'MARKET',
+      quantity:p.quantity, leverage:p.leverage, reduceOnly:true, positionId:p.id,
+    }, T + 1)).toThrow(DemoEngineError);
   });
 });
 
