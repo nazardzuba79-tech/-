@@ -66,10 +66,11 @@ async function setLeverage(page, value) {
   await page.waitForTimeout(250);
 }
 
+/** The order-family tabs, by their real labels: Лимит and Рынок. */
 async function setType(page, family) {
-  const label = family === 'LIMIT' ? 'Лимитный' : 'Рыночный';
-  const tab = page.locator('.fo-typeTab, .fo-familyTab, [role="tab"]', { hasText: label }).first();
-  if (await tab.count()) { await tab.click(); await page.waitForTimeout(250); }
+  const label = family === 'LIMIT' ? 'Лимит' : 'Рынок';
+  await page.locator('.order-family-tabs button', { hasText: new RegExp(`^${label}$`) }).first().click();
+  await page.waitForTimeout(350);
 }
 
 const qtyInput = (page) => page.locator('.fo-qtyInputRow input').first();
@@ -99,6 +100,9 @@ async function newPage(browser, vp) {
     viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, deviceScaleFactor: 1,
   });
   const page = await context.newPage();
+  // A trader who means to place the order clicks OK. Playwright dismisses
+  // dialogs by default, which silently drops the submit.
+  page.on('dialog', (d) => { void d.accept(); });
   const drafts = [];
   page.on('request', (r) => {
     if (r.url().endsWith('/native/commands') && r.method() === 'POST') {
@@ -234,8 +238,103 @@ async function run() {
           empty.positionValue === '—' && empty.margin === '—' && empty.liqLong === '—',
           JSON.stringify(empty));
 
+        // ── 9: the percentage slider sizes from real available margin ──
+        await setType(page, 'LIMIT');
+        await setMarginMode(page, 'CROSS');
+        await setLeverage(page, 10);
+        await priceInput(page).fill('50000');
+        await qtyInput(page).fill('');
+        await page.waitForTimeout(300);
+        const sized = [];
+        for (const pct of [25, 50, 75, 100]) {
+          await page.locator('.percent-slider-presets button', { hasText: new RegExp(`^${pct}%$`) }).first().click();
+          await page.waitForTimeout(450);
+          sized.push({ pct, qty: await qtyInput(page).inputValue(), margin: (await readBlock(page)).margin });
+        }
+        // Never smaller as the share grows — and it stops growing at the
+        // CONTRACT's maximum order quantity rather than offering a size the
+        // server would refuse. On this account the budget is far larger
+        // than the cap, so 50% onward all land on 1000 BTC exactly.
+        check(`${tag}: a larger share never sizes a smaller order`,
+          sized.every((x, i) => i === 0 || Number(x.qty) >= Number(sized[i - 1].qty)),
+          sized.map((x) => `${x.pct}%=${x.qty}`).join(' '));
+        check(`${tag}: 50% is about twice 25% until a limit binds`,
+          Math.abs(Number(sized[1].qty) / Number(sized[0].qty) - 2) < 0.05,
+          `${sized[0].qty} -> ${sized[1].qty}`);
+        check(`${tag}: sizing stops at the contract's maximum, not at the budget`,
+          Number(sized[3].qty) <= 1000, `100% = ${sized[3].qty} BTC (cap 1000)`);
+        check(`${tag}: no preset sizes beyond what the account can post`,
+          !(await page.evaluate(() => [...document.querySelectorAll('.fo-error')].some((e) => /не хватает средств/i.test(e.textContent)))),
+          sized.map((x) => `${x.pct}%→${x.margin}`).join(' '));
+        await qtyInput(page).fill('');
+        await page.waitForTimeout(250);
+
         await page.screenshot({ path: `${OUT}/margin-mode-${tag}.png`, fullPage: false });
-        void drafts;
+
+        // ── The order actually placed carries the bucket ──────────────
+        // Four combinations, submitted for real against the real engine,
+        // because what the panel displays and what the engine settles are
+        // two different claims.
+        const placed = [];
+        for (const scenario of [
+          { mode: 'CROSS',    type: 'MARKET', side: 'BUY',  qty: '0.01' },
+          { mode: 'CROSS',    type: 'LIMIT',  side: 'SELL', qty: '0.01', price: '52000' },
+          { mode: 'ISOLATED', type: 'MARKET', side: 'BUY',  qty: '0.01' },
+          { mode: 'ISOLATED', type: 'LIMIT',  side: 'SELL', qty: '0.01', price: '52000' },
+        ]) {
+          const before = drafts.length;
+          await setType(page, scenario.type);
+          await setMarginMode(page, scenario.mode);
+          if (scenario.price) await priceInput(page).fill(scenario.price);
+          await qtyInput(page).fill(scenario.qty);
+          await page.waitForTimeout(400);
+          const button = scenario.side === 'BUY' ? 'Купить / Лонг' : 'Продать / Шорт';
+          await page.locator('.fo-submitPair button', { hasText: button }).first().click();
+          await page.waitForTimeout(3500);
+          const sent = drafts.slice(before).filter((d) => d.kind === 'OPEN');
+          placed.push({ ...scenario, sent: sent[0] ?? null });
+        }
+        for (const p of placed) {
+          const name = `${p.mode} + ${p.type} + ${p.side === 'BUY' ? 'Long' : 'Short'}`;
+          check(`${tag}: ${name} reaches the engine in its own bucket`,
+            p.sent !== null && p.sent.marginType === p.mode,
+            p.sent ? `marginType=${p.sent.marginType} side=${p.sent.side} type=${p.sent.type}` : '(no command sent)');
+        }
+
+        // ── 12 + 13: the mode survives a reload, on the server's word ──
+        const state = await page.evaluate(async () => {
+          const res = await fetch('/api/v1/private-trading/native/state', {
+            headers: { Authorization: 'Bearer ' + (localStorage.getItem('exchange_token') ?? '') },
+          });
+          return res.ok ? res.json() : null;
+        });
+        if (state && state.positions) {
+          const modes = state.positions.map((x) => x.marginMode);
+          check(`${tag}: the engine stored both buckets`,
+            modes.includes('CROSS') && modes.includes('ISOLATED'), modes.join(', ') || '(none)');
+          const iso = state.positions.find((x) => x.marginMode === 'ISOLATED');
+          check(`${tag}: the isolated position carries its own posted margin`,
+            Boolean(iso) && Number(iso.isolatedMargin) > 0, iso ? iso.isolatedMargin : '(none)');
+          check(`${tag}: the isolated position is liquidated on its own basis`,
+            Boolean(iso) && iso.liquidationStatus === 'ISOLATED_POSITION_ESTIMATE', iso ? iso.liquidationStatus : '');
+          check(`${tag}: the account still reports isolated margin as in use`,
+            state.account !== null && Number(state.account.initialMargin) > 0, state.account ? state.account.initialMargin : '(no account)');
+        } else {
+          check(`${tag}: the engine state was readable after placing`, false, '(state unavailable)');
+        }
+
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.locator('.futures-account-summary').waitFor({ timeout: 40000 });
+        await page.waitForTimeout(3000);
+        const afterReload = await page.evaluate(() =>
+          [...document.querySelectorAll('.futures-positions-table tbody tr, .futures-position-row')]
+            .map((r) => r.textContent.replace(/\s+/g, ' ').trim()).slice(0, 8));
+        check(`${tag}: a reload still shows an isolated position as isolated`,
+          afterReload.some((t) => /Изолированная/.test(t)), afterReload.join(' || ').slice(0, 200) || '(no rows)');
+        check(`${tag}: and still shows a cross position as cross`,
+          afterReload.some((t) => /Кросс/.test(t)), afterReload.join(' || ').slice(0, 200) || '(no rows)');
+
+        await page.screenshot({ path: `${OUT}/margin-mode-positions-${tag}.png`, fullPage: false });
       } finally {
         await context.close();
       }
