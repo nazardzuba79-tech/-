@@ -157,30 +157,87 @@
    silently identical to a live one. */
 .futures-terminal .ticker-item .value.is-stale { opacity: .62; }
 
-/* ── "Торговля с графика" — a chart TOOL switch ──────────────────────
-   It sits on the chart's own chrome, at the density of the drawing rail
-   it shares an edge with, and states a tool mode. It is deliberately not
-   styled as a mode banner: nothing about the account changes with it. */
-.futures-terminal .chart-trading-toggle {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
-  background: var(--surface-2, rgba(255,255,255,.02));
-  font-size: 11px;
+/* ── Chart tools ─────────────────────────────────────────────────────
+   The switch used to sit above the chart permanently, in a bordered
+   strip. It was worth perhaps one press a session and cost that strip in
+   every session, on the panel whose scarcest resource is height. It now
+   opens on a double click, at the pointer, and takes no layout space at
+   all when it is closed — hence no empty band where the bar used to be.
+
+   The surface is the positioning context for the menu and the touch
+   trigger, and is otherwise transparent: it adds no box of its own. */
+.futures-terminal .chart-surface {
+  position: relative;
+  display: flex; flex-direction: column;
+  flex: 1; min-height: 0; min-width: 0;
 }
-.futures-terminal .chart-trading-switch {
-  display: inline-flex; align-items: center; gap: 7px;
+.futures-terminal .chart-surface > :not(.chart-tools-menu):not(.chart-tools-trigger) {
+  flex: 1; min-height: 0;
+}
+
+/* Touch has no double click, and while a bar is being chosen the double
+   click belongs to the chart. This is a small control in the chart's own
+   corner for exactly those two cases — never a bar, and never permanent:
+   on a pointer device it exists only for as long as the picker is armed. */
+.futures-terminal .chart-tools-trigger {
+  position: absolute; top: 8px; right: 8px; z-index: 4;
+  display: none; place-items: center;
+  width: 30px; height: 30px; padding: 0;
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  border-radius: 7px;
+  background: rgba(18,20,26,.86);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: var(--text-secondary); cursor: pointer;
+}
+.futures-terminal .chart-surface[data-chart-picking] .chart-tools-trigger { display: grid; color: #e9c578; border-color: #e9c578; }
+@media (hover: none), (pointer: coarse) {
+  .futures-terminal .chart-tools-trigger { display: grid; }
+}
+.futures-terminal .chart-tools-trigger[aria-expanded=true] { color: #e9c578; border-color: #e9c578; }
+
+.futures-terminal .chart-tools-menu {
+  position: fixed; z-index: 60;
+  min-width: 212px; max-width: min(280px, calc(100vw - 16px));
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--border, rgba(255,255,255,.12));
+  border-radius: 8px;
+  background: var(--panel-alt, #16181e);
+  box-shadow: 0 12px 32px rgba(0,0,0,.5);
+  font-size: 12px;
+}
+.futures-terminal .chart-tools-menu:focus { outline: none; }
+.futures-terminal .chart-tools-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 2px 4px 6px; margin-bottom: 2px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,.08));
+  color: var(--text-tertiary); font-size: 10.5px; letter-spacing: .3px; text-transform: uppercase;
+}
+.futures-terminal .chart-tools-close {
+  border: 0; background: transparent; color: var(--text-tertiary);
+  width: 20px; height: 20px; border-radius: 4px; font-size: 15px; line-height: 1; cursor: pointer;
+}
+.futures-terminal .chart-tools-close:hover { background: rgba(255,255,255,.08); color: var(--text-primary); }
+.futures-terminal .chart-tools-switch {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 6px; border-radius: 5px;
   color: var(--text-secondary); cursor: pointer; user-select: none;
 }
-.futures-terminal .chart-trading-switch input { accent-color: #e9c578; cursor: pointer; margin: 0; }
-.futures-terminal .chart-trading-pick {
-  border: 1px solid var(--border, rgba(255,255,255,.12));
+.futures-terminal .chart-tools-switch:hover { background: rgba(255,255,255,.05); color: var(--text-primary); }
+.futures-terminal .chart-tools-switch input { accent-color: #e9c578; cursor: pointer; margin: 0; }
+.futures-terminal .chart-tools-state {
+  padding: 5px 6px; border-radius: 5px;
+  background: rgba(233,197,120,.1); color: #e9c578; font-size: 11px; line-height: 1.35;
+}
+.futures-terminal .chart-tools-action {
+  width: 100%; text-align: left;
+  border: 0; border-radius: 5px; padding: 8px 6px;
   background: transparent; color: var(--text-secondary);
-  border-radius: 4px; padding: 3px 10px; font-size: 11px; cursor: pointer;
-  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+  font-size: 12px; cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
 }
-.futures-terminal .chart-trading-pick:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
-.futures-terminal .chart-trading-pick.active { border-color: #e9c578; color: #e9c578; background: rgba(233,197,120,.1); }
-@media (max-width: 600px) {
-  .futures-terminal .chart-trading-toggle { padding: 6px 10px; gap: 8px; }
-}
+.futures-terminal .chart-tools-action:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
+.futures-terminal .chart-tools-action.primary { color: #e9c578; }
+.futures-terminal .chart-tools-action.primary:hover { background: rgba(233,197,120,.12); }
+.futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #e9c578; outline-offset: 1px; }
+

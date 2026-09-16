@@ -168,9 +168,24 @@ export function nativeOrderToTerminal(order: NativeOrder): FuturesOrder {
  * back together for "margin balance"; equity is that sum plus unrealized
  * P&L, which the card derives from the positions it is already reading.
  */
-export function nativeBalances(state: NativeState): FuturesBalance[] {
+/**
+ * The futures balance, or `null` when there ISN'T one yet.
+ *
+ * This used to return a literal `[{ available: '0', locked: '0' }]` for an
+ * account with no ledger — and that is the whole of the `0.00 USDT` bug.
+ * An uninitialized account has no futures balance to report; it is not an
+ * account holding zero. The summary card read that fabricated row, found
+ * `available: '0'`, and printed a confident `0.00 USDT` over a wallet the
+ * server had just said held real demo funds.
+ *
+ * Returning `null` makes it the unknown it is, which the card already knows
+ * how to render as a dash. What the trader should see instead — the demo
+ * balance and the button that opens the account — is the activation state,
+ * which the execution seam publishes separately.
+ */
+export function nativeBalances(state: NativeState): FuturesBalance[] | null {
   const account = state.account;
-  if (!account) return [{ asset: 'USDT', available: '0', locked: '0' }];
+  if (!account) return null;
   return [{
     asset: 'USDT',
     available: account.available,
@@ -193,8 +208,11 @@ export function nativeAccountState(
 ): FuturesAccountState {
   if (state === null || !state.initialized) {
     const pending = <T,>() => unanswered<T>(flags.loading, flags.failed);
+    const balances = state === null ? null : nativeBalances(state);
     return {
-      balances: state === null ? pending<FuturesBalance[]>() : answered(nativeBalances(state), flags.fetchedAt),
+      // Before the account exists there is no balance to answer WITH, so
+      // this stays unanswered rather than answering zero.
+      balances: balances === null ? pending<FuturesBalance[]>() : answered(balances, flags.fetchedAt),
       positions: pending<FuturesPosition[]>(),
       orders: pending<FuturesOrder[]>(),
       orderHistory: pending<FuturesOrder[]>(),
@@ -202,8 +220,9 @@ export function nativeAccountState(
     };
   }
   const working = state.orders.filter((order) => ['OPEN', 'PARTIALLY_FILLED'].includes(order.status));
+  const balances = nativeBalances(state);
   return {
-    balances: answered(nativeBalances(state), flags.fetchedAt),
+    balances: balances === null ? unanswered<FuturesBalance[]>(flags.loading, flags.failed) : answered(balances, flags.fetchedAt),
     positions: answered(state.positions.map(nativePositionToTerminal), flags.fetchedAt),
     orders: answered(working.map(nativeOrderToTerminal), flags.fetchedAt),
     orderHistory: answered(state.orders.map(nativeOrderToTerminal), flags.fetchedAt),

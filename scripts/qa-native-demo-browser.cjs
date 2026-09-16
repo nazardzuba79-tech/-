@@ -84,8 +84,36 @@ async function session(width, configure) {
   return s;
 }
 async function ready(s) {
-  await s.page.locator('.chart-trading-toggle').waitFor();
+  // The permanent "Торговля с графика" strip is gone; the chart surface is
+  // what tells us the terminal has composed.
+  await s.page.locator('.chart-surface').waitFor();
   await s.page.waitForFunction(() => { const b = document.querySelector('.fo-submitPair .buy'); return b && !b.disabled; });
+}
+
+/** Open the chart tool menu the way a trader does: a double click ON the chart. */
+async function openChartMenu(p) {
+  // Scroll first: at 390px the chart sits below the fold, and a viewport
+  // coordinate taken from an off-screen box lands somewhere else entirely.
+  await p.locator('.chart-surface').scrollIntoViewIfNeeded();
+  const menu = p.locator('.chart-tools-menu');
+  // A few points across the chart body. The menu deliberately does not open
+  // from a control inside the chart (the drawing rail, the interval tabs),
+  // and at 390px those occupy a much larger share of the width — so try
+  // more than one spot rather than assume where the bare canvas is.
+  for (const [fx, fy] of [[0.55, 0.55], [0.72, 0.45], [0.62, 0.72], [0.8, 0.6]]) {
+    const box = await p.locator('.chart-surface').boundingBox();
+    await p.mouse.dblclick(box.x + box.width * fx, box.y + box.height * fy);
+    try { await menu.waitFor({ timeout: 3000 }); return; } catch {}
+  }
+  await menu.waitFor();
+}
+async function setChartTools(p, on) {
+  await openChartMenu(p);
+  const input = p.locator('.chart-tools-menu .chart-tools-switch input');
+  if (on) await input.check(); else await input.uncheck();
+  if (on) { await p.locator('.chart-tools-action').click(); }
+  else { await p.keyboard.press('Escape'); }
+  await p.locator('.chart-tools-menu').waitFor({ state: 'detached' });
 }
 async function family(page, type) {
   await page.locator('.fo-panel .order-family-tabs [role=tab]').nth(type === 'MARKET' ? 1 : 0).click();
@@ -241,20 +269,25 @@ async function chartFlow(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s); await family(p, 'MARKET'); await qty(p).fill('1');
-    await p.locator('.chart-trading-switch input').check(); await p.locator('.chart-trading-pick').click();
+    await setChartTools(p, true);
     await p.waitForFunction(() => window.__nativeQaSeries?.data().length > 10); await p.locator('.chart-area').scrollIntoViewIfNeeded();
     const points = await p.evaluate(() => { const c = window.__nativeQaChart, series = window.__nativeQaSeries, r = c.chartElement().getBoundingClientRect(); return series.data().slice(0, -3).filter(x => typeof x.time === 'number' && x.open !== undefined).map(x => ({ ...x, x: c.timeScale().timeToCoordinate(x.time) })).filter(x => x.x > 35 && x.x < r.width - 90).filter((_, i) => i % 7 === 0).map(x => ({ x: r.left + x.x, y: r.top + series.priceToCoordinate((x.high + x.low) / 2) })); });
     let picked = false;
-    for (const point of points) { await p.mouse.click(point.x, point.y); await delay(100); if (await p.locator('.chart-trading-pick').getAttribute('aria-pressed') === 'false') { picked = true; break; } }
+    for (const point of points) {
+      await p.mouse.click(point.x, point.y); await delay(120);
+      // The picker disarms itself once a bar is accepted; the menu is
+      // closed by now, so ask the page rather than a visible control.
+      if (await p.evaluate(() => !document.querySelector('[data-chart-picking]'))) { picked = true; break; }
+    }
     assert(picked, 'Original chart did not accept a closed-candle pick');
     const { state, draft } = await command(s, 'OPEN', () => button(p, 'LONG').click());
     assert(draft.candle && Number.isFinite(draft.candle.openTime), 'Selected candle did not reach native execution');
     assert.equal(state.positions.length, 1); assert(state.positions[0].historical); assert(state.entries.some(x => x.positionId === state.positions[0].id && x.candle.openTime === draft.candle.openTime));
     const before = state.positions.map(x => [x.id, x.quantity]);
-    await p.locator('.chart-trading-switch input').uncheck(); assert.equal(await p.locator('.chart-trading-pick').count(), 0);
+    await setChartTools(p, false);
     assert.deepEqual((await api(s.context, s.token, 'state')).positions.map(x => [x.id, x.quantity]), before, 'Tool Off reset account positions');
-    await p.locator('.chart-trading-switch input').check(); await p.locator('[data-position-line]').first().waitFor();
-    await p.locator('.chart-trading-switch input').uncheck(); await qty(p).fill('1');
+    await setChartTools(p, true); await p.locator('[data-position-line]').first().waitFor();
+    await setChartTools(p, false); await qty(p).fill('1');
     const live = await command(s, 'OPEN', () => button(p, 'SHORT').click()); assert.equal(live.draft.candle, undefined, 'Tool Off retained the unsent historical selection');
   } finally { await s.context.close(); }
 }

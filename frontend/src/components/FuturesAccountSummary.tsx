@@ -51,6 +51,20 @@ export function FuturesAccountSummary({
    */
   const execution = useFuturesExecution();
   const aggregate = execution.account_aggregate;
+  /**
+   * An account the engine will open, but hasn't.
+   *
+   * Non-null for exactly one situation: the server says this account trades
+   * the simulation engine, there is no ledger yet, and there are demo funds
+   * waiting. It renders as one extra row and one button INSIDE this card —
+   * the same panel every account gets — rather than as a separate demo
+   * block or a second terminal.
+   */
+  // `?? null` is load-bearing, not tidiness: an execution object from
+  // before this field existed yields `undefined`, and `undefined !== null`
+  // would have read as "this account is unopened" and blanked every figure
+  // on a perfectly ordinary funded account.
+  const activation = execution.activation ?? null;
   const failedResources = (['balances', 'positions'] as const).filter(key => account[key].failed);
   const retrying = failedResources.some(key => account[key].loading || account[key].refreshing);
 
@@ -62,6 +76,10 @@ export function FuturesAccountSummary({
   const available = aggregate
     ? Number(aggregate.available)
     : account.balances.data ? (row ? parseFloat(row.available) : 0) : null;
+  // `0.00` is only ever the truth about a REAL account that answered with
+  // no row for this asset. An account that has not been opened has no
+  // available margin to report, and the figures below stay unknown.
+  const unopened = activation !== null;
   const locked = account.balances.data ? (row ? parseFloat(row.locked) : 0) : null;
   const positions = account.positions.data;
 
@@ -102,7 +120,8 @@ export function FuturesAccountSummary({
   const mask = (s: string) => (showBalance ? s : '****');
   /** The one place an unknown becomes visible text. Never a zero. */
   const show = (value: number | null, format: (n: number) => string) =>
-    value === null ? '—' : mask(format(value));
+    value === null || unopened ? '—' : mask(format(value));
+  const showPct = (value: number | null) => (value === null || unopened ? '—' : `${value.toFixed(2)}%`);
 
   return (
     <div className="futures-account-summary" style={styles.wrap}>
@@ -146,31 +165,52 @@ export function FuturesAccountSummary({
       <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.initialMarginPct')}</span>
-          <span className="mono">{initialMarginPct === null ? '—' : `${initialMarginPct.toFixed(2)}%`}</span>
+          <span className="mono">{showPct(initialMarginPct)}</span>
         </div>
         <div className="futures-account-track" style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
+          <div style={{ ...styles.barFill, width: `${unopened ? 0 : Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
         </div>
       </div>
 
       <div className="futures-account-risk" style={styles.barRow}>
         <div style={styles.barLabelRow}>
           <span>{t('futures.maintenanceMarginPct')}</span>
-          <span className="mono">{maintenanceMarginPct === null ? '—' : `${maintenanceMarginPct.toFixed(2)}%`}</span>
+          <span className="mono">{showPct(maintenanceMarginPct)}</span>
         </div>
         <div className="futures-account-track" style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
+          <div style={{ ...styles.barFill, width: `${unopened ? 0 : Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
         </div>
       </div>
 
       <div className="futures-account-stat futures-account-balance" style={styles.statRow}>
-        <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginBalance')}</span>
-        <span className="mono">{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
+        <span style={styles.statLabel}>{t('futures.marginBalance')}</span>
+        <span className="mono" style={styles.statValue}>{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
       <div className="futures-account-stat" style={styles.statRow}>
-        <span style={{ color: 'var(--text-secondary)' }}>{t('futures.availableMargin')}</span>
-        <span className="mono">{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
+        <span style={styles.statLabel}>{t('futures.availableMargin')}</span>
+        <span className="mono" style={styles.statValue}>{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
       </div>
+
+      {activation && (
+        // The balance the server reported, shown as itself. It is the same
+        // money the Wallet shows; `Начать торговлю` is what moves it into
+        // the trading ledger, exactly once.
+        <>
+          <div className="futures-account-stat futures-account-demo" style={styles.statRow}>
+            <span style={styles.statLabel}>{t('futures.demoAvailable')}</span>
+            <span className="mono" style={styles.statValue}>{mask(formatActivation(activation.available))} {activation.asset}</span>
+          </div>
+          <button
+            type="button"
+            className="futures-account-activate"
+            disabled={activation.pending}
+            onClick={activation.begin}
+            style={{ ...styles.actionBtn, ...styles.activateBtn }}
+          >
+            {t(activation.pending ? 'futures.startTradingPending' : 'futures.startTrading')}
+          </button>
+        </>
+      )}
 
       <div className="futures-account-actions" style={styles.actionsRow}>
         <button type="button" onClick={() => navigate('/wallet?action=deposit')} style={styles.actionBtn}>
@@ -186,6 +226,20 @@ export function FuturesAccountSummary({
       </div>
     </div>
   );
+}
+
+/**
+ * The server's balance string, grouped for reading — not recomputed.
+ *
+ * The digits are the server's own. This only inserts separators and pads
+ * the fraction to two places; it never rounds a value up, and it falls back
+ * to the raw string rather than printing something the server did not say.
+ */
+function formatActivation(value: string): string {
+  if (!/^\d+(?:\.\d+)?$/.test(value)) return value;
+  const [whole, fraction = ''] = value.split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${grouped}.${(fraction + '00').slice(0, 2)}`;
 }
 
 function EyeIcon() {
@@ -224,8 +278,23 @@ const styles: Record<string, React.CSSProperties> = {
   barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' },
   barTrack: { height: 4, borderRadius: 999, background: 'var(--panel)', overflow: 'hidden' },
   barFill: { height: '100%', borderRadius: 999 },
-  statRow: { display: 'flex', justifyContent: 'space-between', fontSize: 13 },
+  // The value is a number that can be eight digits wide; the label is the
+  // part that gives way. Without this the label wrapped to a second line
+  // and the rows stopped lining up with each other.
+  statRow: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+    gap: 10, fontSize: 13, minWidth: 0,
+  },
   actionsRow: { display: 'flex', gap: 8, marginTop: 2 },
+  statLabel: { color: 'var(--text-secondary)', minWidth: 0, flex: '0 1 auto' },
+  statValue: { flex: '0 0 auto', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' },
+  activateBtn: {
+    background: 'var(--buy)',
+    borderColor: 'transparent',
+    color: '#04140d',
+    fontSize: 13,
+    padding: '9px 0',
+  },
   actionBtn: {
     flex: 1,
     background: 'var(--panel)',

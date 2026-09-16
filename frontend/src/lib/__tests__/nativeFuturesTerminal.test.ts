@@ -60,13 +60,41 @@ describe('the terminal is the terminal, for every account', () => {
   });
 
   test('"Торговля с графика" switches chart TOOLS, and drops only an unsent pick', () => {
-    expect(page).toContain('<ChartTradingToggle');
+    // The permanent checkbox above the chart is gone; the same switch now
+    // lives in a menu that only exists while it is open.
+    expect(page).toContain('<ChartTradingMenu');
+    expect(page).not.toContain('<ChartTradingToggle');
     // Off -> the chart's trading interaction is not passed at all.
     expect(page).toContain('privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}');
     // Off -> an unsent selection is cancelled...
     expect(page).toContain('native.interaction.onCancelSelection()');
     // ...and nothing about the account is reset with it.
     expect(page).not.toMatch(/setChartTrading[\s\S]{0,400}?(setPositions|refreshFuturesAccount|initialize)\(/);
+  });
+
+  test('the chart menu opens on a double click and nothing else acts on one', () => {
+    expect(page).toContain('onDoubleClick');
+    expect(page).toContain('setChartMenu({ x: event.clientX, y: event.clientY })');
+    // A double click opens a menu. It must not also reach a drawing tool,
+    // and it must not pick, place or price anything by itself.
+    expect(page).toContain('event.preventDefault()');
+    expect(page).toContain('event.stopPropagation()');
+    expect(page).not.toMatch(/onDoubleClick[\s\S]{0,600}?(placeOrder|pickEntry|onCandleSelect)\(/);
+    // A menu anchored to a point on one contract means nothing on another.
+    expect(page).toContain('useEffect(() => { setChartMenu(null); }, [symbol]);');
+  });
+
+  test('the account card, not a second terminal, opens the simulation account', () => {
+    // The old NativeDemoTicket/NativePanel are not coming back: the one
+    // ordinary account panel carries the balance and the one action.
+    expect(page).not.toContain('NativeDemoTicket');
+    expect(page).not.toContain('NativeDemoPanel');
+    const execution = source('lib/useNativeFuturesExecution.ts');
+    expect(execution).toContain('native.initialize()');
+    // Offered only while the server says there is something to open the
+    // account WITH — never as a button that would move nothing.
+    expect(execution).toContain("state && !state.initialized ? state.demoAvailable ?? null : null");
+    expect(execution).toContain('Number(waiting) > 0');
   });
 
   test('a legacy private-mode link lands on the ordinary terminal', () => {

@@ -77,6 +77,31 @@ export interface FuturesAccountAggregate {
   collateralAsOf: number | null;
 }
 
+/**
+ * The pre-account state: funds the engine will accept, and the one action
+ * that accepts them.
+ *
+ * `available` is the server's own `demoAvailable` string, passed through
+ * untouched — it is never defaulted to '0', because an account whose
+ * balance is unknown is not an account holding nothing.
+ */
+export interface FuturesAccountActivation {
+  /** The server's `demoAvailable`, verbatim. */
+  available: string;
+  /** The asset those funds are denominated in. */
+  asset: string;
+  /** True while an activation attempt is in flight. */
+  pending: boolean;
+  /**
+   * Open the account.
+   *
+   * Idempotency, the accepted-model check and the owner binding all live
+   * behind this, in the controller and then on the server. Calling it twice
+   * — a double click, a retry, a second tab — moves the balance once.
+   */
+  begin(): void;
+}
+
 export interface FuturesExecution {
   /** REAL = our matching engine and the real futures ledger.
    *  NATIVE = the simulation engine; no real order, no real wallet write. */
@@ -107,6 +132,19 @@ export interface FuturesExecution {
   /** The engine's own account aggregate, when it publishes one. `null` —
    *  every real account — leaves the summary deriving as it always has. */
   account_aggregate: FuturesAccountAggregate | null;
+  /**
+   * An account the engine can open but has not opened yet.
+   *
+   * Non-null means exactly one thing: the server says this account trades
+   * the simulation engine, it has no ledger yet, and it has demo funds
+   * waiting. The account card renders that as the balance it is plus one
+   * action, inside the ordinary panel — there is no second terminal and no
+   * separate demo block.
+   *
+   * `null` for every real account, and also for an owner whose account is
+   * already open, so the card's normal path is untouched in both cases.
+   */
+  activation: FuturesAccountActivation | null;
   placeOrder(params: {
     symbol: string;
     side: 'BUY' | 'SELL';
@@ -136,6 +174,7 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   candle: null,
   contract: null,
   account_aggregate: null,
+  activation: null,
   placeOrder: async (params) => { await api.placeFuturesOrder(params); },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
   closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },

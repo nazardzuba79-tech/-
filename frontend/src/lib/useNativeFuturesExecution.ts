@@ -81,6 +81,22 @@ export function useNativeFuturesExecution(
      */
     const aggregate = state?.account ?? null;
 
+    /**
+     * Funds waiting for an account that does not exist yet.
+     *
+     * The server answers `demoAvailable` only while there is no ledger, and
+     * answers `null` once there is one — so this is non-null for exactly
+     * the window the activation control should exist in, and the card needs
+     * no rule of its own about when to show it. A zero or unparseable
+     * balance yields `null`: there is nothing to open an account with, and
+     * offering a button that would move nothing is worse than not offering
+     * one.
+     */
+    const waiting = state && !state.initialized ? state.demoAvailable ?? null : null;
+    const activation = waiting !== null && Number(waiting) > 0
+      ? { available: waiting, asset: 'USDT', pending: native.busy, begin: () => { void native.initialize(); } }
+      : null;
+
     const refuse = async () => {
       throw new Error('Торговый счёт ещё не загружен');
     };
@@ -95,6 +111,10 @@ export function useNativeFuturesExecution(
         candle: pickedCandle,
         contract,
         account_aggregate: aggregate,
+        // The activation control belongs to the NOT-READY branch: an
+        // account that has not been opened is exactly an account that
+        // cannot trade yet, so this is where the trader meets it.
+        activation,
         placeOrder: refuse, cancelOrder: refuse, closePosition: refuse,
         setProtection: refuse, clearProtection: refuse,
         refresh: () => { void run({ kind: 'REFRESH' }); },
@@ -111,6 +131,9 @@ export function useNativeFuturesExecution(
       candle: pickedCandle,
       contract,
       account_aggregate: aggregate,
+      // Always null here: `ready` requires `state.initialized`, and the
+      // server stops answering `demoAvailable` the moment a ledger exists.
+      activation,
       async placeOrder(params) {
         const reducing = params.reduceOnly || Boolean(exitId);
         const target = !reducing ? undefined : exitId ?? state.positions.find(
@@ -165,5 +188,5 @@ export function useNativeFuturesExecution(
       // reload button and the terminal's post-trade nudge reach the engine.
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, contract, native.showCard]);
+  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, contract, native.showCard, native.busy, native.initialize]);
 }
