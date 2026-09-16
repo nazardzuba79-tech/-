@@ -55,6 +55,115 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     privateAccount: await db.privateTradingAccount.count({ where: { userId } }),
   }));
 
+  /**
+   * BEFORE -> INITIALIZE -> AFTER, as the trader actually meets it.
+   *
+   * This is the flow the `0.00 USDT` blocker lived in. The terminal read
+   * the wallet's demo funds as an account balance of zero, and the only
+   * control that could open the account had been removed from the page, so
+   * the owner had funds in the Wallet, `Доступная маржа: 0.00 USDT` in
+   * Futures, and no way across. The server contract below is what the
+   * account panel now renders, and what makes the crossing possible.
+   */
+  test('BEFORE the account exists the server offers the demo balance, and AFTER it is collateral exactly once', async () => {
+    const f = await fixture('10000000');
+
+    // ---- BEFORE ----------------------------------------------------
+    const before = await f.service.state(f.actor);
+    expect(before.initialized).toBe(false);
+    // The funds are REPORTED, so the panel has something true to show.
+    expect(before.demoAvailable).toBe('10000000');
+    // And there is no account yet — which is the unknown the panel renders
+    // as a dash. A zero here is what the client used to fabricate.
+    expect(before.account).toBeNull();
+    expect(before.ledger).toBeNull();
+    // The wallet still holds it: initialization has not happened.
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: 'USDT' } } }))!.available.toString()).toBe('10000000');
+
+    // ---- INITIALIZE ------------------------------------------------
+    const after = await f.service.initialize(f.actor, `init-${randomUUID()}`);
+    expect(after.initialized).toBe(true);
+    expect(after.revision).toBe(1);
+
+    // ---- AFTER -----------------------------------------------------
+    // The offer is withdrawn the moment the account exists, so the button
+    // cannot be pressed a second time by a client that simply re-reads.
+    const reloaded = await f.service.state(f.actor);
+    expect(reloaded.demoAvailable).toBeNull();
+    expect(reloaded.initialized).toBe(true);
+
+    // NO DOUBLE COUNTING. The demo row was debited into the ledger, so the
+    // settle balance carries the whole amount and the wallet side carries
+    // none of it. Collateral is their sum, and it is the original figure,
+    // not twice it.
+    expect(reloaded.account?.settleBalance).toBe('10000000');
+    expect(reloaded.account?.walletCollateral).toBe('0');
+    expect(reloaded.account?.collateral).toBe('10000000');
+    expect(reloaded.account?.equity).toBe('10000000');
+    expect(reloaded.account?.available).toBe('10000000');
+    expect(reloaded.ledger?.reconciled).toBe(true);
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: 'USDT' } } }))!.available.toString()).toBe('0');
+
+    // ---- RELOAD DOES NOT RE-TRANSFER -------------------------------
+    // A fresh process, as a page reload is. Reading state must not move
+    // anything, and initializing again must not move anything either.
+    const second = f.make().service;
+    await second.state(f.actor);
+    const repeat = await second.initialize(f.actor, `init-${randomUUID()}`);
+    expect(repeat.revision).toBe(1);
+    expect(repeat.account?.collateral).toBe('10000000');
+    expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: 'USDT' } } }))!.available.toString()).toBe('0');
+    expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(1);
+  });
+
+  /**
+   * The rest of the wallet is collateral too, and is counted ONCE.
+   *
+   * The owner's total is balances times marks plus the trading ledger —
+   * never a number written into the source. This proves the two parts are
+   * added rather than either being double counted or dropped.
+   */
+  test('a non-settle holding is valued at mark and added once, never twice', async () => {
+    const f = await fixture('1000000');
+    await db.demoBalance.create({ data: { userId: f.user.id, asset: 'BTC', available: '2', locked: '0.5' } });
+
+    const before = await f.service.state(f.actor);
+    // The offer names the SETTLE funds the account opens with, not the
+    // whole wallet: BTC is collateral, but it is not what is transferred.
+    expect(before.demoAvailable).toBe('1000000');
+
+    await f.service.initialize(f.actor, `init-${randomUUID()}`);
+    const after = await f.service.state(f.actor);
+
+    // 2.5 BTC at the fixture's 50 000 mark = 125 000, held apart from the
+    // 1 000 000 that moved into the ledger. Locked quantity counts: it is
+    // still the owner's, and it is still collateral.
+    expect(after.account?.settleBalance).toBe('1000000');
+    expect(after.account?.walletCollateral).toBe('125000');
+    expect(after.account?.collateral).toBe('1125000');
+    expect(after.account?.equity).toBe('1125000');
+    expect(after.account?.collateralComplete).toBe(true);
+    expect(after.account?.unpricedAssets).toEqual([]);
+
+    // The valuation MOVES with the price — it is not a stored total.
+    f.market.price = '60000';
+    const revalued = await f.service.state(f.actor);
+    expect(revalued.account?.walletCollateral).toBe('150000');
+    expect(revalued.account?.collateral).toBe('1150000');
+    // ...while the ledger side is untouched by a price change.
+    expect(revalued.account?.settleBalance).toBe('1000000');
+  });
+
+  test('a wallet with no demo funds is offered nothing to open an account with', async () => {
+    const f = await fixture('0');
+    const before = await f.service.state(f.actor);
+    expect(before.initialized).toBe(false);
+    // '0' is a real answer, and the client refuses to offer a button that
+    // would move nothing — it is not rendered as an opportunity.
+    expect(before.demoAvailable).toBe('0');
+    expect(before.account).toBeNull();
+  });
+
   test('first use moves the existing demo balance once, even from two tabs at the same time', async () => {
     const f = await fixture();
     const [a, b] = await Promise.all([f.service.initialize(f.actor, `init-${randomUUID()}`), f.make().service.initialize(f.actor, `init-${randomUUID()}`)]);

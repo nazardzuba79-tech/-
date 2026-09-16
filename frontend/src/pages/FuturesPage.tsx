@@ -20,7 +20,7 @@ import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
 import { nativeDemoApi } from '../lib/nativeDemoApi';
 import { pairToNativeSymbol } from '../lib/nativeFuturesAdapter';
 import type { FuturesContractRules } from '../lib/futuresMath';
-import { ChartTradingToggle } from '../components/ChartTradingToggle';
+import { ChartTradingMenu, type ChartMenuAnchor } from '../components/ChartTradingMenu';
 import { FuturesTransferModal } from '../components/FuturesTransferModal';
 import { AssetsPanel } from '../components/AssetsPanel';
 import { AccountPanelToggle } from '../components/AccountPanelToggle';
@@ -150,6 +150,19 @@ export function FuturesPage() {
    * it, and it is not persisted anywhere — it is the state of a toolbar.
    */
   const [chartTrading, setChartTrading] = useState(false);
+  /**
+   * Where the chart tool menu is open, or `null` for closed.
+   *
+   * It used to be a checkbox pinned above the chart in every session. A
+   * double click on the chart opens the same controls at the pointer and
+   * costs no vertical space when they are not wanted.
+   */
+  const [chartMenu, setChartMenu] = useState<ChartMenuAnchor | null>(null);
+  const closeChartMenu = useCallback(() => setChartMenu(null), []);
+  // A menu anchored to a point on one contract's chart means nothing on
+  // another's, and must not survive leaving the page either.
+  useEffect(() => { setChartMenu(null); }, [symbol]);
+  useEffect(() => () => setChartMenu(null), []);
   /** A reduce-only close the trader started from the positions table. The
    *  form fills itself from it; nothing is placed until they submit. */
   const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number } | null>(null);
@@ -282,22 +295,77 @@ export function FuturesPage() {
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
-            {nativeExecution && <ChartTradingToggle
-              enabled={chartTrading}
-              onChange={next => {
-                setChartTrading(next);
-                // Turning the tools off discards an UNSENT historical
-                // selection, so the next ordinary order cannot silently
-                // open in the past. Positions, orders, balance and history
-                // are account state and are not touched.
-                if (!next) native.interaction.onCancelSelection();
-              }}
-              picking={native.interaction.selecting !== null}
-              onPick={native.pickEntry}
-            />}
-            <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
-              privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
-              candleLoader={nativeExecution?native.loader:undefined} />
+            {/* The double click is captured on this wrapper rather than on
+                the chart itself: the chart owns no dblclick handler, so
+                nothing is being overridden, and stopping it here keeps a
+                stray second click from reaching a drawing tool. It opens a
+                menu and does nothing else — no drawing, no zoom, no pick,
+                and certainly no order. */}
+            <div
+              className="chart-surface"
+              /* The picking state, readable from the DOM. The control that
+                 arms it lives in a menu that is closed by the time a bar is
+                 picked, so this is how anything outside the chart — a
+                 cursor rule, a QA run — can tell that a click on the chart
+                 is currently a selection rather than a pan. */
+              data-chart-picking={nativeExecution && native.interaction.selecting !== null ? native.interaction.selecting : undefined}
+              onDoubleClick={nativeExecution ? (event) => {
+                // Controls inside the chart (the drawing rail, the interval
+                // and indicator buttons) keep their own double-click
+                // behaviour; only the chart surface opens the menu.
+                if ((event.target as HTMLElement).closest('button,select,input,a,[role=button]')) return;
+                // While a bar is being chosen, the chart owns the pointer.
+                // A double click's FIRST click already reaches the chart and
+                // picks — so opening the menu on the second one would both
+                // steal the gesture and report a state that had just
+                // changed underneath it. The control stays reachable: the
+                // compact trigger appears for exactly as long as the picker
+                // is armed (see .chart-tools-trigger), and Esc still cancels.
+                if (native.interaction.selecting !== null) return;
+                event.preventDefault();
+                event.stopPropagation();
+                setChartMenu({ x: event.clientX, y: event.clientY });
+              } : undefined}
+            >
+              <PriceChart pair={symbol} chrome="terminal" drawingTools market="futures" compactTools={studio}
+                privateTrading={nativeExecution&&chartTrading?native.interaction:undefined}
+                candleLoader={nativeExecution?native.loader:undefined} />
+              {nativeExecution && <button
+                type="button"
+                /* Touch has no double click. This is a compact control that
+                   floats in the chart's own corner rather than a strip
+                   above it, and CSS shows it only where the gesture is
+                   unavailable. */
+                className="chart-tools-trigger"
+                aria-label={t('futures.chartTools')}
+                aria-haspopup="menu"
+                aria-expanded={chartMenu !== null}
+                onClick={(event) => {
+                  const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+                  setChartMenu((open) => (open ? null : { x: box.left, y: box.bottom + 4 }));
+                }}
+              >
+                <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <path d="M2 11.5 6 7l3 2.5L14 4" /><path d="M2 14h12" />
+                </svg>
+              </button>}
+              {nativeExecution && <ChartTradingMenu
+                anchor={chartMenu}
+                enabled={chartTrading}
+                picking={native.interaction.selecting !== null}
+                onToggle={next => {
+                  setChartTrading(next);
+                  // Turning the tools off discards an UNSENT historical
+                  // selection, so the next ordinary order cannot silently
+                  // open in the past. Positions, orders, balance and history
+                  // are account state and are not touched.
+                  if (!next) native.interaction.onCancelSelection();
+                }}
+                onPick={native.pickEntry}
+                onCancelPicking={native.interaction.onCancelSelection}
+                onClose={closeChartMenu}
+              />}
+            </div>
           </div>
 
           <div className="orderbook-area repaired-futures-book">

@@ -9,71 +9,71 @@
       "evidence": {
         "price": {
           "width": 254,
-          "height": 52,
+          "height": 40,
           "left": 1173,
           "right": 1427,
           "top": 241,
-          "bottom": 293
+          "bottom": 281
         },
         "quantity": {
           "width": 254,
-          "height": 52,
+          "height": 40,
           "left": 1173,
           "right": 1427,
-          "top": 305,
-          "bottom": 357
+          "top": 293,
+          "bottom": 333
         },
         "long": {
           "width": 123,
           "height": 44,
           "left": 1173,
           "right": 1296,
-          "top": 592.84375,
-          "bottom": 636.84375
+          "top": 568.84375,
+          "bottom": 612.84375
         },
         "short": {
           "width": 123,
           "height": 44,
           "left": 1304,
           "right": 1427,
-          "top": 592.84375,
-          "bottom": 636.84375
+          "top": 568.84375,
+          "bottom": 612.84375
         },
         "trailing": [
           {
             "outer": {
               "width": 254,
-              "height": 52,
+              "height": 40,
               "left": 1173,
               "right": 1427,
               "top": 241,
-              "bottom": 293
+              "bottom": 281
             },
             "inner": {
-              "width": 85.203125,
-              "height": 50,
-              "left": 1340.796875,
+              "width": 81.203125,
+              "height": 38,
+              "left": 1344.796875,
               "right": 1426,
               "top": 242,
-              "bottom": 292
+              "bottom": 280
             }
           },
           {
             "outer": {
               "width": 254,
-              "height": 52,
+              "height": 40,
               "left": 1173,
               "right": 1427,
-              "top": 305,
-              "bottom": 357
+              "top": 293,
+              "bottom": 333
             },
             "inner": {
-              "width": 44,
-              "height": 50,
-              "left": 1382,
+              "width": 54,
+              "height": 38,
+              "left": 1372,
               "right": 1426,
-              "top": 306,
-              "bottom": 356
+              "top": 294,
+              "bottom": 332
             }
           }
         ]
@@ -89,71 +89,71 @@
       "evidence": {
         "price": {
           "width": 254,
-          "height": 52,
+          "height": 40,
           "left": 1173,
           "right": 1427,
           "top": 241,
-          "bottom": 293
+          "bottom": 281
         },
         "quantity": {
           "width": 254,
-          "height": 52,
+          "height": 40,
           "left": 1173,
           "right": 1427,
-          "top": 305,
-          "bottom": 357
+          "top": 293,
+          "bottom": 333
         },
         "long": {
           "width": 123,
           "height": 44,
           "left": 1173,
           "right": 1296,
-          "top": 592.84375,
-          "bottom": 636.84375
+          "top": 568.84375,
+          "bottom": 612.84375
         },
         "short": {
           "width": 123,
           "height": 44,
           "left": 1304,
           "right": 1427,
-          "top": 592.84375,
-          "bottom": 636.84375
+          "top": 568.84375,
+          "bottom": 612.84375
         },
         "trailing": [
           {
             "outer": {
               "width": 254,
-              "height": 52,
+              "height": 40,
               "left": 1173,
               "right": 1427,
               "top": 241,
-              "bottom": 293
+              "bottom": 281
             },
             "inner": {
               "width": 54,
-              "height": 50,
+              "height": 38,
               "left": 1372,
               "right": 1426,
               "top": 242,
-              "bottom": 292
+              "bottom": 280
             }
           },
           {
             "outer": {
               "width": 254,
-              "height": 52,
+              "height": 40,
               "left": 1173,
               "right": 1427,
-              "top": 305,
-              "bottom": 357
+              "top": 293,
+              "bottom": 333
             },
             "inner": {
-              "width": 44,
-              "height": 50,
-              "left": 1382,
+              "width": 54,
+              "height": 38,
+              "left": 1372,
               "right": 1426,
-              "top": 306,
-              "bottom": 356
+              "top": 294,
+              "bottom": 332
             }
           }
         ]
@@ -164,12 +164,12 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10098460.48 USDT",
+        "balance": "10101054.73 USDT",
         "available": [
-          "10048822.47 USDT"
+          "10050108.86 USDT"
         ],
         "risk": [
-          "0.49%",
+          "0.50%",
           "0.03%"
         ]
       }
@@ -195,7 +195,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t345565.50 USDT\t49366.6\t49366.5\t—\t\n-0.70\n-0.00%\n\t-190.06\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t148099.50 USDT\t49366.4\t49366.5\t—\t\n-0.30\n-0.00%\n\t-81.45\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t354670.40 USDT\t50667.3\t50667.2\t—\t\n-0.70\n-0.00%\n\t-195.07\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152001.60 USDT\t50667.1\t50667.2\t—\t\n-0.30\n-0.00%\n\t-83.60\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 880,
           "full": 1199,
@@ -220,7 +220,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-6e354e64-61b8-4933-9697-aabbee65e99e",
+        "href": "/futures?nativeCard=native%3A9%3Anative-fc81c299-8d79-422d-99ba-58719747ae78",
         "exported": "1080x1215"
       }
     },
@@ -264,71 +264,71 @@
       "evidence": {
         "price": {
           "width": 364,
-          "height": 52,
+          "height": 40,
           "left": 13,
           "right": 377,
-          "top": 716,
-          "bottom": 768
+          "top": 713,
+          "bottom": 753
         },
         "quantity": {
           "width": 364,
-          "height": 52,
+          "height": 40,
           "left": 13,
           "right": 377,
-          "top": 780,
-          "bottom": 832
+          "top": 765,
+          "bottom": 805
         },
         "long": {
           "width": 178,
           "height": 44,
           "left": 13,
           "right": 191,
-          "top": 1067.84375,
-          "bottom": 1111.84375
+          "top": 1040.84375,
+          "bottom": 1084.84375
         },
         "short": {
           "width": 178,
           "height": 44,
           "left": 199,
           "right": 377,
-          "top": 1067.84375,
-          "bottom": 1111.84375
+          "top": 1040.84375,
+          "bottom": 1084.84375
         },
         "trailing": [
           {
             "outer": {
               "width": 364,
-              "height": 52,
+              "height": 40,
               "left": 13,
               "right": 377,
-              "top": 716,
-              "bottom": 768
+              "top": 713,
+              "bottom": 753
             },
             "inner": {
-              "width": 85.203125,
-              "height": 50,
-              "left": 290.796875,
+              "width": 81.203125,
+              "height": 38,
+              "left": 294.796875,
               "right": 376,
-              "top": 717,
-              "bottom": 767
+              "top": 714,
+              "bottom": 752
             }
           },
           {
             "outer": {
               "width": 364,
-              "height": 52,
+              "height": 40,
               "left": 13,
               "right": 377,
-              "top": 780,
-              "bottom": 832
+              "top": 765,
+              "bottom": 805
             },
             "inner": {
-              "width": 44,
-              "height": 50,
-              "left": 332,
+              "width": 54,
+              "height": 38,
+              "left": 322,
               "right": 376,
-              "top": 781,
-              "bottom": 831
+              "top": 766,
+              "bottom": 804
             }
           }
         ]
@@ -344,18 +344,18 @@
       "evidence": {
         "price": {
           "width": 364,
-          "height": 52,
+          "height": 40,
           "left": 13,
           "right": 377,
-          "top": 48,
-          "bottom": 100
+          "top": 72,
+          "bottom": 112
         },
         "quantity": {
           "width": 364,
-          "height": 52,
+          "height": 40,
           "left": 13,
           "right": 377,
-          "top": 112,
+          "top": 124,
           "bottom": 164
         },
         "long": {
@@ -378,36 +378,36 @@
           {
             "outer": {
               "width": 364,
-              "height": 52,
+              "height": 40,
               "left": 13,
               "right": 377,
-              "top": 48,
-              "bottom": 100
+              "top": 72,
+              "bottom": 112
             },
             "inner": {
               "width": 54,
-              "height": 50,
+              "height": 38,
               "left": 322,
               "right": 376,
-              "top": 49,
-              "bottom": 99
+              "top": 73,
+              "bottom": 111
             }
           },
           {
             "outer": {
               "width": 364,
-              "height": 52,
+              "height": 40,
               "left": 13,
               "right": 377,
-              "top": 112,
+              "top": 124,
               "bottom": 164
             },
             "inner": {
-              "width": 44,
-              "height": 50,
-              "left": 332,
+              "width": 54,
+              "height": 38,
+              "left": 322,
               "right": 376,
-              "top": 113,
+              "top": 125,
               "bottom": 163
             }
           }
@@ -419,12 +419,12 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10098460.48 USDT",
+        "balance": "10101054.73 USDT",
         "available": [
-          "10048822.47 USDT"
+          "10050108.86 USDT"
         ],
         "risk": [
-          "0.49%",
+          "0.50%",
           "0.03%"
         ]
       }
@@ -450,7 +450,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t345565.50 USDT\t49366.6\t49366.5\t—\t\n-0.70\n-0.00%\n\t-190.06\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t148099.50 USDT\t49366.4\t49366.5\t—\t\n-0.30\n-0.00%\n\t-81.45\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t354670.40 USDT\t50667.3\t50667.2\t—\t\n-0.70\n-0.00%\n\t-195.07\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152001.60 USDT\t50667.1\t50667.2\t—\t\n-0.30\n-0.00%\n\t-83.60\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 388,
           "full": 1195,
@@ -475,7 +475,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-64f0e54d-c752-4bb1-9fc7-c19a72e1683a",
+        "href": "/futures?nativeCard=native%3A9%3Anative-91d28b09-ca9f-41b6-863a-26fa37fb55e2",
         "exported": "1080x1215"
       }
     },

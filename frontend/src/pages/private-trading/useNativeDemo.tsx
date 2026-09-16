@@ -80,7 +80,29 @@ export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){
     return()=>clearInterval(timer);
   },[requested,allowed,state?.initialized,run,dialog,candle]);
   useEffect(()=>{const id=params.get('nativeCard');if(requested&&allowed&&id)nativeDemoApi.getCard(id).then(setCard).catch(fail);},[params,requested,allowed,fail]);
-  async function initialize(){if(pending.current||!state||!allowed)return;pending.current=true;setBusy(true);try{const result=await nativeDemoApi.initialize(state.model.version,'initialize-native-account');if(alive.current)setState(result);}catch(e){fail(e);}finally{pending.current=false;if(alive.current)setBusy(false);}}
+  /**
+   * Open the account, at most once.
+   *
+   * Three guards, and they are layered on purpose because they fail at
+   * different moments. `pending.current` is set SYNCHRONOUSLY before the
+   * await, so a double click cannot get two requests past it — the second
+   * click runs while the first is still in flight and returns immediately.
+   * The idempotency key is fixed rather than random, so a retry, a second
+   * tab or a reload that races the first attempt is the same request to the
+   * server and is deduplicated there. And the server checks the owner
+   * binding and the accepted model on top of both.
+   *
+   * `useCallback` is not cosmetic: the execution seam memoizes on this
+   * identity, and a fresh function every render would rebuild the whole
+   * execution object on every tick.
+   */
+  const initialize=useCallback(async()=>{
+    if(pending.current||!state||!allowed)return;
+    pending.current=true;setBusy(true);
+    try{const result=await nativeDemoApi.initialize(state.model.version,'initialize-native-account');if(alive.current)setState(result);}
+    catch(e){fail(e);}
+    finally{pending.current=false;if(alive.current)setBusy(false);}
+  },[state,allowed,fail]);
   async function showCard(id:string){try{const result=await nativeDemoApi.card(id);if(alive.current)setCard(result);}catch(e){fail(e);}}
   const normalized=symbol.replace(/[^A-Z0-9]/gi,'').toUpperCase();
   const positions=[...(state?.positions??[]),...(state?.history??[])];

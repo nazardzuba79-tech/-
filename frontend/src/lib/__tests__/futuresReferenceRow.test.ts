@@ -166,7 +166,15 @@ describe('3. the account summary under the order buttons', () => {
   test('unknown is a dash and a real zero is a zero', () => {
     // `show` renders '—' for null and the formatted number otherwise; null
     // is never coerced to 0 on the way in.
-    expect(SUMMARY).toContain("value === null ? '—' : mask(format(value))");
+    //
+    // `unopened` joined it for the same reason it exists: an account the
+    // engine has not opened yet has no available margin, and printing
+    // `0.00` over a wallet the server says holds demo funds is the same
+    // fake zero in a different disguise.
+    expect(SUMMARY).toContain("value === null || unopened ? '—' : mask(format(value))");
+    expect(SUMMARY).toContain('const unopened = activation !== null;');
+    // And the percentages take the same route rather than a second one.
+    expect(SUMMARY).toContain("const showPct = (value: number | null) => (value === null || unopened ? '—' : `${value.toFixed(2)}%`);");
     // The real account's derivation is unchanged — it is now the branch
     // taken when the engine publishes no aggregate of its own.
     expect(SUMMARY).toContain(': account.balances.data ? (row ? parseFloat(row.available) : 0) : null;');
