@@ -1,0 +1,6 @@
+/* Spot terminal route cleanup: the global market ticker strip duplicates the
+   market list and steals vertical space from the trading workspace. Keep the
+   ticker on other routes; hide it only inside the Spot trading terminal. */
+.trade-terminal.spot-terminal > .market-ticker {
+  display: none !important;
+}
