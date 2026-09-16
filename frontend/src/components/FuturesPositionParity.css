@@ -1,0 +1,21 @@
+.trade-terminal.trade-terminal.futures-reference .futures-position-money[data-positive="true"]::before,
+.trade-terminal.trade-terminal.futures-reference .futures-position-realized[data-positive="true"]::before {
+  content: '+';
+}
+
+.trade-terminal.trade-terminal.futures-reference .futures-position-money[data-unit]::after,
+.trade-terminal.trade-terminal.futures-reference .futures-position-realized[data-unit]::after {
+  content: ' ' attr(data-unit);
+}
+
+.trade-terminal.trade-terminal.futures-reference .futures-position-roi::before {
+  content: '(';
+}
+
+.trade-terminal.trade-terminal.futures-reference .futures-position-roi[data-positive="true"]::before {
+  content: '(+';
+}
+
+.trade-terminal.trade-terminal.futures-reference .futures-position-roi::after {
+  content: ')';
+}

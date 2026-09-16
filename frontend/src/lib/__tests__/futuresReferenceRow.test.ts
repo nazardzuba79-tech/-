@@ -19,6 +19,7 @@ const FORM = source('components/FuturesOrderForm.tsx');
 const PANEL = source('components/FuturesPositionsPanel.tsx');
 const SUMMARY = source('components/FuturesAccountSummary.tsx');
 const CSS = source('pages/trade-terminal/ReferenceFuturesTerminal.css');
+const ROW_PARITY_CSS = source('components/FuturesPositionParity.css');
 
 describe('1. price and quantity are one field shape, used twice', () => {
   test('both are the same class, with the caption and the extra INSIDE', () => {
@@ -101,14 +102,32 @@ describe('2. the positions row carries the reference columns', () => {
     }
   });
 
+  test('native Cross never presents an engine-only liquidation price as account-authoritative', () => {
+    expect(PANEL).toContain("execution.engine === 'NATIVE'");
+    expect(PANEL).toContain("p.marginType === 'CROSS'");
+    expect(PANEL).toContain('aggregate.collateralComplete');
+    expect(PANEL).toContain('aggregate.walletCollateral');
+    expect(PANEL).toContain('const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;');
+  });
+
   test('unrealized carries ROI under it, and realized is its OWN column', () => {
     expect(PANEL).toContain('futures-position-pnl');
-    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,300}roe\.toFixed\(2\)/);
+    expect(PANEL).toMatch(/futures-position-pnl[\s\S]{0,700}roe\.toFixed\(2\)/);
     expect(PANEL).toContain('const realized = parseFloat(p.realizedPnl);');
     // The two are NEVER summed: adding them would double-count the fees and
     // funding already inside the realized figure, on a size that is no
     // longer part of the open one.
     expect(PANEL).not.toMatch(/realized\s*\+\s*pnl|pnl\s*\+\s*realized/);
+  });
+
+  test('P&L presentation names the quote asset and formats positive values like the reference without changing the numeric node', () => {
+    expect(PANEL).toContain('className="futures-position-money"');
+    expect(PANEL).toContain('className="futures-position-roi"');
+    expect(PANEL).toContain('className="futures-position-realized"');
+    expect(PANEL.match(/data-unit=/g)!.length).toBe(2);
+    expect(ROW_PARITY_CSS).toContain("content: ' ' attr(data-unit);");
+    expect(ROW_PARITY_CSS).toContain("content: '(+';");
+    expect(ROW_PARITY_CSS).toContain("content: ')';");
   });
 
   test('TP/SL, both close methods and the P&L card button', () => {
@@ -131,18 +150,19 @@ describe('2. the positions row carries the reference columns', () => {
     expect(CSS).not.toMatch(/\.futures-position(-row)? [^{]*\{[^}]*text-overflow: ellipsis/);
   });
 
-  test('the tab counters come from the account, not from a constant', () => {
+  test('the tab counters use the same replacement account as the visible rows', () => {
     const page = source('pages/FuturesPage.tsx');
-    expect(page).toContain("account.positions.data?.length ?? '—'");
-    expect(page).toContain("account.orders.data?.length ?? '—'");
+    expect(page).toContain('const visibleAccount = nativeExecution?.account ?? account;');
+    expect(page).toContain("visibleAccount.positions.data?.length ?? '—'");
+    expect(page).toContain("visibleAccount.orders.data?.length ?? '—'");
   });
 
   test('an open position keeps the panel from auto-collapsing', () => {
     const page = source('pages/FuturesPage.tsx');
     // The panel only collapses when orders AND positions are VERIFIED empty,
-    // so a row that exists is never hidden by the collapse.
-    expect(page).toContain('isVerifiedEmptyAccountResource(account.orders)');
-    expect(page).toContain('isVerifiedEmptyAccountResource(account.positions)');
+    // and it makes that decision on the same account the rows use.
+    expect(page).toContain('isVerifiedEmptyAccountResource(visibleAccount.orders)');
+    expect(page).toContain('isVerifiedEmptyAccountResource(visibleAccount.positions)');
   });
 });
 
