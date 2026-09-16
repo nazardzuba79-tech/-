@@ -24,6 +24,11 @@ const now=()=>Date.now(),started=now();
    per symbol, so widening the list costs nothing at runtime.
    Fixture mode keeps a tiny deterministic set because it invents candles. */
 const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT'];
+/* Synthetic preview capital, same category as the 10,000,000 settle deposit
+   below: a non-settle holding that makes the multi-asset collateral path real
+   in review and in CI. It is NOT an account value — it is priced every read
+   from the market-data path, so the figure moves when the price moves. */
+const PREVIEW_WALLET_BTC='2';
 let symbols=FIXTURE_SYMBOLS;
 function fixtureCandle(t,interval=60000){const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
@@ -53,6 +58,16 @@ class ReviewRepository{
   account(actor){const s=session(actor.sessionId);if(!s||s.userId!==actor.userId)throw new Error('Denied');return s;}
   async read(actor){return structuredClone(this.account(actor).row);}
   async available(actor){return this.account(actor).row?'0':'10000000';}
+  /** EVERY asset this preview session holds, exactly as the production repository
+   *  reports the owner's DemoBalance rows — the settle row, which initialization
+   *  DEBITS into the simulation ledger, plus a non-settle holding so the Cross
+   *  collateral valuation is genuinely exercised here. Its price comes from the
+   *  SAME market-data path the positions are priced on; nothing is valued by a
+   *  number written into this file. */
+  async holdings(actor){const s=this.account(actor);return[
+    {asset:'USDT',available:s.row?'0':'10000000',locked:'0'},
+    {asset:'BTC',available:PREVIEW_WALLET_BTC,locked:'0'},
+  ];}
   async revision(actor,revision){return structuredClone(this.account(actor).revisions[revision]??null);}
   async prior(actor,key,hash){const entry=this.account(actor).commands[key];if(!entry)return null;if(entry.hash!==hash)throw new Error('IDEMPOTENCY_CONFLICT');return structuredClone(entry.row);}
   async initialize(actor,key){const s=this.account(actor);if(s.row)return structuredClone(s.row);const t=now(),row={revision:1,deposit:'10000000',commands:[],snapshot:emptyDemoState('10000000',t),createdAt:t,source:'PREVIEW_FIXTURE'};s.row=row;s.revisions[1]=row;s.commands[key]={hash:commandHash({kind:'INITIALIZE'}),row};save(actor.sessionId,s);return structuredClone(row);}
@@ -108,5 +123,10 @@ app.use(express.static(dist,{index:false,maxAge:0}));
 app.get('*',(req,res)=>{let token=/(?:^|;\s*)native_review=([a-f0-9]{48})(?:;|$)/.exec(req.headers.cookie||'')?.[1];let s=session(token);
   if(!s){token=randomBytes(24).toString('hex');s={userId:'preview-'+createHash('sha256').update(token).digest('hex').slice(0,16),row:null,revisions:{},commands:{}};save(token,s);res.cookie('native_review',token,{httpOnly:true,sameSite:'lax',secure:req.headers['x-forwarded-proto']==='https',maxAge:86400000});}
   const html=fs.readFileSync(path.join(dist,'index.html'),'utf8').replace('<head>','<head><script>localStorage.setItem("exchange_token",'+JSON.stringify(token)+');localStorage.setItem("exchange_lang","ru");if(location.pathname==="/")history.replaceState(null,"","/futures");</script>');res.type('html').send(html);});
-app.use((e,_req,res,_next)=>{const safe=e?.name==='ZodError'?'Проверьте параметры запроса':e?.code&&/^[a-zA-Z0-9_]+$/.test(e.code)?e.code:e?.message&&/^[A-Z0-9_]+$/.test(e.message)?e.message:'Данные или расчёт временно недоступны';res.status(e?.status||503).json({error:safe});});
+app.use((e,_req,res,_next)=>{
+  // The response stays sanitized, but the cause is printed. A bare 503 with
+  // nothing behind it is what made a missing repository method look like a
+  // market-data outage in CI for a whole run.
+  console.error('[native-demo-review] request failed:',e&&e.stack?e.stack:e);
+  const safe=e?.name==='ZodError'?'Проверьте параметры запроса':e?.code&&/^[a-zA-Z0-9_]+$/.test(e.code)?e.code:e?.message&&/^[A-Z0-9_]+$/.test(e.message)?e.message:'Данные или расчёт временно недоступны';res.status(e?.status||503).json({error:safe});});
 app.listen(Number(process.env.PORT||4178),'0.0.0.0',()=>console.log('Native demo review ready (isolated preview only)'));

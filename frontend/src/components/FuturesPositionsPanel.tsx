@@ -3,7 +3,7 @@ import { ApiError } from '../lib/api';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
 
 type Tab = 'open' | 'history';
@@ -56,13 +56,13 @@ export function FuturesPositionsPanel({
 
   // The one history load, on tab activation.
   useEffect(() => {
-    if (tab === 'history') refreshFuturesAccount(['positionHistory']);
+    if (tab === 'history') execution.refresh(['positionHistory']);
   }, [tab]);
 
   // `refreshKey` still means "the page says the account changed" — it now
   // asks the shared store rather than issuing this panel's own request.
   useEffect(() => {
-    if (refreshKey > 0) refreshFuturesAccount(tab === 'open' ? ['positions'] : ['positionHistory']);
+    if (refreshKey > 0) execution.refresh(tab === 'open' ? ['positions'] : ['positionHistory']);
   }, [refreshKey, tab]);
 
   useEffect(() => {
@@ -104,7 +104,7 @@ export function FuturesPositionsPanel({
       </svg>
       <span>{message}</span>
       {failed && <button type="button" disabled={resource.loading || resource.refreshing}
-        onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
+        onClick={() => execution.refresh([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>}
     </div></>;
   }
 
@@ -129,7 +129,7 @@ export function FuturesPositionsPanel({
       {activeResource.failed && !!activeResource.data?.length && <div className="terminal-account-state" role="alert" aria-busy={activeResource.refreshing}>
         <span>{t('futures.loadPositionsError')}</span>
         <button type="button" className="terminal-account-retry" disabled={activeResource.loading || activeResource.refreshing}
-          onClick={() => refreshFuturesAccount([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
+          onClick={() => execution.refresh([tab === 'open' ? 'positions' : 'positionHistory'])}>{t('trade.retry')}</button>
       </div>}
 
       {tab === 'open' ? (

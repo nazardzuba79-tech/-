@@ -1,113 +1,516 @@
 {
   "fixtureOnly": true,
   "productionVerified": false,
+  "scope": "original terminal / isolated native engine",
   "checks": [
     {
-      "name": "pnl-card-1440",
+      "name": "fields-limit-1440",
       "passed": true,
-      "exported": "1080x1215",
-      "filename": "VOLTEX-BTCUSDT-pnl.png",
-      "onScreen": "330x371",
-      "dialogHeight": 504,
-      "viewport": 1000
-    },
-    {
-      "name": "layout-1440",
-      "passed": true,
-      "layout": {
-        "overlaps": 0,
-        "switches": 0,
-        "leaks": [],
-        "modeChip": "Cross",
-        "cardButtons": 2,
-        "tabs": [
-          "Открытые ордера (0)",
-          "Позиции (2)",
-          "История ордеров",
-          "История торговли",
-          "Активы",
-          "P&L"
-        ],
-        "scrollWidth": 1440,
-        "width": 1440,
-        "liquidationHeader": true
+      "evidence": {
+        "price": {
+          "width": 254,
+          "height": 52,
+          "left": 1173,
+          "right": 1427,
+          "top": 241,
+          "bottom": 293
+        },
+        "quantity": {
+          "width": 254,
+          "height": 52,
+          "left": 1173,
+          "right": 1427,
+          "top": 305,
+          "bottom": 357
+        },
+        "long": {
+          "width": 123,
+          "height": 44,
+          "left": 1173,
+          "right": 1296,
+          "top": 592.84375,
+          "bottom": 636.84375
+        },
+        "short": {
+          "width": 123,
+          "height": 44,
+          "left": 1304,
+          "right": 1427,
+          "top": 592.84375,
+          "bottom": 636.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 254,
+              "height": 52,
+              "left": 1173,
+              "right": 1427,
+              "top": 241,
+              "bottom": 293
+            },
+            "inner": {
+              "width": 85.203125,
+              "height": 50,
+              "left": 1340.796875,
+              "right": 1426,
+              "top": 242,
+              "bottom": 292
+            }
+          },
+          {
+            "outer": {
+              "width": 254,
+              "height": 52,
+              "left": 1173,
+              "right": 1427,
+              "top": 305,
+              "bottom": 357
+            },
+            "inner": {
+              "width": 44,
+              "height": 50,
+              "left": 1382,
+              "right": 1426,
+              "top": 306,
+              "bottom": 356
+            }
+          }
+        ]
       }
     },
     {
-      "name": "cross-liquidation-far-1440",
-      "passed": true,
-      "liquidation": [
-        "90487307.2",
-        "90487307.2"
-      ]
-    },
-    {
-      "name": "long-short-limit-cancel-tpsl-partial-close-png-reload-1440",
+      "name": "positions-remain-visible-1440",
       "passed": true
     },
     {
-      "name": "native-historical-limit-wick-1440",
+      "name": "fields-market-1440",
       "passed": true,
-      "limit": "50347.4",
-      "low": 49852.1,
-      "entry": "50347.4"
+      "evidence": {
+        "price": {
+          "width": 254,
+          "height": 52,
+          "left": 1173,
+          "right": 1427,
+          "top": 241,
+          "bottom": 293
+        },
+        "quantity": {
+          "width": 254,
+          "height": 52,
+          "left": 1173,
+          "right": 1427,
+          "top": 305,
+          "bottom": 357
+        },
+        "long": {
+          "width": 123,
+          "height": 44,
+          "left": 1173,
+          "right": 1296,
+          "top": 592.84375,
+          "bottom": 636.84375
+        },
+        "short": {
+          "width": 123,
+          "height": 44,
+          "left": 1304,
+          "right": 1427,
+          "top": 592.84375,
+          "bottom": 636.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 254,
+              "height": 52,
+              "left": 1173,
+              "right": 1427,
+              "top": 241,
+              "bottom": 293
+            },
+            "inner": {
+              "width": 54,
+              "height": 50,
+              "left": 1372,
+              "right": 1426,
+              "top": 242,
+              "bottom": 292
+            }
+          },
+          {
+            "outer": {
+              "width": 254,
+              "height": 52,
+              "left": 1173,
+              "right": 1427,
+              "top": 305,
+              "bottom": 357
+            },
+            "inner": {
+              "width": 44,
+              "height": 50,
+              "left": 1382,
+              "right": 1426,
+              "top": 306,
+              "bottom": 356
+            }
+          }
+        ]
+      }
     },
     {
-      "name": "native-chart-click-history-entry-pnl-exit-1440",
+      "name": "account-summary-1440",
+      "passed": true,
+      "evidence": {
+        "mode": "Тип маржи\nКросс",
+        "balance": "10098851.61 USDT",
+        "available": [
+          "10049016.41 USDT"
+        ],
+        "risk": [
+          "0.49%",
+          "0.03%"
+        ]
+      }
+    },
+    {
+      "name": "position-table-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t346938.20 USDT\t49562.7\t49562.6\t—\t\n-0.70\n-0.00%\n\t-190.82\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t148687.80 USDT\t49562.5\t49562.6\t—\t\n-0.30\n-0.00%\n\t-81.78\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1199,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "limit-close-prefill-no-submit-1440",
+      "passed": true
+    },
+    {
+      "name": "pnl-card-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-72cc7f93-98b6-4dcb-be4e-540ad92740e1",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "owner-no-real-account-requests-1440",
+      "passed": true
+    },
+    {
+      "name": "normal-owner-flow-1440",
+      "passed": true,
+      "evidence": {
+        "openLongShort": true,
+        "add": true,
+        "cancel": true,
+        "protection": true,
+        "partialClose": true,
+        "fullClose": true,
+        "reload": true,
+        "fixtureRestart": true
+      }
+    },
+    {
+      "name": "access-outage-no-real-fallback-1440",
+      "passed": true
+    },
+    {
+      "name": "state-outage-no-real-fallback-1440",
+      "passed": true
+    },
+    {
+      "name": "reduce-only-limit-contract-1440",
+      "passed": true
+    },
+    {
+      "name": "chart-tool-selection-1440",
+      "passed": true
+    },
+    {
+      "name": "fields-limit-390",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 364,
+          "height": 52,
+          "left": 13,
+          "right": 377,
+          "top": 716,
+          "bottom": 768
+        },
+        "quantity": {
+          "width": 364,
+          "height": 52,
+          "left": 13,
+          "right": 377,
+          "top": 780,
+          "bottom": 832
+        },
+        "long": {
+          "width": 178,
+          "height": 44,
+          "left": 13,
+          "right": 191,
+          "top": 1067.84375,
+          "bottom": 1111.84375
+        },
+        "short": {
+          "width": 178,
+          "height": 44,
+          "left": 199,
+          "right": 377,
+          "top": 1067.84375,
+          "bottom": 1111.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 364,
+              "height": 52,
+              "left": 13,
+              "right": 377,
+              "top": 716,
+              "bottom": 768
+            },
+            "inner": {
+              "width": 85.203125,
+              "height": 50,
+              "left": 290.796875,
+              "right": 376,
+              "top": 717,
+              "bottom": 767
+            }
+          },
+          {
+            "outer": {
+              "width": 364,
+              "height": 52,
+              "left": 13,
+              "right": 377,
+              "top": 780,
+              "bottom": 832
+            },
+            "inner": {
+              "width": 44,
+              "height": 50,
+              "left": 332,
+              "right": 376,
+              "top": 781,
+              "bottom": 831
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "positions-remain-visible-390",
+      "passed": true
+    },
+    {
+      "name": "fields-market-390",
+      "passed": true,
+      "evidence": {
+        "price": {
+          "width": 364,
+          "height": 52,
+          "left": 13,
+          "right": 377,
+          "top": 48,
+          "bottom": 100
+        },
+        "quantity": {
+          "width": 364,
+          "height": 52,
+          "left": 13,
+          "right": 377,
+          "top": 112,
+          "bottom": 164
+        },
+        "long": {
+          "width": 178,
+          "height": 44,
+          "left": 13,
+          "right": 191,
+          "top": 399.84375,
+          "bottom": 443.84375
+        },
+        "short": {
+          "width": 178,
+          "height": 44,
+          "left": 199,
+          "right": 377,
+          "top": 399.84375,
+          "bottom": 443.84375
+        },
+        "trailing": [
+          {
+            "outer": {
+              "width": 364,
+              "height": 52,
+              "left": 13,
+              "right": 377,
+              "top": 48,
+              "bottom": 100
+            },
+            "inner": {
+              "width": 54,
+              "height": 50,
+              "left": 322,
+              "right": 376,
+              "top": 49,
+              "bottom": 99
+            }
+          },
+          {
+            "outer": {
+              "width": 364,
+              "height": 52,
+              "left": 13,
+              "right": 377,
+              "top": 112,
+              "bottom": 164
+            },
+            "inner": {
+              "width": 44,
+              "height": 50,
+              "left": 332,
+              "right": 376,
+              "top": 113,
+              "bottom": 163
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "account-summary-390",
+      "passed": true,
+      "evidence": {
+        "mode": "Тип маржи\nКросс",
+        "balance": "10098851.61 USDT",
+        "available": [
+          "10049016.41 USDT"
+        ],
+        "risk": [
+          "0.49%",
+          "0.03%"
+        ]
+      }
+    },
+    {
+      "name": "position-table-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t346938.20 USDT\t49562.7\t49562.6\t—\t\n-0.70\n-0.00%\n\t-190.82\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t148687.80 USDT\t49562.5\t49562.6\t—\t\n-0.30\n-0.00%\n\t-81.78\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1195,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "limit-close-prefill-no-submit-390",
       "passed": true
     },
     {
       "name": "pnl-card-390",
       "passed": true,
-      "exported": "1080x1215",
-      "filename": "VOLTEX-BTCUSDT-pnl.png",
-      "onScreen": "352x396",
-      "dialogHeight": 521,
-      "viewport": 1000
-    },
-    {
-      "name": "layout-390",
-      "passed": true,
-      "layout": {
-        "overlaps": 0,
-        "switches": 0,
-        "leaks": [],
-        "modeChip": "Cross",
-        "cardButtons": 2,
-        "tabs": [
-          "Открытые ордера (0)",
-          "Позиции (2)",
-          "История ордеров",
-          "История торговли",
-          "Активы",
-          "P&L"
-        ],
-        "scrollWidth": 390,
-        "width": 390,
-        "liquidationHeader": true
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-3a6751a2-a403-40f5-aec2-499302537486",
+        "exported": "1080x1215"
       }
     },
     {
-      "name": "cross-liquidation-far-390",
-      "passed": true,
-      "liquidation": [
-        "90487322",
-        "90487322"
-      ]
-    },
-    {
-      "name": "long-short-limit-cancel-tpsl-partial-close-png-reload-390",
+      "name": "owner-no-real-account-requests-390",
       "passed": true
     },
     {
-      "name": "native-historical-limit-wick-390",
+      "name": "normal-owner-flow-390",
       "passed": true,
-      "limit": "50545.5",
-      "low": 50131.4,
-      "entry": "50545.5"
+      "evidence": {
+        "openLongShort": true,
+        "add": true,
+        "cancel": true,
+        "protection": true,
+        "partialClose": true,
+        "fullClose": true,
+        "reload": true,
+        "fixtureRestart": false
+      }
     },
     {
-      "name": "native-chart-click-history-entry-pnl-exit-390",
+      "name": "access-outage-no-real-fallback-390",
+      "passed": true
+    },
+    {
+      "name": "state-outage-no-real-fallback-390",
+      "passed": true
+    },
+    {
+      "name": "reduce-only-limit-contract-390",
+      "passed": true
+    },
+    {
+      "name": "chart-tool-selection-390",
       "passed": true
     }
   ],

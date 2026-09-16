@@ -152,7 +152,7 @@ async function accountSummary(page, state) {
   assert.equal(g.balance.trim(), Number(state.account.equity).toFixed(2) + ' USDT', 'Margin Balance differs from native equity');
   assert.deepEqual(g.available.map(x => x.trim()), [Number(state.account.available).toFixed(2) + ' USDT'], 'Available Balance differs from native state');
   const pct = key => (Number(state.account[key]) / Number(state.account.equity) * 100).toFixed(2) + '%';
-  assert.deepEqual(g.risk, [pct('usedMargin'), pct('maintenanceMargin')], 'IM/MM summary differs from authoritative native account');
+  assert.deepEqual(g.risk, [pct('initialMargin'), pct('maintenanceMargin')], 'IM/MM summary differs from authoritative native account');
   return g;
 }
 async function normalFlow(width) {
@@ -178,7 +178,16 @@ async function normalFlow(width) {
     const row = positionRow(p, 'LONG'); await row.locator('.fut-tpslTrigger').click();
     await p.locator('.fut-tpslInput').nth(0).fill(limit);
     state = (await command(s, 'PROTECTION', () => p.locator('.fut-tpslSave').click())).state;
-    assert.equal(state.positions.find(x => x.id === longId).protection.takeProfit, limit.replace(/\.0$/, ''));
+    // Compare the PRICE, not its spelling. The engine stores the trigger
+    // exactly as submitted, so '99278.0' comes back '99278.0'; stripping a
+    // trailing '.0' from the expected side assumed a normalization that does
+    // not exist, and only failed when mark x 2 happened to land on a whole
+    // tenth. A wrong trigger price still fails this.
+    assert.equal(
+      Number(state.positions.find(x => x.id === longId).protection.takeProfit),
+      Number(limit),
+      'Take-profit trigger differs from the price that was set',
+    );
     await check(`limit-close-prefill-no-submit-${width}`, async () => {
       const before = s.drafts.filter(x => x.kind !== 'REFRESH').length;
       await row.locator('.futures-position-close').nth(0).click();

@@ -4,7 +4,7 @@ import { PrivateTradingMarketData, PrivateChartInterval, assertPrivateFreshQuote
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
-import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, NATIVE_DEMO_MODEL } from './engine';
+import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, DemoState, NATIVE_DEMO_MODEL } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 import { accountLedger, AccountLedger } from './ledger';
@@ -41,11 +41,25 @@ export function truncateBook(book:NativeBook,side:'BUY'|'SELL',quantity:string,l
 export class NativeDemoService {
   private busy=new Set<string>();
   constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){}
+  /**
+   * The state projection WITHOUT an account.
+   *
+   * `account` and `ledger` are deliberately `null` here and filled in by
+   * `authoritative()`. The engine's own settle-denominated figures used to
+   * be returned straight from this method, which made every response's type
+   * a UNION of two different account shapes — a caller could not tell from
+   * the contract which one it had, and a field could go missing without
+   * anything failing to compile. There is now exactly one account shape on
+   * the wire, and exactly one place that builds it.
+   */
   view(row:NativeAccount|null){
-    if(!row)return{initialized:false,model:NATIVE_DEMO_MODEL,revision:0,account:null,positions:[],history:[],orders:[],events:[],source:null,asOf:null};
+    const empty={model:NATIVE_DEMO_MODEL,account:null as CrossAccount|null,ledger:null as AccountLedger|null};
+    if(!row)return{...empty,initialized:false,revision:0,positions:[] as ReturnType<typeof demoPositionView>[],history:[] as ReturnType<typeof demoPositionView>[],
+      orders:[] as DemoState['orders'],events:[] as DemoState['events'],source:null as NativeAccount['source']|null,asOf:null as number|null,
+      entries:[] as {positionId:string;candle:NativeCandle|null}[]};
     const positions=row.snapshot.positions.map(p=>demoPositionView(row.snapshot,p));
-    return{initialized:true,model:NATIVE_DEMO_MODEL,revision:row.revision,account:demoAccount(row.snapshot),positions:positions.filter(p=>p.status==='OPEN'),history:positions.filter(p=>p.status!=='OPEN'),
-      orders:row.snapshot.orders,events:row.snapshot.events,source:row.source,asOf:row.snapshot.time,
+    return{...empty,initialized:true,revision:row.revision,positions:positions.filter(p=>p.status==='OPEN'),history:positions.filter(p=>p.status!=='OPEN'),
+      orders:row.snapshot.orders,events:row.snapshot.events,source:row.source as NativeAccount['source']|null,asOf:row.snapshot.time as number|null,
       entries:row.commands.filter((c):c is Extract<NativeInstruction,{kind:'OPEN'}>=>c.kind==='OPEN').map(c=>({positionId:c.order.id,candle:c.candle??null}))};
   }
   /**
@@ -93,8 +107,8 @@ export class NativeDemoService {
    * response each built their own account, a trader could place an order
    * and watch available margin disagree with itself for five seconds.
    */
-  private async authoritative<T extends ReturnType<NativeDemoService['view']>>(actor:OwnerSession,view:T,row:NativeAccount|null){
-    if(!row||!view.initialized)return{...view,ledger:null};
+  private async authoritative(actor:OwnerSession,view:ReturnType<NativeDemoService['view']>,row:NativeAccount|null):Promise<ReturnType<NativeDemoService['view']>>{
+    if(!row||!view.initialized)return view;
     const valuation=await this.collateral(actor);
     const open=row.snapshot.positions.some(p=>p.status==='OPEN');
     return{...view,account:crossAccount(demoAccount(row.snapshot),valuation,open),ledger:accountLedger(row.snapshot)};

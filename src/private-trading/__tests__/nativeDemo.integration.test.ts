@@ -59,7 +59,31 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     const f = await fixture();
     const [a, b] = await Promise.all([f.service.initialize(f.actor, `init-${randomUUID()}`), f.make().service.initialize(f.actor, `init-${randomUUID()}`)]);
     expect(a.revision).toBe(1); expect(b.revision).toBe(1);
-    expect(a.account?.walletBalance).toBe('10000000');
+
+    // `walletBalance` was renamed to `settleBalance` when the account model
+    // started counting the wallet's OTHER assets as Cross collateral: one
+    // name was being used for two different quantities. Same figure, and
+    // the assertion is still that the balance moved in full.
+    expect(a.account?.settleBalance).toBe('10000000');
+
+    // THE EQUIVALENT FINANCIAL MAGNITUDE, and the double-counting check.
+    // The demo row was DEBITED into the simulation ledger, so it must now
+    // be counted once and only once: the wallet side contributes nothing,
+    // and the whole collateral base is exactly the amount that moved.
+    expect(a.account?.walletCollateral).toBe('0');
+    expect(a.account?.collateral).toBe('10000000');
+    // No position yet, so equity is that collateral and all of it is free.
+    expect(a.account?.unrealizedPnl).toBe('0');
+    expect(a.account?.equity).toBe('10000000');
+    expect(a.account?.available).toBe('10000000');
+    // And the ledger agrees with the engine it was projected from.
+    expect(a.ledger?.openingBalance).toBe('10000000');
+    expect(a.ledger?.closingBalance).toBe('10000000');
+    expect(a.ledger?.reconciled).toBe(true);
+    expect(a.ledger?.totals).toEqual({ realizedPnl: '0', fees: '0', funding: '0', net: '0' });
+
+    // The concurrency assertion is unchanged: the balance moved ONCE, and
+    // the two tabs produced one revision between them.
     expect((await db.demoBalance.findUnique({ where: { userId_asset: { userId: f.user.id, asset: 'USDT' } } }))!.available.toString()).toBe('0');
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(1);
   });

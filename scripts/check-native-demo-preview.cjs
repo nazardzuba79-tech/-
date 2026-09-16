@@ -42,7 +42,23 @@ async function json(path,options={}){
   assert.deepEqual(s.model.funding,{longCashflow:'-0.001',shortCashflow:'0.004',unit:'FRACTION',intervalMs:28800000});
   assert.equal(s.model.fundingSource,'CUSTOM_DEMO_MODEL');assert.equal(s.model.marginMode,'CROSS');
   s=await json('/api/v1/private-trading/native/initialize',{method:'POST',headers,body:JSON.stringify({idempotencyKey:'preview-check-'+randomUUID(),acceptedModel:s.model.version})});
-  assert.equal(s.source,'PREVIEW_FIXTURE');assert.equal(s.account.walletBalance,'10000000');
+  assert.equal(s.source,'PREVIEW_FIXTURE');
+  // `walletBalance` became `settleBalance` when the wallet's OTHER assets
+  // started counting as Cross collateral and one name meant two quantities.
+  assert.equal(s.account.settleBalance,'10000000');
+  // The non-settle holding is priced through the market-data path, so it is a
+  // real number rather than zero, and collateral is the sum of the two halves
+  // — the settle row is counted once, in the ledger, not twice.
+  assert(Number(s.account.walletCollateral)>0,'Preview wallet collateral was not priced');
+  // The identity, not its decimal spelling: the server prints exact decimal
+  // strings and float addition here would disagree on the last digit for a
+  // large wallet without anything actually being wrong.
+  assert(Math.abs(Number(s.account.collateral)-(Number(s.account.settleBalance)+Number(s.account.walletCollateral)))<1e-6,
+    'Collateral is not the settle ledger plus the wallet valuation');
+  assert.equal(s.account.collateralComplete,true);
+  assert.deepEqual(s.account.unpricedAssets,[]);
+  assert.equal(s.ledger.reconciled,true);
+  assert.equal(s.ledger.closingBalance,s.account.settleBalance);
   pass('fresh isolated Cross account initialized with custom funding model disclosed');
 
   // Live market long 5,000 x 10 on actual public depth.

@@ -1,46 +1,2997 @@
 {
   "fixtureOnly": true,
-  "scope": "synthetic large financial values through the actual terminal components",
+  "productionVerified": false,
+  "scope": "original terminal / synthetic layout values",
   "checks": [
     {
-      "name": "tables-and-totals-1440",
+      "name": "large-table-profit-1_2m-1440",
       "passed": true,
-      "cases": 12
-    },
-    {
-      "name": "card-geometry-1440",
-      "passed": true,
-      "cases": 6,
-      "bags": [
-        {
-          "w": 186,
-          "h": 226
-        },
-        {
-          "w": 153,
-          "h": 185
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n1200000.00\n2400.00%\n\t1200000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1244,
+          "overflow": "auto"
         }
-      ]
+      }
     },
     {
-      "name": "tables-and-totals-390",
+      "name": "large-card-glyphs-profit-1_2m-1440",
       "passed": true,
-      "cases": 12
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+2,400.00%",
+            "left": 80,
+            "right": 572.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+2,400.00",
+            "left": 80,
+            "right": 485.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 489.453125,
+            "right": 572.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
     },
     {
-      "name": "card-geometry-390",
+      "name": "large-card-png-profit-1_2m-1440",
       "passed": true,
-      "cases": 6,
-      "bags": [
-        {
-          "w": 186,
-          "h": 226
-        },
-        {
-          "w": 153,
-          "h": 185
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-profit-1_2m-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t1200000.00\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
         }
-      ]
+      }
+    },
+    {
+      "name": "large-table-profit-10m-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n10000000.00\n20000.00%\n\t10000000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1252,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-profit-10m-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+20,000.00%",
+            "left": 80,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+20,000.00",
+            "left": 80,
+            "right": 536.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 540.15625,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-profit-10m-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-profit-10m-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t10000000.00\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-loss-1_2m-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n-1200000.00\n-2400.00%\n\t-1200000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1252,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-loss-1_2m-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "-2,400.00%",
+            "left": 80,
+            "right": 548.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "-2,400.00",
+            "left": 80,
+            "right": 461.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 465.359375,
+            "right": 548.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-loss-1_2m-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-loss-1_2m-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-1200000.00\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-20000-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n250000.00\n20000.00%\n\t250000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1239,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-20000-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+20,000.00%",
+            "left": 80,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+20,000.00",
+            "left": 80,
+            "right": 536.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 540.15625,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-20000-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-20000-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t250000.00\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-128450-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n4820000.50\n128450.75%\n\t4820000.50\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1244,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-128450-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+128,450.75%",
+            "left": 80,
+            "right": 635.3125,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "roi-number",
+            "text": "+128,450.75",
+            "left": 80,
+            "right": 553.9443664550781,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 557.3125,
+            "right": 635.3125,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+128,450.75%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-128450-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-128450-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t4820000.50\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-negative-99999-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n-8750000.25\n-99999.99%\n\t-8750000.25\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1252,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-negative-99999-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "-99,999.99%",
+            "left": 80,
+            "right": 599.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "-99,999.99",
+            "left": 80,
+            "right": 512.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 516.0625,
+            "right": 599.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-99,999.99%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-negative-99999-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-negative-99999-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-8750000.25\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-real-zero-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n0.00\n0.00%\n\t0.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 880,
+          "full": 1239,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-real-zero-1440",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "0.00%",
+            "left": 80,
+            "right": 343.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "0.00",
+            "left": 80,
+            "right": 256.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 260.046875,
+            "right": 343.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n0.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-real-zero-1440",
+      "passed": true,
+      "evidence": {
+        "width": 330,
+        "height": 371.25,
+        "top": 247.953125,
+        "bottom": 752.046875,
+        "dialogHeight": 504.09375,
+        "vh": 1000,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-edeb6154-593b-4df8-92a5-a8842d1a7bef",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-real-zero-1440",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 1440,
+        "viewport": 1440,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t0.00\tCLOSED",
+        "scroll": {
+          "client": 880,
+          "full": 880,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-values-1440",
+      "passed": true
+    },
+    {
+      "name": "large-table-profit-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n1200000.00\n2400.00%\n\t1200000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1240,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-profit-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+2,400.00%",
+            "left": 80,
+            "right": 572.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+2,400.00",
+            "left": 80,
+            "right": 485.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 489.453125,
+            "right": 572.453125,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-profit-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-profit-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t1200000.00\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 450,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-profit-10m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n10000000.00\n20000.00%\n\t10000000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1248,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-profit-10m-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+20,000.00%",
+            "left": 80,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+20,000.00",
+            "left": 80,
+            "right": 536.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 540.15625,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-profit-10m-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-profit-10m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t10000000.00\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 458,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-loss-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n-1200000.00\n-2400.00%\n\t-1200000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1248,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-loss-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "-2,400.00%",
+            "left": 80,
+            "right": 548.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "-2,400.00",
+            "left": 80,
+            "right": 461.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 465.359375,
+            "right": 548.359375,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-2,400.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-loss-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-loss-1_2m-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-1200000.00\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 458,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-20000-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n250000.00\n20000.00%\n\t250000.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1235,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-20000-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+20,000.00%",
+            "left": 80,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "+20,000.00",
+            "left": 80,
+            "right": 536.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 540.15625,
+            "right": 623.15625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+20,000.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-20000-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-20000-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t250000.00\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 442,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-128450-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n4820000.50\n128450.75%\n\t4820000.50\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1240,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-128450-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "+128,450.75%",
+            "left": 80,
+            "right": 635.3125,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "roi-number",
+            "text": "+128,450.75",
+            "left": 80,
+            "right": 553.9443664550781,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 557.3125,
+            "right": 635.3125,
+            "top": 403,
+            "bottom": 503
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n+128,450.75%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-128450-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-128450-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t4820000.50\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 450,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-roi-negative-99999-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n-8750000.25\n-99999.99%\n\t-8750000.25\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1248,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-roi-negative-99999-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "-99,999.99%",
+            "left": 80,
+            "right": 599.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "-99,999.99",
+            "left": 80,
+            "right": 512.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 516.0625,
+            "right": 599.0625,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n-99,999.99%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-roi-negative-99999-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-roi-negative-99999-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t-8750000.25\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 458,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-table-real-zero-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Размер",
+          "Стоимость позиции",
+          "Цена входа",
+          "Маркировочная цена",
+          "Цена ликвидации",
+          "Нереализ. PnL",
+          "Реализ. PnL",
+          "TP/SL",
+          "Закрыть по"
+        ],
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t1250.5 BTC\t2500999987.49 USDT\t1875000.5\t1999999.99\t—\t\n0.00\n0.00%\n\t0.00\tTP/SL\t\nЛимитный\nРынок",
+        "scroll": {
+          "client": 388,
+          "full": 1235,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-card-glyphs-real-zero-390",
+      "passed": true,
+      "evidence": {
+        "fields": [
+          {
+            "name": "symbol",
+            "text": "BTCUSDT",
+            "left": 80,
+            "right": 277.9931640625,
+            "top": 210,
+            "bottom": 257
+          },
+          {
+            "name": "side",
+            "text": "Long",
+            "left": 93,
+            "right": 146.390625,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "leverage",
+            "text": "10x",
+            "left": 162.390625,
+            "right": 201.09375,
+            "top": 282,
+            "bottom": 309
+          },
+          {
+            "name": "roi-label",
+            "text": "ROI",
+            "left": 80,
+            "right": 120.890625,
+            "top": 363,
+            "bottom": 389
+          },
+          {
+            "name": "roi-line",
+            "text": "0.00%",
+            "left": 80,
+            "right": 343.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-number",
+            "text": "0.00",
+            "left": 80,
+            "right": 256.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "roi-unit",
+            "text": "%",
+            "left": 260.046875,
+            "right": 343.046875,
+            "top": 403,
+            "bottom": 510
+          },
+          {
+            "name": "profit-label",
+            "text": "Profit",
+            "left": 80,
+            "right": 134.29150390625,
+            "top": 531,
+            "bottom": 557
+          },
+          {
+            "name": "profit-line",
+            "text": "-0.10USDT",
+            "left": 80,
+            "right": 287.75,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-number",
+            "text": "-0.10",
+            "left": 80,
+            "right": 195.28125,
+            "top": 569,
+            "bottom": 627
+          },
+          {
+            "name": "profit-unit",
+            "text": "USDT",
+            "left": 217.28125,
+            "right": 287.75,
+            "top": 593,
+            "bottom": 621
+          },
+          {
+            "name": "entry-label",
+            "text": "Цена Входа",
+            "left": 80,
+            "right": 206.7197265625,
+            "top": 729,
+            "bottom": 755
+          },
+          {
+            "name": "entry-price",
+            "text": "1,875,000.50",
+            "left": 80,
+            "right": 278.53125,
+            "top": 763,
+            "bottom": 801
+          },
+          {
+            "name": "valuation-label",
+            "text": "Рыночная цена",
+            "left": 80,
+            "right": 244.5888671875,
+            "top": 835,
+            "bottom": 861
+          },
+          {
+            "name": "valuation-price",
+            "text": "1,999,999.99",
+            "left": 80,
+            "right": 278.53125,
+            "top": 869,
+            "bottom": 907
+          }
+        ],
+        "bags": [
+          {
+            "left": 879.7384397474043,
+            "right": 1065.7238743788248,
+            "top": 670.594495867239,
+            "bottom": 896.5552783952135
+          },
+          {
+            "left": 633.3521223967814,
+            "right": 786.0188463566915,
+            "top": 924.0842030324884,
+            "bottom": 1109.5648159650436
+          }
+        ],
+        "text": "\nVOLTEX BTCUSDT P&L\n\n$$VOLTEX\n\nBTCUSDT\nLong10x\nROI\n0.00%\nProfit\n-0.10USDT\n\nЦена Входа\n1,875,000.50\nРыночная цена\n1,999,999.99\n"
+      }
+    },
+    {
+      "name": "large-card-png-real-zero-390",
+      "passed": true,
+      "evidence": {
+        "width": 352,
+        "height": 396,
+        "top": 161.578125,
+        "bottom": 682.421875,
+        "dialogHeight": 520.84375,
+        "vh": 844,
+        "clipped": false,
+        "text": "Карточка результата\nОткрыть\nСохранить PNG",
+        "alt": "BTCUSDT · P&L -0.1 USDT",
+        "href": "/futures?nativeCard=native%3A3%3Anative-f19246c6-6c44-4459-b49d-f7498cb2cda8",
+        "exported": "1080x1215"
+      }
+    },
+    {
+      "name": "large-history-real-zero-390",
+      "passed": true,
+      "evidence": {
+        "pageWidth": 390,
+        "viewport": 390,
+        "clipped": [],
+        "overlap": [],
+        "old": 0,
+        "headers": [
+          "Рынок",
+          "Сторона",
+          "Цена входа",
+          "Реализ. PnL",
+          "Статус"
+        ],
+        "text": "Рынок\tСторона\tЦена входа\tРеализ. PnL\tСтатус\nBTC/USDT 10x\tЛонг\t1875000.5\t0.00\tCLOSED",
+        "scroll": {
+          "client": 388,
+          "full": 420,
+          "overflow": "auto"
+        }
+      }
+    },
+    {
+      "name": "large-values-390",
+      "passed": true
     }
   ],
   "errors": [],

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../lib/i18n';
-import { useFuturesAccount, refreshFuturesAccount } from '../lib/useFuturesAccount';
+import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
 import { getLeverageTier, LeverageTier } from '../lib/futuresMath';
 
@@ -49,7 +49,8 @@ export function FuturesAccountSummary({
    *
    * `null` — every real account — leaves the derivation below untouched.
    */
-  const aggregate = useFuturesExecution().account_aggregate;
+  const execution = useFuturesExecution();
+  const aggregate = execution.account_aggregate;
   const failedResources = (['balances', 'positions'] as const).filter(key => account[key].failed);
   const retrying = failedResources.some(key => account[key].loading || account[key].refreshing);
 
@@ -113,7 +114,7 @@ export function FuturesAccountSummary({
       </div>
       {failedResources.length > 0 && <div className="terminal-account-state" role="alert" aria-busy={retrying}>
         <span>{t(account.balances.failed ? 'trade.loadAssetsError' : 'futures.loadPositionsError')}</span>
-        <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => refreshFuturesAccount(failedResources)}>{t('trade.retry')}</button>
+        <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => execution.refresh(failedResources)}>{t('trade.retry')}</button>
       </div>}
       {aggregate && !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 && (
         // An incomplete valuation understates collateral. Saying so is the
