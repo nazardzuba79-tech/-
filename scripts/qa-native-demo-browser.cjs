@@ -85,9 +85,15 @@ async function session(width, configure) {
 }
 async function ready(s) {
   // The permanent "Торговля с графика" strip is gone; the chart surface is
-  // what tells us the terminal has composed.
+  // what tells us the terminal has composed. A blank order is deliberately
+  // NOT actionable now, so readiness is the authoritative account plus the
+  // auto-seeded LIMIT price — not an enabled submit button with no size.
   await s.page.locator('.chart-surface').waitFor();
-  await s.page.waitForFunction(() => { const b = document.querySelector('.fo-submitPair .buy'); return b && !b.disabled; });
+  await s.page.waitForFunction(() => {
+    const balance = document.querySelector('.futures-account-balance .mono')?.textContent?.trim();
+    const limit = document.querySelector('.fo-priceInputRow input');
+    return Boolean(balance && !balance.includes('—') && limit && Number(limit.value) > 0);
+  });
 }
 
 /** Open the chart tool menu the way a trader does: a double click ON the chart. */
@@ -124,11 +130,19 @@ async function command(s, kind, action) {
   await action(); const response = await waiting; const state = await response.json();
   assert(response.ok(), `${kind}: ${response.status()} ${JSON.stringify(state)}`);
   assert(state.initialized && state.account, `${kind} did not return an authoritative account`);
-  await s.page.waitForFunction(() => { const b = document.querySelector('.fo-submitPair .buy'); return b && !b.disabled; });
+  // A successful order intentionally clears Quantity, which disables the
+  // next submit until the trader sizes it. Yield one UI turn instead of
+  // treating an empty-but-enabled button as the definition of readiness.
+  await s.page.waitForTimeout(80);
   return { state, draft: response.request().postDataJSON() };
 }
 async function open(s, side, quantity) {
   await family(s.page, 'MARKET'); await qty(s.page).fill(quantity);
+  await button(s.page, side).waitFor({ state: 'visible' });
+  await s.page.waitForFunction(side => {
+    const b = document.querySelector(`.fo-submitPair .${side === 'LONG' ? 'buy' : 'sell'}`);
+    return b && !b.disabled;
+  }, side);
   const result = await command(s, 'OPEN', () => button(s.page, side).click());
   assert.equal(result.draft.side, side); assert.equal(result.draft.quantity, quantity); assert.equal(result.draft.type, 'MARKET'); return result.state;
 }
@@ -187,6 +201,19 @@ async function normalFlow(width) {
   const s = await session(width), p = s.page;
   try {
     await ready(s); await family(p, 'LIMIT'); await check(`fields-limit-${width}`, () => geometry(p));
+    await check(`quantity-to-usdt-calculator-${width}`, async () => {
+      const seeded = Number(await price(p).inputValue());
+      assert(Number.isFinite(seeded) && seeded > 0, `LIMIT price was not seeded from the live last price: ${seeded}`);
+      await qty(p).fill('5');
+      await p.waitForFunction(() => { const row = document.querySelector('.fo-infoRow'); return row && !row.textContent.includes('—'); });
+      const expected = (seeded * 5).toFixed(2);
+      const valueText = await p.locator('.fo-infoRow').first().innerText();
+      assert(valueText.includes(expected), `Position value did not follow quantity × price: ${valueText}, expected ${expected}`);
+      assert(!(await button(p, 'LONG').isDisabled()), 'Valid priced quantity still left Long disabled');
+      assert(!(await button(p, 'SHORT').isDisabled()), 'Valid priced quantity still left Short disabled');
+      await qty(p).fill('');
+      return { price: seeded, quantity: 5, positionValue: expected };
+    });
     await p.locator('#futures-tab-positions').click();
     let state = await open(s, 'LONG', '5'); const longId = state.positions.find(x => x.side === 'LONG')?.id; assert(longId);
     state = await open(s, 'SHORT', '3'); assert.equal(state.positions.length, 2);
