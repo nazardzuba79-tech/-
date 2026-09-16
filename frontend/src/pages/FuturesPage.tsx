@@ -126,13 +126,24 @@ export function FuturesPage() {
   // resolves to 'ordinary', the seam goes null, and the unchanged intervals
   // resume.
   const account = useFuturesAccount(nativeExecution?{}:{ orders: 5000, positions: 4000 });
+  /**
+   * The tab strip sits in this component, one level ABOVE the replacement
+   * account provider rendered below. Hooks in this component therefore see
+   * the ordinary shared store even when the child terminal is native. That
+   * is why the screenshot could show a real position row while the tab said
+   * `Позиции (—)`: two different sources were being read on one screen.
+   *
+   * Use the engine's replacement account here when it exists; ordinary
+   * accounts keep the exact shared-store object they used before.
+   */
+  const visibleAccount = nativeExecution?.account ?? account;
   const [positionsRefreshKey, setPositionsRefreshKey] = useState(0);
   const [showTransfer, setShowTransfer] = useState(false);
   const [bottomTab, setBottomTab] = useState<BottomTab>('positions');
   const accountPanel = useCompactAccountPanel(
     (bottomTab === 'orders' || bottomTab === 'positions')
-      && isVerifiedEmptyAccountResource(account.orders)
-      && isVerifiedEmptyAccountResource(account.positions),
+      && isVerifiedEmptyAccountResource(visibleAccount.orders)
+      && isVerifiedEmptyAccountResource(visibleAccount.positions),
     `futures:${bottomTab}`,
   );
   // `status` rides with the levels so the panel can tell "this is the book"
@@ -453,8 +464,8 @@ export function FuturesPage() {
                 onClick={() => { setBottomTab(tab.id); accountPanel.reveal(`futures:${tab.id}`); }}
               >
                 {t(tab.labelKey)}
-                {tab.id === 'positions' && <span className="reference-tab-count">({account.positions.data?.length ?? '—'})</span>}
-                {tab.id === 'orders' && <span className="reference-tab-count">({account.orders.data?.length ?? '—'})</span>}
+                {tab.id === 'positions' && <span className="reference-tab-count">({visibleAccount.positions.data?.length ?? '—'})</span>}
+                {tab.id === 'orders' && <span className="reference-tab-count">({visibleAccount.orders.data?.length ?? '—'})</span>}
               </button>
             ))}
           </div>
