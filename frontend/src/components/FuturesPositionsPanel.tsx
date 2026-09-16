@@ -5,6 +5,7 @@ import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import { useLanguage } from '../lib/i18n';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesPositionProtectionCell } from './FuturesPositionProtection';
+import './FuturesPositionParity.css';
 
 type Tab = 'open' | 'history';
 
@@ -161,6 +162,7 @@ export function FuturesPositionsPanel({
                   const pnl = p.unrealizedPnl !== null ? parseFloat(p.unrealizedPnl) : null;
                   const roe = p.roe !== null ? parseFloat(p.roe) : null;
                   const positive = (pnl ?? 0) >= 0;
+                  const quoteAsset = p.symbol.split('/')[1] ?? '';
                   // Position value is the size at the price the position is
                   // currently marked at — the same two server figures the
                   // row already shows, multiplied. Unknown mark, unknown
@@ -173,6 +175,27 @@ export function FuturesPositionsPanel({
                   // and funding already inside the realized figure would be
                   // counted a second time by a total.
                   const realized = parseFloat(p.realizedPnl);
+                  /**
+                   * A native Cross liquidation reference is only meaningful
+                   * when the deterministic engine and the account header use
+                   * the same collateral pool. The engine cannot replay live
+                   * external wallet marks, while the authoritative account
+                   * deliberately adds that wallet as Cross collateral. If
+                   * such collateral exists (or is partly unpriced), showing
+                   * the engine-only price beside the larger account is a
+                   * false precision. Unknown is a dash; never a smaller-pool
+                   * liquidation price pretending to be account-authoritative.
+                   *
+                   * Isolated is self-contained, and the real engine stores
+                   * its own liquidation price, so neither path is changed.
+                   */
+                  const aggregate = execution.account_aggregate;
+                  const nativeCrossLiquidationUnknown = execution.engine === 'NATIVE'
+                    && p.marginType === 'CROSS'
+                    && (aggregate === null
+                      || !aggregate.collateralComplete
+                      || Number(aggregate.walletCollateral) !== 0);
+                  const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;
                   return (
                     <tr key={p.id} className="futures-position-row">
                       {/* Contract, with Cross and the leverage under it. */}
@@ -187,20 +210,31 @@ export function FuturesPositionsPanel({
                         </div>
                       </Td>
                       <Td className="mono">{p.size} <span className="futures-position-unit">{p.symbol.split('/')[0]}</span></Td>
-                      <Td className="mono">{value === null ? '—' : `${value.toFixed(2)} ${p.symbol.split('/')[1] ?? ''}`}</Td>
+                      <Td className="mono">{value === null ? '—' : `${value.toFixed(2)} ${quoteAsset}`}</Td>
                       <Td className="mono">{p.entryPrice}</Td>
                       <Td className="mono">{p.markPrice ?? '—'}</Td>
-                      <Td className="mono" style={{ color: 'var(--sell)' }}>{p.liquidationPrice ?? '—'}</Td>
+                      <Td className="mono" style={{ color: 'var(--sell)' }}>{liquidationPrice ?? '—'}</Td>
                       {/* Unrealized, with ROI under it — one cell, two facts
                           about the same open exposure. */}
                       <Td className={`mono ${positive ? 'text-buy' : 'text-sell'}`}>
                         <div className="futures-position-pnl">
-                          <span>{pnl !== null ? pnl.toFixed(2) : '—'}</span>
-                          <small>{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
+                          <span
+                            className="futures-position-money"
+                            data-unit={pnl !== null ? quoteAsset : undefined}
+                            data-positive={pnl !== null && pnl > 0 ? 'true' : undefined}
+                          >{pnl !== null ? pnl.toFixed(2) : '—'}</span>
+                          <small
+                            className="futures-position-roi"
+                            data-positive={roe !== null && roe > 0 ? 'true' : undefined}
+                          >{roe !== null ? `${roe.toFixed(2)}%` : '—'}</small>
                         </div>
                       </Td>
                       <Td className={`mono ${realized >= 0 ? 'text-buy' : 'text-sell'}`}>
-                        {Number.isFinite(realized) ? realized.toFixed(2) : '—'}
+                        <span
+                          className="futures-position-realized"
+                          data-unit={Number.isFinite(realized) ? quoteAsset : undefined}
+                          data-positive={Number.isFinite(realized) && realized > 0 ? 'true' : undefined}
+                        >{Number.isFinite(realized) ? realized.toFixed(2) : '—'}</span>
                       </Td>
                       <Td>
                         {/* Real server-held protection, carried on the same
