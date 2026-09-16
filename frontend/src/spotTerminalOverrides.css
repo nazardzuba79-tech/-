@@ -1,0 +1,7 @@
+/* Trading-terminal cleanup: the global market ticker strip duplicates the
+   instrument/market lists and steals vertical space from the workspace.
+   Hide it on every trading terminal shell (Spot, CFD and Futures) while
+   leaving the ticker unchanged on all non-terminal routes. */
+.trade-terminal > .market-ticker {
+  display: none !important;
+}
