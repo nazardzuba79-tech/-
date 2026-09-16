@@ -15,7 +15,10 @@ export const nativeCommandSchema=z.discriminatedUnion('kind',[
     // A reducing order names the position it reduces and keeps its own
     // type: a reduce-only LIMIT rests at its price instead of becoming a
     // market close.
-    reduceOnly:z.literal(true).optional(),positionId:key.optional()}).strict(),
+    reduceOnly:z.literal(true).optional(),positionId:key.optional(),
+    // Omitted means Cross, which is what every order placed before this
+    // field existed was. The engine validates it again on the way in.
+    marginType:z.enum(['CROSS','ISOLATED']).optional()}).strict(),
   z.object({kind:z.literal('CLOSE'),idempotencyKey:key,positionId:key,quantity:positive.optional(),candle:candle.optional()}).strict(),
   z.object({kind:z.literal('CANCEL'),idempotencyKey:key,orderId:key}).strict(),
   z.object({kind:z.literal('PROTECTION'),idempotencyKey:key,positionId:key,protection}).strict(),
@@ -31,8 +34,10 @@ export const NATIVE_ERROR_TEXT:Record<string,string>={
   // account's free collateral, so it is named as that and nothing else —
   // it is NOT reported as a contract-size problem, and it no longer calls
   // the account a demo account in the one place the owner sees.
-  INSUFFICIENT_DEMO_MARGIN:'Недостаточно средств для размещения этого ордера.',
-  INSUFFICIENT_FILL_MARGIN:'Недостаточно средств для исполнения этого ордера.',
+  INSUFFICIENT_DEMO_MARGIN:'Вам не хватает средств для размещения этого ордера.',
+  MARGIN_TYPE_MISMATCH:'Этот ордер относится к другому типу маржи, чем позиция.',
+  INVALID_MARGIN_TYPE:'Неизвестный тип маржи.',
+  INSUFFICIENT_FILL_MARGIN:'Вам не хватает средств для исполнения этого ордера.',
   ENTRY_MARK_UNAVAILABLE:'Недостаточно Mark Price истории для выбранной свечи.',POSITION_NOT_OPEN:'Позиция уже закрыта или не найдена.',
   INVALID_TRIGGER_PRICE:'Проверьте цену TP/SL относительно текущей цены.',INVALID_TRIGGER_STEP:'Цена TP/SL не кратна шагу цены.',INVALID_PROTECTION_QUANTITY:'Количество TP/SL больше позиции или не кратно шагу.',
   SET_EXISTING_POSITION_LEVERAGE_FIRST:'Сначала измените плечо уже открытой позиции.',CANCEL_ORDERS_BEFORE_LEVERAGE:'Сначала отмените активные ордера этой позиции.',

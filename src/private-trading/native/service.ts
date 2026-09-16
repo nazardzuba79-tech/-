@@ -4,7 +4,7 @@ import { PrivateTradingMarketData, PrivateChartInterval, assertPrivateFreshQuote
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
-import { demoAccount, demoPositionView, DemoEngineError, DemoProtection, DemoState, NATIVE_DEMO_MODEL } from './engine';
+import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, migrateDemoState, NATIVE_DEMO_MODEL } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
@@ -20,7 +20,7 @@ export type NativeCommand = {idempotencyKey:string} & (
    * and size against the position) — and it must NOT be collapsed into a
    * CLOSE, which prices at the book instead of at the price the trader set.
    */
-  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<DemoProtection>;reduceOnly?:boolean;positionId?:string}
+  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<DemoProtection>;reduceOnly?:boolean;positionId?:string;marginType?:DemoMarginType}
   | {kind:'CLOSE';positionId:string;quantity?:string;candle?:NativeCandle}
   | {kind:'CANCEL';orderId:string}
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
@@ -256,11 +256,11 @@ export class NativeDemoService {
     const id=`native-${randomUUID()}`;
     if(request.kind==='OPEN'){
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await this.market.instrument(symbol),rules=contractRules(instrument),profile=simulationProfile(instrument);
-      profile.riskModelVersion='NATIVE_CROSS_V2:'+instrument.parameterVersion;
-      profile.assumptions=['Cross USDT-only demo; gross hedge maintenance; not Bybit matching.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
+      profile.riskModelVersion='NATIVE_MARGIN_V3:'+instrument.parameterVersion;
+      profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone and its loss is bounded by it.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
       const size=(price:string)=>request.quantity??new BigNumber(request.margin!).times(request.leverage).div(price).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
-      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
+      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,marginType:request.marginType??'CROSS',...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
         // A reducing order keeps its type and its price; the engine checks
         // the side and the size against the named position itself.
         ...(request.reduceOnly?{reduceOnly:true,positionId:request.positionId}:{}),historical:!!request.candle});

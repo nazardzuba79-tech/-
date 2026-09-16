@@ -8,8 +8,15 @@ const n = (x: string) => decimal(x);
 const out = (x: BigNumber) => amount(x);
 const positive = (x: string) => decimal(x, 'amount', true);
 const active = (o: DemoOrder) => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED';
+export type DemoMarginType = 'CROSS' | 'ISOLATED';
+/** Stored states written before margin mode existed are all Cross. */
+export const DEFAULT_MARGIN_TYPE: DemoMarginType = 'CROSS';
+export const DEMO_STATE_VERSION = 2;
 export const NATIVE_DEMO_MODEL = Object.freeze({
-  version: 'VOLTEX_NATIVE_CROSS_V2', marginMode: 'CROSS', settlementAsset: 'USDT',
+  version: 'VOLTEX_NATIVE_MARGIN_V3',
+  /** Both are real here: see `demoAccount` for the split and `positionRisk` for the per-bucket tier. */
+  marginModes: Object.freeze(['CROSS', 'ISOLATED'] as const),
+  settlementAsset: 'USDT',
   /** Owner-set custom demo cash-flow per 8h UTC settlement (signed fraction of position value). NOT provider funding. */
   funding: Object.freeze({ longCashflow: '-0.001', shortCashflow: '0.004', unit: 'FRACTION', intervalMs: 28_800_000 }),
   fundingSource: 'CUSTOM_DEMO_MODEL',
@@ -17,7 +24,8 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   historicalLimit: 'BUY_IF_LOW_LTE_LIMIT_SELL_IF_HIGH_GTE_LIMIT',
   /** Assumed candle path resolution by age at calculation time: ≤7d 1m, ≤45d 15m, older 1h. */
   historyResolution: Object.freeze(['1m<=7d', '15m<=45d', '1h']),
-  liquidation: 'ACCOUNT_EQUITY_LTE_MAINTENANCE_AT_MARK',
+  /** Cross is answered on the shared account; Isolated is answered on the position's own posted margin. */
+  liquidation: 'CROSS_ACCOUNT_EQUITY_LTE_MAINTENANCE | ISOLATED_POSITION_MARGIN_PLUS_PNL_LTE_MAINTENANCE',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
@@ -27,6 +35,8 @@ export interface DemoOrder {
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
   status: 'OPEN' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED'; createdAt: number;
   positionId: string | null; reduceOnly: boolean; protection: DemoProtection; historical: boolean;
+  /** Which risk bucket this order fills into. An order never crosses buckets. */
+  marginType: DemoMarginType;
 }
 export interface DemoPosition {
   id: string; symbol: string; side: Side; quantity: string; entryPrice: string; leverage: string;
@@ -34,6 +44,13 @@ export interface DemoPosition {
   markPrice: string; lastPrice: string; entryNotional: string; realizedGross: string;
   openingFees: string; closingFees: string; fundingNet: string; roiBasis: string; closedRoiBasis: string;
   protection: DemoProtection; historical: boolean; lastFundingAt: number;
+  marginType: DemoMarginType;
+  /**
+   * ISOLATED only: margin actually MOVED OUT of `walletBalance` and posted
+   * against this position. It is what the position can lose and all it can
+   * lose. Always '0' on a CROSS position, which is backed by the account.
+   */
+  isolatedMargin: string;
 }
 export interface DemoEvent {
   id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION';
@@ -42,7 +59,7 @@ export interface DemoEvent {
   pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
 }
 export interface DemoState {
-  version: 1; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
+  version: 2; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
   marks: Record<string, { mark: string; last: string; time: number }>;
   applied: Record<string, string>; bookConsumption: Record<string, { fingerprint: string; bids: Record<string, string>; asks: Record<string, string> }>;
@@ -51,12 +68,44 @@ export interface DemoState {
 export interface DemoOrderInput {
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; leverage: string;
   price?: string; reduceOnly?: boolean; positionId?: string; protection?: Partial<DemoProtection>; historical?: boolean;
+  /** Omitted on instructions journaled before margin mode existed; those are Cross. */
+  marginType?: DemoMarginType;
 }
 export const noProtection = (): DemoProtection => ({ takeProfit: null, stopLoss: null, triggerBy: 'MARK', quantity: null });
 export function emptyDemoState(balance: string, time: number): DemoState {
   if (n(balance).lt(0) || !Number.isSafeInteger(time) || time < 0) throw new DemoEngineError('INVALID_INITIAL_STATE');
-  return { version: 1, walletBalance: out(n(balance)), initialDeposit: out(n(balance)), positions: [], orders: [], events: [],
+  return { version: DEMO_STATE_VERSION, walletBalance: out(n(balance)), initialDeposit: out(n(balance)), positions: [], orders: [], events: [],
     instruments: {}, marks: {}, applied: {}, bookConsumption: {}, time, nextEvent: 1 };
+}
+/**
+ * READ A STORED STATE FORWARD.
+ *
+ * Version 1 predates margin mode. Every position and order it holds was
+ * opened under the only model that existed, so it is Cross with no posted
+ * margin — that is a fact about those rows, not a default chosen for
+ * convenience, and it keeps `walletBalance` meaning exactly what it meant
+ * when the row was written. Called on every read of a persisted snapshot
+ * and of a replay checkpoint; already-current states pass through
+ * unchanged.
+ */
+export type StoredDemoState = Omit<DemoState,'version'|'positions'|'orders'> & {
+  version: number;
+  positions: (Omit<DemoPosition,'marginType'|'isolatedMargin'> & Partial<Pick<DemoPosition,'marginType'|'isolatedMargin'>>)[];
+  orders: (Omit<DemoOrder,'marginType'> & Partial<Pick<DemoOrder,'marginType'>>)[];
+};
+export function migrateDemoState(state: StoredDemoState | DemoState): DemoState {
+  if (state.version === DEMO_STATE_VERSION) return state as DemoState;
+  const stored = state as StoredDemoState;
+  return {
+    ...stored,
+    version: DEMO_STATE_VERSION,
+    positions: stored.positions.map((p) => ({
+      ...p,
+      marginType: p.marginType ?? DEFAULT_MARGIN_TYPE,
+      isolatedMargin: p.isolatedMargin ?? '0',
+    })),
+    orders: stored.orders.map((o) => ({ ...o, marginType: o.marginType ?? DEFAULT_MARGIN_TYPE })),
+  };
 }
 function requireTime(s: DemoState, time: number) {
   if (!Number.isSafeInteger(time) || time < s.time) throw new DemoEngineError('NON_CHRONOLOGICAL_EVENT');
@@ -68,30 +117,114 @@ function instrument(s: DemoState, symbol: string): DemoInstrument {
 export function registerDemoInstrument(s: DemoState, i: DemoInstrument) {
   validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i);
 }
-function exposure(s: DemoState, symbol: string, mark: string) {
-  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
-    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
+function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMarginType) {
+  // Exposure is read PER BUCKET: an isolated position is its own risk book,
+  // so a cross tier must not be widened by it and vice versa.
+  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol && p.marginType === marginType).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
+    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol && o.marginType === marginType).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
 }
-/** A single shared account, not one copy of the collateral per position. */
+/**
+ * ONE POSITION'S OWN RISK, at a mark this caller chooses.
+ *
+ * The tier is selected on the notional of the bucket this position belongs
+ * to — for CROSS that is every cross position on the contract sharing the
+ * account, for ISOLATED it is this position alone, because that is the
+ * whole point of isolating it. The continuous tier deduction is then
+ * allocated across the bucket in proportion to notional, exactly as it was
+ * before; an isolated bucket of one simply receives all of it.
+ *
+ * `mark` is a parameter rather than `p.markPrice` so the liquidation search
+ * can ask "what would this position's requirement be at that price" without
+ * mutating anything.
+ */
+export function positionRisk(s: DemoState, p: DemoPosition, mark: string) {
+  const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark);
+  const bucket = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && x.marginType === p.marginType);
+  const total = bucket.reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
+  const tier = selectRiskTier(out(total), profile);
+  const deduction = total.gt(0) ? n(tier.deduction).times(value).div(total) : new D(0);
+  return {
+    value,
+    maintenance: D.maximum(0,value.times(tier.maintenanceRate).minus(deduction)).plus(value.times(profile.takerFeeRate)),
+    initial: value.div(p.leverage).plus(value.times(profile.takerFeeRate)),
+    unrealized: new D(linearPnl(p.side,p.quantity,p.entryPrice,mark)),
+  };
+}
+/** An ISOLATED position stands on its posted margin alone: this is what is left of it. */
+export function isolatedHealth(s: DemoState, p: DemoPosition, mark: string) {
+  const risk = positionRisk(s,p,mark);
+  return n(p.isolatedMargin).plus(risk.unrealized).minus(risk.maintenance);
+}
+export const isolatedLiquidatable = (s: DemoState, p: DemoPosition) =>
+  p.marginType === 'ISOLATED' && p.status === 'OPEN' && isolatedHealth(s,p,p.markPrice).lte(0);
+/**
+ * WHAT AN ISOLATED LIQUIDATION MAY COST: the posted margin, and not one
+ * unit more.
+ *
+ * The bankruptcy price is where this position's own P&L has consumed
+ * exactly what was posted against it. Between two observed marks the price
+ * can GAP straight through it — a jump from 50 000 to 30 000 is one tick as
+ * far as this engine is concerned — and settling such a position at the
+ * far mark would bill the shared account for a loss the trader explicitly
+ * ring-fenced. It would also make the mode a label: the account would be
+ * backing the position after all, just later.
+ *
+ * So an isolated liquidation settles at the bankruptcy price when the
+ * observed price is beyond it. The post is consumed, the account is square,
+ * and the shortfall the venue would have absorbed is not invented as the
+ * owner's loss. A price that has NOT reached bankruptcy settles where it
+ * actually is, so an ordinary liquidation still realises its real P&L.
+ */
+export function isolatedBankruptcyBound(p: DemoPosition): string {
+  const bankruptcy = n(p.quantity).gt(0)
+    ? (p.side === 'LONG'
+        ? n(p.entryPrice).minus(n(p.isolatedMargin).div(p.quantity))
+        : n(p.entryPrice).plus(n(p.isolatedMargin).div(p.quantity)))
+    : n(p.entryPrice);
+  const floored = D.maximum(0, bankruptcy);
+  return out(p.side === 'LONG' ? D.maximum(p.lastPrice, floored) : D.minimum(p.lastPrice, floored));
+}
+/**
+ * THE SHARED ACCOUNT — and what has been taken out of it.
+ *
+ * Cross positions are backed by one pool of collateral, so their margin,
+ * their maintenance requirement and their P&L all land on the account.
+ *
+ * An isolated position is NOT backed by that pool. Its margin was moved out
+ * of `walletBalance` when it filled, so the account can neither spend it
+ * nor be liquidated for it: its requirement is absent from `usedMargin` and
+ * `maintenanceMargin`, and its P&L is absent from `equity`. That is the
+ * whole difference between the two modes, and it is made here once.
+ *
+ * `isolatedMargin` and `isolatedUnrealizedPnl` are reported separately so
+ * the Wallet can still show the owner everything they own without the
+ * terminal having to add anything up itself.
+ */
 export function demoAccount(s: DemoState) {
   let upl = new D(0), mm = new D(0), im = new D(0), reserve = new D(0);
+  let isolatedMargin = new D(0), isolatedUpl = new D(0), isolatedMaintenance = new D(0);
   for (const p of s.positions.filter(p => p.status === 'OPEN')) {
     const mark = s.marks[p.symbol]?.mark; if (!mark) throw new DemoEngineError('MARK_MISSING');
-    const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark);
-    const tier = selectRiskTier(out(s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol).reduce((v,x)=>v.plus(n(x.quantity).times(mark)),new D(0))), profile);
-    // Allocate the continuous tier deduction in proportion to same-symbol open notional.
-    const total = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol).reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
-    const deduction = n(tier.deduction).times(value).div(total);
-    mm = mm.plus(D.maximum(0,value.times(tier.maintenanceRate).minus(deduction))).plus(value.times(profile.takerFeeRate));
-    im = im.plus(value.div(p.leverage)).plus(value.times(profile.takerFeeRate));
-    upl = upl.plus(linearPnl(p.side,p.quantity,p.entryPrice,mark));
+    const risk = positionRisk(s,p,mark);
+    if (p.marginType === 'ISOLATED') {
+      isolatedMargin = isolatedMargin.plus(p.isolatedMargin);
+      isolatedUpl = isolatedUpl.plus(risk.unrealized);
+      isolatedMaintenance = isolatedMaintenance.plus(risk.maintenance);
+      continue;
+    }
+    mm = mm.plus(risk.maintenance);
+    im = im.plus(risk.initial);
+    upl = upl.plus(risk.unrealized);
   }
   for (const o of s.orders.filter(active)) reserve = reserve.plus(o.reserved);
   const equity = n(s.walletBalance).plus(upl);
   return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity),
     usedMargin: out(im), orderReserve: out(reserve), available: out(D.maximum(0,equity.minus(im).minus(reserve))),
     maintenanceMargin: out(mm), maintenanceRatio: equity.gt(0) ? out(mm.div(equity)) : null,
-    liquidatable: s.positions.some(p => p.status === 'OPEN') && equity.lte(mm),
+    isolatedMargin: out(isolatedMargin), isolatedUnrealizedPnl: out(isolatedUpl), isolatedMaintenanceMargin: out(isolatedMaintenance),
+    // Only CROSS positions can be liquidated by the account. An isolated
+    // one answers for itself, so it must not make this true.
+    liquidatable: s.positions.some(p => p.status === 'OPEN' && p.marginType === 'CROSS') && equity.lte(mm),
     deficit: out(D.maximum(0,n(s.walletBalance).negated())) };
 }
 export function demoPositionView(s: DemoState,p: DemoPosition) {
@@ -101,7 +234,11 @@ export function demoPositionView(s: DemoState,p: DemoPosition) {
   return { ...p, unrealizedPnl: unrealized, realizedPnl: realized, netPnl: net,
     roiPercent: n(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).gt(0) ? out(n(p.status==='OPEN'?unrealized:net).div(p.status==='OPEN'?p.roiBasis:p.closedRoiBasis).times(100)) : null,
     liquidationPrice: p.status === 'OPEN' ? estimateDemoLiquidationPrice(s,p.id) : null,
-    liquidationStatus: 'ACCOUNT_CROSS_ESTIMATE' as const, marginMode: 'CROSS' as const };
+    // The basis is named, because the two are not the same number: one is
+    // answered against the whole account, the other against this position's
+    // own posted margin.
+    liquidationStatus: (p.marginType === 'ISOLATED' ? 'ISOLATED_POSITION_ESTIMATE' : 'ACCOUNT_CROSS_ESTIMATE') as 'ISOLATED_POSITION_ESTIMATE' | 'ACCOUNT_CROSS_ESTIMATE',
+    marginMode: p.marginType };
 }
 function validateProtection(s: DemoState, p: {symbol:string;side:Side;quantity:string}, protection: DemoProtection, price: string) {
   if (!['MARK','LAST'].includes(protection.triggerBy)) throw new DemoEngineError('INVALID_TRIGGER_SOURCE');
@@ -134,16 +271,24 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
     if (!input.positionId) throw new DemoEngineError('POSITION_ID_REQUIRED');
     const p=getPosition(s,input.positionId);
     if (p.symbol!==input.symbol || p.side===input.side) throw new DemoEngineError('INVALID_REDUCE_SIDE');
+    // Closing quantity belongs to ONE bucket. A cross order cannot release
+    // margin posted against an isolated position, or the isolation is a label.
+    if (p.marginType!==(input.marginType??DEFAULT_MARGIN_TYPE)) throw new DemoEngineError('MARGIN_TYPE_MISMATCH');
     if (n(input.quantity).gt(p.quantity)) throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
   }
+  const marginType=input.marginType??DEFAULT_MARGIN_TYPE;
+  if(!['CROSS','ISOLATED'].includes(marginType))throw new DemoEngineError('INVALID_MARGIN_TYPE');
   const protection = {...noProtection(),...input.protection};
   if (input.reduceOnly && (protection.takeProfit!==null || protection.stopLoss!==null)) throw new DemoEngineError('REDUCE_ORDER_PROTECTION');
   validateProtection(s,{...input,quantity:input.quantity},protection,price);
-  const o:DemoOrder = {...input, reduceOnly:!!input.reduceOnly, historical:!!input.historical, price:input.type==='LIMIT'?price:null,
+  const o:DemoOrder = {...input, marginType, reduceOnly:!!input.reduceOnly, historical:!!input.historical, price:input.type==='LIMIT'?price:null,
     remaining:input.quantity, filled:'0', averagePrice:null, reserved:'0', status:'OPEN', createdAt:time, positionId:input.positionId??null,protection};
   o.reserved=reserveFor(s,o,price);
+  // Margin for an isolated position is still FUNDED from the shared wallet —
+  // what isolation changes is that once posted it stops backing anything
+  // else. So the affordability question at placement is the same one.
   if (!o.reduceOnly && (demoAccount(s).liquidatable || n(o.reserved).gt(demoAccount(s).available))) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');
-  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
+  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark,marginType).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
   if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
@@ -155,6 +300,15 @@ function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,ti
   p.realizedGross=out(n(p.realizedGross).plus(gross));p.closingFees=out(n(p.closingFees).plus(fee));
   const releasedBasis=n(p.roiBasis).times(qty).div(p.quantity);
   p.roiBasis=out(n(p.roiBasis).minus(releasedBasis));p.closedRoiBasis=out(n(p.closedRoiBasis).plus(releasedBasis));
+  // The isolated post comes home in the same proportion as the quantity
+  // that is leaving. On a liquidation the loss debited just above has
+  // already consumed most of it, which is exactly why an isolated position
+  // cannot cost the account more than it posted.
+  if(p.marginType==='ISOLATED'){
+    const releasedMargin=n(p.isolatedMargin).times(qty).div(p.quantity);
+    p.isolatedMargin=out(n(p.isolatedMargin).minus(releasedMargin));
+    s.walletBalance=out(n(s.walletBalance).plus(releasedMargin));
+  }
   p.quantity=out(n(p.quantity).minus(qty));p.markPrice=price;p.lastPrice=price;
   emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing});
   if(n(p.quantity).isZero()) {
@@ -172,7 +326,7 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
   } else {
     // Same symbol+direction increases one LIVE position, opposite direction remains a hedge.
     // Each historical test entry stays its own position (own entry marker, P&L and card).
-    let p=o.historical?undefined:s.positions.find(p=>p.status==='OPEN'&&!p.historical&&p.symbol===o.symbol&&p.side===o.side);
+    let p=o.historical?undefined:s.positions.find(p=>p.status==='OPEN'&&!p.historical&&p.symbol===o.symbol&&p.side===o.side&&p.marginType===o.marginType);
     if(o.historical)p=s.positions.find(p=>p.id===o.id&&p.status==='OPEN');
     if(p && p.leverage!==o.leverage)throw new DemoEngineError('SET_EXISTING_POSITION_LEVERAGE_FIRST');
     const prof=instrument(s,o.symbol).profile,fee=n(quantity).times(price).times(maker?prof.makerFeeRate:prof.takerFeeRate);
@@ -182,12 +336,23 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
     if(!p) {
       p={id:o.id,symbol:o.symbol,side:o.side,quantity:'0',entryPrice:price,leverage:o.leverage,status:'OPEN',openedAt:time,closedAt:null,
         markPrice:s.marks[o.symbol].mark,lastPrice:s.marks[o.symbol].last,entryNotional:'0',realizedGross:'0',openingFees:'0',closingFees:'0',
-        fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time};s.positions.push(p);
+        fundingNet:'0',roiBasis:'0',closedRoiBasis:'0',protection:structuredClone(o.protection),historical:o.historical,lastFundingAt:time,
+        marginType:o.marginType,isolatedMargin:'0'};s.positions.push(p);
     }
     p.entryPrice=weightedEntry([{quantity:p.quantity,price:p.entryPrice},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
     p.quantity=out(n(p.quantity).plus(quantity));p.entryNotional=out(n(p.entryNotional).plus(n(quantity).times(price)));
     p.roiBasis=out(n(p.roiBasis).plus(n(quantity).times(price).div(p.leverage)));
     p.openingFees=out(n(p.openingFees).plus(fee));s.walletBalance=out(n(s.walletBalance).minus(fee));o.positionId=p.id;
+    // ISOLATION HAPPENS HERE. The margin for this fill LEAVES the shared
+    // wallet and is posted against the position. After this line the
+    // account cannot spend it, cannot be liquidated for it, and cannot use
+    // it to hold up any other position — which is the only thing that
+    // makes the mode real rather than a label on a row.
+    if(p.marginType==='ISOLATED'){
+      const posted=n(quantity).times(price).div(p.leverage);
+      p.isolatedMargin=out(n(p.isolatedMargin).plus(posted));
+      s.walletBalance=out(n(s.walletBalance).minus(posted));
+    }
     emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing});
   }
   o.averagePrice=weightedEntry([{quantity:o.filled,price:o.averagePrice??price},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
@@ -213,8 +378,19 @@ export function setDemoLeverage(s:DemoState,id:string,leverage:string,time:numbe
   requireTime(s,time);const p=getPosition(s,id),i=instrument(s,p.symbol);
   validateContractOrder({rules:i.rules,profile:i.profile,quantity:p.quantity,price:p.entryPrice,leverage,market:true});
   if(s.orders.some(o=>active(o)&&o.positionId===id))throw new DemoEngineError('CANCEL_ORDERS_BEFORE_LEVERAGE');
-  const before=p.leverage;p.leverage=leverage;
-  const a=demoAccount(s);if(n(a.equity).lt(n(a.usedMargin).plus(a.orderReserve))){p.leverage=before;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
+  const before=p.leverage,postedBefore=p.isolatedMargin,walletBefore=s.walletBalance;p.leverage=leverage;
+  // An isolated position's posted margin IS its leverage. Re-sizing it to
+  // the new requirement moves the difference to or from the wallet, so
+  // lowering leverage funds the position and raising it releases cash —
+  // rather than leaving a post that no longer means anything.
+  if(p.marginType==='ISOLATED'){
+    const required=n(p.quantity).times(p.entryPrice).div(leverage);
+    const delta=required.minus(p.isolatedMargin);
+    p.isolatedMargin=out(required);s.walletBalance=out(n(s.walletBalance).minus(delta));
+  }
+  const a=demoAccount(s);
+  const short=n(a.equity).lt(n(a.usedMargin).plus(a.orderReserve))||n(s.walletBalance).lt(0)||isolatedLiquidatable(s,p);
+  if(short){p.leverage=before;p.isolatedMargin=postedBefore;s.walletBalance=walletBefore;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
   // Leverage changes margin requirements, NEVER quantity, entry or absolute P&L.
   p.roiBasis=out(n(p.quantity).times(p.entryPrice).div(leverage));s.time=time;
   emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
@@ -229,16 +405,39 @@ export function settleDemoFunding(s:DemoState,time:number) {
   for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.openedAt<time&&p.lastFundingAt<time)){
     if(s.marks[p.symbol]?.time!==time)throw new DemoEngineError('FUNDING_MARK_NOT_AT_SETTLEMENT');
     const rate=p.side==='LONG'?NATIVE_DEMO_MODEL.funding.longCashflow:NATIVE_DEMO_MODEL.funding.shortCashflow;
-    const flow=n(p.quantity).times(p.markPrice).times(rate);s.walletBalance=out(n(s.walletBalance).plus(flow));p.fundingNet=out(n(p.fundingNet).plus(flow));p.lastFundingAt=time;
+    const flow=n(p.quantity).times(p.markPrice).times(rate);
+    if(p.marginType==='ISOLATED'){
+      // Into and out of the post, so funding can actually walk an isolated
+      // position into liquidation instead of silently draining the account
+      // that is supposed to be shielded from it. A flow larger than what is
+      // posted cannot leave a negative post: the remainder falls to the
+      // account, which is the only place left for it, and the next risk
+      // pass closes the position.
+      const next=n(p.isolatedMargin).plus(flow);
+      p.isolatedMargin=out(D.maximum(0,next));
+      if(next.lt(0))s.walletBalance=out(n(s.walletBalance).plus(next));
+    } else s.walletBalance=out(n(s.walletBalance).plus(flow));
+    p.fundingNet=out(n(p.fundingNet).plus(flow));p.lastFundingAt=time;
     emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(flow),pricing:'MARK_SETTLEMENT'});
   }s.time=time;
 }
 export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL') {
   requireTime(s,time);
+  // Isolated first, and one at a time: a position whose own post is gone is
+  // closed on its own, and the rest of the account — including every other
+  // isolated position — is untouched by it.
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='ISOLATED')){
+    if(!isolatedLiquidatable(s,p))continue;
+    for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id))cancelDemoOrder(s,o.id,time);
+    settleClose(s,p,p.quantity,isolatedBankruptcyBound(p),time,'LIQUIDATION',pricing,null);
+  }
   if(demoAccount(s).liquidatable){
-    for(const o of s.orders.filter(active))cancelDemoOrder(s,o.id,time);
-    for(const p of s.positions.filter(p=>p.status==='OPEN'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
-  } else for(const p of s.positions.filter(p=>p.status==='OPEN')) {
+    for(const o of s.orders.filter(o=>active(o)&&o.marginType==='CROSS'))cancelDemoOrder(s,o.id,time);
+    // Only the shared book is swept. An isolated position is not collateral
+    // for the account and is not seized to save it.
+    for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='CROSS'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
+  }
+  for(const p of s.positions.filter(p=>p.status==='OPEN')) {
     const v=n(p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice),{takeProfit:tp,stopLoss:sl}=p.protection;
     const stop=sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl));
     const profit=tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp));
@@ -260,19 +459,33 @@ export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;q
   for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
 }
 /**
- * Cross-margin liquidation reference for one position: the Mark price of ITS contract at which the
- * whole account reaches equity <= maintenance, with every other contract frozen at its current Mark.
- * Same-contract hedges move together. null = the shared collateral keeps the account solvent for
- * every price in the adverse direction (or the contract is fully hedged).
+ * THE LIQUIDATION REFERENCE FOR ONE POSITION — on the basis that actually applies to it.
+ *
+ * CROSS: the Mark price of ITS contract at which the whole account reaches equity <= maintenance,
+ * with every other contract frozen at its current Mark. Same-contract cross hedges move together.
+ * null = the shared collateral keeps the account solvent for every price in the adverse direction
+ * (or the contract is fully hedged).
+ *
+ * ISOLATED: the Mark at which THIS position's posted margin plus its own P&L reaches its own
+ * maintenance requirement. The rest of the account is not consulted, because it is not backing
+ * this position — so an isolated liquidation price is nearer than a cross one on the same account,
+ * and it moves when the post moves rather than when the account does. Other isolated positions on
+ * the same contract are held still: each stands on its own money.
  */
 export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):string|null{
   const p=s.positions.find(x=>x.id===positionId&&x.status==='OPEN');if(!p)return null;
   const current=s.marks[p.symbol];if(!current)return null;
-  const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol);
-  const net=same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
+  const isolated=p.marginType==='ISOLATED';
+  // The direction the search walks. Cross nets same-contract hedges because
+  // they share the collateral; an isolated position is alone by definition.
+  const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol&&x.marginType==='CROSS');
+  const net=isolated
+    ? (p.side==='LONG'?new D(p.quantity):new D(p.quantity).negated())
+    : same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
   if(net.isZero())return null;
   const health=(price:BigNumber)=>{
     const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
+    if(isolated)return isolatedHealth(probe,probe.positions.find(x=>x.id===p.id)!,mark);
     const a=demoAccount(probe);return n(a.equity).minus(a.maintenanceMargin);
   };
   const m0=n(current.mark);if(health(m0).lte(0))return current.mark;

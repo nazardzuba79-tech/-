@@ -136,7 +136,7 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   }else if(c.kind==='CLOSE'){
     if(c.book){
       const p=s.positions.find(p=>p.id===c.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
-      const o=placeDemoOrder(s,{id:c.id,symbol:p.symbol,side:p.side==='LONG'?'SHORT':'LONG',type:'MARKET',quantity:c.quantity??p.quantity,leverage:p.leverage,reduceOnly:true,positionId:p.id},time);
+      const o=placeDemoOrder(s,{id:c.id,symbol:p.symbol,side:p.side==='LONG'?'SHORT':'LONG',type:'MARKET',quantity:c.quantity??p.quantity,leverage:p.leverage,reduceOnly:true,positionId:p.id,marginType:p.marginType},time);
       executeDemoBook(s,o.id,c.book,time);
     }else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
   }

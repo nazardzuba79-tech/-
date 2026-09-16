@@ -483,7 +483,21 @@ export function FuturesOrderForm({
    *  the direction now arrives from the caller. */
   function place(orderSide: 'BUY' | 'SELL') {
     if (!canSubmit) return;
-    if (leverage >= config!.highLeverageWarningThreshold && !window.confirm(
+    /**
+     * A MISSING THRESHOLD MEANS NO WARNING, NOT A WARNING ON EVERYTHING.
+     *
+     * `highLeverageWarningThreshold` is nullable, and `leverage >= null`
+     * is `leverage >= 0` — true for every order ever placed. That put a
+     * confirm dialog in front of a 1x order, and a trader who dismissed
+     * it had their order silently dropped with no error shown, because
+     * this guard returns without saying anything.
+     *
+     * `Infinity` is the same fallback the leverage control beside it
+     * already uses for the same field; this call site was the one that
+     * read it bare.
+     */
+    const warnAt = config!.highLeverageWarningThreshold ?? Infinity;
+    if (leverage >= warnAt && !window.confirm(
       `${t('futures.leverageWarningTitle')}\n\n${t('futures.leverageWarningBody', { leverage })}`
     )) return;
     submitOrder(orderSide);

@@ -32,11 +32,17 @@ const out = (x: BigNumber) => amount(x);
 
 /** Exactly the fields the engine's own `demoAccount()` returns that this model consumes. */
 export interface EngineAccount {
+  /** CROSS free cash. Margin posted to isolated positions has already left it. */
   walletBalance: string;
+  /** CROSS positions only. */
   unrealizedPnl: string;
   usedMargin: string;
   orderReserve: string;
   maintenanceMargin: string;
+  /** Posted against isolated positions: out of the cross pool, still the owner's. */
+  isolatedMargin?: string;
+  /** ISOLATED positions' P&L, which the cross account is not entitled to. */
+  isolatedUnrealizedPnl?: string;
 }
 
 export interface CrossAccount {
@@ -49,12 +55,12 @@ export interface CrossAccount {
   unrealizedPnl: string;
   /** collateral + unrealizedPnl. */
   equity: string;
-  /** Initial margin locked by open positions. */
+  /** Initial margin locked by open positions, including margin posted to isolated ones. */
   initialMargin: string;
   /** Margin reserved by resting orders. */
   orderReserve: string;
   maintenanceMargin: string;
-  /** equity - initialMargin - orderReserve, floored at 0. */
+  /** What a NEW position may use: cross equity less everything already committed, floored at 0. */
   available: string;
   /** initialMargin / equity, or null when equity is not positive. */
   initialMarginRatio: string | null;
@@ -83,12 +89,22 @@ export function crossAccount(
   valuation: CollateralValuation,
   hasOpenPositions: boolean,
 ): CrossAccount {
-  const settleBalance = n(engine.walletBalance);
+  // ISOLATED MARGIN IS STILL THE OWNER'S MONEY. It left the cross pool when
+  // the position filled, so `walletBalance` no longer holds it — but it was
+  // not spent, and the Wallet must not report the account as smaller by the
+  // amount its own positions are holding. It is added back HERE, once, into
+  // the settle balance, and counted as initial margin in use, which is what
+  // it is. Adding it is not double counting for exactly the reason the
+  // wallet-row addition above is not: the debit and the credit are the same
+  // movement seen from two sides.
+  const isolatedMargin = n(engine.isolatedMargin ?? '0');
+  const isolatedPnl = n(engine.isolatedUnrealizedPnl ?? '0');
+  const settleBalance = n(engine.walletBalance).plus(isolatedMargin);
   const walletCollateral = n(valuation.priced);
   const collateral = settleBalance.plus(walletCollateral);
-  const unrealizedPnl = n(engine.unrealizedPnl);
+  const unrealizedPnl = n(engine.unrealizedPnl).plus(isolatedPnl);
   const equity = collateral.plus(unrealizedPnl);
-  const initialMargin = n(engine.usedMargin);
+  const initialMargin = n(engine.usedMargin).plus(isolatedMargin);
   const orderReserve = n(engine.orderReserve);
   const maintenanceMargin = n(engine.maintenanceMargin);
 
@@ -101,7 +117,10 @@ export function crossAccount(
     initialMargin: out(initialMargin),
     orderReserve: out(orderReserve),
     maintenanceMargin: out(maintenanceMargin),
-    available: out(D.maximum(0, equity.minus(initialMargin).minus(orderReserve))),
+    // What can still be opened with. Isolated P&L is NOT in it: an unrealised
+    // gain inside a ring-fenced position is not collateral for a new one
+    // until that position is closed, so it is subtracted back out here.
+    available: out(D.maximum(0, equity.minus(isolatedPnl).minus(initialMargin).minus(orderReserve))),
     // Both ratios are answered HERE, on the same equity, so an interface
     // can print them without dividing anything itself. Null rather than 0
     // when equity is not positive: a ratio of an empty account is not zero,
@@ -109,7 +128,11 @@ export function crossAccount(
     initialMarginRatio: equity.gt(0) ? out(initialMargin.div(equity)) : null,
     maintenanceRatio: equity.gt(0) ? out(maintenanceMargin.div(equity)) : null,
     // The whole point: never liquidate against collateral we know is short.
-    liquidatable: valuation.complete ? hasOpenPositions && equity.lte(maintenanceMargin) : null,
+    // The cross question, asked on cross money: isolated positions answer for
+    // themselves in the engine and neither rescue nor endanger the account.
+    liquidatable: valuation.complete
+      ? hasOpenPositions && equity.minus(isolatedMargin).minus(isolatedPnl).lte(maintenanceMargin)
+      : null,
     collateralComplete: valuation.complete,
     unpricedAssets: valuation.unpriced,
     collateralAsOf: valuation.asOf,
