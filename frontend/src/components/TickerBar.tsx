@@ -78,7 +78,7 @@ export function TickerBar({ pair, onSelectPair, spotPrecision = false }: { pair:
         }}
       >
         <span className="pair-name">{pair}</span>
-        <span className="pair-arrow">▼</span>
+        <span className="pair-arrow" aria-hidden="true" />
       </div>
 
       <div className="ticker-item">

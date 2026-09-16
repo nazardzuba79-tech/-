@@ -24,8 +24,8 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar { display:flex; flex-direction:row; flex-wrap:nowrap; align-items:center; justify-content:space-between; gap:20px; padding:10px 16px; min-height:70px; overflow-x:auto; scrollbar-width:thin; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > * { flex:0 0 auto; grid-column:auto; grid-row:auto; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item > .label { white-space:nowrap; font-size:10px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .pair-name { font-size:17px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item .value.price { font-size:23px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .pair-name { font-size:var(--terminal-pair-size); }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .ticker-item .value.price { font-size:var(--terminal-last-size); }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar .futures-funding-values { flex-wrap:nowrap; }
 
 @media(min-width:1025px) {

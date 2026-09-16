@@ -10,7 +10,7 @@
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.ticker-bar,.cfd-ticker-bar) { gap:20px; padding:12px 16px; }
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .label { color:var(--text-secondary); font-size:11px; line-height:17px; font-weight:400; white-space:nowrap; }
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .value { font-size:14px; line-height:21px; font-weight:600; letter-spacing:0; }
-.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .value.price { font-size:24px; line-height:30px; letter-spacing:-.5px; }
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) .ticker-item .value.price { font-size:var(--terminal-last-size); line-height:var(--terminal-last-line); letter-spacing:-.2px; }
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.bottom-tabs,.cfd-tabs) { min-height:44px; }
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.bottom-tab,.cfd-tab) { font-size:12px; font-weight:500; line-height:18px; }
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) :is(.info-heading,.reference-order-heading) { font-weight:600; letter-spacing:0; }
@@ -187,3 +187,129 @@
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tabs { background:#171a20; gap:20px; padding-inline:16px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tab { font-size:12px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference :is(input,button,select):focus-visible { outline:1px solid #e9ad35; outline-offset:2px; }
+
+/* ------------------------------------------------------------------ *
+ * Shared terminal header
+ *
+ * Spot, Futures and CFD read as one application, so the instrument row
+ * is sized from tokens here rather than from a font-size picked
+ * separately on each page. Six files were each setting the last price to
+ * a different number between 19px and 25px; the tokens are the only
+ * place that decision now lives.
+ * ------------------------------------------------------------------ */
+.trade-terminal {
+  /* Prominent, but part of a terminal header — not a hero heading. */
+  --terminal-last-size: 20px;
+  --terminal-last-line: 24px;
+  --terminal-pair-size: 15px;
+  --terminal-stat-size: 12px;
+  --terminal-label-size: 10.5px;
+}
+
+/* The pair-selector chevron.
+ *
+ * It used to be a "▼" hidden by `font-size:0` with two borders rotated
+ * 45° — on an inline <span>, where width and height do not apply. The box
+ * collapsed to nothing and the borders drew a stray pale stroke beside
+ * the pair name. `inline-block` is what makes it an actual chevron, and
+ * the secondary colour is what stops it reading as an artifact. */
+/* `flex: 0 0 auto` is the half that actually removes the artifact.
+   `.pair-selector` is a 90px flex row, and "BTC/USDT" at this weight does
+   not fit in it, so the chevron — the only shrinkable item — was squashed
+   from 6px to ONE pixel. A 1px-wide, 6px-tall rotated border is precisely
+   the thin pale stroke that was showing beside the pair name. The
+   selector sizes to its content now, and the chevron cannot be shrunk. */
+.trade-terminal.trade-terminal.trade-terminal .pair-selector { width: auto; min-width: 0; }
+.trade-terminal .pair-arrow {
+  flex: 0 0 auto;
+  display: inline-block;
+  box-sizing: border-box;
+  width: 6px; height: 6px;
+  margin: 0 2px 3px 7px;
+  border-right: 1.4px solid currentColor;
+  border-bottom: 1.4px solid currentColor;
+  transform: rotate(45deg);
+  color: var(--text-secondary);
+  font-size: 0;
+  transition: color 120ms ease;
+}
+.trade-terminal .pair-selector:hover .pair-arrow,
+.trade-terminal .pair-selector:focus-visible .pair-arrow { color: var(--text-primary); }
+.trade-terminal .pair-selector:focus-visible { outline: 1px solid var(--color-accent, #f5a600); outline-offset: 2px; border-radius: 4px; }
+
+.trade-terminal.trade-terminal.trade-terminal .pair-name,
+.trade-terminal.trade-terminal.trade-terminal .cfd-symbol {
+  font-size: var(--terminal-pair-size); font-weight: 600; letter-spacing: -.2px; line-height: 20px;
+}
+/* One size for the last price on every surface, and tabular figures so a
+   tick from 74,999.50 to 75,000.00 does not move the metrics beside it. */
+.trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference,.cfd-terminal) .ticker-item .value.price,
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .ticker-item .value.price {
+  font-size: var(--terminal-last-size); line-height: var(--terminal-last-line);
+  letter-spacing: -.2px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .value,
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .futures-secondary-price .value {
+  font-variant-numeric: tabular-nums;
+}
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .ticker-item .value:not(.price) { font-size: var(--terminal-stat-size); }
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .ticker-item .label { font-size: var(--terminal-label-size); }
+/* The primary block no longer reserves room for a 25px number, which is
+   what left the header looking half empty next to Bybit's. */
+.trade-terminal.trade-terminal.trade-terminal .ticker-bar .futures-primary-price { min-width: 116px; padding-right: 14px; }
+
+@media (max-width: 900px) {
+  .trade-terminal {
+    --terminal-last-size: 17px;
+    --terminal-last-line: 21px;
+    --terminal-pair-size: 14px;
+    --terminal-stat-size: 11px;
+    --terminal-label-size: 10px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal .ticker-bar .futures-primary-price { min-width: 0; padding-right: 10px; }
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared order inputs — Spot, Futures and CFD
+ *
+ * Three surfaces, one control. What follows is only the part every one
+ * of them needs; each terminal keeps its own colours.
+ * ------------------------------------------------------------------ */
+
+/* Tabular figures on anything a price or a size is typed into. Without
+   them a digit change re-measures the text, and in a field whose trailing
+   unit is laid out after the input, that moves the unit. */
+.trade-terminal.trade-terminal .input-group input,
+.trade-terminal.trade-terminal .fo-input,
+.trade-terminal.trade-terminal .cfd-input {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+/* Chrome and Safari put steppers on number inputs. They appear on hover,
+   take width from the value, and shift the text under the cursor. */
+.trade-terminal.trade-terminal .input-group input[type=number]::-webkit-outer-spin-button,
+.trade-terminal.trade-terminal .input-group input[type=number]::-webkit-inner-spin-button,
+.trade-terminal.trade-terminal .fo-input[type=number]::-webkit-outer-spin-button,
+.trade-terminal.trade-terminal .fo-input[type=number]::-webkit-inner-spin-button,
+.trade-terminal.trade-terminal .cfd-input[type=number]::-webkit-outer-spin-button,
+.trade-terminal.trade-terminal .cfd-input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.trade-terminal.trade-terminal .input-group input[type=number],
+.trade-terminal.trade-terminal .fo-input[type=number],
+.trade-terminal.trade-terminal .cfd-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+/* A fixed slot for the unit, so BTC and 1000PEPE leave the input the same
+   width and the caret does not move when the contract changes. */
+.trade-terminal.trade-terminal .input-suffix {
+  display: inline-flex; align-items: center; justify-content: flex-end;
+  min-width: 42px; font-variant-numeric: tabular-nums; letter-spacing: .2px;
+  white-space: nowrap; pointer-events: none; color: var(--text-secondary);
+}
+.trade-terminal.trade-terminal .input-group { transition: border-color 120ms ease; }
+.trade-terminal.trade-terminal .fo-lastPriceBtn:hover,
+.trade-terminal.trade-terminal .max-btn:hover { background: #ffffff0f; }
+.trade-terminal.trade-terminal .fo-lastPriceBtn:focus-visible,
+.trade-terminal.trade-terminal .max-btn:focus-visible {
+  outline: 1px solid var(--accent-yellow, #f5a600); outline-offset: -1px;
+}

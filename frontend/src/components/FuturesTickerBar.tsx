@@ -170,7 +170,7 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
         }}
       >
         <span className="pair-name">{symbol}</span>
-        <span className="pair-arrow">▼</span>
+        <span className="pair-arrow" aria-hidden="true" />
       </div>
 
       <div className="ticker-item futures-primary-price">

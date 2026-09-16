@@ -11,7 +11,7 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.ticker-bar,.cfd-ticker-bar) { background:linear-gradient(115deg,#182431,#111922 65%); flex-wrap:nowrap; overflow-x:auto; gap:20px; padding:10px 16px; min-height:70px; scrollbar-width:thin; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.ticker-bar,.cfd-ticker-bar) > * { flex:0 0 auto; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.ticker-bar .label,.cfd-ticker-metric>:first-child) { font-size:11px; white-space:nowrap; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .ticker-bar .value.price { font-size:23px; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference .ticker-bar .value.price { font-size:var(--terminal-last-size); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.terminal-chart-heading,.orderbook-header,.bottom-tabs,.cfd-chart-toolbar,.cfd-tabs,.pairs-title-row) { background:#141e29; border-color:#26313d; min-height:40px; font-size:12px; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.chart-toolbar,.drawing-rail,.orderbook-col-headers,.orderbook-asks,.orderbook-bids) { background:#111922; border-color:#26313d; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio.market-reference :is(.input-group,.cfd-input,.cfd-select,.order-family-input,.pairs-search input) { background:#192632; color:#e7edf3; border:1px solid #304050; border-radius:3px; }

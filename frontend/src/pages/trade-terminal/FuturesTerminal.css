@@ -65,7 +65,7 @@
 /* The quantity's unit, inside the field rather than beside the label. */
 .futures-terminal .fo-qtyInputRow { position: relative; display: flex; align-items: center; }
 .futures-terminal .fo-qtyInputRow .fo-input { width: 100%; padding-right: 52px; }
-.futures-terminal .fo-unit { position: absolute; right: 11px; color: var(--text-secondary); font-size: 12px; font-weight: 600; pointer-events: none; }
+.futures-terminal .fo-unit { position: absolute; right: 10px; color: var(--text-secondary); font-size: 11px; font-weight: 600; letter-spacing:.2px; pointer-events: none; }
 
 .futures-terminal .fo-mlWrap { position: relative; min-width: 0; }
 /* Two triggers, side by side. Margin mode carries the longer label so it
@@ -102,11 +102,11 @@
 .futures-terminal .fo-mlChipActive { background: var(--accent-yellow); border-color: var(--accent-yellow); color: #14181d; }
 .futures-terminal .fo-mlWarn { color: #ef5350; font-size: 11px; line-height: 15px; }
 .futures-terminal .fo-label { display: flex; flex-direction: column; gap: 7px; color: #afbac5; font-size: 13px; }
-.futures-terminal .fo-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 10px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; line-height: 20px; font-variant-numeric: tabular-nums; outline: none; }
+.futures-terminal .fo-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; line-height: 19px; font-variant-numeric: tabular-nums; outline: none; }
 .futures-terminal .fo-input:focus { border-color: var(--accent-yellow); }
 .futures-terminal .fo-priceInputRow { display: flex; gap: 6px; }
 .futures-terminal .fo-priceInputRow .fo-input { flex: 1; }
-.futures-terminal .fo-lastPriceBtn { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; padding: 0 9px; color: var(--accent-yellow); font-size: 12px; cursor: pointer; }
+.futures-terminal .fo-lastPriceBtn { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 4px; padding: 0 8px; color: var(--accent-yellow); font-size: 11px; white-space: nowrap; cursor: pointer; }
 .futures-terminal .fo-markPrice { color: #aeb9c4; }
 .futures-terminal .fo-qtyLabelRow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
 .futures-terminal .fo-qtyLabelRow > span { font-size: 12px; color: #a5b0bc !important; }
