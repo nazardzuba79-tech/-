@@ -11,7 +11,7 @@ const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>n
 const candle=z.object({source:z.literal('BYBIT_LINEAR'),interval:z.enum(['1m','5m','15m','1h','4h','1d','1w']),openTime:z.number().int().positive(),pricePoint:z.enum(['OPEN','CLOSE'])}).strict();
 const protection=z.object({takeProfit:positive.nullable().optional(),stopLoss:positive.nullable().optional(),triggerBy:z.enum(['MARK','LAST']).optional(),quantity:positive.nullable().optional()}).strict();
 export const nativeCommandSchema=z.discriminatedUnion('kind',[
-  z.object({kind:z.literal('OPEN'),idempotencyKey:key,symbol:z.string().regex(/^[A-Z0-9]{1,32}(?:\/)?USDT$/),side:z.enum(['LONG','SHORT']),type:z.enum(['MARKET','LIMIT']),margin:positive.optional(),quantity:positive.optional(),leverage:positive,price:positive.optional(),candle:candle.optional(),protection:protection.optional(),
+  z.object({kind:z.literal('OPEN'),idempotencyKey:key,symbol:z.string().regex(/^[A-Z0-9]{1,32}(?:\/)?USDT$/),side:z.enum(['LONG','SHORT']),type:z.enum(['MARKET','LIMIT']),margin:positive.optional(),quantity:positive.optional(),leverage:positive,price:positive.optional(),candle:candle.optional(),protection:protection.optional(),marginType:z.enum(['CROSS','ISOLATED']).default('CROSS'),
     // A reducing order names the position it reduces and keeps its own
     // type: a reduce-only LIMIT rests at its price instead of becoming a
     // market close.
@@ -27,12 +27,9 @@ export const nativeCommandSchema=z.discriminatedUnion('kind',[
 });
 export const NATIVE_ERROR_TEXT:Record<string,string>={
   HISTORY_GAP:'История содержит пропуски. Сделка не записана.',HISTORY_LIMIT:'Слишком длинный участок истории для одного расчёта.',MARK_HISTORY_GAP:'Нет Mark Price истории для этого участка.',
-  // Say what the trader can act on. The cause here is genuinely the
-  // account's free collateral, so it is named as that and nothing else —
-  // it is NOT reported as a contract-size problem, and it no longer calls
-  // the account a demo account in the one place the owner sees.
-  INSUFFICIENT_DEMO_MARGIN:'Недостаточно средств для размещения этого ордера.',
-  INSUFFICIENT_FILL_MARGIN:'Недостаточно средств для исполнения этого ордера.',
+  // One user-facing sentence for both placement and fill collateral refusals.
+  INSUFFICIENT_DEMO_MARGIN:'Вам не хватает средств',
+  INSUFFICIENT_FILL_MARGIN:'Вам не хватает средств',
   ENTRY_MARK_UNAVAILABLE:'Недостаточно Mark Price истории для выбранной свечи.',POSITION_NOT_OPEN:'Позиция уже закрыта или не найдена.',
   INVALID_TRIGGER_PRICE:'Проверьте цену TP/SL относительно текущей цены.',INVALID_TRIGGER_STEP:'Цена TP/SL не кратна шагу цены.',INVALID_PROTECTION_QUANTITY:'Количество TP/SL больше позиции или не кратно шагу.',
   SET_EXISTING_POSITION_LEVERAGE_FIRST:'Сначала измените плечо уже открытой позиции.',CANCEL_ORDERS_BEFORE_LEVERAGE:'Сначала отмените активные ордера этой позиции.',
@@ -92,8 +89,6 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
       return res.status(409).json({code:e.code,error:NATIVE_ERROR_TEXT[e.code]??'Операция не выполнена. Проверьте параметры ордера.'});
     }
     // Contract-rule violations from the shared decimal validators are the owner's input, not a server fault.
-    // A refusal names the limit it hit and the value that limit allows: without
-    // them "вне лимитов контракта" tells the trader nothing they can act on.
     if(e instanceof ContractRuleError)return res.status(400).json({code:e.message,limit:e.detail.limit,allowed:e.detail.allowed,actual:e.detail.actual,
       error:`${NATIVE_INPUT_ERROR_TEXT[e.message]??'Ордер отклонён контрактом.'} ${LIMIT_TEXT[e.detail.limit]??e.detail.limit}: ${e.detail.allowed}. Запрошено: ${e.detail.actual}.`});
     if(e instanceof Error&&Object.prototype.hasOwnProperty.call(NATIVE_INPUT_ERROR_TEXT,e.message))return res.status(400).json({code:e.message,error:NATIVE_INPUT_ERROR_TEXT[e.message]});
