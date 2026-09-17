@@ -87,6 +87,11 @@ async function run(width) {
   const cross = state.positions.find(p => p.marginMode === 'CROSS');
   const isolated = state.positions.find(p => p.marginMode === 'ISOLATED');
   assert(cross && isolated && cross.quantity === isolated.quantity, 'Need two equal-size same-side positions in different buckets');
+  // Derive a marketable SELL limit from this fixture's observed mark. A
+  // literal price of 1 would fail the existing minimum-notional rule and
+  // test order admission instead of target identity. Do not relax that rule.
+  const closePrice = String(Math.floor(Number(isolated.markPrice) * 0.9));
+  assert(Number(closePrice) > 0 && Number(closePrice) * 0.005 >= 5);
   const realRequests = [], drafts = [], pending = new Set();
   await context.route('**/*', route => {
     const request = route.request(), url = new URL(request.url());
@@ -118,12 +123,12 @@ async function run(width) {
   assert(await page.locator('.fo-submitPair .buy').isDisabled(), 'LONG close must not offer BUY');
   record(`${width}: exact isolated table id, picker cancelled, wrong side disabled`, { id: isolated.id });
 
-  await price.fill('1'); await quantity.fill('0.010');
+  await price.fill(closePrice); await quantity.fill('0.010');
   const partial = await uiCommand(page, 'OPEN', () => quantity.press('Enter'));
   assert.equal(partial.draft.positionId, isolated.id);
   assert.equal(partial.draft.marginType, 'ISOLATED');
   assert.equal(partial.draft.side, 'SHORT'); assert.equal(partial.draft.type, 'LIMIT');
-  assert.equal(partial.draft.price, '1'); assert.equal(partial.draft.quantity, '0.010');
+  assert.equal(partial.draft.price, closePrice); assert.equal(partial.draft.quantity, '0.010');
   assert.equal(partial.draft.reduceOnly, true); assert(!('candle' in partial.draft));
   assert.equal(partial.value.positions.find(p => p.id === isolated.id)?.quantity, '0.01');
   assert.equal(partial.value.positions.find(p => p.id === cross.id)?.quantity, '0.02');
@@ -147,7 +152,7 @@ async function run(width) {
   await uiCommand(page, 'REFRESH', () => page.locator('#futures-tab-positionHistory').click());
   await page.locator('#futures-tab-positions').click();
   await page.waitForFunction(() => document.querySelectorAll('.futures-position-row').length === 1);
-  await price.fill('1'); await quantity.fill('0.005');
+  await price.fill(closePrice); await quantity.fill('0.005');
   const writesBefore = drafts.filter(d => d.kind !== 'REFRESH').length;
   await page.locator('.fo-submitPair .sell').click();
   await page.locator('.fo-error').filter({ hasText: 'Невозможно однозначно' }).waitFor();
@@ -156,7 +161,7 @@ async function run(width) {
   record(`${width}: closed target refused without a write or neighbour fallback`);
 
   await target(0, cross.id);
-  await price.fill('1'); await quantity.fill('0.005');
+  await price.fill(closePrice); await quantity.fill('0.005');
   const next = await uiCommand(page, 'OPEN', () => page.locator('.fo-submitPair .sell').click());
   assert.equal(next.draft.positionId, cross.id); assert.equal(next.draft.marginType, 'CROSS');
   assert.equal(next.value.positions.find(p => p.id === cross.id)?.quantity, '0.015');
