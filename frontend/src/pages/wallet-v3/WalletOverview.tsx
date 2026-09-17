@@ -1,19 +1,22 @@
+import { useMemo, useState } from 'react';
 import {
   ArrowDownToLineIcon,
   ArrowLeftRightIcon,
+  ArrowRightIcon,
   ArrowUpFromLineIcon,
   ChevronRightIcon,
+  CircleDollarSignIcon,
   EyeIcon,
   EyeOffIcon,
-  LandmarkIcon,
-  ScrollTextIcon,
+  HistoryIcon,
+  RepeatIcon,
   WalletIcon,
 } from 'lucide-react';
+import { CryptoIcon } from '../../components/CryptoIcon';
 import { useLanguage } from '../../lib/i18n';
-import { EM_DASH, MASK, btcEquivalentDecimals, formatAmount, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
-import { EquityChart } from './EquityChart';
-import { PerformancePeriods } from './PerformancePeriods';
-import { PortfolioAllocation } from './PortfolioAllocation';
+import { EM_DASH, MASK, decimalsFor, formatAmount, formatPercent, formatSignedUsd, formatUsd, toneOf } from './format';
+import { AllocationCard } from './AllocationCard';
+import { DynamicsCard } from './DynamicsCard';
 import { RecentActivity } from './RecentActivity';
 import { TierBadge } from './TierBadge';
 import { LedgerRow, LoadState, UnifiedAccount, WalletOverview as OverviewData, WalletPerformance } from './useWalletData';
@@ -21,62 +24,61 @@ import { LedgerRow, LoadState, UnifiedAccount, WalletOverview as OverviewData, W
 /**
  * THE OVERVIEW — the Wallet's landing section, on the approved design.
  *
- * One page: the account's headline total with its BTC equivalent and tier,
- * the two accounts it is made of, the distribution ring, the equity curve
- * with profit by period, and the last deposits and withdrawals.
+ * TWO ACCOUNTS, TWO LEDGERS. `Финансирование` is the real spot ledger the
+ * deposits land on (`/wallet/overview`). `Unified Trading` is the margin
+ * account (`/private-trading/native/wallet`) for the owner, or the futures
+ * ledger for everyone else. They are separate ledgers, so the Overview's
+ * headline is their sum — the one place the two are added, and the only
+ * arithmetic on this page. Each account row shows the server's own figure.
  *
- * NOTHING HERE IS A SECOND SET OF BOOKS. The total is `account.totalEquityUsd`
- * — the same figure the Unified Trading section prints; the BTC equivalent
- * is the hook's, divided by the same mark that valued the equity; every
- * period figure is the server's own `periods[p]`; the accounts card reads
- * the ledger subtotals the server answered and never adds them up itself.
- * A `null` anywhere is an unknown and renders as an em dash.
+ * THE BTC EQUIVALENT uses the same mark the hook divided the account's
+ * equity by (`totalEquityUsd / btcEquivalent`), so the Overview and the
+ * Unified section cannot disagree on a BTC figure.
  *
- * THE P&L PILL IS 7D, AND SAYS SO. VOLTEX stores one snapshot per day, so
- * there is no intraday figure to call "today"; the pill is labelled with
- * the window it actually measures.
+ * THE P&L PILL IS 7D, AND SAYS SO. VOLTEX stores one snapshot per day; there
+ * is no intraday figure to call "today".
  *
  * EVERY USER, THE SAME PAGE. An ordinary account gets exactly this layout
- * with its own (possibly empty) figures: no tier badge, dashes where the
- * account has no answer, an empty-state ring and an empty activity list —
- * never sample values.
+ * with its own figures: no tier badge, dashes where the account has no
+ * answer, an empty ring and an empty activity list — never sample values.
  */
 const ACTION_BASE =
-  'flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-w px-4 text-[13px] font-semibold leading-5 transition-colors duration-150 ease-exp';
+  'wallet-btn flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-w px-4 text-[13px] font-semibold leading-5 transition-colors duration-150 ease-exp';
 const ACTION_PRIMARY = ACTION_BASE + ' bg-gold text-[#1a1400] hover:bg-gold-light';
 const ACTION_SECONDARY = ACTION_BASE + ' border border-hair bg-panel text-ink hover:border-hair-strong hover:bg-panel-2';
+const ACTION_OFF = ACTION_BASE + ' wallet-action-convert cursor-not-allowed border border-hair bg-panel text-ink-4';
+const ICON_BUTTON = 'wallet-account-icon-button';
 
-const ICON_BUTTON =
-  'wallet-account-icon-button flex h-8 w-8 items-center justify-center rounded-w border border-hair bg-panel text-ink transition-colors duration-150 ease-exp hover:bg-panel-3';
+type Tab = 'account' | 'asset';
 
 function AccountRow({
   icon: Icon,
   name,
-  value,
-  note,
+  usd,
+  btc,
   hidden,
   children,
 }: {
   icon: typeof WalletIcon;
   name: string;
-  value: string;
-  note?: string;
+  usd: string;
+  btc: string;
   hidden: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div className="wallet-account-row" data-account={name}>
-      <div className="wallet-account-row-name flex min-w-0 items-center gap-2.5">
-        <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-panel-3 text-ink">
+      <div className="wallet-account-row-name">
+        <span className="wallet-account-ico">
           <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </span>
         <span className="truncate text-[14px] font-semibold text-ink">{name}</span>
       </div>
       <div className="wallet-account-row-value min-w-0">
-        <p className="num text-[15px] font-semibold leading-5 text-ink">{hidden ? MASK : value}</p>
-        {note && <p className="mt-0.5 text-[11px] leading-4 text-ink-4">{note}</p>}
+        <p className="num text-[15px] font-semibold leading-5 text-ink">{hidden ? MASK : usd}</p>
+        <p className="num mt-0.5 text-[11px] leading-4 text-ink-4">≈ {hidden ? MASK : btc} BTC</p>
       </div>
-      <div className="wallet-account-row-actions flex items-center gap-1.5">{children}</div>
+      <div className="wallet-account-row-actions">{children}</div>
     </div>
   );
 }
@@ -98,6 +100,7 @@ export function WalletOverview({
   onHistory,
   onOpenUnified,
   onOpenFunding,
+  onOpenPnl,
 }: {
   account: UnifiedAccount | null;
   overview: OverviewData | null;
@@ -115,30 +118,71 @@ export function WalletOverview({
   onHistory: () => void;
   onOpenUnified: () => void;
   onOpenFunding: () => void;
+  onOpenPnl: () => void;
 }) {
   const { t, lang } = useLanguage();
+  const [tab, setTab] = useState<Tab>('account');
 
   const cross = account?.mode === 'CROSS';
-  const usd = (value: number | null | undefined) =>
-    unavailable || value === null || value === undefined ? EM_DASH : formatUsd(value, lang);
+  const known = (v: number | null | undefined): number | null => (unavailable || v === null || v === undefined ? null : v);
 
-  const total = unavailable ? null : account?.totalEquityUsd ?? null;
+  // The two accounts, as the server answered them.
+  const fundingUsd = known(cross ? overview?.real.spotValueUsd : account?.spotUsd);
+  const unifiedUsd = known(cross ? account!.totalEquityUsd : account?.futuresUsd);
+  // The headline: the sum of the accounts, when at least one is known. On
+  // a plain ledger this is exactly the server's own total.
+  const total = cross
+    ? fundingUsd === null && unifiedUsd === null
+      ? null
+      : (fundingUsd ?? 0) + (unifiedUsd ?? 0)
+    : known(account?.totalEquityUsd);
+
+  // One BTC mark for the whole page: the one the hook used for the
+  // account's equity, or the spot feed's when the account has no equity.
+  const btcPrice =
+    account?.totalEquityUsd && btcEquivalent && account.totalEquityUsd > 0 && btcEquivalent > 0
+      ? account.totalEquityUsd / btcEquivalent
+      : overview?.btcPriceUsd && overview.btcPriceUsd > 0
+        ? overview.btcPriceUsd
+        : null;
+  const btc = (usd: number | null) => (usd === null || btcPrice === null ? EM_DASH : formatAmount(usd / btcPrice, lang, 8));
+  const usd = (v: number | null) => (v === null ? EM_DASH : formatUsd(v, lang));
+
   const week = performance?.periods?.['7d'] ?? null;
   const weekOk = Boolean(week?.available) && performanceState !== 'error';
 
-  // The funding account is the spot ledger — where deposits land and
-  // withdrawals leave from. On the Cross account that same ledger is the
-  // collateral behind Unified Trading, so its value is REPORTED but marked
-  // as already counted, and never added to the equity beside it.
-  const fundingUsd = overview ? overview.real.spotValueUsd : null;
-  const unifiedUsd = cross ? account!.totalEquityUsd : account?.futuresUsd ?? null;
+  /** Every held asset across both accounts, tagged with the account it sits in. */
+  const assets = useMemo(() => {
+    const list: { symbol: string; account: string; quantity: number; valueUsd: number | null; priced: boolean }[] = [];
+    for (const r of rows) if (r.total > 0) list.push({ symbol: r.symbol, account: t('wallet.navUnified'), quantity: r.total, valueUsd: r.valueUsd, priced: r.priced });
+    if (cross && overview) {
+      for (const b of overview.real.spot) {
+        const q = Number(b.available) + Number(b.locked);
+        if (q > 0) list.push({ symbol: b.asset, account: t('wallet.navFunding'), quantity: q, valueUsd: b.valueUsd, priced: b.valueUsd !== null });
+      }
+    }
+    return list.sort((a, b) => (b.valueUsd ?? -1) - (a.valueUsd ?? -1));
+  }, [rows, overview, cross, t]);
+
+  const holdings = useMemo(() => {
+    const bySymbol = new Map<string, number>();
+    for (const a of assets) if (a.valueUsd !== null && a.valueUsd > 0) bySymbol.set(a.symbol, (bySymbol.get(a.symbol) ?? 0) + a.valueUsd);
+    return [...bySymbol].map(([symbol, valueUsd]) => ({ symbol, valueUsd }));
+  }, [assets]);
+  const unpriced = useMemo(() => {
+    const names = new Set<string>(account?.unpricedAssets ?? []);
+    for (const a of assets) if (!a.priced) names.add(a.symbol);
+    return [...names];
+  }, [assets, account]);
+
+  const footer = `${t('wallet.navUnified')} ${unifiedUsd === null ? EM_DASH : formatUsd(unifiedUsd, lang).replace('$', '')} · ${t('wallet.navFunding')} ${fundingUsd === null ? EM_DASH : formatUsd(fundingUsd, lang).replace('$', '')} USD`;
 
   return (
     <div className="wallet-overview min-w-0">
       <header className="wallet-overview-head">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[16px] font-medium text-ink-3">{t('wallet.overviewTitle')}</h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-[17px] font-medium text-ink-3">{t('wallet.overviewTitle')}</h2>
             <button
               type="button"
               onClick={onToggleHidden}
@@ -150,32 +194,27 @@ export function WalletOverview({
             </button>
           </div>
 
-          <div className="wallet-overview-total mt-3 flex flex-wrap items-end gap-x-2.5 gap-y-2">
-            <span className="num text-[30px] font-semibold leading-none tracking-[-0.02em] text-ink sm:text-[34px]">
-              {hidden ? MASK : total === null ? EM_DASH : formatUsd(total, lang)}
-            </span>
-            <span className="pb-[3px] text-[13px] font-medium text-ink-3">USD</span>
-            <span className="pb-[1px]">
-              <TierBadge mode={account?.mode} />
-            </span>
+          <div className="wallet-overview-total">
+            <span className="num wallet-overview-amount">{hidden ? MASK : total === null ? EM_DASH : formatUsd(total, lang).replace('$', '')}</span>
+            <span className="wallet-overview-unit">USD</span>
+            <TierBadge mode={account?.mode} />
           </div>
 
-          <p className="wallet-overview-btc num mt-2.5 text-[13px] text-ink-3">
-            ≈ {hidden ? MASK : btcEquivalent === null ? EM_DASH : formatAmount(btcEquivalent, lang, btcEquivalentDecimals(btcEquivalent))} BTC
-          </p>
+          <p className="wallet-overview-btc num">≈ {hidden ? MASK : total === null ? EM_DASH : btc(total)} BTC</p>
 
-          <div className="wallet-overview-pnl mt-3.5 flex flex-wrap items-center gap-2 text-[13px]">
+          <button type="button" onClick={onOpenPnl} className="wallet-overview-pnl">
             <span className="text-ink-3">{t('wallet.pnlSeven')}</span>
-            <span className={`wallet-overview-pnl-pill num ${toneOf(weekOk ? week!.percent : null)}`} data-available={weekOk ? 'true' : 'false'}>
+            <span className={`wallet-pill num ${toneOf(weekOk ? week!.percent : null)}`} data-available={weekOk ? 'true' : 'false'}>
               {hidden ? MASK : weekOk ? `${formatSignedUsd(week!.absolutePnl, lang)} · ${formatPercent(week!.percent, lang)}` : EM_DASH}
             </span>
-          </div>
+            <ArrowRightIcon className="h-3.5 w-3.5 text-ink-4" strokeWidth={1.8} aria-hidden="true" />
+          </button>
         </div>
 
-        <div className="wallet-overview-actions flex flex-wrap items-center gap-2.5 lg:justify-end">
+        <div className="wallet-overview-actions">
           <button type="button" onClick={onDeposit} className={ACTION_PRIMARY}>
             <ArrowDownToLineIcon className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
-            {t('wallet.deposit')}
+            {t('wallet.depositShort')}
           </button>
           <button type="button" onClick={onWithdraw} className={ACTION_SECONDARY}>
             <ArrowUpFromLineIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
@@ -185,9 +224,9 @@ export function WalletOverview({
             <ArrowLeftRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
             {t('wallet.transfer')}
           </button>
-          <button type="button" onClick={onHistory} className={ACTION_SECONDARY}>
-            <ScrollTextIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
-            {t('wallet.openHistory')}
+          <button type="button" disabled aria-disabled="true" title={t('wallet.convertUnavailable')} className={ACTION_OFF}>
+            <RepeatIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
+            {t('wallet.convert')}
           </button>
         </div>
 
@@ -196,68 +235,88 @@ export function WalletOverview({
         </span>
       </header>
 
-      <div className="wallet-overview-body mt-5 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_380px] xl:gap-5">
-        <div className="flex min-w-0 flex-col gap-4 xl:gap-5">
-          <section aria-label={t('wallet.accountsTitle')} className="wallet-accounts-card rounded-wlg border border-hair bg-panel shadow-panel">
-            <p className="px-5 pt-4 pb-1 text-[12px] font-medium text-ink-3">{t('wallet.accountsTitle')}</p>
-            <AccountRow
-              icon={LandmarkIcon}
-              name={t('wallet.navFunding')}
-              value={usd(fundingUsd)}
-              note={cross ? t('wallet.accountCounted') : undefined}
-              hidden={hidden}
-            >
-              <button type="button" onClick={onDeposit} aria-label={t('wallet.deposit')} title={t('wallet.deposit')} className={ICON_BUTTON}>
-                <ArrowDownToLineIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+      <div className="wallet-overview-body">
+        <div className="wallet-overview-col">
+          <section aria-label={t('wallet.accountsTitle')} className="wallet-accounts-card wallet-card">
+            <div className="wallet-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected={tab === 'account'} onClick={() => setTab('account')}>
+                {t('wallet.tabAccount')}
               </button>
-              <button type="button" onClick={onWithdraw} aria-label={t('wallet.withdraw')} title={t('wallet.withdraw')} className={ICON_BUTTON}>
-                <ArrowUpFromLineIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+              <button type="button" role="tab" aria-selected={tab === 'asset'} onClick={() => setTab('asset')}>
+                {t('wallet.tabAsset')}
               </button>
-              <button type="button" onClick={onTransfer} aria-label={t('wallet.transfer')} title={t('wallet.transfer')} className={ICON_BUTTON}>
-                <ArrowLeftRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-              <button type="button" onClick={onOpenFunding} aria-label={t('wallet.openDetails')} title={t('wallet.openDetails')} className={ICON_BUTTON}>
-                <ChevronRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-            </AccountRow>
-            <AccountRow icon={WalletIcon} name={t('wallet.navUnified')} value={usd(unifiedUsd)} hidden={hidden}>
-              <button type="button" onClick={onTransfer} aria-label={t('wallet.transfer')} title={t('wallet.transfer')} className={ICON_BUTTON}>
-                <ArrowLeftRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-              <button type="button" onClick={onHistory} aria-label={t('wallet.openHistory')} title={t('wallet.openHistory')} className={ICON_BUTTON}>
-                <ScrollTextIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-              <button type="button" onClick={onOpenUnified} aria-label={t('wallet.openDetails')} title={t('wallet.openDetails')} className={ICON_BUTTON}>
-                <ChevronRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-              </button>
-            </AccountRow>
-            {cross && (
-              <p className="wallet-accounts-note border-t border-hair-soft px-5 py-3 text-[11.5px] leading-4 text-ink-4" role="note">
-                {t('wallet.accountUnifiedPool')}
-              </p>
+            </div>
+
+            {tab === 'account' ? (
+              <>
+                <p className="wallet-accounts-label">{t('wallet.assets')}</p>
+                <AccountRow icon={CircleDollarSignIcon} name={t('wallet.navFunding')} usd={usd(fundingUsd)} btc={btc(fundingUsd)} hidden={hidden}>
+                  <button type="button" onClick={onDeposit} aria-label={t('wallet.depositShort')} title={t('wallet.depositShort')} className={ICON_BUTTON}>
+                    <ArrowDownToLineIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onWithdraw} aria-label={t('wallet.withdraw')} title={t('wallet.withdraw')} className={ICON_BUTTON}>
+                    <ArrowUpFromLineIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onTransfer} aria-label={t('wallet.transfer')} title={t('wallet.transfer')} className={ICON_BUTTON}>
+                    <ArrowLeftRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onOpenFunding} aria-label={t('wallet.openDetails')} title={t('wallet.openDetails')} className={ICON_BUTTON}>
+                    <ChevronRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                </AccountRow>
+                <AccountRow icon={WalletIcon} name={t('wallet.navUnified')} usd={usd(unifiedUsd)} btc={btc(unifiedUsd)} hidden={hidden}>
+                  <button type="button" onClick={onDeposit} aria-label={t('wallet.depositShort')} title={t('wallet.depositShort')} className={ICON_BUTTON}>
+                    <ArrowDownToLineIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onTransfer} aria-label={t('wallet.transfer')} title={t('wallet.transfer')} className={ICON_BUTTON}>
+                    <ArrowLeftRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onHistory} aria-label={t('wallet.openHistory')} title={t('wallet.openHistory')} className={ICON_BUTTON}>
+                    <HistoryIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                  <button type="button" onClick={onOpenUnified} aria-label={t('wallet.openDetails')} title={t('wallet.openDetails')} className={ICON_BUTTON}>
+                    <ChevronRightIcon className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+                  </button>
+                </AccountRow>
+              </>
+            ) : (
+              <ul className="wallet-asset-tab">
+                {assets.length === 0 && <li className="px-5 py-8 text-center text-[13px] text-ink-4">{loading ? t('wallet.loading') : t('wallet.noAssets')}</li>}
+                {assets.map((a) => (
+                  <li key={a.account + a.symbol} className="wallet-asset-tab-row" data-symbol={a.symbol}>
+                    <CryptoIcon symbol={a.symbol} size={30} />
+                    <span className="min-w-0">
+                      <span className="block text-[14px] font-semibold text-ink">{a.symbol}</span>
+                      <span className="block truncate text-[11px] leading-4 text-ink-4">{a.account}</span>
+                    </span>
+                    <span className="text-right">
+                      <span className="num block text-[14px] font-semibold text-ink">{hidden ? MASK : formatAmount(a.quantity, lang, decimalsFor(a.symbol))}</span>
+                      <span className="num block text-[11px] leading-4 text-ink-4">
+                        {hidden ? MASK : a.valueUsd === null ? t('wallet.noQuote') : `≈ ${formatUsd(a.valueUsd, lang).replace('$', '')} USD`}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
-          <PortfolioAllocation
-            rows={rows}
+          <AllocationCard
+            holdings={holdings}
+            accounts={[
+              { label: t('wallet.navUnified'), valueUsd: unifiedUsd },
+              { label: t('wallet.navFunding'), valueUsd: fundingUsd },
+            ]}
             hidden={hidden}
             unavailable={unavailable}
             loading={loading}
-            unpricedAssets={account?.unpricedAssets ?? []}
+            unpricedAssets={unpriced}
+            footer={footer}
           />
         </div>
 
-        <div className="flex min-w-0 flex-col gap-4 xl:gap-5">
-          <div className="wallet-dynamics min-w-0">
-            <EquityChart
-              performance={performance}
-              loading={performanceState === 'loading'}
-              unavailable={performanceState === 'error'}
-              hidden={hidden}
-            />
-            <PerformancePeriods performance={performance} hidden={hidden} />
-          </div>
-
+        <div className="wallet-overview-col">
+          <DynamicsCard performance={performance} loading={performanceState === 'loading'} unavailable={performanceState === 'error'} hidden={hidden} />
           <RecentActivity hidden={hidden} onAll={onHistory} />
         </div>
       </div>

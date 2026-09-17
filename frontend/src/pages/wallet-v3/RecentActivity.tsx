@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { ArrowRightIcon, FileClockIcon, WifiOffIcon } from 'lucide-react';
-import { CryptoIcon } from '../../components/CryptoIcon';
 import { api } from '../../lib/api';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
@@ -90,14 +89,10 @@ export function RecentActivity({ hidden, onAll }: { hidden: boolean; onAll: () =
   const statusLabel = (s: Status) => (s === 'done' ? t('wallet.txDone') : s === 'pending' ? t('wallet.txPending') : t('wallet.txRejected'));
 
   return (
-    <section aria-label={t('wallet.recentActivity')} className="wallet-recent-activity rounded-wlg border border-hair bg-panel shadow-panel">
-      <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2">
-        <h2 className="text-[15px] font-semibold tracking-normal text-ink">{t('wallet.recentActivity')}</h2>
-        <button
-          type="button"
-          onClick={onAll}
-          className="wallet-recent-all flex items-center gap-1 rounded-wsm px-1.5 py-1 text-[12.5px] font-semibold text-ink-2 transition-colors duration-150 ease-exp hover:bg-panel-3 hover:text-ink"
-        >
+    <section aria-label={t('wallet.recentActivity')} className="wallet-recent-activity wallet-card">
+      <div className="wallet-card-head">
+        <h2 className="wallet-card-title">{t('wallet.recentActivity')}</h2>
+        <button type="button" onClick={onAll} className="wallet-recent-all wallet-link">
           {t('wallet.allActivity')}
           <ArrowRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
         </button>
@@ -110,25 +105,18 @@ export function RecentActivity({ hidden, onAll }: { hidden: boolean; onAll: () =
       ) : flows.length === 0 ? (
         <EmptyState icon={FileClockIcon} title={t('wallet.noActivity')} description={t('wallet.noHistoryBody')} compact />
       ) : (
-        <ul className="wallet-recent-list px-5 pb-4 pt-1">
+        <ul className="wallet-recent-list">
           {flows.map((f) => {
             const dp = decimalsFor(f.asset);
             const negative = f.amount < 0;
             return (
               <li key={f.id} className="wallet-recent-row" data-kind={f.kind} data-status={f.status}>
-                <CryptoIcon symbol={f.asset} size={26} />
-                <span className="min-w-0">
-                  <span className="block truncate text-[13px] font-semibold text-ink">
-                    {t(f.kind === 'deposit' ? 'wallet.txDeposit' : 'wallet.txWithdraw')}
-                  </span>
-                  <span className="num block text-[11px] leading-4 text-ink-4">{new Date(f.at).toLocaleString(lang)}</span>
-                </span>
-                <span className="text-right">
-                  <span className={`num block whitespace-nowrap text-[13px] font-semibold ${negative ? 'text-ink' : 'text-pos'}`}>
-                    {hidden ? MASK : `${negative ? '−' : '+'} ${formatAmount(Math.abs(f.amount), lang, dp)} ${f.asset}`}
-                  </span>
-                  <span className={`block text-[11px] font-medium leading-4 ${STATUS_TONE[f.status]}`}>● {statusLabel(f.status)}</span>
-                </span>
+                <strong className="text-[13px] font-semibold text-ink">{t(f.kind === 'deposit' ? 'wallet.depositShort' : 'wallet.withdraw')}</strong>
+                <b className={`num whitespace-nowrap text-right text-[13px] font-semibold ${negative ? 'text-ink' : 'text-pos'}`}>
+                  {hidden ? MASK : `${negative ? '−' : '+'} ${formatAmount(Math.abs(f.amount), lang, dp)} ${f.asset}`}
+                </b>
+                <small className="num text-[11px] text-ink-4">{new Date(f.at).toLocaleString(lang)}</small>
+                <small className={`text-right text-[11px] font-medium ${STATUS_TONE[f.status]}`}>● {statusLabel(f.status)}</small>
               </li>
             );
           })}

@@ -12,10 +12,10 @@ import ts from 'typescript';
  *   2. an empty ordinary account renders the same layout with real zeros
  *      where the server said zero and dashes where it said nothing;
  *   3. a page with no answer yet shows no dollar figure anywhere;
- *   4. profit by period is the server's own `periods[p]`, dash when the
+ *   4. the two accounts are two ledgers: the headline is their sum and
+ *      nothing else is added up on the page;
+ *   5. profit by period is the server's own `periods[p]`, dash when the
  *      window is unavailable, and the P&L pill is labelled 7D;
- *   5. the accounts card reports the Cross ledger as already counted and
- *      adds nothing up itself;
  *   6. every new label exists in all seven locales.
  */
 
@@ -45,40 +45,55 @@ const fmt = (() => {
   return out;
 })();
 
-const i18n = { useLanguage: () => ({ lang: 'ru', t: (k: string) => k }) };
+const i18n = { useLanguage: () => ({ lang: 'ru', t: (k: string, p?: Record<string, unknown>) => (p ? `${k}(${Object.values(p).join(',')})` : k) }) };
 const icons = new Proxy({}, { get: (_t, name) => () => React.createElement('svg', { 'data-icon': String(name) }) });
 const stub = (name: string) => (props: Record<string, unknown>) =>
-  React.createElement('div', { 'data-stub': name, 'data-props': JSON.stringify(Object.keys(props)) });
+  React.createElement('div', { 'data-stub': name, 'data-props': JSON.stringify(props, (_k, v) => (typeof v === 'function' ? undefined : v)) });
 
 const PERIODS = ['7d', '30d', '90d', '1y', 'all'];
+const noop = () => {};
+
+/** Hooks that run synchronously, so the card's effects fire as a mount would. */
+function hooks() {
+  const state: any[] = [];
+  const effects: (() => void)[] = [];
+  let cursor = 0;
+  const h = {
+    ...React,
+    useState(initial: any) {
+      const slot = cursor++;
+      if (!(slot in state)) state[slot] = typeof initial === 'function' ? initial() : initial;
+      return [state[slot], (next: any) => { state[slot] = typeof next === 'function' ? next(state[slot]) : next; }];
+    },
+    useMemo: (factory: () => any) => factory(),
+    useEffect: (run: () => void) => { effects.push(run); },
+    useId: () => 'gradient',
+  };
+  return { h, reset: () => { cursor = 0; effects.length = 0; }, effects };
+}
 
 function overviewModule() {
   const { TierBadge } = evaluate(wallet + 'TierBadge.tsx', { 'lucide-react': icons, '../../lib/i18n': i18n });
-  const { PerformancePeriods } = evaluate(wallet + 'PerformancePeriods.tsx', {
-    '../../lib/i18n': i18n, './format': fmt, './useWalletData': { PERFORMANCE_PERIODS: PERIODS },
-  });
   return evaluate(wallet + 'WalletOverview.tsx', {
+    react: { ...React, useState: (i: any) => [i, noop], useMemo: (f: () => any) => f() },
     'lucide-react': icons,
     '../../lib/i18n': i18n,
     './format': fmt,
     './TierBadge': { TierBadge },
-    './PerformancePeriods': { PerformancePeriods },
-    './EquityChart': { EquityChart: stub('EquityChart') },
-    './PortfolioAllocation': { PortfolioAllocation: stub('PortfolioAllocation') },
+    './AllocationCard': { AllocationCard: stub('AllocationCard') },
+    './DynamicsCard': { DynamicsCard: stub('DynamicsCard') },
     './RecentActivity': { RecentActivity: stub('RecentActivity') },
-    './useWalletData': { PERFORMANCE_PERIODS: PERIODS },
+    '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
   });
 }
 
-const noop = () => {};
 const base = {
   rows: [], performanceState: 'ok', hidden: false, onToggleHidden: noop, unavailable: false, loading: false,
-  onDeposit: noop, onWithdraw: noop, onTransfer: noop, onHistory: noop, onOpenUnified: noop, onOpenFunding: noop,
+  onDeposit: noop, onWithdraw: noop, onTransfer: noop, onHistory: noop, onOpenUnified: noop, onOpenFunding: noop, onOpenPnl: noop,
 };
-
 const period = (available: boolean, absolutePnl: number | null = null, percent: number | null = null) => ({
   period: '', available, startDate: available ? '2026-09-10' : null, endDate: available ? '2026-09-17' : null,
-  startEquity: null, endEquity: null, absolutePnl, percent, points: [],
+  startEquity: null, endEquity: null, absolutePnl, percent, points: available ? [{ date: '2026-09-10', equity: 1 }, { date: '2026-09-17', equity: 2 }] : [],
 });
 const noHistory = { periods: Object.fromEntries(PERIODS.map((p) => [p, period(false)])), ageDays: 0, startedOn: null };
 
@@ -95,8 +110,9 @@ const EMPTY_SPOT = {
 const EMPTY_OVERVIEW = { real: { spot: [], futures: [], spotValueUsd: 0, futuresValueUsd: 0, totalValueUsd: 0 }, valuationComplete: true, unpricedAssets: [], btcPriceUsd: 100000 };
 
 /** The locale groups thousands with a narrow no-break space; the assertions read it as a plain one. */
-const plain = (markup: string) => markup.replace(/[\u00a0\u202f]/g, ' ');
+const plain = (markup: string) => markup.replace(/[  ]/g, ' ');
 const html = (props: Record<string, unknown>) => plain(renderToStaticMarkup(overviewModule().WalletOverview({ ...base, ...props } as any)));
+const headline = (out: string) => /class="num wallet-overview-amount">([^<]*)</.exec(out)![1];
 
 describe('1. the Super VIP mark', () => {
   it('is on the owner Cross account, with its crown', () => {
@@ -125,28 +141,23 @@ describe('2. an empty ordinary account gets the same design, with nothing in it'
   const out = html({ account: EMPTY_SPOT, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 0 });
 
   it('renders the real zeros the server answered, as zeros', () => {
-    // Total, funding and unified are all a server-answered 0 — a fact, not
-    // an unknown — so they read $0,00 and never a dash.
-    expect(out.match(/\$0,00/g)?.length).toBe(3);
-    expect(out).toContain('0 BTC');
+    // The headline, funding and unified are all a server-answered 0 — a
+    // fact, not an unknown — so they read as 0,00 and never as a dash.
+    expect(headline(out)).toBe('0,00');
+    expect(out.match(/\$0,00/g)?.length).toBe(2);
+    expect(out).toContain('≈ 0 BTC');
   });
 
-  it('shows a dash for every window the account has no history for', () => {
-    expect(out).toContain('data-available="false"');
-    expect(out).not.toContain('data-available="true"');
-    for (const p of PERIODS) expect(out).toContain(`data-period="${p}"`);
-    // The 7D pill too.
-    expect(out).toMatch(/wallet\.pnlSeven<\/span><span class="wallet-overview-pnl-pill num text-ink-4" data-available="false">—</);
+  it('shows a dash for the 7D pill when the account has no history', () => {
+    expect(out).toMatch(/wallet\.pnlSeven<\/span><span class="wallet-pill num text-ink-4" data-available="false">—</);
   });
 
   it('keeps every card of the layout: accounts, distribution, dynamics, activity', () => {
-    for (const stubbed of ['EquityChart', 'PortfolioAllocation', 'RecentActivity']) expect(out).toContain(`data-stub="${stubbed}"`);
-    expect(out).toContain('wallet.accountsTitle');
+    for (const stubbed of ['AllocationCard', 'DynamicsCard', 'RecentActivity']) expect(out).toContain(`data-stub="${stubbed}"`);
+    expect(out).toContain('role="tablist"');
+    expect(out).toContain('wallet.tabAccount');
     expect(out).toContain('wallet.navFunding');
     expect(out).toContain('wallet.navUnified');
-    // And no Cross-only note on a plain ledger.
-    expect(out).not.toContain('wallet.accountUnifiedPool');
-    expect(out).not.toContain('wallet.accountCounted');
   });
 });
 
@@ -154,25 +165,92 @@ describe('3. no answer yet means no figure', () => {
   it('renders dashes and no dollar amount before the account resolves', () => {
     const out = html({ account: null, overview: null, performance: null, btcEquivalent: null });
     expect(out).not.toMatch(/\$\d/);
-    expect(out).toContain('— BTC');
-    expect((out.match(/—/g) ?? []).length).toBeGreaterThanOrEqual(3 + 1 + 5 * 2);
+    expect(headline(out)).toBe('—');
+    expect(out).toContain('≈ — BTC');
   });
 
   it('renders dashes, not zeros, when the ledger failed and no account answered', () => {
     const out = html({ account: EMPTY_SPOT, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 0, unavailable: true });
-    expect(out).not.toContain('$0,00');
+    expect(out).not.toContain('0,00');
+    expect(headline(out)).toBe('—');
   });
 });
 
-describe('4. profit by period is the server’s own answer', () => {
-  it('prints absolutePnl and percent per window and labels the pill 7D', () => {
+describe('4. two accounts, two ledgers', () => {
+  const overview = { ...EMPTY_OVERVIEW, real: { ...EMPTY_OVERVIEW.real, spotValueUsd: 230701, totalValueUsd: 230701 } };
+
+  it('lists each account with the server’s own figure and sums them once, in the headline', () => {
+    const out = html({ account: CROSS, overview, performance: noHistory, btcEquivalent: 10.002505 });
+    expect(out).toContain('$230 701,00');
+    expect(out).toContain('$1 000 250,50');
+    expect(headline(out)).toBe('1 230 951,50');
+    // The BTC mark is the one the hook divided the equity by, so the
+    // Overview cannot disagree with the Unified section: 1 000 250,5 / 10,002505 = 100 000.
+    expect(out).toContain('≈ 12,309515 BTC');
+    expect(out).toContain('≈ 10,002505 BTC');
+    expect(out).toContain('≈ 2,30701 BTC');
+  });
+
+  it('adds nothing else: the account rows and the ring get the server figures unchanged', () => {
+    const out = html({ account: CROSS, overview, performance: noHistory, btcEquivalent: 10.0025 });
+    const ring = /data-stub="AllocationCard" data-props="([^"]*)"/.exec(out)![1].replace(/&quot;/g, '"');
+    expect(JSON.parse(ring).accounts).toEqual([
+      { label: 'wallet.navUnified', valueUsd: 1000250.5 },
+      { label: 'wallet.navFunding', valueUsd: 230701 },
+    ]);
+    const source = read(wallet + 'WalletOverview.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    // One sum, of the two ledgers, and no P&L or ratio arithmetic anywhere.
+    expect(source.split('(fundingUsd ?? 0) + (unifiedUsd ?? 0)')).toHaveLength(2);
+    expect(source).not.toMatch(/absolutePnl\s*[-+*/]|percent\s*[-+*/]|\bfetch\(|\bapi\./);
+  });
+
+  it('the Asset tab lists every holding with the account it sits in, never merged', () => {
+    const rows = [{ symbol: 'USDT', name: 'Tether', total: 5, walletBalance: 5, available: 5, locked: 0, priceUsd: 1, changePercent24h: 0, valueUsd: 5, spendable: false, priced: true }];
+    const withSpot = { ...overview, real: { ...overview.real, spot: [{ asset: 'USDT', available: '230701', locked: '0', priceUsd: 1, valueUsd: 230701 }] } };
+    const mod = overviewModule();
+    // Force the Asset tab open.
+    const withTab = evaluate(wallet + 'WalletOverview.tsx', {
+      react: { ...React, useState: (i: any) => [i === 'account' ? 'asset' : i, noop], useMemo: (f: () => any) => f() },
+      'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt,
+      './TierBadge': mod.TierBadge ? { TierBadge: mod.TierBadge } : { TierBadge: () => null },
+      './AllocationCard': { AllocationCard: stub('AllocationCard') }, './DynamicsCard': { DynamicsCard: stub('DynamicsCard') },
+      './RecentActivity': { RecentActivity: stub('RecentActivity') }, '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
+    });
+    const out = plain(renderToStaticMarkup(withTab.WalletOverview({ ...base, account: CROSS, overview: withSpot, rows, performance: noHistory, btcEquivalent: 10 } as any)));
+    expect(out.match(/data-symbol="USDT"/g)).toHaveLength(2);
+    expect(out).toContain('wallet.navUnified');
+    expect(out).toContain('wallet.navFunding');
+    expect(out).toContain('≈ 230 701,00 USD');
+    expect(out).toContain('≈ 5,00 USD');
+    expect(out).not.toContain('230 706');
+  });
+
+  it('masks every figure behind the eye toggle', () => {
+    const out = html({ account: CROSS, overview, performance: noHistory, btcEquivalent: 10, hidden: true });
+    expect(out).not.toMatch(/\$\d|\d BTC/);
+    expect(out).toContain(fmt.MASK);
+  });
+});
+
+describe('5. profit by period is the server’s own answer', () => {
+  function dynamics(performance: any, extra: Record<string, unknown> = {}) {
+    const hk = hooks();
+    const { DynamicsCard } = evaluate(wallet + 'DynamicsCard.tsx', {
+      react: hk.h, 'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt, './useWalletData': { PERFORMANCE_PERIODS: PERIODS },
+    });
+    const props = { performance, loading: false, unavailable: false, hidden: false, ...extra };
+    const render = () => { hk.reset(); return DynamicsCard(props as any); };
+    render();
+    for (const run of hk.effects) run();
+    return plain(renderToStaticMarkup(render()));
+  }
+
+  it('prints absolutePnl and percent per window, dashes for windows the history cannot cover', () => {
     const performance = {
-      periods: {
-        '7d': period(true, 1248.1, 0.05), '30d': period(true, -3200, -0.31), '90d': period(false), '1y': period(false), all: period(true, 25000.25, 2.5),
-      },
+      periods: { '7d': period(true, 1248.1, 0.05), '30d': period(true, -3200, -0.31), '90d': period(false), '1y': period(false), all: period(true, 25000.25, 2.5) },
       ageDays: 200, startedOn: '2026-03-01',
     };
-    const out = html({ account: CROSS, overview: EMPTY_OVERVIEW, performance, btcEquivalent: 10 });
+    const out = dynamics(performance);
     expect(out).toContain('+$1 248,10');
     expect(out).toContain('+0,05%');
     expect(out).toContain('-$3 200,00');
@@ -180,49 +258,43 @@ describe('4. profit by period is the server’s own answer', () => {
     expect(out).toContain('+$25 000,25');
     expect(out).toContain('+2,50%');
     expect(out).toContain('data-period="90d" data-available="false"');
-    expect(out).toContain('data-period="1y" data-available="false"');
-    // The headline pill is the 7D window, said in its label, USD + percent.
+    expect(out.match(/class="wallet-period-row"/g)).toHaveLength(4);
+    // Opens on 7D — the first window the account can answer — and draws it.
+    expect(out).toContain('data-period="7d" data-available="true" aria-pressed="true"');
+    expect(out).toContain('stroke="var(--w-gold)"');
+    expect(out).toContain('10.09 — 17.09.2026');
+    expect(out).toContain('wallet.updatedOn(2026-09-17)');
+  });
+
+  it('keeps its card, all dashes, for an account with no history — nothing is drawn', () => {
+    const out = dynamics(noHistory);
+    expect(out.match(/data-available="false"/g)!.length).toBeGreaterThanOrEqual(5);
+    expect(out).not.toContain('<path d="M');
+    expect(out).toContain('wallet.chartNoHistory');
+    expect(out).not.toMatch(/[+-]\$\d/);
+  });
+
+  it('labels the headline pill 7D and never calls anything "today"', () => {
+    const performance = { ...noHistory, periods: { ...noHistory.periods, '7d': period(true, 1248.1, 0.05) } };
+    const out = html({ account: CROSS, overview: EMPTY_OVERVIEW, performance, btcEquivalent: 10 });
     expect(out).toContain('wallet.pnlSeven');
     expect(out).toMatch(/data-available="true">\+\$1 248,10 · \+0,05%</);
-    // Nothing rendered calls anything "today" (the comments explain why not).
-    const code = read(wallet + 'WalletOverview.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-    expect(code).not.toMatch(/today|сегодня/i);
-  });
-
-  it('computes no P&L of its own', () => {
-    for (const file of ['WalletOverview.tsx', 'PerformancePeriods.tsx', 'TierBadge.tsx', 'FundingView.tsx']) {
-      const source = read(wallet + file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
-      expect(`${file}: ${/absolutePnl\s*[-+*/]|percent\s*[-+*/]|totalEquityUsd\s*[-+*/]|spotValueUsd\s*[-+*/]/.test(source)}`).toBe(`${file}: false`);
-      expect(`${file}: ${/\bfetch\(|\bapi\./.test(source)}`).toBe(`${file}: false`);
+    for (const file of ['WalletOverview.tsx', 'DynamicsCard.tsx', 'AllocationCard.tsx', 'FundingView.tsx']) {
+      const code = read(wallet + file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+      expect(`${file}: ${/today|сегодня/i.test(code)}`).toBe(`${file}: false`);
+      expect(`${file}: ${/\bfetch\(|\bapi\./.test(code)}`).toBe(`${file}: false`);
     }
-  });
-});
-
-describe('5. the accounts card on a Cross account', () => {
-  it('reports the funding ledger as already counted and never sums the two', () => {
-    const overview = { ...EMPTY_OVERVIEW, real: { ...EMPTY_OVERVIEW.real, spotValueUsd: 230701, totalValueUsd: 230701 } };
-    const out = html({ account: CROSS, overview, performance: noHistory, btcEquivalent: 10 });
-    expect(out).toContain('$230 701,00');
-    expect(out).toContain('$1 000 250,50');
-    expect(out).toContain('wallet.accountCounted');
-    expect(out).toContain('wallet.accountUnifiedPool');
-    // The headline is the account's equity, exactly — not equity + funding.
-    expect(out).not.toContain('$1 230 951,50');
-  });
-
-  it('masks every figure behind the eye toggle', () => {
-    const out = html({ account: CROSS, overview: EMPTY_OVERVIEW, performance: noHistory, btcEquivalent: 10, hidden: true });
-    expect(out).not.toMatch(/\$\d/);
-    expect(out).toContain(fmt.MASK);
   });
 });
 
 describe('6. the labels exist in every locale', () => {
   const keys = [
     'wallet.brandTagline', 'wallet.navAnalysis', 'wallet.cardLinkTitle', 'wallet.overviewTitle', 'wallet.pnlSeven',
-    'wallet.accountsTitle', 'wallet.accountCounted', 'wallet.accountUnifiedPool', 'wallet.periodsTitle',
-    'wallet.recentActivity', 'wallet.allActivity', 'wallet.noActivity', 'wallet.superVip', 'wallet.superVipTitle',
-    'wallet.fundingSubtitle', 'wallet.openDetails',
+    'wallet.accountsTitle', 'wallet.recentActivity', 'wallet.allActivity', 'wallet.noActivity', 'wallet.superVip', 'wallet.superVipTitle',
+    'wallet.fundingSubtitle', 'wallet.openDetails', 'wallet.depositShort', 'wallet.borrow', 'wallet.borrowUnavailable', 'wallet.tabAccount',
+    'wallet.tabAsset', 'wallet.allocationSub', 'wallet.dynamicsSub', 'wallet.profitForPeriod', 'wallet.periodAllShort', 'wallet.updatedOn',
+    'wallet.valuationFull', 'wallet.valuationFullShort', 'wallet.hideSmallUsd', 'wallet.colCurrency', 'wallet.colAsCollateral',
+    'wallet.collateralLocked', 'wallet.colAction', 'wallet.unrealizedPnlLong', 'wallet.assetsCount',
   ];
   it.each(['ru', 'en', 'es', 'hi', 'ja', 'ko', 'zh'])('%s', (lang) => {
     const dictionary = read(`frontend/src/lib/i18n/locales/${lang}.ts`);
@@ -237,23 +309,21 @@ describe('6. the labels exist in every locale', () => {
     expect(ru).toContain("'wallet.navOverview': 'Обзор'");
     expect(ru).toContain("'wallet.navFunding': 'Финансирование'");
     expect(ru).toContain("'wallet.equityChart': 'Динамика активов'");
+    expect(ru).toContain("'wallet.depositShort': 'Внести'");
   });
 });
 
 describe('7. the funding view', () => {
   function fundingHtml(props: Record<string, unknown>) {
     const { FundingView } = evaluate(wallet + 'FundingView.tsx', {
-      'lucide-react': icons,
-      '../../lib/i18n': i18n,
-      './format': fmt,
-      './ui': { EmptyState: stub('EmptyState') },
-      '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
+      'lucide-react': icons, '../../lib/i18n': i18n, './format': fmt,
+      './ui': { EmptyState: stub('EmptyState') }, '../../components/CryptoIcon': { CryptoIcon: () => React.createElement('i') },
     });
     return plain(renderToStaticMarkup(FundingView({ hidden: false, unavailable: false, loading: false, onDeposit: noop, onWithdraw: noop, onTransfer: noop, ...props } as any)));
   }
 
   it('is empty — a deposit action and nothing else — for an account with nothing', () => {
-    const out = fundingHtml({ account: EMPTY_SPOT, overview: EMPTY_OVERVIEW });
+    const out = fundingHtml({ overview: EMPTY_OVERVIEW });
     expect(out).toContain('data-stub="EmptyState"');
     expect(out).toContain('$0,00');
     expect(out).not.toContain('<table');
@@ -272,12 +342,11 @@ describe('7. the funding view', () => {
         spotValueUsd: 230701,
       },
     };
-    const out = fundingHtml({ account: CROSS, overview });
+    const out = fundingHtml({ overview });
     expect(out).toContain('data-asset="USDT"');
     expect(out).toContain('data-asset="EUR"');
     expect(out).not.toContain('data-asset="XRP"');
     expect(out).toContain('$230 701,00');
     expect(out).toMatch(/data-asset="EUR"[\s\S]*?—<\/td>/);
-    expect(out).toContain('wallet.accountUnifiedPool');
   });
 });
