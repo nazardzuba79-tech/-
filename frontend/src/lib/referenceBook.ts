@@ -34,7 +34,17 @@ export function visibleDepthRatio(bids: SpotDepthLevel[], asks: SpotDepthLevel[]
   return Number.isFinite(buy + sell) && buy > 0 && sell > 0 ? buy / (buy + sell) * 100 : null;
 }
 
-export const REFERENCE_ROW_HEIGHT = 22;
+/**
+ * The ladder's row pitch, in px.
+ *
+ * This is the one number that decides how much of the book a trader can
+ * actually see: `referenceRowCount` divides the panel by it, and the CSS
+ * reads it back as `--book-row-height`, so the rendered rows and the
+ * requested depth can never disagree. 22px showed noticeably fewer levels
+ * per side than the reference terminal does in the same column; 20px is
+ * still comfortably above the 16px hit-target floor for a clickable row.
+ */
+export const REFERENCE_ROW_HEIGHT = 20;
 export const REFERENCE_CENTER_HEIGHT = 36;
 
 /** Whole rows only: reserve the center price band before dividing the stacks. */
