@@ -15,20 +15,25 @@ export function TerminalChart({ pair, market='spot', compactTools=false, private
   candleLoader?:ChartCandleLoader;
 }) {
   const [mode,setMode]=useState<'voltex'|'tradingview'>('voltex');
-  const { t, lang }=useLanguage();
+  const { t }=useLanguage();
   useEffect(() => { if (privateTrading?.enabled && privateTrading.selecting) setMode('voltex'); }, [privateTrading?.enabled, privateTrading?.selecting]);
   useEffect(() => { if (privateTrading?.enabled && privateTrading.focus) setMode('voltex'); }, [privateTrading?.enabled, privateTrading?.focus?.sequence]);
+  /**
+   * Still read by the TradingView switch below: leaving a chart while a bar
+   * is being chosen must cancel that choice rather than strand it.
+   */
   const choosing = privateTrading?.enabled && privateTrading.selecting;
-  const tradeLabel = lang === 'ru' ? 'Сделка с графика' : 'Trade from chart';
   return <div className="terminal-chart-shell">
     <div className="terminal-chart-heading">
       <span>{t('futures.chart')}</span>
       <div role="group" aria-label={t('futures.chart')}>
-        {privateTrading?.enabled && <button type="button" className="chart-trade-action" aria-pressed={!!choosing}
-          title={mode === 'tradingview' ? `${tradeLabel} · VOLTEX` : tradeLabel}
-          onClick={() => { setMode('voltex'); if (choosing) privateTrading.onCancelSelection(); else privateTrading.onSelectionModeChange?.('entry'); }}>
-          <span aria-hidden="true">↗</span> {tradeLabel}
-        </button>}
+        {/* The "Сделка с графика" button used to sit here. It is gone from
+            the UI on purpose: it duplicated a control the chart already
+            offers, and it was the widest thing in this heading. Nothing
+            below it changed — the picker is still armed from the chart's
+            own tool menu, the two effects above still bring the VOLTEX
+            chart forward while a bar is being chosen, and the TradingView
+            switch still cancels an unfinished choice. */}
         <button type="button" aria-pressed={mode==='voltex'} onClick={()=>setMode('voltex')}>VOLTEX</button>
         <button type="button" aria-pressed={mode==='tradingview'} onClick={()=>{ if (choosing) privateTrading?.onCancelSelection(); setMode('tradingview'); }}>TradingView</button>
       </div>
