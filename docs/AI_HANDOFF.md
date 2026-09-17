@@ -2454,3 +2454,10 @@ withdrawal was placed.
 - **No regressions.** Failing-test list across `src/services/copyTrading` and `frontend/src/lib/__tests__/copy*`, with and without this change: **identical**. Five tests fail on `main` already, all in the Copy Trading first-load area (task 2 of the brief), and none of them are touched here.
 - **NOT VERIFIED.** Whether the Render backend is serving a build that contains #106 — this sandbox cannot reach that deployment. Nothing here changes the production symptom if the running backend predates #106; that has to be checked on Render itself.
 - Not merged to `main`, not deployed to production.
+
+### 2026-09-17 — Claude — making the backend deploy identifiable (same branch)
+
+- **Why.** The brief asks whether Render is really serving a build that contains #106. That could not be answered from anywhere: `/health` returned `{status:'ok'}` and nothing else, and the frontend (Cloudflare Pages) and the API (Render) deploy independently — so "the site updated" is no evidence about the API.
+- **What.** `/health` now also returns `commit`, `branch` and `startedAt`. `status` is unchanged for anything already polling it. `resolveBuildCommit()` reads `RENDER_GIT_COMMIT`, then `GIT_COMMIT`, `SOURCE_VERSION`, `VERCEL_GIT_COMMIT_SHA`, and returns **`null`** when none is set or the variable is exported empty — an admitted unknown, never a guess, because a wrong SHA here would be believed.
+- **TESTED.** `src/__tests__/buildCommit.test.ts`, 3/3: precedence, null-not-guess (including empty and whitespace), and trimming. Backend `tsc` PASS.
+- **How to use it.** `curl https://<render-host>/health` and compare `commit` against the SHA you expect. If it predates #106, the Ksenia symptom is a stale backend and no frontend deploy will change it.
