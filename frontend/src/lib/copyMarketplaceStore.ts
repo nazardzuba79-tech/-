@@ -14,6 +14,7 @@ export interface CopyMarketplaceResponse {
   errors: Partial<Record<'nazar' | 'ksenia' | 'identities', string>>;
 }
 type Section = 'nazar' | 'ksenia' | 'identities';
+type PerformancePeriod = '7D' | '30D' | '90D' | 'ALL';
 export interface CopyMarketplaceState {
   nazar: SyntheticCopyTradingResponse | null;
   ksenia: KseniaResponse | null;
@@ -34,11 +35,13 @@ const rows = (value: unknown, keys: string, dates: string[] = []) => Array.isArr
   && value.every(row => numbers(row, keys) && dates.every(key => date(row[key])));
 
 const KSENIA_REPORTED_TRADE_ID = 'KS-REPORTED-20260916-BTC';
+const KSENIA_REPORTED_CLOSE_DATE = '2026-09-16';
+const PERIOD_DAYS: Record<Exclude<PerformancePeriod, 'ALL'>, number> = { '7D': 7, '30D': 30, '90D': 90 };
 function reportedKseniaTrade(value: unknown, strategyId: string): value is Record<string, any> {
   if (strategyId !== 'VX-KSENIA' || !record(value) || value.id !== KSENIA_REPORTED_TRADE_ID
     || value.source !== 'OWNER_REPORTED' || value.marketSymbol !== 'BTCUSDT' || value.side !== 'SHORT'
     || value.result !== 'WIN' || value.leverage !== 10 || value.netPnl !== 1754 || value.returnPct !== 7.8
-    || value.openedOn !== '2026-09-15' || value.closedOn !== '2026-09-16') return false;
+    || value.openedOn !== '2026-09-15' || value.closedOn !== KSENIA_REPORTED_CLOSE_DATE) return false;
   // Exact prices, size, intraday timestamps and holding duration were not
   // supplied. They must stay absent so the existing formatters render “—”.
   return ['entryPrice','exitPrice','quantity','holdingTimeMinutes','grossPnl','fees','funding','riskR']
@@ -71,9 +74,21 @@ function reportedKseniaPerformance(value: Record<string, any>, strategyId: strin
   if (!record(entry) || entry.id !== KSENIA_REPORTED_TRADE_ID || entry.source !== 'OWNER_REPORTED'
     || entry.market !== 'BTCUSDT' || entry.side !== 'SHORT' || entry.leverage !== 10
     || entry.netPnl !== 1754 || entry.returnPct !== 7.8
-    || entry.openedOn !== '2026-09-15' || entry.closedOn !== '2026-09-16') return false;
+    || entry.openedOn !== '2026-09-15' || entry.closedOn !== KSENIA_REPORTED_CLOSE_DATE) return false;
   return ['entryPrice','exitPrice','quantity','openedAt','closedAt','fees','funding']
     .every(key => entry[key] === null);
+}
+/** The reported row can justify an unknown holding-time aggregate only for a
+ * period that actually still counts the trade. A valid declaration is not a
+ * blanket permission to omit unrelated period aggregates. This mirrors the
+ * backend's strict cutoff rule: closeDate > endDate - periodDays. */
+function reportedKseniaCountsInPeriod(value: Record<string, any>, period: PerformancePeriod): boolean {
+  const end = value.simulation?.simulatedAt?.slice?.(0, 10);
+  if (typeof end !== 'string' || end < KSENIA_REPORTED_CLOSE_DATE) return false;
+  if (period === 'ALL') return true;
+  const endMs = Date.parse(`${end}T00:00:00Z`);
+  const closeMs = Date.parse(`${KSENIA_REPORTED_CLOSE_DATE}T00:00:00Z`);
+  return Number.isFinite(endMs) && closeMs > endMs - PERIOD_DAYS[period] * 86_400_000;
 }
 function visibleTrade(value: unknown, strategyId: string): value is Record<string, any> {
   if (reportedKseniaTrade(value, strategyId)) return true;
@@ -116,10 +131,11 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
     && value.trades.every((trade: any, index: number) => index === 0
       || closeTime(value.trades[index - 1]) >= closeTime(trade));
   const tradeStats = record(value.tradeStats)
-    && ['7D','30D','90D','ALL'].every(period => {
+    && (['7D','30D','90D','ALL'] as PerformancePeriod[]).every(period => {
       const stats = (value.tradeStats as any)[period];
+      const mayOmitHolding = reportedPresent && reportedKseniaCountsInPeriod(value, period);
       return numbers(stats, 'totalTrades winningTrades losingTrades grossProfit grossLoss netPnlTotal')
-        && (finite(stats.holdingTimeTotalMinutes) || (reportedPresent && stats.holdingTimeTotalMinutes === undefined));
+        && (finite(stats.holdingTimeTotalMinutes) || (mayOmitHolding && stats.holdingTimeTotalMinutes === undefined));
     })
     // The real total must be at least what is shown, or the count under the
     // table would be smaller than the table.

@@ -67,9 +67,12 @@ export interface HomeMarket {
   logoOf: (base: string) => string | undefined;
 }
 
-// One 15-second display clock for visible market surfaces. Child components
-// receive these values and never open a second upstream market-data loop.
-const TICKER_POLL_MS = 15_000;
+/**
+ * The homepage is presentation, not an execution surface. One real snapshot
+ * every six hours is enough for the hero terminal, market map and popular
+ * assets table. Trading/Futures keep their own real-time feeds untouched.
+ */
+export const HOME_MARKET_REFRESH_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_HERO_PAIR = 'BTC/USDT';
 const receivedNumber = (value: unknown): number => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '')
   && Number.isFinite(Number(value)) ? Number(value) : NaN;
@@ -79,10 +82,6 @@ export function useHomeMarket(): HomeMarket {
   const [tickerUpdatedAt, setTickerUpdatedAt] = useState<number | null>(null);
   const [tickerSource, setTickerSource] = useState('');
   const [tickersStale, setTickersStale] = useState(false);
-  // The hero is intentionally pinned to BTC/USDT at first paint. Waiting for
-  // the full multi-pair ticker walk before deciding this pair made the laptop
-  // screen sit on "Loading market data" even though its three BTC feeds could
-  // have been requested immediately and independently.
   const [hero, setHero] = useState<HomeHeroFeed>({
     pair: DEFAULT_HERO_PAIR, book: null, candles: [], trades: [],
     bookStatus: 'loading', candlesStatus: 'loading', tradesStatus: 'loading',
@@ -107,7 +106,7 @@ export function useHomeMarket(): HomeMarket {
     let hasTickers = false;
     let heroInFlight = false;
     let heroVisible = true;
-    let heroPair: string | null = DEFAULT_HERO_PAIR;
+    const heroPair: string | null = DEFAULT_HERO_PAIR;
     let tickerStartedAt = -Infinity;
     let heroStartedAt = -Infinity;
     let cfdStartedAt = -Infinity;
@@ -128,12 +127,15 @@ export function useHomeMarket(): HomeMarket {
     };
 
     async function loadCfd() {
-      if (cancelled || document.hidden || !heroVisible || cfdInFlight || Date.now() - cfdStartedAt < TICKER_POLL_MS) return;
-      cfdInFlight = true; cfdStartedAt = Date.now();
+      if (cancelled || document.hidden || !heroVisible || cfdInFlight
+        || Date.now() - cfdStartedAt < HOME_MARKET_REFRESH_MS) return;
+      cfdInFlight = true;
+      cfdStartedAt = Date.now();
       try {
         const res = await api.getCfdTickers();
         if (cancelled) return;
-        setCfd(res); setCfdStatus('ok');
+        setCfd(res);
+        setCfdStatus('ok');
         setCfdPriceHistory(previous => {
           const next: Record<string, number[]> = { ...previous };
           res.tickers.forEach(row => {
@@ -146,23 +148,19 @@ export function useHomeMarket(): HomeMarket {
           return next;
         });
       } catch {
-        // Preserve the last good display snapshot instead of blanking GOLD/OIL
-        // on one failed poll. The visible row ages itself to Last quote.
         if (!cancelled) setCfdStatus('error');
-      } finally { cfdInFlight = false; }
+      } finally {
+        cfdInFlight = false;
+      }
     }
 
     async function loadHero() {
       if (cancelled || document.hidden || !heroVisible || !heroPair || heroInFlight
-        || Date.now() - heroStartedAt < TICKER_POLL_MS) return;
+        || Date.now() - heroStartedAt < HOME_MARKET_REFRESH_MS) return;
       heroInFlight = true;
       heroStartedAt = Date.now();
       const pair = heroPair;
 
-      // Start all three reads together, but publish each one as soon as it
-      // completes. The old Promise.allSettled barrier meant one slow Kraken
-      // endpoint held the chart, book and tape hostage even when the other
-      // two were already available.
       const bookTask = api.getExternalOrderBook(pair, 12).then(value => {
         const validBook = value.pair === pair && positive(value.timestamp)
           ? { ...value,
@@ -208,48 +206,139 @@ export function useHomeMarket(): HomeMarket {
 
     function loadTickers() {
       if (cancelled || document.hidden || tickerInFlight
-        || Date.now() - tickerStartedAt < TICKER_POLL_MS) return;
+        || Date.now() - tickerStartedAt < HOME_MARKET_REFRESH_MS) return;
       tickerInFlight = true;
       tickerStartedAt = Date.now();
-      api.getExternalTickers().then((res) => {
+      api.getExternalTickers().then(res => {
         if (cancelled) return;
-        const rows: HomeTicker[] = res.tickers.filter(t => Number.isFinite(receivedNumber(t.lastPrice)) && receivedNumber(t.lastPrice) >= 0).map((t) => {
-          const [base, quote] = t.pair.split('/');
-          return { pair:t.pair, base, quote, price:receivedNumber(t.lastPrice),
-            change:Number.isFinite(receivedNumber(t.changePercent24h)) ? parseChangePercent(t.changePercent24h,t.pair) : NaN,
-            quoteVolume:receivedNumber(t.quoteVolume24h)>=0 ? receivedNumber(t.quoteVolume24h) : NaN,
-            high:receivedNumber(t.high24h), low:receivedNumber(t.low24h) };
-        });
+        const rows: HomeTicker[] = res.tickers
+          .filter(t => Number.isFinite(receivedNumber(t.lastPrice)) && receivedNumber(t.lastPrice) >= 0)
+          .map(t => {
+            const [base, quote] = t.pair.split('/');
+            return {
+              pair: t.pair,
+              base,
+              quote,
+              price: receivedNumber(t.lastPrice),
+              change: Number.isFinite(receivedNumber(t.changePercent24h)) ? parseChangePercent(t.changePercent24h, t.pair) : NaN,
+              quoteVolume: receivedNumber(t.quoteVolume24h) >= 0 ? receivedNumber(t.quoteVolume24h) : NaN,
+              high: receivedNumber(t.high24h),
+              low: receivedNumber(t.low24h),
+            };
+          });
         if (rows.length === 0) throw new Error('Empty market ticker response');
-        hasTickers = true; setTickers(rows); setTickerUpdatedAt(Date.now()); setTickerSource(res.source); setTickersStale(false);
-        setPriceHistory(previous => { const next: Record<string, number[]> = {};
-          byVolume(rows,60).forEach(row => { if(Number.isFinite(row.price)&&row.price>=0) next[row.pair]=[...(previous[row.pair]??[]),row.price].slice(-24); }); return next; });
+        hasTickers = true;
+        setTickers(rows);
+        setTickerUpdatedAt(Date.now());
+        setTickerSource(res.source);
+        setTickersStale(false);
+        setPriceHistory(previous => {
+          const next: Record<string, number[]> = { ...previous };
+          byVolume(rows, 60).forEach(row => {
+            if (!Number.isFinite(row.price) || row.price < 0) return;
+            const old = previous[row.pair] ?? [];
+            if (old[old.length - 1] !== row.price) next[row.pair] = [...old, row.price].slice(-24);
+          });
+          return next;
+        });
         setTickersStatus('ok');
       }).catch(() => {
-        if (cancelled) return; setTickersStale(hasTickers);
-        setTickersStatus(prev=>prev==='ok'?'ok':'error');
-      }).finally(()=>{tickerInFlight=false;});
+        if (cancelled) return;
+        setTickersStale(hasTickers);
+        setTickersStatus(previous => previous === 'ok' ? 'ok' : 'error');
+      }).finally(() => {
+        tickerInFlight = false;
+      });
     }
 
-    const refresh=()=>{loadTickers();void loadHero();void loadCfd();};
-    const terminal=document.getElementById('home-live-terminal');
-    const observer=typeof IntersectionObserver!=='undefined'&&terminal?new IntersectionObserver(entries=>{heroVisible=entries.some(entry=>entry.isIntersecting);if(heroVisible){void loadHero();void loadCfd();}},{rootMargin:'120px'}):null;
-    if(terminal)observer?.observe(terminal);refresh();
-    const poll=window.setInterval(refresh,TICKER_POLL_MS);document.addEventListener('visibilitychange',refresh);
+    const refresh = () => {
+      loadTickers();
+      void loadHero();
+      void loadCfd();
+    };
+    const terminal = document.getElementById('home-live-terminal');
+    const observer = typeof IntersectionObserver !== 'undefined' && terminal
+      ? new IntersectionObserver(entries => {
+        heroVisible = entries.some(entry => entry.isIntersecting);
+        if (heroVisible) {
+          void loadHero();
+          void loadCfd();
+        }
+      }, { rootMargin: '120px' })
+      : null;
+    if (terminal) observer?.observe(terminal);
+    refresh();
+    const poll = window.setInterval(refresh, HOME_MARKET_REFRESH_MS);
+    document.addEventListener('visibilitychange', refresh);
 
-    api.getExternalRankings().then(res=>{if(cancelled)return;setRankings(res.rankings);setRankingsStatus('ok');}).catch(()=>!cancelled&&setRankingsStatus('error'));
-    api.getGlobalMarket().then(res=>{if(cancelled)return;setGlobal(res.global);setFearGreed(res.fearGreed);setGlobalStatus(res.global||res.fearGreed?'ok':'error');}).catch(()=>!cancelled&&setGlobalStatus('error'));
-    futuresConfigStore.load().then(res=>{if(cancelled)return;setFuturesSymbols(res.symbols);setFuturesStatus(res.symbols.length>0?'ok':'error');}).catch(()=>!cancelled&&setFuturesStatus('error'));
+    // These are metadata/bootstrap reads rather than live quote loops. They
+    // remain one-shot per homepage mount; no child opens its own poller.
+    api.getExternalRankings().then(res => {
+      if (cancelled) return;
+      setRankings(res.rankings);
+      setRankingsStatus('ok');
+    }).catch(() => !cancelled && setRankingsStatus('error'));
+    api.getGlobalMarket().then(res => {
+      if (cancelled) return;
+      setGlobal(res.global);
+      setFearGreed(res.fearGreed);
+      setGlobalStatus(res.global || res.fearGreed ? 'ok' : 'error');
+    }).catch(() => !cancelled && setGlobalStatus('error'));
+    futuresConfigStore.load().then(res => {
+      if (cancelled) return;
+      setFuturesSymbols(res.symbols);
+      setFuturesStatus(res.symbols.length > 0 ? 'ok' : 'error');
+    }).catch(() => !cancelled && setFuturesStatus('error'));
 
-    return()=>{cancelled=true;window.clearInterval(poll);observer?.disconnect();document.removeEventListener('visibilitychange',refresh);};
+    return () => {
+      cancelled = true;
+      window.clearInterval(poll);
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
 
-  const logoByBase=new Map(rankings.map(r=>[r.symbol.toUpperCase(),r.image]));
-  return {priceHistory,tickerUpdatedAt,tickerSource,tickersStale,hero,tickers,tickersStatus,rankings,rankingsStatus,global,fearGreed,globalStatus,cfd,cfdStatus,cfdPriceHistory,futuresSymbols,futuresStatus,logoOf:(base:string)=>logoByBase.get(base.toUpperCase())};
+  const logoByBase = new Map(rankings.map(r => [r.symbol.toUpperCase(), r.image]));
+  return {
+    priceHistory,
+    tickerUpdatedAt,
+    tickerSource,
+    tickersStale,
+    hero,
+    tickers,
+    tickersStatus,
+    rankings,
+    rankingsStatus,
+    global,
+    fearGreed,
+    globalStatus,
+    cfd,
+    cfdStatus,
+    cfdPriceHistory,
+    futuresSymbols,
+    futuresStatus,
+    logoOf: (base: string) => logoByBase.get(base.toUpperCase()),
+  };
 }
 
 export function byVolume(tickers: HomeTicker[], limit: number): HomeTicker[] {
-  return tickers.filter(t=>t.quote==='USDT').sort((a,b)=>(Number.isFinite(b.quoteVolume)?b.quoteVolume:-1)-(Number.isFinite(a.quoteVolume)?a.quoteVolume:-1)).slice(0,limit);
+  return tickers.filter(t => t.quote === 'USDT')
+    .sort((a, b) => (Number.isFinite(b.quoteVolume) ? b.quoteVolume : -1) - (Number.isFinite(a.quoteVolume) ? a.quoteVolume : -1))
+    .slice(0, limit);
 }
-export function formatPriceValue(v:number):string{if(!Number.isFinite(v))return'—';if(v===0)return'0';if(v>=1000)return v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});if(v>=1)return v.toFixed(2);return v.toFixed(4);}
-export function formatCompactUsd(v:number|null|undefined):string{if(v===null||v===undefined||!Number.isFinite(v))return'—';if(v>=1e12)return`$${(v/1e12).toFixed(2)}T`;if(v>=1e9)return`$${(v/1e9).toFixed(2)}B`;if(v>=1e6)return`$${(v/1e6).toFixed(2)}M`;return`$${v.toFixed(0)}`;}
+
+export function formatPriceValue(v: number): string {
+  if (!Number.isFinite(v)) return '—';
+  if (v === 0) return '0';
+  if (v >= 1000) return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (v >= 1) return v.toFixed(2);
+  return v.toFixed(4);
+}
+
+export function formatCompactUsd(v: number | null | undefined): string {
+  if (v === null || v === undefined || !Number.isFinite(v)) return '—';
+  if (v >= 1e12) return `$${(v / 1e12).toFixed(2)}T`;
+  if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
+  if (v >= 1e6) return `$${(v / 1e6).toFixed(2)}M`;
+  return `$${v.toFixed(0)}`;
+}

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthPage } from './pages/AuthPage';
 import { HomePage } from './pages/home/HomePage';
 import { RouteShell } from './RouteShell';
@@ -10,7 +10,8 @@ import { prefetchCopyMarketplace } from './lib/useCopyMarketplace';
 
 const RegisterPage = lazy(() => import('./pages/register/RegisterPage').then((m) => ({ default: m.RegisterPage })));
 const TradePage = lazy(() => import('./pages/TradePage').then((m) => ({ default: m.TradePage })));
-const FuturesPage = lazy(() => import('./pages/FuturesRoute').then((m) => ({ default: m.FuturesRoute })));
+const FuturesPage = lazy(() => import('./pages/FuturesPage').then((m) => ({ default: m.FuturesPage })));
+const PrivateTradingPage = lazy(() => import('./pages/private-trading/PrivateTradingPage').then((m) => ({ default: m.PrivateTradingPage })));
 const MarketsPage = lazy(() => import('./pages/MarketsPage').then((m) => ({ default: m.MarketsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
 const CardPage = lazy(() => import('./pages/CardPage').then((m) => ({ default: m.CardPage })));
@@ -32,6 +33,14 @@ const AdminKycPage = lazy(() => import('./pages/admin/AdminKycPage').then((m) =>
 const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage').then((m) => ({ default: m.AdminWithdrawalsPage })));
 const AdminDepositsPage = lazy(() => import('./pages/admin/AdminDepositsPage').then((m) => ({ default: m.AdminDepositsPage })));
 const AdminAuditLogPage = lazy(() => import('./pages/admin/AdminAuditLogPage').then((m) => ({ default: m.AdminAuditLogPage })));
+
+/** Query-string routing stays here so the ordinary Futures path has exactly
+ * one lazy chunk: App -> FuturesPage. The exceptional private card surface is
+ * separately lazy and remains server-authorized after this selector. */
+function FuturesEntry() {
+  const [params] = useSearchParams();
+  return params.get('card') ? <PrivateTradingPage /> : <FuturesPage />;
+}
 
 function usePrefetchLikelyRoutes() {
   useEffect(() => {
@@ -72,7 +81,7 @@ export function App() {
         <Route path="/login" element={<RedirectIfAuthed><AuthPage /></RedirectIfAuthed>} />
         <Route path="/register" element={<RedirectIfAuthed><RegisterPage /></RedirectIfAuthed>} />
         <Route path="/trade" element={<RequireAuth><TradePage /></RequireAuth>} />
-        <Route path="/futures" element={<RequireAuth><FuturesPage /></RequireAuth>} />
+        <Route path="/futures" element={<RequireAuth><FuturesEntry /></RequireAuth>} />
         <Route path="/markets" element={<RequireAuth><MarketsPage /></RequireAuth>} />
         <Route path="/banking" element={<RequireAuth><BankingPage /></RequireAuth>} />
         <Route path="/earn" element={<Navigate to="/banking" replace />} />

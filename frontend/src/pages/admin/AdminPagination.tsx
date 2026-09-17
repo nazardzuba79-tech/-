@@ -16,7 +16,11 @@ export function AdminPagination({
   itemLabel: string;
   onPageChange: (page: number) => void;
 }) {
-  if (total === 0) return null;
+  // A single-page list has nowhere to paginate. Hiding the entire row also
+  // removes redundant copy such as “1–14 из 14”, while 2+ pages keep the
+  // exact existing controls and count text.
+  if (total === 0 || totalPages <= 1) return null;
+
   const from = (page - 1) * pageSize + 1;
   const to = Math.min(page * pageSize, total);
   const pages = buildPageList(page, totalPages);
