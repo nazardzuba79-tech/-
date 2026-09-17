@@ -328,7 +328,7 @@ describe('5. the page does not poll per asset', () => {
     const projections = source.slice(source.indexOf('const account: UnifiedAccount'));
     expect(projections).not.toMatch(/\bfetch\(|api\.|nativeDemoApi\./);
     // And no component below the hook fetches either.
-    for (const file of ['PortfolioStrip.tsx', 'AssetLedger.tsx', 'PortfolioAllocation.tsx']) {
+    for (const file of ['PortfolioStrip.tsx', 'AssetLedger.tsx', 'AllocationCard.tsx', 'DynamicsCard.tsx', 'WalletOverview.tsx', 'FundingView.tsx']) {
       expect(`${file}: ${/\bfetch\(|\bapi\./.test(read(`frontend/src/pages/wallet-v3/${file}`))}`).toBe(`${file}: false`);
     }
   });
@@ -554,10 +554,8 @@ describe('7. the Wallet workspace is sectioned like a trading account', () => {
     expect(funding).toContain('<FundingView');
     // Both are fed the same hook outputs the Unified section reads — never
     // a second request or a second derivation.
-    for (const block of [overview, funding]) {
-      expect(block).toContain('account={account}');
-      expect(block).toContain('overview={overview}');
-    }
+    expect(overview).toContain('account={account}');
+    for (const block of [overview, funding]) expect(block).toContain('overview={overview}');
   });
 
   it('puts the account summary and the asset table in the same section', () => {
@@ -566,6 +564,11 @@ describe('7. the Wallet workspace is sectioned like a trading account', () => {
     // Nothing between them: the table starts immediately below the summary.
     expect(unified.indexOf('<PortfolioStrip')).toBeLessThan(unified.indexOf('<AssetLedger'));
     expect(unified.slice(unified.indexOf('</PortfolioStrip>') === -1 ? unified.indexOf('onHistory') : 0)).toBeDefined();
-    expect(unified).toContain('<PortfolioAllocation');
+    // The approved Unified page is the header, the summary and the table at
+    // full width; the distribution ring lives on the Overview now.
+    expect(unified).not.toContain('<PortfolioAllocation');
+    expect(unified).not.toContain('<AllocationCard');
+    // The Cross account tells the table which rows back the margin.
+    expect(unified).toContain("collateral={account?.mode === 'CROSS'}");
   });
 });

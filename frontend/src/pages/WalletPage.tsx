@@ -6,7 +6,6 @@ import { PortfolioStrip } from './wallet-v3/PortfolioStrip';
 import { EquityChart } from './wallet-v3/EquityChart';
 import { WalletSection, WalletSideNav } from './wallet-v3/WalletSideNav';
 import { AssetLedger } from './wallet-v3/AssetLedger';
-import { PortfolioAllocation } from './wallet-v3/PortfolioAllocation';
 import { TransactionHistory } from './wallet-v3/TransactionHistory';
 import { DepositModal } from './wallet-v3/DepositModal';
 import { WithdrawModal } from './wallet-v3/WithdrawModal';
@@ -144,12 +143,12 @@ export function WalletPage() {
                 onHistory={() => setSection('orders')}
                 onOpenUnified={() => setSection('unified')}
                 onOpenFunding={() => setSection('funding')}
+                onOpenPnl={() => setSection('pnl')}
               />
             )}
 
             {section === 'funding' && (
               <FundingView
-                account={account}
                 overview={overview}
                 hidden={hidden}
                 unavailable={unavailable}
@@ -177,26 +176,23 @@ export function WalletPage() {
                   onHistory={() => setSection('orders')}
                 />
 
-                <div className="wallet-holdings-grid mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-5">
+                <div className="wallet-holdings-grid mt-4">
                   <AssetLedger
                     rows={rows}
                     hidden={hidden}
                     unavailable={unavailable}
                     loading={loading}
+                    collateral={account?.mode === 'CROSS'}
                     onDeposit={() => setModal('deposit')}
                     onWithdraw={() => setModal('withdraw')}
                     onTransfer={() => setModal('transfer')}
                   />
-
-                  <div className="wallet-allocation-column min-w-0 xl:pt-[34px]">
-                    <PortfolioAllocation
-                      rows={rows}
-                      hidden={hidden}
-                      unavailable={unavailable}
-                      loading={loading}
-                      unpricedAssets={account?.unpricedAssets ?? []}
-                    />
-                  </div>
+                  {/* The approved design's footnote: the valuation status
+                      under the table. Complete → said so; incomplete → the
+                      header already names the unpriced asset. */}
+                  {account && account.valuationComplete && (
+                    <p className="wallet-foot-note">{t('wallet.valuationFull')}</p>
+                  )}
                 </div>
               </>
             )}

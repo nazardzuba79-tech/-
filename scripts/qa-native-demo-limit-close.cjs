@@ -68,9 +68,11 @@ async function armPicker(page) {
     }
   }
   await menu.waitFor();
-  await menu.locator('.chart-tools-switch input').check();
-  await menu.locator('.chart-tools-action').click();
-  await page.locator('.chart-surface[data-chart-picking]').waitFor();
+  // The visible Pick action enables the tools itself. Use that user-facing
+  // control rather than checking a checkbox whose mobile decoration can be
+  // positioned outside the viewport. The armed-state assertion is unchanged.
+  await menu.locator('.chart-tools-action.primary').click();
+  await page.locator('.chart-surface[data-chart-picking="entry"]').waitFor();
 }
 async function run(width) {
   const context = await browser.newContext({ viewport: { width, height: width === 390 ? 844 : 1000 }, locale: 'ru-RU', timezoneId: 'UTC' });

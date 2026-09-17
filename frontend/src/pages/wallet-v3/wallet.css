@@ -18,9 +18,11 @@
   --w-panel-3: #eef2f7;
   --w-surface-0: #ffffff;
   --w-surface-1: #f8f9fb;
-  --w-hair: #dfe5ec;
-  --w-hair-strong: #c9d2dc;
-  --w-hair-soft: #eaeff4;
+  /* The seams are meant to be almost invisible: a card edge is a whisper
+     of grey, a row divider fainter still. */
+  --w-hair: #e9edf2;
+  --w-hair-strong: #d5dce4;
+  --w-hair-soft: #f0f3f7;
   --w-ink: #172033;
   --w-ink-2: #3b4351;
   --w-ink-3: #667085;
@@ -32,7 +34,7 @@
   --w-gold-deep: #a87a22;
   --w-gold-wash: #fff5d1;
   --w-gold-line: rgba(242, 180, 0, 0.38);
-  --w-shadow-panel: 0 1px 2px 0 rgba(23, 32, 51, 0.04), 0 1px 8px -2px rgba(23, 32, 51, 0.05);
+  --w-shadow-panel: 0 1px 2px 0 rgba(23, 32, 51, 0.03), 0 1px 6px -2px rgba(23, 32, 51, 0.04);
   --w-shadow-lift: 0 2px 6px -1px rgba(23, 32, 51, 0.07);
   --w-shadow-modal: 0 24px 64px -16px rgba(16, 24, 40, 0.22), 0 2px 6px -1px rgba(16, 24, 40, 0.06);
 }
@@ -123,21 +125,10 @@
   letter-spacing: normal;
 }
 
-/* Keep the ledger readable when the enlarged allocation rail would leave
-   less than a full table's width. Tablet uses the same stacked workspace. */
-@media (min-width: 1024px) and (max-width: 1279px) {
-  .vx-wallet .wallet-holdings-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .vx-wallet .wallet-allocation-column {
-    padding-top: 0;
-  }
-}
-
 /* The asset table is a dense financial grid: one line per row, one line of
    actions, no wrapping that would turn a 44px row into a 110px one. */
 .vx-wallet .wallet-ledger-desktop tbody tr {
-  height: 48px;
+  height: 64px;
 }
 .vx-wallet .wallet-ledger-row-actions {
   white-space: nowrap;
@@ -265,11 +256,8 @@
     flex-direction: column;
     gap: 0;
     overflow: visible;
-    padding: 18px 12px 16px;
-    border: 1px solid var(--w-hair);
-    border-radius: 14px;
-    background: var(--w-panel);
-    box-shadow: var(--w-shadow-panel);
+    padding: 6px 14px 16px 0;
+    border-right: 1px solid var(--w-hair-soft);
   }
   .vx-wallet .wallet-nav-group {
     flex-direction: column;
@@ -379,62 +367,222 @@
   pointer-events: none;
 }
 
+/* ── Shared card vocabulary (the approved design's `.card`) ──────────── */
+.vx-wallet .wallet-card {
+  border: 1px solid var(--w-hair);
+  border-radius: 14px;
+  background: var(--w-panel);
+  box-shadow: var(--w-shadow-panel);
+}
+.vx-wallet .wallet-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px 20px 6px;
+}
+.vx-wallet .wallet-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-card-sub {
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--w-ink-3);
+}
+/* Segmented control: 7Д · 30Д · 90Д · Всё, Активы · Счета. */
+.vx-wallet .wallet-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--w-panel-3);
+}
+.vx-wallet .wallet-seg button {
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--w-ink-3);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.vx-wallet .wallet-seg button[aria-pressed='true'] {
+  background: var(--w-panel);
+  color: var(--w-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(23, 32, 51, 0.12);
+}
+.vx-wallet .wallet-seg button:disabled {
+  color: var(--w-ink-4);
+  cursor: not-allowed;
+}
+.vx-wallet .wallet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--w-panel-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.vx-wallet .wallet-pill.text-pos {
+  background: rgba(22, 138, 101, 0.1);
+}
+.vx-wallet .wallet-pill.text-neg {
+  background: rgba(217, 74, 86, 0.1);
+}
+.vx-wallet .wallet-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--w-hair);
+  border-radius: 8px;
+  background: var(--w-panel-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--w-gold-deep);
+  transition: color 0.15s ease;
+}
+.vx-wallet .wallet-link:hover {
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-tabs {
+  display: flex;
+  gap: 22px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--w-hair-soft);
+}
+.vx-wallet .wallet-tabs button {
+  height: 46px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-tabs button[aria-selected='true'] {
+  color: var(--w-ink);
+  border-bottom-color: var(--w-ink);
+}
+
 /* ── The Overview ──────────────────────────────────────────────────────── */
 .vx-wallet .wallet-overview-head {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 22px 22px 20px;
+  min-height: 150px;
   overflow: hidden;
-  border: 1px solid var(--w-hair);
-  border-radius: 14px;
-  background: var(--w-panel);
-  box-shadow: var(--w-shadow-panel);
 }
 @media (min-width: 1024px) {
   .vx-wallet .wallet-overview-head {
     flex-direction: row;
     align-items: flex-start;
     justify-content: space-between;
-    padding: 24px 26px 22px;
   }
+}
+.vx-wallet .wallet-overview-total {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  line-height: 1;
+}
+.vx-wallet .wallet-overview-amount {
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--w-ink);
+}
+@media (max-width: 640px) {
+  .vx-wallet .wallet-overview-amount {
+    font-size: 26px;
+  }
+}
+.vx-wallet .wallet-overview-unit {
+  align-self: flex-end;
+  margin-bottom: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-overview-btc {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-overview-pnl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 13px;
 }
 .vx-wallet .wallet-overview-actions {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
-/* The decorative V from the approved header: gold, faint, clipped by the
-   card, behind everything. */
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-overview-actions {
+    justify-content: flex-end;
+  }
+}
+/* The decorative V from the approved header: gold, faint, clipped. */
 .vx-wallet .wallet-overview-mark {
   position: absolute;
-  top: -42px;
-  right: -8px;
+  top: -34px;
+  right: -6px;
   font-size: 180px;
   font-weight: 700;
   line-height: 1;
-  color: rgba(242, 180, 0, 0.13);
+  color: rgba(242, 180, 0, 0.16);
   pointer-events: none;
   user-select: none;
 }
-.vx-wallet .wallet-overview-pnl-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--w-panel-3);
-  font-size: 12.5px;
-  font-weight: 600;
+@media (max-width: 1024px) {
+  .vx-wallet .wallet-overview-mark {
+    font-size: 120px;
+    right: -14px;
+    top: -20px;
+  }
 }
-.vx-wallet .wallet-overview-pnl-pill.text-pos {
-  background: rgba(22, 138, 101, 0.1);
+.vx-wallet .wallet-overview-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 8px;
 }
-.vx-wallet .wallet-overview-pnl-pill.text-neg {
-  background: rgba(217, 74, 86, 0.1);
+@media (min-width: 1280px) {
+  .vx-wallet .wallet-overview-body {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+.vx-wallet .wallet-overview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
 }
 
-/* The Super VIP mark. A gold gradient pill with a crown, a thin highlight
-   sweep across it, on the headline total only. */
+/* The Super VIP mark. A gold gradient pill with a crown and a soft
+   highlight, on the headline total only. */
 .vx-wallet .wallet-tier-badge {
   position: relative;
   display: inline-flex;
@@ -469,138 +617,396 @@
   pointer-events: none;
 }
 
-/* The accounts card: two rows, name / value / icon actions. */
+/* The accounts card: tabs, a label, two rows of name / value / actions. */
+.vx-wallet .wallet-accounts-label {
+  display: block;
+  padding: 18px 20px 6px;
+  font-size: 12px;
+  color: var(--w-ink-3);
+}
 .vx-wallet .wallet-account-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
-  padding: 14px 20px;
+  padding: 16px 20px;
   border-top: 1px solid var(--w-hair-soft);
-}
-.vx-wallet .wallet-account-row-value {
-  grid-column: 1 / -1;
 }
 @media (min-width: 640px) {
   .vx-wallet .wallet-account-row {
-    grid-template-columns: 200px minmax(0, 1fr) auto;
-  }
-  .vx-wallet .wallet-account-row-value {
-    grid-column: auto;
+    grid-template-columns: 230px minmax(0, 1fr) auto;
+    gap: 12px;
   }
 }
+.vx-wallet .wallet-account-row-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.vx-wallet .wallet-account-ico {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--w-panel-3);
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-account-row-actions {
+  display: flex;
+  gap: 8px;
+}
+.vx-wallet .wallet-account-icon-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--w-hair);
+  border-radius: 9px;
+  background: var(--w-panel);
+  color: var(--w-ink);
+  transition: background 0.15s ease;
+}
+.vx-wallet .wallet-account-icon-button:hover {
+  background: var(--w-panel-3);
+}
+.vx-wallet .wallet-asset-tab-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 20px;
+  border-top: 1px solid var(--w-hair-soft);
+}
 
-/* Profit by period under the equity curve: visually one card with it. */
-.vx-wallet .wallet-dynamics .wallet-equity-chart {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
+/* Portfolio distribution: donut left, legend with bars right. */
+.vx-wallet .wallet-dist {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  padding: 14px 20px 20px;
+}
+@media (min-width: 640px) {
+  .vx-wallet .wallet-dist {
+    grid-template-columns: 230px minmax(0, 1fr);
+  }
+}
+.vx-wallet .wallet-donut {
+  position: relative;
+  margin: 0 auto;
+}
+.vx-wallet .wallet-donut svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vx-wallet .wallet-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.vx-wallet .wallet-donut-center small {
+  font-size: 11px;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-donut-center strong {
+  margin-top: 2px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-donut-center em {
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 11px;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.vx-wallet .wallet-legend-row {
+  display: grid;
+  grid-template-columns: 18px 56px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.vx-wallet .wallet-legend-bar {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--w-panel-3);
+  overflow: hidden;
+}
+.vx-wallet .wallet-legend-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+.vx-wallet .wallet-legend-pct {
+  min-width: 48px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--w-ink);
+}
+.vx-wallet .wallet-legend-usd {
+  min-width: 132px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--w-ink-3);
+}
+@media (max-width: 640px) {
+  .vx-wallet .wallet-legend-row {
+    grid-template-columns: 18px 52px minmax(0, 1fr) auto;
+  }
+  .vx-wallet .wallet-legend-usd {
+    display: none;
+  }
+}
+.vx-wallet .wallet-dist-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 20px 18px;
+  font-size: 12px;
+  color: var(--w-ink-3);
+}
+
+/* Динамика активов: the profit band, the gold curve, the period rows. */
+.vx-wallet .wallet-dyn-profit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--w-panel-3);
+}
+.vx-wallet .wallet-dyn-usd {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+}
+.vx-wallet .wallet-dyn-chart {
+  padding: 10px 14px 6px;
+}
+.vx-wallet .wallet-dyn-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 20px 12px;
+  font-size: 11px;
+  color: var(--w-ink-3);
 }
 .vx-wallet .wallet-period-rows {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 12px 12px;
-  border: 1px solid var(--w-hair);
-  border-top: 0;
-  border-radius: 0 0 14px 14px;
-  background: var(--w-panel);
-  box-shadow: var(--w-shadow-panel);
-}
-.vx-wallet .wallet-period-rows-title {
-  padding: 2px 8px 6px;
+  margin: 0 12px 12px;
+  padding-top: 6px;
+  border-top: 1px solid var(--w-hair-soft);
 }
 .vx-wallet .wallet-period-row {
   display: grid;
-  grid-template-columns: minmax(96px, 1fr) auto auto;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 7px 8px;
   border-radius: 8px;
+  font-size: 12px;
+  color: var(--w-ink);
+  transition: background 0.15s ease;
 }
 .vx-wallet .wallet-period-row:hover {
   background: var(--w-panel-3);
 }
-.vx-wallet .wallet-period-row[data-available='false'] .wallet-period-row-usd,
-.vx-wallet .wallet-period-row[data-available='false'] .wallet-period-row-pct {
+.vx-wallet .wallet-period-row[aria-pressed='true'] {
+  background: var(--w-gold-wash);
+}
+.vx-wallet .wallet-period-row-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-period-row-label small {
+  display: block;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
   color: var(--w-ink-4);
 }
 .vx-wallet .wallet-period-row-usd {
+  font-weight: 600;
   text-align: right;
 }
 .vx-wallet .wallet-period-row-pct {
-  min-width: 64px;
+  min-width: 58px;
+  font-weight: 600;
   text-align: right;
 }
 
 /* Recent deposits and withdrawals. */
+.vx-wallet .wallet-recent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 20px 18px;
+}
 .vx-wallet .wallet-recent-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--w-hair-soft);
-}
-.vx-wallet .wallet-recent-row:first-child {
-  border-top: 0;
+  grid-template-columns: 1fr auto;
+  row-gap: 4px;
 }
 
-/* ── Unified account header ──────────────────────────────────────────────
-   One white card carrying the account identity, its margin usage, the
-   three headline figures and the actions, dense enough that the asset
-   table still starts inside the first viewport. */
-.vx-wallet .wallet-account-panel {
-  padding: 18px 20px;
+/* ── Unified Trading (page head, summary, toolbar, table) ─────────────── */
+.vx-wallet .wallet-page-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-page-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  /* The title block yields first: the IM/MM entries wrap under the title
+     before the five actions are pushed onto a second line. */
+  .vx-wallet .wallet-page-head > div:first-child {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .vx-wallet .wallet-page-head > .wallet-account-actions {
+    flex: 0 0 auto;
+  }
+}
+.vx-wallet .wallet-summary {
+  margin-top: 22px;
+  padding: 18px 22px;
+}
+.vx-wallet .wallet-account-metrics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+@media (min-width: 768px) {
+  .vx-wallet .wallet-account-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+  }
+  .vx-wallet .wallet-account-metrics > div {
+    padding: 0 22px;
+  }
+  .vx-wallet .wallet-account-metrics > div:first-child {
+    padding-left: 0;
+  }
+  .vx-wallet .wallet-account-metrics > div + div {
+    border-left: 1px solid var(--w-hair-soft);
+  }
+}
+.vx-wallet .wallet-ledger-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+.vx-wallet .wallet-ledger-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 220px;
+  max-width: 320px;
+  height: 36px;
+  padding: 0 12px;
   border: 1px solid var(--w-hair);
-  border-radius: 14px;
+  border-radius: 10px;
   background: var(--w-panel);
-  box-shadow: var(--w-shadow-panel);
 }
-.vx-wallet .wallet-im-bar {
-  /* The filled track is a ratio the SERVER answered; the element only
-     draws it. Width is clamped so a tiny ratio is still visible and a
-     ratio above 1 cannot overflow its track. */
-  height: 4px;
-  border-radius: 999px;
-  background: var(--w-hair);
-  overflow: hidden;
+.vx-wallet .wallet-ledger-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--w-ink);
 }
-.vx-wallet .wallet-im-bar > span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--w-pos);
+.vx-wallet .wallet-ledger-search input::placeholder {
+  color: var(--w-ink-4);
 }
-.vx-wallet .wallet-im-bar[data-tone='warn'] > span {
+.vx-wallet .wallet-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--w-ink-3);
+  white-space: nowrap;
+}
+.vx-wallet .wallet-check-box {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--w-hair-strong);
+  border-radius: 4px;
+  background: var(--w-panel);
+  color: #1a1400;
+}
+.vx-wallet .wallet-check-box[data-on='true'] {
+  border-color: var(--w-gold);
   background: var(--w-gold);
 }
-.vx-wallet .wallet-account-metric {
-  min-width: 0;
+.vx-wallet .wallet-ledger-head {
+  height: 42px;
+  border-bottom: 1px solid var(--w-hair);
+  background: var(--w-panel-3);
 }
-.vx-wallet .wallet-account-metric p {
-  overflow-wrap: anywhere;
+.vx-wallet .wallet-ledger-tr {
+  height: 64px;
 }
-
-/* `Конвертация` is present but has no flow behind it, so it must read as
-   unavailable rather than merely quiet — and it stays in the row. */
-.vx-wallet .wallet-action-convert {
-  opacity: 0.5;
+.vx-wallet .wallet-toggle {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--w-hair-strong);
+  transition: background 0.15s ease;
 }
-
-/* The ledger is wider than the content column at laptop widths; it scrolls
-   inside its own card and the page never grows a horizontal scrollbar. */
-.vx-wallet .wallet-ledger-desktop {
-  scrollbar-width: thin;
+.vx-wallet .wallet-toggle[aria-checked='true'] {
+  background: var(--w-gold);
 }
-
-/* A search field's default clear button is drawn for the host platform and
-   needs a deliberate colour to sit on this surface. */
-.vx-wallet input[type='search']::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  background: var(--w-ink-4);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1 1l10 10M11 1L1 11' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / contain no-repeat;
-  cursor: pointer;
+.vx-wallet .wallet-toggle i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--w-panel);
+  box-shadow: 0 1px 2px rgba(23, 32, 51, 0.2);
+  transition: transform 0.15s ease;
+}
+.vx-wallet .wallet-toggle[aria-checked='true'] i {
+  transform: translateX(16px);
+}
+.vx-wallet .wallet-foot-note {
+  margin-top: 22px;
+  font-size: 12px;
+  color: var(--w-ink-3);
 }
