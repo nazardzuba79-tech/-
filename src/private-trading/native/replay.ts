@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
-import { amount, decimal } from '../math';
+import { amount, consumeBook, decimal } from '../math';
 import type { Candle } from '../types';
 import { closeDemoPosition, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState,
   emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount,
@@ -123,6 +123,33 @@ function sortInstructions(input:NativeInstruction[]){
   for(const c of input){if(!c.id||ids.has(c.id)||!Number.isSafeInteger(c.at)||c.at<0)throw new DemoEngineError('INVALID_COMMAND_ID_OR_TIME');ids.add(c.id);}
   return [...input].sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
 }
+/**
+ * CLOSE is a risk-reducing action, not a fresh exposure admission. It may
+ * have to unwind a position accumulated across many valid orders, and the
+ * stored entry-time contract limits may be lower than today's close limits.
+ * Consume only the actually observed book, keep the same per-snapshot depth
+ * accounting as normal market orders, and never invent a fill. This avoids
+ * trapping an existing position behind max-order/leverage admission rules.
+ */
+function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefined,book:NativeBook,time:number){
+  const p=s.positions.find(p=>p.id===positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
+  if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
+  const rules=s.instruments[p.symbol]?.rules;if(!rules)throw new DemoEngineError('INSTRUMENT_MISSING');
+  const requested=quantity??p.quantity,q=decimal(requested,'quantity',true);
+  if(!q.mod(decimal(rules.qtyStep,'quantity_step',true)).isZero())throw new DemoEngineError('INVALID_QUANTITY_STEP');
+  if(q.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
+  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${p.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
+  let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
+  used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
+  const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:f(D.maximum(0,n(x.quantity).minus(used[side][f(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
+  const direction=p.side==='LONG'?'SELL':'BUY',result=consumeBook(direction,requested,{bids:levels('bids'),asks:levels('asks')});
+  for(const fill of result.fills){
+    closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK');
+    const side=direction==='BUY'?'asks':'bids',price=f(n(fill.price));
+    used[side][price]=f(n(used[side][price]??'0').plus(fill.quantity));
+  }
+  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+}
 function apply(s:DemoState,c:NativeInstruction,time:number){
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
@@ -134,22 +161,8 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
     else if(c.book)executeDemoBook(s,o.id,c.book,time);
     else if(o.type==='MARKET')throw new DemoEngineError('EXECUTION_PRICE_MISSING');
   }else if(c.kind==='CLOSE'){
-    if(c.book){
-      const p=s.positions.find(p=>p.id===c.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
-      /**
-       * A close is risk-REDUCING. The position can legitimately have been
-       * opened at 10x while its current notional later grows into a tier whose
-       * entry ceiling is 5x. Reusing p.leverage here made the admission check
-       * reject the EXIT with TIER_LEVERAGE_EXCEEDED. Leverage has no economic
-       * role on a reduce-only IOC (reserve is zero; fill only settles quantity),
-       * so use the contract minimum solely as the validation value. The open
-       * position keeps its real leverage and every P&L/margin figure unchanged.
-       */
-      const closeLeverage=s.instruments[p.symbol]?.rules.minLeverage;
-      if(!closeLeverage)throw new DemoEngineError('INSTRUMENT_MISSING');
-      const o=placeDemoOrder(s,{id:c.id,symbol:p.symbol,side:p.side==='LONG'?'SHORT':'LONG',type:'MARKET',quantity:c.quantity??p.quantity,leverage:closeLeverage,reduceOnly:true,positionId:p.id,marginType:p.marginType},time);
-      executeDemoBook(s,o.id,c.book,time);
-    }else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
+    if(c.book)executeCloseBook(s,c.positionId,c.quantity,c.book,time);
+    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
   }
   else if(c.kind==='CANCEL')cancelDemoOrder(s,c.orderId,time);
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);
