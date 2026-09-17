@@ -1,5 +1,4 @@
 import BigNumber from 'bignumber.js';
-import { createHash } from 'crypto';
 import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
 import type { ContractRules, ModelProfile, Side } from '../types';
 
@@ -58,11 +57,65 @@ export interface DemoEvent {
   quantity: string; price: string | null; fee: string; cashflow: string;
   pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
 }
+export interface BookConsumption {
+  /** Legacy field kept for states persisted before the identity change; unused. */
+  fingerprint: string;
+  bids: Record<string, string>; asks: Record<string, string>;
+  seen?: { bids: Record<string, string>; asks: Record<string, string> };
+}
+export interface ObservedBook { bids: { price: string; quantity: string }[]; asks: { price: string; quantity: string }[]; timestamp: number }
+/** How long an observed snapshot may be consumed against, and how long its ledger is kept. */
+export const OBSERVED_BOOK_MAX_AGE_MS = 5000;
+/**
+ * THE IDENTITY OF AN OBSERVED BOOK IS THE PROVIDER SNAPSHOT, NOT THE SLICE.
+ *
+ * Every command stores only the depth it needed (`truncateBook`), so the
+ * same provider snapshot reaches the engine as different arrays: a close of
+ * 1 keeps `[1 @ 100]`, the next close of 2 keeps `[1 @ 100, 1 @ 99]`. Keying
+ * the consumption ledger by a hash of those arrays gave each slice its own
+ * ledger, and the second command bought the `1 @ 100` the first had already
+ * taken. The key is therefore `symbol:bookGeneratedAt` — the provider's own
+ * snapshot time — and OPEN and CLOSE share it. A level that two slices
+ * report with different quantities cannot come from one snapshot and is
+ * refused as INCONSISTENT_BOOK. A new provider timestamp is a new snapshot
+ * and new liquidity: that is the versioned replenishment rule of this model.
+ */
+export function bookConsumptionKey(symbol: string, book: { timestamp: number }) { return `${symbol}:${book.timestamp}`; }
+export function consumeObservedBook(s: DemoState, symbol: string, book: ObservedBook, direction: 'BUY' | 'SELL', quantity: string, time: number, limitPrice?: string) {
+  if (time < book.timestamp || time - book.timestamp > OBSERVED_BOOK_MAX_AGE_MS) throw new DemoEngineError('STALE_BOOK');
+  const key = bookConsumptionKey(symbol, book);
+  const used: BookConsumption = s.bookConsumption[key] ??= { fingerprint: key, bids: {}, asks: {} };
+  used.seen ??= { bids: {}, asks: {} };
+  for (const side of ['bids', 'asks'] as const) {
+    for (const level of book[side]) {
+      const price = out(n(level.price)), observed = out(positive(level.quantity));
+      const before = used.seen[side][price];
+      if (before !== undefined && before !== observed) throw new DemoEngineError('INCONSISTENT_BOOK');
+      used.seen[side][price] = observed;
+    }
+  }
+  const levels = (side: 'bids' | 'asks') => book[side]
+    .map(x => ({ price: x.price, quantity: out(D.maximum(0, n(x.quantity).minus(used[side][out(n(x.price))] ?? '0'))) }))
+    .filter(x => n(x.quantity).gt(0));
+  const result = consumeBook(direction, quantity, { bids: levels('bids'), asks: levels('asks') }, limitPrice);
+  const side = direction === 'BUY' ? 'asks' : 'bids';
+  const record = (fill: { price: string; quantity: string }) => { const p = out(n(fill.price)); used[side][p] = out(n(used[side][p] ?? '0').plus(fill.quantity)); };
+  const prune = () => { for (const k of Object.keys(s.bookConsumption)) if (Number(k.split(':')[1]) < time - OBSERVED_BOOK_MAX_AGE_MS) delete s.bookConsumption[k]; };
+  return { fills: result.fills, record, prune };
+}
 export interface DemoState {
   version: 2; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
   marks: Record<string, { mark: string; last: string; time: number }>;
-  applied: Record<string, string>; bookConsumption: Record<string, { fingerprint: string; bids: Record<string, string>; asks: Record<string, string> }>;
+  applied: Record<string, string>;
+  /**
+   * Observed liquidity already consumed from a provider snapshot, keyed by
+   * the SOURCE snapshot identity (`symbol:bookGeneratedAt`) — never by the
+   * levels a command happened to keep. `bids`/`asks` are quantity consumed
+   * per price; `seen` is the quantity each price level was OBSERVED to hold,
+   * so two slices of one snapshot that disagree about a level are refused.
+   */
+  bookConsumption: Record<string, BookConsumption>;
   time: number; nextEvent: number;
 }
 export interface DemoOrderInput {
@@ -445,18 +498,13 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
   }s.time=time;
 }
 /** Observable depth is consumed only inside this private state; NEVER written to any public book. */
-export function executeDemoBook(s:DemoState,id:string,book:{bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number},time:number){
+export function executeDemoBook(s:DemoState,id:string,book:ObservedBook,time:number){
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
-  if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
-  // Stored books are truncated to the depth each command needs, so the snapshot identity includes its content.
-  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${o.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
-  let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
-  used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
-  const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:out(D.maximum(0,n(x.quantity).minus(used[side][out(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
-  const direction=o.side==='LONG'?'BUY':'SELL',result=consumeBook(direction,o.remaining,{bids:levels('bids'),asks:levels('asks')},o.price??undefined);
-  for(const f of result.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');const side=direction==='BUY'?'asks':'bids',p=out(n(f.price));used[side][p]=out(n(used[side][p]??'0').plus(f.quantity));}
+  const direction=o.side==='LONG'?'BUY':'SELL';
+  const consumed=consumeObservedBook(s,o.symbol,book,direction,o.remaining,time,o.price??undefined);
+  for(const f of consumed.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record(f);}
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
-  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+  consumed.prune();
 }
 /**
  * THE LIQUIDATION REFERENCE FOR ONE POSITION — on the basis that actually applies to it.

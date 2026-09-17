@@ -19,7 +19,7 @@ export function FuturesPositionsPanel({
   /** Hand this position to the order form as a reduce-only LIMIT ticket.
    *  Absent means the terminal offers no limit close, and the button is
    *  not rendered rather than rendered dead. */
-  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string }) => void;
+  onLimitClose?: (position: { id: string; symbol: string; side: 'LONG' | 'SHORT'; size: string; marginType: 'ISOLATED' | 'CROSS' }) => void;
   /** When the page owns the tab row (the futures terminal does, so there is
    *  one row of tabs rather than two stacked), pass the active tab here and
    *  this panel renders content only. Left out, it keeps its own tabs and

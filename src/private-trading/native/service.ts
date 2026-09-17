@@ -9,7 +9,7 @@ import { valueCollateral, CollateralPrice, CollateralValuation } from './collate
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
-import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
   | {kind:'REFRESH'}
@@ -29,6 +29,13 @@ export type NativeCommand = {idempotencyKey:string} & (
 const MINUTE=60_000;
 /** A plain refresh is persisted only when something happened or the stored canonical checkpoint is this old. */
 export const NATIVE_REFRESH_PERSIST_MS=15*MINUTE;
+/**
+ * Commands waiting per account, beyond the one running. Two tabs, a burst
+ * of closes and the 30-second refresh all fit; a runaway client does not.
+ * Overflow is an explicit retriable refusal, never a silent drop.
+ */
+export const NATIVE_COMMAND_QUEUE_LIMIT=16;
+interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null}
 const outcome=(s:NativeAccount['snapshot'])=>JSON.stringify([s.events.map(e=>e.id+e.kind+e.time+e.price),s.orders.map(o=>o.status+o.filled),s.positions.map(p=>p.status+p.quantity)]);
 /** Keep only the observed depth a command can consume (deterministic replay without storing 1000 levels). */
 export function truncateBook(book:NativeBook,side:'BUY'|'SELL',quantity:string,limit?:string):NativeBook{
@@ -40,7 +47,22 @@ export function truncateBook(book:NativeBook,side:'BUY'|'SELL',quantity:string,l
   return side==='BUY'?{bids:[],asks:kept,timestamp:book.timestamp}:{bids:kept,asks:[],timestamp:book.timestamp};
 }
 export class NativeDemoService {
-  private busy=new Set<string>();
+  /**
+   * ONE ORDERED LANE PER ACCOUNT, in this process.
+   *
+   * The previous guard was a `Set` of busy accounts that answered a second
+   * request with `native_busy` — so a CLOSE arriving while the 30-second
+   * REFRESH ran was refused, and the trader's click was lost. Commands for
+   * one account now wait their turn in arrival order; different accounts
+   * never block each other. A plain REFRESH that is still the tail of the
+   * lane is shared with the next plain REFRESH instead of being run twice.
+   *
+   * This lane is process-local. Two replicas are still serialized by the
+   * repository: `commit` takes the account row lock and refuses a stale
+   * revision, so a double spend across processes remains impossible — the
+   * lane only stops one process from refusing its own trader.
+   */
+  private lanes=new Map<string,CommandLane>();
   constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){}
   /**
    * The state projection WITHOUT an account.
@@ -207,13 +229,40 @@ export class NativeDemoService {
     const bar=bars.find(b=>b.time===start);if(!bar)throw new DemoEngineError('ENTRY_MARK_UNAVAILABLE');
     return edge==='START'?bar.mark.open:bar.mark.close;
   }
-  async command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean}={}){
-    const hash=commandHash(request),prior=await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
-    if(this.busy.has(actor.userId))throw new PrivateTradingError('native_busy','Расчёт уже выполняется',409);
-    this.busy.add(actor.userId);
-    try {
+  command(actor:OwnerSession,request:NativeCommand,options:{persist?:boolean}={}){
+    // The lane is entered SYNCHRONOUSLY, so arrival order is call order and
+    // not the order in which two idempotency lookups happened to return.
+    return this.serialized(actor.userId,request,options,()=>this.execute(actor,request,commandHash(request),options));
+  }
+  /** How many commands this account has running or waiting right now. */
+  queued(userId:string){return this.lanes.get(userId)?.depth??0;}
+  private serialized<T>(userId:string,request:NativeCommand,options:{persist?:boolean},task:()=>Promise<T>):Promise<T>{
+    const lane=this.lanes.get(userId)??{chain:Promise.resolve(),depth:0,tailRefresh:null};
+    const plainRefresh=request.kind==='REFRESH'&&!options.persist;
+    // A refresh queued behind a refresh would read the same state twice.
+    // Only the TAIL is shared: a refresh queued after a CLOSE must observe it.
+    if(plainRefresh&&lane.tailRefresh)return lane.tailRefresh as Promise<T>;
+    if(lane.depth>=NATIVE_COMMAND_QUEUE_LIMIT)return Promise.reject(new PrivateTradingError('native_queue_full','Слишком много операций в очереди. Повторите через секунду',429));
+    lane.depth+=1;this.lanes.set(userId,lane);
+    const run=lane.chain.then(task,task);
+    lane.chain=run.catch(()=>undefined);
+    lane.tailRefresh=plainRefresh?run:null;
+    const settle=()=>{lane.depth-=1;if(lane.tailRefresh===run)lane.tailRefresh=null;if(lane.depth===0)this.lanes.delete(userId);};
+    run.then(settle,settle);
+    return run;
+  }
+  private async execute(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
+    {
+      // Re-checked INSIDE the lane: a double click queues the same key twice,
+      // and the second must answer with the first's receipt rather than find
+      // its position already closed and refuse.
+      const prior=await this.repository.prior(actor,request.idempotencyKey,hash);if(prior)return this.authoritative(actor,this.view(prior),prior);
       const row=await this.repository.read(actor);if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите демо-баланс',409);
-      const instruction=await this.instruction(row,request);
+      // A monotonic per-account sequence orders instructions journaled in the
+      // same millisecond. A burst drained from the lane, or a clock that does
+      // not advance, must never replay a reduce before the position it names.
+      const seq=nextInstructionSeq(row.commands);
+      const instruction=await this.instruction(row,request,seq);
       const commands=structuredClone(instruction?[...row.commands,instruction]:row.commands);
       if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row);
       // Backdated trades re-simulate the scenario from the beginning; everything else continues the
@@ -222,7 +271,7 @@ export class NativeDemoService {
       const result=await this.replay(row,commands,incremental);
       if(result.observed){
         // Same effect as the quotes just applied to the projected snapshot; never undone by a later replay.
-        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,marks:result.observed});
+        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:instruction?seq+1:seq,marks:result.observed});
       }
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
       const changed=!!instruction||!!result.observed||outcome(result.snapshot)!==outcome(row.snapshot);
@@ -230,7 +279,7 @@ export class NativeDemoService {
       if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged);}
       const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
       return this.authoritative(actor,this.view(committed),committed);
-    }finally{this.busy.delete(actor.userId);}
+    }
   }
   private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null):Promise<ReplayResult>{
     const load=(r:BarRequest)=>this.bars(r),asOf=this.now();
@@ -252,7 +301,7 @@ export class NativeDemoService {
     const at=Math.max(this.now(),result.snapshot.time);
     return{...result,observed:applyLatestQuotes(result.snapshot,latest,at)};
   }
-  private async instruction(row:NativeAccount,request:NativeCommand):Promise<NativeInstruction|undefined>{
+  private async instruction(row:NativeAccount,request:NativeCommand,seq:number):Promise<NativeInstruction|undefined>{
     const id=`native-${randomUUID()}`;
     if(request.kind==='OPEN'){
       const symbol=request.symbol.replace(/[^A-Z0-9]/g,''),instrument=await this.market.instrument(symbol),rules=contractRules(instrument),profile=simulationProfile(instrument);
@@ -260,10 +309,18 @@ export class NativeDemoService {
       profile.assumptions=['USDT-only demo, Cross or Isolated per order; gross hedge maintenance; not Bybit matching.','An isolated position is backed by its posted margin alone and its loss is bounded by it.','Custom demo funding -0.001 / +0.004 of position value per 8h UTC; not provider funding.','Historical assumed OHLC path, never a claim of actual past fills.'];
       const sizePrice=request.type==='LIMIT'?request.price:undefined;
       const size=(price:string)=>request.quantity??new BigNumber(request.margin!).times(request.leverage).div(price).div(rules.qtyStep).integerValue(BigNumber.ROUND_FLOOR).times(rules.qtyStep).toFixed();
-      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,marginType:request.marginType??'CROSS',...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
+      // The named position IS the identity of a reducing order. It is checked
+      // here, against this account's own row, before any market data is
+      // fetched: ownership (the row is the actor's), symbol, side and
+      // remaining size all have to agree, and the risk bucket comes from the
+      // position — a client cannot move a close into another bucket by
+      // naming one, and the engine repeats every check on replay.
+      const target=request.reduceOnly?this.reduceTarget(row,{positionId:request.positionId!,symbol,side:request.side,quantity:request.quantity,marginType:request.marginType}):null;
+      const marginType=target?target.marginType:request.marginType??'CROSS';
+      const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,marginType,...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
         // A reducing order keeps its type and its price; the engine checks
         // the side and the size against the named position itself.
-        ...(request.reduceOnly?{reduceOnly:true,positionId:request.positionId}:{}),historical:!!request.candle});
+        ...(target?{reduceOnly:true,positionId:target.id}:{}),historical:!!request.candle});
       if(request.candle){
         const selected=await this.market.resolveCandle({...request.candle,symbol}),candle=request.candle;
         if(request.type==='LIMIT'){
@@ -272,35 +329,50 @@ export class NativeDemoService {
           const quantity=size(sizePrice!);
           if(touch){
             const mark=touch.at===selected.openTime?await this.markAt(symbol,touch.at,'START'):touch.price;
-            return{id,kind:'OPEN',at:touch.at,order:order(quantity),instrument:{rules,profile},mark,last:touch.price,point:touch.price,maker:touch.maker,candle:{...candle,pricePoint:'OPEN'}};
+            return{id,seq,kind:'OPEN',at:touch.at,order:order(quantity),instrument:{rules,profile},mark,last:touch.price,point:touch.price,maker:touch.maker,candle:{...candle,pricePoint:'OPEN'}};
           }
           // Not reached inside the selected candle: the order rests from that candle's close.
           const at=selected.closeTime,mark=await this.markAt(symbol,at,'END');
-          return{id,kind:'OPEN',at,order:order(quantity),instrument:{rules,profile},mark,last:selected.candle.close,candle:{...candle,pricePoint:'CLOSE'}};
+          return{id,seq,kind:'OPEN',at,order:order(quantity),instrument:{rules,profile},mark,last:selected.candle.close,candle:{...candle,pricePoint:'CLOSE'}};
         }
         const at=selected.effectiveAt,mark=await this.markAt(symbol,at,request.candle.pricePoint==='OPEN'?'START':'END');
-        return{id,kind:'OPEN',at,order:order(size(selected.price)),instrument:{rules,profile},mark,last:selected.price,point:selected.price,candle};
+        return{id,seq,kind:'OPEN',at,order:order(size(selected.price)),instrument:{rules,profile},mark,last:selected.price,point:selected.price,candle};
       }
       const q=await this.market.freshQuote(symbol);assertPrivateFreshQuote(q,symbol,this.now());
       const quantity=size(sizePrice??q.lastPrice);
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},request.side==='LONG'?'BUY':'SELL',quantity,request.type==='LIMIT'?request.price:undefined);
-      return{id,kind:'OPEN',at:this.now(),order:order(quantity),instrument:{rules,profile},mark:q.markPrice,last:q.lastPrice,book};
+      return{id,seq,kind:'OPEN',at:this.now(),order:order(quantity),instrument:{rules,profile},mark:q.markPrice,last:q.lastPrice,book};
     }
     if(request.kind==='CLOSE'){
       const p=row.snapshot.positions.find(p=>p.id===request.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
+      if(request.quantity!==undefined&&new BigNumber(request.quantity).gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
       if(request.candle){
         const c=await this.market.resolveCandle({...request.candle,symbol:p.symbol});
         if(c.effectiveAt<=p.openedAt)throw new DemoEngineError('EXIT_BEFORE_ENTRY');
-        return{id,kind:'CLOSE',at:c.effectiveAt,positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:c.price,candle:request.candle};
+        return{id,seq,kind:'CLOSE',at:c.effectiveAt,positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:c.price,candle:request.candle};
       }
       const q=await this.market.freshQuote(p.symbol);assertPrivateFreshQuote(q,p.symbol,this.now());
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},p.side==='LONG'?'SELL':'BUY',request.quantity??p.quantity);
-      return{id,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book};
+      return{id,seq,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book};
     }
-    if(request.kind==='CANCEL')return{id,kind:'CANCEL',at:this.now(),orderId:request.orderId};
-    if(request.kind==='PROTECTION')return{id,kind:'PROTECTION',at:this.now(),positionId:request.positionId,protection:request.protection};
-    if(request.kind==='LEVERAGE')return{id,kind:'LEVERAGE',at:this.now(),positionId:request.positionId,leverage:request.leverage};
+    if(request.kind==='CANCEL')return{id,seq,kind:'CANCEL',at:this.now(),orderId:request.orderId};
+    if(request.kind==='PROTECTION')return{id,seq,kind:'PROTECTION',at:this.now(),positionId:request.positionId,protection:request.protection};
+    if(request.kind==='LEVERAGE')return{id,seq,kind:'LEVERAGE',at:this.now(),positionId:request.positionId,leverage:request.leverage};
     return undefined;
+  }
+  /**
+   * The one open position a reducing order may touch, or a named refusal.
+   * Quantity is never used to pick a position and no other candidate is
+   * consulted: the ID is the identity, and it either fits or it does not.
+   */
+  private reduceTarget(row:NativeAccount,input:{positionId:string;symbol:string;side:'LONG'|'SHORT';quantity?:string;marginType?:DemoMarginType}){
+    const p=row.snapshot.positions.find(p=>p.id===input.positionId&&p.status==='OPEN');
+    if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
+    if(p.symbol!==input.symbol)throw new DemoEngineError('INVALID_REDUCE_SYMBOL');
+    if(p.side===input.side)throw new DemoEngineError('INVALID_REDUCE_SIDE');
+    if(input.marginType!==undefined&&input.marginType!==p.marginType)throw new DemoEngineError('MARGIN_TYPE_MISMATCH');
+    if(input.quantity!==undefined&&new BigNumber(input.quantity).gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
+    return p;
   }
   /** Card values come from ONE persisted revision; an open position is revalued and frozen first. */
   async card(actor:OwnerSession,positionId:string,revision?:number){

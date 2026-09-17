@@ -184,7 +184,7 @@ export function FuturesPage() {
   useEffect(() => () => setChartMenu(null), []);
   /** A reduce-only close the trader started from the positions table. The
    *  form fills itself from it; nothing is placed until they submit. */
-  const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number } | null>(null);
+  const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number; positionId: string; marginType: 'ISOLATED' | 'CROSS' } | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
   useEffect(() => setPickedPrice(null), [symbol]);
@@ -484,7 +484,10 @@ export function FuturesPage() {
                 onLimitClose={(position) => {
                   setSymbol(position.symbol);
                   pickedSeq.current += 1;
-                  setCloseTicket({ symbol: position.symbol, side: position.side, size: position.size, seq: pickedSeq.current });
+                  // The row's own position ID and bucket travel with the
+                  // ticket: two positions of one contract can share a side
+                  // and a size, and only the ID says which one this is.
+                  setCloseTicket({ symbol: position.symbol, side: position.side, size: position.size, seq: pickedSeq.current, positionId: position.id, marginType: position.marginType });
                 }}
               />
             )}

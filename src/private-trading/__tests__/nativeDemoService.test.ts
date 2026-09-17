@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS } from '../native/service';
+import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT } from '../native/service';
 import { NativeAccount, NativeRepository, revisionPayload, commandHash } from '../native/store';
 import { emptyDemoState } from '../native/engine';
 import type { OwnerSession } from '../serviceTypes';
@@ -365,12 +365,137 @@ describe('a repeated request never trades twice',()=>{
     expect(retried.ledger!.totals.fees).toBe(first.ledger!.totals.fees);
   });
 
-  test('two in-flight commands do not interleave: the second is refused while the first runs',async()=>{
+  test('two in-flight commands do not interleave: the second runs AFTER the first, and is not refused',async()=>{
     const f=setup();await f.service.initialize(actor,'idem-init-5');
-    const slow=f.service.command(actor,long());
-    await expect(f.service.command(actor,long())).rejects.toMatchObject({status:409});
-    await slow;
+    const first=f.service.command(actor,long());
+    const second=f.service.command(actor,long({margin:'2500'}));
+    const [a,b]=await Promise.all([first,second]);
+    expect(a.revision).toBe(2);expect(b.revision).toBe(3);
     const state=await f.service.state(actor);
-    expect(state.positions).toHaveLength(1);
+    // Same symbol, side and bucket: the second fill averaged into ONE position.
+    expect(state.positions).toHaveLength(1);expect(state.positions[0].quantity).toBe('3');
+  });
+});
+
+describe('commands for one account are serialized in arrival order, never refused as busy',()=>{
+  /** Hold the first repository read until released, so later commands queue behind it. */
+  function gateFirstRead(f:ReturnType<typeof setup>,userId=actor.userId){
+    let release!:()=>void;const gate=new Promise<void>(r=>{release=r;});let reads=0;
+    const read=f.repo.read.bind(f.repo);
+    f.repo.read=(async(a:OwnerSession)=>{if(a.userId===userId){reads+=1;if(reads===1)await gate;}return read();}) as typeof f.repo.read;
+    return{release,reads:()=>reads};
+  }
+  test('a CLOSE that arrives while a REFRESH is running is executed after it, not dropped',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-1');
+    const opened=await f.service.command(actor,long());const id=opened.positions[0].id;
+    f.clock.t+=5_000;
+    const gate=gateFirstRead(f);
+    const refresh=f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    const close=f.service.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()});
+    expect(f.service.queued(actor.userId)).toBe(2);
+    gate.release();
+    const [r,c]=await Promise.all([refresh,close]);
+    expect(r.positions).toHaveLength(1);
+    expect(c.positions).toHaveLength(0);expect(c.history).toHaveLength(1);
+    expect(f.service.queued(actor.userId)).toBe(0);
+  });
+  test('the same key queued twice by a double click trades once and answers with one receipt',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-2');
+    const request=long();
+    const [a,b]=await Promise.all([f.service.command(actor,request),f.service.command(actor,request)]);
+    expect(b.revision).toBe(a.revision);expect(b.positions).toHaveLength(1);
+    expect(f.repo.commits).toBe(1);
+  });
+  test('plain refreshes queued together are answered by ONE computation',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-3');
+    await f.service.command(actor,long());f.clock.t+=5_000;
+    const gate=gateFirstRead(f);
+    const all=Promise.all([1,2,3].map(()=>f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()})));
+    expect(f.service.queued(actor.userId)).toBe(1);
+    gate.release();
+    const results=await all;
+    expect(gate.reads()).toBe(1);
+    expect(results.map(r=>r.revision)).toEqual([2,2,2]);
+  });
+  test('a refresh queued AFTER a close observes the close instead of sharing the earlier refresh',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-4');
+    const opened=await f.service.command(actor,long());const id=opened.positions[0].id;f.clock.t+=5_000;
+    const gate=gateFirstRead(f);
+    const early=f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    const close=f.service.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()});
+    const late=f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(f.service.queued(actor.userId)).toBe(3);
+    gate.release();
+    const [a,,c]=await Promise.all([early,close,late]);
+    expect(a.positions).toHaveLength(1);
+    expect(c.positions).toHaveLength(0);expect(c.history).toHaveLength(1);
+  });
+  test('the lane is bounded: overflow is an explicit retriable refusal, and the queue drains',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-5');
+    const gate=gateFirstRead(f);
+    const queued=Array.from({length:NATIVE_COMMAND_QUEUE_LIMIT},()=>f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true}));
+    await expect(f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true})).rejects.toMatchObject({code:'native_queue_full',status:429});
+    gate.release();
+    await Promise.all(queued);
+    expect(f.service.queued(actor.userId)).toBe(0);
+  });
+  test('accounts do not block each other',async()=>{
+    const f=setup();await f.service.initialize(actor,'lane-init-6');
+    const other:OwnerSession={userId:'other',sessionId:'s2',expiresAt:Number.MAX_SAFE_INTEGER};
+    const gate=gateFirstRead(f);
+    const slow=f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()},{persist:true});
+    // The other account shares the repository fixture row here; only the lane is under test.
+    const fast=await f.service.state(other);
+    expect(fast.initialized).toBe(true);
+    expect(f.service.queued(other.userId)).toBe(0);
+    gate.release();await slow;
+  });
+});
+
+describe('a reducing order names ONE position, and the name has to fit',()=>{
+  async function twoBuckets(){
+    const f=setup();await f.service.initialize(actor,'target-init');
+    const cross=(await f.service.command(actor,long())).positions[0];
+    const state=await f.service.command(actor,long({marginType:'ISOLATED',margin:'2500'}));
+    const isolated=state.positions.find(p=>p.marginMode==='ISOLATED')!;
+    expect(state.positions).toHaveLength(2);
+    expect(cross).toMatchObject({marginMode:'CROSS',quantity:'2'});expect(isolated).toMatchObject({marginMode:'ISOLATED',quantity:'1'});
+    return{f,cross,isolated};
+  }
+  const reduce=(positionId:string,extra:object={})=>({kind:'OPEN' as const,symbol:'BTCUSDT',side:'SHORT' as const,type:'LIMIT' as const,quantity:'1',leverage:'20',price:'60000',reduceOnly:true as const,positionId,idempotencyKey:key(),...extra});
+  test('the client cannot move a close into another bucket by naming one',async()=>{
+    const {f,isolated}=await twoBuckets();const before=f.repo.row!.commands.length;
+    await expect(f.service.command(actor,reduce(isolated.id,{marginType:'CROSS'}))).rejects.toMatchObject({code:'MARGIN_TYPE_MISMATCH'});
+    expect(f.repo.row!.commands).toHaveLength(before);
+  });
+  test('the bucket comes from the position: a LIMIT reduce of the isolated position rests in the isolated bucket',async()=>{
+    const {f,isolated}=await twoBuckets();
+    const v=await f.service.command(actor,reduce(isolated.id));
+    const order=v.orders.find(o=>o.status==='OPEN')!;
+    expect(order).toMatchObject({marginType:'ISOLATED',positionId:isolated.id,reduceOnly:true,type:'LIMIT',price:'60000',remaining:'1'});
+    expect(v.positions.map(p=>[p.marginMode,p.quantity]).sort()).toEqual([['CROSS','2'],['ISOLATED','1']]);
+  });
+  test('a position of another contract, the same side, or more than remains is refused before any market data is read',async()=>{
+    const {f,cross,isolated}=await twoBuckets();
+    const quotes=()=>f.market.freshQuote.bind(f.market);let asked=0;const answer=quotes();
+    f.market.freshQuote=(async(symbol:string)=>{asked+=1;return answer(symbol);}) as typeof f.market.freshQuote;
+    await expect(f.service.command(actor,reduce(cross.id,{symbol:'ETHUSDT'}))).rejects.toMatchObject({code:'INVALID_REDUCE_SYMBOL'});
+    await expect(f.service.command(actor,reduce(cross.id,{side:'LONG'}))).rejects.toMatchObject({code:'INVALID_REDUCE_SIDE'});
+    await expect(f.service.command(actor,reduce(isolated.id,{quantity:'1.5'}))).rejects.toMatchObject({code:'CLOSE_EXCEEDS_POSITION'});
+    await expect(f.service.command(actor,reduce('native-does-not-exist'))).rejects.toMatchObject({code:'POSITION_NOT_OPEN'});
+    await expect(f.service.command(actor,{kind:'CLOSE',positionId:isolated.id,quantity:'2',idempotencyKey:key()})).rejects.toMatchObject({code:'CLOSE_EXCEEDS_POSITION'});
+    expect(asked).toBe(0);
+  });
+  test('when the resting reduce fills, exactly the named position shrinks and the other bucket is untouched',async()=>{
+    const {f,cross,isolated}=await twoBuckets();
+    await f.service.command(actor,reduce(isolated.id));
+    // The path reaches the limit: a SHORT limit at 60 000 fills when last >= 60 000.
+    const t0=f.clock.t;f.market.price=t=>t<t0?'50000':'60000';
+    f.market.quote={...f.market.quote,mark:'60000',last:'60000',bid:'59999.9',ask:'60000.1'};
+    f.clock.t+=2*M;
+    const v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(v.positions.map(p=>[p.id,p.marginMode,p.quantity])).toEqual([[cross.id,'CROSS','2']]);
+    expect(v.history.map(p=>[p.id,p.status])).toEqual([[isolated.id,'CLOSED']]);
+    expect(v.orders.find(o=>o.positionId===isolated.id&&o.reduceOnly)).toMatchObject({status:'FILLED',averagePrice:'60000',marginType:'ISOLATED'});
   });
 });

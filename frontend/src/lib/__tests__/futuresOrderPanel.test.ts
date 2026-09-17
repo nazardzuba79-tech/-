@@ -302,6 +302,42 @@ test.each(['STOP', 'TAKE_PROFIT', 'OCO'])('%s presentation cannot fall through t
   expect(f.placed).not.toHaveBeenCalled();
 });
 
+// ── A close from the table names its position ─────────────────────────
+
+describe('a reduce-only LIMIT from the positions table names the position it reduces', () => {
+  test('the ticket ID travels with the order; a hand-made reduce-only order carries none', async () => {
+    const f = await orderForm();
+    // The table hands the form a ticket for ONE of two same-size positions.
+    const ticket = { side: 'LONG', size: '2', seq: 1, positionId: 'native-isolated', marginType: 'ISOLATED' };
+    let tree = f.render();
+    tree = f.form.render({ ...props, closeTicket: ticket });
+    f.change(tree, '0.00', '60000');
+    await tick();
+    tree = f.form.render({ ...props, closeTicket: ticket });
+    expect(nodes(tree).find((n) => n.type === 'input' && n.props.type === 'checkbox').props.checked).toBe(true);
+    byClass(tree, 'sell')[0].props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledTimes(1);
+    expect(f.placed.mock.calls[0][0]).toMatchObject({ side: 'SELL', type: 'LIMIT', price: '60000', quantity: '2', reduceOnly: true, positionId: 'native-isolated', marginType: 'ISOLATED' });
+
+    // Reduce-only switched off by hand: the name is forgotten with it.
+    tree = f.form.render({ ...props, closeTicket: ticket });
+    const box = nodes(tree).find((n) => n.type === 'input' && n.props.type === 'checkbox');
+    box.props.onChange({ target: { checked: false } });
+    box.props.onChange({ target: { checked: true } });
+    tree = f.form.render({ ...props, closeTicket: ticket });
+    f.change(tree, '0.00', '60000');
+    f.change(tree, '0.00000', '1');
+    await tick();
+    tree = f.form.render({ ...props, closeTicket: ticket });
+    byClass(tree, 'sell')[0].props.onClick();
+    await tick();
+    expect(f.placed).toHaveBeenCalledTimes(2);
+    expect(f.placed.mock.calls[1][0]).toMatchObject({ reduceOnly: true });
+    expect(f.placed.mock.calls[1][0]).not.toHaveProperty('positionId');
+  });
+});
+
 // ── A. Exactly one persistent slider ─────────────────────────────────
 
 describe('A. the panel keeps exactly ONE persistent slider', () => {

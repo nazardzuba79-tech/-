@@ -56,7 +56,15 @@ export function FuturesOrderForm({
    *  in the direction and the quantity, and the trader prices it. Nothing
    *  is placed until they press the button, exactly as for any other
    *  order. */
-  closeTicket?: { side: 'LONG' | 'SHORT'; size: string; seq: number };
+  closeTicket?: {
+    side: 'LONG' | 'SHORT'; size: string; seq: number;
+    /** The position the row named. It travels with the order, so the engine
+     *  reduces THAT position and not the first one of the same size. */
+    positionId?: string;
+    /** The bucket that position is in; the form follows it, because a close
+     *  is settled in the position's bucket whatever the toggle says. */
+    marginType?: 'ISOLATED' | 'CROSS';
+  };
   /**
    * The last TRADED price for this contract.
    *
@@ -111,7 +119,13 @@ export function FuturesOrderForm({
     setReduceOnly(true);
     setQuantity(closeTicket.size);
     setPercent(0);
+    setReduceTargetId(closeTicket.positionId ?? null);
+    if (closeTicket.marginType && execution.marginType === null) setMarginType(closeTicket.marginType);
   }, [closeTicket?.seq]);
+  /** The position a reduce-only order from the table is FOR. Cleared when
+   *  the trader turns reduce-only off; a hand-made reduce-only order names
+   *  no position and is resolved by the engine's own rules. */
+  const [reduceTargetId, setReduceTargetId] = useState<string | null>(closeTicket?.positionId ?? null);
   const [percent, setPercent] = useState(0);
   /**
    * The leverage the TRADER asked for. What the order actually uses is
@@ -446,11 +460,13 @@ export function FuturesOrderForm({
         leverage,
         marginType,
         reduceOnly,
+        ...(reduceOnly && reduceTargetId ? { positionId: reduceTargetId } : {}),
       });
       setPrice('');
       setPriceEdited(false);
       setQuantity('');
       setPercent(0);
+      setReduceTargetId(null);
       // The account really did change: refresh it now rather than waiting
       // for whichever poll fires next. Balances too — placing an order
       // locks margin, and that figure used to lag by up to five seconds.
@@ -645,7 +661,7 @@ export function FuturesOrderForm({
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
         <label className="fo-reduceOnlyRow">
-          <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />
+          <input type="checkbox" checked={reduceOnly} onChange={(e) => { setReduceOnly(e.target.checked); if (!e.target.checked) setReduceTargetId(null); }} />
           {t('futures.reduceOnly')}
         </label>
 

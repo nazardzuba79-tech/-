@@ -38,6 +38,9 @@ export const NATIVE_ERROR_TEXT:Record<string,string>={
   MARGIN_TYPE_MISMATCH:'Этот ордер относится к другому типу маржи, чем позиция.',
   INVALID_MARGIN_TYPE:'Неизвестный тип маржи.',
   INSUFFICIENT_FILL_MARGIN:'Вам не хватает средств для исполнения этого ордера.',
+  // A reducing order names ONE position. These say which part of the name did not fit.
+  POSITION_ID_REQUIRED:'Для сокращающего ордера нужна позиция.',INVALID_REDUCE_SIDE:'Сокращающий ордер должен быть противоположен стороне позиции.',
+  INVALID_REDUCE_SYMBOL:'Позиция относится к другому контракту.',INCONSISTENT_BOOK:'Стакан изменился во время расчёта. Повторите.',
   ENTRY_MARK_UNAVAILABLE:'Недостаточно Mark Price истории для выбранной свечи.',POSITION_NOT_OPEN:'Позиция уже закрыта или не найдена.',
   INVALID_TRIGGER_PRICE:'Проверьте цену TP/SL относительно текущей цены.',INVALID_TRIGGER_STEP:'Цена TP/SL не кратна шагу цены.',INVALID_PROTECTION_QUANTITY:'Количество TP/SL больше позиции или не кратно шагу.',
   SET_EXISTING_POSITION_LEVERAGE_FIRST:'Сначала измените плечо уже открытой позиции.',CANCEL_ORDERS_BEFORE_LEVERAGE:'Сначала отмените активные ордера этой позиции.',

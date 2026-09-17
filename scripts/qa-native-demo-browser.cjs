@@ -304,6 +304,98 @@ async function limitCloseContract(width) {
     assert.equal(Number(draft.price), Number(limit)); assert(next.positions.some(x => x.id === state.positions[0].id), 'Nonmarketable limit close filled immediately');
   } finally { await s.context.close(); }
 }
+/** Pick the margin bucket the way a trader does: the popover under the mode trigger. */
+async function marginMode(page, mode) {
+  await page.locator('.fo-mlTrigger').first().click();
+  await page.locator('.fo-mlPopover .fo-mlMode').nth(mode === 'ISOLATED' ? 0 : 1).click();
+  await page.locator('.fo-mlPopover').waitFor({ state: 'detached' });
+}
+const bucketRow = (page, side, bucket) => positionRow(page, side)
+  .filter({ has: page.locator('.futures-position-contract small', { hasText: bucket === 'ISOLATED' ? /Изол|Isol/i : /Кросс|Cross/i }) });
+/**
+ * TWO LOOK-ALIKE POSITIONS, ONE NAMED CLOSE.
+ *
+ * Same contract, same side, same size — one Cross, one Isolated. A limit
+ * close started from a row must reduce THAT row's position: the draft the
+ * form sends carries the row's position ID and the position's own bucket,
+ * at the price the trader typed, and the resting order names the same
+ * position. Neither position is touched by a non-marketable limit.
+ */
+async function limitCloseTargeting(width) {
+  const s = await session(width), p = s.page;
+  const keys = [];
+  try {
+    await ready(s);
+    let state = await open(s, 'LONG', '2');
+    const cross = state.positions.find(x => x.marginMode === 'CROSS' && x.side === 'LONG'); assert(cross, 'Cross long was not opened');
+    await marginMode(p, 'ISOLATED');
+    state = await open(s, 'LONG', '2');
+    const isolated = state.positions.find(x => x.marginMode === 'ISOLATED' && x.side === 'LONG'); assert(isolated && isolated.id !== cross.id, 'Isolated long was not opened as its own position');
+    assert.equal(cross.quantity, isolated.quantity, 'Fixture positions must be the same size for this check to mean anything');
+    await p.locator('#futures-tab-positions').click(); await rows(p).nth(1).waitFor();
+    const evidence = { crossId: cross.id, isolatedId: isolated.id, closes: [] };
+    for (const target of [{ position: isolated, bucket: 'ISOLATED' }, { position: cross, bucket: 'CROSS' }]) {
+      await p.locator('#futures-tab-positions').click();
+      const row = bucketRow(p, 'LONG', target.bucket); await row.waitFor();
+      await row.locator('.futures-position-close').nth(0).click();
+      await p.waitForFunction(() => document.querySelector('.fo-reduceOnlyRow input')?.checked === true);
+      // The trader's OWN price, far from the market so nothing fills.
+      const limit = (Number(target.position.markPrice) * 2).toFixed(1);
+      await price(p).fill(limit);
+      const r = await command(s, 'OPEN', () => button(p, 'SHORT').click());
+      assert.equal(r.draft.reduceOnly, true, 'Ticket did not send a reduce-only order');
+      assert.equal(r.draft.positionId, target.position.id, `Ticket named ${r.draft.positionId}, expected the ${target.bucket} row ${target.position.id}`);
+      assert.equal(r.draft.marginType, target.bucket, 'The bucket sent is not the position\'s own');
+      assert.equal(r.draft.type, 'LIMIT'); assert.equal(Number(r.draft.price), Number(limit), 'The price sent is not the one the trader typed');
+      const order = r.state.orders.find(o => o.reduceOnly && o.status === 'OPEN' && o.positionId === target.position.id);
+      assert(order, 'The resting close does not name the row\'s position');
+      assert.equal(order.marginType, target.bucket);
+      assert.deepEqual(r.state.positions.filter(x => x.side === 'LONG').map(x => [x.id, x.quantity]).sort(), [[cross.id, '2'], [isolated.id, '2']].sort(), 'A non-marketable limit changed a position');
+      evidence.closes.push({ bucket: target.bucket, positionId: r.draft.positionId, price: r.draft.price, orderId: order.id });
+      keys.push(order.id);
+    }
+    // Leave the account as it was found: cancel both resting closes, close both positions.
+    for (const orderId of keys) await api(s.context, s.token, 'commands', { kind: 'CANCEL', orderId, idempotencyKey: `qa-cancel-${orderId}` });
+    for (const id of [cross.id, isolated.id]) await api(s.context, s.token, 'commands', { kind: 'CLOSE', positionId: id, idempotencyKey: `qa-close-${id}` });
+    return evidence;
+  } finally { await s.context.close(); }
+}
+/**
+ * A CLOSE CLICKED WHILE A REFRESH IS IN FLIGHT IS SENT, NOT DROPPED.
+ *
+ * The terminal refreshes on load and every 30 s on the same command path.
+ * The refresh is held at the network edge for a few seconds; the trader
+ * clicks Market close in the meantime. The click must reach the server as
+ * a CLOSE after the refresh and close the position — the old boolean gate
+ * returned false and showed "Операция не подтверждена" instead.
+ */
+async function closeDuringRefresh(width) {
+  const s = await session(width), p = s.page;
+  try {
+    await ready(s);
+    const state = await open(s, 'LONG', '1');
+    const id = state.positions.find(x => x.side === 'LONG' && x.quantity === '1')?.id ?? state.positions.find(x => x.side === 'LONG').id;
+    let held = 0, releasedAt = 0;
+    await s.context.route('**/native/commands', async route => {
+      const body = route.request().postDataJSON();
+      if (body?.kind === 'REFRESH') { held += 1; await delay(4000); releasedAt = Date.now(); }
+      await route.continue();
+    });
+    await p.reload(); await ready(s);
+    await p.locator('#futures-tab-positions').click(); await rows(p).first().waitFor();
+    const clickedAt = Date.now();
+    const waiting = p.waitForResponse(r => r.url().endsWith('/native/commands') && r.request().method() === 'POST' && r.request().postDataJSON()?.kind === 'CLOSE');
+    await positionRow(p, 'LONG').first().locator('.futures-position-close').nth(1).click();
+    const response = await waiting; const next = await response.json();
+    assert(response.ok(), `CLOSE during refresh: ${response.status()} ${JSON.stringify(next)}`);
+    assert(held >= 1, 'No REFRESH was in flight when the close was clicked');
+    assert(!next.positions.some(x => x.id === id), 'The close that was clicked during the refresh did not close the position');
+    assert(releasedAt >= clickedAt, 'The refresh had already finished before the click; the race was not exercised');
+    const panel = await p.locator('.futures-positions-panel').innerText();
+    assert(!/не подтверждена|не закрыта/i.test(panel), 'The terminal reported a refusal for a close it sent');
+    return { refreshesHeld: held, closedDuringRefresh: true };
+  } finally { await s.context.close(); }
+}
 async function chartFlow(width) {
   const s = await session(width), p = s.page;
   try {
@@ -408,6 +500,8 @@ async function main() {
     await check(`access-outage-no-real-fallback-${width}`, () => outage(width, 'access'));
     await check(`state-outage-no-real-fallback-${width}`, () => outage(width, 'native/state'));
     await check(`reduce-only-limit-contract-${width}`, () => limitCloseContract(width));
+    await check(`limit-close-targets-the-named-position-${width}`, () => limitCloseTargeting(width));
+    await check(`close-during-refresh-is-sent-${width}`, () => closeDuringRefresh(width));
     await check(`chart-tool-selection-${width}`, () => chartFlow(width));
   }
   assert.deepEqual(report.errors, [], 'Browser runtime errors');

@@ -308,3 +308,42 @@ describe('the terminal sizes to the contract it is trading', () => {
     expect(futuresMath.fitQuantityToContract(1.66666667, 60000, { ...rules, qtyStep: '0' }, { market: false }).quantity).toBe(0);
   });
 });
+
+describe('a close started from the table carries the position ID end to end', () => {
+  const page = source(PAGE);
+  const form = source('components/FuturesOrderForm.tsx');
+  const seam = source('lib/futuresExecution.tsx');
+  const hook = source('lib/useNativeFuturesExecution.ts');
+  const controller = source('pages/private-trading/useNativeDemo.tsx');
+
+  test('the page puts the row ID and bucket into the ticket', () => {
+    expect(page).toContain('positionId: position.id');
+    expect(page).toContain('marginType: position.marginType');
+  });
+
+  test('the form sends the ticket ID with the order, and only for a reduce-only order', () => {
+    expect(form).toContain('...(reduceOnly && reduceTargetId ? { positionId: reduceTargetId } : {})');
+    expect(form).toContain('setReduceTargetId(closeTicket.positionId ?? null)');
+    // Turning reduce-only off forgets the name; nothing is closed by a stale ticket.
+    expect(form).toContain('if (!e.target.checked) setReduceTargetId(null)');
+  });
+
+  test('the real engine never receives the name: its payload stays byte-for-byte', () => {
+    expect(seam).toContain('placeOrder: async ({ positionId: _positionId, ...params }) => { await api.placeFuturesOrder(params); }');
+  });
+
+  test('the native adapter resolves the target by name and refuses instead of guessing', () => {
+    expect(hook).toContain('resolveNativeReduceTarget(');
+    expect(hook).not.toContain('p.quantity===params.quantity');
+    expect(hook).not.toMatch(/candidates\.find\(\(?p\)?\s*=>\s*\(?exitId \? p\.id === exitId : true/);
+    // The bucket sent with a reducing order is the position's own.
+    expect(hook).toContain('marginType: targetPosition.marginMode');
+  });
+
+  test('a command is never refused for being busy: the controller queues it', () => {
+    expect(controller).toContain('new NativeCommandLane()');
+    expect(controller).not.toContain('if(pending.current||!allowed)return false');
+    // An older revision cannot overwrite a newer one.
+    expect(controller).toContain('if(!acceptsRevision(stateRef.current,next))return;');
+  });
+});

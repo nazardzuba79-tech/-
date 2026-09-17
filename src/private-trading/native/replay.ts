@@ -1,8 +1,8 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
-import { amount, consumeBook, decimal } from '../math';
+import { amount, decimal } from '../math';
 import type { Candle } from '../types';
-import { closeDemoPosition, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState,
+import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState,
   emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
@@ -14,7 +14,14 @@ export const NATIVE_MAX_CONCURRENT_CONTRACTS=6;
 export interface ReplayBar { time:number; intervalMs:number; trade:Candle; mark:Candle }
 export type NativeBook={bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number};
 export type NativeCandleRef={source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'};
-export type NativeInstruction = {id:string;at:number} & (
+/**
+ * `seq` is the per-account journal order, assigned by the service when the
+ * instruction is written. It breaks ties between instructions with the same
+ * `at`. Instructions journaled before it existed have none and keep their
+ * historical id order among themselves, so every stored checkpoint replays
+ * exactly as it did.
+ */
+export type NativeInstruction = {id:string;at:number;seq?:number} & (
   | {kind:'OPEN';order:DemoOrderInput;instrument:DemoInstrument;mark:string;last:string;point?:string;maker?:boolean;book?:NativeBook;candle?:NativeCandleRef}
   | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef}
   | {kind:'CANCEL';orderId:string}
@@ -121,8 +128,16 @@ function sortInstructions(input:NativeInstruction[]){
   if(input.length>NATIVE_COMMAND_LIMIT)throw new DemoEngineError('COMMAND_LIMIT');
   const ids=new Set<string>();
   for(const c of input){if(!c.id||ids.has(c.id)||!Number.isSafeInteger(c.at)||c.at<0)throw new DemoEngineError('INVALID_COMMAND_ID_OR_TIME');ids.add(c.id);}
-  return [...input].sort((a,b)=>a.at-b.at||a.id.localeCompare(b.id));
+  return [...input].sort(compareInstructions);
 }
+/** Time first; then journal sequence, with pre-sequence instructions before sequenced ones at the same time, ordered by id as before. */
+export function compareInstructions(a:{at:number;seq?:number;id:string},b:{at:number;seq?:number;id:string}){
+  if(a.at!==b.at)return a.at-b.at;
+  if(a.seq===undefined&&b.seq===undefined)return a.id.localeCompare(b.id);
+  return (a.seq??-1)-(b.seq??-1);
+}
+/** The next journal sequence for an account: one past the largest already written. */
+export function nextInstructionSeq(commands:{seq?:number}[]){return commands.reduce((m,c)=>Math.max(m,c.seq??0),0)+1;}
 /**
  * CLOSE is a risk-reducing action, not a fresh exposure admission. It may
  * have to unwind a position accumulated across many valid orders, and the
@@ -138,17 +153,11 @@ function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefine
   const requested=quantity??p.quantity,q=decimal(requested,'quantity',true);
   if(!q.mod(decimal(rules.qtyStep,'quantity_step',true)).isZero())throw new DemoEngineError('INVALID_QUANTITY_STEP');
   if(q.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
-  const fingerprint=JSON.stringify([book.bids,book.asks]),key=`${p.symbol}:${book.timestamp}:${createHash('sha256').update(fingerprint).digest('hex').slice(0,16)}`;
-  let used=s.bookConsumption[key];if(used&&used.fingerprint!==fingerprint)throw new DemoEngineError('INCONSISTENT_BOOK');
-  used??={fingerprint,bids:{},asks:{}};s.bookConsumption[key]=used;
-  const levels=(side:'bids'|'asks')=>book[side].map(x=>({price:x.price,quantity:f(D.maximum(0,n(x.quantity).minus(used[side][f(n(x.price))]??'0')))})).filter(x=>n(x.quantity).gt(0));
-  const direction=p.side==='LONG'?'SELL':'BUY',result=consumeBook(direction,requested,{bids:levels('bids'),asks:levels('asks')});
-  for(const fill of result.fills){
-    closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK');
-    const side=direction==='BUY'?'asks':'bids',price=f(n(fill.price));
-    used[side][price]=f(n(used[side][price]??'0').plus(fill.quantity));
-  }
-  for(const k of Object.keys(s.bookConsumption))if(Number(k.split(':')[1])<time-5000)delete s.bookConsumption[k];
+  // One consumption ledger per provider snapshot, shared with market OPEN:
+  // a slice of the same snapshot cannot buy liquidity another command took.
+  const consumed=consumeObservedBook(s,p.symbol,book,p.side==='LONG'?'SELL':'BUY',requested,time);
+  for(const fill of consumed.fills){closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK');consumed.record(fill);}
+  consumed.prune();
 }
 function apply(s:DemoState,c:NativeInstruction,time:number){
   if(c.kind==='OPEN'){
