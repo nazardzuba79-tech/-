@@ -17,6 +17,7 @@ import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { FuturesExecutionProvider, REAL_FUTURES_EXECUTION } from '../lib/futuresExecution';
 import { FuturesAccountSourceContext } from '../lib/futuresAccountSource';
 import { useNativeFuturesExecution } from '../lib/useNativeFuturesExecution';
+import type { FuturesCloseTicket } from '../lib/nativeReduceTarget';
 import { nativeDemoApi } from '../lib/nativeDemoApi';
 import { pairToNativeSymbol } from '../lib/nativeFuturesAdapter';
 import type { FuturesContractRules } from '../lib/futuresMath';
@@ -184,10 +185,13 @@ export function FuturesPage() {
   useEffect(() => () => setChartMenu(null), []);
   /** A reduce-only close the trader started from the positions table. The
    *  form fills itself from it; nothing is placed until they submit. */
-  const [closeTicket, setCloseTicket] = useState<{ symbol: string; side: 'LONG' | 'SHORT'; size: string; seq: number } | null>(null);
+  const [closeTicket, setCloseTicket] = useState<FuturesCloseTicket | null>(null);
   const [pickedPrice, setPickedPrice] = useState<{ symbol: string; value: string; seq: number } | null>(null);
   const pickedSeq = useRef(0);
-  useEffect(() => setPickedPrice(null), [symbol]);
+  useEffect(() => {
+    setPickedPrice(null);
+    setCloseTicket(current => current?.symbol === symbol ? current : null);
+  }, [symbol]);
   const pairListRef = useRef<FuturesPairListHandle>(null);
   const marketDialogRef = useRef<HTMLDialogElement>(null);
   const [desktopMarkets, setDesktopMarkets] = useState(() => window.matchMedia('(min-width: 1025px)').matches);
@@ -265,7 +269,10 @@ export function FuturesPage() {
     return Number.isFinite(value) && value > 0 ? value : null;
   }, [tape, symbol]);
 
-  const handleOrderPlaced = useCallback(() => setPositionsRefreshKey((k) => k + 1), []);
+  const handleOrderPlaced = useCallback(() => {
+    setCloseTicket(null);
+    setPositionsRefreshKey((k) => k + 1);
+  }, []);
 
   // A position can only ever be opened on a listed contract (the
   // order-placement route rejects anything else outright). Clicking a symbol
@@ -482,9 +489,16 @@ export function FuturesPage() {
                    then types. It is the form that places it, so this is a
                    real limit close and not a second order path. */
                 onLimitClose={(position) => {
-                  setSymbol(position.symbol);
+                  // Read that exact row from the same account source as the
+                  // table. Never infer its bucket from the form's old mode.
+                  const target = visibleAccount.positions.data?.find(p => p.id === position.id);
+                  if (!target) return;
+                  native.interaction.onCancelSelection();
+                  setPickedPrice(null);
+                  setSymbol(target.symbol);
                   pickedSeq.current += 1;
-                  setCloseTicket({ symbol: position.symbol, side: position.side, size: position.size, seq: pickedSeq.current });
+                  setCloseTicket({ id: target.id, symbol: target.symbol, side: target.side,
+                    size: target.size, marginType: target.marginType, seq: pickedSeq.current });
                 }}
               />
             )}

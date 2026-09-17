@@ -7,6 +7,7 @@ import { PercentSlider } from './PercentSlider';
 import { FuturesAccountSummary } from './FuturesAccountSummary';
 import { useFuturesAccount } from '../lib/useFuturesAccount';
 import { useFuturesExecution } from '../lib/futuresExecution';
+import type { FuturesCloseTicket } from '../lib/nativeReduceTarget';
 import { futuresOrderErrorMessage } from '../lib/futuresOrderErrors';
 import {
   getLeverageTier,
@@ -56,7 +57,7 @@ export function FuturesOrderForm({
    *  in the direction and the quantity, and the trader prices it. Nothing
    *  is placed until they press the button, exactly as for any other
    *  order. */
-  closeTicket?: { side: 'LONG' | 'SHORT'; size: string; seq: number };
+  closeTicket?: FuturesCloseTicket;
   /**
    * The last TRADED price for this contract.
    *
@@ -101,17 +102,24 @@ export function FuturesOrderForm({
     }
   }, [family, lastPrice, price, priceEdited]);
   const [quantity, setQuantity] = useState('');
+  const [closeTarget, setCloseTarget] = useState<FuturesCloseTicket | null>(null);
   /** A close requested from the positions table fills the ticket in, in
    *  reduce-only LIMIT, sized at the position. The trader still types the
-   *  price and still presses the button. */
+   *  price and still presses the button. Identity survives price/quantity
+   *  edits and a LIMIT/MARKET switch; only explicit cancellation, successful
+   *  submission or leaving the symbol discards it. */
   useEffect(() => {
-    if (!closeTicket) return;
+    if (!closeTicket || closeTicket.symbol !== symbol) { setCloseTarget(null); return; }
+    setCloseTarget(closeTicket);
     setType('LIMIT');
     setFamily('LIMIT');
     setReduceOnly(true);
+    setSide(closeTicket.side === 'LONG' ? 'SELL' : 'BUY');
+    setMarginType(closeTicket.marginType);
     setQuantity(closeTicket.size);
     setPercent(0);
-  }, [closeTicket?.seq]);
+    setError(null);
+  }, [closeTicket?.seq, symbol]);
   const [percent, setPercent] = useState(0);
   /**
    * The leverage the TRADER asked for. What the order actually uses is
@@ -163,9 +171,11 @@ export function FuturesOrderForm({
    * changes. See lib/futuresExecution.
    */
   const execution = useFuturesExecution();
+  const activeCloseTarget = reduceOnly ? closeTarget : null;
   /** An engine that settles in one margin mode is not offering a choice.
-   *  `null` — every ordinary account — leaves the toggle the trader's. */
-  const marginType = execution.marginType ?? chosenMarginType ?? execution.defaultMarginType;
+   *  A named close also keeps its position's bucket, not a different one
+   *  selected while the form still contains that position's id. */
+  const marginType = execution.marginType ?? activeCloseTarget?.marginType ?? chosenMarginType ?? execution.defaultMarginType;
   // The leverage bounds and the tier table come from the one shared read of
   // /futures/config rather than this form's own copy — same values, same
   // `null`-until-known semantics, one request for the page instead of three.
@@ -234,6 +244,7 @@ export function FuturesOrderForm({
 
   const currentPosition = positions?.find(
     (position) => position.symbol === symbol && position.marginType === marginType
+      && (!activeCloseTarget || position.id === activeCloseTarget.id)
   );
   const pendingExposureOrders = (activeOrders ?? [])
     .filter((order) =>
@@ -363,7 +374,7 @@ export function FuturesOrderForm({
       // the position it closes, so the free balance is the wrong budget
       // for it entirely: sizing from it offers a quantity the server
       // rejects as "would exceed the current position size".
-      if (positions === null) return;
+      if (positions === null || (activeCloseTarget && !currentPosition)) return;
       const closable = exposurePosition ? exposurePosition.size : 0;
       setQuantity(contractSized(closable * (pct / 100)));
       return;
@@ -446,7 +457,9 @@ export function FuturesOrderForm({
         leverage,
         marginType,
         reduceOnly,
+        ...(execution.engine === 'NATIVE' && activeCloseTarget ? { positionId: activeCloseTarget.id } : {}),
       });
+      setCloseTarget(null);
       setPrice('');
       setPriceEdited(false);
       setQuantity('');
@@ -509,6 +522,7 @@ export function FuturesOrderForm({
    *  the direction now arrives from the caller. */
   function place(orderSide: 'BUY' | 'SELL') {
     if (!canSubmit) return;
+    if (activeCloseTarget && orderSide !== (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY')) return;
     /**
      * A MISSING THRESHOLD MEANS NO WARNING, NOT A WARNING ON EVERYTHING.
      *
@@ -544,7 +558,7 @@ export function FuturesOrderForm({
         setPercent(0); setError(null);
       }} />
 
-      <form onSubmit={handleSubmit} className="fo-form">
+      <form onSubmit={handleSubmit} className="fo-form" data-close-position-id={activeCloseTarget?.id}>
         {/* One compact control where a margin-mode toggle and a full
             leverage slider used to stack. The panel now has exactly ONE
             persistent slider, and it is position size. Every bound comes
@@ -552,8 +566,8 @@ export function FuturesOrderForm({
             effectiveMaxLeverage, and config.highLeverageWarningThreshold. */}
         <FuturesMarginLeverage
           marginType={marginType}
-          onMarginTypeChange={execution.marginType ? () => {} : setMarginType}
-          marginTypeLocked={execution.marginType !== null}
+          onMarginTypeChange={execution.marginType || activeCloseTarget ? () => {} : setMarginType}
+          marginTypeLocked={execution.marginType !== null || activeCloseTarget !== null}
           leverage={leverage}
           onLeverageChange={(next) => {
             setRequestedLeverage(next);
@@ -645,7 +659,10 @@ export function FuturesOrderForm({
         <PercentSlider value={percent} onChange={applyPercent} presets={SIZE_PRESETS} continuous label={t('trade.quantity')} />
 
         <label className="fo-reduceOnlyRow">
-          <input type="checkbox" checked={reduceOnly} onChange={(e) => setReduceOnly(e.target.checked)} />
+          <input type="checkbox" checked={reduceOnly} onChange={(e) => {
+            setReduceOnly(e.target.checked);
+            if (!e.target.checked) setCloseTarget(null);
+          }} />
           {t('futures.reduceOnly')}
         </label>
 
@@ -731,7 +748,7 @@ export function FuturesOrderForm({
         <div className="fo-submitPair">
           <button
             type="button"
-            disabled={!canSubmit}
+            disabled={!canSubmit || activeCloseTarget?.side === 'LONG'}
             title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('BUY')}
             className="submit-btn buy"
@@ -740,7 +757,7 @@ export function FuturesOrderForm({
           </button>
           <button
             type="button"
-            disabled={!canSubmit}
+            disabled={!canSubmit || activeCloseTarget?.side === 'SHORT'}
             title={!connectedFamily ? t('analytics.unavailable') : undefined}
             onClick={() => place('SELL')}
             className="submit-btn sell"
