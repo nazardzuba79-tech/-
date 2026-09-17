@@ -10,13 +10,13 @@ test('Ksenia owner-reported BTC short adds 7.8pp and 1754 USDT without inventing
   const result: any = withKseniaReportedTrade(base);
 
   expect(base).toEqual(before);
-  expect(result.economics.periods['7D'].roi).toBeCloseTo(before.economics.periods['7D'].roi + 7.8, 8);
-  expect(result.economics.periods.ALL.masterPnl).toBeCloseTo(before.economics.periods.ALL.masterPnl + 1754, 8);
+  expect(result.economics.periods['7D'].roi).toBe(Number((before.economics.periods['7D'].roi + 7.8).toFixed(4)));
+  expect(result.economics.periods.ALL.masterPnl).toBe(Number((before.economics.periods.ALL.masterPnl + 1754).toFixed(4)));
 
   const beforeDay = before.dailyResults.find((day: any) => day.date === '2026-09-16');
   const afterDay = result.dailyResults.find((day: any) => day.date === '2026-09-16');
-  expect(afterDay.dailyReturn).toBeCloseTo(beforeDay.dailyReturn + 0.078, 10);
-  expect(afterDay.realizedPnl).toBeCloseTo(beforeDay.realizedPnl + 1754, 8);
+  expect(afterDay.dailyReturn).toBe(Number((beforeDay.dailyReturn + 0.078).toFixed(12)));
+  expect(afterDay.realizedPnl).toBe(Number((beforeDay.realizedPnl + 1754).toFixed(4)));
 
   expect(result.tradeHistoryCount).toBe(before.tradeHistoryCount + 1);
   expect(result.tradeStats.ALL.totalTrades).toBe(before.tradeStats.ALL.totalTrades + 1);
