@@ -20,8 +20,82 @@
   height:44px; min-height:44px; max-height:44px; flex-basis:44px;
 }
 .trade-terminal.terminal-studio .bottom-panel[data-account-compact=true] .orders-resize-handle { display:none; }
+
+/* FINAL FUTURES DENSITY LAYER
+   FuturesPage imports this sheet last. Keep the few geometry/readability
+   rules that must win here instead of adding another specificity race to the
+   older terminal sheets. It is intentionally visual only: no market/account
+   number is generated here. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal-account-header > .bottom-tabs {
+  min-height:46px; height:46px; gap:22px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-tab {
+  font-size:13px; line-height:20px; font-weight:500;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-tab[aria-selected=true] { font-weight:650; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-content {
+  flex:1; min-height:0; overflow:auto;
+}
+
+/* Market search starts at the same workspace rhythm as the terminal toolbar,
+   not after a tall decorative heading. */
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .studio-market-heading {
+  height:42px; min-height:42px; box-sizing:border-box; display:flex; align-items:center;
+  margin:0; padding:0 12px; font-size:13px; border-bottom:1px solid #26313d;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pairs-search {
+  padding:8px 10px; border-bottom:1px solid #26313d;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pairs-search input {
+  height:38px; font-size:12px; line-height:18px;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row .p-base { font-size:13px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row :is(.p-price,.p-change) { font-size:12px; }
+
+/* Bybit-like ladder readability. Row height remains owned by
+   REFERENCE_ROW_HEIGHT, so rendered row count and measurement stay in sync. */
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row {
+  font-size:13px; font-weight:500; color:#e8edf3; padding-inline:10px;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-columns {
+  font-size:11px; font-weight:500; color:#9cabb9;
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
+  background:rgba(20,160,115,.30);
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
+  background:rgba(200,64,74,.30);
+}
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong { font-size:19px; }
+
+/* The ticket uses the same readable scale instead of falling back to 11px
+   labels after the larger chart/book typography. */
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-family-tabs button,
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-mlTrigger,
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-label,
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoRow { font-size:12px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn { font-size:13px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-summary { font-size:13px; }
+
 @media(min-width:1025px) {
+  /* The old shared .bottom-panel rule hard-coded 145px. That was the hidden
+     reason Claude's 208–272px grid track still measured ~156px in-browser.
+     Let the grid own the expanded height; compact mode remains pinned to 44. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel:not([data-account-compact=true]) {
+    height:auto; min-height:0; max-height:none; flex-basis:auto; align-self:stretch;
+  }
+  /* Give the ladder enough physical width for 13px tabular numbers without
+     stealing the dedicated order-entry rail. Bottom panel still spans chart
+     + book exactly like the reference exchange. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
+    grid-template-columns:212px minmax(0,1fr) 250px 278px;
+  }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .terminal[data-account-compact=true] {
     grid-template-rows:70px minmax(0,1fr) 44px;
+  }
+}
+@media(min-width:1025px) and (max-width:1279px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
+    grid-template-columns:184px minmax(0,1fr) 220px 252px;
   }
 }
