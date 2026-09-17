@@ -136,7 +136,18 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   }else if(c.kind==='CLOSE'){
     if(c.book){
       const p=s.positions.find(p=>p.id===c.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
-      const o=placeDemoOrder(s,{id:c.id,symbol:p.symbol,side:p.side==='LONG'?'SHORT':'LONG',type:'MARKET',quantity:c.quantity??p.quantity,leverage:p.leverage,reduceOnly:true,positionId:p.id,marginType:p.marginType},time);
+      /**
+       * A close is risk-REDUCING. The position can legitimately have been
+       * opened at 10x while its current notional later grows into a tier whose
+       * entry ceiling is 5x. Reusing p.leverage here made the admission check
+       * reject the EXIT with TIER_LEVERAGE_EXCEEDED. Leverage has no economic
+       * role on a reduce-only IOC (reserve is zero; fill only settles quantity),
+       * so use the contract minimum solely as the validation value. The open
+       * position keeps its real leverage and every P&L/margin figure unchanged.
+       */
+      const closeLeverage=s.instruments[p.symbol]?.rules.minLeverage;
+      if(!closeLeverage)throw new DemoEngineError('INSTRUMENT_MISSING');
+      const o=placeDemoOrder(s,{id:c.id,symbol:p.symbol,side:p.side==='LONG'?'SHORT':'LONG',type:'MARKET',quantity:c.quantity??p.quantity,leverage:closeLeverage,reduceOnly:true,positionId:p.id,marginType:p.marginType},time);
       executeDemoBook(s,o.id,c.book,time);
     }else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
   }
