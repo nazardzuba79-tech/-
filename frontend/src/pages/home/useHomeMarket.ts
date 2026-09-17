@@ -67,9 +67,12 @@ export interface HomeMarket {
   logoOf: (base: string) => string | undefined;
 }
 
-// One 15-second display clock for visible market surfaces. Child components
-// receive these values and never open a second upstream market-data loop.
-const TICKER_POLL_MS = 15_000;
+// The public homepage is a presentation surface, not an execution terminal.
+// One real market snapshot every six hours is enough for its laptop preview,
+// heatmap and popular-assets blocks. Trade/Futures keep their own live feeds;
+// this slower cadence is scoped to the homepage only and avoids thousands of
+// unnecessary background reads while preserving real received values.
+const TICKER_POLL_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_HERO_PAIR = 'BTC/USDT';
 const receivedNumber = (value: unknown): number => (typeof value === 'number' || typeof value === 'string' && value.trim() !== '')
   && Number.isFinite(Number(value)) ? Number(value) : NaN;
