@@ -1,6 +1,7 @@
 import { advanceKseniaReview, createKseniaReviewState, kseniaReviewResponse } from '../canonical/kseniaReview';
 import { summarizeStrategy } from '../marketplaceSummary';
 import { withKseniaReportedTrade } from '../kseniaReportedTrade';
+import { validStrategy } from '../../../../frontend/src/lib/copyMarketplaceStore';
 
 test('Ksenia owner-reported BTC short adds 7.8pp and 1754 USDT without inventing execution fields', () => {
   const state = advanceKseniaReview(createKseniaReviewState(), 10);
@@ -57,4 +58,8 @@ test('reported Ksenia trade stays in newest-first order after newer canonical tr
   expect(times).toEqual([...times].sort((a, b) => b - a));
   expect(result.trades.some((trade: any) => trade.id === 'KS-REPORTED-20260916-BTC')).toBe(true);
   expect(result.trades).toHaveLength(10);
+  // Pin the exact user-visible failure: this section must pass the same
+  // network-boundary validator the marketplace uses, otherwise both the card
+  // and opened profile fall back to skeleton/“Данные недоступны”.
+  expect(validStrategy(result, 'VX-KSENIA')).toBe(true);
 });
