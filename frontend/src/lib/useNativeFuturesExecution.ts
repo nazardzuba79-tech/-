@@ -4,43 +4,15 @@ import { REAL_FUTURES_EXECUTION } from './futuresExecution';
 import {
   nativeAccountState, terminalOrderToNativeDraft, pairToNativeSymbol,
 } from './nativeFuturesAdapter';
-import { nativeDemoApi } from './nativeDemoApi';
+import { PrivateTradingError } from './privateTradingError';
 import type { NativeDemoController } from '../pages/private-trading/useNativeDemo';
 import type { FuturesContractRules } from './futuresMath';
 
-function decimalPlaces(value:string):number{const dot=value.indexOf('.');return dot===-1?0:value.length-dot-1;}
-function decimalUnits(value:string,places:number):bigint{
-  if(!/^\d+(?:\.\d+)?$/.test(value))throw new Error('Некорректное количество позиции');
-  const[whole,fraction='']=value.split('.');
-  if(fraction.length>places)throw new Error('Количество не соответствует шагу контракта');
-  return BigInt((whole||'0')+fraction.padEnd(places,'0'));
-}
-function unitsText(value:bigint,places:number):string{
-  if(places===0)return value.toString();
-  const raw=value.toString().padStart(places+1,'0'),whole=raw.slice(0,-places),fraction=raw.slice(-places).replace(/0+$/,'');
-  return fraction?`${whole}.${fraction}`:whole;
-}
-/** One contract-valid slice of a risk-reducing market close. A position can
- * legitimately be larger than Bybit's per-order market ceiling because it
- * may have been accumulated over several fills. The terminal's Close button
- * must therefore behave like an exchange close action, not like one giant
- * order that the contract rejects. */
-function marketCloseChunk(quantity:string,rules:FuturesContractRules):string{
-  const places=Math.max(decimalPlaces(quantity),decimalPlaces(rules.qtyStep),decimalPlaces(rules.maxMarketOrderQty),decimalPlaces(rules.minOrderQty));
-  const total=decimalUnits(quantity,places),step=decimalUnits(rules.qtyStep,places),rawMax=decimalUnits(rules.maxMarketOrderQty,places),rawMin=decimalUnits(rules.minOrderQty,places);
-  if(step<=0n||total<=0n||total%step!==0n)throw new Error('Количество позиции не соответствует шагу контракта');
-  const maximum=(rawMax/step)*step;if(maximum<=0n)throw new Error('Рыночное закрытие недоступно для этого контракта');
-  const minimum=((rawMin+step-1n)/step)*step;
-  let chunk=total>maximum?maximum:total;
-  const remainder=total-chunk;
-  // Do not strand a final remainder below the venue's minimum: move enough
-  // from this slice into the last one while both remain step-aligned.
-  if(remainder>0n&&minimum>0n&&remainder<minimum){
-    const shift=minimum-remainder;
-    if(chunk-shift>=minimum)chunk-=shift;
-  }
-  if(chunk<=0n||chunk>maximum)return unitsText(total,places);
-  return unitsText(chunk,places);
+const wait=(ms:number)=>new Promise<void>(resolve=>setTimeout(resolve,ms));
+const nativeFailure=(native:NativeDemoController,fallback:string)=>
+  new PrivateTradingError(native.getError()||native.error||fallback,409);
+function retryableCloseMessage(message:string){
+  return /устар|временно недоступ|котиров|стакан|market_data|provider|повторите/i.test(message);
 }
 
 /**
@@ -141,7 +113,7 @@ export function useNativeFuturesExecution(
             kind: 'CLOSE', positionId: target!, quantity: params.quantity,
             ...(pickedCandle ? { candle: pickedCandle } : {}),
           });
-          if (!ok) throw new Error(native.getError() || native.error || 'Операция не подтверждена');
+          if (!ok) throw nativeFailure(native,'Операция не подтверждена');
           return;
         }
         const ok = await run(terminalOrderToNativeDraft({
@@ -149,45 +121,59 @@ export function useNativeFuturesExecution(
           ...(reducing ? { reduceOnly: true, positionId: target, marginType: reduceMarginType } : {}),
           candle: pickedCandle,
         }));
-        if (!ok) throw new Error(native.getError() || native.error || 'Операция не подтверждена');
+        if (!ok) throw nativeFailure(native,'Операция не подтверждена');
       },
       async cancelOrder(orderId) {
-        if (!(await run({ kind: 'CANCEL', orderId }))) throw new Error(native.getError() || native.error || 'Ордер не отменён');
+        if (!(await run({ kind: 'CANCEL', orderId }))) throw nativeFailure(native,'Ордер не отменён');
       },
       async closePosition(positionId) {
         const first=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
-        if(!first)throw new Error('Позиция уже закрыта или не найдена');
-        // Fetch the rules of THE position being closed. The selected terminal
-        // symbol can be different if the click switched instruments a render
-        // ago, and using its ceiling would reproduce the same mismatch.
-        const rules=await nativeDemoApi.contract(first.symbol);
-        let stagnant=0;
-        for(let pass=0;pass<64;pass++){
+        if(!first)throw new PrivateTradingError('Позиция уже закрыта или не найдена',409);
+        /**
+         * The server owns CLOSE sizing now. A position may be larger than one
+         * venue market order (or older than today's contract limits), so the
+         * server consumes the real observed book directly as a risk-reducing
+         * close action. If that snapshot has insufficient depth, keep asking
+         * for a fresh snapshot; never reuse or invent liquidity.
+         */
+        let stagnant=0,transientFailures=0;
+        for(let pass=0;pass<30;pass++){
           const before=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
           if(!before)return;
-          const quantity=marketCloseChunk(before.quantity,rules);
-          const ok=await run({kind:'CLOSE',positionId,quantity});
-          if(!ok)throw new Error(native.getError() || native.error || 'Позиция не закрыта');
+          const ok=await run({kind:'CLOSE',positionId});
+          if(!ok){
+            const message=native.getError()||native.error||'Позиция не закрыта';
+            if(transientFailures<4&&retryableCloseMessage(message)){
+              transientFailures+=1;
+              await wait(350*transientFailures);
+              continue;
+            }
+            throw new PrivateTradingError(message,409);
+          }
+          transientFailures=0;
           const after=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
           if(!after)return;
-          // A 1000-level observed book can occasionally be thinner than a
-          // large position. Ask for a fresh book rather than pretending the
-          // remainder filled. Three zero-progress snapshots means there is
-          // genuinely no executable depth right now.
           if(after.quantity===before.quantity){
             stagnant+=1;
-            if(stagnant>=3)throw new Error('Недостаточно ликвидности для полного закрытия позиции. Повторите через несколько секунд.');
-          }else stagnant=0;
+            if(stagnant>=4)throw new PrivateTradingError('Недостаточно ликвидности для полного закрытия позиции. Повторите через несколько секунд.',409);
+            // Give the provider time to publish a genuinely new observed book.
+            await wait(500*stagnant);
+          }else{
+            stagnant=0;
+            // A very large close may consume one whole snapshot. Yield briefly
+            // so the next command is not guaranteed to hit the identical book.
+            await wait(150);
+          }
         }
-        throw new Error('Позиция слишком велика для одного цикла закрытия. Повторите закрытие оставшегося объёма.');
+        throw new PrivateTradingError('Позиция закрыта частично. Повторите закрытие оставшегося объёма.',409);
       },
       async setProtection(positionId, body) {
         const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: body.takeProfit, stopLoss: body.stopLoss } });
-        if (!ok) throw new Error(native.getError() || native.error || 'TP/SL не сохранены');
+        if (!ok) throw nativeFailure(native,'TP/SL не сохранены');
       },
       async clearProtection(positionId) {
         const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: null, stopLoss: null } });
-        if (!ok) throw new Error(native.getError() || native.error || 'TP/SL не сняты');
+        if (!ok) throw nativeFailure(native,'TP/SL не сняты');
       },
       showPnlCard: (positionId: string) => { void native.showCard(positionId); },
       refresh: () => { void run({ kind: 'REFRESH' }); },

@@ -9,8 +9,8 @@ const instrument: DemoInstrument = {
     tickSize: '0.1',
     qtyStep: '1',
     minOrderQty: '1',
-    maxOrderQty: '10000',
-    maxMarketOrderQty: '10000',
+    maxOrderQty: '10',
+    maxMarketOrderQty: '10',
     minNotionalValue: '5',
     minLeverage: '1',
     maxLeverage: '100',
@@ -39,30 +39,36 @@ const bar: ReplayBar = {
   mark: { timestamp: T, open: '500', low: '500', high: '2000', close: '2000' },
 };
 
-test('market close remains allowed after a profitable position grows into a tier below its entry leverage', () => {
-  const open: NativeInstruction = {
-    id: 'open-zec',
-    kind: 'OPEN',
-    at: T,
-    order: {
-      id: 'position-zec',
-      symbol: 'ZECUSDT',
-      side: 'LONG',
-      type: 'MARKET',
-      quantity: '100',
-      leverage: '10',
-      marginType: 'CROSS',
+function openInstructions(count:number):NativeInstruction[]{
+  return Array.from({length:count},(_,index)=>({
+    id:`open-zec-${index}`,
+    kind:'OPEN' as const,
+    at:T,
+    order:{
+      id:`position-zec-${index}`,
+      symbol:'ZECUSDT',
+      side:'LONG' as const,
+      type:'MARKET' as const,
+      quantity:'10',
+      leverage:'10',
+      marginType:'CROSS' as const,
     },
     instrument,
-    mark: '500',
-    last: '500',
-    point: '500',
-  };
+    mark:'500',
+    last:'500',
+    point:'500',
+  }));
+}
+
+test('one close action can unwind a position accumulated above the per-order max after it grows into a lower-leverage tier', () => {
+  // Ten individually valid 10-ZEC orders accumulate into one 100-ZEC live
+  // position. The contract's per-order market max is still only 10 ZEC.
+  const opens=openInstructions(10);
   const close: NativeInstruction = {
     id: 'close-zec',
     kind: 'CLOSE',
     at: T + 59_999,
-    positionId: 'position-zec',
+    positionId: 'position-zec-0',
     quantity: '100',
     price: '2000',
     book: {
@@ -72,27 +78,43 @@ test('market close remains allowed after a profitable position grows into a tier
     },
   };
 
-  // At entry the 50k notional permits 10x. At the close mark the same
-  // position is worth 200k, whose entry tier permits only 5x. That lower
-  // admission ceiling must never trap an already-open position: CLOSE is
-  // risk-reducing and must be able to exit at the observed book.
+  // At entry the final 50k notional permits 10x. At the close mark the same
+  // position is worth 200k, whose entry tier permits only 5x. A risk-reducing
+  // close must not be trapped by either the 10-ZEC admission max or the 5x
+  // entry ceiling. It may consume only the observed book and nothing else.
   const state = replayNativeDemo({
     deposit: '1000000',
-    instructions: [open, close],
+    instructions: [...opens, close],
     bars: { ZECUSDT: [bar] },
     asOf: T + 60_000,
   });
 
   expect(state.positions[0]).toMatchObject({
-    id: 'position-zec',
+    id: 'position-zec-0',
     status: 'CLOSED',
     quantity: '0',
     leverage: '10',
   });
   expect(state.events.filter((event) => event.kind === 'CLOSE')).toHaveLength(1);
   expect(state.events.find((event) => event.kind === 'CLOSE')).toMatchObject({
-    positionId: 'position-zec',
+    positionId: 'position-zec-0',
     quantity: '100',
     price: '2000',
+    pricing: 'OBSERVED_BOOK',
   });
+});
+
+test('repeated close commands never reuse liquidity from the same observed book snapshot', () => {
+  const opens=openInstructions(2);
+  const book={timestamp:T+59_998,bids:[{price:'2000',quantity:'10'}],asks:[]};
+  const first:NativeInstruction={
+    id:'close-one',kind:'CLOSE',at:T+59_998,positionId:'position-zec-0',quantity:'10',price:'2000',book,
+  };
+  const second:NativeInstruction={
+    id:'close-two',kind:'CLOSE',at:T+59_999,positionId:'position-zec-0',quantity:'10',price:'2000',book,
+  };
+  const state=replayNativeDemo({deposit:'1000000',instructions:[...opens,first,second],bars:{ZECUSDT:[bar]},asOf:T+60_000});
+
+  expect(state.positions[0]).toMatchObject({status:'OPEN',quantity:'10'});
+  expect(state.events.filter(event=>event.kind==='CLOSE')).toHaveLength(1);
 });
