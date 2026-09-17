@@ -78,6 +78,16 @@
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-summary { font-size:13px; }
 
 @media(min-width:1025px) {
+  /* The markets/search column belongs to the trading workspace, not to the
+     account table. Stop it above row 3, then let the account panel span
+     markets + chart + book. That is the Bybit geometry the screenshots ask
+     for: almost the whole terminal width, stopping only before order entry. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .reference-market-sidebar {
+    grid-column:1; grid-row:1 / 3;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel {
+    grid-column:1 / 4; grid-row:3;
+  }
   /* The old shared .bottom-panel rule hard-coded 145px. That was the hidden
      reason Claude's 208–272px grid track still measured ~156px in-browser.
      Let the grid own the expanded height; compact mode remains pinned to 44. */
@@ -85,8 +95,7 @@
     height:auto; min-height:0; max-height:none; flex-basis:auto; align-self:stretch;
   }
   /* Give the ladder enough physical width for 13px tabular numbers without
-     stealing the dedicated order-entry rail. Bottom panel still spans chart
-     + book exactly like the reference exchange. */
+     stealing the dedicated order-entry rail. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
     grid-template-columns:212px minmax(0,1fr) 250px 278px;
   }
