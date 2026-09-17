@@ -33,7 +33,7 @@
   font-size:13px; line-height:20px; font-weight:500;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-tab[aria-selected=true] { font-weight:650; }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-content {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-content {
   flex:1; min-height:0; overflow:auto;
 }
 
@@ -76,6 +76,60 @@
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoRow { font-size:12px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn { font-size:13px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-account-summary { font-size:13px; }
+
+/* VISUAL REGRESSION GUARD — FUTURES ORDER TICKET
+   The shared polish/approved layers accidentally turned this narrow trading
+   rail into a card UI: a rounded calculator box and large pill-shaped Long /
+   Short buttons. That was never part of the requested Futures changes. Keep
+   the exact same margin, liquidation and execution values; only restore the
+   compact exchange-style presentation here, in the final loaded sheet. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoBox {
+  background:transparent;
+  border:0;
+  border-top:1px solid var(--border-color,#26313d);
+  border-bottom:1px solid var(--border-color,#26313d);
+  border-radius:0;
+  padding:8px 0;
+  gap:4px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoRow {
+  min-height:20px;
+  line-height:20px;
+  flex-wrap:nowrap;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoRow > :last-child {
+  margin-left:auto;
+  text-align:right;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair {
+  gap:8px;
+  padding-block:2px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn {
+  height:40px;
+  min-height:40px;
+  border-radius:4px;
+  padding:0 8px;
+  font-size:13px;
+  font-weight:650;
+  line-height:18px;
+  white-space:nowrap;
+}
+/* Keep instrument + last/mark price as one compact left cluster. The
+   design-variant sheet used space-between across every header item, which
+   created the oversized empty zone highlighted in the production capture. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar {
+  justify-content:flex-start;
+  gap:clamp(16px,1.35vw,24px);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .pair-selector {
+  margin-right:0;
+  min-width:auto;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar .futures-primary-price {
+  min-width:132px;
+  padding-right:16px;
+}
 
 @media(min-width:1025px) {
   /* The markets/search column belongs to the trading workspace, not to the
