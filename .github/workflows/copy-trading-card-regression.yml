@@ -5,19 +5,23 @@ on:
     paths:
       - 'src/services/copyTrading/**'
       - 'frontend/src/lib/copyMarketplaceStore.ts'
+      - 'frontend/src/lib/copyMarketplaceCache.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
       - 'frontend/src/lib/useCopyMarketplace.ts'
       - 'frontend/src/pages/CopyTradingPage.tsx'
       - 'frontend/src/pages/copy-trading-bolt/**'
+      - 'scripts/qa-copy-last-good-browser.cjs'
       - '.github/workflows/copy-trading-card-regression.yml'
   push:
     paths:
       - 'src/services/copyTrading/**'
       - 'frontend/src/lib/copyMarketplaceStore.ts'
+      - 'frontend/src/lib/copyMarketplaceCache.ts'
       - 'frontend/src/lib/kseniaCopyTrading.ts'
       - 'frontend/src/lib/useCopyMarketplace.ts'
       - 'frontend/src/pages/CopyTradingPage.tsx'
       - 'frontend/src/pages/copy-trading-bolt/**'
+      - 'scripts/qa-copy-last-good-browser.cjs'
       - '.github/workflows/copy-trading-card-regression.yml'
 
 permissions:
@@ -41,3 +45,20 @@ jobs:
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Production frontend build
         run: npm run build --prefix frontend
+      - name: Backend build (real marketplace router and service for the browser QA)
+        run: npm run build
+      - name: Install disposable browser
+        run: |
+          npm install --prefix /tmp/voltex-copy-qa --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
+          node /tmp/voltex-copy-qa/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Browser QA — last-good snapshot paints before the marketplace API answers
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-copy-qa/node_modules/playwright
+        run: node scripts/qa-copy-last-good-browser.cjs
+      - name: Preserve browser evidence
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copy-last-good-browser
+          path: docs/qa/copy-last-good-browser/
+          retention-days: 7

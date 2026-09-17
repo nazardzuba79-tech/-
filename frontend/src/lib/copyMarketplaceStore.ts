@@ -205,6 +205,14 @@ export class CopyMarketplaceStore {
     if (Object.keys(stale).some(key => stale[key as Section] !== this.state.stale[key as Section])) this.state = { ...this.state, stale };
     return this.state;
   };
+  /**
+   * Re-read the session now. A logout is a client-side route change, not a
+   * reload: the marketplace page has already unmounted by the time the token
+   * is cleared, so nothing would otherwise ask this store for state, and the
+   * snapshot it wrote would stay on disk until the marketplace is next
+   * opened. api.ts broadcasts every token change; this is the receiver.
+   */
+  syncSession = () => { this.checkSession(); };
   private checkSession() {
     const session = this.getSession();
     if (session === this.session) return;

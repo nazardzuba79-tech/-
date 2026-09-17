@@ -98,7 +98,36 @@ const PAINTED=`(${painted})()`,READY=`(${ready})(${PAINTED})`;
  // 5-6. The confirmed values are on screen at once, no skeleton in sight.
  await page.waitForFunction(READY,null,{timeout:1500});
  report.reload={readyMs:Date.now()-start,painted:await page.evaluate(PAINTED)};
+ // The sections below the fold reveal once on scroll (Reveal.tsx). Walk the
+ // whole page so every one of them is shown, check each really became
+ // visible, return to the top, and only then capture the full page — a
+ // capture of an unscrolled page would show the hero over a black void.
+ report.reload.reveal=await page.evaluate(async()=>{
+  const settle=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  const until=async(check,limit)=>{const started=performance.now();while(!check()&&performance.now()-started<limit)await new Promise(resolve=>setTimeout(resolve,50));return check();};
+  const sections=[...document.querySelectorAll('.vx-reveal')];
+  const results=[];
+  for(const el of sections){
+   el.scrollIntoView({block:'center',behavior:'instant'});
+   await settle();
+   const shown=await until(()=>el.classList.contains('vx-shown'),3000);
+   const opaque=await until(()=>getComputedStyle(el).opacity==='1',2000);
+   const box=el.getBoundingClientRect();
+   results.push({shown,opaque,opacity:getComputedStyle(el).opacity,height:box.height,top:box.top+scrollY,bottom:box.bottom+scrollY});
+  }
+  window.scrollTo(0,0);
+  await settle();
+  const footer=document.querySelector('footer');
+  const footerTop=footer?footer.getBoundingClientRect().top+scrollY:null;
+  const contentBottom=results.length?Math.max(...results.map(item=>item.bottom)):null;
+  return {sections:results,footerTop,contentBottom,scrollHeight:document.documentElement.scrollHeight,unshown:document.querySelectorAll('.vx-reveal:not(.vx-shown)').length};
+ });
  await page.screenshot({path:path.join(OUT,'reload-1600.png'),fullPage:true});
+ const reveal=report.reload.reveal;
+ if(!reveal.sections.length)report.findings.push('No .vx-reveal section found on the homepage');
+ if(reveal.unshown||reveal.sections.some(item=>!item.shown))report.findings.push('A reveal section never became shown: '+JSON.stringify(reveal.sections));
+ if(reveal.sections.some(item=>!item.opaque||item.height<=0))report.findings.push('A reveal section is still transparent or empty after scrolling: '+JSON.stringify(reveal.sections));
+ if(reveal.footerTop===null||reveal.footerTop<reveal.contentBottom-1)report.findings.push(`Footer at ${reveal.footerTop} is not after the visible content ending at ${reveal.contentBottom}`);
  // 7. No market provider is asked for anything before the six-hour TTL.
  await wait(2000);
  report.reload.marketRequests=marketRequests.reload.slice();

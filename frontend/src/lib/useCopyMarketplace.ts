@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { clearToken, getToken } from './api';
+import { clearToken, getToken, onSessionChange } from './api';
 import { CopyMarketplaceStore, type CopyMarketplaceResponse } from './copyMarketplaceStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
@@ -21,6 +21,9 @@ async function fetchCopyMarketplace(signal: AbortSignal): Promise<CopyMarketplac
 }
 
 export const copyMarketplaceStore = new CopyMarketplaceStore(fetchCopyMarketplace, getToken);
+// Logout clears the session's snapshot the moment the token goes, not the
+// next time the marketplace happens to be opened.
+onSessionChange(copyMarketplaceStore.syncSession);
 export const prefetchCopyMarketplace = () => { void copyMarketplaceStore.prefetch(); };
 export function useCopyMarketplace() {
   return useSyncExternalStore(copyMarketplaceStore.subscribe, copyMarketplaceStore.getState, copyMarketplaceStore.getState);

@@ -1,9 +1,9 @@
 {
-  "startedAt": "2026-09-17T11:07:23.264Z",
+  "startedAt": "2026-09-17T11:40:17.289Z",
   "firstVisit": {
-    "readyMs": 375,
+    "readyMs": 394,
     "marketRequests": 8,
-    "metadataRequests": 0,
+    "metadataRequests": 1,
     "painted": {
       "candles": 1,
       "bookRows": 12,
@@ -27,7 +27,7 @@
     }
   },
   "reload": {
-    "readyMs": 230,
+    "readyMs": 199,
     "painted": {
       "candles": 1,
       "bookRows": 12,
@@ -38,13 +38,77 @@
       "placeholders": 0,
       "badge": "6h snapshot"
     },
+    "reveal": {
+      "sections": [
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 237.34375,
+          "top": 1004.6875,
+          "bottom": 1242.03125
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 817.25,
+          "top": 1262.03125,
+          "bottom": 2079.28125
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 1048.96875,
+          "top": 2099.28125,
+          "bottom": 3148.25
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 722.078125,
+          "top": 3168.25,
+          "bottom": 3890.328125
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 375.0625,
+          "top": 3910.328125,
+          "bottom": 4285.390625
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 834.8125,
+          "top": 4305.390625,
+          "bottom": 5140.203125
+        },
+        {
+          "shown": true,
+          "opaque": true,
+          "opacity": "1",
+          "height": 270.78125,
+          "top": 5160.203125,
+          "bottom": 5430.984375
+        }
+      ],
+      "footerTop": 5474.984375,
+      "contentBottom": 5430.984375,
+      "scrollHeight": 5809,
+      "unshown": 0
+    },
     "marketRequests": [],
     "metadataRequests": [
       "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU"
     ]
   },
   "coldVisit": {
-    "readyMs": 234,
+    "readyMs": 229,
     "marketRequests": 8
   },
   "pageErrors": [],
