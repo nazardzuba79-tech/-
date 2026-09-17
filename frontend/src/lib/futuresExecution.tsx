@@ -164,6 +164,13 @@ export interface FuturesExecution {
     leverage: number;
     marginType: 'ISOLATED' | 'CROSS';
     reduceOnly?: boolean;
+    /**
+     * Internal exact target for a reduce-only order started from one
+     * position row. The ordinary HTTP API has no such field; the REAL
+     * adapter strips it before sending the payload. Native execution uses
+     * it to avoid reducing a different same-symbol position.
+     */
+    positionId?: string;
   }): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
   closePosition(positionId: string): Promise<void>;
@@ -188,7 +195,13 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   contract: null,
   account_aggregate: null,
   activation: null,
-  placeOrder: async (params) => { await api.placeFuturesOrder(params); },
+  placeOrder: async (params) => {
+    // `positionId` belongs only to the execution seam. The production
+    // futures order route deliberately has no position-id field, so never
+    // leak internal targeting metadata into its strict request schema.
+    const { positionId: _positionId, ...payload } = params;
+    await api.placeFuturesOrder(payload);
+  },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
   closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },
   setProtection: async (positionId, body) => { await api.setFuturesPositionProtection(positionId, body); },
