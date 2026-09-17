@@ -1,4 +1,4 @@
-import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_CENTER_HEIGHT } from '../referenceBook';
+import { referencePrice, referenceQuantity, referenceRowCount, visibleDepthRatio, REFERENCE_CENTER_HEIGHT, REFERENCE_ROW_HEIGHT } from '../referenceBook';
 import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { createRequire } from 'module';
@@ -46,7 +46,11 @@ test('consistent decimals, tiny real quantities never rounded to zero, invalid q
   for(const v of [NaN,Infinity,-1])expect(referenceQuantity(v)).toBe('—');
 });
 test.each([312,460,472,598])('row budget at %spx cannot expose partial rows',height=>{
-  for(const both of [true,false])expect(referenceRowCount(height,both)*22*(both?2:1)+REFERENCE_CENTER_HEIGHT).toBeLessThanOrEqual(height);
+  // Against the REAL row pitch, not a copy of it. Repeating the number here
+  // meant this pinned one specific height rather than the invariant it
+  // names — change the pitch and the ladder is still whole rows, but the
+  // assertion was measuring the old one.
+  for(const both of [true,false])expect(referenceRowCount(height,both)*REFERENCE_ROW_HEIGHT*(both?2:1)+REFERENCE_CENTER_HEIGHT).toBeLessThanOrEqual(height);
 });
 test('depth ratio needs both real sides, never substitutes a fake 50/50',()=>{
   expect(visibleDepthRatio([],[])).toBeNull();

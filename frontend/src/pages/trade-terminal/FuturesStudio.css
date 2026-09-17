@@ -69,11 +69,23 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-infoBox { background:#0c141d; border:1px solid #23313f; border-radius:6px; padding:11px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .fo-submitPair .submit-btn { min-height:44px; border-radius:999px; font-size:12px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-account-summary { background:#101720 !important; border-color:#26313d !important; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tabs { gap:18px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tab { font-size:11px; }
+/* The bottom panel is where a trader reads their own money, so it is
+   sized to be read. These three rules are the ones that actually win on
+   this terminal — the same intent is expressed in
+   ReferenceFuturesTerminal.css for the non-studio variant, and the two
+   are kept in step deliberately. Consolidating the terminal's stacked
+   sheets into one density scale is follow-up work, not this change. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tabs { gap:22px; min-height:46px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tab { font-size:13px; font-weight:500; letter-spacing:.01em; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-tab[aria-selected=true] { font-weight:600; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .bottom-content { background:#111922; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-positions-table { width:100%; font-size:13px; line-height:1.45; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-positions-table th { padding:10px 14px; font-size:12px; font-weight:500; letter-spacing:.01em; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .futures-positions-table td { padding:11px 14px; vertical-align:middle; font-variant-numeric:tabular-nums; }
 @media(min-width:1025px) {
-  .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { display:grid; grid-template-columns:212px minmax(0,1fr) 218px 278px; grid-template-rows:108px minmax(0,1fr) 156px; }
+    /* 156px showed roughly two table rows under the header, which is what
+     made the panel read as a narrow strip of empty fields. */
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { display:grid; grid-template-columns:212px minmax(0,1fr) 218px 278px; grid-template-rows:108px minmax(0,1fr) clamp(208px,25vh,272px); }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-market-sidebar { grid-column:1; grid-row:1 / 4; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar { grid-column:2 / 4; grid-row:1; display:grid; grid-template-columns:170px repeat(3,minmax(0,1fr)); grid-template-rows:1fr 1fr; gap:8px 14px; overflow:hidden; }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .ticker-bar > :nth-child(1) { grid-column:1; grid-row:1; }
