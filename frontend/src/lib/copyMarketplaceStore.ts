@@ -43,6 +43,37 @@ function reportedKseniaTrade(value: unknown, strategyId: string): value is Recor
   return ['entryPrice','exitPrice','quantity','holdingTimeMinutes','grossPnl','fees','funding','riskR']
     .every(key => value[key] === undefined);
 }
+/**
+ * The payload's own DECLARATION that an owner-reported trade is folded into
+ * its aggregates.
+ *
+ * This is deliberately separate from whether the trade's ROW is still one of
+ * the ten the table renders. The strategy closes a trade every few hours, so
+ * the reported row scrolls out of the display window within about a week —
+ * but it stays counted in totals until it leaves each rolling period, and the
+ * holding-time aggregate stays unknowable for as long as it is counted,
+ * because that one trade's duration was never supplied.
+ *
+ * Tying the two together is what broke the card: the server deletes the
+ * aggregate for every period that still contains the trade, the row scrolls
+ * away, and the section then fails validation and is dropped wholesale —
+ * taking ROI 7D, the profile and the history with it.
+ *
+ * Every known field is pinned and every unknown one must be an explicit
+ * `null`, so this cannot be used to smuggle a payload with fields simply
+ * missing.
+ */
+function reportedKseniaPerformance(value: Record<string, any>, strategyId: string): boolean {
+  if (strategyId !== 'VX-KSENIA' || !Array.isArray(value.reportedPerformance)
+    || value.reportedPerformance.length !== 1) return false;
+  const entry = value.reportedPerformance[0];
+  if (!record(entry) || entry.id !== KSENIA_REPORTED_TRADE_ID || entry.source !== 'OWNER_REPORTED'
+    || entry.market !== 'BTCUSDT' || entry.side !== 'SHORT' || entry.leverage !== 10
+    || entry.netPnl !== 1754 || entry.returnPct !== 7.8
+    || entry.openedOn !== '2026-09-15' || entry.closedOn !== '2026-09-16') return false;
+  return ['entryPrice','exitPrice','quantity','openedAt','closedAt','fees','funding']
+    .every(key => entry[key] === null);
+}
 function visibleTrade(value: unknown, strategyId: string): value is Record<string, any> {
   if (reportedKseniaTrade(value, strategyId)) return true;
   return record(value)
@@ -74,8 +105,10 @@ export function validStrategy(value: unknown, id: string): value is SyntheticCop
   // The visible trade rows: at most ten, newest first. Canonical rows remain
   // fully formed. The single owner-reported Ksenia row is intentionally
   // partial only where the operator did not provide the underlying facts.
-  const reportedPresent = Array.isArray(value.trades)
-    && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id));
+  // Counted, not necessarily on screen. See reportedKseniaPerformance.
+  const reportedPresent = (Array.isArray(value.trades)
+    && value.trades.some((trade: unknown) => reportedKseniaTrade(trade, id)))
+    || reportedKseniaPerformance(value, id);
   const visibleTrades = Array.isArray(value.trades)
     && value.trades.length <= VISIBLE_TRADE_ROWS
     && value.trades.every((trade: unknown) => visibleTrade(trade, id))
