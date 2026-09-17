@@ -130,9 +130,10 @@ export default {
         '2xl': '16px',
         // Wallet V3's own small radii, under distinct names so the shared
         // scale the homepage/settings/register already use is untouched.
-        w: '6px',
-        wsm: '4px',
-        wlg: '8px',
+        // Retuned to the approved wallet design's rounder cards and controls.
+        w: '10px',
+        wsm: '7px',
+        wlg: '14px',
       },
       fontSize: {
         '2xs': ['10px', '14px'],

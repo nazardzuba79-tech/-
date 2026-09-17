@@ -11,7 +11,7 @@
  * enough that the first viewport carries all of it plus real asset rows. The
  * equity curve is a section of its own reached from the Wallet's own
  * navigation, so this file checks BOTH that it is absent from the main
- * section and that it is still there, on real history, under `Анализ P&L`.
+ * section and that it is still there, on real history, under `P&L Analysis`.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 
@@ -82,8 +82,15 @@ async function run() {
         page.on('request', (r) => { if (r.url().includes('/api/v1/')) requests.push(r.url().split('/api/v1/')[1].split('?')[0]); });
 
         await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+        // The Wallet opens on the Overview now; the Unified Trading section
+        // under review here is one click away in the Wallet's own nav.
+        await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+        const landing = await page.evaluate(() =>
+          [...document.querySelectorAll('.wallet-side-nav button')].filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.textContent.trim()));
+        await openSection(page, 'Unified Trading');
         await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
         const tag = `${mode}-${vp.label}`;
+        check(`${tag}: the Wallet opens on the Overview`, landing.join() === 'Обзор', landing.join() || '(none)');
 
         // ── A light financial workspace, not a dark terminal ────────────
         const surfaces = await page.evaluate(() => {
@@ -112,8 +119,8 @@ async function run() {
           };
         });
         check(`${tag}: the Wallet carries its own five sections`, nav.labels.length === 5, nav.labels.join(' | '));
-        check(`${tag}: the unified account is the section in view`, nav.active.join() === 'Единый торговый', nav.active.join() || '(none)');
-        check(`${tag}: sections with nothing behind them are disabled, not invented`, nav.disabled.length === 2, nav.disabled.join(' | '));
+        check(`${tag}: the unified account is the section in view`, nav.active.join() === 'Unified Trading', nav.active.join() || '(none)');
+        check(`${tag}: every section has something behind it — nothing is disabled`, nav.disabled.length === 0, nav.disabled.join(' | '));
 
         // ── Account identity + the metrics that belong to it ────────────
         const modeChip = (await page.textContent('.wallet-account-mode')).trim();
@@ -274,7 +281,7 @@ async function run() {
         // Counted BEFORE the switch: the curve reads the series the page
         // already has, so moving between sections must cost nothing.
         const perfBeforeSwitch = requests.filter((u) => u === 'wallet/performance').length;
-        await openSection(page, 'Анализ P&L');
+        await openSection(page, 'P&L Analysis');
         await page.waitForSelector('.wallet-equity-chart', { timeout: 15000 });
         const curve = await page.evaluate(readCurve);
         check(`${tag}/pnl: the equity chart lives in its own section`, curve !== null);
@@ -314,8 +321,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch });
       const page = await context.newPage();
       await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
-      await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
-      await openSection(page, 'Анализ P&L');
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      await openSection(page, 'P&L Analysis');
       await page.waitForSelector('.wallet-equity-chart', { timeout: 15000 });
       const tag = `no-history-${vp.label}`;
 
@@ -338,6 +345,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
       const page = await context.newPage();
       await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      await openSection(page, 'Unified Trading');
       await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
       const chip = (await page.textContent('.wallet-account-mode')).trim();
       // There is no Cross account yet, so the page must not claim one — and
@@ -358,6 +367,8 @@ async function run() {
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
       const page = await context.newPage();
       await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      await openSection(page, 'Unified Trading');
       await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
       const tag = `${mode}-unpriced`;
 
