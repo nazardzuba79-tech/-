@@ -88,16 +88,17 @@
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel {
     grid-column:1 / 4; grid-row:3;
   }
-  /* The old shared .bottom-panel rule hard-coded 145px. That was the hidden
-     reason Claude's 208–272px grid track still measured ~156px in-browser.
-     Let the grid own the expanded height; compact mode remains pinned to 44. */
-  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel:not([data-account-compact=true]) {
-    height:auto; min-height:0; max-height:none; flex-basis:auto; align-self:stretch;
-  }
-  /* Give the ladder enough physical width for 13px tabular numbers without
-     stealing the dedicated order-entry rail. */
+  /* The old design-variant layer re-pinned row 3 to 156px after Claude's
+     studio rule. This last-loaded rule owns the real desktop track: a compact
+     70px ticker, flexible workspace, and a visibly useful account table. */
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
     grid-template-columns:212px minmax(0,1fr) 250px 278px;
+    grid-template-rows:70px minmax(0,1fr) clamp(208px,25vh,272px);
+  }
+  /* The old shared .bottom-panel rule hard-coded 145px. Let the grid own the
+     expanded height; compact mode remains pinned to 44. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-panel:not([data-account-compact=true]) {
+    height:auto; min-height:0; max-height:none; flex-basis:auto; align-self:stretch;
   }
   .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio.terminal-studio .terminal[data-account-compact=true] {
     grid-template-rows:70px minmax(0,1fr) 44px;
@@ -106,5 +107,6 @@
 @media(min-width:1025px) and (max-width:1279px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
     grid-template-columns:184px minmax(0,1fr) 220px 252px;
+    grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
   }
 }
