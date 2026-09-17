@@ -1,0 +1,32 @@
+/*
+ * Visual motion for the homepage laptop while its market DATA stays on the
+ * six-hour real-snapshot cadence. This never changes a price, candle, trade,
+ * order-book level or percentage: it only drifts the already-received SVG
+ * drawing by a few pixels so the hero does not look frozen between snapshots.
+ */
+@keyframes vx-home-chart-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-2.5px); }
+}
+
+@keyframes vx-home-depth-breathe {
+  0%, 100% { opacity: .72; }
+  50% { opacity: .92; }
+}
+
+.vx-home .vx-reference-stage .vx-real-candles .vx-candle-up,
+.vx-home .vx-reference-stage .vx-real-candles .vx-candle-down {
+  animation: vx-home-chart-drift 14s ease-in-out infinite;
+}
+
+.vx-home .vx-reference-stage .vx-book-depth {
+  animation: vx-home-depth-breathe 4.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vx-home .vx-reference-stage .vx-real-candles .vx-candle-up,
+  .vx-home .vx-reference-stage .vx-real-candles .vx-candle-down,
+  .vx-home .vx-reference-stage .vx-book-depth {
+    animation: none;
+  }
+}
