@@ -5,6 +5,7 @@ import {
   nativeAccountState, terminalOrderToNativeDraft, pairToNativeSymbol,
 } from './nativeFuturesAdapter';
 import { PrivateTradingError } from './privateTradingError';
+import type { NativePosition } from './nativeDemoApi';
 import type { NativeDemoController } from '../pages/private-trading/useNativeDemo';
 import type { FuturesContractRules } from './futuresMath';
 
@@ -13,6 +14,34 @@ const nativeFailure=(native:NativeDemoController,fallback:string)=>
   new PrivateTradingError(native.getError()||native.error||fallback,409);
 function retryableCloseMessage(message:string){
   return /устар|временно недоступ|котиров|стакан|market_data|provider|повторите/i.test(message);
+}
+
+/**
+ * Resolve the ONE open position a reduce-only order is allowed to touch.
+ *
+ * Native can legitimately hold a Cross and an Isolated position on the same
+ * contract in the same direction. The old code simply picked the first
+ * symbol+side match when no chart exit id was present, so a limit close from
+ * the table could reduce the wrong risk bucket. We prefer the explicit exit
+ * id, then the order's selected margin bucket, then an exact full-size match.
+ * If more than one candidate still remains we REFUSE instead of guessing.
+ */
+export function resolveNativeReduceTarget(
+  positions: NativePosition[],
+  params: { symbol:string; side:'BUY'|'SELL'; quantity:string; marginType:'ISOLATED'|'CROSS' },
+  exitId: string | null,
+): NativePosition | undefined {
+  const nativeSymbol=pairToNativeSymbol(params.symbol);
+  const expectedSide=params.side==='SELL'?'LONG':'SHORT';
+  const candidates=positions.filter(p=>p.status==='OPEN'&&p.symbol===nativeSymbol&&p.side===expectedSide);
+  if(exitId)return candidates.find(p=>p.id===exitId);
+  if(candidates.length===1)return candidates[0];
+
+  const bucket=candidates.filter(p=>p.marginMode===params.marginType);
+  if(bucket.length===1)return bucket[0];
+
+  const exact=(bucket.length?bucket:candidates).filter(p=>p.quantity===params.quantity);
+  return exact.length===1?exact[0]:undefined;
 }
 
 /**
@@ -99,13 +128,14 @@ export function useNativeFuturesExecution(
       activation,
       async placeOrder(params) {
         const reducing = params.reduceOnly || Boolean(exitId);
-        const targetPosition = !reducing ? undefined : state.positions.find(
-          (p) => (exitId ? p.id === exitId : true)
-            && p.symbol === pairToNativeSymbol(params.symbol)
-            && p.side === (params.side === 'SELL' ? 'LONG' : 'SHORT'),
-        );
-        const target = !reducing ? undefined : exitId ?? targetPosition?.id;
-        if (reducing && !target) throw new Error('Нет позиции для сокращения');
+        const targetPosition = !reducing ? undefined : resolveNativeReduceTarget(state.positions,params,exitId);
+        const target = !reducing ? undefined : targetPosition?.id;
+        if (reducing && !target) {
+          throw new PrivateTradingError(
+            'Невозможно однозначно определить позицию для сокращения. Выберите позицию в таблице и повторите.',
+            409,
+          );
+        }
         const reduceMarginType = targetPosition?.marginMode;
 
         if (reducing && params.type === 'MARKET') {
