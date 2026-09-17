@@ -530,23 +530,34 @@ describe('7. the Wallet workspace is sectioned like a trading account', () => {
 
   it('navigates inside the Wallet without leaving it or duplicating the global nav', () => {
     const nav = read('frontend/src/pages/wallet-v3/WalletSideNav.tsx');
-    // Buttons that switch a section, never links that route away.
-    expect(nav).not.toMatch(/<Link|react-router|href=/);
-    expect(nav).toContain("id: 'pnl'");
-    expect(nav).toContain("id: 'unified'");
+    // Every SECTION is a button that switches what renders beside it. The
+    // one anchor in the file is the VoLtex Card tile, which goes to the
+    // Crypto Card page on purpose — and it is the only `<Link`.
+    expect(nav.match(/<Link\b/g)).toHaveLength(1);
+    expect(nav).toContain('<Link to="/card"');
+    expect(nav).not.toMatch(/href=/);
+    for (const id of ['overview', 'funding', 'unified', 'pnl', 'orders']) expect(nav).toContain(`id: '${id}'`);
+    // No item is dead: nothing here is disabled, and nothing needs a
+    // "not available yet" reason any more.
+    expect(nav).not.toMatch(/disabled=|live:|navUnavailable/);
   });
 
-  it('offers no navigation item that has nothing behind it', () => {
-    const nav = read('frontend/src/pages/wallet-v3/WalletSideNav.tsx');
-    // VOLTEX has one account surface and no separate funding account, so
-    // those two entries are DISABLED with a reason rather than wired to an
-    // invented page — the same rule the Convert action follows.
-    expect(nav).toMatch(/id: 'overview'[^}]*live: false/);
-    expect(nav).toMatch(/id: 'funding'[^}]*live: false/);
-    expect(nav).toContain("t('wallet.navUnavailable')");
-    expect(nav).toContain('disabled={!item.live}');
-    // A dead item can never become the rendered section.
-    expect(nav).toContain('onClick={item.live ?');
+  it('gives every navigation item a real section, and opens on the Overview', () => {
+    const source = page();
+    for (const id of ['overview', 'funding', 'unified', 'pnl', 'orders']) {
+      expect(source).toContain(`{section === '${id}' && (`);
+    }
+    expect(source).toContain("useState<WalletSection>('overview')");
+    const overview = source.slice(source.indexOf("{section === 'overview' && ("), source.indexOf("{section === 'funding' && ("));
+    const funding = source.slice(source.indexOf("{section === 'funding' && ("), source.indexOf("{section === 'unified' && ("));
+    expect(overview).toContain('<WalletOverview');
+    expect(funding).toContain('<FundingView');
+    // Both are fed the same hook outputs the Unified section reads — never
+    // a second request or a second derivation.
+    for (const block of [overview, funding]) {
+      expect(block).toContain('account={account}');
+      expect(block).toContain('overview={overview}');
+    }
   });
 
   it('puts the account summary and the asset table in the same section', () => {

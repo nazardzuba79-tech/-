@@ -11,6 +11,8 @@ import { TransactionHistory } from './wallet-v3/TransactionHistory';
 import { DepositModal } from './wallet-v3/DepositModal';
 import { WithdrawModal } from './wallet-v3/WithdrawModal';
 import { TransferModal } from './wallet-v3/TransferModal';
+import { WalletOverview } from './wallet-v3/WalletOverview';
+import { FundingView } from './wallet-v3/FundingView';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
 import './wallet-v3/wallet.css';
 
@@ -35,13 +37,20 @@ function saveFlag(key: string, value: boolean) {
 type ActiveModal = 'deposit' | 'withdraw' | 'transfer' | null;
 
 /**
- * The Unified Trading Account.
+ * The Wallet workspace.
  *
  * A light financial workspace under the app's dark global header, with its
  * OWN navigation beside the content — the account's sections, inside the
  * Wallet, not a second copy of the global one. The palette lives entirely
  * in wallet-v3/wallet.css, scoped so it cannot leak into Trade, Futures or
  * Admin.
+ *
+ * It opens on the Overview (`Обзор`): the headline total, the two accounts,
+ * the distribution ring, the equity curve with profit by period and the
+ * last deposits and withdrawals — the approved design, the same for every
+ * account, with each account's own figures in it and nothing in it for an
+ * account that has nothing. `Финансирование` is the spot ledger, `Unified
+ * Trading` the margin account below.
  *
  * The main section is dense on purpose: identity, margin usage, the three
  * headline figures, the actions, the filters and the first asset rows all
@@ -69,11 +78,12 @@ export function WalletPage() {
     return action === 'deposit' || action === 'withdraw' || action === 'transfer' ? action : null;
   });
   const [hidden, setHidden] = useState(() => loadFlag(HIDE_BALANCE_KEY));
-  const [section, setSection] = useState<WalletSection>('unified');
+  const [section, setSection] = useState<WalletSection>('overview');
   const [period, setPeriod] = useState<PerformancePeriod>('7d');
   const historyRef = useRef<HTMLDivElement>(null);
 
   const {
+    overview,
     overviewState,
     performance,
     performanceState,
@@ -116,6 +126,40 @@ export function WalletPage() {
           <WalletSideNav section={section} onSection={setSection} />
 
           <div className="min-w-0">
+            {section === 'overview' && (
+              <WalletOverview
+                account={account}
+                overview={overview}
+                rows={rows}
+                performance={performance}
+                performanceState={performanceState}
+                btcEquivalent={btcEquivalent}
+                hidden={hidden}
+                onToggleHidden={toggleHidden}
+                unavailable={unavailable}
+                loading={loading}
+                onDeposit={() => setModal('deposit')}
+                onWithdraw={() => setModal('withdraw')}
+                onTransfer={() => setModal('transfer')}
+                onHistory={() => setSection('orders')}
+                onOpenUnified={() => setSection('unified')}
+                onOpenFunding={() => setSection('funding')}
+              />
+            )}
+
+            {section === 'funding' && (
+              <FundingView
+                account={account}
+                overview={overview}
+                hidden={hidden}
+                unavailable={unavailable}
+                loading={loading}
+                onDeposit={() => setModal('deposit')}
+                onWithdraw={() => setModal('withdraw')}
+                onTransfer={() => setModal('transfer')}
+              />
+            )}
+
             {section === 'unified' && (
               <>
                 <PortfolioStrip
