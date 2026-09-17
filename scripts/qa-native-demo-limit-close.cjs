@@ -58,19 +58,16 @@ async function uiCommand(page, kind, action) {
 async function armPicker(page) {
   const menu = page.locator('.chart-tools-menu');
   await page.locator('.chart-surface').scrollIntoViewIfNeeded();
-  const trigger = page.locator('.chart-tools-trigger');
-  if (await trigger.isVisible()) await trigger.click();
-  else {
-    for (const [fx, fy] of [[0.55, 0.55], [0.72, 0.45], [0.62, 0.72]]) {
-      const box = await page.locator('.chart-surface').boundingBox();
-      await page.mouse.dblclick(box.x + fx * box.width, box.y + fy * box.height);
-      try { await menu.waitFor({ timeout: 2000 }); break; } catch {}
-    }
+  // Same actual chart gesture as qa-native-demo-browser.cjs, including its
+  // narrow-viewport runs. The corner-trigger menu's placement is a separate
+  // issue: this case verifies that a genuinely armed picker cannot leak
+  // into a table close, not that all chart menu entry points are equivalent.
+  for (const [fx, fy] of [[0.55, 0.55], [0.72, 0.45], [0.62, 0.72], [0.8, 0.6]]) {
+    const box = await page.locator('.chart-surface').boundingBox();
+    await page.mouse.dblclick(box.x + fx * box.width, box.y + fy * box.height);
+    try { await menu.waitFor({ timeout: 3000 }); break; } catch {}
   }
   await menu.waitFor();
-  // The visible Pick action enables the tools itself. Use that user-facing
-  // control rather than checking a checkbox whose mobile decoration can be
-  // positioned outside the viewport. The armed-state assertion is unchanged.
   await menu.locator('.chart-tools-action.primary').click();
   await page.locator('.chart-surface[data-chart-picking="entry"]').waitFor();
 }
