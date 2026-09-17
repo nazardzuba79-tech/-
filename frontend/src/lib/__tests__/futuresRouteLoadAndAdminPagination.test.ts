@@ -4,11 +4,12 @@ import { resolve } from 'path';
 const frontend = resolve(__dirname, '../../..');
 const read = (file: string) => readFileSync(resolve(frontend, 'src', file), 'utf8');
 
-test('normal Futures load has one route lazy boundary, not a second FuturesPage lazy import', () => {
-  const route = read('pages/FuturesRoute.tsx');
-  expect(route).toContain("import { FuturesPage } from './FuturesPage'");
-  expect(route).not.toContain("lazy(() => import('./FuturesPage')");
-  expect(route).toContain("lazy(() => import('./private-trading/PrivateTradingPage')");
+test('normal Futures load has one app lazy boundary and no FuturesRoute waterfall', () => {
+  const app = read('App.tsx');
+  expect(app).toContain("const FuturesPage = lazy(() => import('./pages/FuturesPage')");
+  expect(app).not.toContain("import('./pages/FuturesRoute')");
+  expect(app).toContain("const PrivateTradingPage = lazy(() => import('./pages/private-trading/PrivateTradingPage')");
+  expect(app).toContain("<Route path=\"/futures\" element={<RequireAuth><FuturesEntry /></RequireAuth>} />");
 });
 
 test('admin pagination is absent when there is only one page', () => {
