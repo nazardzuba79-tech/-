@@ -11,6 +11,15 @@ test('homepage public market surfaces use one six-hour quote cadence', () => {
   expect(market).not.toContain('15_000');
 });
 
+test('homepage hero does not open a real-time market socket', () => {
+  const hero = read('HomeSapphireHero.tsx');
+  const terminal = read('SapphireTerminal.tsx');
+  expect(hero).not.toContain('useHeroStream');
+  expect(hero).toContain('<SapphireTerminal market={market}/>');
+  expect(terminal).toContain("stale?'Stale':'6h snapshot'");
+  expect(terminal).not.toContain("'15s refresh'");
+});
+
 test('popular-assets sparklines never synthesize a price path', () => {
   const markets = read('HomeMarkets.tsx');
   expect(markets).toContain("market.priceHistory[r.historyKey]");
