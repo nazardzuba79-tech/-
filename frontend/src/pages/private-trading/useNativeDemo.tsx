@@ -54,7 +54,7 @@ function chartExits(events:NativeEvent[],positionId:string){
     .filter(e=>e.price!==null&&Number.isFinite(Number(e.price))&&Number.isFinite(Number(e.quantity))&&Number(e.quantity)>0)
     .sort((a,b)=>a.time-b.time||a.id.localeCompare(b.id));
   for(const event of source){
-    const price=Number(event.price),quantity=Number(event.quantity),previous=result.at(-1);
+    const price=Number(event.price),quantity=Number(event.quantity),previous=result.length?result[result.length-1]:undefined;
     // One observed-book close may be split both by depth and, for a large
     // position, into several contract-valid market orders. Commands from the
     // same click arrive seconds apart, so fold only a short CLOSE burst.
