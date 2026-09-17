@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import ts from 'typescript';
 
+const SIX_HOURS = 6 * 60 * 60 * 1000;
 const source = readFileSync(resolve(__dirname, '../../pages/home/useHomeMarket.ts'), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
@@ -97,7 +98,7 @@ function mount(overrides: Record<string, jest.Mock> = {}) {
   render();
   return {
     api, loadConfig, window, document, observers, render, intervals, listeners,
-    advance(ms = 15_000) { clock += ms; intervals.forEach(fn => fn()); },
+    advance(ms = SIX_HOURS) { clock += ms; intervals.forEach(fn => fn()); },
     visibility(hidden: boolean) {
       document.hidden = hidden;
       listeners.get('visibilitychange')?.forEach(fn => fn());
@@ -109,7 +110,7 @@ function mount(overrides: Record<string, jest.Mock> = {}) {
 test('one shared clock fetches one ticker snapshot and bounded real hero sources per interval', async () => {
   const h = mount();
   await flush();
-  expect(h.window.setInterval.mock.calls.map(call => call[1])).toEqual([15_000]);
+  expect(h.window.setInterval.mock.calls.map(call => call[1])).toEqual([SIX_HOURS]);
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(1);
   expect(h.api.getExternalOrderBook).toHaveBeenCalledWith('BTC/USDT', 12);
   expect(h.api.getExternalCandles).toHaveBeenCalledWith('BTC/USDT', '15m', 48);
@@ -196,7 +197,7 @@ test('offscreen hero pauses its three reads; hidden document pauses all recurrin
   h.observers[0].callback([{ isIntersecting: true }]);
   h.observers[0].callback([{ isIntersecting: true }]);
   await flush();
-  expect(h.api.getExternalTickers).toHaveBeenCalledTimes(3);
+  expect(h.api.getExternalTickers).toHaveBeenCalledTimes(2);
   expect(h.api.getExternalOrderBook).toHaveBeenCalledTimes(2);
   h.unmount();
 });
@@ -330,14 +331,14 @@ test('missing quote fields stay unknown while actual zero remains zero', async (
   h.unmount();
 });
 
-test('CFD reference observations share the 15-second clock and pause offscreen', async () => {
+test('CFD reference observations share the six-hour clock and pause offscreen', async () => {
   const row={symbol:'XAUUSD',price:'2000',changePercent24h:'0',status:'live',stale:false};
   const response={configured:true,source:'twelvedata',tickers:[row]};
   const h=mount({getCfdTickers:jest.fn().mockResolvedValue(response)}); await flush();
-  h.advance(15_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
-  h.advance(45_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
+  h.advance(); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
+  h.advance(); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000]);
-  h.observers[0].callback([{isIntersecting:false}]); h.advance(60_000); await flush();
+  h.observers[0].callback([{isIntersecting:false}]); h.advance(); await flush();
   expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   h.api.getCfdTickers.mockRejectedValue(new Error('offline'));
   h.observers[0].callback([{isIntersecting:true}]); await flush();
