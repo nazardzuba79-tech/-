@@ -144,3 +144,64 @@ test('a missing holding-time aggregate without a declared reported trade is stil
   tampered.reportedPerformance[0].netPnl = 99_999;
   expect(validStrategy(tampered, 'VX-KSENIA')).toBe(false);
 });
+
+/**
+ * ROI · 7D IS A ROLLING WINDOW, AND A DROP IS NOT A LOST TRADE.
+ *
+ * Reported from production: "ROI 7D was ~51% yesterday and is +41.9% today,
+ * even though yesterday's trade counts and today already has one."
+ *
+ * Both figures are right. The window is the last seven days, so rolling from
+ * the 16th to the 17th drops 2026-09-10 (+11.343%) out of it and brings
+ * 2026-09-17 (+2.344%) in — a net −8.999pp that has nothing to do with the
+ * owner-reported trade, which is still fully inside the window on the 17th.
+ *
+ * This is pinned because the obvious "fix" — making the number stop falling —
+ * would mean inventing a figure, and because the next person to look at a
+ * ~9pp overnight drop deserves to find the arithmetic written down.
+ */
+test('ROI 7D falls between 16 and 17 Sep because a day rolls OUT, not because the trade left', () => {
+  const addDays = (date: string, days: number) =>
+    new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10);
+  const windowOf = (data: any) => {
+    const end = data.simulation.simulatedAt.slice(0, 10);
+    const cutoff = addDays(end, -7);
+    return data.dailyResults.filter((row: any) => row.date > cutoff && row.date <= end);
+  };
+  const on = (steps: number) => withKseniaReportedTrade(
+    summarizeStrategy(kseniaReviewResponse(advanceKseniaReview(createKseniaReviewState(), steps))) as any,
+  ) as any;
+
+  const sixteenth = on(10);
+  const seventeenth = on(11);
+  expect(sixteenth.simulation.simulatedAt.slice(0, 10)).toBe('2026-09-16');
+  expect(seventeenth.simulation.simulatedAt.slice(0, 10)).toBe('2026-09-17');
+
+  // The two figures the owner actually saw.
+  expect(sixteenth.economics.periods['7D'].roi).toBeCloseTo(50.9208, 3);
+  expect(seventeenth.economics.periods['7D'].roi).toBeCloseTo(41.9214, 3);
+
+  const before = windowOf(sixteenth);
+  const after = windowOf(seventeenth);
+  expect(before[0].date).toBe('2026-09-10');
+  expect(after[0].date).toBe('2026-09-11');
+
+  // The whole of the drop is the day that aged out, less the day that arrived.
+  const rolledOut = before[0].dailyReturn * 100;
+  const rolledIn = after[after.length - 1].dailyReturn * 100;
+  expect(after[after.length - 1].date).toBe('2026-09-17');
+  // Within the 4-decimal rounding the published `roi` already carries, so the
+  // residual here is that rounding and nothing else.
+  expect(sixteenth.economics.periods['7D'].roi - rolledOut + rolledIn)
+    .toBeCloseTo(seventeenth.economics.periods['7D'].roi, 3);
+
+  // And the reported trade is still inside the 17 Sep window, carrying its
+  // +7.8pp on top of that day's canonical return.
+  const sixteenthDay = after.find((row: any) => row.date === '2026-09-16');
+  expect(sixteenthDay).toBeDefined();
+  const canonical: any = summarizeStrategy(
+    kseniaReviewResponse(advanceKseniaReview(createKseniaReviewState(), 11)) as any,
+  );
+  const canonicalDay = canonical.dailyResults.find((row: any) => row.date === '2026-09-16');
+  expect(sixteenthDay.dailyReturn).toBeCloseTo(canonicalDay.dailyReturn + 0.078, 9);
+});
