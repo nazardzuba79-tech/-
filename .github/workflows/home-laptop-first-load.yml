@@ -6,7 +6,9 @@ on:
       - 'frontend/src/lib/__tests__/homeHeroStream.test.ts'
       - 'frontend/src/lib/__tests__/homeHeroVisibility.test.ts'
       - 'frontend/src/lib/__tests__/homeLiveMarket.test.ts'
+      - 'frontend/src/lib/__tests__/homeMarketSnapshot.test.ts'
       - 'scripts/qa-home-laptop-first-load.cjs'
+      - 'scripts/qa-home-snapshot-reload.cjs'
       - '.github/workflows/home-laptop-first-load.yml'
 permissions:
   contents: read
@@ -30,7 +32,7 @@ jobs:
         working-directory: frontend
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Homepage first-load regression tests
-        run: npm test -- --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/homeLiveMarket.test.ts frontend/src/lib/__tests__/homeHeroStream.test.ts frontend/src/lib/__tests__/homeHeroVisibility.test.ts
+        run: npm test -- --runInBand --silent --runTestsByPath frontend/src/lib/__tests__/homeLiveMarket.test.ts frontend/src/lib/__tests__/homeMarketSnapshot.test.ts frontend/src/lib/__tests__/homeHeroStream.test.ts frontend/src/lib/__tests__/homeHeroVisibility.test.ts
       - name: Frontend production build
         working-directory: frontend
         env:
@@ -44,10 +46,17 @@ jobs:
         env:
           HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
         run: node scripts/qa-home-laptop-first-load.cjs
+      - name: Browser QA — reload paints the last-good snapshot before the API answers
+        if: success() || failure()
+        env:
+          HOME_QA_PLAYWRIGHT: /tmp/voltex-home-qa/node_modules/playwright
+        run: node scripts/qa-home-snapshot-reload.cjs
       - name: Preserve browser evidence
         if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: home-laptop-first-load
-          path: docs/qa/home-laptop-first-load/
+          path: |
+            docs/qa/home-laptop-first-load/
+            docs/qa/home-snapshot-reload/
           retention-days: 7
