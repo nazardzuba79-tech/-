@@ -204,6 +204,8 @@ test('ROI 7D falls between 16 and 17 Sep because a day rolls OUT, not because th
   );
   const canonicalDay = canonical.dailyResults.find((row: any) => row.date === '2026-09-16');
   expect(sixteenthDay.dailyReturn).toBeCloseTo(canonicalDay.dailyReturn + 0.078, 9);
+});
+
 /** The presence of a valid reportedPerformance declaration must not become a
  * blanket waiver for every period. On 2026-09-23 the 16 Sep trade has already
  * left the rolling 7D window, while it remains inside 30D/90D/ALL. Therefore
