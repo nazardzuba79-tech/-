@@ -13,6 +13,7 @@ import { Reveal } from './Reveal';
 import { useHomeMarket } from './useHomeMarket';
 import './home.css';
 import './home-live-market.css';
+import './home-snapshot-motion.css';
 // Loaded AFTER home.css on purpose: this is the Tailwind utilities layer
 // the homepage owns, and it must win specificity ties against the
 // `.vx-home` rules above. See home-tailwind-utilities.css for why the
@@ -32,8 +33,10 @@ import './sapphire-terminal-detail.css';
  *   header · hero + market tape · market overview · approved Crypto Card A ·
  *   trading sessions · heatmap · markets · institutional ecosystem · FAQ · footer
  *
- * One market hook feeds every section, so the whole page costs a single
- * ticker poll plus three one-shot requests rather than a fetch per block.
+ * One market hook feeds every section. The public presentation snapshot is
+ * refreshed at most once every six hours; Trade and Futures keep their own
+ * live feeds. The laptop can stay visually animated without fabricating new
+ * prices between those real snapshots.
  * Sections below the fold reveal once as they come into view.
  *
  * Nothing outside this directory is touched: Trade, Futures, Copy Trading,
