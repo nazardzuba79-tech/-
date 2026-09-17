@@ -144,3 +144,22 @@ test('a missing holding-time aggregate without a declared reported trade is stil
   tampered.reportedPerformance[0].netPnl = 99_999;
   expect(validStrategy(tampered, 'VX-KSENIA')).toBe(false);
 });
+
+/** The presence of a valid reportedPerformance declaration must not become a
+ * blanket waiver for every period. On 2026-09-23 the 16 Sep trade has already
+ * left the rolling 7D window, while it remains inside 30D/90D/ALL. Therefore
+ * 7D holding time is knowable again and deleting it must invalidate the
+ * payload even though the declaration is still present. */
+test('reported trade only permits missing holding time in periods that still count it', () => {
+  const base: any = summarizeStrategy(kseniaReviewResponse(advanceKseniaReview(createKseniaReviewState(), 17)));
+  expect(base.simulation.simulatedAt.slice(0, 10)).toBe('2026-09-23');
+  const result: any = withKseniaReportedTrade(base);
+  expect(validStrategy(result, 'VX-KSENIA')).toBe(true);
+  expect(result.reportedPerformance).toHaveLength(1);
+  expect(result.tradeStats['7D'].holdingTimeTotalMinutes).toBeDefined();
+  expect(result.tradeStats['30D'].holdingTimeTotalMinutes).toBeUndefined();
+
+  const forged = JSON.parse(JSON.stringify(result));
+  delete forged.tradeStats['7D'].holdingTimeTotalMinutes;
+  expect(validStrategy(forged, 'VX-KSENIA')).toBe(false);
+});
