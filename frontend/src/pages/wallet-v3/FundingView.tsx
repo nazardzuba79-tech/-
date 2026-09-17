@@ -3,7 +3,7 @@ import { CryptoIcon } from '../../components/CryptoIcon';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
 import { EM_DASH, MASK, decimalsFor, formatAmount, formatUsd } from './format';
-import { UnifiedAccount, WalletOverview as OverviewData } from './useWalletData';
+import { WalletOverview as OverviewData } from './useWalletData';
 
 /**
  * THE FUNDING ACCOUNT — the spot ledger, the account deposits land on and
@@ -11,9 +11,8 @@ import { UnifiedAccount, WalletOverview as OverviewData } from './useWalletData'
  *
  * Its rows are `/wallet/overview`'s own valued spot balances: quantity,
  * available, locked and the server's valuation. An asset the server could
- * not price shows its value as a dash, never as $0. On the owner's Cross
- * account this same ledger is the collateral behind Unified Trading, which
- * the page says in one line rather than reporting the money twice.
+ * not price shows its value as a dash, never as $0. It is a separate ledger
+ * from the Unified Trading account, so nothing here is counted twice.
  *
  * An empty ledger is an empty table with a deposit action — the design the
  * owner approved, with nothing in it, for every account that has nothing.
@@ -24,7 +23,6 @@ const ACTION_PRIMARY = ACTION_BASE + ' bg-gold text-[#1a1400] hover:bg-gold-ligh
 const ACTION_SECONDARY = ACTION_BASE + ' border border-hair bg-panel text-ink hover:border-hair-strong hover:bg-panel-2';
 
 export function FundingView({
-  account,
   overview,
   hidden,
   unavailable,
@@ -33,7 +31,6 @@ export function FundingView({
   onWithdraw,
   onTransfer,
 }: {
-  account: UnifiedAccount | null;
   overview: OverviewData | null;
   hidden: boolean;
   unavailable: boolean;
@@ -43,7 +40,6 @@ export function FundingView({
   onTransfer: () => void;
 }) {
   const { t, lang } = useLanguage();
-  const cross = account?.mode === 'CROSS';
   const balances = overview?.real.spot ?? [];
   const held = balances.filter((b) => Number(b.available) + Number(b.locked) > 0);
   const totalUsd = unavailable || !overview ? null : overview.real.spotValueUsd;
@@ -58,7 +54,6 @@ export function FundingView({
             {hidden ? MASK : totalUsd === null ? EM_DASH : formatUsd(totalUsd, lang)}
             <span className="ml-2 text-[13px] font-medium tracking-normal text-ink-3">USD</span>
           </p>
-          {cross && <p className="mt-2 max-w-[560px] text-[12px] leading-4 text-ink-4">{t('wallet.accountUnifiedPool')}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2.5 lg:justify-end">
           <button type="button" onClick={onDeposit} className={ACTION_PRIMARY}>
@@ -76,7 +71,7 @@ export function FundingView({
         </div>
       </header>
 
-      <section aria-label={t('wallet.assets')} className="wallet-funding-table mt-5 overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel">
+      <section aria-label={t('wallet.assets')} className="wallet-funding-table wallet-card mt-5 overflow-hidden">
         {unavailable ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.dataUnavailableBody')} compact />
         ) : loading && !overview ? (

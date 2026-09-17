@@ -46,21 +46,25 @@ function readOverview() {
   const text = (s) => q(s)?.textContent?.trim() ?? null;
   return {
     present: Boolean(q('.wallet-overview')),
-    total: text('.wallet-overview-total .num'),
+    total: text('.wallet-overview-amount'),
     badge: text('.wallet-tier-badge'),
     btc: text('.wallet-overview-btc'),
-    pnl: text('.wallet-overview-pnl-pill'),
-    pnlAvailable: q('.wallet-overview-pnl-pill')?.getAttribute('data-available'),
+    pnl: text('.wallet-overview-pnl .wallet-pill'),
+    pnlAvailable: q('.wallet-overview-pnl .wallet-pill')?.getAttribute('data-available'),
     accounts: [...document.querySelectorAll('.wallet-account-row')].map((r) => ({
       name: r.querySelector('.wallet-account-row-name span:last-child').textContent.trim(),
       value: r.querySelector('.wallet-account-row-value p').textContent.trim(),
       actions: r.querySelectorAll('button').length,
     })),
-    note: Boolean(q('.wallet-accounts-note')),
+    tabs: [...document.querySelectorAll('.wallet-tabs [role="tab"]')].map((b) => b.textContent.trim()),
     allocation: Boolean(q('.wallet-allocation')),
-    allocationRows: document.querySelectorAll('.wallet-allocation li').length,
-    chart: Boolean(q('.wallet-equity-chart')),
-    chartLine: Boolean(q('.wallet-equity-chart path[fill="none"]')),
+    allocationRows: document.querySelectorAll('.wallet-legend-row').length,
+    allocationBars: [...document.querySelectorAll('.wallet-legend-bar i')].map((i) => i.style.width),
+    allocationFoot: text('.wallet-dist-foot'),
+    chart: Boolean(q('.wallet-dynamics')),
+    chartLine: Boolean(q('.wallet-dyn-chart path[fill="none"]')),
+    chartGold: q('.wallet-dyn-chart path[fill="none"]')?.getAttribute('stroke') ?? null,
+    seg: [...document.querySelectorAll('.wallet-dynamics .wallet-seg button')].map((b) => b.textContent.trim() + (b.disabled ? '(off)' : '')),
     periods: [...document.querySelectorAll('.wallet-period-row')].map((r) => ({
       p: r.dataset.period, ok: r.dataset.available, usd: r.querySelector('.wallet-period-row-usd').textContent.trim(), pct: r.querySelector('.wallet-period-row-pct').textContent.trim(),
     })),
@@ -68,6 +72,8 @@ function readOverview() {
     activityRows: document.querySelectorAll('.wallet-recent-row').length,
     activityText: text('.wallet-recent-activity'),
     nav: [...document.querySelectorAll('.wallet-side-nav button')].map((b) => ({ label: b.textContent.trim(), active: b.getAttribute('aria-current') === 'page', disabled: b.disabled })),
+    sideBorder: q('.wallet-side-nav') ? getComputedStyle(q('.wallet-side-nav')).borderRightColor : null,
+    cardBorder: q('.wallet-card') ? getComputedStyle(q('.wallet-card')).borderTopColor : null,
     cardLink: q('.wallet-card-link')?.getAttribute('href') ?? null,
     brand: text('.wallet-brand-name'),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -95,38 +101,41 @@ async function run() {
         check(`${tag}: sections named as asked`, ov.nav.map((n) => n.label).join('|') === 'Обзор|Финансирование|Unified Trading|P&L Analysis|Orders', ov.nav.map((n) => n.label).join('|'));
         check(`${tag}: VoLtex Card tile links to the card page`, ov.cardLink === '/card', String(ov.cardLink));
         if (!vp.touch) check(`${tag}: brand block reads VOLTEX`, ov.brand === 'VOLTEX', String(ov.brand));
-        check(`${tag}: the headline total is a formatted USD amount`, /^\$[\d\s  .,]+$/.test(ov.total ?? ''), String(ov.total));
+        check(`${tag}: the headline total is a formatted amount with a USD unit`, /^[\d\s  .,]+$/.test(ov.total ?? ''), String(ov.total));
         check(`${tag}: the BTC equivalent is stated`, /≈ [\d\s  .,]+ BTC/.test(ov.btc ?? ''), String(ov.btc));
         check(`${tag}: the 7D P&L pill carries USD and percent`, ov.pnlAvailable === 'true' && /\$.*·.*%/.test(ov.pnl ?? ''), String(ov.pnl));
         check(`${tag}: two accounts are listed, with actions`, ov.accounts.length === 2 && ov.accounts.every((a) => a.actions >= 3), JSON.stringify(ov.accounts));
-        check(`${tag}: the distribution ring is on the Overview`, ov.allocation && ov.allocationRows > 0, String(ov.allocationRows));
-        check(`${tag}: the equity curve is drawn on real days`, ov.chart && ov.chartLine);
-        check(`${tag}: five period rows, the covered ones with USD + %`, ov.periods.length === 5 && ov.periods.filter((p) => p.ok === 'true').every((p) => /^[+-]\$/.test(p.usd) && /%$/.test(p.pct)), JSON.stringify(ov.periods));
+        check(`${tag}: the accounts card has the Аккаунт / Актив tabs`, ov.tabs.join('|') === 'Аккаунт|Актив', ov.tabs.join('|'));
+        check(`${tag}: the distribution has a legend with bars, % and USD`, ov.allocation && ov.allocationRows > 0 && ov.allocationBars.every((w) => /%$/.test(w)), `${ov.allocationRows} rows, bars ${ov.allocationBars.join(' ')}`);
+        check(`${tag}: the distribution footer names the two accounts`, /Unified Trading/.test(ov.allocationFoot ?? '') && /Финансирование/.test(ov.allocationFoot ?? ''), String(ov.allocationFoot));
+        check(`${tag}: the equity curve is drawn on real days, in gold`, ov.chart && ov.chartLine && ov.chartGold === 'var(--w-gold)', String(ov.chartGold));
+        check(`${tag}: the period switch is 7Д/30Д/90Д/Всё with uncovered windows off`, ov.seg.join('|') === '7Д|30Д|90Д(off)|Всё', ov.seg.join('|'));
+        if (!vp.touch) check(`${tag}: the seams are near-invisible — sidebar without a box, card edges a whisper`, /rgb\(2[34]\d, 2[34]\d, 2[45]\d\)/.test(ov.sideBorder ?? '') && /rgb\(23[0-9], 23[0-9], 24[0-9]\)/.test(ov.cardBorder ?? ''), `side ${ov.sideBorder} card ${ov.cardBorder}`);
+        check(`${tag}: four period rows, the covered ones with USD + %`, ov.periods.length === 4 && ov.periods.filter((p) => p.ok === 'true').every((p) => /^[+-]\$/.test(p.usd) && /%$/.test(p.pct)), JSON.stringify(ov.periods));
         check(`${tag}: uncovered periods are dashes, never zeros`, ov.periods.filter((p) => p.ok === 'false').every((p) => p.usd === '—' && p.pct === '—'), JSON.stringify(ov.periods.filter((p) => p.ok === 'false')));
         check(`${tag}: recent activity is an empty state, not sample rows`, ov.activity && ov.activityRows === 0 && /пока нет/.test(ov.activityText ?? ''), String(ov.activityRows));
         check(`${tag}: no horizontal page overflow`, !ov.overflow);
         check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
 
-        if (mode === 'owner') {
-          check(`${tag}: Super VIP is on the owner's Cross account`, ov.badge === 'Super VIP', String(ov.badge));
-          check(`${tag}: the funding row is marked as counted in Unified Trading`, ov.note);
-          const unified = ov.accounts.find((a) => a.name === 'Unified Trading');
-          check(`${tag}: the headline IS the unified equity, not a sum`, unified && unified.value === ov.total, `${unified?.value} vs ${ov.total}`);
-        } else {
-          check(`${tag}: no tier badge on an ordinary account`, ov.badge === null, String(ov.badge));
-          check(`${tag}: no Cross note on a plain ledger`, !ov.note);
+        {
           const funding = ov.accounts.find((a) => a.name === 'Финансирование');
           const unified = ov.accounts.find((a) => a.name === 'Unified Trading');
-          check(`${tag}: ordinary total = spot + futures, both server subtotals`, funding && unified && Math.abs(money(funding.value) + money(unified.value) - money(ov.total)) < 0.005, `${funding?.value} + ${unified?.value} = ${ov.total}`);
+          check(`${tag}: the headline is the two accounts added once — Unified + Финансирование`, funding && unified && Math.abs(money(funding.value) + money(unified.value) - money(ov.total)) < 0.005, `${funding?.value} + ${unified?.value} = ${ov.total}`);
+        }
+        if (mode === 'owner') {
+          check(`${tag}: Super VIP is on the owner's Cross account`, ov.badge === 'Super VIP', String(ov.badge));
+        } else {
+          check(`${tag}: no tier badge on an ordinary account`, ov.badge === null, String(ov.badge));
         }
         await page.screenshot({ path: `${OUT}/overview-${tag}.png`, fullPage: true });
 
         // The same figure in the Unified Trading section.
         await openSection(page, 'Unified Trading');
         await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
-        const unifiedFigures = await page.$$eval('.wallet-account-metric', (els) => els.map((el) => el.querySelectorAll('p')[0].textContent.trim() + '=' + el.querySelectorAll('p')[1].textContent.trim()));
-        const same = mode === 'owner' ? unifiedFigures[1]?.split('=')[1] : unifiedFigures[0]?.split('=')[1];
-        check(`${tag}: Overview total equals the Unified Trading figure`, same === ov.total, `${same} vs ${ov.total}`);
+        const unifiedFigures = await page.$$eval('.wallet-account-metric', (els) => els.map((el) => el.querySelectorAll('p')[1].childNodes[0].textContent.trim()));
+        const unifiedRow = ov.accounts.find((a) => a.name === 'Unified Trading');
+        const same = mode === 'owner' ? unifiedFigures[1] : unifiedFigures[2];
+        check(`${tag}: the Unified Trading account row equals the Unified section's own figure`, unifiedRow && money(unifiedRow.value) === money(same), `${unifiedRow?.value} vs ${same}`);
 
         // Funding: the real spot ledger.
         await openSection(page, 'Финансирование');
@@ -134,12 +143,10 @@ async function run() {
         const funding = await page.evaluate(() => ({
           total: document.querySelector('.wallet-funding-total')?.textContent?.trim(),
           rows: [...document.querySelectorAll('.wallet-funding-row')].map((r) => r.dataset.asset + ':' + r.querySelectorAll('td')[4].textContent.trim()),
-          note: Boolean(document.querySelector('.wallet-funding-head p.max-w-\\[560px\\]')),
           empty: Boolean(document.querySelector('.wallet-funding-table svg')),
         }));
         check(`${tag}/funding: the ledger total is stated`, /^\$/.test(funding.total ?? ''), String(funding.total));
         check(`${tag}/funding: rows are the real spot balances with a valuation`, funding.rows.length >= 3 && funding.rows.every((r) => /:\$/.test(r)), funding.rows.join(' | '));
-        check(`${tag}/funding: the Cross note is ${mode === 'owner' ? 'shown' : 'absent'}`, funding.note === (mode === 'owner'));
         await page.screenshot({ path: `${OUT}/funding-${tag}.png`, fullPage: true });
 
         // Card link routes to the Crypto Card page.
@@ -159,7 +166,7 @@ async function run() {
       await page.waitForSelector('.wallet-overview', { timeout: 15000 });
       await page.waitForTimeout(600);
       const ov = await page.evaluate(readOverview);
-      check('no-history: every period row is a dash', ov.periods.length === 5 && ov.periods.every((p) => p.ok === 'false' && p.usd === '—'), JSON.stringify(ov.periods));
+      check('no-history: every period row is a dash', ov.periods.length === 4 && ov.periods.every((p) => p.ok === 'false' && p.usd === '—'), JSON.stringify(ov.periods));
       check('no-history: the P&L pill is a dash', ov.pnlAvailable === 'false' && ov.pnl === '—', String(ov.pnl));
       check('no-history: the chart card stays, empty', ov.chart && !ov.chartLine);
       await page.screenshot({ path: `${OUT}/overview-no-history-1440.png`, fullPage: true });

@@ -91,25 +91,38 @@ function ledgerFixture(options: Record<string, any> = {}, lang = 'ru') {
   };
 }
 
-test('desktop ledger has exactly the seven requested columns and original quantity/USD meaning', () => {
+test('desktop ledger has exactly the six approved columns and original quantity/USD meaning', () => {
   const fixture = ledgerFixture();
   const headings = nodes(fixture.render(), node => node.type === 'th').map(text);
-  // The reference account's own column set. `В использовании` was promoted
-  // out of a footnote under Available into a column of its own: on a margin
-  // account committed quantity is a fact a reader checks, not an aside. The
-  // 24h move moved under the ticker so the row stays one line.
-  expect(headings).toEqual(['Актив', 'Активы', 'Баланс кошелька', 'В использовании', 'Доступно', 'Стоимость', 'Действия']);
-  expect(nodes(fixture.render(), node => node.type === 'col')).toHaveLength(7);
-  for (const row of fixture.tableRows()) expect(nodes(row, node => node.type === 'td')).toHaveLength(7);
+  // The approved design's own column set: the quantity with its USD value
+  // under it, the wallet row and the committed quantity as columns of their
+  // own, whether the holding backs the margin, and the actions.
+  expect(headings).toEqual(['Валюта', 'Активы', 'Баланс кошелька', 'В ордерах', 'В качестве обеспечения', 'Действие']);
+  expect(nodes(fixture.render(), node => node.type === 'col')).toHaveLength(6);
+  for (const row of fixture.tableRows()) expect(nodes(row, node => node.type === 'td')).toHaveLength(6);
   const html = fixture.html();
   for (const amount of ['271 BTC', '32 726 245 USDT', '1 200 000 XRP', '0,00412 ETH']) expect(html).toContain(amount);
   expect(html).not.toMatch(/32\.7[MК]|1\.2[MК]|271\s*\$/);
   expect(html).toContain('$32 726 245,00');
 });
 
+test('the collateral column states the server-decided fact and is not a control', () => {
+  // On the Cross account a PRICED holding backs the margin; the switch only
+  // SHOWS that, and says it cannot be changed here. On a plain ledger there
+  // is no collateral and the cell is an unknown, never a zero or an "off".
+  const cross = ledgerFixture({ collateral: true, rows: [rows[0], { ...rows[1], priceUsd: null, valueUsd: null, priced: false }] });
+  const switches = nodes(cross.render(), node => node.props?.role === 'switch');
+  expect(switches).toHaveLength(2);
+  expect(switches.map(node => node.props['aria-checked'])).toEqual([true, false]);
+  expect(switches.every(node => node.props['aria-disabled'] === 'true' && !node.props.onClick)).toBe(true);
+  const spot = ledgerFixture({ collateral: false });
+  expect(nodes(spot.render(), node => node.props?.role === 'switch')).toHaveLength(0);
+  expect(normalize(text(nodes(spot.tableRows()[0], node => node.type === 'td')[4]))).toBe(fmt.EM_DASH);
+});
+
 test.each(['ru', 'en', 'zh', 'es', 'hi', 'ja', 'ko'])('all %s columns/actions are localized and quantities preserve units', lang => {
   const fixture = ledgerFixture({}, lang);
-  expect(nodes(fixture.render(), node => node.type === 'th')).toHaveLength(7);
+  expect(nodes(fixture.render(), node => node.type === 'th')).toHaveLength(6);
   expect(fixture.html()).not.toMatch(/wallet\.(actions|tradeAction|col)/);
   expect(fixture.html()).toContain(normalize(fmt.formatAmount(32726245, lang, 2) + ' USDT'));
   expect(fixture.html()).toContain(normalize(fmt.formatUsd(32726245, lang)));
@@ -125,11 +138,12 @@ test('committed balance is its own column, on every row, with zero shown as the 
   const btc = rowsRendered.find(row => text(row).includes('Bitcoin'));
   const cells = nodes(btc, node => node.type === 'td');
   expect(byClass(cells[3], 'wallet-ledger-locked')).toHaveLength(1);
-  // The unit is carried once, by the `Активы` column; repeating it in four
-  // more columns is noise in a dense grid.
-  expect(normalize(text(cells[3]))).toBe('2,5');
+  // The unit is carried once, by the `Активы` column; repeating it in more
+  // columns is noise in a dense grid. (The available figure rides along in
+  // the same cell, hidden, so the mask audit still covers it.)
+  expect(normalize(text(byClass(cells[3], 'wallet-ledger-locked')[0]))).toBe('2,5');
   const usdt = rowsRendered.find(row => text(row).includes('Tether'));
-  expect(normalize(text(nodes(usdt, node => node.type === 'td')[3]))).toBe('0');
+  expect(normalize(text(byClass(nodes(usdt, node => node.type === 'td')[3], 'wallet-ledger-locked')[0]))).toBe('0');
 });
 
 test('an asset with no price is reported unknown, never as a holding worth nothing', () => {
@@ -183,7 +197,7 @@ test('hidden balances mask quantity/available/locked/value on desktop and mobile
   expect(fixture.html()).toContain('+1,24%');
 });
 
-test('actual search, hide-zero and sort handlers preserve original filtering and value order without row mutation', () => {
+test('actual search, hide-small and sort handlers preserve original filtering and value order without row mutation', () => {
   const before = JSON.stringify(rows), fixture = ledgerFixture();
   expect(fixture.tableRows().map(row => row.key)).toEqual(['USDT', 'BTC', 'XRP', 'ETH']);
   const search = nodes(fixture.render(), node => node.type === 'input' && node.props.type === 'search')[0];
@@ -302,7 +316,9 @@ test('missing preflight borders are supplied only inside Wallet main/dialog at z
 });
 
 test.each([
-  [false, false, '$12 345 678,91'],
+  // The approved layout writes the currency as a `USD` suffix rather than
+  // a `$` prefix; the figure itself keeps every digit and its cents.
+  [false, false, '12 345 678,91'],
   [true, false, fmt.MASK],
   [false, true, fmt.EM_DASH],
 ])('the headline figures retain their authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
@@ -332,6 +348,8 @@ test.each([
   expect(rendered).toContain('Баланс маржи');
   expect(rendered).toContain(normalize(expected));
   if (!hidden && !unavailable) {
+    expect(rendered).toContain('12 345 678,91<span class="ml-1 text-[12px] font-medium tracking-normal text-ink-3">USD</span>');
+    expect(rendered).not.toContain('$12 345 678,91');
     // Three headline figures, no more: the account's own, never a fourth
     // invented from them.
     // The exact class, not its container `wallet-account-metrics`.
@@ -416,9 +434,9 @@ test('the account header reports unknown margin figures as dashes, never as zero
   const rendered = normalize(renderToStaticMarkup(tree));
   // A spot ledger shows its two wallets and no invented margin row.
   expect(rendered).toContain('Спот');
-  expect(rendered).toContain('$250,00');
+  expect(rendered).toContain('250,00');
   expect(rendered).toContain('Фьючерсы');
-  expect(rendered).toContain('$50,00');
+  expect(rendered).toContain('50,00');
   // No margin row at all on a plain ledger — and no IM/MM bars either.
   expect(rendered).not.toMatch(/Начальная маржа|Поддерживающая маржа|Доступная маржа/);
   expect(rendered).not.toContain('wallet-margin-usage');

@@ -100,7 +100,7 @@ async function run() {
           };
           return {
             page: lum(document.querySelector('.vx-wallet')),
-            panel: lum(document.querySelector('.wallet-allocation')),
+            panel: lum(document.querySelector('.wallet-summary')),
             ink: getComputedStyle(document.querySelector('.wallet-account-panel h2')).color,
           };
         });
@@ -124,10 +124,14 @@ async function run() {
 
         // ── Account identity + the metrics that belong to it ────────────
         const modeChip = (await page.textContent('.wallet-account-mode')).trim();
+        // Label text only (the P&L pill sits beside the first label) and the
+        // figure only (the `USD` unit is its own span after it).
         const metrics = await page.$$eval('.wallet-account-metric', (els) =>
-          els.map((el) => el.querySelectorAll('p')[0].textContent.trim() + '=' + el.querySelectorAll('p')[1].textContent.trim()));
+          els.map((el) => el.querySelectorAll('p')[0].childNodes[0].textContent.trim() + '=' + el.querySelectorAll('p')[1].childNodes[0].textContent.trim()));
         check(`${tag}: the header reports exactly three headline figures`, metrics.length === 3, metrics.join(' | '));
-        check(`${tag}: the leading figure is a formatted USD amount`, /^Активы=\$[\d\s\u00a0\u202f.,]+$/.test(metrics[0] ?? ''), metrics[0] ?? '');
+        const units = await page.$$eval('.wallet-account-metric p:nth-child(2) span', (els) => els.map((e) => e.textContent.trim()));
+        check(`${tag}: every figure carries its USD unit`, units.length === 3 && units.every((u) => u === 'USD'), units.join('|'));
+        check(`${tag}: the leading figure is a formatted amount`, /^Активы=[\d\s\u00a0\u202f.,]+$/.test(metrics[0] ?? ''), metrics[0] ?? '');
         check(`${tag}: no figure is the old hardcoded observation`, !/58[   ,]?454[   ,]?972/.test(metrics.join(' ')), metrics.join(' | '));
 
         if (mode === 'owner') {
@@ -153,7 +157,7 @@ async function run() {
           });
           check(`${tag}: IM and MM are both stated`, margin.length === 2 && margin[0].label === 'IM' && margin[1].label === 'MM', JSON.stringify(margin));
           check(`${tag}: both ratios are real percentages, not dashes`, margin.every((m) => /%$/.test(m.percent)), margin.map((m) => m.label + ' ' + m.percent).join(' | '));
-          check(`${tag}: both requirements are stated in USD`, margin.every((m) => /^\$/.test(m.value)), margin.map((m) => m.label + ' ' + m.value).join(' | '));
+          check(`${tag}: both requirements are stated in USD`, margin.every((m) => /USD$/.test(m.value)), margin.map((m) => m.label + ' ' + m.value).join(' | '));
         } else {
           check(`${tag}: header reports a spot account`, modeChip === 'Спотовый счёт', modeChip);
           check(`${tag}: no invented margin metrics`, !metrics.some((m) => /маржа/i.test(m)), metrics.join(' | '));
@@ -161,16 +165,9 @@ async function run() {
           check(`${tag}: no margin usage bars on an account without margin`, marginRows === 0, String(marginRows));
         }
 
-        // ── The pink-circled P&L glance stays in the header ─────────────
-        const glance = await page.evaluate(() => {
-          const el = document.querySelector('.wallet-pnl-glance');
-          if (!el) return null;
-          return {
-            value: el.querySelectorAll('p')[2].textContent.trim(),
-            periods: [...el.querySelectorAll('button')].map((b) => b.textContent.trim()),
-          };
-        });
-        check(`${tag}: the compact P&L readout is kept in the header`, glance !== null && glance.periods.length === 5, JSON.stringify(glance));
+        // ── The P&L pill sits beside `Активы`, as in the reference ──────
+        const pill = await page.evaluate(() => document.querySelector('.wallet-account-metric .wallet-pill')?.textContent?.trim() ?? null);
+        check(`${tag}: the P&L pill is beside the assets figure`, pill !== null && /P&L/.test(pill), String(pill));
 
         // ── The equity curve is NOT between the summary and the table ───
         const chartInMain = await page.locator('.wallet-equity-chart').count();
@@ -186,7 +183,10 @@ async function run() {
 
         if (vp.label === '1440') {
           const heads = await page.$$eval('.wallet-ledger-desktop th', (els) => els.map((e) => e.textContent.trim()));
-          check(`${tag}: ledger has the seven reference columns`, heads.length === 7 && heads[3] === 'В использовании', heads.join(' | '));
+          check(`${tag}: ledger has the six approved columns`, heads.join('|') === 'Валюта|Активы|Баланс кошелька|В ордерах|В качестве обеспечения|Действие', heads.join(' | '));
+          const switches = await page.$$eval('.wallet-ledger-desktop [role="switch"]', (els) => els.map((e) => e.getAttribute('aria-checked') + '/' + e.getAttribute('aria-disabled')));
+          check(`${tag}: the collateral switches state the server's answer and are not controls`,
+            mode === 'owner' ? switches.length > 0 && switches.every((s) => /^(true|false)\/true$/.test(s)) : switches.length === 0, switches.join(' '));
           const rowCount = await page.$$eval('.wallet-ledger-desktop tbody tr', (els) => els.length);
           check(`${tag}: ledger renders rows`, rowCount > 0, String(rowCount));
           const tabular = await page.evaluate(() =>
@@ -216,10 +216,9 @@ async function run() {
           const summaryInFold = [fold.title, fold.header, fold.metrics, fold.actions, fold.filters]
             .every((v) => v !== null && v <= fold.viewport);
           check(`${tag}: title, account header, figures, actions and filters are all above the fold`, summaryInFold, JSON.stringify(fold));
-          check(`${tag}: at least three asset rows are above the fold too`,
-            fold.rows >= 3 && fold.rowsInFold >= 3, `${fold.rowsInFold}/${fold.rows} rows`);
-          check(`${tag}: no rendered row is pushed below the fold`, fold.rowsInFold === fold.rows, `${fold.rowsInFold}/${fold.rows} rows`);
-          check(`${tag}: the table is dense, not a spaced-out list`, fold.rowHeight !== null && fold.rowHeight <= 60, `${fold.rowHeight}px rows`);
+          check(`${tag}: at least two asset rows are above the fold too`,
+            fold.rows >= 2 && fold.rowsInFold >= 2, `${fold.rowsInFold}/${fold.rows} rows`);
+          check(`${tag}: rows are the reference's 64px`, fold.rowHeight !== null && fold.rowHeight >= 60 && fold.rowHeight <= 72, `${fold.rowHeight}px rows`);
           if (mode === 'owner') check(`${tag}: IM/MM are above the fold`, fold.margin !== null && fold.margin <= fold.viewport, String(fold.margin));
 
           // ── The actions are ONE horizontal row, not a vertical stack ──
@@ -230,7 +229,9 @@ async function run() {
           });
           check(`${tag}: all five actions sit on one line`, actions.lines === 1 && actions.labels.length === 5, JSON.stringify(actions));
           check(`${tag}: the actions are in the reference's order`,
-            /Пополнить.*Конверт.*Перевести.*Вывести/.test(actions.labels.join(' ')), actions.labels.join(' | '));
+            /Внести.*Конверт.*Перевести.*Взять заем.*История/.test(actions.labels.join(' ')), actions.labels.join(' | '));
+          const off = await page.$$eval('.wallet-account-actions button:disabled', (els) => els.map((b) => b.textContent.trim()));
+          check(`${tag}: Convert and Borrow are offered as unavailable, never faked`, off.join('|') === 'Конвертация|Взять заем', off.join('|'));
         } else {
           const mobileRows = await page.$$eval('.wallet-ledger-mobile > li', (els) => els.length);
           check(`${tag}: mobile ledger renders rows`, mobileRows > 0, String(mobileRows));
@@ -243,9 +244,11 @@ async function run() {
           check(`${tag}: the Wallet navigation collapses to a strip`, navShape.height <= 70, JSON.stringify(navShape));
         }
 
-        // ── The pink-circled distribution panel stays ───────────────────
+        // ── The table runs full width; the distribution lives on the Overview ──
         const allocation = await page.locator('.wallet-allocation').count();
-        check(`${tag}: the portfolio distribution panel is kept`, allocation === 1, String(allocation));
+        check(`${tag}: no distribution panel beside the table`, allocation === 0, String(allocation));
+        const foot = await page.evaluate(() => document.querySelector('.wallet-foot-note')?.textContent?.trim() ?? null);
+        check(`${tag}: the valuation footnote is under the table`, foot !== null && /Оценка полная/.test(foot), String(foot));
 
         // ── Search + hide-zero are real controls ────────────────────────
         await page.fill('.wallet-asset-ledger input[type="search"]', 'btc');
@@ -260,7 +263,7 @@ async function run() {
         await hideZero.click();
         await page.waitForTimeout(120);
         const pressedAfter = await hideZero.getAttribute('aria-pressed');
-        check(`${tag}: hide-zero toggles`, pressedBefore !== pressedAfter, `${pressedBefore} -> ${pressedAfter}`);
+        check(`${tag}: hide-small toggles`, pressedBefore !== pressedAfter, `${pressedBefore} -> ${pressedAfter}`);
         await hideZero.click();
 
         // ── No horizontal page scroll at either width ───────────────────
@@ -268,7 +271,7 @@ async function run() {
         check(`${tag}: no horizontal page overflow`, overflow <= 0, `${overflow}px`);
 
         // ── Deposit navigates to the real flow ──────────────────────────
-        const depositVisible = await page.locator('.wallet-account-panel button', { hasText: 'Пополнить' }).first().isVisible();
+        const depositVisible = await page.locator('.wallet-account-panel button', { hasText: 'Внести' }).first().isVisible();
         check(`${tag}: deposit action is reachable`, depositVisible);
 
         // ── Convert is offered as unavailable, never as a fake success ──

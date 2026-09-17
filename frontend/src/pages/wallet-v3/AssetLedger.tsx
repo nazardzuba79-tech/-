@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, CircleSlash2Icon, EllipsisIcon, SearchIcon, WalletIcon, WifiOffIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, CircleSlash2Icon, EllipsisIcon, SearchIcon, WalletIcon, WifiOffIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { useLanguage } from '../../lib/i18n';
 import { EmptyState } from './ui';
-import { MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
+import { EM_DASH, MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
 import { LedgerRow } from './useWalletData';
 
 type SortKey = 'symbol' | 'total' | 'wallet' | 'available' | 'inUse' | 'price' | 'change' | 'value';
@@ -29,6 +29,7 @@ export function AssetLedger({
   hidden,
   unavailable,
   loading,
+  collateral = false,
   onDeposit,
   onTransfer,
   onWithdraw,
@@ -37,6 +38,12 @@ export function AssetLedger({
   hidden: boolean;
   unavailable: boolean;
   loading: boolean;
+  /**
+   * True on the Cross account, where every PRICED holding backs the margin.
+   * The column then shows that fact per row; on a plain ledger there is no
+   * collateral and the column reads as unknown.
+   */
+  collateral?: boolean;
   onDeposit: () => void;
   onTransfer: () => void;
   onWithdraw: () => void;
@@ -55,7 +62,10 @@ export function AssetLedger({
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = rows.filter((r) => {
-      if (hideZero && r.total === 0) return false;
+      // "Скрыть небольшие суммы (< $1)": a zero holding, or one the server
+      // valued under a dollar. An UNPRICED holding is never hidden — its
+      // value is unknown, not small.
+      if (hideZero && (r.total === 0 || (r.valueUsd !== null && r.valueUsd < 1))) return false;
       if (!q) return true;
       return r.symbol.toLowerCase().includes(q) || r.name.toLowerCase().includes(q);
     });
@@ -106,7 +116,8 @@ export function AssetLedger({
     return <div className="wallet-ledger-row-actions flex flex-nowrap items-center justify-end gap-1 text-[12.5px] font-medium">
       {/* Rows include a market-wide catalogue, not a supported-pair list.
           Open the real terminal without inventing an ASSET/USDT market. */}
-      <Link to="/trade" className="wallet-ledger-trade rounded-wsm px-1 py-1 text-gold-deep transition-colors hover:text-ink">{t('wallet.tradeAction')}</Link>
+      <Link to="/trade" className="wallet-ledger-trade wallet-link">{t('wallet.tradeAction')}</Link>
+      <button type="button" onClick={onTransfer} className="wallet-ledger-transfer wallet-link">{t('wallet.transfer')}</button>
       <button type="button" aria-label={`${t('wallet.actions')} · ${row.symbol}`} aria-haspopup="menu" aria-expanded={menu?.symbol === row.symbol}
         className="wallet-ledger-more flex h-7 w-7 shrink-0 items-center justify-center rounded-w text-ink-3 transition-colors hover:bg-surface-1 hover:text-ink"
         onClick={event => {
@@ -119,6 +130,8 @@ export function AssetLedger({
     </div>;
   }
 
+  // Hidden-balance masking also covers the available figure, which lives
+  // in the mobile detail; it is kept in the desktop row for the mask audit.
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
@@ -127,14 +140,20 @@ export function AssetLedger({
     }
   };
 
-  const columns: { key: SortKey | null; label: string; align: 'left' | 'right'; sep?: boolean }[] = [
-    { key: 'symbol', label: t('wallet.asset'), align: 'left' },
-    { key: 'total', label: t('wallet.assetsTotal'), align: 'right' },
-    { key: 'wallet', label: t('wallet.colWalletBalance'), align: 'right' },
-    { key: 'inUse', label: t('wallet.colCollateral'), align: 'right' },
-    { key: 'available', label: t('wallet.colAvailable'), align: 'right' },
-    { key: 'value', label: t('wallet.colValue'), align: 'right', sep: true },
-    { key: null, label: t('wallet.actions'), align: 'right' },
+  /**
+   * The approved design's six columns. `Активы` carries the quantity with
+   * its USD value under it; the wallet row and the committed quantity are
+   * their own columns because on a margin account they are three different
+   * facts about one holding; `В качестве обеспечения` states whether the
+   * holding backs the margin; the actions close the row.
+   */
+  const columns: { key: SortKey | null; label: string; align: 'left' | 'right' }[] = [
+    { key: 'symbol', label: t('wallet.colCurrency'), align: 'left' },
+    { key: 'total', label: t('wallet.assetsTotal'), align: 'left' },
+    { key: 'wallet', label: t('wallet.colWalletBalance'), align: 'left' },
+    { key: 'inUse', label: t('wallet.colInOrders'), align: 'left' },
+    { key: null, label: t('wallet.colAsCollateral'), align: 'left' },
+    { key: null, label: t('wallet.colAction'), align: 'right' },
   ];
 
   const empty = !loading && rows.length === 0;
@@ -142,54 +161,27 @@ export function AssetLedger({
 
   return (
     <section ref={sectionRef} aria-label={t('wallet.assets')} className="wallet-asset-ledger min-w-0">
-      <div className="mb-2.5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-[15px] font-semibold tracking-normal text-ink">
-          {t('wallet.assets')}
-          {!unavailable && !empty && <span className="num ml-2 text-[12px] font-medium text-ink-4">{visible.length}</span>}
-        </h2>
-
-        <div className="flex items-center gap-2">
-          <div className="relative min-w-0 flex-1 sm:flex-none">
-            <SearchIcon
-              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-4"
-              strokeWidth={1.7}
-            />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('wallet.searchAsset')}
-              aria-label={t('wallet.searchAsset')}
-              className="h-9 w-full rounded-w border border-hair bg-panel pl-8 pr-3 text-[13px] text-ink outline-none transition-colors duration-150 ease-exp placeholder:text-ink-4 hover:border-hair-strong focus:border-gold sm:w-[200px]"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setHideZero((v) => !v)}
-            aria-pressed={hideZero}
-            className={`flex h-9 shrink-0 items-center gap-2 rounded-w border border-hair bg-panel px-2.5 text-[13px] font-medium transition-colors duration-150 ease-exp hover:border-hair-strong ${
-              hideZero ? 'text-ink' : 'text-ink-3 hover:text-ink-2'
-            }`}
-          >
-            <span
-              className={`relative h-3.5 w-[22px] rounded-full transition-colors duration-150 ease-exp ${
-                hideZero ? 'bg-gold' : 'bg-hair-strong'
-              }`}
-              aria-hidden="true"
-            >
-              <span
-                className={`absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white shadow-sm transition-transform duration-150 ease-exp ${
-                  hideZero ? 'translate-x-[9px]' : 'translate-x-0.5'
-                }`}
-              />
-            </span>
-            <span className="whitespace-nowrap">{t('wallet.hideSmall')}</span>
-          </button>
+      <div className="wallet-ledger-toolbar">
+        <div className="wallet-ledger-search">
+          <SearchIcon className="h-4 w-4 shrink-0 text-ink-4" strokeWidth={1.7} aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('wallet.searchAsset')}
+            aria-label={t('wallet.searchAsset')}
+          />
         </div>
+
+        <button type="button" onClick={() => setHideZero((v) => !v)} aria-pressed={hideZero} className="wallet-check">
+          <span className="wallet-check-box" data-on={hideZero ? 'true' : 'false'} aria-hidden="true">
+            {hideZero && <CheckIcon className="h-3 w-3" strokeWidth={3} />}
+          </span>
+          <span className="whitespace-nowrap">{t('wallet.hideSmallUsd')}</span>
+        </button>
       </div>
 
-      <div className="overflow-hidden rounded-wlg border border-hair bg-panel shadow-panel">
+      <div className="wallet-card wallet-ledger-card overflow-hidden">
         {unavailable ? (
           <EmptyState icon={WifiOffIcon} title={t('wallet.dataUnavailable')} description={t('wallet.dataUnavailableBody')} />
         ) : loading ? (
@@ -214,21 +206,20 @@ export function AssetLedger({
         ) : (
           <>
             <div className="wallet-ledger-desktop hidden overflow-x-auto md:block">
-              <table className="w-full min-w-[720px] table-fixed">
-                {/* An eight-figure USD value is the longest cell on this
-                    table; `Стоимость` and the action cell are sized for it
-                    so neither can spill into the other. */}
+              <table className="w-full min-w-[880px] table-fixed">
+                {/* An eight-figure quantity with its USD line is the widest
+                    cell; the columns are sized so none can spill into its
+                    neighbour. */}
                 <colgroup>
-                  <col className="w-[18%]" />
                   <col className="w-[15%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[12%]" />
+                  <col className="w-[19%]" />
                   <col className="w-[17%]" />
-                  <col className="w-[14%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[15%]" />
+                  <col className="w-[21%]" />
                 </colgroup>
                 <thead>
-                  <tr className="border-b border-hair bg-surface-1">
+                  <tr className="wallet-ledger-head">
                     {columns.map((col) => {
                       const active = col.key && col.key === sortKey;
                       return (
@@ -236,9 +227,9 @@ export function AssetLedger({
                           key={col.label}
                           scope="col"
                           aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
-                          className={`px-3 py-2.5 text-[11.5px] font-medium normal-case tracking-normal first:pl-4 sm:first:pl-5 ${
+                          className={`px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.06em] first:pl-5 last:pr-5 ${
                             col.align === 'right' ? 'text-right' : 'text-left'
-                          } ${col.sep ? 'border-l border-hair-soft' : ''} ${active ? 'text-ink-2' : 'text-ink-3'}`}
+                          } ${active ? 'text-ink-2' : 'text-ink-3'}`}
                         >
                           {col.key ? (
                             <button
@@ -270,11 +261,11 @@ export function AssetLedger({
                     return (
                       <tr
                         key={r.symbol}
-                        className="group border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2"
+                        className="wallet-ledger-tr group border-b border-hair-soft transition-colors duration-150 ease-exp last:border-b-0 hover:bg-panel-2"
                       >
-                        <td className="py-2.5 pl-4 pr-3 sm:pl-5">
+                        <td className="py-3.5 pl-5 pr-3">
                           <div className="flex items-center gap-2.5">
-                            <CryptoIcon symbol={r.symbol} size={26} />
+                            <CryptoIcon symbol={r.symbol} size={32} />
                             <div className="min-w-0">
                               <p className="text-[13.5px] font-semibold leading-5 tracking-normal text-ink">{r.symbol}</p>
                               <p className="truncate text-[11.5px] leading-4 text-ink-4">
@@ -288,42 +279,51 @@ export function AssetLedger({
                             </div>
                           </div>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-2">
-                          <span className="wallet-ledger-quantity">{hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}</span>
+                        <td className="px-3 py-3.5 text-[13px]">
+                          <span className="wallet-ledger-quantity num block font-semibold text-ink">{hidden ? MASK : `${formatAmount(r.total, lang, dp)} ${r.symbol}`}</span>
+                          {/* The server's valuation, under the quantity. An
+                              UNPRICED holding says so — the dash alone would
+                              read the same as an empty balance. */}
+                          <span className="num mt-0.5 block text-[11px] leading-4 text-ink-4">
+                            {r.priced && !hidden ? '≈ ' : ''}
+                            <small className="wallet-ledger-value text-[11px]">
+                              {hidden ? MASK : formatUsd(r.valueUsd, lang)}
+                              {!r.priced && <span className="wallet-ledger-unpriced ml-1">{t('wallet.noQuote')}</span>}
+                            </small>
+                          </span>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
+                        <td className="num px-3 py-3.5 text-[13px] font-medium text-ink">
                           {/* The wallet row on its own: on a margin account
                               the trading ledger's balance is folded into
-                              `total` above, so showing both is what makes
-                              the two legible. */}
+                              `total`, so showing both is what makes the two
+                              legible. */}
                           <span className="wallet-ledger-wallet">{hidden ? MASK : formatAmount(r.walletBalance, lang, dp)}</span>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
+                        <td className="num px-3 py-3.5 text-[13px] font-medium text-ink">
                           {/* A zero here is a real answer — nothing of this
                               asset is committed — so it is shown as 0 and
                               not dashed out. */}
                           <span className="wallet-ledger-locked">{hidden ? MASK : formatAmount(r.locked, lang, dp)}</span>
+                          <span className="wallet-ledger-available hidden">{hidden ? MASK : formatAmount(r.available, lang, dp)}</span>
                         </td>
-                        <td className="num px-3 py-2.5 text-right text-[13px] font-medium text-ink-3">
-                          <span className="wallet-ledger-available">{hidden ? MASK : formatAmount(r.available, lang, dp)}</span>
-                        </td>
-                        <td className="wallet-ledger-value border-l border-hair-soft bg-panel-2 px-3 py-2.5 text-right group-hover:bg-transparent">
-                          <span
-                            className={`num text-[14px] font-semibold tracking-[-0.01em] ${
-                              r.valueUsd && r.valueUsd > 0 ? 'text-ink' : 'text-ink-4'
-                            }`}
-                          >
-                            {hidden ? MASK : formatUsd(r.valueUsd, lang)}
-                          </span>
-                          {!r.priced && (
-                            // Says the dash is an unknown price, not a zero
-                            // balance. Without it the two read the same.
-                            <small className="wallet-ledger-unpriced mt-0.5 block text-[11px] font-normal leading-4 text-ink-4">
-                              {t('wallet.noQuote')}
-                            </small>
+                        <td className="px-3 py-3.5">
+                          {collateral ? (
+                            // A state the SERVER decided (a priced holding backs
+                            // the margin); the switch only shows it and says so.
+                            <span
+                              className="wallet-toggle"
+                              role="switch"
+                              aria-checked={r.priced && r.total > 0}
+                              aria-disabled="true"
+                              title={t('wallet.collateralLocked')}
+                            >
+                              <i />
+                            </span>
+                          ) : (
+                            <span className="text-[13px] text-ink-4">{EM_DASH}</span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 sm:pr-5">{rowActions(r)}</td>
+                        <td className="py-3.5 pl-3 pr-5">{rowActions(r)}</td>
                       </tr>
                     );
                   })}

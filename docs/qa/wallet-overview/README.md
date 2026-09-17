@@ -14,8 +14,13 @@ production data, no external service).
 - `funding-owner-1440.png` — the Funding section: the real spot ledger.
 - `overview-no-history-1440.png` — an account with no stored history: every
   period row and the 7D pill are dashes, the chart card stays.
+- `unified-owner-1440.png` / `unified-ordinary-1440.png` — the Unified
+  Trading section on the approved layout: title row with the margin chip and
+  IM/MM, five actions (Convert and Borrow disabled), the three-figure summary
+  card, the search + "hide small" toolbar, the six-column table and the
+  valuation footnote.
 
 Figures in these captures are the review stand's deterministic fixture
 (USDT 5 000 000, BTC 271 + 2.5, ETH 561, XRP 1 200 000 at fixed marks), not
-any real account. Result of the run: 97/97 checks passed; the existing
-`scripts/qa-wallet-unified-account.cjs` also passed 188/188 on the same build.
+any real account. Result of the run (re-taken for the approved-layout pass): 103/103 checks;
+`scripts/qa-wallet-unified-account.cjs` 198/198 on the same build.

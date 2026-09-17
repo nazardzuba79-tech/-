@@ -123,10 +123,13 @@ describe('/wallet does NOT own the utilities it uses', () => {
     // A sample of the layer Wallet borrows, not a design decision. `gap-5`
     // left this list when the workspace was tightened to the reference's
     // density; `gap-4` is the spacing that replaced it.
-    for (const utility of ['flex-col', 'gap-4', 'rounded-wlg', 'text-ink-3', 'bg-panel', 'shadow-panel']) {
+    // `rounded-wlg`/`shadow-panel` left this list when the cards moved to
+    // the hand-written `wallet-card` rule of the approved design; the
+    // buttons, text ramp and surfaces are still utilities.
+    for (const utility of ['flex-col', 'gap-4', 'rounded-w', 'text-ink-3', 'bg-panel', 'hover:bg-panel-3']) {
       expect(used).toContain(utility);
     }
-    expect(used.some((c) => c.startsWith('xl:grid-cols-[minmax('))).toBe(true);
+    expect(used.some((c) => /^(sm|md|lg|xl):/.test(c))).toBe(true);
   });
 
   it('so tailwind.config must keep scanning it, or the classes stop existing', () => {
