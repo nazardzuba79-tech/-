@@ -1,0 +1,52 @@
+{
+  "startedAt": "2026-09-17T11:07:23.264Z",
+  "firstVisit": {
+    "readyMs": 375,
+    "marketRequests": 8,
+    "metadataRequests": 0,
+    "painted": {
+      "candles": 1,
+      "bookRows": 12,
+      "tradeRows": 6,
+      "tapeBtc": true,
+      "heatmap": 1,
+      "marketsBtc": true,
+      "placeholders": 0,
+      "badge": "6h snapshot"
+    },
+    "snapshot": {
+      "version": 1,
+      "tickers": 3,
+      "candles": 48,
+      "bookBids": 6,
+      "trades": 6,
+      "rankings": 1,
+      "cfd": 1,
+      "futuresSymbols": 1,
+      "bytes": 6698
+    }
+  },
+  "reload": {
+    "readyMs": 230,
+    "painted": {
+      "candles": 1,
+      "bookRows": 12,
+      "tradeRows": 6,
+      "tapeBtc": true,
+      "heatmap": 1,
+      "marketsBtc": true,
+      "placeholders": 0,
+      "badge": "6h snapshot"
+    },
+    "marketRequests": [],
+    "metadataRequests": [
+      "/api/v1/market/assets/icons?symbols=BTC%2CETH%2CSOL%2CXAU"
+    ]
+  },
+  "coldVisit": {
+    "readyMs": 234,
+    "marketRequests": 8
+  },
+  "pageErrors": [],
+  "findings": []
+}
