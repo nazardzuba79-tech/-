@@ -4,8 +4,44 @@ import { REAL_FUTURES_EXECUTION } from './futuresExecution';
 import {
   nativeAccountState, terminalOrderToNativeDraft, pairToNativeSymbol,
 } from './nativeFuturesAdapter';
+import { nativeDemoApi } from './nativeDemoApi';
 import type { NativeDemoController } from '../pages/private-trading/useNativeDemo';
 import type { FuturesContractRules } from './futuresMath';
+
+function decimalPlaces(value:string):number{const dot=value.indexOf('.');return dot===-1?0:value.length-dot-1;}
+function decimalUnits(value:string,places:number):bigint{
+  if(!/^\d+(?:\.\d+)?$/.test(value))throw new Error('Некорректное количество позиции');
+  const[whole,fraction='']=value.split('.');
+  if(fraction.length>places)throw new Error('Количество не соответствует шагу контракта');
+  return BigInt((whole||'0')+fraction.padEnd(places,'0'));
+}
+function unitsText(value:bigint,places:number):string{
+  if(places===0)return value.toString();
+  const raw=value.toString().padStart(places+1,'0'),whole=raw.slice(0,-places),fraction=raw.slice(-places).replace(/0+$/,'');
+  return fraction?`${whole}.${fraction}`:whole;
+}
+/** One contract-valid slice of a risk-reducing market close. A position can
+ * legitimately be larger than Bybit's per-order market ceiling because it
+ * may have been accumulated over several fills. The terminal's Close button
+ * must therefore behave like an exchange close action, not like one giant
+ * order that the contract rejects. */
+function marketCloseChunk(quantity:string,rules:FuturesContractRules):string{
+  const places=Math.max(decimalPlaces(quantity),decimalPlaces(rules.qtyStep),decimalPlaces(rules.maxMarketOrderQty),decimalPlaces(rules.minOrderQty));
+  const total=decimalUnits(quantity,places),step=decimalUnits(rules.qtyStep,places),rawMax=decimalUnits(rules.maxMarketOrderQty,places),rawMin=decimalUnits(rules.minOrderQty,places);
+  if(step<=0n||total<=0n||total%step!==0n)throw new Error('Количество позиции не соответствует шагу контракта');
+  const maximum=(rawMax/step)*step;if(maximum<=0n)throw new Error('Рыночное закрытие недоступно для этого контракта');
+  const minimum=((rawMin+step-1n)/step)*step;
+  let chunk=total>maximum?maximum:total;
+  const remainder=total-chunk;
+  // Do not strand a final remainder below the venue's minimum: move enough
+  // from this slice into the last one while both remain step-aligned.
+  if(remainder>0n&&minimum>0n&&remainder<minimum){
+    const shift=minimum-remainder;
+    if(chunk-shift>=minimum)chunk-=shift;
+  }
+  if(chunk<=0n||chunk>maximum)return unitsText(total,places);
+  return unitsText(chunk,places);
+}
 
 /**
  * The owner's futures terminal, backed by the simulation engine.
@@ -14,19 +50,6 @@ import type { FuturesContractRules } from './futuresMath';
  * decision. It returns a `FuturesExecution` for the ORIGINAL components —
  * the same order form, the same tables — whose account state is a
  * projection of the native state and whose writes are native commands.
- *
- * Three things it deliberately does NOT do:
- *
- *  - It never falls back to `REAL_FUTURES_EXECUTION` for this account.
- *    `ready` is false while the verdict or the state is unknown, and false
- *    when either failed, so a simulation outage blocks trading rather than
- *    opening the real engine to an account that must never reach it.
- *  - It computes no financial figure. Every string in the projection is
- *    one the server sent; the engine remains the only thing that values a
- *    position, charges funding or decides a liquidation price.
- *  - It invents no order book. A historical order carries the identity of
- *    the bar the trader picked, and the server prices it from the bar it
- *    holds.
  */
 export function useNativeFuturesExecution(
   native: NativeDemoController,
@@ -45,24 +68,13 @@ export function useNativeFuturesExecution(
 
   return useMemo(() => {
     /**
-     * `null` releases the REAL engine, so it is returned for exactly ONE
-     * answer: the server said this is an ordinary account.
-     *
-     * While the verdict is unknown, and for an owner whose access call is
-     * failing, a non-null but NOT-READY execution is returned instead. That
-     * does two things at once: `useFuturesAccount` sees a replacement
-     * source and never subscribes to the real store (so the owner's tab
-     * issues no /futures/balances, /futures/positions or /futures/orders/me
-     * at all), and `ready: false` blocks trading. Fail closed: an outage
-     * stops the owner trading, it never hands them the real engine.
+     * `null` releases the REAL engine for exactly one verdict: ordinary.
+     * Unknown/failed owner access returns a non-ready native execution so it
+     * can never fall through to the real-money routes.
      */
     if (binding === 'ordinary') return null;
 
     const account = nativeAccountState(state, {
-      // `checked` false means the access verdict is still in flight; a
-      // state of null after that means the account read is.
-      // Unknown is not failure: while the binding is still being decided,
-      // and while an owner's access call is retrying, this reads as loading.
       loading: binding === 'unknown' || !checked || (allowed && state === null),
       failed: checked && binding === 'owner' && !allowed,
       fetchedAt,
@@ -73,50 +85,28 @@ export function useNativeFuturesExecution(
       ? { source: 'BYBIT_LINEAR' as const, interval: candle.interval, openTime: candle.openTime, pricePoint: 'CLOSE' as const }
       : null;
 
-    /**
-     * The server's account, passed straight through — not copied field by
-     * field, and not recombined. The shapes are identical on purpose: any
-     * transformation here would be a second place where the account's
-     * arithmetic lives.
-     */
+    /** The server's account, passed straight through — never recomputed. */
     const aggregate = state?.account ?? null;
-
-    /**
-     * Funds waiting for an account that does not exist yet.
-     *
-     * The server answers `demoAvailable` only while there is no ledger, and
-     * answers `null` once there is one — so this is non-null for exactly
-     * the window the activation control should exist in, and the card needs
-     * no rule of its own about when to show it. A zero or unparseable
-     * balance yields `null`: there is nothing to open an account with, and
-     * offering a button that would move nothing is worse than not offering
-     * one.
-     */
     const waiting = state && !state.initialized ? state.demoAvailable ?? null : null;
     const activation = waiting !== null && Number(waiting) > 0
       ? { available: waiting, asset: 'USDT', pending: native.busy, begin: () => { void native.initialize(); } }
       : null;
 
-    const refuse = async () => {
-      throw new Error('Торговый счёт ещё не загружен');
-    };
-    const ready = allowed && state !== null && state.initialized;
+    const refuse = async () => { throw new Error('Торговый счёт ещё не загружен'); };
+    // A warm browser transcript is display-only. It becomes tradable only
+    // after THIS session has received an authoritative server response.
+    const ready = allowed && native.stateLoaded && state !== null && state.initialized;
     if (!ready) {
       return {
         ...REAL_FUTURES_EXECUTION,
         engine: 'NATIVE' as const,
         ready: false,
         account,
-        // null = "the trader chooses". Even here: an unopened account has no
-        // position in either bucket, so there is nothing to pin.
         marginType: null,
         defaultMarginType: 'CROSS' as const,
         candle: pickedCandle,
         contract,
         account_aggregate: aggregate,
-        // The activation control belongs to the NOT-READY branch: an
-        // account that has not been opened is exactly an account that
-        // cannot trade yet, so this is where the trader meets it.
         activation,
         placeOrder: refuse, cancelOrder: refuse, closePosition: refuse,
         setProtection: refuse, clearProtection: refuse,
@@ -128,24 +118,12 @@ export function useNativeFuturesExecution(
       engine: 'NATIVE' as const,
       ready: true,
       account,
-      // The engine settles this account in Cross. The terminal states that
-      // rather than offering a toggle whose other position does nothing.
-      // THE TRADER CHOOSES. The engine settles both buckets for real — an
-      // isolated position posts its own margin out of the wallet, is
-      // liquidated on that margin alone and cannot cost the account more
-      // than it — so pinning this to CROSS would now be the interface
-      // refusing a mode the account actually has.
+      // Trader chooses the real risk bucket; native opens on Cross by default.
       marginType: null,
-      // ...but it OPENS on Cross, because that is how this account is run:
-      // one unified pool of collateral, which is what the Wallet header
-      // says and what every position here has been backed by until now.
-      // Isolated is a deliberate choice, not the state you land in.
       defaultMarginType: 'CROSS' as const,
       candle: pickedCandle,
       contract,
       account_aggregate: aggregate,
-      // Always null here: `ready` requires `state.initialized`, and the
-      // server stops answering `demoAvailable` the moment a ledger exists.
       activation,
       async placeOrder(params) {
         const reducing = params.reduceOnly || Boolean(exitId);
@@ -156,32 +134,14 @@ export function useNativeFuturesExecution(
         );
         const target = !reducing ? undefined : exitId ?? targetPosition?.id;
         if (reducing && !target) throw new Error('Нет позиции для сокращения');
-        /**
-         * A REDUCING ORDER BELONGS TO THE POSITION IT REDUCES.
-         *
-         * Its bucket is the position's, never the panel's current
-         * selection: a trader closing an isolated position while the form
-         * happens to show Cross is closing THAT position, and the engine
-         * rightly refuses an order that crosses buckets. Taking the mode
-         * from the row makes the close mean what the click meant.
-         */
         const reduceMarginType = targetPosition?.marginMode;
 
-        /**
-         * A MARKET reduce is a close at the book, which is what CLOSE means.
-         *
-         * A LIMIT reduce is NOT. It is a resting order at the trader's own
-         * price, and the engine has always accepted one (`placeDemoOrder`
-         * takes `reduceOnly` with a `positionId` and checks the side and
-         * size against that position). Collapsing it into CLOSE priced it at
-         * the book instead — a different trade from the one that was placed.
-         */
         if (reducing && params.type === 'MARKET') {
           const ok = await run({
             kind: 'CLOSE', positionId: target!, quantity: params.quantity,
             ...(pickedCandle ? { candle: pickedCandle } : {}),
           });
-          if (!ok) throw new Error(native.error || 'Операция не подтверждена');
+          if (!ok) throw new Error(native.getError() || native.error || 'Операция не подтверждена');
           return;
         }
         const ok = await run(terminalOrderToNativeDraft({
@@ -189,29 +149,48 @@ export function useNativeFuturesExecution(
           ...(reducing ? { reduceOnly: true, positionId: target, marginType: reduceMarginType } : {}),
           candle: pickedCandle,
         }));
-        if (!ok) throw new Error(native.error || 'Операция не подтверждена');
+        if (!ok) throw new Error(native.getError() || native.error || 'Операция не подтверждена');
       },
       async cancelOrder(orderId) {
-        if (!(await run({ kind: 'CANCEL', orderId }))) throw new Error(native.error || 'Ордер не отменён');
+        if (!(await run({ kind: 'CANCEL', orderId }))) throw new Error(native.getError() || native.error || 'Ордер не отменён');
       },
       async closePosition(positionId) {
-        if (!(await run({ kind: 'CLOSE', positionId }))) throw new Error(native.error || 'Позиция не закрыта');
+        const first=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
+        if(!first)throw new Error('Позиция уже закрыта или не найдена');
+        // Fetch the rules of THE position being closed. The selected terminal
+        // symbol can be different if the click switched instruments a render
+        // ago, and using its ceiling would reproduce the same mismatch.
+        const rules=await nativeDemoApi.contract(first.symbol);
+        let stagnant=0;
+        for(let pass=0;pass<64;pass++){
+          const before=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
+          if(!before)return;
+          const quantity=marketCloseChunk(before.quantity,rules);
+          const ok=await run({kind:'CLOSE',positionId,quantity});
+          if(!ok)throw new Error(native.getError() || native.error || 'Позиция не закрыта');
+          const after=native.getState()?.positions.find(p=>p.id===positionId&&p.status==='OPEN');
+          if(!after)return;
+          // A 1000-level observed book can occasionally be thinner than a
+          // large position. Ask for a fresh book rather than pretending the
+          // remainder filled. Three zero-progress snapshots means there is
+          // genuinely no executable depth right now.
+          if(after.quantity===before.quantity){
+            stagnant+=1;
+            if(stagnant>=3)throw new Error('Недостаточно ликвидности для полного закрытия позиции. Повторите через несколько секунд.');
+          }else stagnant=0;
+        }
+        throw new Error('Позиция слишком велика для одного цикла закрытия. Повторите закрытие оставшегося объёма.');
       },
       async setProtection(positionId, body) {
         const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: body.takeProfit, stopLoss: body.stopLoss } });
-        if (!ok) throw new Error(native.error || 'TP/SL не сохранены');
+        if (!ok) throw new Error(native.getError() || native.error || 'TP/SL не сохранены');
       },
       async clearProtection(positionId) {
         const ok = await run({ kind: 'PROTECTION', positionId, protection: { takeProfit: null, stopLoss: null } });
-        if (!ok) throw new Error(native.error || 'TP/SL не сняты');
+        if (!ok) throw new Error(native.getError() || native.error || 'TP/SL не сняты');
       },
-      // The frozen result snapshot this account already produces.
       showPnlCard: (positionId: string) => { void native.showCard(positionId); },
-      // The native engine answers every command with the WHOLE account, so
-      // a command has already refreshed what a real refresh would fetch.
-      // An explicit refresh is still honoured — it is how the panel's own
-      // reload button and the terminal's post-trade nudge reach the engine.
       refresh: () => { void run({ kind: 'REFRESH' }); },
     };
-  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, contract, native.showCard, native.busy, native.initialize]);
+  }, [binding, allowed, checked, state, fetchedAt, candle, exitId, run, native.error, native.stateLoaded, native.getState, native.getError, contract, native.showCard, native.busy, native.initialize]);
 }
