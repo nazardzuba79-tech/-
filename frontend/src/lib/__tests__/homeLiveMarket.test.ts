@@ -6,6 +6,7 @@ const source = readFileSync(resolve(__dirname, '../../pages/home/useHomeMarket.t
 const compiled = ts.transpileModule(source, { compilerOptions: {
   target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
 } }).outputText;
+const HOME_REFRESH_MS = 6 * 60 * 60 * 1000;
 const flush = () => new Promise(resolve => setImmediate(resolve));
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -97,7 +98,7 @@ function mount(overrides: Record<string, jest.Mock> = {}) {
   render();
   return {
     api, loadConfig, window, document, observers, render, intervals, listeners,
-    advance(ms = 15_000) { clock += ms; intervals.forEach(fn => fn()); },
+    advance(ms = HOME_REFRESH_MS) { clock += ms; intervals.forEach(fn => fn()); },
     visibility(hidden: boolean) {
       document.hidden = hidden;
       listeners.get('visibilitychange')?.forEach(fn => fn());
@@ -106,10 +107,10 @@ function mount(overrides: Record<string, jest.Mock> = {}) {
   };
 }
 
-test('one shared clock fetches one ticker snapshot and bounded real hero sources per interval', async () => {
+test('one shared six-hour clock fetches one ticker snapshot and bounded real hero sources per interval', async () => {
   const h = mount();
   await flush();
-  expect(h.window.setInterval.mock.calls.map(call => call[1])).toEqual([15_000]);
+  expect(h.window.setInterval.mock.calls.map(call => call[1])).toEqual([HOME_REFRESH_MS]);
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(1);
   expect(h.api.getExternalOrderBook).toHaveBeenCalledWith('BTC/USDT', 12);
   expect(h.api.getExternalCandles).toHaveBeenCalledWith('BTC/USDT', '15m', 48);
@@ -163,7 +164,7 @@ test('slow ticker and hero requests cannot overlap with their next scheduled rea
   const bookGate = deferred<typeof book>();
   const h = mount({ getExternalTickers: jest.fn().mockReturnValue(tickerGate.promise),
     getExternalOrderBook: jest.fn().mockReturnValue(bookGate.promise) });
-  h.advance(45_000);
+  h.advance(HOME_REFRESH_MS * 3);
   h.visibility(false);
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(1);
   tickerGate.resolve(tickers());
@@ -188,7 +189,7 @@ test('offscreen hero pauses its three reads; hidden document pauses all recurrin
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(2);
   expect(h.api.getExternalOrderBook).toHaveBeenCalledTimes(1);
   h.visibility(true);
-  h.advance(60_000);
+  h.advance(HOME_REFRESH_MS * 4);
   await flush();
   expect(h.api.getExternalTickers).toHaveBeenCalledTimes(2);
   h.visibility(false);
@@ -330,14 +331,14 @@ test('missing quote fields stay unknown while actual zero remains zero', async (
   h.unmount();
 });
 
-test('CFD reference observations share the 15-second clock and pause offscreen', async () => {
+test('CFD reference observations share the six-hour homepage clock and pause offscreen', async () => {
   const row={symbol:'XAUUSD',price:'2000',changePercent24h:'0',status:'live',stale:false};
   const response={configured:true,source:'twelvedata',tickers:[row]};
   const h=mount({getCfdTickers:jest.fn().mockResolvedValue(response)}); await flush();
-  h.advance(15_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
-  h.advance(45_000); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
+  h.advance(HOME_REFRESH_MS); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(2);
+  h.advance(HOME_REFRESH_MS * 3); await flush(); expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   expect(h.render().cfdPriceHistory.XAUUSD).toEqual([2000]);
-  h.observers[0].callback([{isIntersecting:false}]); h.advance(60_000); await flush();
+  h.observers[0].callback([{isIntersecting:false}]); h.advance(HOME_REFRESH_MS * 4); await flush();
   expect(h.api.getCfdTickers).toHaveBeenCalledTimes(3);
   h.api.getCfdTickers.mockRejectedValue(new Error('offline'));
   h.observers[0].callback([{isIntersecting:true}]); await flush();
