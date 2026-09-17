@@ -153,7 +153,10 @@ export function nativeOrderToTerminal(order: NativeOrder): FuturesOrder {
     originalQuantity: order.quantity,
     remainingQuantity: order.remaining,
     status: order.status,
-    reduceOnly: false,
+    // Preserve the engine's actual order semantics. A resting LIMIT close
+    // is risk-reducing; projecting it as false made the terminal count it
+    // as new exposure and could clamp sizing/leverage for the next order.
+    reduceOnly: order.reduceOnly,
     leverage: Number(order.leverage),
     marginType: order.marginType,
     createdAt: new Date(order.createdAt).toISOString(),
@@ -164,10 +167,10 @@ export function nativeOrderToTerminal(order: NativeOrder): FuturesOrder {
  * The account's one balance row.
  *
  * `available` is spendable margin and `locked` is margin already committed
- * — used margin plus the reserve behind working orders — which is exactly
- * what the real endpoint's two fields mean. The summary card adds them
- * back together for "margin balance"; equity is that sum plus unrealized
- * P&L, which the card derives from the positions it is already reading.
+ * — used margin plus order reserve — which is exactly what the real
+ * endpoint's two fields mean. The summary card adds them back together for
+ * "margin balance"; equity is that sum plus unrealized P&L, which the card
+ * derives from the positions it is already reading.
  */
 /**
  * The futures balance, or `null` when there ISN'T one yet.
