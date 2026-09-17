@@ -76,6 +76,7 @@ import { HistoricalOpenInterestService } from './services/analytics/HistoricalOp
 import { CoinGlassAnalyticsService } from './services/analytics/CoinGlassAnalyticsService';
 import { marketDataRouter } from './api/routes/marketData';
 import { marketOptionsRouter } from './api/routes/marketOptions';
+import { resolveBuildCommit } from './buildCommit';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -189,7 +190,23 @@ app.use(
   })
 );
 
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+/**
+ * Liveness, AND which build is answering.
+ *
+ * `status` is unchanged for anything already polling this. `commit` is the
+ * only way to tell whether the API is running the code you think it is: the
+ * frontend and the backend deploy independently, so a fresh Cloudflare Pages
+ * build says nothing about which revision Render is serving. Render sets
+ * RENDER_GIT_COMMIT itself; the other names cover other hosts and local runs.
+ * `null` means the platform did not tell us — not "old", and not a guess.
+ */
+const BUILD_COMMIT = resolveBuildCommit(process.env);
+app.get('/health', (_req, res) => res.json({
+  status: 'ok',
+  commit: BUILD_COMMIT,
+  branch: process.env.RENDER_GIT_BRANCH ?? null,
+  startedAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
+}));
 app.use('/api/v1', ordersRouter(prisma, engine, marketDataService));
 app.use('/api/v1', tradesRouter(prisma));
 app.use('/api/v1', depositsRouter(prisma, marketDataService));

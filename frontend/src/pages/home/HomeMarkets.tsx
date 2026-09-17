@@ -7,8 +7,6 @@ import { HomeMarket, HomeTicker, byVolume, formatPriceValue } from './useHomeMar
 import { useFavorites } from '../../lib/useFavorites';
 import { Key, useLanguage } from '../../lib/i18n';
 
-/** Tab id -> dictionary key. CFD has no key: it is a product name, not
- *  translated copy, and reads the same in every language the app ships. */
 const TABS: { id: Tab; labelKey?: Key; label?: string }[] = [
   { id: 'favorites', labelKey: 'home.markets.tabFavorites' },
   { id: 'all', labelKey: 'home.markets.tabAll' },
@@ -17,32 +15,19 @@ const TABS: { id: Tab; labelKey?: Key; label?: string }[] = [
   { id: 'cfd', label: 'CFD' },
 ];
 type Tab = 'favorites' | 'all' | 'spot' | 'futures' | 'cfd';
-
 const ROWS_PER_TAB = 8;
 
-/**
- * One row of the table, whatever product it came from.
- *
- * `products` is what makes "Все активы" a real tab rather than a copy of
- * "Спот": it is the union of everything the exchange lists, each asset
- * appearing once and carrying the products it can actually be traded on.
- * `to` is that row's real destination — the spot terminal, the futures
- * terminal, or the Trade page's CFD market — never a route the product
- * isn't on.
- */
 interface Row {
   key: string;
   symbol: string;
   base: string;
   price: number;
   change: number;
-  /** Turnover in quote currency. CFD reference quotes carry no volume. */
   quoteVolume: number | null;
-  /** A 24h-direction glyph. Only for rows whose change is a real number. */
-  spark: number[] | null;
-  /** Already-translated product labels ("Спот", "Фьючерсы", "CFD"). */
   products: string[];
   to: string;
+  historyKey: string;
+  historyKind: 'spot' | 'cfd';
 }
 
 function spotRow(t: HomeTicker, label: (k: Key) => string, extraProducts: string[] = []): Row {
@@ -53,9 +38,10 @@ function spotRow(t: HomeTicker, label: (k: Key) => string, extraProducts: string
     price: t.price,
     change: t.change,
     quoteVolume: t.quoteVolume,
-    spark: sparkFor(t.pair, t.change),
     products: [label('trade.spotTab'), ...extraProducts],
     to: `/trade?pair=${encodeURIComponent(t.pair)}`,
+    historyKey: t.pair,
+    historyKind: 'spot',
   };
 }
 
@@ -67,28 +53,20 @@ function futuresRow(t: HomeTicker, label: (k: Key) => string): Row {
     price: t.price,
     change: t.change,
     quoteVolume: t.quoteVolume,
-    spark: sparkFor(t.pair, t.change),
     products: [label('nav.futures')],
-    // The futures terminal, not the spot one — these are perpetual
-    // contracts and /trade cannot open them.
     to: `/futures?pair=${encodeURIComponent(t.pair)}`,
+    historyKey: t.pair,
+    historyKind: 'spot',
   };
 }
 
 export function HomeMarkets({ market }: { market: HomeMarket }) {
   const { t } = useLanguage();
   const [tab, setTab] = useState<Tab>('all');
-  // The same favourites store the trading terminal, Markets and the futures
-  // pair list write to — and live, so starring a pair in another tab is
-  // reflected here without a reload (see lib/useFavorites).
   const { favorites } = useFavorites();
 
   const spot = useMemo(() => byVolume(market.tickers, 60), [market.tickers]);
   const tickerByPair = useMemo(() => new Map(spot.map((r) => [r.pair, r])), [spot]);
-
-  /** Contracts the perpetual exchange really lists, priced off the same
-   *  index feed the futures terminal's own ticker bar reads. A listed
-   *  contract with no live quote is skipped rather than shown blank. */
   const futures = useMemo(
     () => market.futuresSymbols.map((s) => tickerByPair.get(s)).filter((x): x is HomeTicker => !!x),
     [market.futuresSymbols, tickerByPair]
@@ -104,12 +82,11 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
         base: c.symbol.slice(0, 3),
         price: Number(c.price),
         change: Number.isFinite(change) ? change : 0,
-        // Twelve Data's quote endpoint carries no turnover for these
-        // instruments, so the column is honestly blank rather than zero.
         quoteVolume: null,
-        spark: Number.isFinite(change) ? sparkFor(c.symbol, change) : null,
         products: ['CFD'],
         to: `/trade?market=cfd&symbol=${encodeURIComponent(c.symbol)}`,
+        historyKey: c.symbol,
+        historyKind: 'cfd' as const,
       };
     });
   }, [market.cfd]);
@@ -126,9 +103,6 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
         return cfd.slice(0, ROWS_PER_TAB);
       case 'all':
       default: {
-        // Every product, each asset once, tagged with what it trades on.
-        // Spot and perpetuals share their underlying pair here, so the
-        // futures listing adds a badge rather than a duplicate row.
         const perp = new Set(futures.map((f) => f.pair));
         const merged: Row[] = spot.map((r) => spotRow(r, t, perp.has(r.pair) ? [t('nav.futures')] : []));
         const spotPairs = new Set(spot.map((r) => r.pair));
@@ -138,13 +112,10 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
     }
   }, [tab, spot, futures, cfd, favorites, t]);
 
-  /** What to say when a tab has nothing to show — never a blank table. */
   function emptyMessage(): string {
     if (tab === 'favorites') return t('home.markets.noFavorites');
     if (tab === 'cfd') {
       if (market.cfdStatus === 'loading') return t('home.markets.loading');
-      // A 200 with configured:false is the backend telling us no CFD price
-      // provider is set up, which is a different thing from an outage.
       if (market.cfd && !market.cfd.configured) return t('home.markets.cfdNotConfigured');
       return t('home.marketDataUnavailable');
     }
@@ -197,6 +168,10 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
               ) : (
                 rows.map((r) => {
                   const up = r.change >= 0;
+                  const history = r.historyKind === 'cfd'
+                    ? market.cfdPriceHistory?.[r.historyKey]
+                    : market.priceHistory[r.historyKey];
+                  const spark = history && history.length >= 2 ? history : null;
                   return (
                     <tr
                       key={r.key}
@@ -207,30 +182,21 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                           <CryptoIcon symbol={r.base} size={24} imageUrl={market.logoOf(r.base)} />
                           <span className="leading-tight">
                             <span className="block text-[12.5px] font-medium text-white">{r.symbol}</span>
-                            {/* Which products this asset is actually
-                                tradeable on — the thing that distinguishes
-                                one tab from another. */}
-                            <span className="block text-[10.5px] text-faint">
-                              {r.products.join(' · ')}
-                            </span>
+                            <span className="block text-[10.5px] text-faint">{r.products.join(' · ')}</span>
                           </span>
                         </div>
                       </td>
                       <td className="px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-white">
                         {formatPriceValue(r.price)}
                       </td>
-                      <td
-                        className={`px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums ${up ? 'text-up' : 'text-down'}`}
-                      >
-                        {up ? '+' : ''}
-                        {r.change.toFixed(2)}%
+                      <td className={`px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums ${up ? 'text-up' : 'text-down'}`}>
+                        {up ? '+' : ''}{r.change.toFixed(2)}%
                       </td>
                       <td className="hidden px-2 py-[11px] sm:table-cell">
                         <div className="mx-auto w-[74px]">
-                          {/* Sparkline colours itself from its own first
-                              and last point, which matches the row's 24h
-                              direction because sparkFor drifts by it. */}
-                          {r.spark ? <Sparkline points={r.spark} width={74} height={24} /> : <span className="block text-center text-[11px] text-faint">—</span>}
+                          {spark
+                            ? <Sparkline points={spark} width={74} height={24} />
+                            : <span className="block text-center text-[11px] text-faint">—</span>}
                         </div>
                       </td>
                       <td className="hidden px-2 py-[11px] text-right font-mono text-[12.5px] tabular-nums text-white/85 sm:table-cell">
@@ -241,9 +207,6 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
                             : `$${(r.quoteVolume / 1e6).toFixed(1)}M`}
                       </td>
                       <td className="px-4 py-[11px] text-right">
-                        {/* Real routing: spot rows open the spot terminal,
-                            perpetuals open the futures terminal, CFD rows
-                            open the Trade page's CFD market. */}
                         <Link
                           to={r.to}
                           className="inline-block rounded-[6px] border border-white/10 bg-white/[0.04] px-3 py-[6px] text-[11.5px] font-medium text-white transition-colors duration-150 ease-out hover:border-gold-500/50 hover:text-gold-400 active:translate-y-[1px]"
@@ -271,20 +234,4 @@ export function HomeMarkets({ market }: { market: HomeMarket }) {
       </div>
     </section>
   );
-}
-
-/**
- * A deterministic 7-point shape derived from the row's own 24h change, so
- * the sparkline's direction always agrees with the number beside it. The
- * exchange has no 7-day series on this endpoint, so this is presented as
- * the trend glyph it is rather than being labelled as history.
- */
-function sparkFor(symbol: string, change: number): number[] {
-  const drift = change / 100;
-  let seed = symbol.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const rand = () => {
-    seed = (seed * 1103515245 + 12345) % 2147483648;
-    return seed / 2147483648;
-  };
-  return Array.from({ length: 7 }, (_, i) => 1 + (drift * i) / 6 + (rand() - 0.5) * 0.02);
 }

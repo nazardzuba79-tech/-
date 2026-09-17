@@ -13,6 +13,7 @@ import { Reveal } from './Reveal';
 import { useHomeMarket } from './useHomeMarket';
 import './home.css';
 import './home-live-market.css';
+import './home-six-hour-market.css';
 // Loaded AFTER home.css on purpose: this is the Tailwind utilities layer
 // the homepage owns, and it must win specificity ties against the
 // `.vx-home` rules above. See home-tailwind-utilities.css for why the
@@ -32,13 +33,10 @@ import './sapphire-terminal-detail.css';
  *   header · hero + market tape · market overview · approved Crypto Card A ·
  *   trading sessions · heatmap · markets · institutional ecosystem · FAQ · footer
  *
- * One market hook feeds every section, so the whole page costs a single
- * ticker poll plus three one-shot requests rather than a fetch per block.
- * Sections below the fold reveal once as they come into view.
- *
- * Nothing outside this directory is touched: Trade, Futures, Copy Trading,
- * Wallet, Analytics and Admin keep their own components, routes, styling
- * and permissions exactly as they were.
+ * One market hook feeds every section. Public quote/depth/candle snapshots
+ * refresh on a six-hour presentation cadence; the real trading terminals keep
+ * their own live feeds. Sections below the fold reveal once as they come into
+ * view.
  */
 export function HomePage() {
   const market = useHomeMarket();
