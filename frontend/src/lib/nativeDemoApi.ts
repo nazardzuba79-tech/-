@@ -20,7 +20,12 @@ export interface NativePosition {
   /** ISOLATED only: the margin posted against this position. '0' for Cross. */
   isolatedMargin:string;
 }
-export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED'}
+export interface NativeOrder {
+  id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;
+  price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED';
+  /** Server-held order semantics. A resting close must never be projected as new exposure. */
+  reduceOnly:boolean;positionId:string|null;
+}
 export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string}
 export interface NativeState {
   initialized:boolean;revision:number;source:'DEMO_BALANCE'|'PREVIEW_FIXTURE'|null;asOf:number|null;demoAvailable?:string|null;
