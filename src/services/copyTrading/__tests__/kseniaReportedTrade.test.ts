@@ -22,7 +22,8 @@ test('Ksenia owner-reported BTC short adds 7.8pp and 1754 USDT without inventing
   expect(result.tradeStats.ALL.winningTrades).toBe(before.tradeStats.ALL.winningTrades + 1);
   expect(result.tradeStats.ALL.holdingTimeTotalMinutes).toBeUndefined();
 
-  expect(result.trades[0]).toMatchObject({
+  const reported = result.trades.find((trade: any) => trade.id === 'KS-REPORTED-20260916-BTC');
+  expect(reported).toMatchObject({
     id: 'KS-REPORTED-20260916-BTC',
     symbol: 'BTCUSDT · 10x',
     marketSymbol: 'BTCUSDT',
@@ -35,6 +36,25 @@ test('Ksenia owner-reported BTC short adds 7.8pp and 1754 USDT without inventing
     closedOn: '2026-09-16',
   });
   for (const key of ['entryPrice','exitPrice','quantity','holdingTimeMinutes','grossPnl','fees','funding','riskR']) {
-    expect(result.trades[0][key]).toBeUndefined();
+    expect(reported[key]).toBeUndefined();
   }
+});
+
+test('reported Ksenia trade stays in newest-first order after newer canonical trades exist', () => {
+  // This is the production rollover that broke the entire Ksenia card on
+  // 2026-09-17: the reported trade closes on the 16th, while the canonical
+  // model now has a real row from the 17th. Prepending the older row made the
+  // marketplace validator reject the whole strategy as out of order.
+  const state = advanceKseniaReview(createKseniaReviewState(), 11);
+  const base: any = summarizeStrategy(kseniaReviewResponse(state));
+  expect(base.trades.some((trade: any) => String(trade.closedAt).startsWith('2026-09-17'))).toBe(true);
+
+  const result: any = withKseniaReportedTrade(base);
+  const times = result.trades.map((trade: any) => trade.id === 'KS-REPORTED-20260916-BTC'
+    ? Date.parse('2026-09-16T23:59:59.999Z')
+    : Date.parse(trade.closedAt));
+
+  expect(times).toEqual([...times].sort((a, b) => b - a));
+  expect(result.trades.some((trade: any) => trade.id === 'KS-REPORTED-20260916-BTC')).toBe(true);
+  expect(result.trades).toHaveLength(10);
 });
