@@ -48,6 +48,12 @@ function weekKey(date: string): string {
   return addDays(date, -d.getUTCDay());
 }
 
+function visibleTradeCloseTime(trade: any): number {
+  if (trade?.id === REPORTED_TRADE_ID) return Date.parse(`${REPORTED_CLOSE_DATE}T23:59:59.999Z`);
+  const value = Date.parse(trade?.closedAt);
+  return Number.isFinite(value) ? value : Number.NEGATIVE_INFINITY;
+}
+
 /**
  * Public presentation overlay for an owner-reported Ksenia trade.
  *
@@ -104,7 +110,14 @@ export function withKseniaReportedTrade<T>(input: T): T {
     result: 'WIN',
     source: 'OWNER_REPORTED',
   };
-  data.trades = [reportedRow, ...(data.trades ?? [])].slice(0, 10);
+  // The marketplace contract requires newest-first rows. Once the canonical
+  // model advances beyond 2026-09-16, blindly prepending this historical
+  // reported row makes the payload invalid and the client drops Ksenia's
+  // entire card/profile. Merge it into the display window by close time
+  // instead, then keep only the ten rows the UI actually renders.
+  data.trades = [reportedRow, ...(data.trades ?? [])]
+    .sort((a: any, b: any) => visibleTradeCloseTime(b) - visibleTradeCloseTime(a))
+    .slice(0, 10);
 
   if (data.tradeStats) {
     for (const period of ['7D', '30D', '90D', 'ALL'] as const) {
