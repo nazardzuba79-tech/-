@@ -419,8 +419,13 @@ async function largeValues(width) {
       cardModel = { ...s.baseCard, unrealizedPnl: example.pnl, roiPercent: example.roi, entryPrice: '1875000.5', valuationPrice: '1999999.99' };
       await s.page.reload(); await ready(s); await s.page.locator('#futures-tab-positions').click(); await rows(s.page).first().waitFor();
       await check(`large-table-${example.id}-${width}`, async () => {
-        assert.equal((await s.page.locator('.futures-position-pnl > span').innerText()).trim(), Number(example.pnl).toFixed(2));
-        assert.equal((await s.page.locator('.futures-position-pnl > small').innerText()).trim(), Number(example.roi).toFixed(2) + '%');
+        // The reference prints the figure grouped and to four decimals, with
+        // the settle-currency approximation under it; the brackets and the
+        // unit are drawn by the stylesheet, so innerText carries neither.
+        const grouped = (v, d) => Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+        assert.equal((await s.page.locator('.futures-position-money').first().innerText()).trim(), grouped(example.pnl, 4));
+        assert.equal((await s.page.locator('.futures-position-roi').innerText()).trim(), Number(example.roi).toFixed(2) + '%');
+        assert.equal((await s.page.locator('.futures-position-approx').first().innerText()).trim(), `≈${grouped(example.pnl, 2)} USD`);
         return tableLayout(s.page, width);
       });
       await check(`large-card-glyphs-${example.id}-${width}`, () => cardGlyphs(s.page, cardModel));

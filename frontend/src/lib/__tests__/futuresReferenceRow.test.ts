@@ -82,14 +82,19 @@ describe('1. price and quantity are one field shape, used twice', () => {
 
 describe('2. the positions row carries the reference columns', () => {
   test('contract with Cross and leverage under it', () => {
+    // The owner's reference composes this cell as the ticker with a
+    // perpetual badge beside it and the margin line underneath, so the cell
+    // is longer than it was — the facts it must carry are unchanged.
     expect(PANEL).toContain('futures-position-contract');
-    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,400}futures\.cross/);
-    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,400}\{p\.leverage\}x/);
+    expect(PANEL).toContain('futures-position-perp');
+    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,700}futures\.cross/);
+    expect(PANEL).toMatch(/futures-position-contract[\s\S]{0,700}Number\(p\.leverage\)\.toFixed\(2\)/);
   });
 
   test('quantity with its unit, and the position value in the quote asset', () => {
     expect(PANEL).toContain('futures-position-unit');
-    expect(PANEL).toContain("futures.positionValue");
+    // The reference's own column wording; the figure behind it is the same.
+    expect(PANEL).toContain("futures.colValue");
     // Value is size at the MARK, and unknown when the mark is unknown — it
     // is never silently valued at the entry price instead.
     expect(PANEL).toContain('const value = markNumber === null ? null : parseFloat(p.size) * markNumber;');
@@ -132,8 +137,9 @@ describe('2. the positions row carries the reference columns', () => {
 
   test('TP/SL, both close methods and the P&L card button', () => {
     expect(PANEL).toContain('FuturesPositionProtectionCell');
-    expect(PANEL).toContain("t('trade.limit')");
-    expect(PANEL).toContain("t('trade.market')");
+    // «Лимитный» / «Рыночный», as the reference labels the two close paths.
+    expect(PANEL).toContain("t('futures.closeLimit')");
+    expect(PANEL).toContain("t('futures.closeMarket')");
     expect(PANEL).toContain('futures-position-card');
     // Neither extra is rendered where it would do nothing.
     expect(PANEL).toContain('{onLimitClose && (');

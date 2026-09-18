@@ -1,22 +1,22 @@
-.terminal-chart-shell { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; overflow:hidden; background:#101014; }
-.trade-terminal .terminal-chart-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; padding:0 12px; border-bottom:1px solid #292c34; font-size:12px; font-weight:600; color:#d9dce4; }
+.terminal-chart-shell { display:flex; flex:1; flex-direction:column; min-width:0; min-height:0; overflow:hidden; background:#12161c; }
+.trade-terminal .terminal-chart-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; padding:0 12px; border-bottom:1px solid #232a34; font-size:12px; font-weight:600; color:#d9dce4; }
 .terminal-chart-heading > div { display:flex; gap:16px; align-self:stretch; }
 .terminal-chart-heading button { border:0; border-bottom:2px solid transparent; padding:0; background:none; color:#8d939f; font:inherit; font-size:11px; cursor:pointer; }
-.terminal-chart-heading button[aria-pressed=true] { color:#f7a600; border-bottom-color:#f7a600; }
-.terminal-chart-heading button:focus-visible { outline:2px solid #f7a600; outline-offset:2px; }
+.terminal-chart-heading button[aria-pressed=true] { color:#f0c964; border-bottom-color:#f0c964; }
+.terminal-chart-heading button:focus-visible { outline:2px solid #f0c964; outline-offset:2px; }
 .terminal-chart-heading .chart-trade-action { align-self:center; min-height:28px; padding:3px 8px; border:1px solid #455362; border-radius:5px; color:#dbe4ef; white-space:nowrap; }
-.terminal-chart-heading .chart-trade-action[aria-pressed=true] { background:#302b1d; border-color:#e9b44c; color:#f0c76d; }
+.terminal-chart-heading .chart-trade-action[aria-pressed=true] { background:#302b1d; border-color:#f0c964; color:#f0c964; }
 .chart-trade-status { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-shrink:0; min-height:28px; padding:4px 12px; background:#1b2937; color:#c8d8e8; font-size:11px; }
 .chart-trade-status button { padding:0 6px; background:none; border:0; font-size:19px; color:#dce6f0; cursor:pointer; }
 .chart-history-now { margin-left:4px; border:0; padding:4px 6px; background:transparent; font-size:11px; color:#a5b7ca; cursor:pointer; }
 [data-chart-trade-selecting] .chart-view canvas { cursor:crosshair !important; }
 @media(max-width:600px) { .terminal-chart-heading > div { gap:8px; } .terminal-chart-heading .chart-trade-action { font-size:10px; padding:3px 5px; } }
-.trade-terminal .terminal-chart-shell .chart-toolbar { background:#17181e; border-bottom:1px solid #292c34; min-height:38px; height:auto; padding:4px 8px; gap:6px; flex-wrap:wrap; }
+.trade-terminal .terminal-chart-shell .chart-toolbar { background:#17181e; border-bottom:1px solid #232a34; min-height:38px; height:auto; padding:4px 8px; gap:6px; flex-wrap:wrap; }
 .trade-terminal .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { font-family:Inter,Arial,sans-serif; font-size:11px; font-weight:500; border-radius:4px; }
 .trade-terminal .terminal-chart-shell .chart-tools { gap:3px; flex-wrap:wrap; }
 .trade-terminal .terminal-chart-shell .chart-watermark { display:none; }
 .voltex-plot-title { position:absolute; top:10px; left:12px; z-index:3; color:#c9cdd7; font:500 11px Inter,Arial,sans-serif; pointer-events:none; }
-.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { background:#14151a; border-color:#292c34; }
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { background:#14151a; border-color:#232a34; }
 .trade-terminal .terminal-chart-shell .voltex-indicator-legend { top:32px !important; }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail { scrollbar-width:thin; scrollbar-color:#30333b transparent; }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail::-webkit-scrollbar { width:2px; height:2px; }
@@ -35,11 +35,24 @@
    even on short screens. Collapsing this rail never unmounts the chart. */
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell {
   display:flex; flex-direction:column; align-self:stretch; flex:0 0 44px;
-  width:44px; min-height:0; overflow:hidden; border-right:1px solid #26313d;
-  background:var(--voltex-plot-background,#111922);
+  width:44px; min-height:0; overflow:hidden; border-right:1px solid #232a34;
+  background:var(--voltex-plot-background,#12161c);
 }
+/* Collapsed means GONE, the way a charting app does it: the rail gives the
+   chart all 44px back and only a small tab is left on the chart's edge to
+   bring it out again. The tab sits near the top rather than at the foot of
+   the rail, where it used to be easy to miss. */
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed {
-  width:18px; flex-basis:18px;
+  width:0; flex-basis:0; border-right:0; background:transparent; overflow:visible; position:relative;
+}
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle {
+  position:absolute; top:8px; left:0; z-index:4;
+  width:16px; min-width:16px; height:30px; min-height:30px; flex:none; margin:0;
+  border:1px solid var(--border,#232a34); border-left:0; border-radius:0 5px 5px 0;
+  background:var(--panel-alt,#1a1f27); color:var(--text-secondary,#98a2b3);
+}
+.trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed .drawing-rail-toggle:hover {
+  background:var(--panel-alt-hover,#1f252e); color:var(--text-primary,#eaeef3);
 }
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
   width:100%; min-width:0; flex:1 1 auto; border-right:0;
@@ -47,22 +60,25 @@
 .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail[hidden] { display:none; }
 .trade-terminal .terminal-chart-shell .drawing-rail-toggle {
   display:flex; align-items:center; justify-content:center; flex:0 0 24px;
-  width:100%; min-height:24px; padding:0; margin-top:auto;
-  border:0; border-top:1px solid #26313d; border-radius:0;
+  width:100%; min-height:24px; padding:0; margin:0;
+  /* Above the tools, not under them: the rail itself takes the remaining
+     height, so without this the toggle is pinned to the floor of the chart. */
+  order:-1;
+  border:0; border-bottom:1px solid #232a34; border-radius:0;
   background:#17232f; color:#c1cdd9; cursor:pointer;
 }
 .trade-terminal .terminal-chart-shell .drawing-rail-toggle:hover { background:#243340; color:#fff; }
-.trade-terminal .terminal-chart-shell .drawing-rail-toggle:focus-visible { outline:2px solid #e9b44c; outline-offset:-2px; }
+.trade-terminal .terminal-chart-shell .drawing-rail-toggle:focus-visible { outline:2px solid #f0c964; outline-offset:-2px; }
 .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle svg { transform:rotate(180deg); }
 @media(max-width:900px) {
   .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell {
     flex-direction:row; width:100%; flex-basis:42px; min-height:42px;
-    border-right:0; border-bottom:1px solid #26313d;
+    border-right:0; border-bottom:1px solid #232a34;
   }
   .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell .drawing-rail {
     flex:1 1 auto; width:auto; height:42px; min-height:42px; border-bottom:0;
   }
-  .trade-terminal .terminal-chart-shell .drawing-rail-toggle { width:24px; height:100%; margin-top:0; border-top:0; border-left:1px solid #26313d; }
+  .trade-terminal .terminal-chart-shell .drawing-rail-toggle { width:24px; height:100%; margin-top:0; border-top:0; border-left:1px solid #232a34; }
   .trade-terminal .terminal-chart-shell .drawing-rail-toggle svg { transform:rotate(90deg); }
   .trade-terminal .terminal-chart-shell .drawing-tools .drawing-rail-shell.is-collapsed { width:100%; flex-basis:24px; min-height:24px; }
   .trade-terminal .terminal-chart-shell .is-collapsed .drawing-rail-toggle { flex:1; width:100%; border-left:0; }

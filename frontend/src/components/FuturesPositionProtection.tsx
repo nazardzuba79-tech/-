@@ -237,7 +237,7 @@ export function FuturesPositionProtectionCell({
             )}
           </span>
         ) : (
-          <span style={styles.setLabel}>{t('futures.tpsl')}</span>
+          <span className="fut-tpslAdd" style={styles.setLabel}>+ {t('futures.addTpsl')}</span>
         )}
       </button>
 

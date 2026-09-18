@@ -4,8 +4,8 @@
 .private-trading-terminal .private-bottom-panel.private-reference-panel{grid-column:1/4;background:#12161c;color:#e7e8ea;border-top:4px solid #050505;font-family:Arial,sans-serif}
 .private-reference-panel .private-bottom-tabs{min-height:40px;height:40px;gap:0;border-bottom:1px solid #303035;background:#12161c;align-items:stretch;padding:0 10px;overflow-x:auto;flex-shrink:0}
 .private-reference-panel .private-bottom-tabs button{padding:0 13px;background:none;color:#5c6675;border:0;border-bottom:2px solid transparent;border-radius:0;font:14px Arial,sans-serif;white-space:nowrap;cursor:pointer}
-.private-reference-panel .private-bottom-tabs button[aria-selected=true]{color:#f3f3f5;border-bottom-color:#f5a524;background:none;font-weight:600}
-.private-reference-demo{color:#f5a524;align-self:center;padding:0 10px 0 6px;white-space:nowrap;font-size:14px;font-weight:600}
+.private-reference-panel .private-bottom-tabs button[aria-selected=true]{color:#f3f3f5;border-bottom-color:#f0c964;background:none;font-weight:600}
+.private-reference-demo{color:#f0c964;align-self:center;padding:0 10px 0 6px;white-space:nowrap;font-size:14px;font-weight:600}
 .private-reference-panel .private-table-scroll{background:#12161c;overflow:auto;scrollbar-width:thin;scrollbar-color:#303035 #12161c;min-height:178px}
 .private-reference-panel .private-reference-table{width:100%;min-width:1368px;table-layout:fixed;border-collapse:collapse;font:12px Arial,sans-serif;color:#ececef;font-variant-numeric:tabular-nums}
 .private-reference-panel .private-reference-table th{height:39px;box-sizing:border-box;padding:0 16px;text-align:left;font-size:12px;font-weight:400;color:#5c6675;border:0;white-space:nowrap;background:#12161c}
@@ -21,17 +21,17 @@
 .private-reference-panel .private-ref-contract>span{display:block;font-size:12px;margin-top:2px}
 .private-reference-panel .private-ref-unit{color:#5c6675;font-weight:400;font-size:11px}
 .private-reference-panel .positive{color:#2ebd85}.private-reference-panel .negative{color:#ff334b}
-.private-reference-panel .private-ref-liquidation{color:#f5a524}
+.private-reference-panel .private-ref-liquidation{color:#f0c964}
 .private-reference-panel .private-ref-pnl-with-share{display:flex;align-items:center;gap:8px}
 .private-reference-panel .private-ref-pnl-with-share>div>span,.private-reference-panel .private-ref-pnl-with-share>div>small{display:block;font-size:12px;line-height:15px}
 .private-reference-panel .private-ref-pnl-with-share>div>span:first-child{border-bottom:1px dashed currentColor;width:max-content}
 .private-reference-panel .private-ref-share{display:inline-flex;align-items:center;justify-content:center;padding:4px;border:0;background:none;color:#5c6675;cursor:pointer;width:23px;height:23px;flex-shrink:0}
-.private-reference-panel .private-ref-share:hover{color:#f5a524}
+.private-reference-panel .private-ref-share:hover{color:#f0c964}
 .private-reference-panel .private-ref-pill{border:0;border-radius:14px;background:#3c3e42;color:#f2f2f4;padding:4px 11px;line-height:16px;font:600 12px Arial,sans-serif;white-space:nowrap;cursor:pointer}
 .private-reference-panel .private-ref-pill:disabled{cursor:not-allowed;opacity:.48}
 .private-reference-panel .private-ref-close-buttons{display:flex;gap:8px}
-.private-reference-panel button:focus-visible{outline:2px solid #f5a524;outline-offset:2px}
+.private-reference-panel button:focus-visible{outline:2px solid #f0c964;outline-offset:2px}
 @media(min-width:768px) and (max-width:1080px){.private-trading-terminal .private-bottom-panel.private-reference-panel{grid-column:1/3}}
 @media(max-width:767px){.private-trading-terminal .private-bottom-panel.private-reference-panel{width:100%;max-width:100vw;min-height:230px}.private-reference-panel .private-bottom-tabs{min-height:44px}.private-reference-panel .private-ref-share{min-height:28px;min-width:28px}.private-reference-panel .private-reference-table td{height:92px}}
 .private-reference-panel .private-ref-contract .private-ref-asof{display:block;font-size:9px;color:#5c6675;margin-top:4px}
-.private-reference-panel .private-ref-contract .private-ref-advance{display:block;margin-top:4px;color:#f5a524;font-size:10px}
+.private-reference-panel .private-ref-contract .private-ref-advance{display:block;margin-top:4px;color:#f0c964;font-size:10px}

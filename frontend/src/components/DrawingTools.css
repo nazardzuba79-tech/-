@@ -20,7 +20,7 @@
   color: #edf2f8; background: #1d2938;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-btn.active {
-  color: #e6c662; background: #302c20; border-color: #665732;
+  color: #f0c964; background: #302c20; border-color: #665732;
 }
 .trade-terminal .drawing-tools .drawing-rail .tool-btn:focus-visible,
 .trade-terminal .drawing-tools .drawing-rail .tool-group-chevron:focus-visible,
@@ -49,7 +49,7 @@
 }
 .drawing-flyout .tool-flyout-item:hover,
 .drawing-flyout .tool-flyout-item:focus { background: #253246; color: #fff; }
-.drawing-flyout .tool-flyout-item.active { color: #e6c662; background: #302c20; }
+.drawing-flyout .tool-flyout-item.active { color: #f0c964; background: #302c20; }
 .drawing-flyout svg { flex-shrink: 0; }
 /* Portal, outside the terminal root — scoped explicitly. */
 .chart-draw-dialog-backdrop {
@@ -73,7 +73,7 @@
   min-height: 34px; padding: 7px 12px; border: 1px solid #43516a; border-radius: 5px;
   color: #d6e1ee; background: #1e2a3b; cursor: pointer; font: 12px var(--font-ui);
 }
-.chart-draw-dialog button.primary { color: #171b22; background: #d5b64e; border-color: #d5b64e; }
+.chart-draw-dialog button.primary { color: #171b22; background: #f0c964; border-color: #f0c964; }
 .chart-draw-dialog button.danger { color: #ffc2cb; background: #39232e; border-color: #80505d; }
 .chart-draw-dialog button:disabled { opacity: .45; cursor: not-allowed; }
 .chart-draw-dialog button:focus-visible, .chart-draw-dialog input:focus-visible { outline: 2px solid #a6c6eb; outline-offset: 2px; }
