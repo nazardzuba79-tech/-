@@ -200,13 +200,56 @@ async function card(page, filename, width) {
   assert(!/simulation|preview|demo/i.test(saved.suggestedFilename()), 'PNG filename leaks mode wording');
   await dialog.getByRole('button', { name: 'Закрыть', exact: true }).click(); return { ...g, exported: '1080x1215' };
 }
+/**
+ * Every amount is rendered with group separators and a non-breaking space
+ * before its unit. Those are display, not arithmetic, so the comparisons
+ * below run on the digits: `56 405 024.03\u00a0USDT` -> `56405024.03 USDT`.
+ * The separators themselves are asserted separately, right after.
+ */
+const plainAmount = (text) => (text || '').replace(/\u00a0/g, ' ').replace(/(?<=\d) (?=\d)/g, '').trim();
+
+/**
+ * What the card should print for a margin ratio.
+ *
+ * Two decimals, except that a KNOWN non-zero usage too small for them reads
+ * `<0.01%` — a position that exists is a different fact from no position at
+ * all. A real zero is still `0.00%`.
+ */
+function expectedUsagePercent(part, equity) {
+  const value = (Number(part) / Number(equity)) * 100;
+  if (value > 0 && value < 0.005) return '<0.01%';
+  return value.toFixed(2) + '%';
+}
+
 async function accountSummary(page, state) {
-  const g = await page.locator('.futures-account-summary').evaluate(e => ({ mode: e.querySelector('.futures-account-mode')?.innerText, balance: e.querySelector('.futures-account-balance .mono')?.textContent, available: [...e.querySelectorAll('.futures-account-stat:not(.futures-account-mode):not(.futures-account-balance) .mono')].map(x => x.textContent), risk: [...e.querySelectorAll('.futures-account-risk .mono')].map(x => x.textContent) }));
+  const g = await page.locator('.futures-account-summary').evaluate(e => ({
+    balance: e.querySelector('.futures-account-balance .fa-value')?.textContent,
+    available: e.querySelector('.futures-account-available .fa-value')?.textContent,
+    im: e.querySelector('.futures-account-im .fa-value')?.textContent,
+    mm: e.querySelector('.futures-account-mm .fa-value')?.textContent,
+    // The bottom card no longer repeats the margin mode — the owner asked
+    // for that duplicate row to go. The mode lives on the working switcher
+    // at the top of the same panel, so that is where it is read from now.
+    modeRowInCard: e.querySelector('.futures-account-mode') !== null,
+    units: [...e.querySelectorAll('.futures-account-stat .fa-unit')].map(x => x.textContent),
+  }));
+  g.mode = await page.locator('.fo-mlTriggerText').innerText();
   assert(/(?:Cross|Кросс)/i.test(g.mode || ''), 'Owner margin mode is not Cross: ' + JSON.stringify(g));
-  assert.equal(g.balance.trim(), Number(state.account.equity).toFixed(2) + ' USDT', 'Margin Balance differs from native equity');
-  assert.deepEqual(g.available.map(x => x.trim()), [Number(state.account.available).toFixed(2) + ' USDT'], 'Available Balance differs from native state');
-  const pct = key => (Number(state.account[key]) / Number(state.account.equity) * 100).toFixed(2) + '%';
-  assert.deepEqual(g.risk, [pct('initialMargin'), pct('maintenanceMargin')], 'IM/MM summary differs from authoritative native account');
+  assert.equal(g.modeRowInCard, false, 'The duplicate margin-mode row is back in the account card');
+  assert.equal(plainAmount(g.balance), Number(state.account.equity).toFixed(2) + ' USDT', 'Margin Balance differs from native equity');
+  assert.equal(plainAmount(g.available), Number(state.account.available).toFixed(2) + ' USDT', 'Available Balance differs from native state');
+  assert.deepEqual(
+    [g.im.trim(), g.mm.trim()],
+    [expectedUsagePercent(state.account.initialMargin, state.account.equity), expectedUsagePercent(state.account.maintenanceMargin, state.account.equity)],
+    'IM/MM summary differs from authoritative native account',
+  );
+  // The unit is its own element AND separated from the digits by a real
+  // character, so a copied balance never reads `10250.00USDT`.
+  assert(g.units.length >= 2 && g.units.every(u => /^\u00a0/.test(u || '')), 'Currency is not separated from the amount: ' + JSON.stringify(g.units));
+  // Group separators are present on any amount long enough to need them.
+  const grouped = (g.balance || '').replace(/\u00a0USDT$/, '');
+  if (grouped.replace(/[^\d]/g, '').length > 5) assert(/\d \d/.test(grouped), 'Large balance is not grouped: ' + grouped);
+  assert(!/[KMB]\b|\u2026/.test(grouped), 'Balance was abbreviated or truncated: ' + grouped);
   return g;
 }
 async function normalFlow(width) {
