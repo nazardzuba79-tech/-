@@ -133,14 +133,18 @@ export class NativeDemoService {
    * No total is written into the code. The figure is whatever the owner's
    * rows and the live quotes make it.
    */
-  async collateral(actor:OwnerSession):Promise<CollateralValuation>{
+  async collateral(actor:OwnerSession,options:{reuse?:boolean}={}):Promise<CollateralValuation>{
     const holdings=await this.repository.holdings(actor);
     const settle='USDT';
     const prices=await Promise.all(holdings
       .filter(h=>h.asset!==settle)
       .map(async(h):Promise<CollateralPrice>=>{
         try{
-          const quote=await this.quote(`${h.asset}${settle}`);
+          // Inside a command the valuation may share the command's own fresh
+          // quotes (the same observation, once). A plain read always prices
+          // the wallet now: a reader asking for the account gets the market
+          // as it is, not a two-second-old snapshot.
+          const quote=await this.quote(`${h.asset}${settle}`,!options.reuse);
           // Mark, not last: the collateral is valued the way the positions
           // it backs are valued, so the two cannot drift apart.
           return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
@@ -308,7 +312,7 @@ export class NativeDemoService {
       // ONE valuation per command, taken BEFORE the decision and journaled
       // with it: admission, the fill margin check, the liquidation verdict
       // and the account in the response all read this same figure.
-      const valuation=await this.collateral(actor),collateral=externalCollateral(valuation);
+      const valuation=await this.collateral(actor,{reuse:true}),collateral=externalCollateral(valuation);
       if(instruction)instruction.collateral=collateral;
       // A shallow copy: the row is this command's own read and the replay
       // never mutates an instruction. Cloning the whole journal here was the
