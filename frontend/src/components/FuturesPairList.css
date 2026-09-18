@@ -15,7 +15,7 @@
 .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-name {
   min-width: 40px;
 }
-.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-base {
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-name .p-base {
   font-size: 12px;
 }
 .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .pairs-col-headers.futures-pair-headers {
@@ -32,7 +32,7 @@
   .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-name {
     min-width: 32px;
   }
-  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row :is(.p-price, .p-change) {
+  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row > :is(span.p-price, span.p-change) {
     font-size: 11px;
   }
   .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .pairs-col-headers.futures-pair-headers {
