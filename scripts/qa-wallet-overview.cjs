@@ -37,7 +37,7 @@ async function setMode(mode, query = '') {
   return (await fetch(`${BASE}/__mode/${mode}${query}`)).json();
 }
 async function openSection(page, label) {
-  await page.locator('.wallet-side-nav button', { hasText: label }).first().click();
+  await page.locator('.wallet-side-nav .wallet-nav-item', { hasText: label }).first().click();
   await page.waitForTimeout(250);
 }
 
@@ -71,12 +71,16 @@ function readOverview() {
     activity: Boolean(q('.wallet-recent-activity')),
     activityRows: document.querySelectorAll('.wallet-recent-row').length,
     activityText: text('.wallet-recent-activity'),
-    nav: [...document.querySelectorAll('.wallet-side-nav button')].map((b) => ({ label: b.textContent.trim(), active: b.getAttribute('aria-current') === 'page', disabled: b.disabled })),
+    nav: [...document.querySelectorAll('.wallet-side-nav .wallet-nav-item')].map((b) => ({ label: b.textContent.trim(), active: b.getAttribute('aria-current') === 'page', disabled: b.disabled })),
     sideBorder: q('.wallet-side-nav') ? getComputedStyle(q('.wallet-side-nav')).borderRightColor : null,
     cardBorder: q('.wallet-card') ? getComputedStyle(q('.wallet-card')).borderTopColor : null,
     cardLink: q('.wallet-card-link')?.getAttribute('href') ?? null,
     brand: text('.wallet-brand-name'),
     overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    heading: document.querySelectorAll('.vx-wallet h1').length,
+    railLeft: q('.wallet-side-nav') ? Math.round(q('.wallet-side-nav').getBoundingClientRect().left) : null,
+    contentRight: q('.wallet-content') ? Math.round(window.innerWidth - q('.wallet-content').getBoundingClientRect().right) : null,
+    themeBtn: text('.wallet-theme-btn'),
   };
 }
 
@@ -115,6 +119,24 @@ async function run() {
         check(`${tag}: uncovered periods are dashes, never zeros`, ov.periods.filter((p) => p.ok === 'false').every((p) => p.usd === '—' && p.pct === '—'), JSON.stringify(ov.periods.filter((p) => p.ok === 'false')));
         check(`${tag}: recent activity is an empty state, not sample rows`, ov.activity && ov.activityRows === 0 && /пока нет/.test(ov.activityText ?? ''), String(ov.activityRows));
         check(`${tag}: no horizontal page overflow`, !ov.overflow);
+        check(`${tag}: the page prints no duplicate heading — the wordmark is the title`, ov.heading === 0, String(ov.heading));
+        check(`${tag}: the workspace is full bleed — rail on the left edge, content to the right one`,
+          ov.railLeft === 0 && ov.contentRight !== null && ov.contentRight <= 26, `left ${ov.railLeft}px, right gutter ${ov.contentRight}px`);
+        check(`${tag}: the light/dark switch is on the rail`, /Тёмная|Светлая/.test(ov.themeBtn ?? ''), String(ov.themeBtn));
+        if (!vp.touch) {
+          // The rail is sticky; the app header is sticky too and 64px tall.
+          // Stuck at 0 the first section slides underneath it on scroll.
+          const stuck = await page.evaluate(async () => {
+            window.scrollTo(0, 600);
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+            const header = document.querySelector('header').getBoundingClientRect();
+            const first = document.querySelector('.wallet-side-nav .wallet-nav-item').getBoundingClientRect();
+            window.scrollTo(0, 0);
+            return { headerBottom: Math.round(header.bottom), firstTop: Math.round(first.top) };
+          });
+          check(`${tag}: the rail sticks BELOW the app header, not under it`,
+            stuck.firstTop >= stuck.headerBottom, `header ends ${stuck.headerBottom}px, first item at ${stuck.firstTop}px`);
+        }
         check(`${tag}: no page errors`, errors.length === 0, errors.join(' | '));
 
         {
@@ -155,6 +177,47 @@ async function run() {
         check(`${tag}: the card tile navigates to /card`, page.url().endsWith('/card'), page.url());
         await context.close();
       }
+    }
+
+    // The dark variant: one switch, both roots, real surfaces.
+    {
+      await setMode('owner', '?opened=1&history=45');
+      const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+      const page = await context.newPage();
+      await page.goto(`${BASE}/wallet`, { waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      const read = () => page.evaluate(() => {
+        const lum = (sel) => {
+          const el = document.querySelector(sel);
+          const m = el && /rgb\((\d+), (\d+), (\d+)\)/.exec(getComputedStyle(el).backgroundColor);
+          return m ? (Number(m[1]) + Number(m[2]) + Number(m[3])) / 3 : null;
+        };
+        const ink = document.querySelector('.wallet-overview-amount');
+        return {
+          page: lum('.vx-wallet'),
+          card: lum('.wallet-card'),
+          ink: ink ? getComputedStyle(ink).color : null,
+          attr: document.documentElement.getAttribute('data-wallet-theme'),
+          label: document.querySelector('.wallet-theme-btn')?.textContent?.trim() ?? null,
+        };
+      });
+      const light = await read();
+      await page.locator('.wallet-theme-btn').first().click();
+      await page.waitForTimeout(250);
+      const dark = await read();
+      check('theme: the workspace starts light', light.page !== null && light.page > 220, String(light.page));
+      check('theme: one click turns the page dark', dark.page !== null && dark.page < 40, String(dark.page));
+      check('theme: panels are dark surfaces, not white cut-outs', dark.card !== null && dark.card < 60, String(dark.card));
+      check('theme: the text inverts with it', /rgb\(2[23]\d, 2[23]\d, 2[23]\d\)/.test(dark.ink ?? ''), String(dark.ink));
+      check('theme: the switch is stored on the document root', dark.attr === 'dark', String(dark.attr));
+      check('theme: the button offers the way back', dark.label === 'Светлая', String(dark.label));
+      await page.screenshot({ path: `${OUT}/overview-owner-1440-dark.png`, fullPage: true });
+      // And it survives a reload rather than resetting to light.
+      await page.reload({ waitUntil: 'networkidle' });
+      await page.waitForSelector('.wallet-overview', { timeout: 15000 });
+      const again = await read();
+      check('theme: the choice survives a reload', again.attr === 'dark' && again.page !== null && again.page < 40, `${again.attr} / ${again.page}`);
+      await context.close();
     }
 
     // The empty-history account: the Overview keeps every card, all dashes.

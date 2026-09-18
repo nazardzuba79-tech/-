@@ -34,9 +34,54 @@
   --w-gold-deep: #a87a22;
   --w-gold-wash: #fff5d1;
   --w-gold-line: rgba(242, 180, 0, 0.38);
+  /* The app's global header: sticky, 64px. The Wallet's own rail sticks
+     below it rather than under it. */
+  --w-header-h: 64px;
   --w-shadow-panel: 0 1px 2px 0 rgba(23, 32, 51, 0.03), 0 1px 6px -2px rgba(23, 32, 51, 0.04);
   --w-shadow-lift: 0 2px 6px -1px rgba(23, 32, 51, 0.07);
   --w-shadow-modal: 0 24px 64px -16px rgba(16, 24, 40, 0.22), 0 2px 6px -1px rgba(16, 24, 40, 0.06);
+}
+
+/* ── The dark variant ────────────────────────────────────────────────────
+   The same workspace at night, on the approved design's own dark values.
+   It is a DELIBERATE CHOICE, stored per reader (see useWalletTheme.ts), not
+   a reading of `prefers-color-scheme` — an operator who put the ledger in
+   dark expects it dark tomorrow morning too.
+
+   The attribute lives on the document element because the Wallet's dialogs
+   are portalled out of the page, so one switch has to reach both roots.
+   `:where()` keeps the selector at the same weight as the light block
+   above, which is why this one wins only by coming after it — and why no
+   utility class loses to it. Nothing outside these two classes is themed. */
+.vx-wallet:where([data-wallet-theme='dark'] *),
+.vx-wallet-modal-root:where([data-wallet-theme='dark'] *) {
+  --w-base: #121518;
+  --w-panel: #1b2024;
+  --w-panel-2: #1f252a;
+  --w-panel-3: #242a2f;
+  --w-surface-0: #1b2024;
+  --w-surface-1: #1f252a;
+  --w-hair: #262d33;
+  --w-hair-strong: #313a40;
+  --w-hair-soft: #222930;
+  --w-ink: #e8e8e8;
+  --w-ink-2: #c6ccd2;
+  --w-ink-3: #a8a8a8;
+  --w-ink-4: #7d8790;
+  /* Brighter than the light pair: the same green and red lose their
+     footing against a near-black panel. */
+  --w-pos: #2ebd85;
+  --w-neg: #f0616d;
+  --w-gold: #f2b400;
+  --w-gold-light: #f5c433;
+  /* On white this is the darker gold that keeps links readable; on black it
+     has to go the other way. */
+  --w-gold-deep: #f2b400;
+  --w-gold-wash: rgba(242, 180, 0, 0.14);
+  --w-gold-line: rgba(242, 180, 0, 0.45);
+  --w-shadow-panel: 0 1px 2px 0 rgba(0, 0, 0, 0.32);
+  --w-shadow-lift: 0 2px 8px -2px rgba(0, 0, 0, 0.45);
+  --w-shadow-modal: 0 24px 64px -16px rgba(0, 0, 0, 0.7), 0 2px 6px -1px rgba(0, 0, 0, 0.4);
 }
 
 /* Wallet workspace only.
@@ -220,15 +265,36 @@
    trading account's own navigation works: it is INSIDE the Wallet and does
    not replace or duplicate the global VOLTEX top navigation. Below `lg` it
    becomes a horizontal scroller of the same items. */
+.vx-wallet .wallet-workspace {
+  /* Full-bleed on purpose: the rail sits against the viewport's left edge
+     and the content runs to its right one, as the reference terminal does.
+     Every inner gutter belongs to the rail or to the content column, so
+     nothing is paid for twice. */
+  padding: 0;
+}
 .vx-wallet .wallet-shell {
   display: grid;
-  gap: 20px;
+  gap: 0;
   grid-template-columns: minmax(0, 1fr);
+  align-items: start;
 }
 @media (min-width: 1024px) {
   .vx-wallet .wallet-shell {
-    grid-template-columns: 208px minmax(0, 1fr);
-    gap: 24px;
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+}
+.vx-wallet .wallet-content {
+  min-width: 0;
+  padding: 18px 16px 48px;
+}
+@media (min-width: 640px) {
+  .vx-wallet .wallet-content {
+    padding: 20px 20px 56px;
+  }
+}
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-content {
+    padding: 22px 24px 56px;
   }
 }
 .vx-wallet .wallet-side-nav {
@@ -236,7 +302,9 @@
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding-bottom: 2px;
+  padding: 10px 16px;
+  background: var(--w-panel);
+  border-bottom: 1px solid var(--w-hair);
 }
 .vx-wallet .wallet-side-nav::-webkit-scrollbar {
   display: none;
@@ -252,12 +320,17 @@
 @media (min-width: 1024px) {
   .vx-wallet .wallet-side-nav {
     position: sticky;
-    top: 16px;
+    /* The app's own header is `sticky; top: 0` and 64px tall, so the rail
+       has to begin where that ends. Sticking it at 0 slides the first
+       section under the header the moment the page scrolls. */
+    top: var(--w-header-h);
     flex-direction: column;
     gap: 0;
     overflow: visible;
-    padding: 6px 14px 16px 0;
-    border-right: 1px solid var(--w-hair-soft);
+    min-height: calc(100vh - var(--w-header-h));
+    padding: 22px 14px 18px;
+    border-bottom: 0;
+    border-right: 1px solid var(--w-hair);
   }
   .vx-wallet .wallet-nav-group {
     flex-direction: column;
@@ -268,6 +341,40 @@
     padding-top: 10px;
     border-top: 1px solid var(--w-hair-soft);
   }
+}
+/* The light/dark switch, at the foot of the rail. On a phone the rail is a
+   strip, so it simply travels with the items. */
+.vx-wallet .wallet-side-foot {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-side-foot {
+    margin-top: auto;
+    padding-top: 18px;
+  }
+}
+.vx-wallet .wallet-theme-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--w-hair);
+  border-radius: 10px;
+  background: var(--w-panel);
+  color: var(--w-ink-3);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.vx-wallet .wallet-theme-btn:hover {
+  background: var(--w-panel-3);
+  color: var(--w-ink);
+  border-color: var(--w-hair-strong);
 }
 .vx-wallet .wallet-nav-label {
   padding: 2px 12px 6px;
@@ -281,8 +388,17 @@
 /* The brand block at the top of the Wallet's own navigation — the approved
    design's wordmark with its gold L and the product line under it. */
 .vx-wallet .wallet-brand {
-  padding: 0 10px;
-  margin-bottom: 22px;
+  flex-shrink: 0;
+  align-self: center;
+  padding: 0 14px 0 0;
+  margin: 0;
+}
+@media (min-width: 1024px) {
+  .vx-wallet .wallet-brand {
+    align-self: stretch;
+    padding: 0 10px;
+    margin-bottom: 22px;
+  }
 }
 .vx-wallet .wallet-brand-name {
   font-size: 17px;
@@ -365,6 +481,76 @@
   border-radius: 50%;
   background: radial-gradient(circle, rgba(242, 180, 0, 0.42), rgba(242, 180, 0, 0) 68%);
   pointer-events: none;
+}
+
+/* ── Margin usage ────────────────────────────────────────────────────────
+   IM and MM as two compact gauges under the account's title, exactly as the
+   reference prints them: label, track, the SERVER's ratio, the requirement.
+   The track carries its own surface colour rather than the hairline token —
+   the hairlines are deliberately near-invisible now, and a gauge that
+   cannot be seen reads as a dead label instead of a live reading. */
+.vx-wallet .wallet-margin-usage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 26px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.vx-wallet .wallet-margin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.vx-wallet .wallet-margin-label {
+  flex-shrink: 0;
+  width: 26px;
+  color: var(--w-ink-3);
+}
+.vx-wallet .wallet-im-bar {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 6px;
+  border-radius: 4px;
+  background: var(--w-panel-3);
+  overflow: hidden;
+}
+.vx-wallet .wallet-im-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--w-pos);
+  transition: width 0.2s ease;
+}
+.vx-wallet .wallet-im-bar[data-tone='warn'] > span {
+  background: var(--w-gold);
+}
+/* Nothing committed is an answer, so the gauge still shows where the fill
+   would start instead of rendering as an empty strip. */
+.vx-wallet .wallet-im-bar[data-empty='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--w-pos);
+  opacity: 0.45;
+}
+.vx-wallet .wallet-margin-pct {
+  flex-shrink: 0;
+  font-weight: 600;
+  color: var(--w-pos);
+}
+.vx-wallet .wallet-margin-value {
+  color: var(--w-ink);
+  white-space: nowrap;
+}
+.vx-wallet .wallet-margin-idle {
+  font-size: 12px;
 }
 
 /* ── Shared card vocabulary (the approved design's `.card`) ──────────── */

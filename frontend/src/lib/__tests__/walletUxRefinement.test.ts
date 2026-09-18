@@ -324,6 +324,9 @@ test.each([
 ])('the headline figures retain their authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   // The header renders an ACCOUNT, taken from whichever source is
@@ -368,6 +371,9 @@ test.each([
 test('margin usage prints the ratios the SERVER answered, never a division done here', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const account = {
@@ -391,6 +397,9 @@ test('margin usage prints the ratios the SERVER answered, never a division done 
 test('an unknown ratio is a dash, and a real zero is a zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const base = {
@@ -414,6 +423,9 @@ test('an unknown ratio is a dash, and a real zero is a zero', () => {
 test('the account header reports unknown margin figures as dashes, never as zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   // An ordinary ledger has no margin account. Its margin fields are UNKNOWN
@@ -449,6 +461,9 @@ test('the account header reports unknown margin figures as dashes, never as zero
 test('Convert is offered as unavailable rather than wired to nothing', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const tree = PortfolioStrip({ account: null, performance: null, performanceLoading: false,
