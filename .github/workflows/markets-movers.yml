@@ -38,4 +38,4 @@ jobs:
       - name: Catalogue backend regressions
         run: npm test -- --runInBand --runTestsByPath src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
       - name: Catalogue frontend regressions
-        run: npx jest --config frontend/jest.config.cjs --runInBand frontend/src/lib/__tests__/cryptoCatalogue.test.ts
+        run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/cryptoCatalogue.test.ts
