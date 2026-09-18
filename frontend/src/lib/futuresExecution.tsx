@@ -164,11 +164,7 @@ export interface FuturesExecution {
     leverage: number;
     marginType: 'ISOLATED' | 'CROSS';
     reduceOnly?: boolean;
-    /**
-     * The position a reducing order reduces, carried from the table row the
-     * trader pressed. An engine that keeps several positions per contract
-     * needs the name; one that keeps one per contract and bucket ignores it.
-     */
+    /** Explicit native table-close target; omitted from ordinary real-engine requests. */
     positionId?: string;
   }): Promise<void>;
   cancelOrder(orderId: string): Promise<void>;
@@ -194,9 +190,7 @@ export const REAL_FUTURES_EXECUTION: FuturesExecution = {
   contract: null,
   account_aggregate: null,
   activation: null,
-  // The real engine has one position per contract and bucket, and its order
-  // payload is pinned byte-for-byte: the name never reaches it.
-  placeOrder: async ({ positionId: _positionId, ...params }) => { await api.placeFuturesOrder(params); },
+  placeOrder: async (params) => { await api.placeFuturesOrder(params); },
   cancelOrder: async (orderId) => { await api.cancelFuturesOrder(orderId); },
   closePosition: async (positionId) => { await api.closeFuturesPosition(positionId); },
   setProtection: async (positionId, body) => { await api.setFuturesPositionProtection(positionId, body); },

@@ -35,6 +35,8 @@ jobs:
         run: npm run build --prefix frontend
         env:
           VITE_API_URL: /api/v1
+      - name: Exact reduce-only target and command regressions
+        run: npm test -- --runInBand --json --outputFile=native-target-tests.json --runTestsByPath frontend/src/lib/__tests__/nativeReduceTarget.test.ts
       - name: Native math and authorization tests
         run: npm test -- --runInBand --json --outputFile=native-tests.json --runTestsByPath src/private-trading/__tests__/nativeDemoEngine.test.ts src/private-trading/__tests__/nativeDemoReplay.test.ts src/private-trading/__tests__/nativeDemoService.test.ts src/private-trading/__tests__/nativeReduceOnlyClose.test.ts src/private-trading/__tests__/nativeOrderSizing.test.ts src/private-trading/__tests__/nativeErrorMessages.test.ts src/private-trading/__tests__/nativeRiskContract.test.ts src/private-trading/__tests__/isolatedMargin.test.ts src/private-trading/__tests__/moneyMatrix.test.ts src/private-trading/__tests__/crossAccount.test.ts src/private-trading/__tests__/crossDemo.test.ts src/api/routes/__tests__/nativeDemoAccess.test.ts frontend/src/lib/__tests__/nativeDemoFrontend.test.ts frontend/src/lib/__tests__/nativeFuturesTerminal.test.ts frontend/src/lib/__tests__/nativeReduceTarget.test.ts frontend/src/lib/__tests__/nativeCommandLane.test.ts frontend/src/lib/__tests__/largeNumberPresentation.test.ts frontend/src/lib/__tests__/privateTradingFrontend.test.ts src/private-trading/__tests__/simulationOnlyIsolation.test.ts
       - name: Disposable browser tooling
@@ -42,6 +44,10 @@ jobs:
         run: |
           npm install --prefix /tmp/native-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
           node /tmp/native-browser/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Exact table LIMIT close in Cross and Isolated (desktop and phone)
+        env:
+          PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
+        run: node scripts/qa-native-demo-limit-close.cjs
       - name: Actual native terminal interactive browser checks
         env:
           PRIVATE_CARD_QA_PLAYWRIGHT: /tmp/native-browser/node_modules/playwright
@@ -56,6 +62,7 @@ jobs:
         with:
           name: native-demo-evidence
           path: |
+            native-target-tests.json
             native-tests.json
             docs/qa/native-demo/
           retention-days: 7

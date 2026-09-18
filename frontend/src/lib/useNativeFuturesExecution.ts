@@ -1,13 +1,9 @@
 import { useMemo } from 'react';
 import type { FuturesExecution } from './futuresExecution';
 import { REAL_FUTURES_EXECUTION } from './futuresExecution';
-import {
-  nativeAccountState, terminalOrderToNativeDraft, pairToNativeSymbol,
-} from './nativeFuturesAdapter';
+import { nativeAccountState } from './nativeFuturesAdapter';
+import { nativeOrderDraft } from './nativeReduceTarget';
 import { PrivateTradingError } from './privateTradingError';
-import { resolveNativeReduceTarget } from './nativeReduceTarget';
-export { resolveNativeReduceTarget } from './nativeReduceTarget';
-export type { ReduceTargetResolution } from './nativeReduceTarget';
 import type { NativeDemoController } from '../pages/private-trading/useNativeDemo';
 import type { FuturesContractRules } from './futuresMath';
 
@@ -105,27 +101,15 @@ export function useNativeFuturesExecution(
       account_aggregate: aggregate,
       activation,
       async placeOrder(params) {
-        const reducing = params.reduceOnly || Boolean(exitId) || Boolean(params.positionId);
-        const resolved = reducing ? resolveNativeReduceTarget(native.getState()?.positions ?? state.positions, params, exitId) : null;
-        if (resolved?.refusal) throw new PrivateTradingError(resolved.refusal.message, 409, resolved.refusal.code);
-        const targetPosition = resolved?.position;
-
-        try {
-          if (targetPosition && params.type === 'MARKET') {
-            await execute({
-              kind: 'CLOSE', positionId: targetPosition.id, quantity: params.quantity,
-              ...(pickedCandle ? { candle: pickedCandle } : {}),
-            });
-            return;
-          }
-          await execute(terminalOrderToNativeDraft({
-            ...params,
-            // The bucket is the POSITION's, not the form's: the server checks
-            // the same thing and refuses a name that does not fit.
-            ...(targetPosition ? { reduceOnly: true, positionId: targetPosition.id, marginType: targetPosition.marginMode } : {}),
-            candle: pickedCandle,
-          }));
-        } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
+        // A position may close/change between the form's render and submit.
+        // Resolve against the controller's current authoritative transcript,
+        // never the older state captured when this execution object rendered.
+        const current = native.getState();
+        if (!current?.initialized) throw new PrivateTradingError('Торговый счёт ещё не загружен', 409);
+        const draft = nativeOrderDraft(current.positions, params, exitId, pickedCandle);
+        // The server's refusal travels as the structured error it is (code,
+        // status, contract limit), so the terminal localizes the real reason.
+        try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }
       },
       async cancelOrder(orderId) {
         try { await execute({ kind: 'CANCEL', orderId }); } catch (e) { throw failureOf(e, 'Ордер не отменён'); }

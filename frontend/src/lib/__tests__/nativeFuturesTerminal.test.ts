@@ -309,35 +309,32 @@ describe('the terminal sizes to the contract it is trading', () => {
   });
 });
 
-describe('a close started from the table carries the position ID end to end', () => {
+describe('a close started from the table carries the position ID end to end (PR #111 targeting, kept)', () => {
   const page = source(PAGE);
   const form = source('components/FuturesOrderForm.tsx');
-  const seam = source('lib/futuresExecution.tsx');
+  const resolver = source('lib/nativeReduceTarget.ts');
   const hook = source('lib/useNativeFuturesExecution.ts');
   const controller = source('pages/private-trading/useNativeDemo.tsx');
 
   test('the page puts the row ID and bucket into the ticket', () => {
-    expect(page).toContain('positionId: position.id');
-    expect(page).toContain('marginType: position.marginType');
+    expect(page).toContain('setCloseTicket({ id: target.id, symbol: target.symbol, side: target.side,');
+    expect(page).toContain('marginType: target.marginType');
   });
 
-  test('the form sends the ticket ID with the order, and only for a reduce-only order', () => {
-    expect(form).toContain('...(reduceOnly && reduceTargetId ? { positionId: reduceTargetId } : {})');
-    expect(form).toContain('setReduceTargetId(closeTicket.positionId ?? null)');
-    // Turning reduce-only off forgets the name; nothing is closed by a stale ticket.
-    expect(form).toContain('if (!e.target.checked) setReduceTargetId(null)');
+  test('the form sends the named target with a native reduce-only order, and forgets it when reduce-only is switched off', () => {
+    expect(form).toContain("...(execution.engine === 'NATIVE' && activeCloseTarget ? { positionId: activeCloseTarget.id } : {})");
+    expect(form).toContain('if (!e.target.checked) setCloseTarget(null)');
   });
 
-  test('the real engine never receives the name: its payload stays byte-for-byte', () => {
-    expect(seam).toContain('placeOrder: async ({ positionId: _positionId, ...params }) => { await api.placeFuturesOrder(params); }');
+  test('the resolver never picks by quantity and never substitutes the other bucket', () => {
+    expect(resolver).toContain('export function resolveNativeReduceTarget');
+    expect(resolver).not.toMatch(/quantity\s*===/);
+    expect(resolver).toContain('return bucket.length === 1 ? bucket[0] : undefined;');
   });
 
-  test('the native adapter resolves the target by name and refuses instead of guessing', () => {
-    expect(hook).toContain('resolveNativeReduceTarget(');
-    expect(hook).not.toContain('p.quantity===params.quantity');
-    expect(hook).not.toMatch(/candidates\.find\(\(?p\)?\s*=>\s*\(?exitId \? p\.id === exitId : true/);
-    // The bucket sent with a reducing order is the position's own.
-    expect(hook).toContain('marginType: targetPosition.marginMode');
+  test('the native adapter resolves against the CURRENT transcript and rethrows the structured refusal', () => {
+    expect(hook).toContain('nativeOrderDraft(current.positions, params, exitId, pickedCandle)');
+    expect(hook).toContain("try { await execute(draft); } catch (e) { throw failureOf(e, 'Операция не подтверждена'); }");
   });
 
   test('a command is never refused for being busy: the controller queues it', () => {

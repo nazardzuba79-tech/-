@@ -345,9 +345,9 @@ describe('the order value and cost are computed on the keystroke', () => {
 
 describe('a reduce-only LIMIT from the positions table names the position it reduces', () => {
   test('the ticket ID travels with the order; a hand-made reduce-only order carries none', async () => {
-    const f = await orderForm();
+    const f = await orderForm({ execution: { engine: 'NATIVE' } });
     // The table hands the form a ticket for ONE of two same-size positions.
-    const ticket = { side: 'LONG', size: '2', seq: 1, positionId: 'native-isolated', marginType: 'ISOLATED' };
+    const ticket = { id: 'native-isolated', symbol: 'BTC/USDT', side: 'LONG', size: '2', seq: 1, marginType: 'ISOLATED' };
     let tree = f.render();
     tree = f.form.render({ ...props, closeTicket: ticket });
     f.change(tree, '0.00', '60000');
