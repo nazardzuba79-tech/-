@@ -606,3 +606,133 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar {
   padding-inline: 12px;
 }
+
+/* ── THE BOTTOM TABLE, TO THE REFERENCE ───────────────────────────────────
+   Column proportions measured off the owner's reference at 2000px: the
+   header baselines sit at x 30 / 278 / 420 / 588 / 725 / 911 / 1059 / 1326 /
+   1529 / 1721, which is the percentage set below. Fixed layout, so the row
+   divides the panel it has instead of demanding its content width — that is
+   also what keeps it from scrolling sideways at any size.
+
+   Type, from the same measurement: headings and the contract's second line
+   quiet and small, figures at 13px, the settle-currency approximation and
+   the unit quieter again. Colour stays ours — the brief said everything but
+   the background, and the palette that just shipped is the background. */
+@media (min-width: 1025px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table {
+    /* Auto layout with the reference's proportions as PREFERRED widths: an
+       ordinary row divides the panel exactly as the reference does, while a
+       figure that genuinely cannot fit — the layout suite drives a position
+       worth 2.5 billion — grows its own column instead of being cut off. A
+       clipped number is the one outcome that is never acceptable. */
+    table-layout: auto;
+    width: 100%;
+    min-width: 0;
+  }
+  /* A cell may take a second line; it may never hide part of a figure. The
+     numbers themselves carry no spaces, so they stay whole — only the unit
+     or a word of the margin line moves down. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td {
+    white-space: normal;
+    overflow-wrap: normal;
+  }
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 12.4%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 7.1%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 8.4%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 6.9%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 9.3%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 7.4%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 13.4%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 10.2%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 9.6%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 14%; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  padding: 10px 9px;
+}
+/* The reference is a 2000px panel. Ours is 1125 at 1440, where those same
+   proportions put "Цена маркировки" against "Цена ликвид." — so below 1600
+   the columns are re-cut for the width actually available, the headings wrap
+   rather than collide, and the close controls keep the room two pills need.
+   Above 1600 the reference's own proportions apply unchanged. */
+@media (max-width: 1599px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(1) { width: 13.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(2) { width: 6.5%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(3) { width: 9%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(4) { width: 7%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(5) { width: 8%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(6) { width: 7%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(7) { width: 12%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(8) { width: 10%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(9) { width: 8%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):nth-child(10) { width: 19%; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { font-size: 11.5px; padding: 8px 7px; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td { padding: 10px 7px; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close { padding: 5px 9px; }
+  /* The two close pills and the card button may take a second line rather
+     than push the whole row past the panel. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-actions { flex-wrap: wrap; row-gap: 4px; }
+
+}
+@media (min-width: 1600px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { white-space: nowrap; }
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td {
+  font-size: 13px;
+  vertical-align: top;
+  padding: 12px 9px;
+}
+/* Contract: ticker, the perpetual badge, then the margin line under them. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-ticker {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract b {
+  font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: 0;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-perp {
+  font-style: normal; font-size: 11px; color: var(--text-tertiary);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-contract small {
+  font-size: 11px; font-weight: 400;
+}
+/* Figures: the unit and the settle-currency line stay behind the number. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-unit {
+  color: var(--text-tertiary); font-size: 11px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-figure {
+  display: inline-flex; align-items: baseline; gap: 4px; flex-wrap: wrap;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-roi {
+  font-size: 12px; opacity: .9;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-approx {
+  display: block; font-size: 11px; opacity: .72;
+}
+/* The realized figure carries the reference's dotted rule, which marks it as
+   the cell with a breakdown behind it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-realized {
+  border-bottom: 1px dotted currentColor;
+}
+/* Close controls: pills, not outlined rectangles. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close {
+  border-radius: 999px; padding: 5px 12px; font-size: 12px;
+  background: var(--panel-alt); border-color: transparent; color: var(--text-primary);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close:hover:not(:disabled) {
+  background: var(--panel-alt-hover); border-color: transparent; color: var(--text-primary);
+}
+/* The side's own edge on the contract cell, as the reference marks it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td:first-child {
+  box-shadow: inset 2px 0 var(--buy);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-row:has(.text-sell.futures-position-side) td:first-child,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-row[data-side=SHORT] td:first-child {
+  box-shadow: inset 2px 0 var(--sell);
+}
+/* "+ Добавить" is an offer, so it reads as one rather than as a value. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fut-tpslAdd {
+  color: var(--text-secondary);
+}
