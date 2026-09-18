@@ -1,0 +1,43 @@
+/* FuturesPairList owns this width budget. The Studio skin was written for a
+   278px sidebar, but the final workspace uses 212px (184px on laptops).
+   Its fixed columns/padding consumed nearly the entire row and minmax(0,1fr)
+   silently clipped the base symbol. Keep the workspace and row height intact;
+   recover space inside THIS list, with a nonzero name track.
+   Component-specific classes keep this from changing Spot or the order book. */
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .pairs-list.futures-pair-list {
+  padding-inline: 0;
+}
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row {
+  grid-template-columns: 12px 20px minmax(40px, 1fr) 62px 52px;
+  column-gap: 2px;
+  padding-inline: 4px;
+}
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-name {
+  min-width: 40px;
+}
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-base {
+  font-size: 12px;
+}
+.trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .pairs-col-headers.futures-pair-headers {
+  grid-template-columns: minmax(0, 1fr) 62px 52px;
+  column-gap: 2px;
+  padding-inline: 6px 7px;
+}
+@media (min-width: 1025px) and (max-width: 1279px) {
+  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row {
+    grid-template-columns: 10px 18px minmax(32px, 1fr) 57px 50px;
+    column-gap: 1px;
+    padding-inline: 2px;
+  }
+  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row .p-name {
+    min-width: 32px;
+  }
+  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .futures-pair-list .pair-row :is(.p-price, .p-change) {
+    font-size: 11px;
+  }
+  .trade-terminal.futures-terminal.futures-reference.futures-studio.terminal-studio .pairs-col-headers.futures-pair-headers {
+    grid-template-columns: minmax(0, 1fr) 57px 50px;
+    column-gap: 1px;
+    padding-inline: 4px 5px;
+  }
+}
