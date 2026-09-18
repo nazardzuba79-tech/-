@@ -7,6 +7,7 @@ import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { List as ListIcon } from 'lucide-react';
 import { CryptoIcon } from './CryptoIcon';
 
 /**
@@ -188,6 +189,23 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
 
   return (
     <div className="ticker-bar futures-ticker-bar">
+      {/* Two ways in, on purpose. The caret on the pair is the one this
+          terminal always had; a trader who has not met it reads the pair as
+          a label, not a control. The list glyph beside it is the affordance
+          the reference terminal leads with, and it is unmistakably a button.
+          Both do the same thing — open the market list with its search
+          focused — so neither is a second code path. */}
+      {onSelectSymbol && (
+        <button
+          type="button"
+          className="pair-markets-btn"
+          aria-label={t('nav.markets')}
+          title={t('nav.markets')}
+          onClick={onSelectSymbol}
+        >
+          <ListIcon size={16} />
+        </button>
+      )}
       <div
         className="pair-selector"
         role={onSelectSymbol ? 'button' : undefined}

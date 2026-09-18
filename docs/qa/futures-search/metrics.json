@@ -1,0 +1,413 @@
+{
+  "status": "PASS",
+  "report": {
+    "390": {
+      "openedViaListButton": true,
+      "entryPointOpenedSearch": true,
+      "closed": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "idleWindowCalls": 5,
+      "msToUsable": 25,
+      "focusedOnOpen": true,
+      "endpointsOpenAdded": [],
+      "endpointsControlAdded": [
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "open": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "btc": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "eth": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "ETH/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "typeWindowCalls": 2,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "reopened": true,
+      "afterHammering": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 219,
+        "chartWidth": 388,
+        "bookWidth": 388,
+        "ticketWidth": 388,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "stillOpensAfterHammering": true,
+      "selectedPair": "ETH/USDT",
+      "selectionTarget": "ETH/USDT",
+      "sortChangedOrder": false,
+      "sortPressed": "true",
+      "pageErrors": []
+    },
+    "1366": {
+      "entryPointOpenedSearch": false,
+      "closed": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "idleWindowCalls": 3,
+      "msToUsable": 40,
+      "focusedOnOpen": true,
+      "endpointsOpenAdded": [],
+      "endpointsControlAdded": [
+        "/api/v1/private-trading/candles",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "open": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "btc": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "eth": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "ETH/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "typeWindowCalls": 1,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "reopened": true,
+      "afterHammering": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 587,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "stillOpensAfterHammering": true,
+      "selectedPair": "ETH/USDT",
+      "selectionTarget": "ETH/USDT",
+      "sortChangedOrder": false,
+      "sortPressed": "true",
+      "pageErrors": []
+    },
+    "1440": {
+      "entryPointOpenedSearch": false,
+      "closed": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "idleWindowCalls": 3,
+      "msToUsable": 38,
+      "focusedOnOpen": true,
+      "endpointsOpenAdded": [],
+      "endpointsControlAdded": [
+        "/api/v1/private-trading/candles",
+        "/api/v1/market/futures/orderbook/BTCUSDT"
+      ],
+      "open": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "btc": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "BTC/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "eth": {
+        "open": true,
+        "headHeight": 34,
+        "title": null,
+        "rows": [
+          "ETH/USDT"
+        ],
+        "rowCount": 1,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "typeWindowCalls": 2,
+      "endpointsTypingAdded": [],
+      "afterEscape": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "reopened": true,
+      "afterHammering": {
+        "open": false,
+        "headHeight": 34,
+        "title": "Рынки",
+        "rows": [
+          "BTC/USDT",
+          "ETH/USDT",
+          "SOL/USDT"
+        ],
+        "rowCount": 3,
+        "listTop": 147,
+        "chartWidth": 661,
+        "bookWidth": 250,
+        "ticketWidth": 312,
+        "overflowX": 0,
+        "sortButtons": [
+          "Цена⇅",
+          "24ч %⇅"
+        ]
+      },
+      "stillOpensAfterHammering": true,
+      "selectedPair": "ETH/USDT",
+      "selectionTarget": "ETH/USDT",
+      "sortChangedOrder": false,
+      "sortPressed": "true",
+      "pageErrors": []
+    }
+  }
+}

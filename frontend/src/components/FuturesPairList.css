@@ -41,3 +41,96 @@
     padding-inline: 4px 5px;
   }
 }
+
+/* ── «Рынки» header, and the search that replaces it ──────────────────────
+   The permanent full-width input above the list is gone. It bought nothing
+   after the first few seconds of a session and cost a row of height for the
+   rest of it. The header row keeps a FIXED height whether it is showing the
+   title or the field, so opening search moves nothing below it — the list,
+   the chart, the book and the ticket all stay exactly where they were. */
+.trade-terminal .pairs-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  box-sizing: border-box;
+  padding: 0 8px 0 10px;
+  border-bottom: 1px solid var(--border, #232c39);
+}
+.trade-terminal .pairs-head-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--text-primary, #fff);
+}
+.trade-terminal .pairs-head-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border: 1px solid var(--border, #2a3745);
+  border-radius: 5px;
+  background: var(--panel-alt, #0c131b);
+  color: var(--text-primary, #fff);
+  font-size: 11.5px;
+  /* Visual only, and short: the field is usable on the frame it mounts. */
+  animation: pairs-head-reveal 120ms ease-out;
+}
+.trade-terminal .pairs-head-input:focus {
+  outline: none;
+  border-color: var(--accent, #e9ad35);
+}
+@keyframes pairs-head-reveal { from { opacity: .4; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .trade-terminal .pairs-head-input { animation: none; }
+}
+/* No button background at rest — a compact terminal control, not a chip. */
+.trade-terminal .pairs-head-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary, #8b96a5);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.trade-terminal .pairs-head-search:hover,
+.trade-terminal .pairs-head-search:focus-visible {
+  background: var(--panel-alt, rgba(255, 255, 255, .06));
+  color: var(--text-primary, #fff);
+}
+
+/* The second way in: the reference terminal's list glyph, left of the pair.
+   The caret on the pair itself already opened this; a trader who has not
+   met that caret reads the pair as a label. This one is unmistakably a
+   button and sits where the reference puts it. */
+.trade-terminal .pair-markets-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  margin-right: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary, #8b96a5);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.trade-terminal .pair-markets-btn:hover,
+.trade-terminal .pair-markets-btn:focus-visible {
+  background: var(--panel-alt, rgba(255, 255, 255, .06));
+  color: var(--text-primary, #fff);
+}
