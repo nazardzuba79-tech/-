@@ -13,6 +13,7 @@ import { TransferModal } from './wallet-v3/TransferModal';
 import { WalletOverview } from './wallet-v3/WalletOverview';
 import { FundingView } from './wallet-v3/FundingView';
 import { PerformancePeriod, useWalletData } from './wallet-v3/useWalletData';
+import { useWalletTheme } from './wallet-v3/useWalletTheme';
 import './wallet-v3/wallet.css';
 
 const HIDE_BALANCE_KEY = 'exchange_hide_balance';
@@ -79,6 +80,7 @@ export function WalletPage() {
   const [hidden, setHidden] = useState(() => loadFlag(HIDE_BALANCE_KEY));
   const [section, setSection] = useState<WalletSection>('overview');
   const [period, setPeriod] = useState<PerformancePeriod>('7d');
+  const { theme, toggleTheme } = useWalletTheme();
   const historyRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -118,13 +120,14 @@ export function WalletPage() {
     <div className="vx-wallet">
       <Nav active="/wallet" />
 
-      <main className="wallet-workspace mx-auto w-full max-w-[1560px] px-4 pb-12 pt-5 sm:px-6 lg:px-8">
-        <h1 className="mb-3 text-[20px] font-semibold tracking-normal text-ink sm:text-[22px]">{t('nav.wallet')}</h1>
-
+      {/* Full-bleed, like the reference terminal: the rail sits against the
+          left edge and the content runs to the right one. No page heading
+          above it — the rail's wordmark is the title. */}
+      <main className="wallet-workspace w-full" aria-label={t('nav.wallet')}>
         <div className="wallet-shell">
-          <WalletSideNav section={section} onSection={setSection} />
+          <WalletSideNav section={section} onSection={setSection} theme={theme} onToggleTheme={toggleTheme} />
 
-          <div className="min-w-0">
+          <div className="wallet-content min-w-0">
             {section === 'overview' && (
               <WalletOverview
                 account={account}
