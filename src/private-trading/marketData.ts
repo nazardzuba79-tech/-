@@ -1,6 +1,8 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
 import { z } from 'zod';
+import type { LiveTicker } from '../services/marketData/bybit/types';
+import type { LiveStatus } from '../services/marketData/live/contract';
 
 /** Public data only. API instances MUST use the authenticated Frankfurt collector. */
 export const PRIVATE_QUOTE_MAX_AGE_MS = 5_000;
@@ -133,6 +135,47 @@ export function assertPrivateFreshQuote(value: unknown, expectedSymbol: string, 
   }
   if (new BigNumber(quote.bids[0].price).gte(quote.asks[0].price)) return invalid();
   return quote;
+}
+
+/**
+ * MARKS FOR MANY CONTRACTS FROM THE COLLECTOR'S LIVE FRAME, ONE CALL.
+ *
+ * The collector already holds one validated ticker per contract of the
+ * universe, fed by the venue's WebSocket and parsed through `validation.ts`
+ * (`markPrice`, `lastPrice`, `providerEventAt`, `receivedAt`, `stale`). An
+ * account with thirty open contracts used to value the twenty-nine it was
+ * NOT executing on with twenty-nine selected-contract REST quotes (each one
+ * an order book of a thousand levels plus a ticker, two venue calls) —
+ * per command, per tab. A mark needs no book. This answers the marks of
+ * the requested contracts from the frame: no venue call, and only rows the
+ * collector holds as current. A row flagged stale, without a mark, or of
+ * another market type is simply ABSENT, so the caller quotes that contract
+ * itself; nothing here turns an old observation into a current one.
+ * The contract an order executes on is never served from here: execution
+ * needs the observed book, fetched fresh, as before.
+ */
+export const PRIVATE_MARKS_MAX = 64;
+export interface PrivateMark {
+  symbol: string; markPrice: string; lastPrice: string;
+  /** The venue's event time when it carries one, else the collector's receive time. Checked for freshness at use. */
+  markProviderTimestamp: number; receivedAt: number; fetchedAt: number;
+}
+const privateMarkSchema = z.object({ symbol: symbolSchema, markPrice: positive, lastPrice: positive, markProviderTimestamp: timestamp, receivedAt: timestamp, fetchedAt: timestamp });
+const privateMarksSchema = z.object({ status: z.enum(['disabled', 'connecting', 'live', 'stale']), fetchedAt: timestamp, marks: z.array(privateMarkSchema).max(PRIVATE_MARKS_MAX) });
+export type PrivateMarksPage = z.infer<typeof privateMarksSchema>;
+export function liveMarks(rows: LiveTicker[], requested: string[], now: number, status: LiveStatus): PrivateMarksPage {
+  const wanted = new Set(requested.map(symbol));
+  if (!wanted.size || wanted.size > PRIVATE_MARKS_MAX) throw new PrivateMarketDataError('invalid_symbol', 400);
+  const marks: PrivateMark[] = [];
+  for (const row of rows) {
+    if (row.marketType !== 'linear_perpetual' || !wanted.has(row.providerSymbol) || row.stale) continue;
+    if (row.markPrice === null || row.lastPrice === null || !(row.markPrice > 0) || !(row.lastPrice > 0)) continue;
+    const at = row.providerEventAt ?? row.receivedAt;
+    if (!Number.isSafeInteger(at) || at <= 0 || !Number.isSafeInteger(row.receivedAt) || row.receivedAt <= 0) continue;
+    marks.push({ symbol: row.providerSymbol, markPrice: new BigNumber(row.markPrice).toFixed(), lastPrice: new BigNumber(row.lastPrice).toFixed(),
+      markProviderTimestamp: at, receivedAt: row.receivedAt, fetchedAt: now });
+  }
+  return { status, fetchedAt: now, marks };
 }
 
 /** Fixed allowlisted upstream endpoints, only instantiated by the collector. */
@@ -306,6 +349,26 @@ export class PrivateTradingMarketData {
   async freshQuote(input: string, signal?: AbortSignal): Promise<PrivateFreshQuote> {
     const contract = symbol(input);
     return assertPrivateFreshQuote(await this.get(`quote/${contract}`, signal), contract, this.now());
+  }
+  /**
+   * Marks of many contracts from the collector's live frame (see `liveMarks`).
+   * Only marks that pass the same freshness window a quote must pass are
+   * returned; a contract that is missing or no longer fresh is absent, and
+   * the caller quotes it itself. Never a substitute for the executed
+   * contract's fresh book.
+   */
+  async marks(symbols: string[], signal?: AbortSignal): Promise<Map<string, PrivateMark>> {
+    const wanted = [...new Set(symbols.map(symbol))];
+    if (!wanted.length) return new Map();
+    if (wanted.length > PRIVATE_MARKS_MAX) throw new PrivateMarketDataError('invalid_symbol', 400);
+    const page = read(privateMarksSchema, await this.get(`marks?${new URLSearchParams({ symbols: wanted.join(',') })}`, signal));
+    const now = this.now(), out = new Map<string, PrivateMark>();
+    for (const mark of page.marks) {
+      if (!wanted.includes(mark.symbol) || out.has(mark.symbol)) return invalid();
+      if (![mark.markProviderTimestamp, mark.receivedAt, mark.fetchedAt].every(t => fresh(t, now))) continue;
+      out.set(mark.symbol, mark);
+    }
+    return out;
   }
   private async chartPage(request: PrivateChartRequest): Promise<PrivateChartPage> {
     abort(request.signal);

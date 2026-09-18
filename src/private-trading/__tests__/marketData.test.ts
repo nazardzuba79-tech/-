@@ -2,7 +2,8 @@ import requestApp from 'supertest';
 import { collectorServer } from '../../services/marketData/live/collectorServer';
 import { LiveFeed } from '../../services/marketData/live/contract';
 import { assertPrivateFreshQuote, CollectorPrivateTradingSource, PrivateTradingMarketData, PrivateInstrument,
-  PrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS } from '../marketData';
+  PrivateFreshQuote, PRIVATE_QUOTE_MAX_AGE_MS, PRIVATE_MARKS_MAX, liveMarks } from '../marketData';
+import type { LiveTicker } from '../../services/marketData/bybit/types';
 
 const NOW = Date.UTC(2026, 8, 14, 12);
 const HOUR = 3_600_000;
@@ -231,4 +232,68 @@ test('all collector private-data endpoints require token, reject invalid ranges,
     await requestApp(runtime.app).get('/internal/v1/private-trading/candles/BTCUSDT?kind=bad').set('Authorization', 'Bearer test-token').expect(400);
     await requestApp(runtime.app).get('/internal/v1/private-trading/funding/BTCUSDT?startTime=0&endTime=1').set('Authorization', 'Bearer test-token').expect(400);
   } finally { get.mockRestore(); runtime.close(); }
+});
+
+describe('marks of many contracts from the collector live frame', () => {
+  const row = (over: Partial<LiveTicker> & { providerSymbol: string }): LiveTicker => ({
+    id: `linear_perpetual:${over.providerSymbol}`, pair: `${over.providerSymbol.replace(/USDT$/, '')}/USDT`, symbol: over.providerSymbol, provider: 'bybit',
+    marketType: 'linear_perpetual', baseAsset: over.providerSymbol.replace(/USDT$/, ''), quoteAsset: 'USDT', settleAsset: 'USDT',
+    lastPrice: 100, bidPrice: 99.9, askPrice: 100.1, high24h: 101, low24h: 99, volume24h: 1, quoteVolume24h: 100, changePercent24h: 0,
+    indexPrice: 100, markPrice: 99.95, fundingRate: 0.0001, openInterest: 1, openInterestValue: 100, fundingIntervalMinutes: 480,
+    providerEventAt: NOW - 120, sequence: 1, receivedAt: NOW - 100, fetchedAt: NOW - 100, stale: false, ...over,
+  } as LiveTicker);
+  test('liveMarks answers only current linear rows of the requested contracts, with exact decimals and the venue event time', () => {
+    const rows = [
+      row({ providerSymbol: 'BTCUSDT', markPrice: 50000.1, lastPrice: 50000.2 }),
+      row({ providerSymbol: 'ETHUSDT', providerEventAt: null }),                              // falls back to the collector's receive time
+      row({ providerSymbol: 'SOLUSDT', stale: true }),                                        // held as stale: absent, never served as current
+      row({ providerSymbol: 'XRPUSDT', markPrice: null }),                                    // no mark: absent
+      row({ providerSymbol: 'DOGEUSDT' }),                                                    // not requested
+      { ...row({ providerSymbol: 'BTCUSDT', markPrice: 1 }), marketType: 'spot', id: 'spot:BTCUSDT' } as LiveTicker, // another market type, same symbol
+    ];
+    const page = liveMarks(rows, ['BTCUSDT', 'ETH-USDT', 'SOLUSDT', 'XRPUSDT', 'ADAUSDT'], NOW, 'live');
+    expect(page.status).toBe('live'); expect(page.fetchedAt).toBe(NOW);
+    expect(page.marks).toEqual([
+      { symbol: 'BTCUSDT', markPrice: '50000.1', lastPrice: '50000.2', markProviderTimestamp: NOW - 120, receivedAt: NOW - 100, fetchedAt: NOW },
+      { symbol: 'ETHUSDT', markPrice: '99.95', lastPrice: '100', markProviderTimestamp: NOW - 100, receivedAt: NOW - 100, fetchedAt: NOW },
+    ]);
+    expect(() => liveMarks(rows, [], NOW, 'live')).toThrow('invalid_symbol');
+    expect(() => liveMarks(rows, ['btc'], NOW, 'live')).toThrow('invalid_symbol');
+    expect(() => liveMarks(rows, Array.from({ length: PRIVATE_MARKS_MAX + 1 }, (_, i) => `S${i}USDT`), NOW, 'live')).toThrow('invalid_symbol');
+  });
+  test('the API client asks the collector once for all symbols and keeps only marks inside the freshness window', async () => {
+    const request = jest.fn().mockResolvedValue(response({ status: 'live', fetchedAt: NOW, marks: [
+      { symbol: 'BTCUSDT', markPrice: '50000.1', lastPrice: '50000.2', markProviderTimestamp: NOW - 200, receivedAt: NOW - 150, fetchedAt: NOW },
+      { symbol: 'ETHUSDT', markPrice: '3000', lastPrice: '3001', markProviderTimestamp: NOW - PRIVATE_QUOTE_MAX_AGE_MS - 1, receivedAt: NOW - 100, fetchedAt: NOW },
+    ] }));
+    const marks = await api(request).marks(['BTC-USDT', 'ETHUSDT', 'BTCUSDT']);
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(String(request.mock.calls[0][0])).toBe('https://collector.example/internal/v1/private-trading/marks?symbols=BTCUSDT%2CETHUSDT');
+    expect(request.mock.calls[0][1].headers).toEqual({ Authorization: 'Bearer private-test-token' });
+    expect([...marks.keys()]).toEqual(['BTCUSDT']);                    // the stale ETH mark is absent, not old-but-served
+    expect(marks.get('BTCUSDT')!.markPrice).toBe('50000.1');
+    expect(await api(request).marks([])).toEqual(new Map()); expect(request).toHaveBeenCalledTimes(1);
+  });
+  test('an unrequested, duplicated or malformed mark makes the whole page invalid; too many symbols never reach the collector', async () => {
+    const mark = { symbol: 'BTCUSDT', markPrice: '50000.1', lastPrice: '50000.2', markProviderTimestamp: NOW - 200, receivedAt: NOW - 150, fetchedAt: NOW };
+    for (const marks of [[{ ...mark, symbol: 'ETHUSDT' }], [mark, mark], [{ ...mark, markPrice: '-1' }], [{ ...mark, markProviderTimestamp: 'x' }]]) {
+      await expect(api(jest.fn().mockResolvedValue(response({ status: 'live', fetchedAt: NOW, marks }))).marks(['BTCUSDT'])).rejects.toThrow('market_data_invalid');
+    }
+    const request = jest.fn();
+    await expect(api(request).marks(Array.from({ length: PRIVATE_MARKS_MAX + 1 }, (_, i) => `S${i}USDT`))).rejects.toThrow('invalid_symbol');
+    expect(request).not.toHaveBeenCalled();
+  });
+  test('the collector route serves the frame it holds, requires the token, sends no-store, and refuses a bad list', async () => {
+    const feed = new LiveFeed('private-test');
+    feed.publish('snapshot', [row({ providerSymbol: 'BTCUSDT', markPrice: 50000.1 }), row({ providerSymbol: 'ETHUSDT', stale: true })]);
+    const runtime = collectorServer(feed, 'test-token', () => ({}));
+    try {
+      await requestApp(runtime.app).get('/internal/v1/private-trading/marks?symbols=BTCUSDT').expect(401);
+      const result = await requestApp(runtime.app).get('/internal/v1/private-trading/marks?symbols=BTCUSDT,ETHUSDT').set('Authorization', 'Bearer test-token').expect(200);
+      expect(result.headers['cache-control']).toBe('no-store');
+      expect(result.body.marks.map((m: { symbol: string; markPrice: string }) => [m.symbol, m.markPrice])).toEqual([['BTCUSDT', '50000.1']]);
+      await requestApp(runtime.app).get('/internal/v1/private-trading/marks').set('Authorization', 'Bearer test-token').expect(400);
+      await requestApp(runtime.app).get('/internal/v1/private-trading/marks?symbols=btc').set('Authorization', 'Bearer test-token').expect(400);
+    } finally { runtime.close(); }
+  });
 });

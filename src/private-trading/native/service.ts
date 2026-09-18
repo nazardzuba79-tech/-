@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
-import { PrivateTradingMarketData, PrivateChartInterval, assertPrivateFreshQuote } from '../marketData';
+import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, assertPrivateFreshQuote } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
@@ -44,6 +44,12 @@ export const NATIVE_COMMAND_QUEUE_LIMIT=16;
  * quote then serves the same command's valuation, so it is fetched once.
  */
 export const NATIVE_QUOTE_REUSE_MS=2000;
+/**
+ * A mark taken from the collector's live frame is used only while it is
+ * younger than this at the moment it is applied — inside the engine's own
+ * 5-second window with a margin — otherwise the contract is quoted itself.
+ */
+export const NATIVE_FRAME_MARK_MAX_AGE_MS=4000;
 /** Attempts one command gets at the revision CAS before a cross-instance conflict is reported to the caller. */
 export const NATIVE_COMMIT_ATTEMPTS=3;
 /** Upstream quotes requested in parallel while valuing many open contracts. */
@@ -92,6 +98,18 @@ export class NativeDemoService {
     try{return assertPrivateFreshQuote(cached,symbol,this.now());}
     catch{const fresh=await this.quote(symbol,true);return assertPrivateFreshQuote(fresh,symbol,this.now());}
   }
+  /**
+   * Marks of the contracts an account holds but is NOT executing on, from the
+   * collector's live frame in one call (`PrivateTradingMarketData.marks`).
+   * A market source without the method (fixtures, older collectors) or a
+   * failed call answers with no marks, and every contract is then quoted
+   * itself as before; nothing stale is ever used in place of a quote.
+   */
+  private async frameMarks(symbols:string[]):Promise<Map<string,PrivateMark>>{
+    if(!symbols.length||typeof this.market.marks!=='function')return new Map();
+    try{return await this.market.marks(symbols);}catch{return new Map();}
+  }
+  private youngQuote(symbol:string){const c=this.quotes.get(symbol);return !!c&&this.now()-c.at<NATIVE_QUOTE_REUSE_MS;}
   /** A quote for valuation may be a recent one; a quote to execute on is always fetched now. */
   private async quote(symbol:string,fresh=false):Promise<PrivateFreshQuote>{
     const cached=this.quotes.get(symbol);
@@ -138,10 +156,14 @@ export class NativeDemoService {
   async collateral(actor:OwnerSession,options:{reuse?:boolean}={}):Promise<CollateralValuation>{
     const holdings=await this.repository.holdings(actor);
     const settle='USDT';
-    const prices=await Promise.all(holdings
-      .filter(h=>h.asset!==settle)
+    const priced=holdings.filter(h=>h.asset!==settle);
+    // One frame read for every asset that has no quote of this command's own; a mark is all a valuation needs.
+    const frame=await this.frameMarks(priced.map(h=>`${h.asset}${settle}`).filter(symbol=>!(options.reuse&&this.youngQuote(symbol))));
+    const prices=await Promise.all(priced
       .map(async(h):Promise<CollateralPrice>=>{
         try{
+          const mark=frame.get(`${h.asset}${settle}`);
+          if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)return{asset:h.asset,price:mark.markPrice,source:'BYBIT_LINEAR_MARK',asOf:mark.markProviderTimestamp};
           // Inside a command the valuation may share the command's own fresh
           // quotes (the same observation, once). A plain read always prices
           // the wallet now: a reader asking for the account gets the market
@@ -376,10 +398,20 @@ export class NativeDemoService {
     // Quotes are fetched only after the (possibly long) history pass, then checked for freshness again.
     const latest:Record<string,{mark:string;last:string;time:number}>={};
     const symbols=[...new Set(result.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol))].sort();
+    // The contracts this command did not execute on need a mark, not a book: one read of the collector's
+    // validated live frame serves them all. A contract the frame does not hold as current — or whose mark
+    // would no longer pass the freshness check by the time it is applied — is quoted itself, below.
+    const frame=await this.frameMarks(symbols.filter(symbol=>!this.youngQuote(symbol)));
+    const quoted:string[]=[];
+    for(const symbol of symbols){
+      const mark=frame.get(symbol);
+      if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)latest[symbol]={mark:mark.markPrice,last:mark.lastPrice,time:mark.markProviderTimestamp};
+      else quoted.push(symbol);
+    }
     // Parallel batches keep every quote inside the freshness window without exceeding upstream concurrency;
     // a contract quoted within NATIVE_QUOTE_REUSE_MS (this command's own execution quote included) is not fetched again.
-    for(let i=0;i<symbols.length;i+=NATIVE_QUOTE_BATCH){
-      const quotes=await Promise.all(symbols.slice(i,i+NATIVE_QUOTE_BATCH).map(symbol=>this.valuationQuote(symbol)));
+    for(let i=0;i<quoted.length;i+=NATIVE_QUOTE_BATCH){
+      const quotes=await Promise.all(quoted.slice(i,i+NATIVE_QUOTE_BATCH).map(symbol=>this.valuationQuote(symbol)));
       for(const checked of quotes)latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};
     }
     const at=Math.max(this.now(),result.snapshot.time);
