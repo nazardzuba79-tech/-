@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, clearToken, getToken } from './api';
 import { depositMinimumEquivalent, validDepositConfig, type DepositConfig } from './depositMinimum';
 
@@ -26,8 +26,13 @@ export interface DepositWallet {
   assets: string[];
 }
 
-/** Every configured deposit wallet at once, for a UI that lists them all
- * instead of making the user pick a network first.
+/**
+ * Every configured deposit wallet, read once.
+ *
+ * This is the ONE place deposit destinations come from. The nav screen
+ * lists them all; the Wallet screen narrows them by asset and network. Both
+ * read the same wallets, so the two screens cannot disagree about which
+ * address belongs to which chain.
  *
  * The addresses normally arrive inside the config envelope, so the whole
  * list costs ONE request. An API that has not shipped that field yet omits
@@ -37,7 +42,13 @@ export interface DepositWallet {
  * an empty address in a funds-receiving field is how deposits get lost.
  */
 export function useDepositWallets(active: boolean) {
-  const empty = { loaded: false, wallets: [] as DepositWallet[], minDepositUsd: null as number | null, error: null as 'chains' | 'address' | null };
+  const empty = {
+    loaded: false,
+    wallets: [] as DepositWallet[],
+    minDepositUsd: null as number | null,
+    usdPeggedAssets: [] as string[],
+    error: null as 'chains' | 'address' | null,
+  };
   const [state, setState] = useState(empty);
 
   useEffect(() => {
@@ -60,9 +71,11 @@ export function useDepositWallets(active: boolean) {
       }));
       if (cancelled) return;
       const wallets = resolved.filter((wallet): wallet is DepositWallet => wallet !== null);
-      setState({ loaded: true, wallets, minDepositUsd: value.minDepositUsd,
+      setState({ loaded: true, wallets, minDepositUsd: value.minDepositUsd, usdPeggedAssets: value.usdPeggedAssets,
         error: wallets.length < value.chains.length ? 'address' : null });
-    }).catch(() => { if (!cancelled) setState({ loaded: true, wallets: [], minDepositUsd: null, error: 'chains' }); });
+    }).catch(() => {
+      if (!cancelled) setState({ loaded: true, wallets: [], minDepositUsd: null, usdPeggedAssets: [], error: 'chains' });
+    });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -70,69 +83,86 @@ export function useDepositWallets(active: boolean) {
   return state;
 }
 
-/** Shared by the nav and Wallet deposit forms. Configuration is read on each
- * opening; no guessed minimum, address, supported asset or conversion. */
-export function useDepositOptions(active: boolean) {
-  const [config, setConfig] = useState<DepositConfig | null>(null);
-  const [chainsLoaded, setChainsLoaded] = useState(false);
-  const [chain, setChain] = useState<string | null>(null);
-  const [asset, setAsset] = useState('');
-  const [destination, setDestination] = useState<{ chain: string; address: string; assets: string[] } | null>(null);
-  const [error, setError] = useState<'chains' | 'address' | null>(null);
+/**
+ * The deposit minimum expressed in the asset the user is about to send.
+ *
+ * The threshold itself is the backend's, in USD. For a USD-pegged asset the
+ * two are the same number. For anything else this is a DISPLAY estimate off
+ * the public ticker, refreshed every 30s — DepositService re-prices at
+ * actual credit time, so nothing here decides what gets credited. An asset
+ * with no usable price returns null and the screen shows the USD figure
+ * alone rather than a guessed conversion.
+ */
+export function useMinimumEquivalent(
+  minDepositUsd: number | null,
+  usdPeggedAssets: string[],
+  asset: string,
+  active: boolean,
+) {
   const [quote, setQuote] = useState<{ asset: string; minimum: number; equivalent: number } | null>(null);
+  const stable = !!asset && usdPeggedAssets.includes(asset);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active || minDepositUsd === null || !asset || stable) return;
     let cancelled = false;
-    setConfig(null); setChainsLoaded(false); setChain(null); setDestination(null); setAsset(''); setError(null);
-    getDepositConfig().then(value => {
-      if (cancelled) return;
-      if (!validDepositConfig(value)) throw new Error('Invalid deposit configuration');
-      setConfig(value); setChain(value.chains[0]?.chain ?? null);
-    }).catch(() => { if (!cancelled) setError('chains'); })
-      .finally(() => { if (!cancelled) setChainsLoaded(true); });
-    return () => { cancelled = true; };
-  }, [active]);
-
-  useEffect(() => {
-    if (!active || !config || !chain) return;
-    let cancelled = false;
-    setDestination(null); setAsset(''); setError(null);
-    api.getDepositAddress(chain).then(value => {
-      if (cancelled) return;
-      const supported = config.chains.find(item => item.chain === chain)?.supportedAssets ?? [];
-      if (value.chain !== chain || typeof value.address !== 'string' || !value.address
-        || !Array.isArray(value.supportedAssets) || !value.supportedAssets.every(item => typeof item === 'string' && supported.includes(item)))
-        throw new Error('Invalid deposit destination');
-      setDestination({ chain, address: value.address, assets: value.supportedAssets });
-      setAsset(value.supportedAssets[0] ?? '');
-    }).catch(() => { if (!cancelled) setError('address'); });
-    return () => { cancelled = true; };
-  }, [active, config, chain]);
-
-  const assets = destination?.chain === chain ? destination.assets : [];
-  const selectedAsset = assets.includes(asset) ? asset : '';
-  useEffect(() => {
-    if (!active || !config || !selectedAsset || config.usdPeggedAssets.includes(selectedAsset)) return;
-    let cancelled = false;
+    const config: DepositConfig = { chains: [], minDepositUsd, usdPeggedAssets };
     const refresh = () => {
-      api.getExternalTicker(`${selectedAsset}/USDT`).then(value => {
+      api.getExternalTicker(`${asset}/USDT`).then(value => {
         if (cancelled) return;
-        const equivalent = depositMinimumEquivalent(config, selectedAsset, value?.ticker?.lastPrice);
-        setQuote(equivalent === null ? null : { asset: selectedAsset, minimum: config.minDepositUsd, equivalent });
+        const equivalent = depositMinimumEquivalent(config, asset, value?.ticker?.lastPrice);
+        setQuote(equivalent === null ? null : { asset, minimum: minDepositUsd, equivalent });
       }).catch(() => { if (!cancelled) setQuote(null); });
     };
     setQuote(null); refresh();
     const timer = setInterval(refresh, 30_000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [active, config, selectedAsset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, minDepositUsd, asset, stable]);
 
-  const stable = !!config?.usdPeggedAssets.includes(selectedAsset);
   return {
-    chains: active ? config?.chains ?? [] : [], chainsLoaded, chain, setChain, asset: selectedAsset, setAsset, assets,
-    address: active && destination?.chain === chain ? destination.address : null, error,
-    minDepositUsd: active ? config?.minDepositUsd ?? null : null, stable,
-    minEquivalent: !active || !config || !selectedAsset ? null : stable ? config.minDepositUsd
-      : quote?.asset === selectedAsset && quote.minimum === config.minDepositUsd ? quote.equivalent : null,
+    stable,
+    minEquivalent: !active || minDepositUsd === null || !asset ? null
+      : stable ? minDepositUsd
+      : quote?.asset === asset && quote.minimum === minDepositUsd ? quote.equivalent : null,
+  };
+}
+
+/**
+ * Asset first, then the networks that carry it.
+ *
+ * Network-first put the user in front of an asset list that, on most
+ * chains, holds exactly one entry — opening it changed nothing and the
+ * screen read as stuck. Choosing the asset first is the question the user
+ * actually has ("I am sending USDT — where?"), and it leaves the second
+ * list with something to choose between.
+ *
+ * Neither list is ever widened beyond what the backend said it will
+ * credit: an asset only appears because some wallet lists it, and a network
+ * only appears under an asset whose own `assets` include it.
+ */
+export function useDepositSelection(wallets: DepositWallet[]) {
+  const assets = useMemo(() => {
+    const seen: string[] = [];
+    for (const wallet of wallets) for (const asset of wallet.assets) if (!seen.includes(asset)) seen.push(asset);
+    return seen;
+  }, [wallets]);
+
+  const [assetChoice, setAsset] = useState('');
+  const [chainChoice, setChain] = useState('');
+
+  // Fall back rather than hold a choice the current wallets cannot honour:
+  // the config is re-read on each opening and a chain can disappear from it.
+  const asset = assets.includes(assetChoice) ? assetChoice : assets[0] ?? '';
+  const networks = useMemo(() => wallets.filter(wallet => wallet.assets.includes(asset)), [wallets, asset]);
+  const wallet = networks.find(item => item.chain === chainChoice) ?? networks[0] ?? null;
+
+  return {
+    assets,
+    asset,
+    setAsset,
+    networks,
+    chain: wallet?.chain ?? '',
+    setChain,
+    address: wallet?.address ?? null,
   };
 }

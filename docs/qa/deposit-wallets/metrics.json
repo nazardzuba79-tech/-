@@ -11,7 +11,7 @@
   "report": {
     "current": {
       "390": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\n\n⚠ Отправляй на этот адрес только SOL / USDT в сеть Solana. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.",
         "selects": 0,
         "copyButtons": 6,
         "addresses": [
@@ -22,14 +22,22 @@
           "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 56,
+        "scrollOverflow": 397,
         "width": 366,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       },
       "1440": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\n\n⚠ Отправляй на этот адрес только SOL / USDT в сеть Solana. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.",
         "selects": 0,
         "copyButtons": 6,
         "addresses": [
@@ -40,16 +48,24 @@
           "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 0,
+        "scrollOverflow": 329,
         "width": 440,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       }
     },
     "fallback": {
       "390": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\n\n⚠ Отправляй на этот адрес только SOL / USDT в сеть Solana. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.",
         "selects": 0,
         "copyButtons": 6,
         "addresses": [
@@ -60,14 +76,22 @@
           "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 56,
+        "scrollOverflow": 397,
         "width": 366,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       },
       "1440": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\n\n⚠ Отправляй на этот адрес только SOL / USDT в сеть Solana. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.",
         "selects": 0,
         "copyButtons": 6,
         "addresses": [
@@ -78,16 +102,24 @@
           "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 0,
+        "scrollOverflow": 329,
         "width": 440,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       }
     },
     "degraded": {
       "390": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
         "selects": 0,
         "copyButtons": 5,
         "addresses": [
@@ -97,14 +129,21 @@
           "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 6,
+        "scrollOverflow": 275,
         "width": 366,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       },
       "1440": {
-        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\n\n⚠ Отправляй на этот адрес только BTC в сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств.\n\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\n\n⚠ Отправляй на этот адрес только USDT в сеть TRC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\n\n⚠ Отправляй на этот адрес только ETH / USDT в сеть ERC-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\n\n⚠ Отправляй на этот адрес только BNB / USDT в сеть BEP-20. Перевод другого актива или через другую сеть может привести к потере средств.\n\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n\n⚠ Отправляй на этот адрес только TON / USDT в сеть TON. Перевод другого актива или через другую сеть может привести к потере средств.\n\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
         "selects": 0,
         "copyButtons": 5,
         "addresses": [
@@ -114,11 +153,18 @@
           "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
           "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
         ],
-        "scrollOverflow": 0,
+        "scrollOverflow": 208,
         "width": 440,
         "modalZ": 100,
         "coveredCopyButtons": 0,
-        "floatingAbove": 1
+        "floatingAbove": 1,
+        "warningTones": [
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)",
+          "rgb(227, 180, 92)"
+        ]
       }
     }
   }

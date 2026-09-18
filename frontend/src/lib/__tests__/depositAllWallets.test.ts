@@ -23,7 +23,11 @@ const { renderToStaticMarkup } = req('react-dom/server');
 const read = (file: string) => readFileSync(resolve(root, file), 'utf8').replace(/\r\n/g, '\n');
 
 function evaluate(file: string, imports: Record<string, unknown> = {}) {
-  const code = ts.transpileModule(read(file), { compilerOptions: {
+  // `import.meta` is a module-only form and this runs the transpiled source
+  // through `new Function`. Only the env lookup is rewritten — the value it
+  // yields (undefined) is the same one a build without VITE_API_URL gets,
+  // so the module still falls back to its own default.
+  const code = ts.transpileModule(read(file).replace(/import\.meta\.env/g, '({} as any)'), { compilerOptions: {
     jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS,
   } }).outputText;
   const output: Record<string, any> = {};
@@ -90,15 +94,32 @@ describe('the deposit screen shows every wallet straight away', () => {
     expect(html).toContain(`aria-label="${dictionaries.ru['deposit.copy']} — ${dictionaries.ru['deposit.chain.ethereum']}"`);
   });
 
-  it('warns once about network and asset, rather than six times', () => {
+  it('warns under each address, naming that wallet’s own assets and network', () => {
     const html = renderModal(loaded);
 
-    expect(html).toContain(dictionaries.ru['deposit.warningAll']);
-    expect(html.split(dictionaries.ru['deposit.warningAll']).length - 1).toBe(1);
-    // The old per-card warning took {assets} and {chain}; nothing may render
-    // it with the placeholders still in place.
+    // One warning per wallet, not one generic notice for all of them.
+    expect(html.split('Отправляй на этот адрес только').length - 1).toBe(WALLETS.length);
+    // Each names what THAT chain credits. Tron takes USDT only, so its
+    // warning must not borrow Ethereum's pair.
+    expect(html).toContain('только USDT в сеть TRC-20');
+    expect(html).toContain('только ETH / USDT в сеть ERC-20');
+    // The network name in the sentence is the bare network, never the card
+    // heading: "only USDT on the USDT (TRC-20) network" is not a sentence.
+    expect(html).not.toContain('в сеть USDT (TRC-20)');
+    // Nothing renders with the placeholders still in place.
     expect(html).not.toContain('{assets}');
     expect(html).not.toContain('{chain}');
+  });
+
+  it('draws the warning in amber, not the red this app uses for a loss', () => {
+    const html = renderModal(loaded);
+    const block = html.slice(html.indexOf('<p style="background:'), html.indexOf('Отправляй'));
+
+    // Sampled from the rendered style: red channel above blue, and not the
+    // sell red. `--sell` must not appear on a warning at all.
+    expect(block).toMatch(/background:rgba\(233, 173, 53/);
+    expect(block).toMatch(/color:#e3b45c/);
+    expect(block).not.toContain('var(--sell');
   });
 
   it('shows the minimum only once the real figure has arrived', () => {
@@ -127,10 +148,19 @@ describe('the deposit screen shows every wallet straight away', () => {
     expect(html).toContain(dictionaries.ru['deposit.loadAddressError']);
   });
 
-  it('carries the new warning in all seven languages', () => {
+  it('carries the warning and every bare network name in all seven languages', () => {
     for (const code of LOCALES) {
-      expect(typeof dictionaries[code]['deposit.warningAll']).toBe('string');
-      expect(dictionaries[code]['deposit.warningAll'].length).toBeGreaterThan(20);
+      expect(typeof dictionaries[code]['deposit.warningAddress']).toBe('string');
+      expect(dictionaries[code]['deposit.warningAddress'].length).toBeGreaterThan(20);
+      // Both placeholders, or a locale would silently drop the asset or the
+      // network from a warning about sending funds.
+      expect(dictionaries[code]['deposit.warningAddress']).toContain('{assets}');
+      expect(dictionaries[code]['deposit.warningAddress']).toContain('{chain}');
+      for (const chain of ['bitcoin', 'tron', 'ethereum', 'bsc', 'solana', 'ton']) {
+        expect(typeof dictionaries[code][`deposit.network.${chain}`]).toBe('string');
+      }
+      // The superseded combined warning is gone, not left behind unused.
+      expect(dictionaries[code]['deposit.warningAll']).toBeUndefined();
     }
   });
 });
@@ -174,17 +204,66 @@ describe('what this change deliberately leaves alone', () => {
     expect(hook).toContain("wallets.length < value.chains.length ? 'address' : null");
   });
 
-  it('leaves the Wallet page deposit modal on its approved design', () => {
+  it('puts the asset above the network on the Wallet page', () => {
     const walletModal = read('frontend/src/pages/wallet-v3/DepositModal.tsx');
-    expect(walletModal).toContain('useDepositOptions');
-    expect(walletModal).not.toContain('useDepositWallets');
-    // Its network/asset selects are part of the approved archive layout.
-    expect(walletModal).toContain('deposit-network');
-    expect(walletModal).toContain('deposit-asset');
+    // Network-first left the user in front of an asset list that, on most
+    // chains, held exactly one entry.
+    expect(walletModal.indexOf('id="deposit-asset"')).toBeGreaterThan(-1);
+    expect(walletModal.indexOf('id="deposit-asset"')).toBeLessThan(walletModal.indexOf('id="deposit-network"'));
+    // The network list is narrowed to the chains that credit the chosen
+    // asset, never the whole set.
+    expect(walletModal).toContain('networks.map');
+    expect(walletModal).not.toContain('chains.map');
   });
 
-  it('leaves useDepositOptions itself intact for the callers that use it', () => {
-    expect(hook).toContain('export function useDepositOptions(active: boolean)');
-    expect(hook).toContain('minEquivalent');
+  it('keeps one deposit data path, not two', () => {
+    // Both screens read the same wallets, so they cannot disagree about
+    // which address belongs to which chain.
+    expect(hook).toContain('export function useDepositWallets(active: boolean)');
+    expect(hook).not.toMatch(/export function useDepositOptions\b/);
+    expect(read('frontend/src/pages/wallet-v3/DepositModal.tsx')).toContain('useDepositWallets');
+    expect(read('frontend/src/components/DepositModal.tsx')).toContain('useDepositWallets');
+    // The deposit config is fetched in exactly one place.
+    expect(hook.match(/getDepositConfig\(\)\.then/g)?.length).toBe(1);
+  });
+
+  it('narrows the network list to chains that actually credit the asset', () => {
+    const selection = evaluate('frontend/src/lib/useDepositOptions.ts', {
+      react: { useEffect: () => undefined, useMemo: (fn: () => unknown) => fn(), useState: (initial: unknown) => [initial, () => undefined] },
+      './api': { api: {}, clearToken: () => undefined, getToken: () => null },
+      './depositMinimum': { depositMinimumEquivalent: () => null, validDepositConfig: () => true },
+    });
+    const wallets = [
+      { chain: 'bitcoin', address: 'a', assets: ['BTC'] },
+      { chain: 'tron', address: 'b', assets: ['USDT'] },
+      { chain: 'ethereum', address: 'c', assets: ['ETH', 'USDT'] },
+    ];
+    const state = selection.useDepositSelection(wallets);
+
+    // Every asset any wallet credits, each once, in the order the backend
+    // listed the chains.
+    expect(state.assets).toEqual(['BTC', 'USDT', 'ETH']);
+    // With no explicit choice it settles on the first asset and the first
+    // chain that carries it — never a chain that does not.
+    expect(state.asset).toBe('BTC');
+    expect(state.networks.map((w: { chain: string }) => w.chain)).toEqual(['bitcoin']);
+    expect(state.address).toBe('a');
+  });
+
+  it('never offers a network that would not credit the chosen asset', () => {
+    const selection = evaluate('frontend/src/lib/useDepositOptions.ts', {
+      react: { useEffect: () => undefined, useMemo: (fn: () => unknown) => fn(), useState: () => ['USDT', () => undefined] },
+      './api': { api: {}, clearToken: () => undefined, getToken: () => null },
+      './depositMinimum': { depositMinimumEquivalent: () => null, validDepositConfig: () => true },
+    });
+    const state = selection.useDepositSelection([
+      { chain: 'bitcoin', address: 'a', assets: ['BTC'] },
+      { chain: 'tron', address: 'b', assets: ['USDT'] },
+      { chain: 'ethereum', address: 'c', assets: ['ETH', 'USDT'] },
+    ]);
+
+    // USDT rides two chains; Bitcoin credits none of it and must not appear.
+    expect(state.networks.map((w: { chain: string }) => w.chain)).toEqual(['tron', 'ethereum']);
+    expect(state.networks.every((w: { assets: string[] }) => w.assets.includes('USDT'))).toBe(true);
   });
 });
