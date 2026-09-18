@@ -1,6 +1,7 @@
-import { BarChart3Icon, CreditCardIcon, LayoutGridIcon, ListOrderedIcon, PiggyBankIcon, WalletIcon, ArrowRightIcon } from 'lucide-react';
+import { BarChart3Icon, CreditCardIcon, LayoutGridIcon, ListOrderedIcon, MoonIcon, PiggyBankIcon, SunIcon, WalletIcon, ArrowRightIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Key, useLanguage } from '../../lib/i18n';
+import { WalletTheme } from './useWalletTheme';
 
 /**
  * THE WALLET'S OWN NAVIGATION.
@@ -66,9 +67,13 @@ function Items({ items, section, onSection }: { items: Item[]; section: WalletSe
 export function WalletSideNav({
   section,
   onSection,
+  theme,
+  onToggleTheme,
 }: {
   section: WalletSection;
   onSection: (next: WalletSection) => void;
+  theme: WalletTheme;
+  onToggleTheme: () => void;
 }) {
   const { t } = useLanguage();
 
@@ -77,7 +82,10 @@ export function WalletSideNav({
       {/* The approved design's brand block: the wordmark with its gold L,
           and the product line under it. Decorative for the sidebar only —
           the global header keeps the app's own logo. */}
-      <div className="wallet-brand hidden lg:block" aria-hidden="true">
+      {/* The workspace's own title. The page no longer prints a separate
+          `Кошелёк` heading above the shell: the wordmark and its product
+          line say where the reader is, at every width. */}
+      <div className="wallet-brand">
         <p className="wallet-brand-name">
           VO<b>L</b>TEX
         </p>
@@ -103,6 +111,23 @@ export function WalletSideNav({
           </span>
           <i className="wallet-card-link-glow" aria-hidden="true" />
         </Link>
+      </div>
+
+      <div className="wallet-side-foot">
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="wallet-theme-btn"
+          aria-pressed={theme === 'dark'}
+          title={t('wallet.themeToggle')}
+        >
+          {theme === 'dark' ? (
+            <SunIcon className="h-4 w-4 shrink-0" strokeWidth={1.7} aria-hidden="true" />
+          ) : (
+            <MoonIcon className="h-4 w-4 shrink-0" strokeWidth={1.7} aria-hidden="true" />
+          )}
+          <span>{t(theme === 'dark' ? 'wallet.themeLight' : 'wallet.themeDark')}</span>
+        </button>
       </div>
     </nav>
   );
