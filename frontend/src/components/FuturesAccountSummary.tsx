@@ -16,15 +16,10 @@ type FuturesConfig = { leverageTiers: LeverageTier[] } | null;
 export function FuturesAccountSummary({
   quoteAsset,
   config,
-  marginType,
   onOpenTransfer,
 }: {
   quoteAsset: string;
   config: FuturesConfig;
-  /** The margin mode this account actually settles in. Stated here because
-   *  it is the first thing the summary has to say about the account: the
-   *  margin figures below mean different things under Cross and Isolated. */
-  marginType?: 'ISOLATED' | 'CROSS';
   onOpenTransfer?: () => void;
 }) {
   const { t } = useLanguage();
@@ -121,7 +116,67 @@ export function FuturesAccountSummary({
   /** The one place an unknown becomes visible text. Never a zero. */
   const show = (value: number | null, format: (n: number) => string) =>
     value === null || unopened ? '—' : mask(format(value));
-  const showPct = (value: number | null) => (value === null || unopened ? '—' : `${value.toFixed(2)}%`);
+  /**
+   * A percentage, at the precision this row can print.
+   *
+   * `—` is unknown. `0.00%` is a real zero — no position against a funded
+   * account. And a KNOWN usage too small for two decimals reads `<0.01%`,
+   * not `0.00%`: a position that exists is a different fact from no
+   * position at all, and on an eight-figure account almost every honest
+   * margin usage lands under a hundredth of a percent. Rounding it away
+   * would be the same flattening the owner rejected on `0.04%`.
+   */
+  const showPct = (value: number | null) => {
+    if (value === null || unopened) return '—';
+    if (value > 0 && value < 0.005) return '<0.01%';
+    return `${value.toFixed(2)}%`;
+  };
+  /**
+   * An incomplete collateral valuation, reduced from a paragraph to a mark.
+   *
+   * The warning itself is NOT dropped: a total that silently omits an asset
+   * reads exactly like a smaller account. It moves next to the figure it
+   * qualifies, where the tooltip says which assets are missing, instead of
+   * standing as a block of technical prose above the numbers.
+   */
+  const collateralIncomplete = aggregate ? !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 : false;
+  const incompleteNote = aggregate && collateralIncomplete
+    ? t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })
+    : '';
+
+  /** Label + amount + unit on the card's one right axis. */
+  const amountRow = (key: string, label: string, value: number | null, extra?: React.ReactNode, tone?: string) => (
+    <div className="futures-account-stat" key={key}>
+      <span className="fa-label">{label}</span>
+      <span className="fa-value mono" style={tone ? { color: tone } : undefined}>
+        <span className="fa-amount">{show(value, groupAmount)}</span>
+        <span className="fa-unit">{NBSP}{quoteAsset}</span>
+        {extra}
+      </span>
+    </div>
+  );
+
+  /**
+   * One margin-usage row: short label, a fixed-width bar, the percentage.
+   *
+   * The percentage is the SAME number the card computed above — this only
+   * renders it. `null` stays a dash, a real 0 stays `0.00%`, and the bar is
+   * empty in both cases but grey for the unknown one, so "no risk" and "not
+   * known" never look alike.
+   */
+  const usageRow = (key: string, short: string, full: string, value: number | null) => {
+    const known = value !== null && !unopened;
+    const filled = known ? Math.min(100, Math.max(0, value)) : 0;
+    return (
+      <div className="futures-account-stat futures-account-usage" key={key}>
+        <span className="fa-label" title={full}>{short}</span>
+        <span className="fa-track" aria-hidden="true">
+          <span className="fa-fill" style={{ width: `${filled}%`, background: usageTone(known ? value : null) }} />
+        </span>
+        <span className="fa-value mono" style={{ color: usageTone(known ? value : null) }}>{showPct(value)}</span>
+      </div>
+    );
+  };
 
   return (
     <div className="futures-account-summary" style={styles.wrap}>
@@ -135,81 +190,50 @@ export function FuturesAccountSummary({
         <span>{t(account.balances.failed ? 'trade.loadAssetsError' : 'futures.loadPositionsError')}</span>
         <button type="button" className="terminal-account-retry" disabled={retrying} onClick={() => execution.refresh(failedResources)}>{t('trade.retry')}</button>
       </div>}
-      {aggregate && !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 && (
-        // An incomplete valuation understates collateral. Saying so is the
-        // only honest option: a total that silently omits an asset reads
-        // exactly like a smaller account.
-        <div className="futures-account-state" role="status" style={{ fontSize: 11, color: 'var(--text-tertiary)', lineHeight: 1.35 }}>
-          {t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })}
-        </div>
-      )}
-      <div className="futures-account-pnl" style={styles.headerRight}>
-        <span>{t('futures.unrealizedPnl')}</span>
-        <span
-          className="mono"
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: pnl === null ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)',
-          }}
-        >
-          {show(pnl, (n) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`)}
-        </span>
-      </div>
 
-      {marginType && <div className="futures-account-stat futures-account-mode" style={styles.statRow}>
-        <span style={{ color: 'var(--text-secondary)' }}>{t('futures.marginType')}</span>
-        <span>{t(marginType === 'ISOLATED' ? 'futures.isolated' : 'futures.cross')}</span>
-      </div>}
+      <div className="futures-account-figures">
+        {amountRow('marginBalance', t('futures.marginBalance'), marginBalance,
+          collateralIncomplete
+            ? <span className="fa-flag" role="img" title={incompleteNote} aria-label={incompleteNote}>!</span>
+            : undefined)}
+        {amountRow('available', t('futures.availableMargin'), available)}
+        <div className="futures-account-stat futures-account-pnl">
+          <span className="fa-label">{t('futures.unrealizedPnl')}</span>
+          <span
+            className="fa-value mono"
+            style={{ color: pnl === null || unopened ? 'var(--text-tertiary)' : pnl >= 0 ? 'var(--buy)' : 'var(--sell)' }}
+          >
+            <span className="fa-amount">{show(pnl, (n) => `${n >= 0 ? '+' : ''}${groupAmount(n)}`)}</span>
+            <span className="fa-unit">{NBSP}{quoteAsset}</span>
+          </span>
+        </div>
+        {usageRow('im', t('futures.initialMarginUsed'), t('futures.initialMarginPct'), initialMarginPct)}
+        {usageRow('mm', t('futures.maintenanceMarginUsed'), t('futures.maintenanceMarginPct'), maintenanceMarginPct)}
 
-      <div className="futures-account-risk" style={styles.barRow}>
-        <div style={styles.barLabelRow}>
-          <span>{t('futures.initialMarginPct')}</span>
-          <span className="mono">{showPct(initialMarginPct)}</span>
-        </div>
-        <div className="futures-account-track" style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${unopened ? 0 : Math.min(100, initialMarginPct ?? 0)}%`, background: 'var(--accent)' }} />
-        </div>
-      </div>
-
-      <div className="futures-account-risk" style={styles.barRow}>
-        <div style={styles.barLabelRow}>
-          <span>{t('futures.maintenanceMarginPct')}</span>
-          <span className="mono">{showPct(maintenanceMarginPct)}</span>
-        </div>
-        <div className="futures-account-track" style={styles.barTrack}>
-          <div style={{ ...styles.barFill, width: `${unopened ? 0 : Math.min(100, maintenanceMarginPct ?? 0)}%`, background: '#f0a63a' }} />
-        </div>
-      </div>
-
-      <div className="futures-account-stat futures-account-balance" style={styles.statRow}>
-        <span style={styles.statLabel}>{t('futures.marginBalance')}</span>
-        <span className="mono" style={styles.statValue}>{show(marginBalance, (n) => n.toFixed(2))} {quoteAsset}</span>
-      </div>
-      <div className="futures-account-stat" style={styles.statRow}>
-        <span style={styles.statLabel}>{t('futures.availableMargin')}</span>
-        <span className="mono" style={styles.statValue}>{show(available, (n) => n.toFixed(2))} {quoteAsset}</span>
+        {activation && (
+          // The balance the server reported, shown as itself. It is the same
+          // money the Wallet shows; `Начать торговлю` is what moves it into
+          // the trading ledger, exactly once.
+          <div className="futures-account-stat futures-account-demo">
+            <span className="fa-label">{t('futures.demoAvailable')}</span>
+            <span className="fa-value mono">
+              <span className="fa-amount">{mask(formatActivation(activation.available))}</span>
+              <span className="fa-unit">{NBSP}{activation.asset}</span>
+            </span>
+          </div>
+        )}
       </div>
 
       {activation && (
-        // The balance the server reported, shown as itself. It is the same
-        // money the Wallet shows; `Начать торговлю` is what moves it into
-        // the trading ledger, exactly once.
-        <>
-          <div className="futures-account-stat futures-account-demo" style={styles.statRow}>
-            <span style={styles.statLabel}>{t('futures.demoAvailable')}</span>
-            <span className="mono" style={styles.statValue}>{mask(formatActivation(activation.available))} {activation.asset}</span>
-          </div>
-          <button
-            type="button"
-            className="futures-account-activate"
-            disabled={activation.pending}
-            onClick={activation.begin}
-            style={{ ...styles.actionBtn, ...styles.activateBtn }}
-          >
-            {t(activation.pending ? 'futures.startTradingPending' : 'futures.startTrading')}
-          </button>
-        </>
+        <button
+          type="button"
+          className="futures-account-activate"
+          disabled={activation.pending}
+          onClick={activation.begin}
+          style={{ ...styles.actionBtn, ...styles.activateBtn }}
+        >
+          {t(activation.pending ? 'futures.startTradingPending' : 'futures.startTrading')}
+        </button>
       )}
 
       <div className="futures-account-actions" style={styles.actionsRow}>
@@ -226,6 +250,44 @@ export function FuturesAccountSummary({
       </div>
     </div>
   );
+}
+
+/**
+ * The gap between an amount and its unit, as a CHARACTER.
+ *
+ * A flex gap alone is a visual space only: copied text and a screen reader
+ * both read `56 405 024.03USDT`. Non-breaking, so the unit can never be
+ * left behind on a line of its own.
+ */
+const NBSP = '\u00A0';
+
+/**
+ * How much of the account a margin figure is using, as a colour.
+ *
+ * A display band over the percentage the card already computed — it reads
+ * the number, it does not change it and it is not a risk model. Three
+ * bands so a heavily used account never looks like an idle one, and an
+ * unknown percentage stays neutral instead of borrowing "safe" green.
+ */
+function usageTone(pct: number | null): string {
+  if (pct === null) return 'var(--text-tertiary)';
+  if (pct >= 80) return 'var(--sell)';
+  if (pct >= 50) return '#f0a63a';
+  return 'var(--buy)';
+}
+
+/**
+ * The card's own number, made readable.
+ *
+ * Group separators and two decimals — nothing else. It never abbreviates
+ * to `56.4M`, never truncates and never rounds a figure up, so the digits
+ * a trader reads are the digits the engine sent.
+ */
+function groupAmount(value: number): string {
+  const fixed = value.toFixed(2);
+  const negative = fixed.startsWith('-');
+  const [whole, fraction] = (negative ? fixed.slice(1) : fixed).split('.');
+  return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}.${fraction}`;
 }
 
 /**
@@ -272,22 +334,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   headerRow: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 8 },
   eyeBtn: { background: 'transparent', border: 'none', color: 'var(--text-tertiary)', display: 'flex' },
-  barRow: { display: 'flex', flexDirection: 'column', gap: 4 },
-  barLabelRow: { display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)' },
-  barTrack: { height: 4, borderRadius: 999, background: 'var(--panel)', overflow: 'hidden' },
-  barFill: { height: '100%', borderRadius: 999 },
-  // The value is a number that can be eight digits wide; the label is the
-  // part that gives way. Without this the label wrapped to a second line
-  // and the rows stopped lining up with each other.
-  statRow: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-    gap: 10, fontSize: 13, minWidth: 0,
-  },
   actionsRow: { display: 'flex', gap: 8, marginTop: 2 },
-  statLabel: { color: 'var(--text-secondary)', minWidth: 0, flex: '0 1 auto' },
-  statValue: { flex: '0 0 auto', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' },
   activateBtn: {
     background: 'var(--buy)',
     borderColor: 'transparent',

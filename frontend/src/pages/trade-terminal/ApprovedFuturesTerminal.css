@@ -131,7 +131,7 @@
 .futures-terminal .percent-slider-track input:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 3px; }
 .futures-terminal .percent-slider-marks { position: absolute; inset: 0 7px; pointer-events: none; }
 .futures-terminal .percent-slider-marks span { position: absolute; top: 10px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid #66727d; background: var(--workspace-bg); transform: translateX(-50%); }
-.futures-terminal .percent-slider-value { position: absolute; right: 0; top: -13px; color: var(--accent-yellow); font-size: 11px; pointer-events: none; }
+.futures-terminal .percent-slider-value { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .futures-terminal .percent-slider-presets { display: flex; justify-content: space-between; }
 .futures-terminal .percent-slider-presets button { background: none; border: 0; padding: 2px 0; color: var(--text-secondary); font-size: 11px; cursor: pointer; }
 .futures-terminal .percent-slider-presets button[aria-pressed="true"] { color: var(--accent-yellow); }

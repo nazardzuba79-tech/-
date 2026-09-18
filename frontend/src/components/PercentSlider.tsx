@@ -58,6 +58,11 @@ export function PercentSlider({
             const next = Number(e.target.value);
             if (Number.isFinite(next)) onChange(Math.min(100, Math.max(0, next)));
           }} />
+        {/* The current percentage is already on the scale below, where the
+            active preset is highlighted, and on the input itself through
+            `aria-valuetext`. This output repeated it a third time as a
+            floating number above the track, so it is kept for assistive
+            technology and taken out of the visual rhythm. */}
         <output className="percent-slider-value">{safeValue}%</output>
       </div>
       <div className="percent-slider-presets">

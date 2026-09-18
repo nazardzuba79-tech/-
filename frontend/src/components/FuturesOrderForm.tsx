@@ -755,7 +755,7 @@ export function FuturesOrderForm({
           which is why "Доступная маржа" no longer rides along in the
           quantity field's label, where it could stretch that field
           relative to the price field beside it. */}
-      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} marginType={marginType} onOpenTransfer={onOpenTransfer} />
+      <FuturesAccountSummary quoteAsset={quoteAsset} config={config} onOpenTransfer={onOpenTransfer} />
 
       {config && (
         <details className="fo-tiersBox">

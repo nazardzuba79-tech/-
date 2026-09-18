@@ -1,0 +1,207 @@
+{
+  "dist": "/tmp/main-base/frontend/dist",
+  "token": "qa-user-a",
+  "viewports": [
+    {
+      "name": "desktop-1440x900",
+      "width": 1440,
+      "height": 900,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        279
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": true,
+      "rows": [
+        {
+          "label": "Тип маржи",
+          "value": "Изолированная",
+          "gap": 77
+        },
+        {
+          "label": "Маржинальный баланс",
+          "value": "10250.00 USDT",
+          "gap": 10
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10000.00 USDT",
+          "gap": 22
+        }
+      ],
+      "tracks": [],
+      "rightBlock": [
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 0,
+      "headerHeight": 48,
+      "sliderValueVisible": true,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "119x34",
+        "119x34"
+      ]
+    },
+    {
+      "name": "desktop-1366x768",
+      "width": 1366,
+      "height": 768,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        279
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": true,
+      "rows": [
+        {
+          "label": "Тип маржи",
+          "value": "Изолированная",
+          "gap": 77
+        },
+        {
+          "label": "Маржинальный баланс",
+          "value": "10250.00 USDT",
+          "gap": 10
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10000.00 USDT",
+          "gap": 22
+        }
+      ],
+      "tracks": [],
+      "rightBlock": [
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 0,
+      "headerHeight": 48,
+      "sliderValueVisible": true,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "119x34",
+        "119x34"
+      ]
+    },
+    {
+      "name": "mobile-390x844",
+      "width": 390,
+      "height": 844,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        0
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": true,
+      "rows": [
+        {
+          "label": "Тип маржи",
+          "value": "Изолированная",
+          "gap": 187
+        },
+        {
+          "label": "Маржинальный баланс",
+          "value": "10250.00 USDT",
+          "gap": 99
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10000.00 USDT",
+          "gap": 132
+        }
+      ],
+      "tracks": [],
+      "rightBlock": [
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 0,
+      "headerHeight": 56,
+      "sliderValueVisible": true,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "174x34",
+        "174x34"
+      ]
+    }
+  ]
+}
