@@ -92,6 +92,7 @@ export function WalletPage() {
     accountResolved,
     rows,
     btcEquivalent,
+    setCollateral,
     refresh,
   } = useWalletData();
 
@@ -190,6 +191,7 @@ export function WalletPage() {
                     unavailable={unavailable}
                     loading={loading}
                     collateral={account?.mode === 'CROSS'}
+                    onCollateralChange={setCollateral}
                     onDeposit={() => setModal('deposit')}
                     onWithdraw={() => setModal('withdraw')}
                     onTransfer={() => setModal('transfer')}
