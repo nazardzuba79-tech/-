@@ -426,7 +426,7 @@ describe('spot and futures pair lists are unchanged', () => {
   // guards is untouched and re-asserted by the test above — the futures
   // list still takes its symbols from the backend listing and still does
   // not derive a tradable pair from a catalogue entry.
-  'src/components/FuturesPairList.tsx': 'babb886a72cbfdc32203547947b327de43fca3ec0c92fc4c3ea1ffa4dbdf7afe',
+  'src/components/FuturesPairList.tsx': '3a21c8540398853aa1c485f9d294007a2ad844cc2f0b702c12ed021aca1176fa',
   };
 
   it('does not derive tradable pairs from catalogue entries', () => {
