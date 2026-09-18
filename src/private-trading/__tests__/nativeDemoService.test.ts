@@ -1,5 +1,5 @@
 import BigNumber from 'bignumber.js';
-import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT, NATIVE_QUOTE_REUSE_MS } from '../native/service';
+import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT, NATIVE_QUOTE_REUSE_MS, NATIVE_COMMIT_ATTEMPTS } from '../native/service';
 import { nativeAdmissionLimits } from '../native/replay';
 import { NativeAccount, NativeRepository, revisionPayload, commandHash } from '../native/store';
 import { emptyDemoState } from '../native/engine';
@@ -28,7 +28,9 @@ class MemoryRepository implements NativeRepository{
     this.revisions.set(1,revisionPayload(this.row));this.keys.set(key,{hash:commandHash({kind:'INITIALIZE'}),row:revisionPayload(this.row)});return structuredClone(this.row);
   }
   async commit(_a:OwnerSession,expected:number,next:NativeAccount,key:string,hash:string){
-    const prior=await this.prior(_a,key,hash);if(prior)return prior;
+    // One critical section, like the row lock in Postgres: the idempotency check and the revision CAS never interleave with another commit.
+    const known=this.keys.get(key);
+    if(known){if(known.hash!==hash)throw new PrivateTradingError('idempotency_conflict','conflict',409);return structuredClone(known.row);}
     if(this.row?.revision!==expected)throw new PrivateTradingError('account_changed','changed',409);
     // Every persisted mutation in this suite is held to the account invariants before it is stored.
     assertNativeInvariants(next.snapshot,undefined,`commit ${expected+1}`);
@@ -646,5 +648,79 @@ describe('admission caps bound NEW risk and never a risk-reducing command',()=>{
     expect(nativeAdmissionLimits()).toEqual({contracts:12,commands:5000});
     process.env.NATIVE_MAX_CONCURRENT_CONTRACTS='0';
     expect(nativeAdmissionLimits().contracts).toBe(30);
+  });
+});
+
+describe('two server instances on one account: the revision CAS decides, the loser decides again, nothing is duplicated or lost',()=>{
+  /** Two services (two replicas: separate lanes) on ONE repository; both commits are held until both have arrived. */
+  function pair(){
+    const f=setup();
+    const other=new NativeDemoService(f.repo,f.market as unknown as PrivateTradingMarketData,f.clock.now);
+    const calls={commit:0};
+    /** From now on the next two commits are held until both have arrived, so both attempts read the SAME revision. */
+    const arm=()=>{
+      let waiting=0,release!:()=>void;const gate=new Promise<void>(r=>{release=r;});
+      const commit=f.repo.commit.bind(f.repo);
+      f.repo.commit=async(...args:Parameters<MemoryRepository['commit']>)=>{calls.commit+=1;if(++waiting===2)release();await gate;return commit(...args);};
+    };
+    return{...f,other,calls,arm};
+  }
+  test('two OPENs on different contracts from two instances: both commit, in order, and the first is not lost',async()=>{
+    const f=pair();await f.service.initialize(actor,key());f.arm();
+    const [a,b]=await Promise.all([f.service.command(actor,long()),f.other.command(actor,long({symbol:'ETHUSDT'}))]);
+    expect(f.calls.commit).toBe(3);                                   // one CAS refusal, one retry
+    expect(f.service.conflicts+f.other.conflicts).toBe(1);
+    expect([a.revision,b.revision].sort()).toEqual([2,3]);
+    const last=a.revision>b.revision?a:b;
+    expect(last.positions.map(p=>p.symbol).sort()).toEqual(['BTCUSDT','ETHUSDT']);
+    expect(last.events.filter(e=>e.kind==='OPEN')).toHaveLength(2);
+    expect(f.repo.row!.commands.filter(c=>c.kind==='OPEN').map(c=>c.seq)).toEqual([1,2]);
+  });
+  test('the same order from two instances MERGES on the retry: one position, two fills, two fees, never a duplicate',async()=>{
+    const f=pair();await f.service.initialize(actor,key());f.arm();
+    const [a,b]=await Promise.all([f.service.command(actor,long()),f.other.command(actor,long())]);
+    const last=a.revision>b.revision?a:b;
+    expect(last.positions).toHaveLength(1);
+    expect(last.positions[0].quantity).toBe('4');                     // 2 + 2, decided on the winner's row
+    expect(last.events.filter(e=>e.kind==='OPEN')).toHaveLength(2);
+    expect(new Set(last.events.filter(e=>e.kind==='OPEN').map(e=>e.actionId)).size).toBe(2);
+    expect(f.repo.row!.revision).toBe(3);
+  });
+  test('a CLOSE whose position the other instance already closed is REFUSED on the retry, never filled twice',async()=>{
+    const f=pair();await f.service.initialize(actor,key());
+    const opened=await f.service.command(actor,long());const id=opened.positions[0].id;
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;f.arm();
+    const results=await Promise.allSettled([f.service.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()}),f.other.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()})]);
+    expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);
+    expect(results.find(r=>r.status==='rejected')).toMatchObject({reason:{code:'POSITION_NOT_OPEN'}});
+    const state=await f.service.state(actor);
+    expect(state.events.filter(e=>e.kind==='CLOSE')).toHaveLength(1);
+    expect(state.history.find(p=>p.id===id)?.status).toBe('CLOSED');
+  });
+  test('the same idempotency key on two instances answers with ONE receipt and no conflict at all',async()=>{
+    const f=pair();await f.service.initialize(actor,key());f.arm();
+    const request=long();
+    const [a,b]=await Promise.all([f.service.command(actor,request),f.other.command(actor,request)]);
+    expect(a.revision).toBe(b.revision);
+    expect(a.positions).toEqual(b.positions);
+    expect(f.service.conflicts+f.other.conflicts).toBe(0);
+    expect(f.repo.row!.revision).toBe(2);
+  });
+  test('the retry is bounded: a row that keeps changing under the command is reported after the last attempt, with nothing persisted',async()=>{
+    const f=setup();await f.service.initialize(actor,key());
+    let attempts=0;
+    f.repo.commit=async()=>{attempts+=1;throw new PrivateTradingError('account_changed','changed',409);};
+    await expect(f.service.command(actor,long())).rejects.toMatchObject({code:'account_changed',status:409});
+    expect(attempts).toBe(NATIVE_COMMIT_ATTEMPTS);
+    expect(f.service.conflicts).toBe(NATIVE_COMMIT_ATTEMPTS-1);
+    expect(f.repo.row!.revision).toBe(1);
+    expect(f.repo.row!.snapshot.positions).toHaveLength(0);
+  });
+  test('an idempotency conflict or any other refusal is never retried',async()=>{
+    const f=setup();await f.service.initialize(actor,key());
+    let attempts=0;
+    f.repo.commit=async()=>{attempts+=1;throw new PrivateTradingError('idempotency_conflict','conflict',409);};
+    await expect(f.service.command(actor,long())).rejects.toMatchObject({code:'idempotency_conflict'});
+    expect(attempts).toBe(1);
   });
 });

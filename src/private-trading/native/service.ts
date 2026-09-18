@@ -44,6 +44,8 @@ export const NATIVE_COMMAND_QUEUE_LIMIT=16;
  * quote then serves the same command's valuation, so it is fetched once.
  */
 export const NATIVE_QUOTE_REUSE_MS=2000;
+/** Attempts one command gets at the revision CAS before a cross-instance conflict is reported to the caller. */
+export const NATIVE_COMMIT_ATTEMPTS=3;
 /** Upstream quotes requested in parallel while valuing many open contracts. */
 export const NATIVE_QUOTE_BATCH=8;
 interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null}
@@ -295,7 +297,34 @@ export class NativeDemoService {
     run.then(settle,settle);
     return run;
   }
+  /**
+   * Two server instances (or a command that overlaps a scheduled refresh on
+   * another replica) can both read revision N and both try to commit N+1.
+   * The database lets exactly one through; the other's whole attempt is
+   * discarded by the revision CAS — nothing of it was persisted — and used
+   * to surface as `account_changed` after the trader had already been told
+   * to try again. The loser now decides AGAIN on the row as it is now: the
+   * row is re-read, the same idempotency key is re-checked (the winner may
+   * have been this very command from another tab), the instruction is
+   * rebuilt from the new row (a reduce order whose position the winner
+   * closed is refused, never filled), the contract is quoted fresh, the
+   * scenario replayed and the commit retried against the new revision. It
+   * is bounded: after `NATIVE_COMMIT_ATTEMPTS` the conflict is reported as
+   * before. Nothing here is optimistic — every attempt persists only through
+   * the same CAS, and a receipt is returned only for a committed row.
+   */
   private async execute(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
+    for(let attempt=1;;attempt++){
+      try{return await this.attempt(actor,request,hash,options);}
+      catch(e){
+        if(attempt>=NATIVE_COMMIT_ATTEMPTS||!(e instanceof PrivateTradingError&&e.code==='account_changed'))throw e;
+        this.conflicts+=1;
+      }
+    }
+  }
+  /** Revision conflicts that were retried inside a command (observability for the audit; never a user-facing figure). */
+  conflicts=0;
+  private async attempt(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
     {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
       // and the second must answer with the first's receipt rather than find

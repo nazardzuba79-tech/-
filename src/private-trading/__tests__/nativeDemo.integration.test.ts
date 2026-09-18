@@ -222,26 +222,38 @@ dbDescribe('native demo real TEST PostgreSQL persistence', () => {
     expect(await realState(f.user.id)).toEqual(before);
   });
 
-  test('two server processes cannot both commit on the same revision; the same key never executes twice', async () => {
+  test('two server processes cannot both commit on the same revision: the loser decides again on the winner\'s row; the same key never executes twice', async () => {
     const f = await fixture();
     await f.service.initialize(f.actor, `init-${randomUUID()}`);
     const other = f.make();
-    let waiting = 0, release!: () => void; const gate = new Promise<void>(r => { release = r; });
+    let waiting = 0, commits = 0, release!: () => void; const gate = new Promise<void>(r => { release = r; });
     for (const repository of [f.repository, other.repository]) {
       const commit = repository.commit.bind(repository);
-      repository.commit = async (...args) => { if (++waiting === 2) release(); await gate; return commit(...args); };
+      repository.commit = async (...args) => { commits += 1; if (++waiting === 2) release(); await gate; return commit(...args); };
     }
     const open = (key: string) => ({ kind: 'OPEN' as const, symbol: 'BTCUSDT', side: 'LONG' as const, type: 'MARKET' as const, margin: '1000', leverage: '10', idempotencyKey: key });
     const results = await Promise.allSettled([f.service.command(f.actor, open(randomUUID())), other.service.command(f.actor, open(randomUUID()))]);
-    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
-    expect(results.find(r => r.status === 'rejected')).toMatchObject({ reason: { status: 409, code: 'account_changed' } });
+    // The row lock + revision CAS let exactly one attempt through; the other was refused by the CAS and re-run on the new revision.
+    expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(2);
+    expect(commits).toBe(3);
+    expect(f.service.conflicts + other.service.conflicts).toBe(1);
+    const merged = await f.make().service.state(f.actor);
+    expect(merged.revision).toBe(3);
+    expect(merged.positions).toHaveLength(1);
+    expect(new BigNumber(merged.positions[0].quantity).toFixed()).toBe('0.4');   // 0.2 + 0.2: one position, both fills
+    expect(merged.events.filter(e => e.kind === 'OPEN')).toHaveLength(2);
+    // The retried attempt decided on a book quoted AFTER the winner's, never on the book of the refused attempt.
+    const journal = ((await db.nativeDemoAccount.findUnique({ where: { userId: f.user.id } }))!.payload as unknown as NativeAccount).commands.filter(c => c.kind === 'OPEN');
+    expect(journal.map(c => c.seq)).toEqual([1, 2]);
+    expect(journal[1].kind === 'OPEN' && journal[0].kind === 'OPEN' && journal[1].book!.timestamp >= journal[0].book!.timestamp).toBe(true);
+    expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id } })).toBe(3);
     const key = randomUUID(), fresh = f.make();
     const same = await Promise.allSettled([fresh.service.command(f.actor, open(key)), f.make().service.command(f.actor, open(key))]);
     const ok = same.filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<NativeDemoService['command']>>> => r.status === 'fulfilled');
     expect(ok.length).toBeGreaterThanOrEqual(1);
     const state = await fresh.service.state(f.actor);
     expect(state.positions).toHaveLength(1);
-    expect(new BigNumber(state.positions[0].quantity).toFixed()).toBe('0.4');
+    expect(new BigNumber(state.positions[0].quantity).toFixed()).toBe('0.6');   // the same-key pair added 0.2 ONCE
     await expect(fresh.service.command(f.actor, { ...open(key), margin: '2000' })).rejects.toMatchObject({ status: 409, code: 'idempotency_conflict' });
     expect(await db.nativeDemoRevision.count({ where: { userId: f.user.id, requestKey: key } })).toBe(1);
   });
