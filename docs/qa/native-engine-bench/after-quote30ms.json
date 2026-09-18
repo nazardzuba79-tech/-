@@ -1,0 +1,374 @@
+{
+  "label": "after-C-quote30ms",
+  "at": "2026-09-18T03:25:32.109Z",
+  "node": "v22.22.2",
+  "ops": 300,
+  "quoteLatencyMs": 30,
+  "historyLatencyMs": 0,
+  "scope": "compute + call counts on an in-memory repository and a fixture market; PostgreSQL, HTTP and the browser are NOT included",
+  "scenarios": [
+    {
+      "contracts": 1,
+      "opened": 1,
+      "refused": null,
+      "samples": {
+        "OPEN": {
+          "n": 150,
+          "p50": 48.63,
+          "p95": 59.3,
+          "p99": 67.66,
+          "max": 91.26,
+          "mean": 48.82
+        },
+        "CLOSE": {
+          "n": 120,
+          "p50": 47.35,
+          "p95": 61.75,
+          "p99": 68.56,
+          "max": 75.96,
+          "mean": 48.32
+        },
+        "REFRESH": {
+          "n": 30,
+          "p50": 9.14,
+          "p95": 15.15,
+          "p99": 31.41,
+          "max": 31.41,
+          "mean": 10.07
+        }
+      },
+      "calls": {
+        "OPEN": {
+          "quote": {
+            "n": 150,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "mean": 1
+          },
+          "history": {
+            "n": 150,
+            "p50": 0,
+            "p95": 0,
+            "p99": 1,
+            "max": 1,
+            "mean": 0.03
+          }
+        },
+        "CLOSE": {
+          "quote": {
+            "n": 120,
+            "p50": 1,
+            "p95": 1,
+            "p99": 1,
+            "max": 1,
+            "mean": 1
+          },
+          "history": {
+            "n": 120,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          }
+        },
+        "REFRESH": {
+          "quote": {
+            "n": 30,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          },
+          "history": {
+            "n": 30,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          }
+        }
+      },
+      "payload": {
+        "bytesLast": 710152,
+        "accountPayload": 428619,
+        "revisionPayload": 281533,
+        "maxSeen": 710152
+      },
+      "response": {
+        "n": 300,
+        "p50": 128459,
+        "p95": 241675,
+        "p99": 251799,
+        "max": 253603,
+        "mean": 129329.88
+      },
+      "journal": 271,
+      "loop": {
+        "p50ms": 5.12,
+        "p99ms": 39.71,
+        "maxms": 58.98
+      },
+      "statuses": {
+        "OPEN": {
+          "filled": 150,
+          "partial": 0,
+          "rejected": 0
+        },
+        "CLOSE": {
+          "filled": 120,
+          "partial": 0,
+          "rejected": 0
+        }
+      },
+      "commits": 271,
+      "openPositions": 1
+    },
+    {
+      "contracts": 6,
+      "opened": 6,
+      "refused": null,
+      "samples": {
+        "OPEN": {
+          "n": 150,
+          "p50": 79.3,
+          "p95": 88.77,
+          "p99": 91.18,
+          "max": 91.42,
+          "mean": 79.26
+        },
+        "CLOSE": {
+          "n": 120,
+          "p50": 3.13,
+          "p95": 7.24,
+          "p99": 70.85,
+          "max": 80.47,
+          "mean": 6.02
+        },
+        "REFRESH": {
+          "n": 30,
+          "p50": 11.74,
+          "p95": 18.09,
+          "p99": 37.35,
+          "max": 37.35,
+          "mean": 12.62
+        }
+      },
+      "calls": {
+        "OPEN": {
+          "quote": {
+            "n": 150,
+            "p50": 3,
+            "p95": 3,
+            "p99": 4,
+            "max": 5,
+            "mean": 3.01
+          },
+          "history": {
+            "n": 150,
+            "p50": 0,
+            "p95": 0,
+            "p99": 3,
+            "max": 6,
+            "mean": 0.12
+          }
+        },
+        "CLOSE": {
+          "quote": {
+            "n": 120,
+            "p50": 0,
+            "p95": 0,
+            "p99": 3,
+            "max": 3,
+            "mean": 0.1
+          },
+          "history": {
+            "n": 120,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          }
+        },
+        "REFRESH": {
+          "quote": {
+            "n": 30,
+            "p50": 0,
+            "p95": 0,
+            "p99": 2,
+            "max": 2,
+            "mean": 0.07
+          },
+          "history": {
+            "n": 30,
+            "p50": 0,
+            "p95": 3,
+            "p99": 6,
+            "max": 6,
+            "mean": 0.6
+          }
+        }
+      },
+      "payload": {
+        "bytesLast": 695421,
+        "accountPayload": 427123,
+        "revisionPayload": 268298,
+        "maxSeen": 695421
+      },
+      "response": {
+        "n": 186,
+        "p50": 95435,
+        "p95": 170609,
+        "p99": 178090,
+        "max": 178090,
+        "mean": 95841.33
+      },
+      "journal": 162,
+      "loop": {
+        "p50ms": 5.12,
+        "p99ms": 31.44,
+        "maxms": 44.4
+      },
+      "statuses": {
+        "OPEN": {
+          "filled": 150,
+          "partial": 0,
+          "rejected": 0
+        },
+        "CLOSE": {
+          "filled": 6,
+          "partial": 0,
+          "rejected": 114
+        }
+      },
+      "commits": 162,
+      "openPositions": 3
+    },
+    {
+      "contracts": 30,
+      "opened": 30,
+      "refused": null,
+      "samples": {
+        "OPEN": {
+          "n": 150,
+          "p50": 177.47,
+          "p95": 208.07,
+          "p99": 218.9,
+          "max": 227.02,
+          "mean": 180.01
+        },
+        "CLOSE": {
+          "n": 120,
+          "p50": 6.18,
+          "p95": 205.71,
+          "p99": 213.69,
+          "max": 213.81,
+          "mean": 41.25
+        },
+        "REFRESH": {
+          "n": 30,
+          "p50": 38.16,
+          "p95": 169.21,
+          "p99": 175.66,
+          "max": 175.66,
+          "mean": 55.28
+        }
+      },
+      "calls": {
+        "OPEN": {
+          "quote": {
+            "n": 150,
+            "p50": 18,
+            "p95": 18,
+            "p99": 19,
+            "max": 19,
+            "mean": 17.84
+          },
+          "history": {
+            "n": 150,
+            "p50": 0,
+            "p95": 0,
+            "p99": 30,
+            "max": 30,
+            "mean": 0.76
+          }
+        },
+        "CLOSE": {
+          "quote": {
+            "n": 120,
+            "p50": 0,
+            "p95": 13,
+            "p99": 14,
+            "max": 15,
+            "mean": 1.95
+          },
+          "history": {
+            "n": 120,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          }
+        },
+        "REFRESH": {
+          "quote": {
+            "n": 30,
+            "p50": 0,
+            "p95": 13,
+            "p99": 14,
+            "max": 14,
+            "mean": 1.7
+          },
+          "history": {
+            "n": 30,
+            "p50": 0,
+            "p95": 0,
+            "p99": 0,
+            "max": 0,
+            "mean": 0
+          }
+        }
+      },
+      "payload": {
+        "bytesLast": 1411341,
+        "accountPayload": 875139,
+        "revisionPayload": 536202,
+        "maxSeen": 1411341
+      },
+      "response": {
+        "n": 204,
+        "p50": 144324,
+        "p95": 227033,
+        "p99": 234487,
+        "max": 235539,
+        "mean": 145774.01
+      },
+      "journal": 204,
+      "loop": {
+        "p50ms": 5.12,
+        "p99ms": 50.4,
+        "maxms": 88.08
+      },
+      "statuses": {
+        "OPEN": {
+          "filled": 150,
+          "partial": 0,
+          "rejected": 0
+        },
+        "CLOSE": {
+          "filled": 24,
+          "partial": 0,
+          "rejected": 96
+        }
+      },
+      "commits": 204,
+      "openPositions": 18
+    }
+  ]
+}

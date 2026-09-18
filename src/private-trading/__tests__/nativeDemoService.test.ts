@@ -1,5 +1,6 @@
 import BigNumber from 'bignumber.js';
-import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT } from '../native/service';
+import { NativeDemoService, NATIVE_REFRESH_PERSIST_MS, NATIVE_COMMAND_QUEUE_LIMIT, NATIVE_QUOTE_REUSE_MS } from '../native/service';
+import { nativeAdmissionLimits } from '../native/replay';
 import { NativeAccount, NativeRepository, revisionPayload, commandHash } from '../native/store';
 import { emptyDemoState } from '../native/engine';
 import type { OwnerSession } from '../serviceTypes';
@@ -98,6 +99,8 @@ describe('native demo service (fixture market, in-memory persistence)',()=>{
   test('historical market entry at a selected 1h candle close immediately shows P&L through to the live price',async()=>{
     const f=setup();await f.service.initialize(actor,'init-key-3');
     f.market.price=t=>t<H0+2*H?'40000':'42000';f.market.quote={...f.market.quote,mark:'42000',last:'42000',bid:'41999.9',ask:'42000.1'};
+    // The fixture moved the market without moving the clock: let the service's short quote snapshot expire.
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
     const v=await f.service.command(actor,long({leverage:'10',candle:{source:'BYBIT_LINEAR',interval:'1h',openTime:H0,pricePoint:'CLOSE'}}));
     expect(v.positions).toHaveLength(1);
     expect(v.positions[0]).toMatchObject({historical:true,entryPrice:'40000',quantity:'1.25',openedAt:H0+H,markPrice:'42000',unrealizedPnl:'2500',roiPercent:'50'});
@@ -297,6 +300,8 @@ describe('the P&L card and the account come from the same numbers',()=>{
       if(symbol==='XYZUSDT')throw new Error('NO_SUCH_CONTRACT');
       return answer(symbol);
     }) as typeof f.market.freshQuote;
+    // Initialization already valued XYZ successfully; let that snapshot expire so the outage is seen.
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
     await f.service.command(actor,long());
 
     const a=(await f.service.account(actor))!.account;
@@ -566,5 +571,77 @@ describe('one collateral snapshot: admission, liquidation reference and the resp
     expect(v.account!.liquidatable).toBeNull();
     expect(v.positions).toHaveLength(1);
     expect(v.positions[0].liquidationPrice).toBeNull();
+  });
+});
+
+describe('the live path fetches each quote once and values the rest from a fresh snapshot',()=>{
+  function counting(f:ReturnType<typeof setup>){
+    const answer=f.market.freshQuote.bind(f.market);const asked:string[]=[];
+    f.market.freshQuote=(async(symbol:string)=>{asked.push(symbol);return answer(symbol);}) as typeof f.market.freshQuote;
+    return asked;
+  }
+  test('an OPEN quotes its own contract once (fresh) and reuses quotes younger than the reuse window for the others',async()=>{
+    const f=setup();await f.service.initialize(actor,'quote-init');f.repo.wallet=[];
+    for(const symbol of ['AAAUSDT','BBBUSDT','CCCUSDT']){await f.service.command(actor,long({symbol,margin:'1000'}));f.clock.t+=100;}
+    const asked=counting(f);
+    await f.service.command(actor,long({symbol:'AAAUSDT',margin:'1000'}));
+    // The executed contract is fetched fresh; the two others were quoted 100-200 ms ago and are reused.
+    expect(asked).toEqual(['AAAUSDT']);
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;asked.length=0;
+    await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect([...asked].sort()).toEqual(['AAAUSDT','BBBUSDT','CCCUSDT']);
+    asked.length=0;f.clock.t+=100;
+    await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(asked).toEqual([]);
+  });
+  test('a reused quote is still checked for freshness at use: an old snapshot is refused, not applied',async()=>{
+    const f=setup();await f.service.initialize(actor,'quote-init-2');f.repo.wallet=[];
+    await f.service.command(actor,long({symbol:'AAAUSDT',margin:'1000'}));
+    // Nothing is fetched for a minute; the snapshot is older than the reuse window and a fresh one is taken.
+    f.clock.t+=60_000;const asked=counting(f);
+    await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(asked).toEqual(['AAAUSDT']);
+  });
+});
+
+describe('admission caps bound NEW risk and never a risk-reducing command',()=>{
+  const symbolAt=(i:number)=>`D${String.fromCharCode(65+(i%26))}${Math.floor(i/26)}USDT`;
+  afterEach(()=>{delete process.env.NATIVE_MAX_CONCURRENT_CONTRACTS;delete process.env.NATIVE_COMMAND_LIMIT;});
+  test('the default contract cap is 30, and the 31st contract is refused before any market data is read',async()=>{
+    expect(nativeAdmissionLimits().contracts).toBe(30);
+    const f=setup();await f.service.initialize(actor,'cap-init');f.repo.wallet=[];
+    for(let i=0;i<30;i++){await f.service.command(actor,long({symbol:symbolAt(i),margin:'1000'}));f.clock.t+=10;}
+    const state=await f.service.state(actor);expect(state.positions).toHaveLength(30);
+    const answer=f.market.freshQuote.bind(f.market);let asked=0;
+    f.market.freshQuote=(async(symbol:string)=>{asked+=1;return answer(symbol);}) as typeof f.market.freshQuote;
+    await expect(f.service.command(actor,long({symbol:symbolAt(30),margin:'1000'}))).rejects.toMatchObject({code:'CONTRACT_LIMIT'});
+    expect(asked).toBe(0);
+    // Adding to a contract already held, reducing, closing and refreshing are all still admitted.
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
+    const added=await f.service.command(actor,long({symbol:symbolAt(0),margin:'1000'}));expect(added.positions).toHaveLength(30);
+    const id=added.positions.find(p=>p.symbol===symbolAt(1))!.id;f.clock.t+=10;
+    const reduced=await f.service.command(actor,{kind:'OPEN',symbol:symbolAt(1),side:'SHORT',type:'LIMIT',price:'70000',quantity:'0.001',leverage:'20',reduceOnly:true,positionId:id,idempotencyKey:key()});
+    expect(reduced.orders.some(o=>o.reduceOnly&&o.status==='OPEN')).toBe(true);f.clock.t+=10;
+    const closed=await f.service.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()});expect(closed.positions).toHaveLength(29);
+  });
+  test('the journal limit refuses only a NEW opening order; closing stays available on a full journal',async()=>{
+    process.env.NATIVE_COMMAND_LIMIT='12';expect(nativeAdmissionLimits().commands).toBe(12);
+    const f=setup();await f.service.initialize(actor,'journal-init');f.repo.wallet=[];
+    let v=await f.service.command(actor,long({margin:'1000'}));
+    for(let i=1;i<12;i++){f.clock.t+=10;v=await f.service.command(actor,long({margin:'1000'}));}
+    expect(f.repo.row!.commands.length).toBeGreaterThanOrEqual(12);
+    f.clock.t+=10;
+    await expect(f.service.command(actor,long({margin:'1000'}))).rejects.toMatchObject({code:'COMMAND_LIMIT'});
+    const id=v.positions[0].id;f.clock.t+=10;
+    const closed=await f.service.command(actor,{kind:'CLOSE',positionId:id,idempotencyKey:key()});
+    expect(closed.positions).toHaveLength(0);expect(closed.history[0].status).toBe('CLOSED');
+    f.clock.t+=10;
+    await expect(f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()})).resolves.toBeTruthy();
+  });
+  test('the caps can be tuned from the environment within bounds',()=>{
+    process.env.NATIVE_MAX_CONCURRENT_CONTRACTS='12';process.env.NATIVE_COMMAND_LIMIT='999999';
+    expect(nativeAdmissionLimits()).toEqual({contracts:12,commands:5000});
+    process.env.NATIVE_MAX_CONCURRENT_CONTRACTS='0';
+    expect(nativeAdmissionLimits().contracts).toBe(30);
   });
 });

@@ -9,7 +9,8 @@ import { valueCollateral, CollateralPrice, CollateralValuation } from './collate
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
 import { accountLedger, AccountLedger } from './ledger';
-import { applyLatestQuotes, BarRequest, historicalLimitTouch, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import { applyLatestQuotes, BarRequest, exposedSymbols, historicalLimitTouch, nativeAdmissionLimits, NativeBook, NativeInstruction, nextInstructionSeq, ReplayBar, ReplayResult, replayNativeDemoAsync } from './replay';
+import type { PrivateFreshQuote } from '../marketData';
 export interface NativeCandle {source:'BYBIT_LINEAR';interval:PrivateChartInterval;openTime:number;pricePoint:'OPEN'|'CLOSE'}
 export type NativeCommand = {idempotencyKey:string} & (
   | {kind:'REFRESH'}
@@ -35,6 +36,16 @@ export const NATIVE_REFRESH_PERSIST_MS=15*MINUTE;
  * Overflow is an explicit retriable refusal, never a silent drop.
  */
 export const NATIVE_COMMAND_QUEUE_LIMIT=16;
+/**
+ * A quote fetched this recently is reused for VALUATION — marking the other
+ * open contracts and pricing wallet collateral — instead of being fetched
+ * again. Well inside the 5-second freshness the engine re-checks at use.
+ * The contract an order EXECUTES on always gets a fresh book; that fresh
+ * quote then serves the same command's valuation, so it is fetched once.
+ */
+export const NATIVE_QUOTE_REUSE_MS=2000;
+/** Upstream quotes requested in parallel while valuing many open contracts. */
+export const NATIVE_QUOTE_BATCH=8;
 interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null}
 /** The three fields of a valuation the engine acts on. */
 export const externalCollateral=(v:CollateralValuation):ExternalCollateral=>({priced:v.priced,complete:v.complete,asOf:v.asOf});
@@ -71,7 +82,23 @@ export class NativeDemoService {
    * lane only stops one process from refusing its own trader.
    */
   private lanes=new Map<string,CommandLane>();
+  private quotes=new Map<string,{at:number;quote:PrivateFreshQuote}>();
   constructor(readonly repository:NativeRepository,private readonly market:PrivateTradingMarketData,private readonly now:()=>number=Date.now){}
+  /** A reused snapshot that no longer passes the freshness check is replaced by a fresh fetch, not reported as stale. */
+  private async valuationQuote(symbol:string):Promise<PrivateFreshQuote>{
+    const cached=await this.quote(symbol);
+    try{return assertPrivateFreshQuote(cached,symbol,this.now());}
+    catch{const fresh=await this.quote(symbol,true);return assertPrivateFreshQuote(fresh,symbol,this.now());}
+  }
+  /** A quote for valuation may be a recent one; a quote to execute on is always fetched now. */
+  private async quote(symbol:string,fresh=false):Promise<PrivateFreshQuote>{
+    const cached=this.quotes.get(symbol);
+    if(!fresh&&cached&&this.now()-cached.at<NATIVE_QUOTE_REUSE_MS)return cached.quote;
+    const quote=await this.market.freshQuote(symbol);
+    this.quotes.set(symbol,{at:this.now(),quote});
+    if(this.quotes.size>256)for(const [k,v] of this.quotes)if(this.now()-v.at>=NATIVE_QUOTE_REUSE_MS)this.quotes.delete(k);
+    return quote;
+  }
   /**
    * The state projection WITHOUT an account.
    *
@@ -113,7 +140,7 @@ export class NativeDemoService {
       .filter(h=>h.asset!==settle)
       .map(async(h):Promise<CollateralPrice>=>{
         try{
-          const quote=await this.market.freshQuote(`${h.asset}${settle}`);
+          const quote=await this.quote(`${h.asset}${settle}`);
           // Mark, not last: the collateral is valued the way the positions
           // it backs are valued, so the two cannot drift apart.
           return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
@@ -283,7 +310,10 @@ export class NativeDemoService {
       // and the account in the response all read this same figure.
       const valuation=await this.collateral(actor),collateral=externalCollateral(valuation);
       if(instruction)instruction.collateral=collateral;
-      const commands=structuredClone(instruction?[...row.commands,instruction]:row.commands);
+      // A shallow copy: the row is this command's own read and the replay
+      // never mutates an instruction. Cloning the whole journal here was the
+      // single largest share of a command's compute.
+      const commands=instruction?[...row.commands,instruction]:[...row.commands];
       if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row,valuation);
       // Backdated trades re-simulate the scenario from the beginning; everything else continues the
       // canonical checkpoint, so outcomes already shown are never recomputed away.
@@ -313,10 +343,11 @@ export class NativeDemoService {
     // Quotes are fetched only after the (possibly long) history pass, then checked for freshness again.
     const latest:Record<string,{mark:string;last:string;time:number}>={};
     const symbols=[...new Set(result.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol))].sort();
-    // Small parallel batches keep every quote inside the freshness window without exceeding upstream concurrency.
-    for(let i=0;i<symbols.length;i+=3){
-      const quotes=await Promise.all(symbols.slice(i,i+3).map(symbol=>this.market.freshQuote(symbol)));
-      for(const q of quotes){const checked=assertPrivateFreshQuote(q,q.symbol,this.now());latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};}
+    // Parallel batches keep every quote inside the freshness window without exceeding upstream concurrency;
+    // a contract quoted within NATIVE_QUOTE_REUSE_MS (this command's own execution quote included) is not fetched again.
+    for(let i=0;i<symbols.length;i+=NATIVE_QUOTE_BATCH){
+      const quotes=await Promise.all(symbols.slice(i,i+NATIVE_QUOTE_BATCH).map(symbol=>this.valuationQuote(symbol)));
+      for(const checked of quotes)latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};
     }
     const at=Math.max(this.now(),result.snapshot.time);
     // The live risk pass values the account on THIS command's valuation.
@@ -338,6 +369,7 @@ export class NativeDemoService {
       // position — a client cannot move a close into another bucket by
       // naming one, and the engine repeats every check on replay.
       const target=request.reduceOnly?this.reduceTarget(row,{positionId:request.positionId!,symbol,side:request.side,quantity:request.quantity,marginType:request.marginType}):null;
+      if(!target)this.admitNewRisk(row,symbol);
       const marginType=target?target.marginType:request.marginType??'CROSS';
       const order=(quantity:string)=>({id,symbol,side:request.side,type:request.type,quantity,leverage:request.leverage,marginType,...(request.price?{price:request.price}:{}),...(request.protection?{protection:request.protection}:{}),
         // A reducing order keeps its type and its price; the engine checks
@@ -360,7 +392,7 @@ export class NativeDemoService {
         const at=selected.effectiveAt,mark=await this.markAt(symbol,at,request.candle.pricePoint==='OPEN'?'START':'END');
         return{id,seq,kind:'OPEN',at,order:order(size(selected.price)),instrument:{rules,profile},mark,last:selected.price,point:selected.price,candle};
       }
-      const q=await this.market.freshQuote(symbol);assertPrivateFreshQuote(q,symbol,this.now());
+      const q=await this.quote(symbol,true);assertPrivateFreshQuote(q,symbol,this.now());
       const quantity=size(sizePrice??q.lastPrice);
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},request.side==='LONG'?'BUY':'SELL',quantity,request.type==='LIMIT'?request.price:undefined);
       return{id,seq,kind:'OPEN',at:this.now(),order:order(quantity),instrument:{rules,profile},mark:q.markPrice,last:q.lastPrice,book};
@@ -373,7 +405,7 @@ export class NativeDemoService {
         if(c.effectiveAt<=p.openedAt)throw new DemoEngineError('EXIT_BEFORE_ENTRY');
         return{id,seq,kind:'CLOSE',at:c.effectiveAt,positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:c.price,candle:request.candle};
       }
-      const q=await this.market.freshQuote(p.symbol);assertPrivateFreshQuote(q,p.symbol,this.now());
+      const q=await this.quote(p.symbol,true);assertPrivateFreshQuote(q,p.symbol,this.now());
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},p.side==='LONG'?'SELL':'BUY',request.quantity??p.quantity);
       return{id,seq,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book};
     }
@@ -381,6 +413,16 @@ export class NativeDemoService {
     if(request.kind==='PROTECTION')return{id,seq,kind:'PROTECTION',at:this.now(),positionId:request.positionId,protection:request.protection};
     if(request.kind==='LEVERAGE')return{id,seq,kind:'LEVERAGE',at:this.now(),positionId:request.positionId,leverage:request.leverage};
     return undefined;
+  }
+  /**
+   * The two admission caps, applied to NEW risk only (see `nativeAdmissionLimits`).
+   * A reducing order, a close, a cancel or a refresh is never refused here.
+   */
+  private admitNewRisk(row:NativeAccount,symbol:string){
+    const limits=nativeAdmissionLimits();
+    const exposed=exposedSymbols(row.snapshot);
+    if(!exposed.has(symbol)&&exposed.size>=limits.contracts)throw new DemoEngineError('CONTRACT_LIMIT');
+    if(row.commands.length>=limits.commands)throw new DemoEngineError('COMMAND_LIMIT');
   }
   /**
    * The one open position a reducing order may touch, or a named refusal.

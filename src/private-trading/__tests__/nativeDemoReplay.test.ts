@@ -158,12 +158,14 @@ describe('cross account risk',()=>{
     placeDemoOrder(s,{id:'add',symbol:'BTCUSDT',side:'LONG',type:'MARKET',quantity:'1',leverage:'20'},T);fillDemoOrder(s,'add','1','60000',T,'SELECTED_POINT');
     expect(s.positions.map(p=>[p.id,p.quantity,p.entryPrice,p.historical])).toEqual([['live','2','55000',false],['hist','1','40000',true]]);
   });
-  test(`at most ${NATIVE_MAX_CONCURRENT_CONTRACTS} contracts carry exposure at the same time`,()=>{
-    const symbols=['A','B','C','D','E','F','G'].map(x=>`${x}XUSDT`);
+  test('a journal that was accepted always replays: the contract cap is an admission rule, not a replay rule',()=>{
+    // 31 contracts, more than the default admission cap: the service refuses
+    // the 31st OPEN before it is journaled (see nativeDemoService.test.ts), but
+    // a journal that holds them — an older, larger cap — must still replay.
+    const symbols=Array.from({length:NATIVE_MAX_CONCURRENT_CONTRACTS+1},(_,i)=>`C${String.fromCharCode(65+(i%26))}${Math.floor(i/26)}USDT`);
     const instructions=symbols.map((symbol,i)=>open(`o${i}`,T,{historical:false,symbol,quantity:'1'},'100',symbol));
     const bars=Object.fromEntries(symbols.map(x=>[x,flat(T,T+M,'100')]));
-    expect(()=>replayNativeDemo({deposit:'1000000',instructions,bars,asOf:T+M})).toThrow('CONTRACT_LIMIT');
-    expect(replayNativeDemo({deposit:'1000000',instructions:instructions.slice(0,6),bars,asOf:T+M}).positions).toHaveLength(6);
+    expect(replayNativeDemo({deposit:'1000000',instructions,bars,asOf:T+M}).positions).toHaveLength(NATIVE_MAX_CONCURRENT_CONTRACTS+1);
   });
 });
 

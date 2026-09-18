@@ -8,9 +8,33 @@ import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, D
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
 const MINUTE=60_000, DAY=86_400_000;
-export const NATIVE_COMMAND_LIMIT=2000;
-/** Distinct contracts that may carry exposure (positions or resting orders) at the same time. */
-export const NATIVE_MAX_CONCURRENT_CONTRACTS=6;
+/**
+ * ADMISSION LIMITS — enforced by the service BEFORE an instruction is
+ * journaled, never by the replay of a journal that already exists. A cap
+ * that a replay enforced could turn an accepted history into an account
+ * that can no longer be read or closed; these bound what NEW risk may be
+ * added, and a risk-reducing command (CLOSE, CANCEL, reduce-only order,
+ * REFRESH) is never refused by either of them.
+ *
+ * `NATIVE_MAX_CONCURRENT_CONTRACTS`: distinct contracts that may carry
+ * exposure at once. Its cost is quote fan-out per command (bounded by the
+ * service's short-lived quote snapshot and wider batches) and one history
+ * window per contract per replayed minute.
+ * `NATIVE_COMMAND_LIMIT`: journal length beyond which a NEW opening order is
+ * refused. Its cost is the persisted payload and the full-scenario replay.
+ * Both read the environment on each call so a deployment can tune them.
+ */
+export const NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS=30;
+export const NATIVE_DEFAULT_COMMAND_LIMIT=5000;
+/** A memory bound on what one replay will load, far above the admission limit; not a product rule. */
+export const NATIVE_JOURNAL_HARD_LIMIT=50000;
+const envBounded=(name:string,fallback:number,min:number,max:number)=>{const v=Number(process.env[name]);return Number.isFinite(v)&&v>=min&&v<=max?Math.floor(v):fallback;};
+export function nativeAdmissionLimits(){
+  return{contracts:envBounded('NATIVE_MAX_CONCURRENT_CONTRACTS',NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS,1,200),commands:envBounded('NATIVE_COMMAND_LIMIT',NATIVE_DEFAULT_COMMAND_LIMIT,10,NATIVE_JOURNAL_HARD_LIMIT)};
+}
+/** @deprecated the cap is applied at admission; kept for callers that display it. */
+export const NATIVE_MAX_CONCURRENT_CONTRACTS=NATIVE_DEFAULT_MAX_CONCURRENT_CONTRACTS;
+export const NATIVE_COMMAND_LIMIT=NATIVE_DEFAULT_COMMAND_LIMIT;
 export interface ReplayBar { time:number; intervalMs:number; trade:Candle; mark:Candle }
 export type NativeBook={bids:{price:string;quantity:string}[];asks:{price:string;quantity:string}[];timestamp:number};
 export type NativeCandleRef={source:'BYBIT_LINEAR';interval:string;openTime:number;pricePoint:'OPEN'|'CLOSE'};
@@ -123,11 +147,11 @@ function segment(s:DemoState,group:Tick[]) {
 }
 const idsDigest=(ids:string[])=>createHash('sha256').update(JSON.stringify([...ids].sort())).digest('hex');
 export function instructionDigest(instructions:NativeInstruction[],before:number){return idsDigest(instructions.filter(c=>c.at<before).map(c=>c.id));}
-function exposedSymbols(s:DemoState){
+export function exposedSymbols(s:DemoState){
   return new Set([...s.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...s.orders.filter(activeOrder).map(o=>o.symbol)]);
 }
 function sortInstructions(input:NativeInstruction[]){
-  if(input.length>NATIVE_COMMAND_LIMIT)throw new DemoEngineError('COMMAND_LIMIT');
+  if(input.length>NATIVE_JOURNAL_HARD_LIMIT)throw new DemoEngineError('JOURNAL_LIMIT');
   const ids=new Set<string>();
   for(const c of input){if(!c.id||ids.has(c.id)||!Number.isSafeInteger(c.at)||c.at<0)throw new DemoEngineError('INVALID_COMMAND_ID_OR_TIME');ids.add(c.id);}
   return [...input].sort(compareInstructions);
@@ -165,8 +189,6 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   if(c.collateral!==undefined)setDemoCollateral(s,c.collateral);
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
-    const exposed=exposedSymbols(s);exposed.add(c.order.symbol);
-    if(exposed.size>NATIVE_MAX_CONCURRENT_CONTRACTS)throw new DemoEngineError('CONTRACT_LIMIT');
     markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
     const o=placeDemoOrder(s,c.order,time);
     if(c.point!==undefined)fillDemoOrder(s,o.id,o.remaining,c.point,time,'SELECTED_POINT',c.maker===true);

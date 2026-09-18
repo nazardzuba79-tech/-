@@ -226,6 +226,26 @@ async function normalFlow(width) {
       await qty(p).fill('');
       return { price: seeded, quantity: 5, positionValue: expected };
     });
+    await check(`market-calculator-instant-${width}`, async () => {
+      // Hold the mark-price poll: the calculator must still answer from the last price the page already has.
+      let held = 0;
+      await s.context.route('**/api/v1/futures/mark-price/**', async route => { held += 1; await delay(3000); await route.continue(); });
+      await p.reload(); await ready(s);
+      await family(p, 'MARKET');
+      const t0 = Date.now();
+      await qty(p).fill('5');
+      await p.waitForFunction(() => { const row = document.querySelector('.fo-infoRow'); return row && !row.textContent.includes('—'); }, null, { timeout: 1500 });
+      const elapsed = Date.now() - t0;
+      const valueText = await p.locator('.fo-infoRow').first().innerText();
+      const value = Number(valueText.replace(/[^0-9.]/g, ''));
+      assert(Number.isFinite(value) && value > 0, `Market order value did not appear: ${valueText}`);
+      assert(elapsed < 1500, `Market order value took ${elapsed} ms`);
+      const costText = await p.locator('.fo-infoRow').nth(1).innerText();
+      assert(!costText.includes('—'), `Cost did not appear with the value: ${costText}`);
+      await s.context.unroute('**/api/v1/futures/mark-price/**');
+      await qty(p).fill('');
+      return { elapsedMs: elapsed, valueText, costText, markPollsHeld: held };
+    });
     await p.locator('#futures-tab-positions').click();
     let state = await open(s, 'LONG', '5'); const longId = state.positions.find(x => x.side === 'LONG')?.id; assert(longId);
     state = await open(s, 'SHORT', '3'); assert.equal(state.positions.length, 2);

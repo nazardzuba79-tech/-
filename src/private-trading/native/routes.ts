@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { NativeCommand, NativeDemoService } from './service';
 import { OwnerSession } from '../serviceTypes';
 import { DemoEngineError, NATIVE_DEMO_MODEL } from './engine';
+import { nativeAdmissionLimits } from './replay';
 import { ContractRuleError } from '../math';
 import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
@@ -44,9 +45,9 @@ export const NATIVE_ERROR_TEXT:Record<string,string>={
   ENTRY_MARK_UNAVAILABLE:'Недостаточно Mark Price истории для выбранной свечи.',POSITION_NOT_OPEN:'Позиция уже закрыта или не найдена.',
   INVALID_TRIGGER_PRICE:'Проверьте цену TP/SL относительно текущей цены.',INVALID_TRIGGER_STEP:'Цена TP/SL не кратна шагу цены.',INVALID_PROTECTION_QUANTITY:'Количество TP/SL больше позиции или не кратно шагу.',
   SET_EXISTING_POSITION_LEVERAGE_FIRST:'Сначала измените плечо уже открытой позиции.',CANCEL_ORDERS_BEFORE_LEVERAGE:'Сначала отмените активные ордера этой позиции.',
-  EXIT_BEFORE_ENTRY:'Свеча выхода должна быть позже входа.',CONTRACT_LIMIT:'Одновременно можно держать не более 6 разных контрактов.',
+  EXIT_BEFORE_ENTRY:'Свеча выхода должна быть позже входа.',CONTRACT_LIMIT:`Одновременно можно держать не более ${nativeAdmissionLimits().contracts} разных контрактов. Закройте позицию, чтобы открыть новый контракт.`,
   CLOSE_EXCEEDS_POSITION:'Количество больше открытой позиции.',LIMIT_PRICE_REQUIRED:'Укажите лимитную цену.',ORDER_NOT_OPEN:'Ордер уже исполнен или отменён.',ORDER_NOT_FOUND:'Ордер не найден.',
-  LATEST_MARK_STALE:'Котировка устарела. Повторите.',STALE_BOOK:'Стакан устарел. Повторите.',COMMAND_LIMIT:'Достигнут лимит операций демо-счёта.',ACCOUNT_MISSING:'Демо-счёт не подключён.',POSITION_MISSING:'Позиция не найдена.',
+  LATEST_MARK_STALE:'Котировка устарела. Повторите.',STALE_BOOK:'Стакан устарел. Повторите.',COMMAND_LIMIT:'Достигнут лимит новых сделок на этом счёте. Закрытие и отмена по-прежнему доступны.',JOURNAL_LIMIT:'Журнал счёта слишком велик для расчёта.',ACCOUNT_MISSING:'Демо-счёт не подключён.',POSITION_MISSING:'Позиция не найдена.',
 };
 const NATIVE_INPUT_ERROR_TEXT:Record<string,string>={
   INVALID_ORDER_SIZE:'Размер ордера вне лимитов контракта.',INVALID_QUANTITY_STEP:'Количество не кратно шагу контракта.',

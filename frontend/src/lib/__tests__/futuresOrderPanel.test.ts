@@ -251,6 +251,7 @@ async function orderForm(overrides: Record<string, any> = {}) {
   const form = mount(FORM, {
     account: overrides.account ?? accountState(),
     confirm: overrides.confirm,
+    execution: overrides.execution,
     api: {
       getFuturesConfig: () => Promise.resolve(overrides.config ?? tierConfig),
       getFuturesMarkPrice: () => Promise.resolve({ markPrice: '50000' }),
@@ -300,6 +301,44 @@ test.each(['STOP', 'TAKE_PROFIT', 'OCO'])('%s presentation cannot fall through t
   submit(tree);
   await tick();
   expect(f.placed).not.toHaveBeenCalled();
+});
+
+// ── The calculator answers on the keystroke ───────────────────────────
+
+describe('the order value and cost are computed on the keystroke', () => {
+  test('a MARKET quantity is valued at the last price while the mark poll is still pending', async () => {
+    const f = await orderForm({ extraApi: { getFuturesMarkPrice: () => new Promise(() => {}) }, props: { lastPrice: 50000 } });
+    let tree = f.render();
+    nodes(tree).find(n => n.type === f.form.components.OrderFamilyTabs).props.onChange('MARKET');
+    tree = f.render();
+    f.change(tree, '0.00000', '2');
+    await tick();
+    tree = f.render();
+    const rows = byClass(tree, 'fo-infoRow').map(text);
+    expect(rows[0]).toContain('100000.00');
+    expect(rows[1]).toContain('10000.00');
+    // And the buttons are live, not waiting on the poll.
+    expect(byClass(tree, 'submit-btn').every(b => !b.props.disabled)).toBe(true);
+  });
+
+  test('when the engine publishes a taker fee, the cost includes the fee reserve the engine takes', async () => {
+    const f = await orderForm({ execution: { contract: { qtyStep: '0.001', minOrderQty: '0.001', maxOrderQty: '1000', maxMarketOrderQty: '1000', minNotionalValue: '5', takerFeeRate: '0.00055' } } });
+    let tree = f.render();
+    f.change(tree, '0.00', '50000');
+    f.change(tree, '0.00000', '2');
+    await tick();
+    tree = f.render();
+    const rows = byClass(tree, 'fo-infoRow').map(text);
+    // 100 000 / 10 = 10 000 margin, plus 2 x 0.00055 x 100 000 = 110 of fee reserve.
+    expect(rows[1]).toContain('10110.00');
+  });
+
+  test('without a published fee rate the cost is the bare margin, as it always was', async () => {
+    const f = await pricedForm();
+    const rows = byClass(f.tree, 'fo-infoRow').map(text);
+    expect(rows[0]).toContain('50000.00');
+    expect(rows[1]).toContain('5000.00');
+  });
 });
 
 // ── A close from the table names its position ─────────────────────────

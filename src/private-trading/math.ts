@@ -16,7 +16,20 @@ const nonnegative = (value: string, name: string) => {
   return n;
 };
 function sideCheck(side: Side): void { if (side !== 'LONG' && side !== 'SHORT') throw new Error('INVALID_SIDE'); }
+/**
+ * A profile object that passed validation once passes again: profiles are
+ * never mutated after registration, and the check walks the whole tier
+ * ladder in decimal arithmetic. Re-running it for every order placed under
+ * the same registered profile — every replayed order, on every command —
+ * was a measurable share of a command's compute at thirty contracts.
+ */
+const validatedProfiles = new WeakSet<ModelProfile>();
 export function validateProfile(profile: ModelProfile): void {
+  if (validatedProfiles.has(profile)) return;
+  validateProfileOnce(profile);
+  validatedProfiles.add(profile);
+}
+function validateProfileOnce(profile: ModelProfile): void {
   for (const key of ['pricingModelVersion', 'feeModelVersion', 'riskModelVersion'] as const) if (!profile[key]) throw new Error('MODEL_VERSION_REQUIRED');
   for (const key of ['takerFeeRate', 'makerFeeRate', 'liquidationFeeRate'] as const) if (nonnegative(profile[key], key).gte(1)) throw new Error('INVALID_FEE_RATE');
   if (nonnegative(profile.slippageBps, 'slippage').gte(10000)) throw new Error('INVALID_SLIPPAGE');

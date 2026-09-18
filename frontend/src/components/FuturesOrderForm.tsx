@@ -16,6 +16,7 @@ import {
   floorToDecimals,
   fitQuantityToContract,
   stepDecimals,
+  orderCost,
   QUANTITY_DECIMALS,
 } from '../lib/futuresMath';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
@@ -214,7 +215,21 @@ export function FuturesOrderForm({
     };
   }, [symbol]);
 
-  const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : markPrice ?? 0;
+  /**
+   * THE CALCULATOR ANSWERS ON THE KEYSTROKE, NOT ON THE NEXT POLL.
+   *
+   * A MARKET order used to be valued at the mark price alone, which this
+   * form fetches on a 5-second timer — so for up to five seconds after
+   * opening the panel (and for as long as that endpoint is slow or down)
+   * a typed quantity showed "—" for its value and cost, and the buttons
+   * stayed disabled. The page already has the last traded price from the
+   * stream the book uses; until the mark arrives, the estimate is priced
+   * at that, and it re-prices itself the moment the mark is known. The
+   * engine still executes on ITS book: this figure is an estimate and is
+   * labelled as one.
+   */
+  const referencePrice = markPrice ?? (lastPrice !== null && Number.isFinite(lastPrice) && lastPrice > 0 ? lastPrice : null);
+  const effectivePrice = !connectedFamily ? 0 : type === 'LIMIT' ? parseFloat(price) : referencePrice ?? 0;
   const quantityNumber = parseFloat(quantity);
   const notional = effectivePrice && quantity ? effectivePrice * quantityNumber : 0;
   /**
@@ -316,9 +331,12 @@ export function FuturesOrderForm({
   const leverage = effectiveMaxLeverage === null
     ? requestedLeverage
     : Math.min(requestedLeverage, effectiveMaxLeverage);
-  /** Margin this order locks. Same expression it always was; it moved
-   *  below `leverage` because that is now derived rather than stored. */
-  const requiredMargin = leverage > 0 ? notional / leverage : 0;
+  /** What this order locks: initial margin, plus — when the engine
+   *  publishes a fee rate — the fee reserve it takes with it, exactly as
+   *  the simulation engine's admission does. Derived, never stored, so it
+   *  follows the quantity and the leverage on the same render. */
+  const orderCosting = orderCost(notional, leverage, execution.contract?.takerFeeRate);
+  const requiredMargin = orderCosting.cost;
   // `freeBalance` only enters the formula for CROSS margin (it is the
   // backstop ratio; ISOLATED ignores it entirely — see futuresMath). So an
   // unknown balance suppresses the preview for CROSS, where it would

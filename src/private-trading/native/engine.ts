@@ -1,4 +1,5 @@
 import BigNumber from 'bignumber.js';
+import { createHash } from 'crypto';
 import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
 import type { ContractRules, ModelProfile, RiskTier, Side } from '../types';
 
@@ -136,6 +137,8 @@ export interface DemoState {
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
   marks: Record<string, { mark: string; last: string; time: number }>;
   applied: Record<string, string>;
+  /** JSON fingerprint of each registered instrument, so a replay that re-registers an identical one skips its validation and copy. */
+  instrumentFingerprints?: Record<string, string>;
   /**
    * Observed liquidity already consumed from a provider snapshot, keyed by
    * the SOURCE snapshot identity (`symbol:bookGeneratedAt`) — never by the
@@ -201,7 +204,14 @@ function instrument(s: DemoState, symbol: string): DemoInstrument {
   const value = s.instruments[symbol]; if (!value) throw new DemoEngineError('INSTRUMENT_MISSING'); return value;
 }
 export function registerDemoInstrument(s: DemoState, i: DemoInstrument) {
-  validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i);
+  // Every replayed OPEN carries its instrument. Validating a 20-tier ladder
+  // and copying it again for the same contract, on every replay of every
+  // command, was a measurable share of a command's compute; an identical
+  // instrument is recognised by its fingerprint and left in place.
+  const fingerprint = JSON.stringify(i);
+  s.instrumentFingerprints ??= {};
+  if (s.instrumentFingerprints[i.rules.symbol] === fingerprint && s.instruments[i.rules.symbol]) return;
+  validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i); s.instrumentFingerprints[i.rules.symbol] = fingerprint;
 }
 /**
  * The tier a bucket's notional falls in — and, past the last published tier,
@@ -393,9 +403,12 @@ function reserveFor(s: DemoState,o: DemoOrder,price: string) {
   const profile = instrument(s,o.symbol).profile;
   return o.reduceOnly ? '0' : out(n(o.remaining).times(price).times(new D(1).div(o.leverage).plus(n(profile.takerFeeRate).times(2))));
 }
+/** The idempotency record of an order input: a digest, not the input itself, which was copied into every persisted snapshot. */
+const orderFingerprint = (input: DemoOrderInput) => createHash('sha256').update(JSON.stringify(input)).digest('hex').slice(0, 32);
 export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) {
-  const fingerprint = JSON.stringify(input);
-  if (s.applied[input.id]) { if (s.applied[input.id] !== fingerprint) throw new DemoEngineError('IDEMPOTENCY_CONFLICT'); return s.orders.find(o => o.id === input.id)!; }
+  const fingerprint = orderFingerprint(input), applied = s.applied[input.id];
+  // States written before the digest existed hold the raw JSON; either form of the same input is the same order.
+  if (applied !== undefined) { if (applied !== fingerprint && applied !== JSON.stringify(input)) throw new DemoEngineError('IDEMPOTENCY_CONFLICT'); return s.orders.find(o => o.id === input.id)!; }
   requireTime(s,time);
   if (!input.id || !['LONG','SHORT'].includes(input.side) || !['MARKET','LIMIT'].includes(input.type)) throw new DemoEngineError('INVALID_ORDER');
   const rules = instrument(s,input.symbol), quote = s.marks[input.symbol]; if (!quote) throw new DemoEngineError('MARK_MISSING');
@@ -422,7 +435,7 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   // Margin for an isolated position is still FUNDED from the shared wallet —
   // what isolation changes is that once posted it stops backing anything
   // else. So the affordability question at placement is the same one.
-  if (!o.reduceOnly && (demoAccount(s).liquidatable || n(o.reserved).gt(demoAccount(s).available))) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');
+  if (!o.reduceOnly) { const a = demoAccount(s); if (a.liquidatable || n(o.reserved).gt(a.available)) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN'); }
   // A reducing order adds no exposure and is never refused by a tier: a
   // position that has outgrown the table must still be closable at a price.
   if (!o.reduceOnly) {
@@ -621,10 +634,19 @@ export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):stri
     ? (p.side==='LONG'?new D(p.quantity):new D(p.quantity).negated())
     : same.reduce((v,x)=>x.side==='LONG'?v.plus(x.quantity):v.minus(x.quantity),new D(0));
   if(net.isZero())return null;
+  // Only THIS contract's cross positions move with the probed price; every
+  // other contract's contribution to equity and maintenance is a constant,
+  // taken once from the account at the current marks. The search therefore
+  // re-evaluates the same-contract bucket per step instead of the whole
+  // account — the difference between a thirty-position account answering
+  // thirty liquidation references in a few milliseconds and in a few hundred.
+  const contribution=(mark:string)=>same.reduce((v,x)=>{const r=positionRisk(s,x,mark);return v.plus(r.unrealized).minus(r.maintenance);},new D(0));
+  const account=isolated?null:demoAccount(s);
+  const base=account?n(account.equity).minus(account.maintenanceMargin).minus(contribution(current.mark)):new D(0);
   const health=(price:BigNumber)=>{
-    const mark=out(price),probe:DemoState={...s,positions:s.positions.map(x=>x.status==='OPEN'&&x.symbol===p.symbol?{...x,markPrice:mark}:x),marks:{...s.marks,[p.symbol]:{...current,mark}}};
-    if(isolated)return isolatedHealth(probe,probe.positions.find(x=>x.id===p.id)!,mark);
-    const a=demoAccount(probe);return n(a.equity).minus(a.maintenanceMargin);
+    const mark=out(price);
+    if(isolated)return isolatedHealth(s,p,mark);
+    return base.plus(contribution(mark));
   };
   const m0=n(current.mark);if(health(m0).lte(0))return current.mark;
   const tick=n(instrument(s,p.symbol).rules.tickSize);

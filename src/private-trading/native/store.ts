@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { privateTradingConfig, PrivateTradingConfig } from '../access';
 import { assertNativeTrader } from './testAccess';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
-import { emptyDemoState, DemoState, migrateDemoState } from './engine';
+import { emptyDemoState, DemoInstrument, DemoState, migrateDemoState } from './engine';
 import { NativeCheckpoint, NativeInstruction } from './replay';
 import { CollateralHolding } from './collateral';
 
@@ -15,7 +15,38 @@ export interface NativeAccount {
 }
 /** Immutable revision evidence: everything except the re-derivable canonical checkpoint. */
 export const revisionPayload=(account:NativeAccount):NativeAccount=>{const{checkpoint:_checkpoint,...rest}=account;return rest;};
-const json=(v:unknown):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(v));
+/**
+ * THE STORED SHAPE: one instrument per (contract, parameters), referenced by key.
+ *
+ * Every OPEN instruction carries the instrument it was placed under (rules
+ * and a risk-tier ladder — a few KB), and a journal of hundreds of opens
+ * repeated the same few instruments hundreds of times in EVERY account
+ * payload and EVERY immutable revision. The engine still receives the full
+ * instruction: `inflate` restores it on read, so nothing downstream knows.
+ */
+export interface StoredNativeAccount extends Omit<NativeAccount,'commands'>{commands:unknown[];instrumentTable?:Record<string,DemoInstrument>}
+const instrumentKey=(i:DemoInstrument)=>`${i.rules.symbol}#${createHash('sha256').update(JSON.stringify(i)).digest('hex').slice(0,16)}`;
+export function compact(account:NativeAccount):StoredNativeAccount{
+  const table:Record<string,DemoInstrument>={};
+  const commands=account.commands.map(c=>{
+    if(c.kind!=='OPEN')return c;
+    const key=instrumentKey(c.instrument);table[key]??=c.instrument;
+    const{instrument:_instrument,...rest}=c;return{...rest,instrumentRef:key};
+  });
+  return{...account,commands,...(Object.keys(table).length?{instrumentTable:table}:{})};
+}
+export function inflate(stored:StoredNativeAccount|NativeAccount):NativeAccount{
+  const table=(stored as StoredNativeAccount).instrumentTable;
+  if(!table)return stored as NativeAccount;
+  const{instrumentTable:_table,...rest}=stored as StoredNativeAccount;
+  const commands=(stored.commands as Array<Record<string,unknown>>).map(c=>{
+    if(c.kind!=='OPEN'||typeof c.instrumentRef!=='string')return c as unknown as NativeInstruction;
+    const instrument=table[c.instrumentRef];if(!instrument)throw new PrivateTradingError('journal_corrupt','Журнал счёта повреждён',500);
+    const{instrumentRef:_ref,...restOfCommand}=c;return{...restOfCommand,instrument} as unknown as NativeInstruction;
+  });
+  return{...rest,commands} as NativeAccount;
+}
+const json=(v:NativeAccount):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(compact(v)));
 /**
  * EVERY stored account comes back through here.
  *
@@ -24,11 +55,14 @@ const json=(v:unknown):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(v));
  * one place, so nothing downstream — the engine, the replay, the account
  * model — has to know that two shapes were ever on disk.
  */
-const forward=(account:NativeAccount):NativeAccount=>({
-  ...account,
-  snapshot:migrateDemoState(account.snapshot),
-  ...(account.checkpoint?{checkpoint:{...account.checkpoint,state:migrateDemoState(account.checkpoint.state)}}:{}),
-});
+const forward=(stored:NativeAccount):NativeAccount=>{
+  const account=inflate(stored);
+  return{
+    ...account,
+    snapshot:migrateDemoState(account.snapshot),
+    ...(account.checkpoint?{checkpoint:{...account.checkpoint,state:migrateDemoState(account.checkpoint.state)}}:{}),
+  };
+};
 export const commandHash=(v:unknown):string=>createHash('sha256').update(JSON.stringify(v,(_k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b))):x)).digest('hex');
 export interface NativeRepository {
   read(actor:OwnerSession):Promise<NativeAccount|null>;
