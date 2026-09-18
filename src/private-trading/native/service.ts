@@ -411,7 +411,7 @@ export class NativeDemoService {
       }
       const q=await this.quote(p.symbol,true);assertPrivateFreshQuote(q,p.symbol,this.now());
       const book=truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},p.side==='LONG'?'SELL':'BUY',request.quantity??p.quantity);
-      return{id,seq,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book};
+      return{id,seq,kind:'CLOSE',at:this.now(),positionId:p.id,...(request.quantity?{quantity:request.quantity}:{}),price:p.side==='LONG'?q.bids[0].price:q.asks[0].price,book,mark:q.markPrice,last:q.lastPrice};
     }
     if(request.kind==='CANCEL')return{id,seq,kind:'CANCEL',at:this.now(),orderId:request.orderId};
     if(request.kind==='PROTECTION')return{id,seq,kind:'PROTECTION',at:this.now(),positionId:request.positionId,protection:request.protection};

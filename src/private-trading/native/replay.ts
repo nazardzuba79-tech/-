@@ -49,7 +49,8 @@ export type NativeInstruction = {id:string;at:number;seq?:number;
   /** The wallet valuation this command was decided against; applied to the state before the instruction. Absent on older journals. */
   collateral?:ExternalCollateral} & (
   | {kind:'OPEN';order:DemoOrderInput;instrument:DemoInstrument;mark:string;last:string;point?:string;maker?:boolean;book?:NativeBook;candle?:NativeCandleRef}
-  | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef}
+  /** A live CLOSE journals the observed mark/last it was decided on; the risk pass runs on them BEFORE the book is consumed. */
+  | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef;mark?:string;last?:string}
   | {kind:'CANCEL';orderId:string}
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
   | {kind:'LEVERAGE';positionId:string;leverage:string}
@@ -190,12 +191,27 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
     markDemoAccount(s,{[c.order.symbol]:{mark:c.mark,last:c.last}},time);
+    // RISK BEFORE EXECUTION: the observation this command was decided on is
+    // applied to the account first. A position it has already carried past
+    // its boundary is liquidated there, before any order can settle at a
+    // gapped book (see NATIVE_DEMO_MODEL.executionOrdering).
+    if(!c.order.historical)evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
     const o=placeDemoOrder(s,c.order,time);
     if(c.point!==undefined)fillDemoOrder(s,o.id,o.remaining,c.point,time,'SELECTED_POINT',c.maker===true);
     else if(c.book)executeDemoBook(s,o.id,c.book,time);
     else if(o.type==='MARKET')throw new DemoEngineError('EXECUTION_PRICE_MISSING');
   }else if(c.kind==='CLOSE'){
-    if(c.book)executeCloseBook(s,c.positionId,c.quantity,c.book,time);
+    if(c.book){
+      if(c.mark!==undefined&&c.last!==undefined){
+        const p=s.positions.find(p=>p.id===c.positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
+        markDemoAccount(s,{[p.symbol]:{mark:c.mark,last:c.last}},time);
+        evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
+        // The observation liquidated it (or a stop/target on it fired): the
+        // trader's intent — be flat — is met, and nothing settles at the gap.
+        if(p.status!=='OPEN')return;
+      }
+      executeCloseBook(s,c.positionId,c.quantity,c.book,time);
+    }
     else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
   }
   else if(c.kind==='CANCEL')cancelDemoOrder(s,c.orderId,time);

@@ -29,6 +29,19 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   /** Cross positions of one contract share a tier; every isolated position is its own tier bucket. */
   riskBuckets: 'CROSS_PER_CONTRACT | ISOLATED_PER_POSITION',
   /**
+   * A live OPEN or CLOSE first applies the observed mark it was decided on
+   * and runs the risk pass, THEN executes. A position that the observation
+   * has already put past its boundary is liquidated at that boundary before
+   * any order can settle at the gapped book.
+   */
+  executionOrdering: 'OBSERVED_MARK_RISK_PASS_BEFORE_EXECUTION',
+  /**
+   * Every settlement of an isolated position — manual close, TP/SL, funding,
+   * liquidation — is bounded by the position's bankruptcy price: the post is
+   * all it can lose, and a loss past it is the venue's, never the account's.
+   */
+  isolatedSettlement: 'BOUNDED_BY_BANKRUPTCY_PRICE_ON_EVERY_PATH',
+  /**
    * Exposure that has grown past the last published risk tier (a rally on a
    * position opened inside it) keeps the LAST tier's maintenance parameters
    * so the account stays readable and the position stays closable. New
@@ -310,15 +323,28 @@ export const isolatedLiquidatable = (s: DemoState, p: DemoPosition) =>
  * owner's loss. A price that has NOT reached bankruptcy settles where it
  * actually is, so an ordinary liquidation still realises its real P&L.
  */
-export function isolatedBankruptcyBound(p: DemoPosition): string {
+export function isolatedBankruptcyPrice(p: DemoPosition): BigNumber {
   const bankruptcy = n(p.quantity).gt(0)
     ? (p.side === 'LONG'
         ? n(p.entryPrice).minus(n(p.isolatedMargin).div(p.quantity))
         : n(p.entryPrice).plus(n(p.isolatedMargin).div(p.quantity)))
     : n(p.entryPrice);
-  const floored = D.maximum(0, bankruptcy);
-  return out(p.side === 'LONG' ? D.maximum(p.lastPrice, floored) : D.minimum(p.lastPrice, floored));
+  return D.maximum(0, bankruptcy);
 }
+/**
+ * The price an isolated settlement is booked at: the observed price, unless
+ * it lies past the position's bankruptcy price — then the bankruptcy price.
+ * Applied on EVERY settlement path (see `settleClose`), so a manual close
+ * into a gap, a stop that fires on a gapped last, or a liquidation all cost
+ * the account the post and nothing beyond it. Inside the post the observed
+ * price is used as it is: the bound never improves an ordinary loss.
+ */
+export function boundIsolatedSettlement(p: DemoPosition, price: string): string {
+  if (p.marginType !== 'ISOLATED') return price;
+  const bankruptcy = isolatedBankruptcyPrice(p);
+  return out(p.side === 'LONG' ? D.maximum(price, bankruptcy) : D.minimum(price, bankruptcy));
+}
+export function isolatedBankruptcyBound(p: DemoPosition): string { return boundIsolatedSettlement(p, p.lastPrice); }
 /**
  * THE SHARED ACCOUNT — and what has been taken out of it.
  *
@@ -444,8 +470,12 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
-function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false) {
+function settleClose(s: DemoState,p:DemoPosition,quantity:string,rawPrice:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false) {
   const qty=positive(quantity);if(qty.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
+  // An isolated position cannot realise a loss larger than its post on ANY
+  // path. The venue would have liquidated it at bankruptcy before a close
+  // could settle past it; the slice beyond is not the account's.
+  const price=boundIsolatedSettlement(p,rawPrice);
   const profile=instrument(s,p.symbol).profile,fee=qty.times(price).times(maker?profile.makerFeeRate:profile.takerFeeRate);
   const gross=n(linearPnl(p.side,quantity,p.entryPrice,price));
   s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
@@ -558,19 +588,18 @@ export function settleDemoFunding(s:DemoState,time:number) {
     if(s.marks[p.symbol]?.time!==time)throw new DemoEngineError('FUNDING_MARK_NOT_AT_SETTLEMENT');
     const rate=p.side==='LONG'?NATIVE_DEMO_MODEL.funding.longCashflow:NATIVE_DEMO_MODEL.funding.shortCashflow;
     const flow=n(p.quantity).times(p.markPrice).times(rate);
+    let charged=flow;
     if(p.marginType==='ISOLATED'){
       // Into and out of the post, so funding can actually walk an isolated
       // position into liquidation instead of silently draining the account
       // that is supposed to be shielded from it. A flow larger than what is
-      // posted cannot leave a negative post: the remainder falls to the
-      // account, which is the only place left for it, and the next risk
-      // pass closes the position.
-      const next=n(p.isolatedMargin).plus(flow);
-      p.isolatedMargin=out(D.maximum(0,next));
-      if(next.lt(0))s.walletBalance=out(n(s.walletBalance).plus(next));
+      // posted is charged only up to the post — the shared wallet never pays
+      // for an isolated position — and the next risk pass closes it.
+      charged=D.maximum(flow,n(p.isolatedMargin).negated());
+      p.isolatedMargin=out(n(p.isolatedMargin).plus(charged));
     } else s.walletBalance=out(n(s.walletBalance).plus(flow));
-    p.fundingNet=out(n(p.fundingNet).plus(flow));p.lastFundingAt=time;
-    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(flow),pricing:'MARK_SETTLEMENT'});
+    p.fundingNet=out(n(p.fundingNet).plus(charged));p.lastFundingAt=time;
+    emit(s,{kind:'FUNDING',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:p.quantity,price:p.markPrice,fee:'0',cashflow:out(charged),pricing:'MARK_SETTLEMENT'});
   }s.time=time;
 }
 export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:DemoEvent['pricing']='OHLC_PATH_MODEL') {

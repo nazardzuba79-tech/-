@@ -83,6 +83,7 @@ jobs:
           src/private-trading/__tests__/nativeDemoService.test.ts
           src/private-trading/__tests__/nativeReduceOnlyClose.test.ts
           src/private-trading/__tests__/nativeRiskContract.test.ts
+          src/private-trading/__tests__/nativeIsolatedGap.test.ts
           src/private-trading/__tests__/nativeDemo.integration.test.ts
           src/api/routes/__tests__/nativeDemoAccess.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
