@@ -1,0 +1,42 @@
+{
+  "label": "before",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "desktop": {
+      "rowsAdded": 215,
+      "rowsRemoved": 215,
+      "textChanges": 2105,
+      "depthStyleWrites": 1340,
+      "otherAttr": 14,
+      "samples": 61,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/before-book-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/before-book-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/before-book-2.png"
+      ]
+    },
+    "mobile": {
+      "rowsAdded": 225,
+      "rowsRemoved": 225,
+      "textChanges": 587,
+      "depthStyleWrites": 255,
+      "otherAttr": 18,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    }
+  }
+}
