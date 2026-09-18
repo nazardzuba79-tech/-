@@ -91,6 +91,41 @@ export interface WalletPerformance {
   startedOn: string | null;
 }
 
+/**
+ * The two audited manual-adjustment actions, one per ledger.
+ *
+ * `BALANCE_ADJUSTED` is BalanceAdjustmentService writing the real `Balance`
+ * table; `DEMO_BALANCE_ADJUSTED` is DemoTradingService writing the
+ * simulation one. Both record `{ asset, delta }` in `metadata`, and both
+ * write it inside the same transaction as the balance itself.
+ */
+const ADJUSTMENT_ACTIONS = { real: 'BALANCE_ADJUSTED', native: 'DEMO_BALANCE_ADJUSTED' } as const;
+
+interface AdjustmentFlow {
+  at: Date;
+  asset: string;
+  delta: string;
+}
+
+/**
+ * One audit row read as a flow, or null when it cannot be trusted as one.
+ *
+ * `metadata` is untyped JSON: a row written by an older build, or by hand,
+ * may carry anything. A row that does not yield an asset and a finite,
+ * non-zero delta is SKIPPED rather than guessed at — a mis-parsed flow
+ * would be subtracted from a real return.
+ */
+function readAdjustment(entry: { createdAt: Date; metadata: unknown }): AdjustmentFlow | null {
+  const metadata = entry.metadata;
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const { asset, delta } = metadata as { asset?: unknown; delta?: unknown };
+  if (typeof asset !== 'string' || asset.trim() === '') return null;
+  if (typeof delta !== 'string' && typeof delta !== 'number') return null;
+  const parsed = new BigNumber(String(delta));
+  if (!parsed.isFinite() || parsed.isZero()) return null;
+  return { at: entry.createdAt, asset: asset.trim(), delta: parsed.toString() };
+}
+
 export class WalletPortfolioService {
   constructor(
     private readonly prisma: PrismaClient,
@@ -255,24 +290,61 @@ export class WalletPortfolioService {
    * move value between two wallets the snapshot already spans, so they
    * never change the total and can never affect the return.
    *
+   * AN ADMIN CREDIT IS A FLOW TOO. A manual adjustment moves the account's
+   * money for exactly the same reason a deposit does — somebody put value
+   * in — so leaving it out reported the credit as PERFORMANCE. That is how
+   * a $6k account topped up to $31m came to publish +450 864 % for the
+   * week. Both audited adjustments are read here and removed like any other
+   * flow; the delta already carries its own sign, so a debit needs no
+   * special case.
+   *
+   * WHICH LEDGER THE SNAPSHOT MEASURES decides which flows count. The
+   * recorded total is the account's authoritative equity: the NATIVE
+   * (simulation) ledger for an account that has one, and the real spot and
+   * futures ledgers for everyone else. They are separate books, so a real
+   * deposit does not move a native total and a demo top-up does not move a
+   * real one. Counting a movement the recorded total never saw would not
+   * merely fail to help — it would subtract value that was never added and
+   * invent a loss. Each account therefore counts the flows of its own book
+   * and no others.
+   *
    * Flows are valued at today's price for the asset, which is exact for the
    * stablecoins most deposits arrive in and an approximation otherwise —
    * this deployment stores no historical price series to value them at the
    * time they happened. Documented in docs/AI_HANDOFF.md.
    */
   private async realSeries(userId: string, now: Date): Promise<PerformancePoint[]> {
-    const [snapshots, deposits, withdrawals] = await Promise.all([
+    const [snapshots, deposits, withdrawals, adjustments, nativeAccount] = await Promise.all([
       this.prisma.portfolioSnapshot.findMany({ where: { userId }, orderBy: { createdAt: 'asc' } }),
       this.prisma.deposit.findMany({ where: { userId, status: 'CREDITED' } }),
       // Only money that has actually left: PENDING/APPROVED withdrawals are
       // still locked in the account, so they are not a flow out yet.
       this.prisma.withdrawal.findMany({ where: { userId, status: 'SENT' } }),
+      // Every manual credit/debit an admin made, on either ledger. Both
+      // services write exactly one of these per adjustment, in the same
+      // transaction as the balance write, so the audit trail is the record.
+      this.prisma.auditLog.findMany({
+        where: { userId, action: { in: [ADJUSTMENT_ACTIONS.real, ADJUSTMENT_ACTIONS.native] } },
+      }),
+      // Present only for an account whose authoritative total is the
+      // simulation ledger — the same fact the Wallet header reads.
+      this.prisma.nativeDemoAccount.findUnique({ where: { userId } }),
     ]);
     if (snapshots.length < 2) return [];
 
+    const measuresNativeLedger = Boolean(nativeAccount);
+    const countedAdjustments = adjustments
+      .filter((entry) => entry.action === (measuresNativeLedger ? ADJUSTMENT_ACTIONS.native : ADJUSTMENT_ACTIONS.real))
+      .map(readAdjustment)
+      .filter((entry): entry is AdjustmentFlow => entry !== null);
+    // A real deposit credits the real ledger; it cannot move a total that
+    // measures the simulation one, so it is not a flow for such an account.
+    const realFlows = measuresNativeLedger ? { deposits: [], withdrawals: [] } : { deposits, withdrawals };
+
     const flowAssets = new Set<string>([
-      ...deposits.map((d) => d.asset),
-      ...withdrawals.map((w) => w.asset),
+      ...realFlows.deposits.map((d) => d.asset),
+      ...realFlows.withdrawals.map((w) => w.asset),
+      ...countedAdjustments.map((a) => a.asset),
     ]);
     const prices = flowAssets.size > 0 ? await this.pricesFor([...flowAssets]) : new Map();
 
@@ -285,8 +357,11 @@ export class WalletPortfolioService {
       const key = utcDayKey(at);
       flowByDay.set(key, (flowByDay.get(key) ?? 0) + sign * usd);
     };
-    for (const d of deposits) addFlow(d.createdAt, d.asset, d.amount, 1);
-    for (const w of withdrawals) addFlow(w.createdAt, w.asset, w.amount, -1);
+    for (const d of realFlows.deposits) addFlow(d.createdAt, d.asset, d.amount, 1);
+    for (const w of realFlows.withdrawals) addFlow(w.createdAt, w.asset, w.amount, -1);
+    // `delta` is already signed — a debit is a negative credit, not a
+    // separate direction — so both go in with the same sign.
+    for (const a of countedAdjustments) addFlow(a.at, a.asset, a.delta, 1);
 
     const days: RawEquityDay[] = snapshots.map((s) => {
       const date = utcDayKey(s.createdAt);

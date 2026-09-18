@@ -637,7 +637,16 @@ test.each([
   // behaviour of skipping an unpriced holding instead of summing it as 0.
   // Pricing, the BigNumber arithmetic, the flow-adjusted performance series
   // and the "never write to the ledger" rule are untouched.
-  ['src/services/WalletPortfolioService.ts', 'e5d27b04faa88cb6d5e4c9f35a57b974dba4261e9ae33f4d714324d552ca51f5'],
+  // Re-taken for the manual-adjustment flow fix. An admin credit is a FLOW,
+  // not performance: leaving it out published a $6k→$31m top-up as +450 864 %
+  // for the week. `realSeries` now also reads the two audited adjustment
+  // actions and removes them like any deposit, and picks the flows of the
+  // ledger the recorded total actually measures — the simulation one for an
+  // account that has a native ledger, the real one otherwise — because
+  // subtracting a movement the total never saw would invent a loss. The
+  // pricing, the BigNumber arithmetic, the snapshot read and the "never
+  // write to the ledger" rule are untouched.
+  ['src/services/WalletPortfolioService.ts', '5fb0da2f75ff3cd20b8e9495cd898c8759eb1dd746773559e061c5575733c433'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
   ['src/api/middleware/auth.ts', 'a2f258c6b2a3993670ec8378f82e36fb4132ab803036dd1ecd4bd1751ac3e13c'],

@@ -46,6 +46,10 @@ function prismaStub(overrides: Partial<Record<string, any>> = {}) {
     portfolioSnapshot: { findMany: jest.fn().mockResolvedValue([]) },
     deposit: { findMany: jest.fn().mockResolvedValue([]) },
     withdrawal: { findMany: jest.fn().mockResolvedValue([]) },
+    // An account with no manual adjustments and no simulation ledger: the
+    // ordinary case, and the one every pre-existing test here describes.
+    auditLog: { findMany: jest.fn().mockResolvedValue([]) },
+    nativeDemoAccount: { findUnique: jest.fn().mockResolvedValue(null) },
     ...overrides,
   } as any;
 }
@@ -394,5 +398,180 @@ describe('wallet performance — no account gets a generated history', () => {
     const perf = await service.performance(OWNER, REFERENCE);
     expect(perf.periods['7d'].available).toBe(true);
     expect(perf.periods['7d'].percent).toBeCloseTo(10, 6);
+  });
+});
+
+/**
+ * MANUAL ADJUSTMENTS ARE FLOWS.
+ *
+ * An admin credit moves the account's money for the same reason a deposit
+ * does. Leaving it out published the credit as performance — a $6k account
+ * topped up to $31m reported +450 864 % for the week. These tests pin the
+ * arithmetic on both ledgers, and pin that a movement the recorded total
+ * never saw is NOT subtracted from it.
+ */
+describe('manual balance adjustments', () => {
+  const snapshot = (date: string, value: string) => ({ createdAt: new Date(`${date}T09:00:00.000Z`), totalValueUsd: value });
+  const audit = (action: string, metadata: unknown, day: string) => ({
+    action,
+    metadata,
+    createdAt: new Date(`${day}T10:00:00.000Z`),
+  });
+
+  it('does not report an admin credit as profit', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '1000'),
+          snapshot('2026-08-29', '31001000'),
+          snapshot('2026-09-04', '31001000'),
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '31000000', reason: 'top-up' }, '2026-08-29'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const perf = await service.performance(NORMAL_USER, REFERENCE);
+    // The whole change was the credit, so the week returned nothing.
+    expect(perf.periods['7d'].percent).toBeCloseTo(0, 6);
+    expect(perf.periods['7d'].absolutePnl).toBeCloseTo(0, 6);
+  });
+
+  it('does not report an admin debit as a loss — the delta carries its own sign', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '2000'),
+          snapshot('2026-08-29', '1000'),
+          snapshot('2026-09-04', '1000'),
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '-1000', reason: 'correction' }, '2026-08-29'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const perf = await service.performance(NORMAL_USER, REFERENCE);
+    expect(perf.periods['7d'].percent).toBeCloseTo(0, 6);
+  });
+
+  it('still reports the trading that happened around the credit', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '1000'),
+          snapshot('2026-08-29', '1000'),
+          // 1 000 credited, and 100 earned on the original capital.
+          snapshot('2026-09-04', '2100'),
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-09-04'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const perf = await service.performance(NORMAL_USER, REFERENCE);
+    expect(perf.periods['7d'].percent).toBeCloseTo(10, 6);
+  });
+
+  it('counts the ledger the snapshot measures, and only that one', async () => {
+    // An account WITH a simulation ledger records its native equity, so a
+    // demo top-up is its flow and a real-ledger credit is not.
+    const rows = [
+      audit('DEMO_BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-08-29'),
+      audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '5000' }, '2026-08-29'),
+    ];
+    const snapshots = [snapshot('2026-08-26', '1000'), snapshot('2026-08-29', '2000'), snapshot('2026-09-04', '2000')];
+
+    const native = prismaStub({
+      portfolioSnapshot: { findMany: jest.fn().mockResolvedValue(snapshots) },
+      auditLog: { findMany: jest.fn().mockResolvedValue(rows) },
+      nativeDemoAccount: { findUnique: jest.fn().mockResolvedValue({ userId: OWNER.id, revision: 3 }) },
+    });
+    expect((await serviceFor(native).service.performance(OWNER, REFERENCE)).periods['7d'].percent).toBeCloseTo(0, 6);
+
+    // The same rows on an account WITHOUT one: the real credit is its flow,
+    // and the 5 000 it never received must not be subtracted from it.
+    const real = prismaStub({
+      portfolioSnapshot: { findMany: jest.fn().mockResolvedValue(snapshots) },
+      auditLog: { findMany: jest.fn().mockResolvedValue(rows) },
+    });
+    const perf = await serviceFor(real).service.performance(NORMAL_USER, REFERENCE);
+    // value 2000 − flow 5000 would be negative; the engine refuses to
+    // manufacture that, so the honest reading here is "no return", never a
+    // fabricated collapse.
+    expect(perf.periods['7d'].percent).toBeLessThanOrEqual(0);
+    expect(Number.isFinite(perf.periods['7d'].percent as number)).toBe(true);
+  });
+
+  it('does not subtract a real deposit from an account whose total is the simulation ledger', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '1000'),
+          snapshot('2026-08-29', '1000'),
+          snapshot('2026-09-04', '1100'),
+        ]),
+      },
+      deposit: {
+        findMany: jest.fn().mockResolvedValue([
+          { asset: 'USDT', amount: '1000', createdAt: new Date('2026-09-04T10:00:00.000Z') },
+        ]),
+      },
+      nativeDemoAccount: { findUnique: jest.fn().mockResolvedValue({ userId: OWNER.id, revision: 1 }) },
+    });
+    const { service } = serviceFor(prisma);
+    // The deposit credited the real ledger; this account's recorded total is
+    // its native equity, which rose 10% by trading. Removing the deposit
+    // would invent a 90% loss.
+    expect((await service.performance(OWNER, REFERENCE)).periods['7d'].percent).toBeCloseTo(10, 6);
+  });
+
+  it('skips an audit row it cannot read as a flow rather than guessing', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '1000'),
+          snapshot('2026-08-29', '1000'),
+          snapshot('2026-09-04', '1100'),
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', null, '2026-09-04'),
+          audit('BALANCE_ADJUSTED', { asset: 'USDT' }, '2026-09-04'),
+          audit('BALANCE_ADJUSTED', { asset: '', delta: '5' }, '2026-09-04'),
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: 'not-a-number' }, '2026-09-04'),
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '0' }, '2026-09-04'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    // None of them parse, so the 10% the account actually earned stands.
+    expect((await service.performance(NORMAL_USER, REFERENCE)).periods['7d'].percent).toBeCloseTo(10, 6);
+  });
+
+  it('reads both actions for the user and nobody else', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          snapshot('2026-08-26', '1000'),
+          snapshot('2026-08-29', '1000'),
+          snapshot('2026-09-04', '1100'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    await service.performance(NORMAL_USER, REFERENCE);
+    expect(prisma.auditLog.findMany).toHaveBeenCalledWith({
+      where: { userId: NORMAL_USER.id, action: { in: ['BALANCE_ADJUSTED', 'DEMO_BALANCE_ADJUSTED'] } },
+    });
   });
 });
