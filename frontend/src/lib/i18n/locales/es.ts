@@ -324,6 +324,7 @@ export const ES: Record<Key, string> = {
   'deposit.copy': 'Copiar',
   'deposit.copied': 'Copiado',
   'deposit.warning': '⚠ Envía solo {assets} en la red {chain}. Los fondos enviados en otra red o como otro activo se perderán permanentemente.',
+  'deposit.warningAll': '⚠ Envía solo los activos indicados sobre una dirección y solo en la red de esa dirección. Los fondos enviados en otra red o como otro activo se perderán permanentemente.',
   'deposit.supportedAssets': 'activos admitidos',
   'deposit.asset': 'Activo',
   'deposit.minAmountHint': 'El depósito mínimo es el equivalente a {amount} USD.',

@@ -67,6 +67,71 @@ describe('deposits routes', () => {
       const res = await request(app).get('/api/v1/deposit-chains');
       expect(res.status).toBe(401);
     });
+
+    // The deposit screen lists every wallet at once. Carrying each address in
+    // the config envelope is what lets it do that in ONE request instead of a
+    // second round trip per chain.
+    it('carries each chain treasury address in the includeConfig envelope', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+      process.env.ETHEREUM_TREASURY_ADDRESS = '0xabc';
+      process.env.ETHEREUM_NATIVE_ASSET = 'ETH';
+      process.env.ETHEREUM_RPC_URL = 'https://rpc.example';
+
+      const app = buildApp();
+      const res = await request(app)
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.status).toBe(200);
+      const byChain = Object.fromEntries(res.body.chains.map((c: any) => [c.chain, c.address]));
+      expect(byChain.bitcoin).toBe('bc1qexample');
+      expect(byChain.ethereum).toBe('0xabc');
+      // It must be the SAME value the per-chain route hands back, or the two
+      // screens would print different addresses for one chain.
+      const single = await request(app).get('/api/v1/deposit-address/bitcoin').set('Authorization', authHeader('user-1'));
+      expect(single.body.address).toBe(byChain.bitcoin);
+    });
+
+    it('reflects an admin override in the envelope address, not just the env default', async () => {
+      delete process.env.BITCOIN_TREASURY_ADDRESS;
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      const prisma = {
+        treasuryWallet: { findUnique: jest.fn().mockResolvedValue({ chain: 'bitcoin', address: 'bc1qadmin-set' }) },
+      };
+      const res = await request(buildApp(prisma))
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.body.chains.find((c: any) => c.chain === 'bitcoin').address).toBe('bc1qadmin-set');
+    });
+
+    // The bare array is the older contract. Adding a field to the envelope
+    // must not change it.
+    it('keeps the bare list free of address and supportedAssets', async () => {
+      process.env.BITCOIN_TREASURY_ADDRESS = 'bc1qexample';
+      process.env.BITCOIN_NATIVE_ASSET = 'BTC';
+
+      const app = buildApp();
+      const res = await request(app).get('/api/v1/deposit-chains').set('Authorization', authHeader('user-1'));
+
+      expect(res.body[0]).toEqual({ chain: 'bitcoin', nativeAsset: 'BTC', tokens: expect.any(Array) });
+      expect(res.body[0]).not.toHaveProperty('address');
+      expect(res.body[0]).not.toHaveProperty('supportedAssets');
+    });
+
+    it('omits a chain entirely rather than listing it with a blank address', async () => {
+      delete process.env.BITCOIN_TREASURY_ADDRESS;
+      delete process.env.TRON_TREASURY_ADDRESS;
+      delete process.env.ETHEREUM_TREASURY_ADDRESS;
+
+      const res = await request(buildApp())
+        .get('/api/v1/deposit-chains?includeConfig=true')
+        .set('Authorization', authHeader('user-1'));
+
+      expect(res.body.chains.every((c: any) => typeof c.address === 'string' && c.address.length > 0)).toBe(true);
+    });
   });
 
   describe('GET /deposit-address/:chain', () => {

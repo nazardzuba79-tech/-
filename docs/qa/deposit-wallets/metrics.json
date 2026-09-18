@@ -1,0 +1,125 @@
+{
+  "status": "PASS",
+  "checks": [
+    "current: every configured wallet listed at 1440 and 390, no network picker",
+    "fallback: every configured wallet listed at 1440 and 390, no network picker",
+    "an unresolvable chain is dropped, not blank, and the screen says so",
+    "degraded: every configured wallet listed at 1440 and 390, no network picker",
+    "the one-request and per-chain paths render an identical wallet list",
+    "copy yields the full address and only the pressed button confirms"
+  ],
+  "report": {
+    "current": {
+      "390": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "selects": 0,
+        "copyButtons": 6,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 56,
+        "width": 366,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      },
+      "1440": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "selects": 0,
+        "copyButtons": 6,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 0,
+        "width": 440,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      }
+    },
+    "fallback": {
+      "390": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "selects": 0,
+        "copyButtons": 6,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 56,
+        "width": 366,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      },
+      "1440": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nSolana\nSOL · USDT\nQA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.",
+        "selects": 0,
+        "copyButtons": 6,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-So-NOT-A-VALID-DEPOSIT-ADDRESS-0005",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 0,
+        "width": 440,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      }
+    },
+    "degraded": {
+      "390": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
+        "selects": 0,
+        "copyButtons": 5,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 6,
+        "width": 366,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      },
+      "1440": {
+        "text": "Пополнение\n✕\nМинимальная сумма пополнения — от 20 $ в эквиваленте.\nBitcoin\nBTC\nQA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001\nКопировать\nUSDT (TRC-20)\nUSDT\nQA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002\nКопировать\nEthereum (ERC20)\nETH · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003\nКопировать\nBNB Smart Chain (BEP-20)\nBNB · USDT\nQA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004\nКопировать\nTON\nTON · USDT\nQA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006\nКопировать\n⚠ Отправляйте только те активы, которые указаны над адресом, и только в сети этого адреса. Средства, отправленные в другой сети или другим активом, будут утеряны безвозвратно.\nДепозит будет зачислен в течение 30-60 минут.\nНе удалось загрузить адрес для депозита",
+        "selects": 0,
+        "copyButtons": 5,
+        "addresses": [
+          "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+          "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+          "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0004",
+          "QA-ONLY-UQ-NOT-A-VALID-DEPOSIT-ADDRESS-0006"
+        ],
+        "scrollOverflow": 0,
+        "width": 440,
+        "modalZ": 100,
+        "coveredCopyButtons": 0,
+        "floatingAbove": 1
+      }
+    }
+  }
+}

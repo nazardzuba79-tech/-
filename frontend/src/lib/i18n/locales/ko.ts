@@ -324,6 +324,7 @@ export const KO: Record<Key, string> = {
   'deposit.copy': '복사',
   'deposit.copied': '복사됨',
   'deposit.warning': '⚠ {chain} 네트워크에서 {assets}만 전송하세요. 다른 네트워크 또는 다른 자산으로 전송된 자금은 영구적으로 손실됩니다.',
+  'deposit.warningAll': '⚠ 주소 위에 표시된 자산만, 그 주소의 네트워크로만 전송하세요. 다른 네트워크 또는 다른 자산으로 전송된 자금은 영구적으로 손실됩니다.',
   'deposit.supportedAssets': '지원 자산',
   'deposit.asset': '자산',
   'deposit.minAmountHint': '최소 입금액은 {amount} USD 상당입니다.',

@@ -1,15 +1,20 @@
 import { useState } from 'react';
-import { useDepositOptions } from '../lib/useDepositOptions';
-import { useLanguage, localeOf } from '../lib/i18n';
+import { useDepositWallets } from '../lib/useDepositOptions';
+import { useLanguage } from '../lib/i18n';
 
 /**
  * Deposit is now purely "here's the address" — no tx-hash entry. An admin
  * credits it manually from the Settings → Deposits feed (real on-chain
  * data, re-verified at credit time), so the client never needs to find and
  * paste anything. See src/pages/SettingsPage.tsx's DepositsTab.
+ *
+ * Every configured wallet is listed at once rather than hidden behind a
+ * network picker: the addresses are the whole point of the screen, and one
+ * of them is what the user has to reach. Each card names the exact assets
+ * that chain will credit, because the address alone does not say that.
  */
 export function DepositModal({ onClose }: { onClose: () => void }) {
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const CHAIN_LABEL: Record<string, string> = {
     bitcoin: t('deposit.chain.bitcoin'),
     tron: t('deposit.chain.tron'),
@@ -18,16 +23,15 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     solana: t('deposit.chain.solana'),
     ton: t('deposit.chain.ton'),
   };
-  const { chains, chainsLoaded, chain, setChain, address, assets, asset, setAsset,
-    error: loadError, minDepositUsd, minEquivalent, stable } = useDepositOptions(true);
+  const { loaded, wallets, minDepositUsd, error: loadError } = useDepositWallets(true);
   const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
-  const [copied, setCopied] = useState(false);
+  // Which card was copied, not a bare flag — six Copy buttons share this.
+  const [copied, setCopied] = useState<string | null>(null);
 
-  async function handleCopy() {
-    if (!address) return;
+  async function handleCopy(chain: string, address: string) {
     await navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setCopied(chain);
+    setTimeout(() => setCopied((current) => (current === chain ? null : current)), 1500);
   }
 
   return (
@@ -40,68 +44,47 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <div style={styles.minBadge}>
-          {minDepositUsd === null ? t('trade.loading') : asset && minEquivalent !== null && !stable
-            ? t('deposit.minAmountEquivalent', {
-                amount: minDepositUsd,
-                equivalent: minEquivalent.toLocaleString(localeOf(lang), {
-                  maximumFractionDigits: minEquivalent < 1 ? 8 : 2,
-                }),
-                asset,
-              })
-            : t('deposit.minAmountHint', { amount: minDepositUsd })}
-        </div>
+        {/* Shown only once the real threshold has arrived — never a placeholder
+            figure, and never a spinner left behind by a failed load. */}
+        {minDepositUsd !== null && (
+          <div style={styles.minBadge}>{t('deposit.minAmountHint', { amount: minDepositUsd })}</div>
+        )}
 
-        {!chainsLoaded && !error && (
+        {!loaded && !error && (
           <p style={{ color: 'var(--text-tertiary)', fontSize: 12 }}>{t('deposit.loadingNetworks')}</p>
         )}
 
-        {chainsLoaded && chains.length === 0 && !error && (
+        {loaded && wallets.length === 0 && !error && (
           <p style={{ color: 'var(--text-tertiary)', fontSize: 12, lineHeight: 1.6 }}>{t('deposit.noneConfigured')}</p>
         )}
 
-        {chains.length > 0 && (
+        {wallets.length > 0 && (
           <>
-            <label style={styles.label}>
-              {t('deposit.network')}
-              <select value={chain ?? ''} onChange={(e) => setChain(e.target.value)} style={styles.input}>
-                {chains.map((c) => (
-                  <option key={c.chain} value={c.chain}>
-                    {CHAIN_LABEL[c.chain] ?? c.chain}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div style={styles.addressBox}>
-              <span className="mono" style={styles.address}>
-                {address ?? t('trade.loading')}
-              </span>
-              <button onClick={handleCopy} style={styles.copyBtn} type="button" disabled={!address}>
-                {copied ? t('deposit.copied') : t('deposit.copy')}
-              </button>
+            <div style={styles.walletList}>
+              {wallets.map((wallet) => (
+                <div style={styles.wallet} key={wallet.chain}>
+                  <div style={styles.walletHead}>
+                    <span style={styles.walletChain}>{CHAIN_LABEL[wallet.chain] ?? wallet.chain}</span>
+                    <span style={styles.walletAssets}>{wallet.assets.join(' · ')}</span>
+                  </div>
+                  <div style={styles.addressBox}>
+                    <span className="mono" style={styles.address}>
+                      {wallet.address}
+                    </span>
+                    <button
+                      onClick={() => handleCopy(wallet.chain, wallet.address)}
+                      style={styles.copyBtn}
+                      type="button"
+                      aria-label={`${t('deposit.copy')} — ${CHAIN_LABEL[wallet.chain] ?? wallet.chain}`}
+                    >
+                      {copied === wallet.chain ? t('deposit.copied') : t('deposit.copy')}
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            <div style={styles.warning}>
-              {t('deposit.warning', {
-                assets: assets.join(' / ') || t('deposit.supportedAssets'),
-                chain: CHAIN_LABEL[chain ?? ''] ?? chain ?? '',
-              })}
-            </div>
-
-            {assets.length > 0 && (
-              <label style={styles.label}>
-                {t('deposit.asset')}
-                <select value={asset} onChange={(e) => setAsset(e.target.value)} style={styles.input}>
-                  {assets.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-
+            <div style={styles.warning}>{t('deposit.warningAll')}</div>
             <div style={styles.success}>{t('deposit.manualCreditNote')}</div>
           </>
         )}
@@ -146,16 +129,39 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--text-secondary)',
     fontSize: 16,
   },
-  addressBox: {
+  walletList: {
     display: 'flex',
-    alignItems: 'center',
-    gap: 8,
+    flexDirection: 'column',
+    gap: 10,
+    marginBottom: 12,
+  },
+  wallet: {
     background: 'var(--panel-alt)',
     border: '1px solid var(--border)',
     borderRadius: 8,
     padding: '10px 12px',
-    marginTop: 16,
-    marginBottom: 12,
+  },
+  walletHead: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 6,
+  },
+  walletChain: {
+    fontSize: 12,
+    fontWeight: 700,
+  },
+  walletAssets: {
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    textAlign: 'right',
+    wordBreak: 'break-word',
+  },
+  addressBox: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
   },
   address: {
     flex: 1,
@@ -191,20 +197,12 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'var(--accent)',
     marginBottom: 12,
   },
-  label: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    fontSize: 11,
-    color: 'var(--text-secondary)',
-  },
-  input: {
-    background: 'var(--panel-alt)',
-    border: '1px solid var(--border)',
+  success: {
+    background: 'var(--buy-dim)',
+    color: 'var(--buy)',
+    padding: '8px 10px',
     borderRadius: 8,
-    padding: '9px 10px',
-    color: 'var(--text-primary)',
-    fontSize: 13,
+    fontSize: 12,
   },
   error: {
     background: 'var(--sell-dim)',
@@ -212,12 +210,6 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '8px 10px',
     borderRadius: 8,
     fontSize: 12,
-  },
-  success: {
-    background: 'var(--buy-dim)',
-    color: 'var(--buy)',
-    padding: '8px 10px',
-    borderRadius: 8,
-    fontSize: 12,
+    marginTop: 8,
   },
 };
