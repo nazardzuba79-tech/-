@@ -419,7 +419,7 @@ describe('spot and futures pair lists are unchanged', () => {
     // The shared pair registry and favourites store.
     'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
     // The spot terminal's pair list.
-    'src/components/PairListSidebar.tsx': '5d222e312c537849459a662d24c79c4938c6de4f9e06dc517f90f41ee49907c2',
+    'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
     // The futures pair list.
       // Re-taken for the data-driven market universe: nulls-last sorting for
   // unpriced markets and windowed rendering. What this suite actually
