@@ -13,17 +13,17 @@
 }
 .futures-terminal .pair-row .p-base, .futures-terminal .pair-row .p-price,
 .futures-terminal .pair-row .p-change { font-size: 12px; font-variant-numeric: tabular-nums; }
-.futures-terminal .pair-row .p-quote { font-size: 10px; color: #a5b0bc; }
+.futures-terminal .pair-row .p-quote { font-size: 10px; color: #98a2b3; }
 .futures-terminal .pairs-col-headers { grid-template-columns: minmax(0, 1fr) 74px 58px; gap: 5px; height: 34px; }
 .futures-terminal .pairs-col-headers .pch-sort, .futures-terminal .pairs-col-headers .pch-mode { font-size: 12px; }
 .futures-terminal .orderbook-header { padding-inline: 12px; }
 .futures-terminal .orderbook-header select { font-size: 12px; }
-.futures-terminal .orderbook-col-headers { font-size: 12px; color: #a5b0bc; }
+.futures-terminal .orderbook-col-headers { font-size: 12px; color: #98a2b3; }
 .trade-terminal.futures-terminal .ob-row { height: 26px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.trade-terminal.futures-terminal .ob-row .cell:last-child { color: #aeb9c4; }
+.trade-terminal.futures-terminal .ob-row .cell:last-child { color: #98a2b3; }
 .futures-terminal .orderbook-spread { font-size: 17px; }
 .futures-terminal .orderbook-spread .usd { font-size: 12px; }
-.futures-terminal .ob-spread-detail { font-size: 11px; color: #a5b0bc; }
+.futures-terminal .ob-spread-detail { font-size: 11px; color: #98a2b3; }
 .futures-terminal .fo-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; overflow: auto hidden; }
 /* The side tabs that used to sit here are gone: the direction is the
    button at the bottom of the form, not a mode entered before it. Their
@@ -41,21 +41,21 @@
 /* A value that differs by direction, shown for both instead of only for
    whichever side was selected — there is no selected side any more. */
 .futures-terminal .fo-sidePair { display: inline-flex; gap: 5px; align-items: baseline; }
-.futures-terminal .fo-sidePairLong { color: #12c98d; }
-.futures-terminal .fo-sidePairShort { color: #ef5350; }
+.futures-terminal .fo-sidePairLong { color: #2ebd85; }
+.futures-terminal .fo-sidePairShort { color: #f6465d; }
 .futures-terminal .fo-sidePairSep { color: var(--text-tertiary); }
 .futures-terminal .fo-typeTabs { display: flex; gap: 22px; min-height: 43px; padding: 0 14px; border-bottom: 1px solid var(--border-color); }
-.futures-terminal .fo-typeTab { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #a5b0bc; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-typeTab { padding: 10px 0; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #98a2b3; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .futures-terminal .fo-typeTabActive { color: var(--accent-yellow); border-bottom-color: var(--accent-yellow); }
 .futures-terminal .fo-form { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; min-width: 0; }
 .futures-terminal .leverage-control > div:first-child { font-size: 12px !important; }
 .futures-terminal .leverage-control > div:first-child .mono { font-size: 14px !important; }
-.futures-terminal .leverage-control > div:nth-of-type(2) { font-size: 11px !important; color: #a5b0bc !important; }
+.futures-terminal .leverage-control > div:nth-of-type(2) { font-size: 11px !important; color: #98a2b3 !important; }
 .futures-terminal .leverage-control button { font-size: 12px !important; }
 .futures-terminal .leverage-control input[type="range"] { appearance: none; height: 16px; margin: 0; padding: 0; background: transparent; }
-.futures-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: #354351; }
+.futures-terminal .leverage-control input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: #232a34; }
 .futures-terminal .leverage-control input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent-yellow); box-shadow: 0 0 0 1px var(--accent-yellow); }
-.futures-terminal .leverage-control input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: #354351; }
+.futures-terminal .leverage-control input[type="range"]::-moz-range-track { height: 4px; border-radius: 4px; background: #232a34; }
 .futures-terminal .leverage-control input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border: 2px solid #202b37; border-radius: 50%; background: var(--accent-yellow); }
 .futures-terminal .leverage-control input[type="range"]:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 4px; border-radius: 4px; }
 /* Compact margin-mode + leverage control. Replaces a full-width segmented
@@ -76,21 +76,21 @@
    the right edge instead of stretching the full panel width. */
 .futures-terminal .fo-mlPopoverRight { left: auto; right: 0; min-width: 210px; }
 .futures-terminal .fo-mlTrigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 12px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
-.futures-terminal .fo-mlTrigger:disabled { color: #6b7684; cursor: not-allowed; }
+.futures-terminal .fo-mlTrigger:disabled { color: #5c6675; cursor: not-allowed; }
 .futures-terminal .fo-mlTrigger[aria-expanded="true"] { border-color: var(--accent-yellow); }
 .futures-terminal .fo-mlTriggerText { display: flex; align-items: baseline; gap: 7px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.futures-terminal .fo-mlTriggerSep { color: #6b7684; }
+.futures-terminal .fo-mlTriggerSep { color: #5c6675; }
 .futures-terminal .fo-mlTriggerLev { color: var(--accent-yellow); font-size: 14px; font-variant-numeric: tabular-nums; }
-.futures-terminal .fo-mlHigh { color: #ef5350; }
-.futures-terminal .fo-mlChevron { color: #a5b0bc; font-size: 11px; }
+.futures-terminal .fo-mlHigh { color: #f6465d; }
+.futures-terminal .fo-mlChevron { color: #98a2b3; font-size: 11px; }
 /* Anchored to the trigger and clamped to the panel, so it can never push
    the terminal into horizontal scroll at any width. */
 .futures-terminal .fo-mlPopover { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; right: 0; max-width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 12px; background: var(--panel); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45); }
 .futures-terminal .fo-mlSection { display: flex; flex-direction: column; gap: 8px; }
-.futures-terminal .fo-mlSectionTitle { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #a5b0bc; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-.futures-terminal .fo-mlRange { color: #6b7684; font-size: 11px; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.futures-terminal .fo-mlSectionTitle { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: #98a2b3; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.futures-terminal .fo-mlRange { color: #5c6675; font-size: 11px; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .futures-terminal .fo-mlModeRow { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.futures-terminal .fo-mlMode { padding: 8px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #aeb9c4; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-mlMode { padding: 8px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #98a2b3; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .futures-terminal .fo-mlModeActive { background: var(--panel); border-color: var(--accent-yellow); color: var(--text-primary); }
 .futures-terminal .fo-mlStepper { display: grid; grid-template-columns: 36px 1fr 36px; gap: 6px; }
 .futures-terminal .fo-mlStep { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-family: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
@@ -98,27 +98,27 @@
 .futures-terminal .fo-mlValue { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; text-align: center; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 14px; font-variant-numeric: tabular-nums; outline: none; }
 .futures-terminal .fo-mlValue:focus { border-color: var(--accent-yellow); }
 .futures-terminal .fo-mlChips { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
-.futures-terminal .fo-mlChip { padding: 6px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #aeb9c4; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
+.futures-terminal .fo-mlChip { padding: 6px 0; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 6px; color: #98a2b3; font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; }
 .futures-terminal .fo-mlChipActive { background: var(--accent-yellow); border-color: var(--accent-yellow); color: #14181d; }
-.futures-terminal .fo-mlWarn { color: #ef5350; font-size: 11px; line-height: 15px; }
-.futures-terminal .fo-label { display: flex; flex-direction: column; gap: 7px; color: #afbac5; font-size: 13px; }
+.futures-terminal .fo-mlWarn { color: #f6465d; font-size: 11px; line-height: 15px; }
+.futures-terminal .fo-label { display: flex; flex-direction: column; gap: 7px; color: #98a2b3; font-size: 13px; }
 .futures-terminal .fo-input { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 13px; line-height: 19px; font-variant-numeric: tabular-nums; outline: none; }
 .futures-terminal .fo-input:focus { border-color: var(--accent-yellow); }
 .futures-terminal .fo-priceInputRow { display: flex; gap: 6px; }
 .futures-terminal .fo-priceInputRow .fo-input { flex: 1; }
 .futures-terminal .fo-lastPriceBtn { background: var(--panel-alt); border: 1px solid var(--border-color); border-radius: 4px; padding: 0 8px; color: var(--accent-yellow); font-size: 11px; white-space: nowrap; cursor: pointer; }
-.futures-terminal .fo-markPrice { color: #aeb9c4; }
+.futures-terminal .fo-markPrice { color: #98a2b3; }
 .futures-terminal .fo-qtyLabelRow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 8px; }
-.futures-terminal .fo-qtyLabelRow > span { font-size: 12px; color: #a5b0bc !important; }
-.futures-terminal .fo-reduceOnlyRow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #afbac5; cursor: pointer; }
+.futures-terminal .fo-qtyLabelRow > span { font-size: 12px; color: #98a2b3 !important; }
+.futures-terminal .fo-reduceOnlyRow { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #98a2b3; cursor: pointer; }
 .futures-terminal .fo-reduceOnlyRow input { accent-color: var(--accent-yellow); }
 .futures-terminal .fo-infoBox { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; background: var(--panel-alt); }
 .futures-terminal .fo-infoRow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 12px; }
-.futures-terminal .fo-infoRow > :first-child { color: #aeb9c4 !important; }
+.futures-terminal .fo-infoRow > :first-child { color: #98a2b3 !important; }
 .futures-terminal .fo-infoRow .mono { white-space: nowrap; font-size: 13px; font-variant-numeric: tabular-nums; }
 .futures-terminal .fo-error { font-size: 12px; color: var(--sell); overflow-wrap: anywhere; }
 .futures-terminal .fo-tiersBox { border-top: 1px solid var(--border-color); padding: 0 14px; flex-shrink: 0; }
-.futures-terminal .fo-tiersTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 13px; font-size: 13px; font-weight: 600; line-height: 18px; color: #afbac5; cursor: pointer; list-style: none; }
+.futures-terminal .fo-tiersTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 13px; font-size: 13px; font-weight: 600; line-height: 18px; color: #98a2b3; cursor: pointer; list-style: none; }
 .futures-terminal .fo-tiersTitle::-webkit-details-marker { display: none; }
 .futures-terminal .fo-tiersTitle::after { content: ''; width: 6px; height: 6px; flex: 0 0 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); margin-right: 2px; }
 .futures-terminal .fo-tiersBox[open] { padding-bottom: 14px; }
@@ -126,8 +126,8 @@
 .futures-terminal .fo-tiersTitle:hover { color: var(--text-primary); }
 .futures-terminal .fo-tiersTitle:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: -2px; border-radius: 4px; }
 .futures-terminal .fo-tiersTable { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
-.futures-terminal .fo-tiersTh { text-align: right; font-weight: 500; color: #a5b0bc; padding: 6px 0 8px; }
-.futures-terminal .fo-tiersTd { text-align: right; padding: 6px 0; color: #afbac5; }
+.futures-terminal .fo-tiersTh { text-align: right; font-weight: 500; color: #98a2b3; padding: 6px 0 8px; }
+.futures-terminal .fo-tiersTd { text-align: right; padding: 6px 0; color: #98a2b3; }
 .futures-terminal .fo-tiersTh:first-child, .futures-terminal .fo-tiersTd:first-child { text-align: left; }
 .futures-terminal .fo-tiersRowActive .fo-tiersTd { color: var(--accent-yellow); }
 .futures-terminal .fo-panel button:focus-visible { outline: 2px solid var(--accent-yellow); outline-offset: 2px; }
@@ -185,15 +185,15 @@
   width: 30px; height: 30px; padding: 0;
   border: 1px solid var(--border, rgba(255,255,255,.12));
   border-radius: 7px;
-  background: rgba(18,20,26,.86);
+  background: rgba(11,14,17,.86);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   color: var(--text-secondary); cursor: pointer;
 }
-.futures-terminal .chart-surface[data-chart-picking] .chart-tools-trigger { display: grid; color: #e9c578; border-color: #e9c578; }
+.futures-terminal .chart-surface[data-chart-picking] .chart-tools-trigger { display: grid; color: #ffb84d; border-color: #ffb84d; }
 @media (hover: none), (pointer: coarse) {
   .futures-terminal .chart-tools-trigger { display: grid; }
 }
-.futures-terminal .chart-tools-trigger[aria-expanded=true] { color: #e9c578; border-color: #e9c578; }
+.futures-terminal .chart-tools-trigger[aria-expanded=true] { color: #ffb84d; border-color: #ffb84d; }
 
 .futures-terminal .chart-tools-menu {
   position: fixed; z-index: 60;
@@ -224,10 +224,10 @@
   color: var(--text-secondary); cursor: pointer; user-select: none;
 }
 .futures-terminal .chart-tools-switch:hover { background: rgba(255,255,255,.05); color: var(--text-primary); }
-.futures-terminal .chart-tools-switch input { accent-color: #e9c578; cursor: pointer; margin: 0; }
+.futures-terminal .chart-tools-switch input { accent-color: #ffb84d; cursor: pointer; margin: 0; }
 .futures-terminal .chart-tools-state {
   padding: 5px 6px; border-radius: 5px;
-  background: rgba(233,197,120,.1); color: #e9c578; font-size: 11px; line-height: 1.35;
+  background: rgba(245,165,36,.1); color: #ffb84d; font-size: 11px; line-height: 1.35;
 }
 .futures-terminal .chart-tools-action {
   width: 100%; text-align: left;
@@ -237,7 +237,7 @@
   transition: background 120ms ease, color 120ms ease;
 }
 .futures-terminal .chart-tools-action:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
-.futures-terminal .chart-tools-action.primary { color: #e9c578; }
-.futures-terminal .chart-tools-action.primary:hover { background: rgba(233,197,120,.12); }
-.futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #e9c578; outline-offset: 1px; }
+.futures-terminal .chart-tools-action.primary { color: #ffb84d; }
+.futures-terminal .chart-tools-action.primary:hover { background: rgba(245,165,36,.12); }
+.futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #ffb84d; outline-offset: 1px; }
 

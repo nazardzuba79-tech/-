@@ -43,6 +43,7 @@ import './trade-terminal/FuturesStudio.css';
 import './trade-terminal/FuturesDesignVariants.css';
 import './trade-terminal/TerminalStudio.css';
 import './trade-terminal/TerminalAccountPanel.css';
+import './trade-terminal/TerminalPremium.css';
 
 // Hard fallback only for a browser that has never loaded Futures before.
 // Returning visitors paint the last real discovered universe immediately

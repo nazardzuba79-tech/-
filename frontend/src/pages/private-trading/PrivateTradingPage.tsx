@@ -22,6 +22,7 @@ import '../trade-terminal/ReferenceFuturesTerminal.css';
 import '../trade-terminal/TerminalPresentationPolish.css';
 import '../trade-terminal/FuturesStudio.css';
 import '../trade-terminal/TerminalStudio.css';
+import '../trade-terminal/TerminalPremium.css';
 import './privateTrading.css';
 import './privateReferencePositions.css';
 

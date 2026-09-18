@@ -28,7 +28,7 @@
 .trade-terminal.trade-terminal.trade-terminal:is(.market-reference,.futures-reference) button:focus-visible { outline:2px solid #f7a600; outline-offset:2px; }
 
 /* Spot keeps every order family visible even in a narrow ticket. */
-.trade-terminal.futures-reference .pairs-count { margin-left:auto; order:2; padding:0 12px; color:#a1a7b3; font-size:11px; font-variant-numeric:tabular-nums; }
+.trade-terminal.futures-reference .pairs-count { margin-left:auto; order:2; padding:0 12px; color:#98a2b3; font-size:11px; font-variant-numeric:tabular-nums; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tabs { gap:0 14px; flex-wrap:wrap; overflow:visible; padding:0 16px; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-type-tab { padding:10px 0; font-size:12px; line-height:18px; }
 .trade-terminal.trade-terminal.trade-terminal.market-reference .order-form-content { padding:16px; gap:18px; }
@@ -126,8 +126,8 @@
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .order-form-area { grid-row:2 / 4; }
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .reference-order-heading { min-height:38px; height:38px; font-size:13px; }
 }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book { background:#101014; padding:0; overflow:hidden; }
-.trade-terminal.futures-reference .repaired-futures-book .reference-book { background:#101014; width:100%; min-width:0; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book { background:#12161c; padding:0; overflow:hidden; }
+.trade-terminal.futures-reference .repaired-futures-book .reference-book { background:#12161c; width:100%; min-width:0; }
 .trade-terminal.futures-reference .repaired-futures-book .rb-tabs { height:38px; flex-basis:38px; gap:18px; }
 .trade-terminal.futures-reference .repaired-futures-book .rb-tabs button { font-size:12px; }
 .trade-terminal.futures-reference .repaired-futures-book :is(.rb-columns,.rb-row) { padding-inline:10px; column-gap:6px; }
@@ -146,8 +146,8 @@
 }
 /* Futures composition: graphite canvas, aligned headings and a compact readable ladder. */
 .trade-terminal.trade-terminal.trade-terminal.futures-reference {
-  --workspace-bg:#14161b; --panel:#14161b; --panel-alt:#202329;
-  --border:#282c34; --border-color:#282c34; --text-primary:#e5e8ed; --text-secondary:#9ca4b1;
+  --workspace-bg:#12161c; --panel:#12161c; --panel-alt:#202329;
+  --border:#232a34; --border-color:#232a34; --text-primary:#e5e8ed; --text-secondary:#9ca4b1;
 }
 @media(min-width:1440px) {
   .trade-terminal.trade-terminal.trade-terminal.futures-reference .terminal {
@@ -155,13 +155,13 @@
   }
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.terminal-chart-heading,.rb-tabs,.reference-order-heading) {
-  height:38px; min-height:38px; background:#171a20; border-bottom:1px solid #282c34;
+  height:38px; min-height:38px; background:#1a1f27; border-bottom:1px solid #232a34;
   font-size:12px; font-weight:600; letter-spacing:0;
 }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar { background:#171a20; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar { background:#1a1f27; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .ticker-bar .label { font-size:11px; color:#949daa; }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.left-panel,.fo-panel,.bottom-panel) { background:#14161b; }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference .pairs-search { background:#14161b; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.left-panel,.fo-panel,.bottom-panel) { background:#12161c; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .pairs-search { background:#12161c; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .pairs-search input { border:1px solid #30353f; background:#1c2027; border-radius:5px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .pair-row { min-height:34px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-row {
@@ -169,22 +169,22 @@
   font-size:12px; font-weight:450;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-center {
-  background:#171a20; border-block:1px solid #282c34;
+  background:#1a1f27; border-block:1px solid #232a34;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-center strong { font-size:19px; letter-spacing:-.3px; }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-controls { background:#101014; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-controls { background:#12161c; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .repaired-futures-book .rb-row:hover { background:#242a33; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-form { gap:12px; padding:12px 14px 16px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference :is(.fo-priceInputRow,.fo-qtyInputRow,.order-family-input,.fo-mlTrigger) {
   background:#202329; border:1px solid #30353e; border-radius:5px; box-shadow:none;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-infoBox {
-  background:transparent; border:0; border-block:1px solid #282c34; border-radius:0; padding:10px 0;
+  background:transparent; border:0; border-block:1px solid #232a34; border-radius:0; padding:10px 0;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-infoRow { font-size:12px; line-height:19px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-submitPair { gap:8px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .fo-submitPair .submit-btn { border-radius:6px; min-height:42px; font-size:12px; font-weight:600; }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tabs { background:#171a20; gap:20px; padding-inline:16px; }
+.trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tabs { background:#1a1f27; gap:20px; padding-inline:16px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference .bottom-tab { font-size:12px; }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference :is(input,button,select):focus-visible { outline:1px solid #e9ad35; outline-offset:2px; }
 
