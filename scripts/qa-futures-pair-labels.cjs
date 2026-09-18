@@ -7,12 +7,13 @@ const path = require('node:path');
 const http = require('node:http');
 const assert = require('node:assert/strict');
 const { pathToFileURL } = require('node:url');
+const { createRequire } = require('node:module');
 const root = path.resolve(__dirname, '..');
 const front = path.join(root, 'frontend');
 const out = path.join(root, 'docs/qa/futures-pair-labels');
 const report = { fixtureOnly: true, productionVerified: false, checks: [] };
 const temp = fs.mkdtempSync(path.join(front, '.qa-pair-labels-'));
-let browser, server;
+let browser, server, activePage;
 
 async function main() {
   fs.mkdirSync(out, { recursive: true });
@@ -24,7 +25,7 @@ async function main() {
   const mockPath = path.join(temp, 'mocks.tsx');
   fs.writeFileSync(mockPath, `import React from 'react';
 const rows=[['BTC/USDT','77405.10','1.41'],['ETH/USDT','2468.49','1.76'],['JUP/USDT','0.2559','13.83'],['DOGE/USDT','0.0838','-8.48'],['1000PEPE/USDT','0.011014','14.52']];
-const quotes=new Map(rows.map(([pair,lastPrice,changePercent24h],i)=>[pair,{lastPrice,changePercent24h,quoteVolume24h:String(1000000-i)}]));
+const quotes=new Map(rows.map(([pair,lastPrice,changePercent24h],i)=>[pair,{lastPrice:Number(lastPrice),changePercent24h:Number(changePercent24h),quoteVolume24h:1000000-i}]));
 export function useFuturesReference(){return quotes;}
 export function useLanguage(){return {t:(key:string)=>({'trade.searchPair':'Поиск пары','trade.favorites':'Избранное','trade.price':'Цена','markets.change24h':'24ч %','trade.nothingFound':'Нет пар','nav.futures':'Фьючерсы'}[key]??key)};}
 export function CryptoIcon({symbol,size}:{symbol:string;size:number}){return <span aria-hidden style={{display:'grid',placeItems:'center',width:size,height:size,borderRadius:'50%',background:'#245265',color:'#fff',fontSize:10}}>{symbol.slice(0,1)}</span>;}
@@ -39,9 +40,9 @@ function Fixture(){const [symbol,setSymbol]=useState('BTC/USDT');return <div cla
 createRoot(document.getElementById('root')!).render(<Fixture/>);
 `);
   const { build } = await import(pathToFileURL(path.join(front, 'node_modules/vite/dist/node/index.js')).href);
+  const reactPlugin = createRequire(path.join(front, 'package.json'))('@vitejs/plugin-react').default;
   await build({ root: temp, configFile: false, publicDir: false, logLevel: 'warn',
-    esbuild: { jsx: 'automatic' },
-    plugins: [{ name: 'pair-labels-fixture', resolveId(id, importer) {
+    plugins: [reactPlugin(), { name: 'pair-labels-fixture', enforce: 'pre', resolveId(id, importer) {
       if (importer?.replaceAll('\\', '/').endsWith('/components/FuturesPairList.tsx') &&
         ['../lib/useFuturesReference', '../lib/i18n', './CryptoIcon'].includes(id)) return mockPath;
     } }], build: { outDir: path.join(temp, 'dist'), emptyOutDir: true } });
@@ -60,15 +61,19 @@ createRoot(document.getElementById('root')!).render(<Fixture/>);
   for (const width of [1664, 1440, 1366, 1280, 1200, 1025, 390]) {
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: 'ru-RU' });
     await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
-    const page = await context.newPage();
+    const page = await context.newPage(); activePage = page;
     page.setDefaultTimeout(10000);
-    const errors = []; page.on('pageerror', e => errors.push(e.message));
+    const errors = []; page.on('pageerror', e => { errors.push(e.message); console.error('Fixture page error:', e.message); });
     await page.goto(origin);
     // At mobile widths the app hosts this same component in a picker. Isolate
     // its available width here instead of claiming to exercise the full dialog.
     if (width < 1025) await page.addStyleTag({ content: `.trade-terminal .terminal{display:block!important}.reference-market-sidebar{display:flex!important;width:calc(100vw - 32px)!important;height:650px!important}` });
     const list = page.locator('.futures-pair-list');
-    await list.locator('[data-row]').first().waitFor();
+    try { await list.locator('[data-row]').first().waitFor(); }
+    catch (error) {
+      report.readiness = { width, errors, html: await page.content(), nodes: await page.locator('.pairs-list, .reference-market-sidebar').evaluateAll(nodes => nodes.map(n => ({ tag:n.className, display:getComputedStyle(n).display, rect:n.getBoundingClientRect().toJSON(), rows:n.querySelectorAll('[data-row]').length }))) };
+      throw error;
+    }
     const dimensions = async () => list.locator('[data-row]').evaluateAll(rows => rows.slice(0, 5).map(row => {
       const name = row.querySelector('.p-name'), base = row.querySelector('.p-base');
       const price = row.querySelector('.p-price'), change = row.querySelector('.p-change');
@@ -131,6 +136,10 @@ createRoot(document.getElementById('root')!).render(<Fixture/>);
 main().catch(error => { report.passed = false; report.error = String(error.stack || error); console.error(error); process.exitCode = 1; })
   .finally(async () => {
     fs.mkdirSync(out, { recursive: true }); fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2));
+    if (!report.passed && activePage && !activePage.isClosed()) {
+      await activePage.screenshot({path:path.join(out,'failure.png'),fullPage:true}).catch(()=>{});
+      if (fs.existsSync(path.join(temp,'dist'))) fs.cpSync(path.join(temp,'dist'),path.join(out,'failed-fixture-build'),{recursive:true});
+    }
     if (browser) await browser.close();
     if (server) await new Promise(resolve => server.close(resolve));
     fs.rmSync(temp, { recursive: true, force: true });
