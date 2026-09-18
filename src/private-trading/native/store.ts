@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { createHash } from 'crypto';
-import { assertOwner, privateTradingConfig, PrivateTradingConfig } from '../access';
+import { privateTradingConfig, PrivateTradingConfig } from '../access';
+import { assertNativeTrader } from './testAccess';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { emptyDemoState, DemoState, migrateDemoState } from './engine';
 import { NativeCheckpoint, NativeInstruction } from './replay';
@@ -45,7 +46,7 @@ export interface NativeRepository {
 /** Only DemoBalance + NativeDemo* writes exist here. Real wallets/orders are not dependencies. */
 export class PrismaNativeRepository implements NativeRepository {
   constructor(private readonly db:PrismaClient,private readonly config:()=>PrivateTradingConfig=privateTradingConfig){}
-  private owner(db:PrismaClient|Prisma.TransactionClient,actor:OwnerSession){return assertOwner(db,actor,this.config);}
+  private owner(db:PrismaClient|Prisma.TransactionClient,actor:OwnerSession){return assertNativeTrader(db,actor,this.config);}
   async read(actor:OwnerSession){await this.owner(this.db,actor);const row=await this.db.nativeDemoAccount.findUnique({where:{userId:actor.userId}});await this.owner(this.db,actor);return row?forward(row.payload as unknown as NativeAccount):null;}
   async available(actor:OwnerSession){await this.owner(this.db,actor);const b=await this.db.demoBalance.findUnique({where:{userId_asset:{userId:actor.userId,asset:'USDT'}}});await this.owner(this.db,actor);return b?b.available.toString():null;}
   async holdings(actor:OwnerSession){

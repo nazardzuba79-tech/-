@@ -16,6 +16,7 @@
  * floor" path is reviewable instead of only described.
  */
 const express = require('express');
+const BigNumber = require('bignumber.js');
 const fs = require('node:fs');
 const path = require('node:path');
 const { NativeDemoService } = require('../dist/private-trading/native/service');
@@ -37,7 +38,12 @@ function quoteFor(symbol) {
   if (!mark) throw new Error('NO_INSTRUMENT');
   return {
     provider: 'bybit', symbol,
-    bids: [{ price: mark, quantity: '10' }], asks: [{ price: mark, quantity: '10' }],
+    // A real book has a spread: a quote whose best bid equals its best ask
+    // is refused by `assertPrivateFreshQuote`, which is why this stand could
+    // never open a position — and therefore never show the Wallet's margin
+    // and unrealized P&L carrying a figure. One tick either side of the mark.
+    bids: [{ price: new BigNumber(mark).times('0.9999').toFixed(2), quantity: '50' }],
+    asks: [{ price: new BigNumber(mark).times('1.0001').toFixed(2), quantity: '50' }],
     markPrice: mark, lastPrice: mark, fundingRate: '0.0001',
     nextFundingTime: (Math.floor(now() / 28800000) + 1) * 28800000,
     providerTimestamp: now(), bookGeneratedAt: now(), markProviderTimestamp: now(), fetchedAt: now(),
@@ -67,7 +73,29 @@ const market = {
     if (state.unpriced && symbol === 'XRPUSDT') throw new Error('NO_QUOTE');
     return quoteFor(symbol);
   },
-  async instrument() { throw new Error('NOT_NEEDED'); },
+  /**
+   * A real contract spec, so the stand can actually OPEN a position.
+   *
+   * Without it the engine cannot size or margin an order, and the account
+   * could only ever be reviewed flat — which is exactly how the Wallet's
+   * `Нереализованный PnL`, IM and MM came to look like dead labels: nobody
+   * had seen them carry a figure. The numbers here are ordinary linear
+   * perpetual parameters; the ENGINE does all the arithmetic on them.
+   */
+  async instrument(symbol) {
+    if (!MARKS[symbol]) throw new Error('NO_INSTRUMENT');
+    return {
+      provider: 'bybit', symbol, baseAsset: symbol.replace('USDT', ''), quoteAsset: 'USDT', settleAsset: 'USDT',
+      contractType: 'LinearPerpetual', status: 'Trading', launchTime: 1_577_836_800_000, fetchedAt: now(),
+      fundingIntervalMinutes: 480,
+      filters: { tickSize: '0.01', minPrice: '0.01', maxPrice: '10000000', qtyStep: '0.001', minOrderQty: '0.001',
+        maxOrderQty: '10000', maxMarketOrderQty: '1000', minNotionalValue: '5' },
+      leverage: { min: '1', max: '100', step: '0.1' },
+      riskTiers: [{ riskLimitValue: '2000000000', maintenanceMarginRate: '0.005', initialMarginRate: '0.01',
+        maintenanceDeduction: '0', maxLeverage: '100' }],
+      parameterModel: 'CURRENT_INSTRUMENT_PARAMETERS', parameterVersion: 'REVIEW_FIXTURE_V1',
+    };
+  },
 };
 
 class ReviewRepository {

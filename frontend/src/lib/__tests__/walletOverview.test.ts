@@ -350,3 +350,72 @@ describe('7. the funding view', () => {
     expect(out).toMatch(/data-asset="EUR"[\s\S]*?—<\/td>/);
   });
 });
+
+describe('8. the workspace chrome: gauges, full bleed, and the theme switch', () => {
+  const css = () => read(wallet + 'wallet.css');
+
+  it('draws the IM/MM gauge — the rule whose loss turned them into blank labels', () => {
+    // REGRESSION GUARD. `.wallet-im-bar` renders as a bare span: without a
+    // height and a track colour it is invisible, and IM/MM read as dead
+    // text beside a gap. That is exactly how they shipped once.
+    const source = css();
+    const rule = source.slice(source.indexOf('.vx-wallet .wallet-im-bar {'), source.indexOf('.vx-wallet .wallet-margin-pct'));
+    expect(rule).toMatch(/height:\s*\d+px/);
+    expect(rule).toMatch(/background:\s*var\(--w-panel-3\)/);
+    // The fill is the server's ratio; a zero still shows where it starts.
+    expect(rule).toContain(".vx-wallet .wallet-im-bar[data-empty='true']::before");
+    expect(rule).toMatch(/\.wallet-im-bar > span \{[^}]*background: var\(--w-pos\)/s);
+  });
+
+  it('says whether a zero margin is "nothing committed" or "unknown"', () => {
+    const source = read(wallet + 'PortfolioStrip.tsx');
+    // Idle is decided by the SERVER's own figures — no margin in use on an
+    // account that has equity — never by guessing at position counts.
+    expect(source).toContain("account!.initialMarginUsd === 0 && (account!.totalEquityUsd ?? 0) > 0");
+    expect(source).toContain("t('wallet.noOpenPositions')");
+    expect(source).toContain('to="/futures"');
+  });
+
+  it('is full bleed: no page heading, no centred column', () => {
+    const page = read('frontend/src/pages/WalletPage.tsx');
+    // The rail's wordmark is the title now, so the duplicate heading is gone.
+    expect(page).not.toMatch(/<h1/);
+    expect(page).not.toContain('max-w-[1560px]');
+    expect(page).not.toContain('mx-auto');
+    expect(page).toContain('<div className="wallet-content min-w-0">');
+    const nav = read(wallet + 'WalletSideNav.tsx');
+    expect(nav).toContain('<div className="wallet-brand">');
+    expect(nav).not.toContain('wallet-brand hidden');
+    expect(css()).toMatch(/\.vx-wallet \.wallet-workspace \{\s*[^}]*padding: 0;/);
+  });
+
+  it('themes both roots from one stored choice, and never sniffs the OS', () => {
+    const hook = read(wallet + 'useWalletTheme.ts');
+    const code = hook.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    // A reader who put the ledger in dark gets it dark next visit, whatever
+    // their laptop is doing — so the preference is stored, not inferred.
+    // (The comment above the hook explains that; the CODE must not read it.)
+    expect(code).not.toContain('prefers-color-scheme');
+    expect(code).toContain('localStorage.setItem');
+    expect(code).toContain('root.removeAttribute(ATTRIBUTE)');
+    const source = css();
+    // One attribute reaches the page AND the portalled dialogs.
+    expect(source).toContain(".vx-wallet:where([data-wallet-theme='dark'] *)");
+    expect(source).toContain(".vx-wallet-modal-root:where([data-wallet-theme='dark'] *)");
+    // The dark block comes after the light one, or it would never win.
+    expect(source.indexOf("[data-wallet-theme='dark']")).toBeGreaterThan(source.indexOf('--w-base: #f5f7fa'));
+    // It retunes tokens only — no component rule is duplicated for dark.
+    const dark = source.slice(source.indexOf(".vx-wallet:where([data-wallet-theme='dark'] *)"));
+    const block = dark.slice(0, dark.indexOf('}'));
+    for (const token of ['--w-base', '--w-panel', '--w-ink', '--w-hair', '--w-gold', '--w-pos', '--w-neg']) {
+      expect(`dark ${token}: ${block.includes(token)}`).toBe(`dark ${token}: true`);
+    }
+  });
+
+  it.each(['ru', 'en', 'es', 'hi', 'ja', 'ko', 'zh'])('%s names the theme switch and the idle state', (lang) => {
+    const dictionary = read(`frontend/src/lib/i18n/locales/${lang}.ts`);
+    for (const key of ['wallet.themeDark', 'wallet.themeLight', 'wallet.themeToggle', 'wallet.noOpenPositions']) {
+      expect(`${lang} ${key}: ${dictionary.includes(`'${key}':`)}`).toBe(`${lang} ${key}: true`);
+    }
+  });
+});

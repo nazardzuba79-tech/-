@@ -324,6 +324,9 @@ test.each([
 ])('the headline figures retain their authoritative financial expression (hidden=%s, unavailable=%s)', (hidden, unavailable, expected) => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   // The header renders an ACCOUNT, taken from whichever source is
@@ -368,6 +371,9 @@ test.each([
 test('margin usage prints the ratios the SERVER answered, never a division done here', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const account = {
@@ -391,6 +397,9 @@ test('margin usage prints the ratios the SERVER answered, never a division done 
 test('an unknown ratio is a dash, and a real zero is a zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const base = {
@@ -414,6 +423,9 @@ test('an unknown ratio is a dash, and a real zero is a zero', () => {
 test('the account header reports unknown margin figures as dashes, never as zero', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   // An ordinary ledger has no margin account. Its margin fields are UNKNOWN
@@ -449,6 +461,9 @@ test('the account header reports unknown margin figures as dashes, never as zero
 test('Convert is offered as unavailable rather than wired to nothing', () => {
   const { PortfolioStrip } = evaluate(wallet + 'PortfolioStrip.tsx', {
     '../../lib/i18n': { useLanguage: () => language() }, './format': fmt,
+    // The idle-margin note routes to the terminal, so the header now has a
+    // router dependency; stubbed here exactly as the ledger's Trade link is.
+    'react-router-dom': { Link: ({ to, children, ...props }: any) => React.createElement('a', { ...props, href: to }, children) },
     './useWalletData': { PERFORMANCE_PERIODS: ['7d', '30d', '90d', '1y', 'all'] },
   });
   const tree = PortfolioStrip({ account: null, performance: null, performanceLoading: false,
@@ -646,7 +661,16 @@ test.each([
   // subtracting a movement the total never saw would invent a loss. The
   // pricing, the BigNumber arithmetic, the snapshot read and the "never
   // write to the ledger" rule are untouched.
-  ['src/services/WalletPortfolioService.ts', '5fb0da2f75ff3cd20b8e9495cd898c8759eb1dd746773559e061c5575733c433'],
+  // Re-taken again for the flow-TIMING correction. A flow is now assigned
+  // to the first snapshot AT OR AFTER it, not to its UTC calendar day: the
+  // once-daily snapshot may have been recorded BEFORE a later same-day
+  // top-up, and subtracting the credit from an observation that never
+  // contained it flattens the wrong day and lets the next day's jump read
+  // as profit. A flow newer than the last snapshot is left for the
+  // observation that will contain it, so it is removed exactly once. The
+  // pricing, the BigNumber arithmetic, the ledger choice and the "never
+  // write to the ledger" rule are still untouched.
+  ['src/services/WalletPortfolioService.ts', 'fbafaf83e96f2a7fb2f40e9ec2f4b8b85191c22e2b10db1bf7fc4068462a4388'],
   ['src/services/PortfolioPerformanceEngine.ts', '7df2bd63857e0f710d020caaabcdc7b42f3269d8949ae03e908251562ab523b6'],
   ['src/api/routes/portfolio.ts', 'e943dce097247b01f5d001770c816faa5be4b024755724b8da2b90822f05f016'],
   ['src/api/middleware/auth.ts', 'a2f258c6b2a3993670ec8378f82e36fb4132ab803036dd1ecd4bd1751ac3e13c'],
