@@ -162,7 +162,7 @@
 }
 @media(min-width:1025px) and (max-width:1279px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
-    grid-template-columns:196px minmax(0,1fr) 220px 280px;
+    grid-template-columns:204px minmax(0,1fr) 220px 280px;
     grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
   }
 }
@@ -570,9 +570,17 @@
    track wide enough for an eight-figure quote; the name keeps enough for the
    longest ticker the list shows. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row {
-  grid-template-columns: 12px 20px minmax(0, 1fr) 72px 48px;
+  grid-template-columns: 12px 20px minmax(36px, 1fr) minmax(72px, max-content) minmax(48px, max-content);
   gap: 3px;
   padding: 4px 6px;
+}
+/* Below 1280 the rail itself is narrower, so the price and change tracks come
+   down with it rather than pushing the ticker into the price column. Measured
+   at 1200: rail 204, tracks 12+20+40+64+44, gaps 12, padding 12. */
+@media (max-width: 1279px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row {
+    grid-template-columns: 12px 20px minmax(36px, 1fr) minmax(64px, max-content) minmax(44px, max-content);
+  }
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row .p-price {
   overflow: visible;
