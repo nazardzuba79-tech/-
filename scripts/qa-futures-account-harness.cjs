@@ -76,6 +76,32 @@ function freshAccounts() {
         openedAt: new Date(now - 172800000).toISOString(), closedAt: new Date(now - 169200000).toISOString(),
       }],
     },
+    // An ADMIN identity, so the header can be checked in the state where
+    // it carries one extra left-hand section. Fixture only — it grants
+    // nothing, because this harness has no admin surface to reach.
+    'qa-user-admin': {
+      me: { id: 'qa-user-admin', email: 'admin@localhost.invalid', role: 'ADMIN', isAdmin: true, createdAt: new Date(now - 86400000 * 500).toISOString(), emailVerified: true, twoFactorEnabled: false, avatarUrl: null, kycStatus: 'NONE' },
+      spot: [{ asset: 'USDT', available: '500.00000000', locked: '0' }],
+      futures: [{ asset: 'USDT', available: '500.00000000', locked: '0' }],
+      positions: [], orders: [], spotOrders: [], history: [],
+    },
+    // A DELIBERATELY LARGE fixture, added for the order-panel layout QA:
+    // the label/value collision the cleanup fixes only appears once the
+    // balance is eight digits wide. Local fixture only — no production
+    // figure is copied here, and nothing reaches a real ledger.
+    'qa-user-c': {
+      me: { id: 'qa-user-c', email: 'c@localhost.invalid', role: 'USER', createdAt: new Date(now - 86400000 * 200).toISOString(), emailVerified: true, twoFactorEnabled: false, avatarUrl: null, kycStatus: 'NONE' },
+      spot: [{ asset: 'USDT', available: '1000000.00000000', locked: '0' }],
+      futures: [{ asset: 'USDT', available: '56381922.68000000', locked: '23101.35000000' }],
+      positions: [{
+        id: 'pos-c1', symbol: 'BTC/USDT', side: 'LONG', size: '2.16560000', entryPrice: '104000.00',
+        leverage: 10, marginType: 'CROSS', initialMargin: '22562.00000000', liquidationPrice: '94600.00',
+        markPrice: '104235.00', unrealizedPnl: '508.92000000', roe: '2.26', openedAt: new Date(now - 7200000).toISOString(),
+      }],
+      orders: [],
+      spotOrders: [],
+      history: [],
+    },
     'qa-user-b': {
       me: { id: 'qa-user-b', email: 'b@localhost.invalid', role: 'USER', createdAt: new Date(now - 86400000 * 90).toISOString(), emailVerified: true, twoFactorEnabled: false, avatarUrl: null, kycStatus: 'NONE' },
       spot: [{ asset: 'USDT', available: '777.00000000', locked: '0' }],
@@ -123,7 +149,13 @@ function marketRoutes(pathname) {
     return {
       symbols: FUTURES_SYMBOLS, fundingIntervalHours: 8, minLeverage: 1, maxLeverage: 50,
       newAccountMaxLeverage: 10, newAccountPeriodDays: 30, highLeverageWarningThreshold: 20,
-      leverageTiers: [{ notionalCap: 50000, maxLeverage: 50, maintenanceMarginRate: 0.005, maintenanceAmount: 0 }],
+      leverageTiers: [
+        { notionalCap: 50000, maxLeverage: 50, maintenanceMarginRate: 0.005, maintenanceAmount: 0 },
+        // A top tier with no cap, so a large fixture position still lands
+        // in a tier and its maintenance margin is a real number rather
+        // than a missing one.
+        { notionalCap: null, maxLeverage: 10, maintenanceMarginRate: 0.01, maintenanceAmount: 250 },
+      ],
       maintenanceMarginRate: '0.005',
     };
   }
@@ -348,6 +380,14 @@ const server = http.createServer(async (req, res) => {
     record(req.method, pathname);
     if ([...failing].some((f) => pathname.includes(f))) return json(503, { error: 'Injected failure' });
     const token = tokenOf(req);
+
+    // The owner-engine probe. These fixture identities are ORDINARY
+    // accounts, so the answer is a definite "no": that is the verdict that
+    // releases the terminal to the normal /futures routes this harness
+    // serves, instead of leaving it waiting on an engine that is not here.
+    if (pathname === '/api/v1/private-trading/access') {
+      return json(200, { allowed: false, nativeAvailable: false, simulationOnly: false });
+    }
 
     const market = marketRoutes(pathname);
     if (market !== undefined) return market === null ? json(404, { error: 'not in fixture set' }) : json(200, market);

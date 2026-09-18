@@ -1150,6 +1150,11 @@ export const EN: Record<Key, string> = {
   'futures.marginBalance': 'Margin balance',
   'futures.initialMarginPct': 'Initial margin',
   'futures.maintenanceMarginPct': 'Maintenance margin',
+  // Short labels for the Futures summary's two margin-usage rows. The
+  // full names above stay as their tooltips, so the panel reads short
+  // without the metric losing its name.
+  'futures.initialMarginUsed': 'Used IM',
+  'futures.maintenanceMarginUsed': 'Used MM',
   'futures.depositAction': 'Deposit',
   'futures.transferAction': 'Transfer',
 

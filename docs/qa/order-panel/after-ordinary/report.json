@@ -1,0 +1,273 @@
+{
+  "dist": "/home/user/-/frontend/dist",
+  "token": "qa-user-a",
+  "viewports": [
+    {
+      "name": "desktop-1440x900",
+      "width": 1440,
+      "height": 900,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        0
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": false,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "10 250.00 USDT",
+          "gap": 21
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10 000.00 USDT",
+          "gap": 51
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+11.75 USDT",
+          "gap": 87
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "5.07%",
+          "gap": 87
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "0.25%",
+          "gap": 87
+        }
+      ],
+      "tracks": [
+        {
+          "w": 34,
+          "h": 3,
+          "right": 1361
+        },
+        {
+          "w": 34,
+          "h": 3,
+          "right": 1361
+        }
+      ],
+      "rightBlock": [
+        "nav-item top-nav-link nav-wallet-link",
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 1,
+      "headerHeight": 48,
+      "sliderValueVisible": false,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "119x34",
+        "119x34"
+      ]
+    },
+    {
+      "name": "desktop-1366x768",
+      "width": 1366,
+      "height": 768,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        0
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": false,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "10 250.00 USDT",
+          "gap": 21
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10 000.00 USDT",
+          "gap": 51
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+11.75 USDT",
+          "gap": 87
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "5.07%",
+          "gap": 87
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "0.25%",
+          "gap": 87
+        }
+      ],
+      "tracks": [
+        {
+          "w": 34,
+          "h": 3,
+          "right": 1287
+        },
+        {
+          "w": 34,
+          "h": 3,
+          "right": 1287
+        }
+      ],
+      "rightBlock": [
+        "nav-item top-nav-link nav-wallet-link",
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 1,
+      "headerHeight": 48,
+      "sliderValueVisible": false,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "119x34",
+        "119x34"
+      ]
+    },
+    {
+      "name": "mobile-390x844",
+      "width": 390,
+      "height": 844,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed."
+      ],
+      "chatOverlapAtRest": [
+        0,
+        0
+      ],
+      "chatOverlapScrolled": [
+        0,
+        0
+      ],
+      "accountCard": true,
+      "marginTypeRowPresent": false,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "10 250.00 USDT",
+          "gap": 131
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "10 000.00 USDT",
+          "gap": 161
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+11.75 USDT",
+          "gap": 197
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "5.07%",
+          "gap": 197
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "0.25%",
+          "gap": 197
+        }
+      ],
+      "tracks": [
+        {
+          "w": 34,
+          "h": 3,
+          "right": 311
+        },
+        {
+          "w": 34,
+          "h": 3,
+          "right": 311
+        }
+      ],
+      "rightBlock": [
+        "nav-item top-nav-link nav-wallet-link",
+        "deposit-button top-nav-fund-btn",
+        "header-extra-action",
+        "language-control",
+        "top-nav-profile-wrap"
+      ],
+      "walletLinks": 1,
+      "headerHeight": 56,
+      "sliderValueVisible": false,
+      "horizontalOverflow": 0,
+      "actionButtonSizes": [
+        "174x34",
+        "174x34"
+      ]
+    }
+  ]
+}

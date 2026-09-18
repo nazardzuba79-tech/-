@@ -7,6 +7,7 @@ import { CryptoIcon } from './CryptoIcon';
 import { formatPrice } from '../lib/formatNumber';
 import { useFavorites } from '../lib/useFavorites';
 import { useWindowedRows } from '../lib/useWindowedRows';
+import './FuturesPairList.css';
 
 export interface FuturesPairListHandle {
   focusSearch: () => void;
@@ -145,7 +146,7 @@ export const FuturesPairList = forwardRef<
         </button>
       </div>
 
-      <div className="pairs-col-headers">
+      <div className="pairs-col-headers futures-pair-headers">
         <span aria-hidden />
         <button type="button" aria-pressed={sortField === 'price'} className={`pch-sort ${sortField === 'price' ? 'active' : ''}`} onClick={() => toggleSort('price')}>
           {t('trade.price')}
@@ -162,7 +163,7 @@ export const FuturesPairList = forwardRef<
           actually show are in the DOM. Spacers preserve the real scroll
           height, so the scrollbar and keyboard scrolling behave exactly as
           they would with every row mounted. */}
-      <div className="pairs-list" ref={attachList} data-total={rows.length}>
+      <div className="pairs-list futures-pair-list" ref={attachList} data-total={rows.length}>
         {rows.length === 0 && <div className="empty-state">{t('trade.nothingFound')}</div>}
         {windowed.padTop > 0 && <div style={{ height: windowed.padTop }} aria-hidden />}
         {rows.slice(windowed.start, windowed.end).map((r) => {

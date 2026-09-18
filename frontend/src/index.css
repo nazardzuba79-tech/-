@@ -2311,3 +2311,106 @@ a:hover > .nav-card-icon {
   --h-text-3:#c5cdd7;
 }
 .trade-terminal.terminal-studio > .global-header .header-brand { --text-primary:#ffffff; }
+
+/* ── Header right block: funds, then account ──────────────────────────────
+   «Кошелёк» moved out of the left product sections and sits here, directly
+   before the deposit CTA. It stays a plain text link: the gold button is
+   the only filled control in this cluster, and a second accent next to it
+   would read as two competing calls to action. The pair is then separated
+   from the language and profile controls by a wider gap — spacing, not a
+   divider, because the header already has enough vertical furniture.
+   Appended last so it wins the ties against the terminal's own
+   `.global-header .nav-item` padding rule above. */
+.global-header .header-actions > .nav-wallet-link {
+  padding: 0 6px;
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+.global-header .header-actions > .nav-wallet-link.nav-active::after {
+  right: 2px;
+  left: 2px;
+}
+/* 8px of gap + 8px here = a 16px step between the money pair and whatever
+   account control follows (the page's own extra action, or the language
+   switcher when there is none). */
+.global-header .header-actions > .deposit-button + * {
+  margin-left: 8px;
+}
+
+/* ── Futures account card: base layout ───────────────────────────────────
+   The terminal layers refine these; this is what the card falls back to
+   anywhere else. Same contract in both places: label left, one right axis
+   for every amount and percentage, and a whole-value wrap rather than a
+   number that collides with its own label. */
+.futures-account-figures {
+  display: flex;
+  flex-direction: column;
+  row-gap: 7px;
+}
+.futures-account-stat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 20px;
+}
+.futures-account-stat .fa-label {
+  flex: 0 0 auto;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.futures-account-stat .fa-value {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  margin-left: auto;
+  color: var(--text-primary);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+.futures-account-stat .fa-unit {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.futures-account-stat .fa-flag {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(240, 166, 58, 0.16);
+  color: #f0a63a;
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+.futures-account-usage .fa-track {
+  flex: 0 0 34px;
+  align-self: center;
+  height: 3px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.futures-account-usage .fa-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.futures-account-usage .fa-value {
+  flex: 0 0 54px;
+  justify-content: flex-end;
+  margin-left: 0;
+}

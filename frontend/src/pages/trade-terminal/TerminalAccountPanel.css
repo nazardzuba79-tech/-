@@ -60,12 +60,6 @@
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-columns {
   font-size:11px; font-weight:500; color:#9cabb9;
 }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(20,160,115,.30);
-}
-.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(200,64,74,.30);
-}
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong { font-size:19px; }
 
 /* The ticket uses the same readable scale instead of falling back to 11px
@@ -163,4 +157,120 @@
     grid-template-columns:184px minmax(0,1fr) 220px 252px;
     grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
   }
+}
+/* ---------------------------------------------------------------------------
+   Owner's terminal corrections: no dead rectangle above order entry, and the
+   order panel and depth start at the navbar.
+
+   WHAT WAS WRONG. `.ticker-bar` was placed `grid-column:2 / 5` — it spanned
+   the order-entry column too — while `.order-form-area` was pushed to
+   `grid-row:2 / 4`. The instrument row's items end around 1070px, so the
+   remainder of that span rendered as a large empty panel over order entry,
+   and the whole ticket sat a full row below the navbar. That empty block was
+   the ticker's own unused tail, not a spacer: there is nothing to delete in
+   the markup, only a span to correct.
+
+   WHY IT IS GATED BY WIDTH. The eight instrument cells need ~1020-1070px on
+   one line. Columns 2+3 only supply that from roughly 1500px up (below it the
+   bar would either scroll or wrap, and wrapping would take the height back
+   out of the chart, which must not shrink). So narrower desktops keep the
+   previous full-span bar, which fits there and overflows nothing. */
+@media(min-width:1500px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:2 / 4; gap:14px; padding-inline:12px;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area {
+    grid-column:4; grid-row:1 / 4;
+  }
+  /* The ticket now owns the full column height, so it no longer needs the
+     nudge the design-variant layer added to clear the bar above it. */
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .order-form-area .fo-panel {
+    padding-top:0;
+  }
+}
+
+/* Depth rises to the navbar as well, once the instrument row fits inside the
+   chart column on its own (~1020-1070px of cells, chart = width - 740).
+   `referenceRowCount` sizes the book from its measured height, so the
+   reclaimed row becomes actual price levels rather than padding. The chart
+   keeps its own row and its own height throughout. */
+@media(min-width:1760px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    grid-column:2 / 3;
+  }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .orderbook-area {
+    grid-column:3; grid-row:1 / 3;
+  }
+}
+
+/* The instrument identity reads as one block: artwork, pair, caret. The icon
+   is the same component and the same 20px the market list uses, so the two
+   panels agree on what BTC looks like. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .pair-selector {
+  display:flex; align-items:center; gap:8px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .pair-selector img,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .pair-selector svg,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .pair-selector .crypto-icon {
+  flex:0 0 auto;
+}
+
+/* The instrument row's rhythm.
+
+   The cells were packed left against a fixed 14px gap, so all the slack
+   collected in one dead strip at the right end — 99px at 1600, 168px at
+   1920, 296px at 2048 — while cells of very different widths (127, 132, 92,
+   64, 59, 109, 130, 184) sat shoulder to shoulder. It read as crowded on the
+   left and empty on the right rather than as one distributed row.
+
+   `space-between` spends that slack on the gaps instead of hoarding it at
+   the end. `gap` stays as the FLOOR, so the cells can never be pushed closer
+   than 14px on a narrow bar — the distribution only ever adds. Scoped to the
+   width where the bar is correctly confined to the chart and depth columns;
+   below it the bar still spans the order column, and spreading cells across
+   that would park a metric above order entry. */
+@media(min-width:1500px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    justify-content:space-between;
+  }
+}
+
+/* The 24h cell carries two figures now (`+900.76 (+1.18%)`) where every
+   other cell carries one, so at the shared 13px it read as the heaviest
+   thing in the row. One step down keeps it legible and stops it competing
+   with the last price above it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .ticker-item .value.change {
+  font-size:12px;
+}
+
+/* ---------------------------------------------------------------------------
+   Order-book calm, against the owner's Binance reference.
+
+   DEPTH BARS. They were drawn at 30% alpha, which on this surface reads as a
+   solid block of colour and makes every size change a visible flash. The
+   reference draws the same cumulative staircase at roughly a tenth, dark
+   enough that the numbers stay the loudest thing in the row. Same geometry,
+   same anchor, same data — only the weight changes.
+
+   The transform transition is kept, and shortened. It exists so a bar that
+   grows does not teleport; at 260ms on a book publishing every 300ms almost
+   every bar was permanently mid-animation, so the ladder never sat still.
+   140ms lands each bar well before the next publish. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
+  background:rgba(20,160,115,.13);
+  transition:transform 140ms linear;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
+  background:rgba(200,64,74,.13);
+}
+
+/* CENTRE PRICE. The number sits in its own slot and the direction arrow in a
+   fixed-width one beside it, so a flip from up to down cannot move a digit.
+   Tabular figures already stop the number changing width as it changes
+   value; this stops the arrow doing it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong {
+  display:inline-flex; align-items:baseline; gap:4px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .rb-arrow {
+  display:inline-block; width:0.72em; text-align:center; font-size:0.8em; font-weight:600;
 }

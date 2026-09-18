@@ -636,7 +636,10 @@ export const RU = {
   'wallet.sparkline': 'Спарклайн',
   'wallet.rankingsLoadError': 'Не удалось загрузить список монет.',
   'wallet.searchAsset': 'Поиск актива, напр. BTC',
-  'wallet.deposit': 'Пополнить',
+  // The deposit CTA's one agreed label, shared by the header button, the
+  // Wallet actions and the Futures panel. Transaction history and status
+  // wording ('Пополнение') is a different thing and keeps its own keys.
+  'wallet.deposit': 'Депозит',
   'wallet.withdraw': 'Вывести',
   'wallet.transfer': 'Перевести',
   'wallet.spot': 'Спот',
@@ -1163,6 +1166,11 @@ export const RU = {
   'futures.marginBalance': 'Маржинальный баланс',
   'futures.initialMarginPct': 'Начальная маржа',
   'futures.maintenanceMarginPct': 'Поддерживающая маржа',
+  // Short labels for the Futures summary's two margin-usage rows. The
+  // full names above stay as their tooltips, so the panel reads short
+  // without the metric losing its name.
+  'futures.initialMarginUsed': 'Используемая НМ',
+  'futures.maintenanceMarginUsed': 'Используемая ПМ',
   'futures.depositAction': 'Депозит',
   'futures.transferAction': 'Перевести',
 

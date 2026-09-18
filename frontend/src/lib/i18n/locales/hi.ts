@@ -1121,6 +1121,11 @@ export const HI: Record<Key, string> = {
   'futures.marginBalance': 'मार्जिन बैलेंस',
   'futures.initialMarginPct': 'शुरुआती मार्जिन',
   'futures.maintenanceMarginPct': 'मेंटेनेंस मार्जिन',
+  // Short labels for the Futures summary's two margin-usage rows. The
+  // full names above stay as their tooltips, so the panel reads short
+  // without the metric losing its name.
+  'futures.initialMarginUsed': 'उपयोग IM',
+  'futures.maintenanceMarginUsed': 'उपयोग MM',
   'futures.depositAction': 'डिपॉज़िट करें',
   'futures.transferAction': 'ट्रांसफर करें',
 

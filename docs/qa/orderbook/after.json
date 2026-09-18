@@ -1,0 +1,42 @@
+{
+  "label": "after",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 4489,
+      "depthStyleWrites": 1490,
+      "otherAttr": 14,
+      "samples": 61,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/after-book-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/after-book-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob/after-book-2.png"
+      ]
+    },
+    "mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 1473,
+      "depthStyleWrites": 464,
+      "otherAttr": 14,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    }
+  }
+}
