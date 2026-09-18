@@ -73,6 +73,7 @@ function runHook(options: {
   };
   const nativeDemoApi = {
     wallet: count('native-wallet', options.wallet ?? (() => Promise.reject(new Error('not the owner')))),
+    setCollateral: async () => { throw new Error('not invoked by read-only hook tests'); },
   };
 
   const intervals: number[] = [];
@@ -118,6 +119,7 @@ function runHook(options: {
 }
 
 const OWNER_WALLET = {
+  initialized: true,
   account: {
     settleBalance: '4000', walletCollateral: '201000', collateral: '205000',
     unrealizedPnl: '-250.5', equity: '204749.5', initialMargin: '600', orderReserve: '150',
@@ -125,11 +127,19 @@ const OWNER_WALLET = {
     liquidatable: false, collateralComplete: true, unpricedAssets: [], collateralAsOf: 1,
   },
   ledger: { entries: [], openingBalance: '0', closingBalance: '4000', totals: { realizedPnl: '0', fees: '0', funding: '0', net: '0' }, walletBalance: '4000', reconciled: true },
-  collateral: { settleAsset: 'USDT', lines: [{ asset: 'BTC', available: '2', locked: '0', quantity: '2', price: '100000', value: '200000', status: 'PRICED', source: 'bybit', asOf: 1 }], priced: '201000', unpriced: [], complete: true, asOf: 1 },
+  collateral: {
+    settleAsset: 'USDT',
+    lines: [{ asset: 'BTC', collateralEnabled: true, available: '2', locked: '0', quantity: '2', price: '100000', value: '200000', status: 'PRICED', source: 'bybit', asOf: 1 }],
+    priced: '201000', collateralPriced: '201000', unpriced: [], collateralUnpriced: [], complete: true, asOf: 1,
+  },
   rows: [
-    { asset: 'USDT', walletQuantity: '1000', tradingBalance: '4000', total: '5000', inUse: '750', available: '4250', price: '1', value: '5000', status: 'SETTLE', asOf: null },
-    { asset: 'BTC', walletQuantity: '2', tradingBalance: '0', total: '2', inUse: '0', available: '2', price: '100000', value: '200000', status: 'PRICED', asOf: 1 },
+    { asset: 'USDT', collateralEnabled: true, collateralToggleable: false, walletQuantity: '1000', tradingBalance: '4000', total: '5000', inUse: '750', available: '4250', price: '1', value: '5000', status: 'SETTLE', asOf: null },
+    { asset: 'BTC', collateralEnabled: true, collateralToggleable: true, walletQuantity: '2', tradingBalance: '0', total: '2', inUse: '0', available: '2', price: '100000', value: '200000', status: 'PRICED', asOf: 1 },
   ],
+  assetsValue: '205000',
+  assetsEquityValue: '204749.5',
+  assetsComplete: true,
+  unpricedAssets: [],
 };
 
 describe('1. the Wallet consumes the SAME authoritative account as the terminal', () => {
@@ -140,6 +150,8 @@ describe('1. the Wallet consumes the SAME authoritative account as the terminal'
     const { account, rows } = hook.render();
 
     expect(account.mode).toBe('CROSS');
+    expect(account.collateralUsd).toBe(205000);
+    expect(account.walletEquityUsd).toBe(204749.5);
     expect(account.totalEquityUsd).toBe(204749.5);
     expect(account.availableUsd).toBe(203999.5);
     expect(account.unrealizedPnlUsd).toBe(-250.5);
@@ -157,6 +169,43 @@ describe('1. the Wallet consumes the SAME authoritative account as the terminal'
     ]);
   });
 
+  it('keeps disabled BTC in Wallet equity while the server margin equity excludes it', async () => {
+    const disabled = {
+      ...OWNER_WALLET,
+      account: {
+        ...OWNER_WALLET.account,
+        walletCollateral: '1000',
+        collateral: '5000',
+        equity: '4749.5',
+        available: '3999.5',
+      },
+      collateral: {
+        ...OWNER_WALLET.collateral,
+        collateralPriced: '1000',
+        lines: OWNER_WALLET.collateral.lines.map((line) => ({ ...line, collateralEnabled: false })),
+      },
+      rows: OWNER_WALLET.rows.map((row) => row.asset === 'BTC' ? { ...row, collateralEnabled: false } : row),
+      // Economic ownership did not change.
+      assetsValue: '205000',
+      assetsEquityValue: '204749.5',
+    };
+    const hook = runHook({ wallet: () => Promise.resolve(disabled) });
+    await Promise.resolve();
+    await Promise.resolve();
+    const { account, rows } = hook.render();
+
+    expect(account.collateralUsd).toBe(205000);
+    expect(account.walletEquityUsd).toBe(204749.5);
+    expect(account.totalEquityUsd).toBe(4749.5);
+    expect(account.availableUsd).toBe(3999.5);
+    expect(rows.find((row: any) => row.symbol === 'BTC')).toMatchObject({
+      total: 2,
+      valueUsd: 200000,
+      collateralEnabled: false,
+      collateralToggleable: true,
+    });
+  });
+
   it('falls back to the ordinary ledger, with margin reported unknown', async () => {
     const overview = () => Promise.resolve({
       real: {
@@ -172,6 +221,7 @@ describe('1. the Wallet consumes the SAME authoritative account as the terminal'
     const { account } = hook.render();
 
     expect(account.mode).toBe('SPOT');
+    expect(account.walletEquityUsd).toBe(300);
     expect(account.totalEquityUsd).toBe(300);
     expect(account.spotUsd).toBe(250);
     // Unknown, not zero: this account has no margin account to report.
@@ -217,10 +267,11 @@ describe('3. an unknown price is never a zero', () => {
   it('carries a null value through to the row and marks it unpriced', async () => {
     const unpriced = {
       ...OWNER_WALLET,
-      account: { ...OWNER_WALLET.account, collateralComplete: false, unpricedAssets: ['WTF'] },
+      assetsComplete: false,
+      unpricedAssets: ['WTF'],
       rows: [
         ...OWNER_WALLET.rows,
-        { asset: 'WTF', walletQuantity: '7', tradingBalance: '0', total: '7', inUse: '0', available: '7', price: null, value: null, status: 'UNPRICED', asOf: null },
+        { asset: 'WTF', collateralEnabled: false, collateralToggleable: true, walletQuantity: '7', tradingBalance: '0', total: '7', inUse: '0', available: '7', price: null, value: null, status: 'UNPRICED', asOf: null },
       ],
     };
     const hook = runHook({ wallet: () => Promise.resolve(unpriced) });
@@ -309,7 +360,8 @@ describe('5. the page does not poll per asset', () => {
     const many = {
       ...OWNER_WALLET,
       rows: Array.from({ length: 40 }, (_, i) => ({
-        asset: `A${i}`, walletQuantity: '1', tradingBalance: '0', total: '1', inUse: '0',
+        asset: `A${i}`, collateralEnabled: true, collateralToggleable: true,
+        walletQuantity: '1', tradingBalance: '0', total: '1', inUse: '0',
         available: '1', price: '10', value: '10', status: 'PRICED', asOf: 1,
       })),
     };
@@ -325,7 +377,7 @@ describe('5. the page does not poll per asset', () => {
 
   it('has no fetch of any kind inside the row or account projection', () => {
     const source = read('frontend/src/pages/wallet-v3/useWalletData.ts');
-    const projections = source.slice(source.indexOf('const account: UnifiedAccount'));
+    const projections = source.slice(source.indexOf('const account: UnifiedAccount'), source.indexOf('const setCollateral = useCallback'));
     expect(projections).not.toMatch(/\bfetch\(|api\.|nativeDemoApi\./);
     // And no component below the hook fetches either.
     for (const file of ['PortfolioStrip.tsx', 'AssetLedger.tsx', 'AllocationCard.tsx', 'DynamicsCard.tsx', 'WalletOverview.tsx', 'FundingView.tsx']) {

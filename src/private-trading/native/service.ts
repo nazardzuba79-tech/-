@@ -76,7 +76,8 @@ export class NativeDemoService {
    * No total is written into the code. The figure is whatever the owner's
    * rows and the live quotes make it.
    */
-  async collateral(actor:OwnerSession):Promise<CollateralValuation>{
+  async collateral(actor:OwnerSession,row?:NativeAccount|null):Promise<CollateralValuation>{
+    const accountRow=row===undefined?await this.repository.read(actor):row;
     const holdings=await this.repository.holdings(actor);
     const settle='USDT';
     const prices=await Promise.all(holdings
@@ -93,7 +94,7 @@ export class NativeDemoService {
           return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
         }
       }));
-    return valueCollateral(holdings,prices,settle);
+    return valueCollateral(holdings,prices,settle,new Set(accountRow?.disabledCollateralAssets??[]));
   }
   /**
    * ONE ACCOUNT OBJECT, WHATEVER ASKED FOR IT.
@@ -114,7 +115,7 @@ export class NativeDemoService {
     // it in instead of paying for a second one. It is the same object, so
     // the account it produces is the same account — never a second reading
     // of prices that could have moved between the two.
-    const valuation=valued??await this.collateral(actor);
+    const valuation=valued??await this.collateral(actor,row);
     const open=row.snapshot.positions.some(p=>p.status==='OPEN');
     return{...view,account:crossAccount(demoAccount(row.snapshot),valuation,open),ledger:accountLedger(row.snapshot)};
   }
@@ -139,6 +140,29 @@ export class NativeDemoService {
     const view=await this.authoritative(actor,this.view(row),row);
     return{account:view.account as CrossAccount,ledger:view.ledger as AccountLedger};
   }
+  private async walletForRow(actor:OwnerSession,row:NativeAccount,valuation?:CollateralValuation){
+    const valued=valuation??await this.collateral(actor,row);
+    const view=await this.authoritative(actor,this.view(row),row,valued);
+    const account=view.account as CrossAccount;
+    const assetsValue=new BigNumber(account.settleBalance).plus(valued.priced);
+    return{
+      initialized:true,
+      account,
+      ledger:view.ledger as AccountLedger,
+      collateral:valued,
+      rows:unifiedWalletRows(account,valued),
+      // All wallet assets stay visible here even when the owner elects not
+      // to use one of them as margin. Only account.collateral/equity use the
+      // enabled subset.
+      assetsValue:assetsValue.toFixed(),
+      // Wallet equity is the economic account value used by Overview and
+      // performance snapshots. Toggling collateral eligibility must not
+      // manufacture a profit/loss event.
+      assetsEquityValue:assetsValue.plus(account.unrealizedPnl).toFixed(),
+      assetsComplete:valued.unpriced.length===0,
+      unpricedAssets:valued.unpriced,
+    };
+  }
   /**
    * THE WALLET, AS ONE ANSWER.
    *
@@ -161,15 +185,61 @@ export class NativeDemoService {
    * `null` when the account has not been opened yet: there is no equity to
    * report, and reporting zero would be a different claim.
    */
-  async wallet(actor:OwnerSession):Promise<{account:CrossAccount;ledger:AccountLedger;collateral:CollateralValuation;rows:UnifiedWalletRow[]}|null>{
+  async wallet(actor:OwnerSession){
     const row=await this.repository.read(actor);
     if(!row)return null;
-    const valuation=await this.collateral(actor);
-    const view=await this.authoritative(actor,this.view(row),row,valuation);
-    const account=view.account as CrossAccount;
-    // Projected from the account and the valuation above — the same two
-    // objects, so a row can never disagree with the header it sits under.
-    return{account,ledger:view.ledger as AccountLedger,collateral:valuation,rows:unifiedWalletRows(account,valuation)};
+    return this.walletForRow(actor,row);
+  }
+  /**
+   * Toggle one non-settle wallet asset in/out of Cross collateral.
+   *
+   * This changes NO holding and NO engine position. The asset remains in the
+   * wallet at its full market value; only the amount that backs margin is
+   * changed. A disable is refused when the remaining collateral would no
+   * longer cover existing IM/order reserve or would make the Cross account
+   * liquidatable. The preference is persisted in the same revisioned native
+   * account row, so reloads and another tab see the same state.
+   */
+  async setCollateralPreference(actor:OwnerSession,assetInput:string,enabled:boolean,idempotencyKey:string){
+    const asset=assetInput.toUpperCase();
+    if(asset==='USDT')throw new PrivateTradingError('collateral_locked','USDT является расчётным активом и всегда используется как обеспечение.',409);
+    const hash=commandHash({kind:'COLLATERAL_PREFERENCE',asset,enabled});
+    const prior=await this.repository.prior(actor,idempotencyKey,hash);
+    if(prior)return this.walletForRow(actor,prior);
+
+    const row=await this.repository.read(actor);
+    if(!row)throw new PrivateTradingError('initialize_demo','Сначала подключите торговый счёт',409);
+    const holdings=await this.repository.holdings(actor);
+    const holding=holdings.find(h=>h.asset===asset);
+    const held=holding?new BigNumber(holding.available).plus(holding.locked??'0'):new BigNumber(0);
+    if(!holding||!held.gt(0))throw new PrivateTradingError('collateral_asset_missing','Этот актив отсутствует в кошельке.',409);
+
+    const disabled=new Set(row.disabledCollateralAssets??[]);
+    const alreadyEnabled=!disabled.has(asset);
+    if(alreadyEnabled===enabled)return this.walletForRow(actor,row);
+    if(enabled)disabled.delete(asset);else disabled.add(asset);
+
+    const next:NativeAccount={...row,disabledCollateralAssets:[...disabled].sort()};
+    const valuation=await this.collateral(actor,next);
+    if(enabled&&valuation.collateralUnpriced.includes(asset)){
+      throw new PrivateTradingError('collateral_unpriced','Для этого актива сейчас нет подтверждённой цены. Его нельзя включить в обеспечение.',409);
+    }
+
+    const engine=demoAccount(row.snapshot);
+    const open=row.snapshot.positions.some(p=>p.status==='OPEN');
+    const prospective=crossAccount(engine,valuation,open);
+    if(!enabled){
+      const freeBeforeFloor=new BigNumber(prospective.equity)
+        .minus(engine.isolatedUnrealizedPnl??'0')
+        .minus(prospective.initialMargin)
+        .minus(prospective.orderReserve);
+      if(freeBeforeFloor.lt(0)||prospective.liquidatable===true){
+        throw new PrivateTradingError('collateral_required','Этот актив сейчас нужен для обеспечения открытых позиций или ордеров.',409);
+      }
+    }
+
+    const committed=await this.repository.commit(actor,row.revision,next,idempotencyKey,hash);
+    return this.walletForRow(actor,committed,valuation);
   }
   async state(actor:OwnerSession){
     const row=await this.repository.read(actor);

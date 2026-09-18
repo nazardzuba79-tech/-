@@ -33,6 +33,10 @@ export interface LedgerRow {
   valueUsd: number | null;
   /** True for rows the account can actually act on (deposit/withdraw). */
   spendable: boolean;
+  /** Server-confirmed margin-collateral preference for this asset. */
+  collateralEnabled: boolean;
+  /** Whether this row is allowed to change that preference. */
+  collateralToggleable: boolean;
   /**
    * False when this row's asset could not be priced. `valueUsd` is then
    * `null` — an unknown, NOT a zero — and the interface has to say so
@@ -58,6 +62,9 @@ export interface UnifiedAccount {
    * what actually backs margin.
    */
   collateralUsd: number | null;
+  /** Economic Wallet value including all assets plus P&L; collateral toggles do not change it. */
+  walletEquityUsd: number | null;
+  /** Effective margin equity: enabled collateral plus P&L. */
   totalEquityUsd: number | null;
   availableUsd: number | null;
   unrealizedPnlUsd: number | null;
@@ -204,7 +211,10 @@ export function useWalletData() {
       const a = unified.account;
       return {
         mode: 'CROSS',
-        collateralUsd: finite(a.collateral),
+        // Keep the asset total independent from margin eligibility: a BTC
+        // holding stays an asset even when the owner disables it as collateral.
+        collateralUsd: finite(unified.assetsValue),
+        walletEquityUsd: finite(unified.assetsEquityValue),
         totalEquityUsd: finite(a.equity),
         availableUsd: finite(a.available),
         unrealizedPnlUsd: finite(a.unrealizedPnl),
@@ -217,8 +227,8 @@ export function useWalletData() {
         // Reporting a split it does not have would be an invention.
         spotUsd: null,
         futuresUsd: null,
-        valuationComplete: a.collateralComplete,
-        unpricedAssets: a.unpricedAssets,
+        valuationComplete: unified.assetsComplete,
+        unpricedAssets: unified.unpricedAssets,
         settleAsset: unified.collateral.settleAsset,
       };
     }
@@ -229,6 +239,7 @@ export function useWalletData() {
       // between the two, so they are the same figure rather than a second
       // one derived from it.
       collateralUsd: overview.real.totalValueUsd,
+      walletEquityUsd: overview.real.totalValueUsd,
       totalEquityUsd: overview.real.totalValueUsd,
       // Spendable cash is a per-asset fact on a plain ledger, shown in the
       // rows. There is no single account-level "available margin" to report,
@@ -256,7 +267,7 @@ export function useWalletData() {
    */
   useEffect(() => {
     if (snapshotRecorded.current || unified === undefined) return;
-    const total = account?.totalEquityUsd ?? null;
+    const total = account?.walletEquityUsd ?? null;
     if (total === null || total <= 0) return;
     snapshotRecorded.current = true;
     api
@@ -298,6 +309,8 @@ export function useWalletData() {
           // null all the way to the cell, which renders a dash.
           valueUsd: finite(r.value),
           spendable: false,
+          collateralEnabled: r.collateralEnabled,
+          collateralToggleable: r.collateralToggleable && unified.initialized !== false,
           priced: r.status !== 'UNPRICED',
         };
       });
@@ -331,6 +344,8 @@ export function useWalletData() {
         changePercent24h: ranking?.changePercent24h ?? null,
         valueUsd: b?.valueUsd ?? (priceUsd === null ? null : total * priceUsd),
         spendable: true,
+        collateralEnabled: false,
+        collateralToggleable: false,
         // Only a held asset can be an unknown: a row the account has none of
         // is not an incomplete valuation, it is an empty one.
         priced: priceUsd !== null || total === 0,
@@ -339,7 +354,7 @@ export function useWalletData() {
   }, [unified, overview, rankingBySymbol]);
 
   const btcEquivalent = useMemo(() => {
-    const total = account?.totalEquityUsd ?? null;
+    const total = account?.walletEquityUsd ?? null;
     if (total === null) return null;
     // The Cross account's own BTC mark, when it holds BTC, in preference to
     // the spot feed's: the equity it divides was valued at that mark.
@@ -348,6 +363,15 @@ export function useWalletData() {
     if (price === null || price <= 0) return null;
     return total / price;
   }, [account, unified, overview]);
+
+  const setCollateral = useCallback(async (asset: string, enabled: boolean) => {
+    const next = await nativeDemoApi.setCollateral(asset, enabled, crypto.randomUUID());
+    // The mutation returns the same authoritative Wallet object the page
+    // normally loads. Paint that confirmed result immediately; no optimistic
+    // margin number and no second valuation race.
+    setUnified(next);
+    return next;
+  }, []);
 
   const refresh = useCallback(() => {
     loadOverview();
@@ -365,6 +389,7 @@ export function useWalletData() {
     rows,
     rankingsLoaded,
     btcEquivalent,
+    setCollateral,
     refresh,
   };
 }

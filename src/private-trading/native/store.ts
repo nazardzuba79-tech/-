@@ -10,6 +10,8 @@ import { CollateralHolding } from './collateral';
 export interface NativeAccount {
   revision:number; deposit:string; commands:NativeInstruction[]; snapshot:DemoState;
   createdAt:number; source:'DEMO_BALANCE'|'PREVIEW_FIXTURE';
+  /** Non-settle wallet assets the owner chose NOT to use as Cross collateral. */
+  disabledCollateralAssets?:string[];
   /** Canonical replay state (live row only). Revisions keep the projected snapshot for cards/idempotency. */
   checkpoint?:NativeCheckpoint;
 }
@@ -26,6 +28,8 @@ const json=(v:unknown):Prisma.InputJsonValue=>JSON.parse(JSON.stringify(v));
  */
 const forward=(account:NativeAccount):NativeAccount=>({
   ...account,
+  disabledCollateralAssets:[...new Set((Array.isArray(account.disabledCollateralAssets)?account.disabledCollateralAssets:[])
+    .filter((asset):asset is string=>typeof asset==='string'&&/^[A-Z0-9]{2,16}$/.test(asset)&&asset!=='USDT'))].sort(),
   snapshot:migrateDemoState(account.snapshot),
   ...(account.checkpoint?{checkpoint:{...account.checkpoint,state:migrateDemoState(account.checkpoint.state)}}:{}),
 });
@@ -74,7 +78,7 @@ export class PrismaNativeRepository implements NativeRepository {
       if(!balance||!balance.available.gt(0))throw new PrivateTradingError('no_demo_funds','Нет доступного демо-баланса USDT для перевода',409);
       const value=balance.available.toString(),taken=await tx.demoBalance.updateMany({where:{userId:actor.userId,asset:'USDT',available:{gte:value}},data:{available:{decrement:value}}});
       if(taken.count!==1)throw new PrivateTradingError('balance_changed','Демо-баланс изменился. Повторите запрос',409);
-      const now=Date.now(),next:NativeAccount={revision:1,deposit:value,commands:[],snapshot:emptyDemoState(value,now),createdAt:now,source:'DEMO_BALANCE'};
+      const now=Date.now(),next:NativeAccount={revision:1,deposit:value,commands:[],snapshot:emptyDemoState(value,now),createdAt:now,source:'DEMO_BALANCE',disabledCollateralAssets:[]};
       await tx.nativeDemoAccount.create({data:{userId:actor.userId,revision:1,payload:json(next)}});
       await tx.nativeDemoRevision.create({data:{userId:actor.userId,revision:1,requestKey:key,requestHash:commandHash({kind:'INITIALIZE'}),payload:json(revisionPayload(next))}});
       await this.owner(tx,actor);return next;

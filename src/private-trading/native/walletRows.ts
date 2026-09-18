@@ -40,6 +40,10 @@ const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_H
 
 export interface UnifiedWalletRow {
   asset: string;
+  /** Whether this asset currently contributes to Cross margin. */
+  collateralEnabled: boolean;
+  /** Settle cash is always collateral; zero rows have nothing useful to toggle. */
+  collateralToggleable: boolean;
   /** Quantity in the wallet row itself. */
   walletQuantity: string;
   /** The trading ledger's balance. Non-zero for the settle asset only. */
@@ -74,6 +78,8 @@ export function unifiedWalletRows(account: CrossAccount, valuation: CollateralVa
     const price = line.status === 'UNPRICED' ? null : line.price;
     return {
       asset: line.asset,
+      collateralEnabled: line.collateralEnabled,
+      collateralToggleable: !isSettle && total.gt(0),
       walletQuantity: amount(walletQuantity),
       tradingBalance: amount(tradingBalance),
       total: amount(total),
@@ -95,6 +101,8 @@ export function unifiedWalletRows(account: CrossAccount, valuation: CollateralVa
   if (!seen.has(settleAsset)) {
     rows.push({
       asset: settleAsset,
+      collateralEnabled: true,
+      collateralToggleable: false,
       walletQuantity: amount(new D(0)),
       tradingBalance: amount(settleBalance),
       total: amount(settleBalance),
