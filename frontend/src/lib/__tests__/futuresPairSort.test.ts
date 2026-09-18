@@ -26,6 +26,8 @@ beforeEach(async () => {
   const code=ts.transpileModule(readFileSync(resolve(frontend,'src/components/FuturesPairList.tsx'),'utf8'), {compilerOptions:{jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
   const favorites = new Set(['ETH/USDT', 'SOL/USDT']);
   new Function('exports','require',code)(output,(name:string) => {
+    // JSDOM checks behavior here; the dedicated Chromium regression loads real CSS.
+    if(name === './FuturesPairList.css')return {};
     if(name.endsWith('/i18n'))return {useLanguage:()=>({t:(key:string)=>key})};
     if(name.endsWith('/useFuturesReference'))return {useFuturesReference:()=>new Map([...tickers].map(([pair,row])=>[pair,Object.fromEntries(Object.entries(row).map(([key,value])=>[key,Number(value)]))]))};
     if(name.endsWith('/futuresReference'))return futuresReference;
