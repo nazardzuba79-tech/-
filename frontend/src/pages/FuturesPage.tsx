@@ -316,8 +316,12 @@ export function FuturesPage() {
         <FuturesTickerBar symbol={symbol} onSelectSymbol={openMarkets} />
 
         <div className="main-grid">
+          {/* No visible heading above the market list. The rail is already
+              labelled for assistive tech by this aside's aria-label, and the
+              word "Рынки" over a market list was a second title for a panel
+              the global nav already names — it only pushed the search and
+              the favourites filter down. */}
           {desktopMarkets && <aside className="left-panel reference-market-sidebar" aria-label={t('nav.markets')}>
-            {studio && <h2 className="studio-market-heading">{t('nav.markets')}</h2>}
             <FuturesPairList ref={pairListRef} symbols={symbols} symbol={symbol} onChange={setSymbol} />
           </aside>}
           <div className="chart-area" role="region" aria-label={t('futures.chart')}>
