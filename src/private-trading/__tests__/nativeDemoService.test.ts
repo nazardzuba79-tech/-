@@ -196,16 +196,25 @@ describe('native Wallet collateral preferences',()=>{
     expect(f.repo.row?.disabledCollateralAssets).toEqual([]);
   });
 
-  test('server refuses to disable collateral that existing margin already needs',async()=>{
+  test('server refuses to disable collateral that an existing account already needs',async()=>{
     const f=setup();
-    // Only BTC remains outside the initialized settle ledger, so removing it
-    // is the exact difference between a safely margined and under-margined account.
+    // Build a legitimate position first. Then model a restored/migrated Cross
+    // account whose free settle cash has already been consumed elsewhere:
+    // BTC is what keeps the stored position safely above maintenance. The
+    // toggle guard must reason from the EXISTING account, not try to create
+    // an impossible new order just for this test.
     f.repo.wallet=[{asset:'BTC',available:'2',locked:'0'}];
     await f.service.initialize(actor,'init-collateral-2');
-    await f.service.command(actor,long({margin:'9990000',leverage:'1'}));
+    await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    f.repo.row!.snapshot.walletBalance='0';
+    const before=await f.service.wallet(actor);
+    expect(before?.account.liquidatable).toBe(false);
+    expect(new BigNumber(before!.account.collateral).gt(before!.account.maintenanceMargin)).toBe(true);
+
     await expect(f.service.setCollateralPreference(actor,'BTC',false,'collateral-required'))
       .rejects.toMatchObject({code:'collateral_required',status:409});
     expect(f.repo.row?.disabledCollateralAssets??[]).toEqual([]);
+    expect((await f.service.wallet(actor))?.rows.find(r=>r.asset==='BTC')?.collateralEnabled).toBe(true);
   });
 
   test('cannot enable an unpriced asset as collateral',async()=>{
