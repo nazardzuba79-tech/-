@@ -1027,8 +1027,10 @@ export const JA: Record<Key, string> = {
   'futures.loadPositionsError': 'ポジションを読み込めませんでした',
   'futures.long': 'ロング',
   'futures.short': 'ショート',
-  'futures.buyLong': '購入 / ロング',
-  'futures.sellShort': '売却 / ショート',
+  'futures.buyLong': 'ロングを開く',
+  'futures.sellShort': 'ショートを開く',
+  'futures.closeShort': 'ショートを閉じる',
+  'futures.closeLong': 'ロングを閉じる',
   'futures.reduceOnly': '減少のみ',
   'futures.leverageWarningTitle': '高レバレッジ — 高リスク',
   'futures.leverageWarningBody': '{leverage}倍のレバレッジを選択しました。このレバレッジでは、わずかな価格変動でポジションが全額清算される可能性があります。続行する前にリスクを理解していることを確認してください。',
@@ -1043,6 +1045,7 @@ export const JA: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} の価格が取得できません。表示されている残高は下限値です。',
+  'futures.collateralPartial': '一部の資産はこの合計に含まれていません。評価額を一時的に取得できません。',
   'wallet.futuresAccount': '先物口座',
   'futures.settleBalance': '決済資産残高',
   'futures.walletCollateral': 'ウォレット担保',

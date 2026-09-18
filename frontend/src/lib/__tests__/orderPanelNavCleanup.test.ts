@@ -283,7 +283,7 @@ describe('5. an incomplete valuation', () => {
   test('the warning is a compact indicator carrying a tooltip', () => {
     const flags = withClass(partial(), 'fa-flag');
     expect(flags).toHaveLength(1);
-    expect(flags[0].props.title).toContain('futures.collateralIncomplete');
+    expect(flags[0].props.title).toContain('futures.collateralPartial');
     expect(flags[0].props['aria-label']).toBe(flags[0].props.title);
   });
 
@@ -295,11 +295,25 @@ describe('5. an incomplete valuation', () => {
     expect(withClass(summary({ aggregate: aggregate() }), 'fa-flag')).toHaveLength(0);
   });
 
-  test('the account is still told the total is a lower bound', () => {
+  test('the account is still told the total is incomplete', () => {
     // The warning is quieter, NOT dropped: a total that silently omits an
-    // asset reads exactly like a smaller account.
+    // asset reads exactly like a smaller account. `unpricedAssets` decides
+    // whether it appears, so it cannot be shown without one and cannot be
+    // suppressed while one exists.
     expect(SUMMARY_SOURCE).toContain('!aggregate.collateralComplete');
-    expect(SUMMARY_SOURCE).toContain('aggregate.unpricedAssets.join');
+    expect(SUMMARY_SOURCE).toContain('aggregate.unpricedAssets.length > 0');
+  });
+
+  test('the tooltip names no assets and does not call the total a lower bound', () => {
+    // v4: the old sentence must not simply move into the tooltip. It carried
+    // an asset code and the phrase "нижняя граница", which is provider
+    // detail; the ticket says the plain fact instead.
+    const ru = source('lib/i18n/locales/ru.ts');
+    expect(ru).toContain("'futures.collateralPartial': 'Часть активов не учтена в сумме: оценка временно недоступна.',");
+    expect(SUMMARY_SOURCE).not.toContain('{ assets:');
+    // And the Wallet page, which this brief does not touch, keeps its own
+    // longer note verbatim.
+    expect(ru).toContain("'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',");
   });
 });
 
@@ -432,6 +446,170 @@ describe('9. the deposit label', () => {
       const dict = source(`lib/i18n/locales/${locale}.ts`);
       expect(`${locale}: ${dict.includes("'futures.initialMarginUsed':")}`).toBe(`${locale}: true`);
       expect(`${locale}: ${dict.includes("'futures.maintenanceMarginUsed':")}`).toBe(`${locale}: true`);
+    }
+  });
+});
+
+// ── 10. v4: the ticket reads as controls on a dark panel ─────────────────
+
+/**
+ * These pin the OUTCOME of the v4 pass, not its taste. Each one is a number
+ * that was measured in a browser on the real build and would change silently
+ * if a later edit undid the pass: the panel/control separation, the pill, the
+ * column width, the split between the two selects, and the disabled style
+ * that used to hide its own label.
+ */
+describe('10. the v4 order ticket', () => {
+  const PANEL_CSS = readFileSync(resolve(frontend, 'src/pages/trade-terminal/TerminalAccountPanel.css'), 'utf8');
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const luminance = (c: number[]) => {
+    const f = (v: number) => (v / 255 <= 0.03928 ? v / 255 / 12.92 : (((v / 255) + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  };
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const token = (name: string) => {
+    const m = new RegExp(`--${name}:(#[0-9a-f]{6});`).exec(PANEL_CSS);
+    if (!m) throw new Error(`token --${name} is gone`);
+    return m[1];
+  };
+
+  test('the panel is darker than its controls by more than the old 1.15', () => {
+    // The owner's complaint measured: our panel sat 1.15 from the control
+    // fill where the reference sat 1.20, so every layer shared one band.
+    const surface = hex(token('fo-surface'));
+    const control = hex(token('fo-control'));
+    expect(luminance(surface)).toBeLessThan(luminance(control));
+    expect(contrast(surface, control)).toBeGreaterThan(1.2);
+    // Still VOLTEX: the blue channel stays clearly above the red one, so
+    // this is a darker navy and not a transplanted neutral graphite.
+    expect(surface[2] - surface[0]).toBeGreaterThanOrEqual(8);
+    expect(control[2] - control[0]).toBeGreaterThanOrEqual(8);
+  });
+
+  test('primary values are clean white and labels are not', () => {
+    expect(token('fo-text')).toBe('#ffffff');
+    expect(luminance(hex(token('fo-text-2')))).toBeLessThan(luminance(hex(token('fo-text'))));
+    expect(luminance(hex(token('fo-text-3')))).toBeLessThan(luminance(hex(token('fo-text-2'))));
+    // A label must still be comfortably readable on the control fill.
+    expect(contrast(hex(token('fo-text-2')), hex(token('fo-control')))).toBeGreaterThan(4.5);
+  });
+
+  test('the border became a hairline instead of an outline', () => {
+    // The old #304050 read as a drawn box around every field. The hairline
+    // sits within a few steps of the fill, so the FILL draws the shape.
+    expect(contrast(hex(token('fo-hairline')), hex(token('fo-control')))).toBeLessThan(1.15);
+  });
+
+  test('the order column is wider and the chart absorbs it', () => {
+    // Measured from the owner's two same-scale references: the marked
+    // control row there is ~1.18x ours. 278 -> 312 is +12.2%.
+    expect(PANEL_CSS).toContain('grid-template-columns:212px minmax(0,1fr) 250px 312px;');
+    // The pair list and the depth column keep their exact widths — the
+    // flexible track is the one that gives.
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:212px minmax\(0,1fr\) 2[0-4]\d px? 312px/);
+  });
+
+  test('the leverage select is no longer the squeezed one', () => {
+    // 1.18/1 is the reference's own split (171px : 145px in its frame).
+    // Ours was 1.55/1, which is what made the right control look cramped.
+    expect(PANEL_CSS).toContain('grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);');
+  });
+
+  test('the submit pair is a capsule, stated as one', () => {
+    expect(PANEL_CSS).toMatch(/\.fo-submitPair \.submit-btn \{[^}]*border-radius:999px;/);
+    expect(PANEL_CSS).toMatch(/\.fo-submitPair \.submit-btn \{[^}]*height:44px;/);
+  });
+
+  test('enabled trading colours are untouched by the restyle', () => {
+    // The owner's frame shows dim buttons because its quantity field is
+    // EMPTY. Chasing that with a brighter enabled fill would be styling a
+    // disabled state. These are the same two values as before the pass.
+    expect(PANEL_CSS).toContain('.submit-btn.buy { background:#00b879; }');
+    expect(PANEL_CSS).toContain('.submit-btn.sell { background:#f33451; }');
+  });
+
+  test('disabled is its own style, and its label can still be read', () => {
+    // `opacity:.45` on the whole button took the label down with the fill.
+    expect(PANEL_CSS).toMatch(/\.submit-btn:disabled \{\s*opacity:1;/);
+    const buyDisabled = /\.submit-btn\.buy:disabled \{\s*background:(#[0-9a-f]{6});\s*color:(#[0-9a-f]{6});/.exec(PANEL_CSS);
+    const sellDisabled = /\.submit-btn\.sell:disabled \{\s*background:(#[0-9a-f]{6});\s*color:(#[0-9a-f]{6});/.exec(PANEL_CSS);
+    expect(buyDisabled).not.toBeNull();
+    expect(sellDisabled).not.toBeNull();
+    for (const m of [buyDisabled!, sellDisabled!]) {
+      // Obviously inactive: the fill is far quieter than the enabled one.
+      expect(luminance(hex(m[1]))).toBeLessThan(luminance(hex('#00b879')));
+      // But still a readable label, which is the whole point.
+      expect(contrast(hex(m[2]), hex(m[1]))).toBeGreaterThan(3);
+    }
+  });
+
+  test('no glow, and focus never moves anything', () => {
+    // The ticket gets contrast from tone, not from halos.
+    expect(PANEL_CSS).not.toMatch(/\.submit-btn[^{]*\{[^}]*box-shadow:0 0 \d+px/);
+    // Hover changes colour only; a size change on hover is what made the
+    // panel feel jumpy.
+    const hover = /:is\(\.fo-mlTrigger:hover,\.fo-priceInputRow:hover,\.fo-qtyInputRow:hover\) \{([^}]*)\}/.exec(PANEL_CSS);
+    expect(hover).not.toBeNull();
+    expect(hover![1]).not.toMatch(/height|padding|border-width|font-size/);
+  });
+
+  test('one focus ring per field, not two', () => {
+    // The row shows focus; the input inside also drew its own outline, and
+    // the row clips its children, so all that survived was a stray vertical
+    // line between the number and its unit.
+    expect(PANEL_CSS).toMatch(/\.fo-input:focus[\s\S]{0,120}outline:none;/);
+  });
+});
+
+// ── 11. v4 wording: it opens, it closes, it never lies about which ───────
+
+describe('11. the v4 button and metric wording', () => {
+  const ru = source('lib/i18n/locales/ru.ts');
+  const form = source('components/FuturesOrderForm.tsx');
+
+  test('the submit pair says what it does, in Cyrillic', () => {
+    expect(ru).toContain("'futures.buyLong': 'Открыть Лонг',");
+    expect(ru).toContain("'futures.sellShort': 'Открыть Шорт',");
+    // Not the reference frame's stray English "Short".
+    expect(ru).not.toContain("'futures.sellShort': 'Открыть Short',");
+  });
+
+  test('reduce-only stops promising it opens anything', () => {
+    expect(ru).toContain("'futures.closeShort': 'Закрыть Шорт',");
+    expect(ru).toContain("'futures.closeLong': 'Закрыть Лонг',");
+    expect(form).toContain("t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')");
+    expect(form).toContain("t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')");
+  });
+
+  test('only the WORDING changes — the order does not', () => {
+    // A reduce-only BUY still closes a short. The side, the flag and the
+    // submitted command are exactly what they were.
+    expect(form).toContain("onClick={() => place('BUY')}");
+    expect(form).toContain("onClick={() => place('SELL')}");
+    expect(form).toContain('reduceOnly,');
+    // And the guard is still the guard.
+    expect(form).toContain('const canSubmit = Boolean(config)');
+    expect(form).toContain('&& !marginShortfall');
+    expect(form).toContain('&& !contractBreach');
+    expect(form).toContain('if (!canSubmit) return;');
+  });
+
+  test('the margin balance label is shorter, the metric is the same', () => {
+    expect(ru).toContain("'futures.marginBalance': 'Баланс маржи',");
+    // Same key, same figure, same source — this is a label, not a metric swap.
+    expect(SUMMARY_SOURCE).toContain("t('futures.marginBalance')");
+    expect(SUMMARY_SOURCE).toContain('Number(aggregate.equity)');
+  });
+
+  test('every locale answers for the new keys', () => {
+    for (const locale of ['en', 'ru', 'es', 'zh', 'ja', 'ko', 'hi']) {
+      const dict = source(`lib/i18n/locales/${locale}.ts`);
+      for (const key of ['futures.closeShort', 'futures.closeLong', 'futures.collateralPartial']) {
+        expect(`${locale}/${key}: ${dict.includes(`'${key}':`)}`).toBe(`${locale}/${key}: true`);
+      }
     }
   });
 });

@@ -1051,8 +1051,10 @@ export const ZH: Record<Key, string> = {
   'futures.loadPositionsError': '无法加载持仓',
   'futures.long': '多',
   'futures.short': '空',
-  'futures.buyLong': '买入/做多',
-  'futures.sellShort': '卖出/做空',
+  'futures.buyLong': '开多',
+  'futures.sellShort': '开空',
+  'futures.closeShort': '平空',
+  'futures.closeLong': '平多',
   'futures.reduceOnly': '只减仓',
   'futures.leverageWarningTitle': '高杠杆 — 高风险',
   'futures.leverageWarningBody': '你选择了 {leverage}x 杠杆。在此杠杆下,价格小幅波动即可能导致仓位被完全强平。继续前请确保你理解相关风险。',
@@ -1067,6 +1069,7 @@ export const ZH: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets} 暂无价格。显示的余额为下限。',
+  'futures.collateralPartial': '部分资产未计入此合计：其估值暂时不可用。',
   'wallet.futuresAccount': '合约账户',
   'futures.settleBalance': '结算资产余额',
   'futures.walletCollateral': '钱包抵押品',

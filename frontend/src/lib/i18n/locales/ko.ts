@@ -1027,8 +1027,10 @@ export const KO: Record<Key, string> = {
   'futures.loadPositionsError': '포지션을 불러올 수 없습니다',
   'futures.long': '롱',
   'futures.short': '숏',
-  'futures.buyLong': '매수 / 롱',
-  'futures.sellShort': '매도 / 숏',
+  'futures.buyLong': '롱 진입',
+  'futures.sellShort': '숏 진입',
+  'futures.closeShort': '숏 청산',
+  'futures.closeLong': '롱 청산',
   'futures.reduceOnly': '축소만',
   'futures.leverageWarningTitle': '높은 레버리지 — 높은 위험',
   'futures.leverageWarningBody': '{leverage}배 레버리지를 선택하셨습니다. 이 레버리지에서는 작은 가격 변동으로도 포지션이 전액 청산될 수 있습니다. 계속하기 전에 위험을 이해했는지 확인하세요.',
@@ -1043,6 +1045,7 @@ export const KO: Record<Key, string> = {
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
   'futures.collateralIncomplete': '{assets}의 가격을 확인할 수 없습니다. 표시된 잔액은 하한값입니다.',
+  'futures.collateralPartial': '일부 자산이 이 합계에 포함되지 않았습니다. 평가액을 일시적으로 가져올 수 없습니다.',
   'wallet.futuresAccount': '선물 계좌',
   'futures.settleBalance': '결제 자산 잔액',
   'futures.walletCollateral': '지갑 담보',

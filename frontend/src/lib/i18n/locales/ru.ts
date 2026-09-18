@@ -1070,8 +1070,15 @@ export const RU = {
   'futures.loadPositionsError': 'Не удалось загрузить позиции',
   'futures.long': 'Лонг',
   'futures.short': 'Шорт',
-  'futures.buyLong': 'Купить / Лонг',
-  'futures.sellShort': 'Продать / Шорт',
+  // The submit pair opens a position; the old "Купить / Продать"
+  // wording read like a spot trade. Owner-approved Futures wording.
+  'futures.buyLong': 'Открыть Лонг',
+  'futures.sellShort': 'Открыть Шорт',
+  // Reduce-only labels. A reduce-only BUY closes a SHORT, so the pair is
+  // deliberately crossed: it names the position being closed, not the side
+  // of the order.
+  'futures.closeShort': 'Закрыть Шорт',
+  'futures.closeLong': 'Закрыть Лонг',
   'futures.reduceOnly': 'Только уменьшение',
   'futures.leverageWarningTitle': 'Высокое плечо — высокий риск',
   'futures.leverageWarningBody':
@@ -1087,7 +1094,14 @@ export const RU = {
   // Part of the collateral has no price, so the figure on screen is a
   // floor, not the account. The unpriced assets are named rather than
   // silently valued at zero.
+  // The Wallet page's own valuation note keeps this wording, assets and
+  // all: it is a page with room for a sentence. The Futures ticket has a
+  // mark and a tooltip instead, and reads the key below.
   'futures.collateralIncomplete': 'Нет цены для {assets}. Баланс показан как нижняя граница.',
+  // The Futures ticket's tooltip. No asset codes and no "lower bound":
+  // which ticker is unpriced is a fact about our providers, not about
+  // this trader. It must still say the total is incomplete.
+  'futures.collateralPartial': 'Часть активов не учтена в сумме: оценка временно недоступна.',
   'wallet.futuresAccount': 'Фьючерсный счёт',
   'futures.settleBalance': 'Баланс расчётного актива',
   'futures.walletCollateral': 'Обеспечение из кошелька',
@@ -1161,7 +1175,7 @@ export const RU = {
   'futures.myOrders': 'Мои ордера',
   'trade.lastPriceBtn': 'Посл. цена',
   'futures.accountTitle': 'Единый торговый счёт',
-  'futures.marginBalance': 'Маржинальный баланс',
+  'futures.marginBalance': 'Баланс маржи',
   'futures.initialMarginPct': 'Начальная маржа',
   'futures.maintenanceMarginPct': 'Поддерживающая маржа',
   // Short labels for the Futures summary's two margin-usage rows. The

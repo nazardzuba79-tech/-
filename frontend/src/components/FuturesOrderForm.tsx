@@ -728,6 +728,10 @@ export function FuturesOrderForm({
             terminal does it. `side` is still the one piece of state the
             request carries; it is simply written at the moment of
             submitting rather than minutes earlier. */}
+        {/* Reduce-only never OPENS anything, so the label must not promise it
+            does. Only the wording changes: `side`, the position it reduces
+            and the submitted command are untouched — a reduce-only BUY still
+            closes a short, which is what this button now says. */}
         <div className="fo-submitPair">
           <button
             type="button"
@@ -736,7 +740,7 @@ export function FuturesOrderForm({
             onClick={() => place('BUY')}
             className="submit-btn buy"
           >
-            {submitting && side === 'BUY' ? t('auth.wait') : t('futures.buyLong')}
+            {submitting && side === 'BUY' ? t('auth.wait') : t(reduceOnly ? 'futures.closeShort' : 'futures.buyLong')}
           </button>
           <button
             type="button"
@@ -745,7 +749,7 @@ export function FuturesOrderForm({
             onClick={() => place('SELL')}
             className="submit-btn sell"
           >
-            {submitting && side === 'SELL' ? t('auth.wait') : t('futures.sellShort')}
+            {submitting && side === 'SELL' ? t('auth.wait') : t(reduceOnly ? 'futures.closeLong' : 'futures.sellShort')}
           </button>
         </div>
       </form>
