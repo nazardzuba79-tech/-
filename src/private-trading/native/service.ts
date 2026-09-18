@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
-import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote } from '../marketData';
+import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PrivateValuationMark, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote, assertPrivateFreshMark } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
@@ -99,6 +99,17 @@ export class NativeDemoService {
     catch{const fresh=await this.quote(symbol,true);return assertPrivateFreshQuote(fresh,symbol,this.now());}
   }
   /**
+   * A collateral valuation needs a contract's MARK and the moment the venue
+   * produced it, not its book (`assertPrivateFreshMark`): a source answering
+   * with a mark alone prices the holding, and a reused snapshot whose mark
+   * no longer passes at use is replaced by a fresh fetch, never reported.
+   */
+  private async valuationMark(symbol:string):Promise<PrivateValuationMark>{
+    const cached=await this.quote(symbol);
+    try{return assertPrivateFreshMark(cached,symbol,this.now());}
+    catch{const fresh=await this.quote(symbol,true);return assertPrivateFreshMark(fresh,symbol,this.now());}
+  }
+  /**
    * Marks of the contracts an account holds but is NOT executing on, from the
    * collector's live frame in one call (`PrivateTradingMarketData.marks`).
    * A market source without the method (fixtures, older collectors) or a
@@ -166,19 +177,22 @@ export class NativeDemoService {
         // Inside a command the valuation may share the command's own fresh
         // quotes (the same observation, once). A plain read always prices
         // the wallet now: a reader asking for the account gets the market
-        // as it is, not a two-second-old snapshot. EITHER WAY the quote is
-        // checked for freshness at the moment it is used — a snapshot that
-        // was 4.5 s old when it was taken is 6 s old 1.5 s later, and the
-        // service's own reuse window says nothing about the provider's
-        // timestamp — and a quote that fails is fetched again, then
-        // refused as unpriced rather than used. A new order is admitted
+        // as it is, not a two-second-old snapshot. EITHER WAY the quote's
+        // MARK is checked for freshness at the moment it is used — a
+        // snapshot that was 4.5 s old when it was taken is 6 s old 1.5 s
+        // later, and the service's own reuse window says nothing about the
+        // provider's timestamp — and a quote that fails is fetched again,
+        // then refused as unpriced rather than used. A new order is admitted
         // only on a valuation that passed this check; what the terminal
         // keeps on screen from an earlier reading is its own display.
+        // The mark is all a valuation reads: a source that answers with a
+        // mark and no book (the test-account wallet projection) prices
+        // the holding; execution alone needs the whole observed book.
         const symbol=`${h.asset}${settle}`;
-        const quote=options.reuse&&!fresh?await this.valuationQuote(symbol):assertPrivateFreshQuote(await this.quote(symbol,true),symbol,this.now());
+        const quoted=options.reuse&&!fresh?await this.valuationMark(symbol):assertPrivateFreshMark(await this.quote(symbol,true),symbol,this.now());
         // Mark, not last: the collateral is valued the way the positions
         // it backs are valued, so the two cannot drift apart.
-        return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
+        return{asset:h.asset,price:quoted.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quoted.markProviderTimestamp};
       }catch{
         // A contract that does not exist and a provider that is down are
         // the same answer here: we do not know what this is worth.

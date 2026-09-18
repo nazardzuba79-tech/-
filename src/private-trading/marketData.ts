@@ -138,6 +138,26 @@ export function assertPrivateFreshQuote(value: unknown, expectedSymbol: string, 
 }
 
 /**
+ * WHAT A VALUATION NEEDS FROM A QUOTE. Collateral is worth its MARK; the
+ * book is for execution. A quote is accepted for a valuation on its mark
+ * and the moment the venue produced it — checked at USE, against the
+ * caller's clock — whatever else it carries: a source that answers a
+ * valuation with a mark and no book (the test-account wallet projection,
+ * older fixtures) prices the holding, and a mark outside the freshness
+ * window is refused whatever the rest of the quote says. Execution keeps
+ * `assertPrivateFreshQuote`: an order needs the whole observed book.
+ */
+const privateValuationMarkSchema = z.object({ symbol: symbolSchema, markPrice: positive, markProviderTimestamp: timestamp.optional(), fetchedAt: timestamp });
+export interface PrivateValuationMark { symbol: string; markPrice: string; markProviderTimestamp: number }
+export function assertPrivateFreshMark(value: unknown, expectedSymbol: string, now = Date.now()): PrivateValuationMark {
+  const mark = read(privateValuationMarkSchema, value);
+  if (mark.symbol !== symbol(expectedSymbol)) return invalid();
+  const at = mark.markProviderTimestamp ?? mark.fetchedAt;
+  if (!fresh(at, now) || !fresh(mark.fetchedAt, now)) throw new PrivateMarketDataError('quote_stale');
+  return { symbol: mark.symbol, markPrice: mark.markPrice, markProviderTimestamp: at };
+}
+
+/**
  * MARKS FOR MANY CONTRACTS FROM THE COLLECTOR'S LIVE FRAME, ONE CALL.
  *
  * The collector already holds one validated ticker per contract of the

@@ -96,6 +96,12 @@ account is observed at all.
 - The executed contract is never valued from the frame: its book is fetched
   fresh, checked (`assertPrivateFreshQuote`), and journaled with the
   instruction, as before.
+- A collateral valuation reads a quote's MARK and the moment the venue
+  produced it (`assertPrivateFreshMark`), never its book: a source that
+  answers a valuation with a mark alone (the test-account wallet projection
+  in `nativeTestAccounts.test.ts`) prices the holding, and a mark outside
+  the freshness window at the moment of use is unpriced, not applied.
+  Execution keeps the whole-book check.
 - The mark's timestamp is the venue's event time when the ticker carries
   one, else the collector's receive time (the moment the observation
   existed); both are checked. Prices cross the frame as JS numbers and are

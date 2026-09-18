@@ -7,6 +7,7 @@ import { assertNativeInvariants } from '../native/invariants';
 import type { OwnerSession } from '../serviceTypes';
 import { PrivateTradingError } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest, PrivateCandleSelection } from '../marketData';
+import { PRIVATE_QUOTE_MAX_AGE_MS } from '../marketData';
 
 const M=60_000, H=3_600_000;
 const H0=Date.UTC(2026,8,15,0,0,0);
@@ -225,6 +226,24 @@ describe('the Cross collateral base is the whole wallet, priced or named',()=>{
     expect(v.priced).toBe('10120000');
   });
 
+  test('a source that answers a valuation with a mark and no book prices the holding; a mark outside the window does not',async()=>{
+    // The test-account wallet projection (nativeTestAccounts.test.ts) models its market this way: a
+    // valuation reads the MARK and when the venue produced it, nothing else. Execution keeps the book.
+    const f=setup();
+    f.repo.wallet=[{asset:'USDT',available:'100',locked:'0'},{asset:'BTC',available:'2',locked:'0'}];
+    let markAge=0;
+    f.market.freshQuote=(async(symbol:string)=>({symbol,markPrice:'50000',markProviderTimestamp:f.clock.now()-markAge,fetchedAt:f.clock.now()}) as unknown as PrivateFreshQuote) as typeof f.market.freshQuote;
+    const v=await f.service.collateral(actor);
+    expect(v.lines.find(l=>l.asset==='BTC')!.price).toBe('50000');
+    expect(v.priced).toBe('100100'); expect(v.complete).toBe(true);
+    // Inside a command (a reused snapshot) the same mark-only answer is accepted on its mark.
+    expect((await f.service.collateral(actor,{reuse:true})).priced).toBe('100100');
+    // The mark's own timestamp decides: a mark older than the window is unpriced, not applied.
+    markAge=PRIVATE_QUOTE_MAX_AGE_MS+1;
+    const stale=await f.service.collateral(actor);
+    expect(stale.lines.find(l=>l.asset==='BTC')!.price).toBeNull();
+    expect(stale.unpriced).toEqual(['BTC']); expect(stale.complete).toBe(false);
+  });
   test('a complete wallet reports complete, and the total is the wallet — not a number written in the code',async()=>{
     const f=setup();
     f.repo.wallet=[{asset:'USDT',available:'1234.5',locked:'0.5'},{asset:'BTC',available:'1',locked:'0'}];
