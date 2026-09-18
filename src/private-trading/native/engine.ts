@@ -80,6 +80,13 @@ export interface DemoEvent {
   time: number; positionId: string | null; orderId: string | null; symbol: string;
   quantity: string; price: string | null; fee: string; cashflow: string;
   pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  /**
+   * The ONE user action (the journaled instruction) that produced this
+   * settlement. A market close that consumed several book levels is several
+   * fill events — exact in the ledger — but one action: the chart draws one
+   * marker per `actionId`, not one per level. Absent on older journals.
+   */
+  actionId?: string;
 }
 export interface BookConsumption {
   /** Legacy field kept for states persisted before the identity change; unused. */
@@ -470,7 +477,7 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
-function settleClose(s: DemoState,p:DemoPosition,quantity:string,rawPrice:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false) {
+function settleClose(s: DemoState,p:DemoPosition,quantity:string,rawPrice:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string) {
   const qty=positive(quantity);if(qty.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
   // An isolated position cannot realise a loss larger than its post on ANY
   // path. The venue would have liquidated it at bankruptcy before a close
@@ -492,7 +499,7 @@ function settleClose(s: DemoState,p:DemoPosition,quantity:string,rawPrice:string
     s.walletBalance=out(n(s.walletBalance).plus(releasedMargin));
   }
   p.quantity=out(n(p.quantity).minus(qty));p.markPrice=price;p.lastPrice=price;
-  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing});
+  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...(actionId?{actionId}:orderId?{actionId:orderId}:{})});
   if(n(p.quantity).isZero()) {
     p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id&&o.id!==orderId))cancelDemoOrder(s,o.id,time);
@@ -535,7 +542,7 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
       p.isolatedMargin=out(n(p.isolatedMargin).plus(posted));
       s.walletBalance=out(n(s.walletBalance).minus(posted));
     }
-    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing});
+    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing,actionId:o.id});
   }
   o.averagePrice=weightedEntry([{quantity:o.filled,price:o.averagePrice??price},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
   o.filled=out(n(o.filled).plus(quantity));o.remaining=out(n(o.remaining).minus(quantity));o.reserved=reserveFor(s,o,o.price??price);
@@ -546,10 +553,10 @@ export function cancelDemoOrder(s:DemoState,id:string,time:number) {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o)throw new DemoEngineError('ORDER_NOT_FOUND');if(!active(o))return;
   o.status='CANCELLED';o.reserved='0';s.time=time;emit(s,{kind:'CANCEL',time,positionId:o.positionId,orderId:id,symbol:o.symbol,quantity:o.remaining,price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
 }
-export function closeDemoPosition(s:DemoState,id:string,quantity:string|undefined,price:string,time:number,pricing:DemoEvent['pricing']='SELECTED_POINT') {
+export function closeDemoPosition(s:DemoState,id:string,quantity:string|undefined,price:string,time:number,pricing:DemoEvent['pricing']='SELECTED_POINT',actionId?:string) {
   requireTime(s,time);const p=getPosition(s,id),q=quantity??p.quantity;
   if(!positive(q).mod(instrument(s,p.symbol).rules.qtyStep).isZero())throw new DemoEngineError('INVALID_QUANTITY_STEP');
-  settleClose(s,p,q,price,time,'CLOSE',pricing,null);s.time=time;
+  settleClose(s,p,q,price,time,'CLOSE',pricing,null,false,actionId);s.time=time;
 }
 export function protectDemoPosition(s:DemoState,id:string,change:Partial<DemoProtection>,time:number) {
   requireTime(s,time);const p=getPosition(s,id),next={...p.protection,...change};

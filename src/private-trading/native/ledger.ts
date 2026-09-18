@@ -70,9 +70,16 @@ export interface AccountLedger {
     /** realizedPnl - fees + funding. The whole of what trading did to the balance. */
     net: string;
   };
-  /** The engine's own figure, carried so a caller can see the two agree. */
+  /** The engine's own free-cash figure, carried so a caller can see the parts. */
   walletBalance: string;
-  /** closingBalance === walletBalance. False means money moved without a journal entry. */
+  /**
+   * Free cash PLUS margin posted to open isolated positions. A post is a
+   * TRANSFER out of free cash, not an economic event, so it has no ledger
+   * line; the ledger's closing balance is therefore the settle balance,
+   * and it is this figure the fold is reconciled against.
+   */
+  settleBalance: string;
+  /** closingBalance === settleBalance. False means money moved without a journal entry. */
   reconciled: boolean;
 }
 
@@ -142,6 +149,8 @@ export function accountLedger(state: DemoState): AccountLedger {
   }
 
   const closing = out(balance);
+  const posted = state.positions.filter((p) => p.status === 'OPEN' && p.marginType === 'ISOLATED').reduce((v, p) => v.plus(p.isolatedMargin), new D(0));
+  const settleBalance = out(n(state.walletBalance).plus(posted));
   return {
     entries, openingBalance: state.initialDeposit, closingBalance: closing,
     totals: {
@@ -149,7 +158,8 @@ export function accountLedger(state: DemoState): AccountLedger {
       net: out(realizedPnl.minus(fees).plus(funding)),
     },
     walletBalance: state.walletBalance,
-    reconciled: n(closing).eq(n(state.walletBalance)),
+    settleBalance,
+    reconciled: n(closing).eq(n(settleBalance)),
   };
 }
 

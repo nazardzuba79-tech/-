@@ -84,6 +84,7 @@ jobs:
           src/private-trading/__tests__/nativeReduceOnlyClose.test.ts
           src/private-trading/__tests__/nativeRiskContract.test.ts
           src/private-trading/__tests__/nativeIsolatedGap.test.ts
+          src/private-trading/__tests__/nativeStress30.test.ts
           src/private-trading/__tests__/nativeDemo.integration.test.ts
           src/api/routes/__tests__/nativeDemoAccess.test.ts
           src/private-trading/__tests__/chartMarketData.test.ts
@@ -134,8 +135,6 @@ jobs:
             frontend/src/lib/privateResultCard.ts
             frontend/src/lib/privateTradingApi.ts
             frontend/src/lib/__tests__/privateTradingFrontend.test.ts
-          frontend/src/lib/__tests__/nativeReduceTarget.test.ts
-          frontend/src/lib/__tests__/nativeCommandLane.test.ts
             frontend/src/pages/private-trading/PrivateResultCardDialog.tsx
             frontend/src/pages/private-trading/privateTrading.css
             frontend/src/pages/private-trading/privateResultCard.css

@@ -173,7 +173,7 @@ export function nextInstructionSeq(commands:{seq?:number}[]){return commands.red
  * accounting as normal market orders, and never invent a fill. This avoids
  * trapping an existing position behind max-order/leverage admission rules.
  */
-function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefined,book:NativeBook,time:number){
+function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefined,book:NativeBook,time:number,actionId?:string){
   const p=s.positions.find(p=>p.id===positionId&&p.status==='OPEN');if(!p)throw new DemoEngineError('POSITION_NOT_OPEN');
   if(time<book.timestamp||time-book.timestamp>5000)throw new DemoEngineError('STALE_BOOK');
   const rules=s.instruments[p.symbol]?.rules;if(!rules)throw new DemoEngineError('INSTRUMENT_MISSING');
@@ -183,7 +183,7 @@ function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefine
   // One consumption ledger per provider snapshot, shared with market OPEN:
   // a slice of the same snapshot cannot buy liquidity another command took.
   const consumed=consumeObservedBook(s,p.symbol,book,p.side==='LONG'?'SELL':'BUY',requested,time);
-  for(const fill of consumed.fills){closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK');consumed.record(fill);}
+  for(const fill of consumed.fills){closeDemoPosition(s,positionId,fill.quantity,fill.price,time,'OBSERVED_BOOK',actionId);consumed.record(fill);}
   consumed.prune();
 }
 function apply(s:DemoState,c:NativeInstruction,time:number){
@@ -210,9 +210,9 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
         // trader's intent — be flat — is met, and nothing settles at the gap.
         if(p.status!=='OPEN')return;
       }
-      executeCloseBook(s,c.positionId,c.quantity,c.book,time);
+      executeCloseBook(s,c.positionId,c.quantity,c.book,time,c.id);
     }
-    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time);
+    else closeDemoPosition(s,c.positionId,c.quantity,c.price,time,'SELECTED_POINT',c.id);
   }
   else if(c.kind==='CANCEL')cancelDemoOrder(s,c.orderId,time);
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);

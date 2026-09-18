@@ -4,6 +4,7 @@ import { getToken,onSessionChange } from '../../lib/api';
 import { nativeDemoApi,type NativeState,type NativeDraft,type NativePosition,type NativeEvent } from '../../lib/nativeDemoApi';
 import { PrivateTradingError,privateTradingApi,type PrivateResultCard } from '../../lib/privateTradingApi';
 import { NativeCommandLane,acceptsRevision } from '../../lib/nativeCommandLane';
+import { chartExits } from '../../lib/nativeChartExits';
 import type { ChartTradeCandle,ChartTradeOverlay,ChartTradingInteraction,ChartCandleLoader } from '../../lib/chartTrading';
 
 const NATIVE_WARM_PREFIX='voltex:native-state:v1:';
@@ -42,30 +43,6 @@ function writeWarmState(token:string|null,state:NativeState){
 function clearWarmState(){
   const storage=warmStorage();if(!storage)return;
   try{for(let i=storage.length-1;i>=0;i--){const key=storage.key(i);if(key?.startsWith(NATIVE_WARM_PREFIX))storage.removeItem(key);}}catch{}
-}
-
-/** A market close can consume many depth levels. The engine correctly emits
- * one fill event per level, but the chart is a trade view, not a fill tape:
- * one close action should be one small exit marker. Exact accounting stays
- * in the ledger/events; this aggregation is presentation-only. */
-function chartExits(events:NativeEvent[],positionId:string){
-  type Exit={time:number;price:number;kind:string;quantity:number;lastTime:number};
-  const result:Exit[]=[];
-  const source=events.filter(e=>e.positionId===positionId&&['CLOSE','TAKE_PROFIT','STOP_LOSS','LIQUIDATION'].includes(e.kind))
-    .filter(e=>e.price!==null&&Number.isFinite(Number(e.price))&&Number.isFinite(Number(e.quantity))&&Number(e.quantity)>0)
-    .sort((a,b)=>a.time-b.time||a.id.localeCompare(b.id));
-  for(const event of source){
-    const price=Number(event.price),quantity=Number(event.quantity),previous=result.length?result[result.length-1]:undefined;
-    // One observed-book close may be split both by depth and, for a large
-    // position, into several contract-valid market orders. Commands from the
-    // same click arrive seconds apart, so fold only a short CLOSE burst.
-    if(event.kind==='CLOSE'&&previous?.kind==='CLOSE'&&event.time-previous.lastTime<=15_000){
-      const total=previous.quantity+quantity;
-      previous.price=(previous.price*previous.quantity+price*quantity)/total;
-      previous.quantity=total;previous.time=event.time;previous.lastTime=event.time;
-    }else result.push({time:event.time,price,kind:event.kind,quantity,lastTime:event.time});
-  }
-  return result.map(({lastTime:_,...exit})=>exit);
 }
 
 export function useNativeDemo(symbol:string,onSymbol?:(symbol:string)=>void){

@@ -4,6 +4,7 @@ import { NativeAccount, NativeRepository, revisionPayload, commandHash } from '.
 import { emptyDemoState, registerDemoInstrument, markDemoAccount, placeDemoOrder, fillDemoOrder, closeDemoPosition, settleDemoFunding,
   evaluateDemoRiskAndProtection, protectDemoPosition, demoAccount, DemoInstrument, DemoState } from '../native/engine';
 import { accountLedger } from '../native/ledger';
+import { assertNativeInvariants } from '../native/invariants';
 import type { OwnerSession } from '../serviceTypes';
 import { PrivateTradingError } from '../serviceTypes';
 import type { PrivateTradingMarketData, PrivateInstrument, PrivateFreshQuote, PrivateHistoryRequest } from '../marketData';
@@ -164,6 +165,7 @@ class MemoryRepository implements NativeRepository {
   async commit(_a: OwnerSession, expected: number, next: NativeAccount, key: string, hash: string) {
     const prior = await this.prior(_a, key, hash); if (prior) return prior;
     if (this.row?.revision !== expected) throw new PrivateTradingError('account_changed', 'changed', 409);
+    assertNativeInvariants(next.snapshot, undefined, `commit ${expected + 1}`);
     const row = structuredClone({ ...next, revision: expected + 1 }); this.row = row;
     this.revisions.set(row.revision, revisionPayload(row)); this.keys.set(key, { hash, row: revisionPayload(row) }); return structuredClone(row);
   }
