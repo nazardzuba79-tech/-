@@ -75,6 +75,7 @@ export interface NativeContract{
  */
 export interface NativeCollateralLine{
   asset:string;available:string;locked:string;quantity:string;price:string|null;value:string|null;
+  collateralEnabled:boolean;
   status:'SETTLE'|'PRICED'|'UNPRICED';source:string|null;asOf:number|null;
 }
 /**
@@ -85,9 +86,11 @@ export interface NativeCollateralLine{
 export interface NativeWalletRow{
   asset:string;walletQuantity:string;tradingBalance:string;total:string;inUse:string;available:string;
   price:string|null;value:string|null;status:'SETTLE'|'PRICED'|'UNPRICED';asOf:number|null;
+  collateralEnabled:boolean;collateralToggleable:boolean;
 }
 export interface NativeCollateral{
-  settleAsset:string;lines:NativeCollateralLine[];priced:string;unpriced:string[];complete:boolean;asOf:number|null;
+  settleAsset:string;lines:NativeCollateralLine[];priced:string;collateralPriced:string;
+  unpriced:string[];collateralUnpriced:string[];complete:boolean;asOf:number|null;
 }
 /**
  * The unified account, as the Wallet reads it.
@@ -98,10 +101,15 @@ export interface NativeCollateral{
  * and `account.collateral` is their sum without anything counted twice.
  */
 export interface NativeWallet{
+  initialized?:boolean;
   account:NativeAccountAggregate;
   ledger:AccountLedgerView;
   collateral:NativeCollateral;
   rows:NativeWalletRow[];
+  /** All priced wallet assets, including assets disabled as margin collateral. */
+  assetsValue:string;
+  assetsComplete:boolean;
+  unpricedAssets:string[];
 }
 export type NativeDraft=
  | {kind:'OPEN';symbol:string;side:'LONG'|'SHORT';type:'MARKET'|'LIMIT';margin?:string;quantity?:string;leverage:string;price?:string;candle?:NativeCandle;protection?:Partial<NativeProtection>;reduceOnly?:true;positionId?:string;marginType?:'CROSS'|'ISOLATED'}
@@ -145,6 +153,7 @@ export function createNativeDemoClient(base:string,token:()=>string|null,fetcher
      * construction.
      */
     wallet:(signal?:AbortSignal)=>request<NativeWallet>('/native/wallet',undefined,signal),
+    setCollateral:(asset:string,enabled:boolean,idempotencyKey:string)=>request<NativeWallet>('/native/collateral-preference',{asset,enabled,idempotencyKey}),
     initialize:(acceptedModel:string,idempotencyKey:string)=>request<NativeState>('/native/initialize',{acceptedModel,idempotencyKey}),
     command:(draft:NativeDraft,idempotencyKey:string)=>request<NativeState>('/native/commands',{...draft,idempotencyKey}),
     card:(positionId:string)=>request<PrivateResultCard>('/native/cards',{positionId}),
