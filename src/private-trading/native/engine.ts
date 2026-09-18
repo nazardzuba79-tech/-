@@ -533,7 +533,13 @@ function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,ti
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id&&o.id!==orderId))cancelDemoOrder(s,o.id,time);
   }else if(p.protection.quantity!==null && n(p.protection.quantity).gt(p.quantity))p.protection.quantity=p.quantity;
 }
-export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false) {
+/**
+ * Fills `quantity` of an order at `price` and RETURNS THE QUANTITY IT ACTUALLY
+ * FILLED: a reducing order never takes more than its position still has, so a
+ * caller records exactly that in the liquidity ledger — never the quantity it
+ * asked the book for.
+ */
+export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false):string {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   if(positive(quantity).gt(o.remaining))throw new DemoEngineError('FILL_EXCEEDS_ORDER');positive(price);
   if(o.price && (o.side==='LONG'?n(price).gt(o.price):n(price).lt(o.price)))throw new DemoEngineError('FILL_OUTSIDE_LIMIT');
@@ -576,6 +582,7 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
   o.filled=out(n(o.filled).plus(quantity));o.remaining=out(n(o.remaining).minus(quantity));o.reserved=reserveFor(s,o,o.price??price);
   o.status=n(o.remaining).isZero()?'FILLED':'PARTIALLY_FILLED';s.time=time;
   if(o.reduceOnly&&active(o)&&!s.positions.some(p=>p.id===o.positionId&&p.status==='OPEN'))cancelDemoOrder(s,o.id,time);
+  return quantity;
 }
 export function cancelDemoOrder(s:DemoState,id:string,time:number) {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o)throw new DemoEngineError('ORDER_NOT_FOUND');if(!active(o))return;
@@ -690,11 +697,27 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
  */
 export function executeRestingDemoOrders(s:DemoState,symbol:string,book:ObservedBook,time:number){
   requireTime(s,time);let fills=0;
-  for(const o of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o))){
+  // The order list is taken once, but EVERY order is read again when its turn
+  // comes and after each of its fills: a full close earlier in this pass
+  // cancels the position's other orders (and one of them may be the next in
+  // the list), and a position reduced by another action may hold less than
+  // the order still names. A reducing order asks the book only for what its
+  // position can still give, each fill takes no more than that, and the
+  // liquidity ledger records the quantity that was actually filled — at the
+  // observed level it came from — never the quantity that was asked for.
+  for(const id of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o)).map(o=>o.id)){
+    const o=s.orders.find(x=>x.id===id)!;if(!active(o))continue;
+    const position=()=>s.positions.find(p=>p.id===o.positionId&&p.status==='OPEN');
+    if(o.reduceOnly&&!position()){cancelDemoOrder(s,o.id,time);continue;}
+    const want=o.reduceOnly?out(D.minimum(o.remaining,position()!.quantity)):o.remaining;
+    if(n(want).lte(0))continue;
     const direction=o.side==='LONG'?'BUY':'SELL';
-    const consumed=consumeObservedBook(s,symbol,book,direction,o.remaining,time,o.price!);
+    const consumed=consumeObservedBook(s,symbol,book,direction,want,time,o.price!);
     for(const f of consumed.fills){
-      try{fillDemoOrder(s,o.id,f.quantity,o.price!,time,'OBSERVED_BOOK',true);consumed.record(f);fills++;}
+      if(!active(o))break;
+      const p=o.reduceOnly?position():undefined;if(o.reduceOnly&&!p)break;
+      const take=p?out(D.minimum(f.quantity,p.quantity)):f.quantity;if(n(take).lte(0))break;
+      try{const filled=fillDemoOrder(s,o.id,take,o.price!,time,'OBSERVED_BOOK',true);consumed.record({price:f.price,quantity:filled});fills++;}
       catch(e){if(e instanceof DemoEngineError&&['INSUFFICIENT_FILL_MARGIN','POSITION_NOT_OPEN'].includes(e.code)){cancelDemoOrder(s,o.id,time);break;}throw e;}
     }
     consumed.prune();
@@ -715,7 +738,10 @@ export function executeDemoBook(s:DemoState,id:string,book:ObservedBook,time:num
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   const direction=o.side==='LONG'?'BUY':'SELL';
   const consumed=consumeObservedBook(s,o.symbol,book,direction,o.remaining,time,o.price??undefined);
-  for(const f of consumed.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record(f);}
+  for(const f of consumed.fills){
+    if(!active(o))break;
+    const filled=fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record({price:f.price,quantity:filled});
+  }
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
   consumed.prune();
 }

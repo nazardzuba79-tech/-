@@ -206,3 +206,74 @@ describe('an exact reduce-only LIMIT on a position', () => {
     expect(v.ledger!.reconciled).toBe(true);
   });
 });
+
+/**
+ * R10 — THE PASS READS EVERY ORDER AGAIN AT EVERY STEP, AND THE LEDGER
+ * RECORDS WHAT WAS FILLED.
+ *
+ * On the reviewed head the pass over resting orders iterated a list taken
+ * once: a full close cancels the position's other orders, the next
+ * iteration then filled a CANCELLED order, ORDER_NOT_OPEN left the whole
+ * command uncommitted — the correct close before it included. And a
+ * reduce-only fill recorded the quantity it ASKED the book for, not the
+ * quantity the position could still give. Both, on a Cross and on an
+ * Isolated position, at prices that trigger no liquidation and no TP/SL.
+ */
+describe.each(['CROSS', 'ISOLATED'] as const)('R10 on a %s position', (marginType) => {
+  const openLong = (f: ReturnType<typeof setup>, symbol: string, quantity: string) =>
+    f.service.command(actor, { kind: 'OPEN', symbol, side: 'LONG', type: 'MARKET', quantity, leverage: '10', marginType, idempotencyKey: key() });
+  const reduceLimit = (f: ReturnType<typeof setup>, positionId: string, quantity: string, price: string) =>
+    f.service.command(actor, { kind: 'OPEN', symbol: 'BTCUSDT', side: 'SHORT', type: 'LIMIT', price, quantity, leverage: '10', reduceOnly: true, positionId, marginType, idempotencyKey: key() });
+  const consumption = (f: ReturnType<typeof setup>, level: string) => Object.values(f.repo.row!.snapshot.bookConsumption).find(c => c.seen?.bids[level] !== undefined)!;
+
+  test('A: two exact reduce-only limits of the whole size and liquidity for both — the first closes the position, the second is cancelled, the command commits, the other position is untouched', async () => {
+    const f = setup(); await f.service.initialize(actor, key());
+    let v = await openLong(f, 'BTCUSDT', '1'); const p = v.positions[0];
+    f.step(); v = await openLong(f, 'ETHUSDT', '1'); const other = v.positions.find(x => x.symbol === 'ETHUSDT')!;
+    f.step(); v = await reduceLimit(f, p.id, '1', '55000'); const first = v.orders.find(o => o.reduceOnly)!;
+    f.step(); v = await reduceLimit(f, p.id, '1', '55000'); const second = v.orders.find(o => o.reduceOnly && o.id !== first.id)!;
+    expect(v.orders.filter(o => o.reduceOnly && o.status === 'OPEN')).toHaveLength(2);
+    f.step(); f.market.price = '56000'; f.market.bids = [{ price: '55999.9', quantity: '2' }];
+    const revision = v.revision;
+    v = await refresh(f);
+    expect(v.revision).toBe(revision + 1);                                                         // committed, not thrown away
+    expect(v.orders.find(o => o.id === first.id)).toMatchObject({ status: 'FILLED', filled: '1', averagePrice: '55000' });
+    expect(v.orders.find(o => o.id === second.id)).toMatchObject({ status: 'CANCELLED', filled: '0' });
+    expect(v.events.filter(e => e.kind === 'CLOSE')).toHaveLength(1);                            // one close, never two
+    expect(v.events.filter(e => e.kind === 'CANCEL').map(e => e.orderId)).toEqual([second.id]);
+    expect(v.history.find(x => x.id === p.id)).toMatchObject({ status: 'CLOSED', marginMode: marginType });
+    expect(v.positions).toHaveLength(1);
+    expect(v.positions[0]).toMatchObject({ id: other.id, quantity: '1', entryPrice: other.entryPrice, marginMode: marginType, status: 'OPEN' });
+    expect(consumption(f, '55999.9').bids['55999.9']).toBe('1');                                   // 1 of the 2 on the bid, not 2
+    expect(f.journal().filter(c => c.kind === 'BOOK')).toHaveLength(1);
+    expect(v.ledger!.reconciled).toBe(true);
+    expect(f.market.calls.history).toBe(0);
+  });
+
+  test('B: the limit still names 1 after another action left 0.4 of the position; a level of 0.5 closes and consumes exactly 0.4, a further level is untouched, the same snapshot again does nothing', async () => {
+    const f = setup(); await f.service.initialize(actor, key());
+    let v = await openLong(f, 'BTCUSDT', '1'); const p = v.positions[0];
+    f.step(); v = await reduceLimit(f, p.id, '1', '55000'); const order = v.orders.find(o => o.reduceOnly)!;
+    f.step(); v = await f.service.command(actor, { kind: 'CLOSE', positionId: p.id, quantity: '0.6', idempotencyKey: key() });
+    expect(v.positions[0]).toMatchObject({ id: p.id, quantity: '0.4' });
+    expect(v.orders.find(o => o.id === order.id)).toMatchObject({ status: 'OPEN', remaining: '1' });
+    f.step(); f.market.price = '56000'; f.market.bids = [{ price: '55999.9', quantity: '0.5' }, { price: '55999.8', quantity: '5' }];
+    v = await refresh(f);
+    const fills = v.events.filter(e => e.kind === 'CLOSE' && e.orderId === order.id);
+    expect(fills).toHaveLength(1);
+    expect(fills[0]).toMatchObject({ quantity: '0.4', price: '55000', pricing: 'OBSERVED_BOOK' });
+    expect(v.orders.find(o => o.id === order.id)).toMatchObject({ status: 'CANCELLED', filled: '0.4', remaining: '0.6' });
+    expect(v.positions).toHaveLength(0);
+    expect(v.history.find(x => x.id === p.id)).toMatchObject({ status: 'CLOSED', marginMode: marginType });
+    const ledger = consumption(f, '55999.9');
+    expect(ledger.seen!.bids['55999.9']).toBe('0.5');
+    expect(ledger.bids['55999.9']).toBe('0.4');                                                  // exactly the remainder, 0.1 left unused
+    expect(ledger.bids['55999.8']).toBeUndefined();                                                // the second level was never touched
+    const events = v.events.length, books = f.journal().filter(c => c.kind === 'BOOK').length;
+    v = await refresh(f);                                                                          // the same snapshot again
+    expect(v.events).toHaveLength(events);
+    expect(f.journal().filter(c => c.kind === 'BOOK')).toHaveLength(books);
+    expect(v.ledger!.reconciled).toBe(true);
+    expect(f.market.calls.history).toBe(0);
+  });
+});
