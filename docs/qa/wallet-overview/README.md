@@ -22,5 +22,12 @@ production data, no external service).
 
 Figures in these captures are the review stand's deterministic fixture
 (USDT 5 000 000, BTC 271 + 2.5, ETH 561, XRP 1 200 000 at fixed marks), not
-any real account. Result of the run (re-taken for the approved-layout pass): 103/103 checks;
-`scripts/qa-wallet-unified-account.cjs` 198/198 on the same build.
+any real account. - `overview-owner-1440-dark.png` — the same Overview after one click on the
+  rail's light/dark switch: dark surfaces, inverted text, gold curve kept.
+
+Result of the run (re-taken for the full-bleed + theme pass): **124/124**
+checks; `scripts/qa-wallet-unified-account.cjs` **200/200** on the same
+build. Both now also assert the things that had silently broken: the IM/MM
+gauges are measured as actually drawn, the rail sticks below the app header
+rather than under it, the page prints no duplicate heading, and the dark
+choice survives a reload.

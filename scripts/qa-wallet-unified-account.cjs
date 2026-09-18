@@ -38,7 +38,7 @@ async function setMode(mode, query = '') {
 
 /** Click a Wallet section in the Wallet's OWN navigation. */
 async function openSection(page, label) {
-  await page.locator('.wallet-side-nav button', { hasText: label }).first().click();
+  await page.locator('.wallet-side-nav .wallet-nav-item', { hasText: label }).first().click();
   await page.waitForTimeout(200);
 }
 
@@ -86,7 +86,7 @@ async function run() {
         // under review here is one click away in the Wallet's own nav.
         await page.waitForSelector('.wallet-overview', { timeout: 15000 });
         const landing = await page.evaluate(() =>
-          [...document.querySelectorAll('.wallet-side-nav button')].filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.textContent.trim()));
+          [...document.querySelectorAll('.wallet-side-nav .wallet-nav-item')].filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.textContent.trim()));
         await openSection(page, 'Unified Trading');
         await page.waitForSelector('.wallet-account-panel', { timeout: 15000 });
         const tag = `${mode}-${vp.label}`;
@@ -110,7 +110,7 @@ async function run() {
 
         // ── The Wallet's own navigation, beside the global one ──────────
         const nav = await page.evaluate(() => {
-          const items = [...document.querySelectorAll('.wallet-side-nav button')];
+          const items = [...document.querySelectorAll('.wallet-side-nav .wallet-nav-item')];
           return {
             labels: items.map((b) => b.textContent.trim()),
             active: items.filter((b) => b.getAttribute('aria-current') === 'page').map((b) => b.textContent.trim()),
@@ -156,6 +156,14 @@ async function run() {
             });
           });
           check(`${tag}: IM and MM are both stated`, margin.length === 2 && margin[0].label === 'IM' && margin[1].label === 'MM', JSON.stringify(margin));
+          // The regression that made them read as blank labels: the gauge
+          // had no height and no track, so only the text rendered.
+          const gauge = await page.$$eval('.wallet-im-bar', (els) => els.map((el) => {
+            const cs = getComputedStyle(el);
+            return { h: Math.round(el.getBoundingClientRect().height), bg: cs.backgroundColor, empty: el.dataset.empty };
+          }));
+          check(`${tag}: the IM/MM gauges are actually drawn`,
+            gauge.length === 2 && gauge.every((g) => g.h >= 4 && !/rgba\(0, 0, 0, 0\)/.test(g.bg)), JSON.stringify(gauge));
           check(`${tag}: both ratios are real percentages, not dashes`, margin.every((m) => /%$/.test(m.percent)), margin.map((m) => m.label + ' ' + m.percent).join(' | '));
           check(`${tag}: both requirements are stated in USD`, margin.every((m) => /USD$/.test(m.value)), margin.map((m) => m.label + ' ' + m.value).join(' | '));
         } else {
@@ -202,7 +210,7 @@ async function run() {
             const rows = [...document.querySelectorAll('.wallet-ledger-desktop tbody tr')];
             return {
               viewport: window.innerHeight,
-              title: bottom('.wallet-workspace h1'),
+              title: bottom('.wallet-brand-name'),
               header: bottom('.wallet-account-panel .wallet-account-mode'),
               margin: bottom('.wallet-margin-usage'),
               metrics: bottom('.wallet-account-metrics'),
@@ -215,7 +223,7 @@ async function run() {
           });
           const summaryInFold = [fold.title, fold.header, fold.metrics, fold.actions, fold.filters]
             .every((v) => v !== null && v <= fold.viewport);
-          check(`${tag}: title, account header, figures, actions and filters are all above the fold`, summaryInFold, JSON.stringify(fold));
+          check(`${tag}: wordmark, account header, figures, actions and filters are all above the fold`, summaryInFold, JSON.stringify(fold));
           check(`${tag}: at least two asset rows are above the fold too`,
             fold.rows >= 2 && fold.rowsInFold >= 2, `${fold.rowsInFold}/${fold.rows} rows`);
           check(`${tag}: rows are the reference's 64px`, fold.rowHeight !== null && fold.rowHeight >= 60 && fold.rowHeight <= 72, `${fold.rowHeight}px rows`);

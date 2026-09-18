@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom';
 import {
   ArrowDownToLineIcon,
   ArrowLeftRightIcon,
+  ArrowUpRightIcon,
   ChevronDownIcon,
   EyeIcon,
   EyeOffIcon,
@@ -56,23 +58,32 @@ function Metric({ label, value, hidden, tone, pill }: { label: string; value: st
 }
 
 /**
- * One margin-usage entry: the server's ratio as a percentage, its own bar,
- * and the requirement in settle-asset terms. `ratio` is a decimal fraction
- * the server answered; the bar only draws it.
+ * One margin-usage entry: the server's ratio as a percentage, its own gauge,
+ * and the requirement in settle-asset terms.
+ *
+ * `ratio` is a decimal fraction the SERVER answered; the gauge only draws
+ * it. A ratio of zero is a real answer — nothing is committed — so the
+ * track still renders with a visible cap at its start rather than an empty
+ * strip, which reads as a broken label instead of a live gauge.
  */
 function MarginRow({ label, ratio, value, hidden }: { label: string; ratio: number | null; value: string; hidden: boolean }) {
   const { lang } = useLanguage();
   // Clamped so a hair-thin ratio is still visible and one above 1 cannot
   // overflow its track. The NUMBER beside it is never clamped.
-  const width = ratio === null ? 0 : Math.max(Math.min(ratio, 1) * 100, ratio > 0 ? 2 : 0);
+  const width = ratio === null ? 0 : Math.max(Math.min(ratio, 1) * 100, ratio > 0 ? 3 : 0);
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-[26px] shrink-0 text-[13px] text-ink-3">{label}</span>
-      <span className="wallet-im-bar w-[96px] shrink-0" data-tone={ratio !== null && ratio > 0.5 ? 'warn' : 'ok'} aria-hidden="true">
+    <div className="wallet-margin-row">
+      <span className="wallet-margin-label">{label}</span>
+      <span
+        className="wallet-im-bar"
+        data-tone={ratio !== null && ratio > 0.5 ? 'warn' : 'ok'}
+        data-empty={ratio === null || ratio === 0 ? 'true' : 'false'}
+        aria-hidden="true"
+      >
         <span style={{ width: `${width}%` }} />
       </span>
-      <span className="num text-[13px] font-semibold text-pos">{ratio === null ? EM_DASH : formatPercent(ratio * 100, lang).replace('+', '')}</span>
-      <span className="num text-[13px] text-ink">{hidden ? MASK : value}</span>
+      <span className="wallet-margin-pct num">{ratio === null ? EM_DASH : formatPercent(ratio * 100, lang).replace('+', '')}</span>
+      <span className="wallet-margin-value num">{hidden ? MASK : value}</span>
     </div>
   );
 }
@@ -138,6 +149,11 @@ export function PortfolioStrip({
       ];
 
   const incomplete = Boolean(account && !account.valuationComplete && account.unpricedAssets.length > 0);
+  // No margin committed, on an account that has equity to commit: the
+  // engine is live and holding nothing, which is different from unknown.
+  const idle = Boolean(
+    cross && !unavailable && account!.initialMarginUsd === 0 && (account!.totalEquityUsd ?? 0) > 0,
+  );
 
   return (
     <section aria-label={t('wallet.unifiedAccount')} className="wallet-account-panel min-w-0">
@@ -161,9 +177,18 @@ export function PortfolioStrip({
           </div>
 
           {cross && (
-            <div className="wallet-margin-usage mt-3 flex flex-wrap gap-x-6 gap-y-2" aria-label={t('wallet.marginUsage')}>
+            <div className="wallet-margin-usage" aria-label={t('wallet.marginUsage')}>
               <MarginRow label={t('wallet.imShort')} ratio={account!.initialMarginRatio} value={`${usd(account!.initialMarginUsd)} USD`} hidden={hidden} />
               <MarginRow label={t('wallet.mmShort')} ratio={account!.maintenanceMarginRatio} value={`${usd(account!.maintenanceMarginUsd)} USD`} hidden={hidden} />
+              {/* Zero initial margin on a funded account is a fact about the
+                  positions, not a missing figure: nothing is committed. Say
+                  which of the two it is, and point at where that changes. */}
+              {idle && (
+                <Link to="/futures" className="wallet-margin-idle wallet-link">
+                  {t('wallet.noOpenPositions')}
+                  <ArrowUpRightIcon className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
+                </Link>
+              )}
             </div>
           )}
         </div>
