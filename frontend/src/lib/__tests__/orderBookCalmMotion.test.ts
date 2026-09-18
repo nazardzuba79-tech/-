@@ -35,7 +35,35 @@ describe('order book rows keep their DOM across a moving ladder', () => {
     expect(rowsFn).toContain('referenceQuantity(level.quantity)');
     expect(rowsFn).toContain('referenceQuantity(level.cumulative)');
     expect(rowsFn).toContain('onPickPrice(exact)');
-    expect(rowsFn).toContain('level.cumulative / maxDepth');
+    // The bar width is still the level's own cumulative over a maximum —
+    // only WHICH maximum changed, to the one belonging to the row's side.
+    expect(rowsFn).toContain('level.cumulative / (side === \'bid\' ? maxBuyDepth : maxSellDepth)');
+  });
+
+  /**
+   * Each side is scaled against its own deepest level.
+   *
+   * A single max across both sides made the thinner side unreadable: on the
+   * owner's own terminal, bids cumulated to 6.009 against asks' 1.936, so
+   * every ask bar was capped at 32% of its track and the ask ladder read as
+   * one flat band. The reference terminal scales per side — its asks run
+   * 0.038 down to 0.002 and the shortest bar is 0.002/0.038 of the track,
+   * not 0.002 measured against the bid side's 0.079.
+   */
+  it('scales each side against its own deepest level, not a shared one', () => {
+    expect(code).toContain('const maxBuyDepth = Math.max(buy[buy.length - 1]?.cumulative ?? 0');
+    expect(code).toContain('const maxSellDepth = Math.max(sell[sell.length - 1]?.cumulative ?? 0');
+    // The shared maximum is gone, so a lopsided book cannot flatten a side.
+    expect(code).not.toMatch(/const maxDepth\s*=/);
+    // Neither side's divisor may be built from the other side's levels.
+    const buyLine = code.split('\n').find(line => line.includes('const maxBuyDepth'))!;
+    const sellLine = code.split('\n').find(line => line.includes('const maxSellDepth'))!;
+    expect(buyLine).not.toContain('sell[');
+    expect(sellLine).not.toContain('buy[');
+    // Still clamped, so a stale or malformed level cannot overflow its row.
+    expect(code).toContain('Math.min(1, level.cumulative');
+    // The cross-side imbalance is not lost: the ratio strip still reports it.
+    expect(code).toContain('visibleDepthRatio(buy, sell)');
   });
 });
 

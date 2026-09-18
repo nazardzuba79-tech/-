@@ -30,7 +30,21 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
   const count = referenceRowCount(height, mode === 'both');
   const buy = useMemo(() => aggregateSpotBook(bids, step, 'BUY').slice(0, count), [bids, step, count]);
   const sell = useMemo(() => aggregateSpotBook(asks, step, 'SELL').slice(0, count), [asks, step, count]);
-  const maxDepth = Math.max(buy[buy.length - 1]?.cumulative ?? 0, sell[sell.length - 1]?.cumulative ?? 0, Number.MIN_VALUE);
+  /**
+   * EACH SIDE IS SCALED AGAINST ITS OWN DEEPEST LEVEL, NOT A SHARED ONE.
+   *
+   * A single max across both sides made the thinner side unreadable: with
+   * bids cumulating to 6.009 against asks' 1.936, every ask bar was capped
+   * at 32% of its track and the ask ladder read as one flat band with no
+   * shape to it. Per-side scaling is what the reference terminal does — its
+   * asks run 0.038 down to 0.002 and the shortest bar is 5% of the track,
+   * which is 0.002/0.038, not 0.002 against the bid side's 0.079.
+   *
+   * The cross-side imbalance is not lost by this: it is what the B/S ratio
+   * strip under the ladder reports, from the same visible window.
+   */
+  const maxBuyDepth = Math.max(buy[buy.length - 1]?.cumulative ?? 0, Number.MIN_VALUE);
+  const maxSellDepth = Math.max(sell[sell.length - 1]?.cumulative ?? 0, Number.MIN_VALUE);
   const ratio = metrics.mid === null ? null : visibleDepthRatio(buy, sell);
   // The selected-contract execution stream is more current than the shared ticker snapshot.
   const latestTrade = trades[0];
@@ -91,7 +105,7 @@ export function FuturesReferenceBook({ bids, asks, pair, onPickPrice, lastPrice 
       {/* scaleX, not width: a transform is composited, so a book updating
           several times a second never re-lays-out the row it sits in. The
           transition is short enough to read as motion rather than lag. */}
-      <i className="rb-depth" style={{ transform: `scaleX(${Math.min(1, level.cumulative / maxDepth)})` }} />
+      <i className="rb-depth" style={{ transform: `scaleX(${Math.min(1, level.cumulative / (side === 'bid' ? maxBuyDepth : maxSellDepth))})` }} />
       <span title={exact}>{price}</span>
       <span title={`${level.quantity} ${base}`}>{referenceQuantity(level.quantity)}</span>
       <span title={`${level.cumulative} ${base}`}>{referenceQuantity(level.cumulative)}</span>

@@ -1,0 +1,42 @@
+{
+  "label": "after",
+  "seed": 20260918,
+  "frameMs": 100,
+  "windowMs": 15000,
+  "results": {
+    "desktop": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 4526,
+      "depthStyleWrites": 1476,
+      "otherAttr": 15,
+      "samples": 61,
+      "rowCounts": [
+        38
+      ],
+      "heights": [
+        831
+      ],
+      "shots": [
+        "/home/user/-/docs/qa/orderbook-1to1/after-book-0.png",
+        "/home/user/-/docs/qa/orderbook-1to1/after-book-1.png",
+        "/home/user/-/docs/qa/orderbook-1to1/after-book-2.png"
+      ]
+    },
+    "mobile": {
+      "rowsAdded": 0,
+      "rowsRemoved": 0,
+      "textChanges": 1502,
+      "depthStyleWrites": 410,
+      "otherAttr": 12,
+      "samples": 60,
+      "rowCounts": [
+        12
+      ],
+      "heights": [
+        306
+      ],
+      "shots": []
+    }
+  }
+}
