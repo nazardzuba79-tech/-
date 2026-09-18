@@ -68,6 +68,9 @@ export interface AssetProviderMappings {
 export interface AssetMarketSnapshot {
   priceUsd: number | null;
   changePercent24h: number | null;
+  /** Market-wide CoinGecko returns, already fetched in the same bulk row. */
+  changePercent7d?: number | null;
+  changePercent30d?: number | null;
   marketCapUsd: number | null;
   volume24hUsd: number | null;
   circulatingSupply: number | null;
@@ -163,7 +166,7 @@ export function defaultTradingPair(tradingPairs: string[]): string | null {
 }
 
 /** Fields the catalogue can be ordered by. */
-export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'symbol' | 'name';
+export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'change7d' | 'change30d' | 'symbol' | 'name';
 
 export interface AssetQuery {
   search?: string;
@@ -369,6 +372,8 @@ export class AssetRegistry {
           // legacy zero-coerced fields.
           priceUsd: coin.market.priceUsd,
           changePercent24h: coin.market.changePercent24h,
+          changePercent7d: coin.changePercent7d,
+          changePercent30d: coin.changePercent30d,
           marketCapUsd: coin.market.marketCapUsd,
           volume24hUsd: coin.market.volume24hUsd,
           circulatingSupply: coin.market.circulatingSupply,
@@ -469,6 +474,10 @@ function compareAssets(a: CanonicalAsset, b: CanonicalAsset, sort: AssetSortKey,
       return nullsLast(a.market?.priceUsd, b.market?.priceUsd, direction) || a.symbol.localeCompare(b.symbol);
     case 'change24h':
       return nullsLast(a.market?.changePercent24h, b.market?.changePercent24h, direction) || a.symbol.localeCompare(b.symbol);
+    case 'change7d':
+      return nullsLast(a.market?.changePercent7d, b.market?.changePercent7d, direction) || a.symbol.localeCompare(b.symbol);
+    case 'change30d':
+      return nullsLast(a.market?.changePercent30d, b.market?.changePercent30d, direction) || a.symbol.localeCompare(b.symbol);
     case 'symbol':
       return a.symbol.localeCompare(b.symbol) * direction;
     case 'name':

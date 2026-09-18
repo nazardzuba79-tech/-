@@ -598,6 +598,8 @@ export const ZH: Record<Key, string> = {
   'catalogue.filterAll': '全部',
   'catalogue.filterTradable': 'VOLTEX 可交易',
   'catalogue.filterFavorites': '自选',
+  'catalogue.gainers': '上涨',
+  'catalogue.losers': '下跌',
   'catalogue.tradable': '可交易',
   'catalogue.dataOnly': '仅数据',
   'catalogue.trade': '交易',

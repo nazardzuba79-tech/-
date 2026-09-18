@@ -175,7 +175,7 @@ export function marketDataRouter(
    *   ?search=btc        symbol OR name, case-insensitive
    *   ?tradable=true     only assets with a real executable VOLTEX pair
    *   ?sort=marketCap    rank | marketCap | volume24h | price | change24h
-   *                      | symbol | name          (default: rank)
+   *                      | change7d | change30d | symbol | name (default: rank)
    *   ?dir=asc|desc      default desc, which for `rank` means best-first
    *   ?limit= &offset=   clamped; default 100, max 1000 (1000 so the
    *                      Markets page can load the whole catalogue once
@@ -276,7 +276,7 @@ export function marketDataRouter(
  *  the default rather than being passed through to a lookup that would
  *  silently do nothing. */
 function parseSort(raw: unknown): AssetSortKey | undefined {
-  const allowed: AssetSortKey[] = ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'symbol', 'name'];
+  const allowed: AssetSortKey[] = ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'change7d', 'change30d', 'symbol', 'name'];
   return typeof raw === 'string' && (allowed as string[]).includes(raw) ? (raw as AssetSortKey) : undefined;
 }
 

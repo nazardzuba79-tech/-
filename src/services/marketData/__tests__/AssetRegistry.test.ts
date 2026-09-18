@@ -98,6 +98,15 @@ describe('AssetRegistry', () => {
     expect(value.assets.find((a) => a.symbol === 'ETH')!.providers.kraken).toBeUndefined();
   });
 
+  it('carries the provider 7d/30d returns into the canonical bulk catalogue', async () => {
+    const { registry } = build(
+      [ranking({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', rank: 1, changePercent7d: 7.25, changePercent30d: -4.5 })],
+      ['BTC/USDT']
+    );
+    const { value } = await registry.getCatalogue();
+    expect(value.assets[0].market).toMatchObject({ changePercent7d: 7.25, changePercent30d: -4.5 });
+  });
+
   it('lists every VOLTEX-tradable pair for an asset', async () => {
     const { registry } = build(
       [ranking({ id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', rank: 1 })],

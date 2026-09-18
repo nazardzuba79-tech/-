@@ -591,6 +591,8 @@ export const ES: Record<Key, string> = {
   'catalogue.filterAll': 'Todos',
   'catalogue.filterTradable': 'Negociable en VOLTEX',
   'catalogue.filterFavorites': 'Favoritos',
+  'catalogue.gainers': 'Suben',
+  'catalogue.losers': 'Bajan',
   'catalogue.tradable': 'Negociable',
   'catalogue.dataOnly': 'Solo datos',
   'catalogue.trade': 'Operar',

@@ -33,7 +33,12 @@ export function referenceValues(asset: ReferenceAsset) {
   const q = asset.liveQuote;
   return {
     price: q?.lastPrice ?? asset.market?.priceUsd ?? null,
+    // 24h may use the live venue reference when it exists. 7d/30d are
+    // market-wide CoinGecko returns from the same bulk catalogue snapshot;
+    // the live venue stream publishes no comparable 7d/30d field.
     change: q?.changePercent24h ?? asset.market?.changePercent24h ?? null,
+    change7d: asset.market?.changePercent7d ?? null,
+    change30d: asset.market?.changePercent30d ?? null,
     volume: q?.quoteVolume24h ?? asset.market?.volume24hUsd ?? null,
     priceQuote: q?.lastPrice != null ? q.quoteAsset : 'USD',
     volumeQuote: q?.quoteVolume24h != null ? q.quoteAsset : 'USD',

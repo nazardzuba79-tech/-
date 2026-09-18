@@ -61,7 +61,7 @@ function asset(over: Partial<CanonicalAsset> = {}): CanonicalAsset {
     rank: 1,
     ambiguous: false,
     collidingIds: [],
-    market: { priceUsd: 50_000, changePercent24h: 2.5, marketCapUsd: 1e12, volume24hUsd: 3e10, circulatingSupply: 19e6 },
+    market: { priceUsd: 50_000, changePercent24h: 2.5, changePercent7d: 8.5, changePercent30d: 12.5, marketCapUsd: 1e12, volume24hUsd: 3e10, circulatingSupply: 19e6 },
     ...over,
   } as CanonicalAsset;
 }
@@ -248,7 +248,7 @@ describe('client-side query', () => {
   });
 
   it('sorts every column deterministically in both directions', () => {
-    for (const sort of ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'symbol', 'name'] as const) {
+    for (const sort of ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'change7d', 'change30d', 'symbol', 'name'] as const) {
       for (const direction of ['asc', 'desc'] as const) {
         const a = filterAndSortAssets(CATALOGUE, { sort, direction }).map((x) => x.id);
         const b = filterAndSortAssets([...CATALOGUE].reverse(), { sort, direction }).map((x) => x.id);
@@ -257,6 +257,19 @@ describe('client-side query', () => {
         expect(a).toHaveLength(CATALOGUE.length);
       }
     }
+  });
+
+  it('filters gainers and losers over 7d and 30d from real provider returns', () => {
+    const base = asset().market!;
+    const moves = [
+      asset({ id: 'cg:a', symbol: 'AAA', name: 'AAA', market: { ...base, changePercent7d: 12, changePercent30d: -9 } }),
+      asset({ id: 'cg:b', symbol: 'BBB', name: 'BBB', market: { ...base, changePercent7d: -21, changePercent30d: 35 } }),
+      asset({ id: 'cg:c', symbol: 'CCC', name: 'CCC', market: { ...base, changePercent7d: null, changePercent30d: null } }),
+    ];
+    expect(filterAndSortAssets(moves, { sort: 'change7d', direction: 'desc' }).map(x => x.symbol)).toEqual(['AAA', 'BBB', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change7d', direction: 'asc' }).map(x => x.symbol)).toEqual(['BBB', 'AAA', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change30d', direction: 'desc' }).map(x => x.symbol)).toEqual(['BBB', 'AAA', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change30d', direction: 'asc' }).map(x => x.symbol)).toEqual(['AAA', 'BBB', 'CCC']);
   });
 
   it('sorts MISSING values last in BOTH directions', () => {

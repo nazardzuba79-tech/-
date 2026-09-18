@@ -591,6 +591,8 @@ export const JA: Record<Key, string> = {
   'catalogue.filterAll': 'すべて',
   'catalogue.filterTradable': 'VOLTEX で取引可能',
   'catalogue.filterFavorites': 'お気に入り',
+  'catalogue.gainers': '上昇',
+  'catalogue.losers': '下落',
   'catalogue.tradable': '取引可能',
   'catalogue.dataOnly': 'データのみ',
   'catalogue.trade': '取引',

@@ -55,12 +55,20 @@ export type TradableFilter = 'all' | 'tradable' | 'favorites';
 
 interface Column {
   key: CatalogueSortKey;
-  labelKey: 'catalogue.asset' | 'catalogue.name' | 'markets.price' | 'markets.change24h' | 'catalogue.marketCap' | 'markets.volume24h';
+  labelKey: 'catalogue.asset' | 'catalogue.name' | 'markets.price' | 'markets.change24h' | 'markets.change7d' | 'markets.change30d' | 'catalogue.marketCap' | 'markets.volume24h';
   numeric: boolean;
   /** Hidden below this viewport width, so mobile keeps the fields that
    *  matter rather than squeezing six desktop columns into 390px. */
   hideBelow?: 'md' | 'lg';
 }
+
+export type ChangePeriod = '24h' | '7d' | '30d';
+
+const CHANGE_COLUMNS: Record<ChangePeriod, Pick<Column, 'key' | 'labelKey'>> = {
+  '24h': { key: 'change24h', labelKey: 'markets.change24h' },
+  '7d': { key: 'change7d', labelKey: 'markets.change7d' },
+  '30d': { key: 'change30d', labelKey: 'markets.change30d' },
+};
 
 const COLUMNS: Column[] = [
   { key: 'symbol', labelKey: 'catalogue.asset', numeric: false },
@@ -134,7 +142,15 @@ export function CatalogueTable({
   const [filter, setFilter] = useState<TradableFilter>(defaultFilter);
   const [sort, setSort] = useState<CatalogueSortKey>('rank');
   const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
+  const [changePeriod, setChangePeriod] = useState<ChangePeriod>('24h');
   const [page, setPage] = useState(1);
+
+  const changeColumn = CHANGE_COLUMNS[changePeriod];
+  const changeSortActive = sort === changeColumn.key;
+  const columns = useMemo(
+    () => COLUMNS.map((column) => column.key === 'change24h' ? { ...column, ...changeColumn } : column),
+    [changeColumn]
+  );
 
   // Any change to what is being shown returns to page 1 — otherwise a
   // narrower filter can leave the view stranded on a page that no longer
@@ -167,6 +183,20 @@ export function CatalogueTable({
   const currentPage = Math.min(page, pageCount);
   // Only these are mounted — 50 rows, never 750.
   const visible = rows.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  function chooseChangePeriod(period: ChangePeriod) {
+    const next = CHANGE_COLUMNS[period];
+    setChangePeriod(period);
+    setSort(next.key);
+    // Opening a period shows the strongest gainers first. The adjacent
+    // direction controls switch to the strongest losers without a request.
+    setDirection('desc');
+  }
+
+  function chooseChangeDirection(next: 'asc' | 'desc') {
+    setSort(changeColumn.key);
+    setDirection(next);
+  }
 
   function toggleSort(key: CatalogueSortKey) {
     if (sort === key) {
@@ -209,16 +239,55 @@ export function CatalogueTable({
           <p>{t('catalogue.subtitle')}</p>
         </div>
 
-        <div className="vx-cat-filters" role="group" aria-label={t('catalogue.title')}>
-          <button type="button" aria-pressed={filter === 'all'} className={filter === 'all' ? 'is-active' : undefined} onClick={() => setFilter('all')}>
-            {t('catalogue.filterAll')}
-          </button>
-          <button type="button" aria-pressed={filter === 'tradable'} className={filter === 'tradable' ? 'is-active' : undefined} onClick={() => setFilter('tradable')}>
-            {t('catalogue.filterTradable')} <span className="vx-cat-badge-count">{tradableCount}</span>
-          </button>
-          <button type="button" aria-pressed={filter === 'favorites'} className={filter === 'favorites' ? 'is-active' : undefined} onClick={() => setFilter('favorites')}>
-            <Star size={12} fill={filter === 'favorites' ? 'currentColor' : 'none'} /> {t('catalogue.filterFavorites')}
-          </button>
+        <div className="vx-cat-head-controls">
+          <div className="vx-cat-filters" role="group" aria-label={t('catalogue.title')}>
+            <button type="button" aria-pressed={filter === 'all'} className={filter === 'all' ? 'is-active' : undefined} onClick={() => setFilter('all')}>
+              {t('catalogue.filterAll')}
+            </button>
+            <button type="button" aria-pressed={filter === 'tradable'} className={filter === 'tradable' ? 'is-active' : undefined} onClick={() => setFilter('tradable')}>
+              {t('catalogue.filterTradable')} <span className="vx-cat-badge-count">{tradableCount}</span>
+            </button>
+            <button type="button" aria-pressed={filter === 'favorites'} className={filter === 'favorites' ? 'is-active' : undefined} onClick={() => setFilter('favorites')}>
+              <Star size={12} fill={filter === 'favorites' ? 'currentColor' : 'none'} /> {t('catalogue.filterFavorites')}
+            </button>
+          </div>
+
+          <div className="vx-cat-change-controls">
+            <div className="vx-cat-change-periods" role="group" aria-label={t(changeColumn.labelKey)}>
+              {(Object.keys(CHANGE_COLUMNS) as ChangePeriod[]).map((period) => {
+                const option = CHANGE_COLUMNS[period];
+                return (
+                  <button
+                    key={period}
+                    type="button"
+                    aria-pressed={changePeriod === period}
+                    className={changePeriod === period ? 'is-active' : undefined}
+                    onClick={() => chooseChangePeriod(period)}
+                  >
+                    {t(option.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="vx-cat-change-direction" role="group" aria-label={t(changeColumn.labelKey)}>
+              <button
+                type="button"
+                aria-pressed={changeSortActive && direction === 'desc'}
+                className={changeSortActive && direction === 'desc' ? 'is-active' : undefined}
+                onClick={() => chooseChangeDirection('desc')}
+              >
+                <ArrowUp size={12} /> {t('catalogue.gainers')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={changeSortActive && direction === 'asc'}
+                className={changeSortActive && direction === 'asc' ? 'is-active' : undefined}
+                onClick={() => chooseChangeDirection('asc')}
+              >
+                <ArrowDown size={12} /> {t('catalogue.losers')}
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -243,7 +312,7 @@ export function CatalogueTable({
               <th className="vx-cat-rank" scope="col">
                 {t('markets.rank')}
               </th>
-              {COLUMNS.map((col) => (
+              {columns.map((col) => (
                 <th
                   key={col.key}
                   scope="col"
@@ -266,6 +335,7 @@ export function CatalogueTable({
                 favorites={favorites}
                 onToggleFavorite={onToggleFavorite}
                 onTrade={onTrade}
+                changePeriod={changePeriod}
               />
             ))}
           </tbody>
@@ -323,11 +393,13 @@ function CatalogueRow({
   favorites,
   onToggleFavorite,
   onTrade,
+  changePeriod,
 }: {
   asset: ReferenceAsset;
   favorites: Set<string>;
   onToggleFavorite: (pair: string) => void;
   onTrade: (pair: string) => void;
+  changePeriod: ChangePeriod;
 }) {
   const { t } = useLanguage();
   // The single gate on the Trade action. `tradable` alone is not enough:
@@ -342,7 +414,7 @@ function CatalogueRow({
   const starred = pair !== null && favorites.has(pair);
 
   const values = referenceValues(asset);
-  const change = values.change;
+  const change = changePeriod === '7d' ? values.change7d : changePeriod === '30d' ? values.change30d : values.change;
   const changeText = changePct(change);
 
   return (
