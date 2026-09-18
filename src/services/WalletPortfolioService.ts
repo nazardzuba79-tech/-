@@ -308,6 +308,11 @@ export class WalletPortfolioService {
    * invent a loss. Each account therefore counts the flows of its own book
    * and no others.
    *
+   * A flow is removed from the first stored snapshot at or after the flow,
+   * because that is the first observation that can contain it. Grouping by
+   * UTC date is insufficient: the once-daily snapshot may have been taken
+   * before a later same-day admin top-up.
+   *
    * Flows are valued at today's price for the asset, which is exact for the
    * stablecoins most deposits arrive in and an approximation otherwise —
    * this deployment stores no historical price series to value them at the
@@ -348,14 +353,39 @@ export class WalletPortfolioService {
     ]);
     const prices = flowAssets.size > 0 ? await this.pricesFor([...flowAssets]) : new Map();
 
-    const flowByDay = new Map<string, number>();
+    // A flow belongs to the FIRST SNAPSHOT THAT CAN ACTUALLY CONTAIN IT,
+    // not blindly to the same UTC calendar date.
+    //
+    // The Wallet records at most one snapshot per UTC day, at the first
+    // visit. An admin top-up can happen later that same day. In that case
+    // today's already-recorded value does NOT contain the top-up; tomorrow's
+    // value does. Subtracting it from today's snapshot would flatten the
+    // wrong observation and let tomorrow's jump appear as profit.
+    //
+    // Assign every flow to the first observation at-or-after its timestamp.
+    // A flow newer than the last stored snapshot is intentionally ignored
+    // for now: no stored equity point contains it yet. On the next request,
+    // once a later snapshot exists, the same immutable flow is assigned to
+    // that observation and removed from performance exactly once.
+    const flowBySnapshot = new Array<number>(snapshots.length).fill(0);
+    const firstSnapshotAtOrAfter = (at: Date): number => {
+      const target = at.getTime();
+      let lo = 0, hi = snapshots.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if (snapshots[mid].createdAt.getTime() >= target) hi = mid;
+        else lo = mid + 1;
+      }
+      return lo;
+    };
     const addFlow = (at: Date, asset: string, amount: unknown, sign: 1 | -1) => {
       const price = prices.get(asset.toUpperCase()) ?? null;
       if (price === null) return;
       const usd = new BigNumber(String(amount)).times(price).toNumber();
       if (!Number.isFinite(usd)) return;
-      const key = utcDayKey(at);
-      flowByDay.set(key, (flowByDay.get(key) ?? 0) + sign * usd);
+      const snapshotIndex = firstSnapshotAtOrAfter(at);
+      if (snapshotIndex >= snapshots.length) return;
+      flowBySnapshot[snapshotIndex] += sign * usd;
     };
     for (const d of realFlows.deposits) addFlow(d.createdAt, d.asset, d.amount, 1);
     for (const w of realFlows.withdrawals) addFlow(w.createdAt, w.asset, w.amount, -1);
@@ -363,12 +393,12 @@ export class WalletPortfolioService {
     // separate direction — so both go in with the same sign.
     for (const a of countedAdjustments) addFlow(a.at, a.asset, a.delta, 1);
 
-    const days: RawEquityDay[] = snapshots.map((s) => {
+    const days: RawEquityDay[] = snapshots.map((s, index) => {
       const date = utcDayKey(s.createdAt);
       return {
         date,
         totalValueUsd: Number(s.totalValueUsd.toString()),
-        netFlowUsd: flowByDay.get(date) ?? 0,
+        netFlowUsd: flowBySnapshot[index],
       };
     });
 
