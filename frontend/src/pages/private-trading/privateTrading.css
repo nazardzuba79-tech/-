@@ -81,7 +81,7 @@
 .private-trading-terminal{
   --private-border:#24262c;
   --private-muted:#858a94;
-  --private-gold:#f2a900;
+  --private-gold:#f5a524;
   background:#0d0e12;
   color:#f3f4f6;
 }
@@ -104,7 +104,7 @@
 .private-market-sidebar{background:#111216}
 .private-market-sidebar h2{height:44px;box-sizing:border-box;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #25272d;font-size:12px;font-weight:600;color:#d7d9de}
 .private-trading-terminal.private-trading-terminal.private-trading-terminal .private-market-sidebar .pairs-list .pair-row{height:32px;min-height:32px;background:#111216;border-bottom-color:#1c1e23;padding-inline:7px}
-.private-trading-terminal.private-trading-terminal.private-trading-terminal .private-market-sidebar .pairs-list .pair-row:hover{background:#17191f}
+.private-trading-terminal.private-trading-terminal.private-trading-terminal .private-market-sidebar .pairs-list .pair-row:hover{background:#12161c}
 .private-chart-stack{background:#0f1014}
 .private-instrument{min-height:56px;padding:8px 14px;gap:28px;background:#111216;border-bottom-color:#25272d}
 .private-instrument strong{font-size:16px;font-weight:650;color:#f5f6f7}
@@ -116,22 +116,22 @@
 .private-order-ticket form{gap:11px}
 .private-segments{margin-bottom:9px;gap:0;border-bottom:1px solid #25272d}
 .private-segments button{min-height:35px;font-size:11px;color:#8f949e;border-bottom-width:2px}
-.private-segments button[aria-selected=true],.private-segments button[aria-pressed=true]{background:transparent;color:#f5f6f7;border-color:#f2a900}
-.private-segments.sides{gap:8px;border:0}.private-segments.sides button{border:1px solid #30333a;border-radius:4px;background:#17191f}
-.private-order-ticket input:not([type=checkbox]),.private-order-ticket select,.private-action-dialog input{min-height:38px;border-color:#30333a;border-radius:4px;background:#17191f;color:#f0f1f3;padding:8px 9px}
+.private-segments button[aria-selected=true],.private-segments button[aria-pressed=true]{background:transparent;color:#f5f6f7;border-color:#f5a524}
+.private-segments.sides{gap:8px;border:0}.private-segments.sides button{border:1px solid #30333a;border-radius:4px;background:#12161c}
+.private-order-ticket input:not([type=checkbox]),.private-order-ticket select,.private-action-dialog input{min-height:38px;border-color:#30333a;border-radius:4px;background:#12161c;color:#f0f1f3;padding:8px 9px}
 .private-wallet{padding:8px 0 11px;margin-bottom:10px;border-bottom-color:#25272d}
 .private-submit{min-height:42px;border-radius:4px;font-size:12px}
 .private-bottom-panel{background:#111216}
 .private-bottom-tabs{min-height:39px;gap:22px;padding:0 12px;border-bottom-color:#25272d;background:#111216}
 .private-bottom-tabs button{font-size:11px;padding:8px 0;color:#8a8f99}
-.private-bottom-tabs button[aria-selected=true]{color:#f3f4f6;border-bottom-color:#f2a900}
+.private-bottom-tabs button[aria-selected=true]{color:#f3f4f6;border-bottom-color:#f5a524}
 .private-table-scroll th{height:34px;box-sizing:border-box;padding:7px 10px;background:#111216;border-bottom-color:#25272d;color:#747a84;font-size:9px;text-transform:none}
 .private-table-scroll td{padding:9px 10px;border-bottom-color:#1f2127;background:#0f1014}
-.private-table-scroll tr:hover td{background:#14161b}
-.private-table-scroll button{border-color:#30333a;background:#17191f;border-radius:3px;color:#c9ccd2}
+.private-table-scroll tr:hover td{background:#12161c}
+.private-table-scroll button{border-color:#30333a;background:#12161c;border-radius:3px;color:#c9ccd2}
 .private-table-scroll .private-icon-button{color:#f2b23f;background:transparent;border-color:transparent}
 .private-chart-trade-detail{background:#111216;border-top-color:#25272d;color:#9da2ab}
-.private-chart-trade-detail button{background:#17191f;border-color:#30333a;color:#e7c47b;border-radius:3px}
+.private-chart-trade-detail button{background:#12161c;border-color:#30333a;color:#e7c47b;border-radius:3px}
 @media(max-width:1450px) and (min-width:1081px){
   .private-terminal-grid{grid-template-columns:168px minmax(430px,1fr)238px 304px;grid-template-rows:minmax(400px,1fr)242px}
   .private-mode-bar{gap:12px}
