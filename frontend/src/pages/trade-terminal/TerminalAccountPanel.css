@@ -60,12 +60,6 @@
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-columns {
   font-size:11px; font-weight:500; color:#9cabb9;
 }
-.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(20,160,115,.30);
-}
-.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(200,64,74,.30);
-}
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong { font-size:19px; }
 
 /* The ticket uses the same readable scale instead of falling back to 11px
@@ -247,4 +241,36 @@
    with the last price above it. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .ticker-item .value.change {
   font-size:12px;
+}
+
+/* ---------------------------------------------------------------------------
+   Order-book calm, against the owner's Binance reference.
+
+   DEPTH BARS. They were drawn at 30% alpha, which on this surface reads as a
+   solid block of colour and makes every size change a visible flash. The
+   reference draws the same cumulative staircase at roughly a tenth, dark
+   enough that the numbers stay the loudest thing in the row. Same geometry,
+   same anchor, same data — only the weight changes.
+
+   The transform transition is kept, and shortened. It exists so a bar that
+   grows does not teleport; at 260ms on a book publishing every 300ms almost
+   every bar was permanently mid-animation, so the ladder never sat still.
+   140ms lands each bar well before the next publish. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
+  background:rgba(20,160,115,.13);
+  transition:transform 140ms linear;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
+  background:rgba(200,64,74,.13);
+}
+
+/* CENTRE PRICE. The number sits in its own slot and the direction arrow in a
+   fixed-width one beside it, so a flip from up to down cannot move a digit.
+   Tabular figures already stop the number changing width as it changes
+   value; this stops the arrow doing it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center strong {
+  display:inline-flex; align-items:baseline; gap:4px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-center .rb-arrow {
+  display:inline-block; width:0.72em; text-align:center; font-size:0.8em; font-weight:600;
 }
