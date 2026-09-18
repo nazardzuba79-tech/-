@@ -30,6 +30,14 @@ const FIXTURE_SYMBOLS=['BTCUSDT','ETHUSDT','SOLUSDT'];
    from the market-data path, so the figure moves when the price moves. */
 const PREVIEW_WALLET_BTC='2';
 let symbols=FIXTURE_SYMBOLS;
+/* FIXTURE MARKET CONTROL — fixture mode only, for the browser QA harness.
+   A test moves the fixture price or shapes the next books it serves, so a
+   resting order can be filled by an observed book, a gap can be staged,
+   and a click's confirmation can be timed against a market the test owns.
+   Never mounted outside NATIVE_PREVIEW_FIXTURE=1; it exists only on the
+   isolated review server, which holds no real account and no real data. */
+const marketOverride={price:null,bids:null,asks:null};
+function fixtureQuotePrice(){return marketOverride.price!==null?Number(marketOverride.price):Number(fixtureCandle(Math.floor(now()/60000)*60000).close);}
 function fixtureCandle(t,interval=60000){const x=Math.sin(t/3600000)*.02,y=Math.sin((t+interval)/3600000)*.02;const o=50000*(1+x),c=50000*(1+y);return{timestamp:t,open:o.toFixed(1),high:(Math.max(o,c)+150).toFixed(1),low:(Math.min(o,c)-150).toFixed(1),close:c.toFixed(1),volume:'125'};}
 const sizes={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000,'1d':86400000,'1w':604800000};
 function fixtureInstrument(symbol){return{provider:'bybit',symbol,baseAsset:symbol.replace(/USDT$/,''),quoteAsset:'USDT',settleAsset:'USDT',contractType:'LinearPerpetual',status:'Trading',launchTime:1577836800000,fetchedAt:now(),fundingIntervalMinutes:480,filters:{tickSize:'0.1',minPrice:'0.1',maxPrice:'10000000',qtyStep:'0.001',minOrderQty:'0.001',maxOrderQty:'1000',maxMarketOrderQty:'1000',minNotionalValue:'5'},leverage:{min:'1',max:'100',step:'1'},riskTiers:[{riskLimitValue:'1000000000',maintenanceMarginRate:'0.005',initialMarginRate:'0.01',maintenanceDeduction:'0',maxLeverage:'100'}],parameterModel:'CURRENT_INSTRUMENT_PARAMETERS',parameterVersion:'QA_ONLY_NOT_MARKET'};}
@@ -38,7 +46,7 @@ async function transport(url,options={}){
   const[kind,symbol]=m.slice(1),q=u.searchParams;let result;
   if(fixture){
     if(kind==='instruments')result=fixtureInstrument(symbol);
-    else if(kind==='quote'){const price=Number(fixtureCandle(Math.floor(now()/60000)*60000).close);result={provider:'bybit',symbol,bids:[{price:(price-.1).toFixed(1),quantity:'10'}],asks:[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:price.toFixed(1),lastPrice:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
+    else if(kind==='quote'){const price=fixtureQuotePrice();result={provider:'bybit',symbol,bids:marketOverride.bids??[{price:(price-.1).toFixed(1),quantity:'10'}],asks:marketOverride.asks??[{price:(price+.1).toFixed(1),quantity:'10'}],markPrice:price.toFixed(1),lastPrice:price.toFixed(1),fundingRate:'0.0001',nextFundingTime:(Math.floor(now()/28800000)+1)*28800000,providerTimestamp:now(),bookGeneratedAt:now(),markProviderTimestamp:now(),fetchedAt:now()};}
     else if(kind==='chart-candles'){const step=sizes[q.get('interval')],end=Number(q.get('endTime')||now()),limit=Number(q.get('limit')||520);const last=Math.floor(end/step)*step;result={source:'BYBIT_LINEAR',symbol,interval:q.get('interval'),candles:Array.from({length:limit},(_,i)=>fixtureCandle(last-(limit-i-1)*step,step)),fetchedAt:now(),providerTimestamp:now()};}
     else if(kind==='candles'){const start=Number(q.get('startTime')),end=Number(q.get('endTime')),step=Number(q.get('intervalMinutes'))*60000;result={symbol,candles:Array.from({length:Math.floor((end-start)/step)+1},(_,i)=>fixtureCandle(start+i*step,step)),fetchedAt:now()};}
     else result={symbol,events:[],fetchedAt:now()};
@@ -86,6 +94,12 @@ const copyPerformance=new CopyPerformanceService(performanceDb,()=>new Date());
 const service=new NativeDemoService(new ReviewRepository(),market);
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res)).catch(next);
 app.get('/health',(_req,res)=>res.json({status:'ok',kind:'isolated-native-demo-preview',fixtureMarket:fixture,commit:process.env.RENDER_GIT_COMMIT??null}));
+if(fixture)app.post('/__fixture/market',(req,res)=>{
+  const b=req.body??{};
+  if('price'in b)marketOverride.price=b.price===null?null:String(b.price);
+  for(const side of ['bids','asks'])if(side in b)marketOverride[side]=b[side]===null?null:b[side].map(l=>({price:String(l.price),quantity:String(l.quantity)}));
+  res.json({ok:true,override:marketOverride});
+});
 app.use('/api/v1/private-trading',(req,res,next)=>{const token=req.headers.authorization?.replace(/^Bearer /,''),s=session(token);if(!s)return res.status(401).json({error:'Preview session required'});res.locals.actor={userId:s.userId,sessionId:token,expiresAt:now()+3600000};next();});
 // The preview mirrors the production contract: this session is a
 // simulation-only account, so the terminal renders with no mode switch.

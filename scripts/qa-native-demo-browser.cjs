@@ -416,6 +416,100 @@ async function closeDuringRefresh(width) {
     return { refreshesHeld: held, closedDuringRefresh: true };
   } finally { await s.context.close(); }
 }
+/**
+ * AN ORDINARY TRADE, IN THE BROWSER, TIMED FROM THE CLICK.
+ *
+ * MARKET open 2 → reduce-only MARKET 0.5 at a higher price → add 1 at a
+ * lower price → an exact reduce-only LIMIT close of 1 from the row, which
+ * rests until the fixture market trades through it and the next refresh
+ * observes a book with depth at its price → full MARKET close from the row.
+ * Cross and Isolated. Every step records two times: the click to the
+ * server's authoritative answer (`serverMs`) and the click to the DOM
+ * showing that answer (`confirmedMs`). The fixture market is moved through
+ * the review server's fixture-only override, so every fill price is known
+ * in advance and asserted against the journal. Engine compute is NOT what
+ * is measured here; this is the terminal.
+ */
+async function tradeCycle(width, bucket) {
+  const s = await session(width), p = s.page;
+  const timings = [];
+  const fixture = async body => { const r = await s.context.request.post(origin + '/__fixture/market', { data: body }); assert(r.ok(), 'Fixture market override refused'); };
+  // The row of this bucket's LONG whose size cell reads `size` — parsed as a number, whatever the locale prints.
+  const sized = size => ({ waitFor: (options = {}) => p.waitForFunction(([wantBucket, wantSize]) => {
+    const rows = [...document.querySelectorAll('.futures-positions-table tbody tr')];
+    return rows.some(tr => {
+      const contract = tr.querySelector('.futures-position-contract');
+      if (!contract || !contract.querySelector('.text-buy')) return false;
+      const small = contract.querySelector('small')?.textContent || '';
+      if (!(wantBucket === 'ISOLATED' ? /Изол|Isol/i : /Кросс|Cross/i).test(small)) return false;
+      const cell = [...tr.querySelectorAll('td.mono')].find(td => /BTC/.test(td.textContent || ''));
+      return !!cell && Number((cell.textContent || '').replace(/[^\d.]/g, '')) === Number(wantSize);
+    });
+  }, [bucket, size], { timeout: options.timeout ?? 25000 }) });
+  const timed = async (step, kind, click, confirmed) => {
+    const t0 = Date.now();
+    const r = await command(s, kind, click);
+    const serverMs = Date.now() - t0;
+    await confirmed(r.state);
+    const confirmedMs = Date.now() - t0;
+    timings.push({ step, command: kind, serverMs, confirmedMs, revision: r.state.revision });
+    return r.state;
+  };
+  const lastFill = (state, kind) => [...state.events].reverse().find(e => e.kind === kind && e.pricing === 'OBSERVED_BOOK');
+  try {
+    await fixture({ price: 50000, bids: null, asks: null });
+    await ready(s); if (bucket === 'ISOLATED') await marginMode(p, 'ISOLATED');
+    await p.locator('#futures-tab-positions').click();
+    // 1. MARKET open 2 at the ask 50 000.1.
+    const submit = async side => { await button(p, side).waitFor({ state: 'visible' }); await p.waitForFunction(x => { const b = document.querySelector(`.fo-submitPair .${x === 'LONG' ? 'buy' : 'sell'}`); return b && !b.disabled; }, side); await button(p, side).click(); };
+    let state = await timed('open-market-2', 'OPEN', async () => { await family(p, 'MARKET'); await qty(p).fill('2'); await submit('LONG'); }, () => sized('2').waitFor());
+    const position = state.positions.find(x => x.side === 'LONG' && x.marginMode === bucket); assert(position, `${bucket} long was not opened`);
+    assert.equal(position.quantity, '2'); assert.equal(lastFill(state, 'OPEN').price, '50000.1');
+    // 2. Reduce-only MARKET 0.5 at 52 000 (bid 51 999.9): the position is 1.5, the entry is unchanged.
+    await fixture({ price: 52000 });
+    state = await timed('partial-close-0.5', 'OPEN', async () => { await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('0.5'); await submit('SHORT'); }, () => sized('1.5').waitFor());
+    assert.equal(state.positions.find(x => x.id === position.id).quantity, '1.5'); assert.equal(lastFill(state, 'CLOSE').price, '51999.9');
+    assert.equal(state.positions.find(x => x.id === position.id).entryPrice, '50000.1');
+    // 3. Add 1 at 48 000 (ask 48 000.1): one position of 2.5 at the averaged entry 49 200.1.
+    await fixture({ price: 48000 });
+    state = await timed('add-market-1', 'OPEN', async () => { await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').uncheck(); await qty(p).fill('1'); await submit('LONG'); }, () => sized('2.5').waitFor());
+    assert.equal(state.positions.filter(x => x.side === 'LONG' && x.marginMode === bucket).length, 1);
+    assert.equal(state.positions.find(x => x.id === position.id).entryPrice, '49200.1'); assert.equal(lastFill(state, 'OPEN').price, '48000.1');
+    // 4. An exact reduce-only LIMIT close of 1 at 55 000 from the row: rests, names the position, reserves nothing.
+    await p.locator('#futures-tab-positions').click();
+    state = await timed('limit-close-1-rests', 'OPEN', async () => {
+      const row = bucketRow(p, 'LONG', bucket); await row.waitFor();
+      await row.locator('.futures-position-close').nth(0).click();
+      await p.waitForFunction(() => document.querySelector('.fo-reduceOnlyRow input')?.checked === true);
+      await price(p).fill('55000'); await qty(p).fill('1'); await submit('SHORT');
+    }, async () => { await p.locator('#futures-tab-orders').click(); await p.locator('#futures-bottom-content').getByRole('button', { name: 'Отменить', exact: true }).first().waitFor(); await p.locator('#futures-tab-positions').click(); });
+    const resting = state.orders.find(o => o.reduceOnly && o.status === 'OPEN' && o.positionId === position.id);
+    assert(resting, 'The limit close did not rest on the named position'); assert.equal(resting.reserved, '0'); assert.equal(resting.price, '55000');
+    assert.equal(state.positions.find(x => x.id === position.id).quantity, '2.5');
+    // 5. The market trades through 55 000 and the next refresh observes 10 on the bid at 55 999.9: the order fills at
+    //    its OWN price, as maker, for 1. Server-confirmed on the refresh; the row shows 1.5 on the terminal's next refresh.
+    await fixture({ price: 56000 });
+    const movedAt = Date.now();
+    const filled = await api(s.context, s.token, 'commands', { kind: 'REFRESH', idempotencyKey: `qa-cycle-refresh-${bucket}-${width}-${movedAt}` });
+    const limitFillServerMs = Date.now() - movedAt;
+    const done = filled.orders.find(o => o.id === resting.id);
+    assert.equal(done.status, 'FILLED', 'The resting limit did not fill from the observed book'); assert.equal(done.averagePrice, '55000');
+    assert.equal(filled.positions.find(x => x.id === position.id).quantity, '1.5');
+    const limitFill = filled.events.find(e => e.orderId === resting.id && e.kind === 'CLOSE'); assert.equal(limitFill.price, '55000'); assert.equal(limitFill.pricing, 'OBSERVED_BOOK');
+    timings.push({ step: 'limit-close-fills-on-observed-book', command: 'REFRESH', serverMs: limitFillServerMs, confirmedMs: null, revision: filled.revision, note: 'server-confirmed by the refresh that observed the book; the row repaints on the terminal\'s next refresh or command' });
+    // 6. Full MARKET close from the row at 56 000 (bid 55 999.9): the row disappears.
+    state = await timed('close-market-rest', 'CLOSE', async () => { const row = bucketRow(p, 'LONG', bucket); await row.waitFor(); await row.locator('.futures-position-close').nth(1).click(); }, () => bucketRow(p, 'LONG', bucket).waitFor({ state: 'detached' }));
+    assert(!state.positions.some(x => x.id === position.id), 'The position is still open after the market close');
+    assert.equal(lastFill(state, 'CLOSE').price, '55999.9'); assert.equal(lastFill(state, 'CLOSE').quantity, '1.5');
+    assert(!state.orders.some(o => o.status === 'OPEN' || o.status === 'PARTIALLY_FILLED'), 'An order is still resting after the cycle');
+    const closed = state.history.find(x => x.id === position.id);
+    assert.equal(closed.status, 'CLOSED'); assert.equal(closed.realizedGross, '16999.5');
+    assert(state.ledger.reconciled, 'Ledger did not reconcile after the cycle');
+    const panel = await p.locator('.futures-positions-panel').innerText();
+    assert(!/не подтверждена|не закрыта|не отменён/i.test(panel), 'The terminal reported a refusal during the cycle');
+    return { bucket, positionId: position.id, timings, realizedGross: closed.realizedGross, fees: Number(closed.openingFees) + Number(closed.closingFees), account: { equity: state.account.equity, available: state.account.available } };
+  } finally { try { await fixture({ price: null, bids: null, asks: null }); } catch {} await s.context.close(); }
+}
 async function chartFlow(width) {
   const s = await session(width), p = s.page;
   try {
@@ -522,6 +616,8 @@ async function main() {
     await check(`reduce-only-limit-contract-${width}`, () => limitCloseContract(width));
     await check(`limit-close-targets-the-named-position-${width}`, () => limitCloseTargeting(width));
     await check(`close-during-refresh-is-sent-${width}`, () => closeDuringRefresh(width));
+    await check(`trade-cycle-cross-${width}`, () => tradeCycle(width, 'CROSS'));
+    await check(`trade-cycle-isolated-${width}`, () => tradeCycle(width, 'ISOLATED'));
     await check(`chart-tool-selection-${width}`, () => chartFlow(width));
   }
   assert.deepEqual(report.errors, [], 'Browser runtime errors');

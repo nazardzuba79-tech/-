@@ -65,8 +65,27 @@ Per command at 30 contracts: **60 venue calls → 2** (a click) and
 **60 → 0** (a refresh). The collector's `market_data_busy` cap of 8 parallel
 venue calls is no longer reached by one account's refresh.
 
+## Resting live LIMIT orders (block R5)
+
+A resting live limit order fills only from an observed book (a journaled
+`BOOK` instruction), never from the replayed OHLC path. The cost per
+command: for each contract with a resting live order whose price the
+FRESH last (frame or quote) has crossed, one checked book — the command's
+own fresh quote when it is the same contract, the 2-second snapshot when
+it is younger than the window, else one `freshQuote` (2 venue calls). No
+crossing, no fetch. The `BOOK` is journaled only when it filled something,
+cut to the levels the resting orders could take. A contract that carries
+only a resting order (no position) is valued too, so an order-only
+account is observed at all.
+
 ## Freshness — what did not change
 
+- A quote or frame mark that was fresh when it answered but has left the
+  window by the time every source of a valuation has answered is fetched
+  once more, fresh, then left unpriced (block R8); an execution book that
+  expired during the command's waits is decided again once on a fresh
+  book, then refused (`quote_stale`). Replayed journal entries keep their
+  event-time checks.
 - `applyLatestQuotes` still refuses a mark older than 5 s (`LATEST_MARK_STALE`)
   and one from the future; a frame mark is applied only if younger than
   4 s at that moment (`NATIVE_FRAME_MARK_MAX_AGE_MS`), else the contract is

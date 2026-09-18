@@ -41,7 +41,10 @@ the simulation differs, it says so.
    then liquidates a position whose post is gone.
 6. **A leverage change** re-posts `quantity × entry / leverage` and moves
    the difference to or from the wallet; it never moves the entry, the
-   quantity or realized P&L.
+   quantity or realized P&L. The LEVERAGE event records the new
+   `leverage` and the signed `marginDelta`, so the journal itself says
+   what the wallet contributed and took back, and the oracle's bound on an
+   isolated loss counts it (block R7).
 
 ## What the simulation's insurance model is
 
