@@ -27,6 +27,11 @@ export async function pendingNativeWallet(service: NativeDemoService, actor: Own
     account,
     ledger: accountLedger(empty),
     collateral: valuation,
-    rows: unifiedWalletRows(account, valuation),
+    // Before initialization there is nowhere to persist a native-account
+    // preference yet, so the switches are deliberately read-only.
+    rows: unifiedWalletRows(account, valuation).map(row => ({ ...row, collateralToggleable: false })),
+    assetsValue: valuation.priced,
+    assetsComplete: valuation.unpriced.length === 0,
+    unpricedAssets: valuation.unpriced,
   };
 }
