@@ -83,9 +83,19 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 50725.9,
+        "price": 49000.6,
         "quantity": 5,
-        "positionValue": "253629.50"
+        "positionValue": "245003.00"
+      }
+    },
+    {
+      "name": "market-calculator-instant-1440",
+      "passed": true,
+      "evidence": {
+        "elapsedMs": 18,
+        "valueText": "Стоимость позиции\n245003.00 USDT",
+        "costText": "Маржа\n24769.80 USDT",
+        "markPollsHeld": 2
       }
     },
     {
@@ -172,9 +182,9 @@
       "name": "account-summary-1440",
       "passed": true,
       "evidence": {
-        "balance": "10 101 171.81 USDT",
-        "available": "10 050 166.91 USDT",
-        "im": "0.50%",
+        "balance": "10 097 730.70 USDT",
+        "available": "10 048 460.59 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -206,7 +216,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t355081.30 USDT\t50726\t50725.9\t—\t\n-0.70\n-0.00%\n\t-195.30\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152177.70 USDT\t50725.8\t50725.9\t—\t\n-0.30\n-0.00%\n\t-83.70\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t343004.20 USDT\t49000.7\t49000.6\t—\t\n-0.70\n-0.00%\n\t-188.65\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t147001.80 USDT\t49000.5\t49000.6\t—\t\n-0.30\n-0.00%\n\t-80.85\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 1159,
           "full": 1228,
@@ -231,7 +241,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-c4919337-514c-4895-a2f9-372a23fc3b98",
+        "href": "/futures?nativeCard=native%3A9%3Anative-e8240401-e0a4-4a07-9fa7-d20d61ef6c2b",
         "exported": "1080x1215"
       }
     },
@@ -264,6 +274,154 @@
     {
       "name": "reduce-only-limit-contract-1440",
       "passed": true
+    },
+    {
+      "name": "limit-close-targets-the-named-position-1440",
+      "passed": true,
+      "evidence": {
+        "crossId": "native-7f322169-adc1-4a37-925d-9ad009f49f37",
+        "isolatedId": "native-18c80d31-aa8e-45cd-a868-b2f056778ca0",
+        "closes": [
+          {
+            "bucket": "ISOLATED",
+            "positionId": "native-18c80d31-aa8e-45cd-a868-b2f056778ca0",
+            "price": "98001.2",
+            "orderId": "native-a0377c24-8a97-4d1f-b60f-6e71124783fa"
+          },
+          {
+            "bucket": "CROSS",
+            "positionId": "native-7f322169-adc1-4a37-925d-9ad009f49f37",
+            "price": "98001.2",
+            "orderId": "native-30397da5-525b-4fda-8ce7-a555daee6ed7"
+          }
+        ]
+      }
+    },
+    {
+      "name": "close-during-refresh-is-sent-1440",
+      "passed": true,
+      "evidence": {
+        "refreshesHeld": 2,
+        "closedDuringRefresh": true
+      }
+    },
+    {
+      "name": "trade-cycle-cross-1440",
+      "passed": true,
+      "evidence": {
+        "bucket": "CROSS",
+        "positionId": "native-aea04ea9-1db9-418a-aa5a-3bce4b788ca2",
+        "timings": [
+          {
+            "step": "open-market-2",
+            "command": "OPEN",
+            "serverMs": 280,
+            "confirmedMs": 285,
+            "revision": 2
+          },
+          {
+            "step": "partial-close-0.5",
+            "command": "CLOSE",
+            "serverMs": 273,
+            "confirmedMs": 277,
+            "revision": 3
+          },
+          {
+            "step": "add-market-1",
+            "command": "OPEN",
+            "serverMs": 278,
+            "confirmedMs": 283,
+            "revision": 4
+          },
+          {
+            "step": "limit-close-1-rests",
+            "command": "OPEN",
+            "serverMs": 258,
+            "confirmedMs": 407,
+            "revision": 5
+          },
+          {
+            "step": "limit-close-fills-on-observed-book",
+            "command": "REFRESH",
+            "serverMs": 12,
+            "confirmedMs": 28586,
+            "revision": 6,
+            "note": "not a click: server-confirmed by the first refresh after the quote-reuse window (serverMs is that refresh's round trip); confirmedMs is the market move to the row showing 1.5, which waits for the terminal's own 30-second refresh"
+          },
+          {
+            "step": "close-market-rest",
+            "command": "CLOSE",
+            "serverMs": 165,
+            "confirmedMs": 170,
+            "revision": 7
+          }
+        ],
+        "realizedGross": "16999.5",
+        "fees": 152.900055,
+        "account": {
+          "equity": "10128846.599945",
+          "available": "10128846.599945"
+        }
+      }
+    },
+    {
+      "name": "trade-cycle-isolated-1440",
+      "passed": true,
+      "evidence": {
+        "bucket": "ISOLATED",
+        "positionId": "native-7d4ba36e-8b8b-4c3a-9ebc-e09c46b63d29",
+        "timings": [
+          {
+            "step": "open-market-2",
+            "command": "OPEN",
+            "serverMs": 260,
+            "confirmedMs": 266,
+            "revision": 2
+          },
+          {
+            "step": "partial-close-0.5",
+            "command": "CLOSE",
+            "serverMs": 279,
+            "confirmedMs": 283,
+            "revision": 3
+          },
+          {
+            "step": "add-market-1",
+            "command": "OPEN",
+            "serverMs": 283,
+            "confirmedMs": 287,
+            "revision": 4
+          },
+          {
+            "step": "limit-close-1-rests",
+            "command": "OPEN",
+            "serverMs": 273,
+            "confirmedMs": 406,
+            "revision": 5
+          },
+          {
+            "step": "limit-close-fills-on-observed-book",
+            "command": "REFRESH",
+            "serverMs": 11,
+            "confirmedMs": 28508,
+            "revision": 6,
+            "note": "not a click: server-confirmed by the first refresh after the quote-reuse window (serverMs is that refresh's round trip); confirmedMs is the market move to the row showing 1.5, which waits for the terminal's own 30-second refresh"
+          },
+          {
+            "step": "close-market-rest",
+            "command": "CLOSE",
+            "serverMs": 164,
+            "confirmedMs": 170,
+            "revision": 7
+          }
+        ],
+        "realizedGross": "16999.5",
+        "fees": 152.900055,
+        "account": {
+          "equity": "10128846.599945",
+          "available": "10128846.599945"
+        }
+      }
     },
     {
       "name": "chart-tool-selection-1440",
@@ -349,9 +507,19 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 50725.9,
+        "price": 49000,
         "quantity": 5,
-        "positionValue": "253629.50"
+        "positionValue": "245000.00"
+      }
+    },
+    {
+      "name": "market-calculator-instant-390",
+      "passed": true,
+      "evidence": {
+        "elapsedMs": 13,
+        "valueText": "Стоимость позиции\n245000.00 USDT",
+        "costText": "Маржа\n24769.50 USDT",
+        "markPollsHeld": 2
       }
     },
     {
@@ -438,9 +606,9 @@
       "name": "account-summary-390",
       "passed": true,
       "evidence": {
-        "balance": "10 101 171.81 USDT",
-        "available": "10 050 166.91 USDT",
-        "im": "0.50%",
+        "balance": "10 097 729.50 USDT",
+        "available": "10 048 460.00 USDT",
+        "im": "0.49%",
         "mm": "0.03%",
         "modeRowInCard": false,
         "units": [
@@ -472,7 +640,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t355081.30 USDT\t50726\t50725.9\t—\t\n-0.70\n-0.00%\n\t-195.30\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152177.70 USDT\t50725.8\t50725.9\t—\t\n-0.30\n-0.00%\n\t-83.70\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t343000.00 USDT\t49000.1\t49000.0\t—\t\n-0.70\n-0.00%\n\t-188.65\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t147000.00 USDT\t48999.9\t49000.0\t—\t\n-0.30\n-0.00%\n\t-80.85\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 388,
           "full": 1224,
@@ -497,7 +665,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-3fc90064-2971-4a54-bd03-b2bfb3d4760d",
+        "href": "/futures?nativeCard=native%3A9%3Anative-e8ed1a4a-36e9-4f75-9072-8950095f95c2",
         "exported": "1080x1215"
       }
     },
@@ -530,6 +698,154 @@
     {
       "name": "reduce-only-limit-contract-390",
       "passed": true
+    },
+    {
+      "name": "limit-close-targets-the-named-position-390",
+      "passed": true,
+      "evidence": {
+        "crossId": "native-9be20c22-2cab-4a74-928d-a8fcae2d3237",
+        "isolatedId": "native-2611b33c-4baf-4be1-afbb-3dafb624daf0",
+        "closes": [
+          {
+            "bucket": "ISOLATED",
+            "positionId": "native-2611b33c-4baf-4be1-afbb-3dafb624daf0",
+            "price": "98000.0",
+            "orderId": "native-61febb5c-a09f-4d03-8b49-d7abc3b5477c"
+          },
+          {
+            "bucket": "CROSS",
+            "positionId": "native-9be20c22-2cab-4a74-928d-a8fcae2d3237",
+            "price": "98000.0",
+            "orderId": "native-2052b99d-8c22-43fa-a714-f1ded4f0bd14"
+          }
+        ]
+      }
+    },
+    {
+      "name": "close-during-refresh-is-sent-390",
+      "passed": true,
+      "evidence": {
+        "refreshesHeld": 2,
+        "closedDuringRefresh": true
+      }
+    },
+    {
+      "name": "trade-cycle-cross-390",
+      "passed": true,
+      "evidence": {
+        "bucket": "CROSS",
+        "positionId": "native-55a56017-e7ca-42b6-9045-46c4dc212158",
+        "timings": [
+          {
+            "step": "open-market-2",
+            "command": "OPEN",
+            "serverMs": 306,
+            "confirmedMs": 310,
+            "revision": 2
+          },
+          {
+            "step": "partial-close-0.5",
+            "command": "CLOSE",
+            "serverMs": 299,
+            "confirmedMs": 303,
+            "revision": 3
+          },
+          {
+            "step": "add-market-1",
+            "command": "OPEN",
+            "serverMs": 257,
+            "confirmedMs": 262,
+            "revision": 4
+          },
+          {
+            "step": "limit-close-1-rests",
+            "command": "OPEN",
+            "serverMs": 254,
+            "confirmedMs": 380,
+            "revision": 5
+          },
+          {
+            "step": "limit-close-fills-on-observed-book",
+            "command": "REFRESH",
+            "serverMs": 10,
+            "confirmedMs": 28553,
+            "revision": 6,
+            "note": "not a click: server-confirmed by the first refresh after the quote-reuse window (serverMs is that refresh's round trip); confirmedMs is the market move to the row showing 1.5, which waits for the terminal's own 30-second refresh"
+          },
+          {
+            "step": "close-market-rest",
+            "command": "CLOSE",
+            "serverMs": 145,
+            "confirmedMs": 150,
+            "revision": 7
+          }
+        ],
+        "realizedGross": "16999.5",
+        "fees": 152.900055,
+        "account": {
+          "equity": "10128846.599945",
+          "available": "10128846.599945"
+        }
+      }
+    },
+    {
+      "name": "trade-cycle-isolated-390",
+      "passed": true,
+      "evidence": {
+        "bucket": "ISOLATED",
+        "positionId": "native-30c7157c-8137-4976-98ba-333dd6f65b97",
+        "timings": [
+          {
+            "step": "open-market-2",
+            "command": "OPEN",
+            "serverMs": 308,
+            "confirmedMs": 312,
+            "revision": 2
+          },
+          {
+            "step": "partial-close-0.5",
+            "command": "CLOSE",
+            "serverMs": 301,
+            "confirmedMs": 305,
+            "revision": 3
+          },
+          {
+            "step": "add-market-1",
+            "command": "OPEN",
+            "serverMs": 239,
+            "confirmedMs": 242,
+            "revision": 4
+          },
+          {
+            "step": "limit-close-1-rests",
+            "command": "OPEN",
+            "serverMs": 260,
+            "confirmedMs": 377,
+            "revision": 5
+          },
+          {
+            "step": "limit-close-fills-on-observed-book",
+            "command": "REFRESH",
+            "serverMs": 11,
+            "confirmedMs": 28472,
+            "revision": 6,
+            "note": "not a click: server-confirmed by the first refresh after the quote-reuse window (serverMs is that refresh's round trip); confirmedMs is the market move to the row showing 1.5, which waits for the terminal's own 30-second refresh"
+          },
+          {
+            "step": "close-market-rest",
+            "command": "CLOSE",
+            "serverMs": 149,
+            "confirmedMs": 154,
+            "revision": 7
+          }
+        ],
+        "realizedGross": "16999.5",
+        "fees": 152.900055,
+        "account": {
+          "equity": "10128846.599945",
+          "available": "10128846.599945"
+        }
+      }
     },
     {
       "name": "chart-tool-selection-390",
