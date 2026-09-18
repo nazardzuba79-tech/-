@@ -153,16 +153,18 @@ describe.each(['CROSS', 'ISOLATED'] as const)('an ordinary %s trade: open, parti
     check(s, v);
   });
 
-  test('4. an exact reduce-only LIMIT CLOSE of 1 rests with no reserve, then fills at its own price as maker', async () => {
+  test('4. an exact reduce-only LIMIT CLOSE of 1 rests with no reserve, then fills at its own price as maker from an observed book', async () => {
     const p = repo.row!.snapshot.positions[0];
     const rested = await run({ kind: 'OPEN', symbol: 'BTCUSDT', side: 'SHORT', type: 'LIMIT', price: '55000', quantity: '1', leverage: '10', reduceOnly: true, positionId: p.id, ...(isolated ? { marginType: 'ISOLATED' as const } : {}), idempotencyKey: key() });
     const order = rested.v.orders.find(o => o.reduceOnly && o.status === 'OPEN')!;
     expect(order).toMatchObject({ positionId: p.id, reserved: '0', price: '55000', quantity: '1' });
     check(rested.s, rested.v);                                   // nothing moved: no fill, no reserve
-    // The market trades through the limit; the next closed minute fills it as maker at the LIMIT price.
+    // The market trades through the limit and the next command observes a book with 10 on the bid at 55 999.9:
+    // the resting order fills from that book, at its own price as maker — inside the same minute, no bar involved.
     market.price = '56000';
-    clock.t = Math.floor(clock.t / M) * M + 2 * M;
+    const historyBefore = market.served.length;
     const { v, s } = await run({ kind: 'REFRESH', idempotencyKey: key() });
+    expect(market.served.length).toBeGreaterThan(historyBefore);
     expect(v.orders.find(o => o.id === order.id)).toMatchObject({ status: 'FILLED', averagePrice: '55000' });
     expect(lastFill(s)).toMatchObject({ price: '55000', quantity: '1', orderId: order.id });
     const gross = bn(1).times(bn('55000').minus(book.entry)), f = fee('1', '55000', MAKER);
@@ -193,10 +195,13 @@ describe.each(['CROSS', 'ISOLATED'] as const)('an ordinary %s trade: open, parti
     expect(fx(book.gross)).toBe('16999.5'); expect(fx(book.fees)).toBe('152.900055');
     expect(v.ledger!.totals).toMatchObject({ realizedPnl: '16999.5', fees: '152.900055', shortfallCovered: '0' });
     expect(s.events.filter(e => e.kind === 'SHORTFALL')).toHaveLength(0);
-    // Every fill in the journal is a level the fixture actually served, at the time it served it.
+    // Every fill in the journal is a level the fixture actually served, at the time it served it — except the
+    // resting LIMIT, which fills at its OWN price when the served bid is at or better than it (a maker's price).
+    const resting = s.orders.find(o => o.reduceOnly && o.type === 'LIMIT')!;
     for (const e of s.events.filter(e => e.pricing === 'OBSERVED_BOOK')) {
       const served = market.served.find(b => b.time === e.time)!;
-      expect([served.bid, served.ask]).toContain(e.price);
+      if (e.orderId === resting.id) { expect(e.price).toBe(resting.price); expect(bn(served.bid).gte(resting.price!)).toBe(true); }
+      else expect([served.bid, served.ask]).toContain(e.price);
     }
   });
 });

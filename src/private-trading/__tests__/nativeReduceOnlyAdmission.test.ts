@@ -159,7 +159,7 @@ describe('service: a position carried up the ladder is closable with an exact re
     const order = v.orders.find(o => o.reduceOnly && o.status === 'OPEN')!;
     expect(order).toMatchObject({ positionId: p.id, reserved: '0', price: '3100' });
     expect(v.account!.orderReserve).toBe('0');
-    market.price = '3200'; clock.t = Math.floor(clock.t / M) * M + 2 * M;
+    market.price = '3200'; clock.t += NATIVE_QUOTE_REUSE_MS + 1;      // the observed book has 100 on the bid at 3 199.9
     v = await service.command(actor, { kind: 'REFRESH', idempotencyKey: key() });
     expect(v.orders.find(o => o.id === order.id)).toMatchObject({ status: 'FILLED', averagePrice: '3100' });
     expect(v.positions).toHaveLength(0);

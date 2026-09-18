@@ -1,10 +1,10 @@
 import { randomUUID } from 'crypto';
 import BigNumber from 'bignumber.js';
-import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, assertPrivateFreshQuote } from '../marketData';
+import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMarketDataError, PRIVATE_QUOTE_MAX_AGE_MS, assertPrivateFreshQuote } from '../marketData';
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
-import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
+import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeRestingDemoOrders, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
@@ -159,33 +159,44 @@ export class NativeDemoService {
     const priced=holdings.filter(h=>h.asset!==settle);
     // One frame read for every asset that has no quote of this command's own; a mark is all a valuation needs.
     const frame=await this.frameMarks(priced.map(h=>`${h.asset}${settle}`).filter(symbol=>!(options.reuse&&this.youngQuote(symbol))));
-    const prices=await Promise.all(priced
-      .map(async(h):Promise<CollateralPrice>=>{
-        try{
-          const mark=frame.get(`${h.asset}${settle}`);
-          if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)return{asset:h.asset,price:mark.markPrice,source:'BYBIT_LINEAR_MARK',asOf:mark.markProviderTimestamp};
-          // Inside a command the valuation may share the command's own fresh
-          // quotes (the same observation, once). A plain read always prices
-          // the wallet now: a reader asking for the account gets the market
-          // as it is, not a two-second-old snapshot. EITHER WAY the quote is
-          // checked for freshness at the moment it is used — a snapshot that
-          // was 4.5 s old when it was taken is 6 s old 1.5 s later, and the
-          // service's own reuse window says nothing about the provider's
-          // timestamp — and a quote that fails is fetched again, then
-          // refused as unpriced rather than used. A new order is admitted
-          // only on a valuation that passed this check; what the terminal
-          // keeps on screen from an earlier reading is its own display.
-          const symbol=`${h.asset}${settle}`;
-          const quote=options.reuse?await this.valuationQuote(symbol):assertPrivateFreshQuote(await this.quote(symbol,true),symbol,this.now());
-          // Mark, not last: the collateral is valued the way the positions
-          // it backs are valued, so the two cannot drift apart.
-          return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
-        }catch{
-          // A contract that does not exist and a provider that is down are
-          // the same answer here: we do not know what this is worth.
-          return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
-        }
-      }));
+    const priceOne=async(h:{asset:string},fresh:boolean):Promise<CollateralPrice>=>{
+      try{
+        const mark=fresh?undefined:frame.get(`${h.asset}${settle}`);
+        if(mark&&this.now()-mark.markProviderTimestamp<=NATIVE_FRAME_MARK_MAX_AGE_MS)return{asset:h.asset,price:mark.markPrice,source:'BYBIT_LINEAR_MARK',asOf:mark.markProviderTimestamp};
+        // Inside a command the valuation may share the command's own fresh
+        // quotes (the same observation, once). A plain read always prices
+        // the wallet now: a reader asking for the account gets the market
+        // as it is, not a two-second-old snapshot. EITHER WAY the quote is
+        // checked for freshness at the moment it is used — a snapshot that
+        // was 4.5 s old when it was taken is 6 s old 1.5 s later, and the
+        // service's own reuse window says nothing about the provider's
+        // timestamp — and a quote that fails is fetched again, then
+        // refused as unpriced rather than used. A new order is admitted
+        // only on a valuation that passed this check; what the terminal
+        // keeps on screen from an earlier reading is its own display.
+        const symbol=`${h.asset}${settle}`;
+        const quote=options.reuse&&!fresh?await this.valuationQuote(symbol):assertPrivateFreshQuote(await this.quote(symbol,true),symbol,this.now());
+        // Mark, not last: the collateral is valued the way the positions
+        // it backs are valued, so the two cannot drift apart.
+        return{asset:h.asset,price:quote.markPrice,source:'BYBIT_LINEAR_MARK',asOf:quote.markProviderTimestamp??quote.fetchedAt};
+      }catch{
+        // A contract that does not exist and a provider that is down are
+        // the same answer here: we do not know what this is worth.
+        return{asset:h.asset,price:null,source:'BYBIT_LINEAR_MARK',asOf:null};
+      }
+    };
+    let prices=await Promise.all(priced.map(h=>priceOne(h,false)));
+    // WHAT WAS FRESH WHEN IT ANSWERED MAY NOT BE FRESH NOW. The assets are
+    // priced in parallel; one source answering late makes every other
+    // price older by the wait. A price that has left the freshness window
+    // by the time all sources have answered is fetched ONCE more, fresh;
+    // one that is still outside it afterwards is unpriced. Bounded: one
+    // extra round, never a loop, and nothing here holds a database lock.
+    const expired=(p:CollateralPrice)=>p.price!==null&&p.asOf!==null&&this.now()-p.asOf>PRIVATE_QUOTE_MAX_AGE_MS;
+    if(prices.some(expired)){
+      prices=await Promise.all(prices.map((p,i)=>expired(p)?priceOne(priced[i],true):Promise.resolve(p)));
+      prices=prices.map(p=>expired(p)?{asset:p.asset,price:null,source:p.source,asOf:null}:p);
+    }
     return valueCollateral(holdings,prices,settle);
   }
   /**
@@ -354,6 +365,8 @@ export class NativeDemoService {
   }
   /** Revision conflicts that were retried inside a command (observability for the audit; never a user-facing figure). */
   conflicts=0;
+  /** Live decisions made again because the execution book had expired during the command's waits (audit only). */
+  expiredDecisions=0;
   private async attempt(actor:OwnerSession,request:NativeCommand,hash:string,options:{persist?:boolean}){
     {
       // Re-checked INSIDE the lane: a double click queues the same key twice,
@@ -367,25 +380,44 @@ export class NativeDemoService {
       const seq=nextInstructionSeq(row.commands);
       // The instruction first: its row-based checks (a reduce order that
       // names a position that does not fit) refuse before any upstream read.
-      const instruction=await this.instruction(row,request,seq);
-      // ONE valuation per command, taken BEFORE the decision and journaled
-      // with it: admission, the fill margin check, the liquidation verdict
-      // and the account in the response all read this same figure.
-      const valuation=await this.collateral(actor,{reuse:true}),collateral=externalCollateral(valuation);
-      if(instruction)instruction.collateral=collateral;
-      // A shallow copy: the row is this command's own read and the replay
-      // never mutates an instruction. Cloning the whole journal here was the
-      // single largest share of a command's compute.
-      const commands=instruction?[...row.commands,instruction]:[...row.commands];
-      if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row,valuation);
-      // Backdated trades re-simulate the scenario from the beginning; everything else continues the
-      // canonical checkpoint, so outcomes already shown are never recomputed away.
-      const incremental=row.checkpoint&&(!instruction||instruction.at>=row.checkpoint.time)?row.checkpoint:null;
-      const result=await this.replay(row,commands,incremental,collateral);
+      let instruction=await this.instruction(row,request,seq);
+      let valuation:CollateralValuation,collateral:ExternalCollateral,commands:NativeInstruction[],result:Awaited<ReturnType<NativeDemoService['replay']>>;
+      // THE DECISION IS TAKEN ON WHAT IS FRESH WHEN IT IS TAKEN. The execution
+      // book was observed before the wallet valuation and the history pass,
+      // either of which can wait on a slow source. If the book has left the
+      // freshness window by the time the command is about to commit, the
+      // decision is made again ONCE on a fresh observation (a new
+      // instruction, a new time); if that one has expired too, the command
+      // is refused rather than committed on an old book. Replayed journal
+      // entries keep their own event time: this check is for the live
+      // decision only.
+      for(let round=0;;round++){
+        // ONE valuation per command, taken BEFORE the decision and journaled
+        // with it: admission, the fill margin check, the liquidation verdict
+        // and the account in the response all read this same figure.
+        valuation=await this.collateral(actor,{reuse:true});collateral=externalCollateral(valuation);
+        if(instruction)instruction.collateral=collateral;
+        // A shallow copy: the row is this command's own read and the replay
+        // never mutates an instruction. Cloning the whole journal here was the
+        // single largest share of a command's compute.
+        commands=instruction?[...row.commands,instruction]:[...row.commands];
+        if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row,valuation);
+        // Backdated trades re-simulate the scenario from the beginning; everything else continues the
+        // canonical checkpoint, so outcomes already shown are never recomputed away.
+        const incremental=row.checkpoint&&(!instruction||instruction.at>=row.checkpoint.time)?row.checkpoint:null;
+        result=await this.replay(row,commands,incremental,collateral);
+        if(!this.expiredAtDecision(instruction))break;
+        if(round>=1)throw new PrivateMarketDataError('quote_stale');
+        this.expiredDecisions+=1;
+        instruction=await this.instruction(row,request,seq);
+      }
+      let seqNext=instruction?seq+1:seq;
       if(result.observed){
         // Same effect as the quotes just applied to the projected snapshot; never undone by a later replay.
-        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:instruction?seq+1:seq,collateral,marks:result.observed});
+        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:seqNext++,collateral,marks:result.observed});
       }
+      // The books that filled resting live orders: journaled so a later replay fills exactly the same.
+      for(const b of result.books)commands.push({id:`book-${randomUUID()}`,kind:'BOOK',at:b.at,seq:seqNext++,symbol:b.symbol,book:b.book});
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
       const changed=!!instruction||!!result.observed||outcome(result.snapshot)!==outcome(row.snapshot);
       const stale=!row.checkpoint||result.checkpoint.time-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
@@ -394,7 +426,7 @@ export class NativeDemoService {
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }
-  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral):Promise<ReplayResult>{
+  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral):Promise<ReplayResult&{books:{symbol:string;book:NativeBook;at:number}[]}>{
     const load=(r:BarRequest)=>this.bars(r),asOf=this.now();
     let result:ReplayResult;
     try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,checkpoint},load);}
@@ -405,7 +437,11 @@ export class NativeDemoService {
     }
     // Quotes are fetched only after the (possibly long) history pass, then checked for freshness again.
     const latest:Record<string,{mark:string;last:string;time:number}>={};
-    const symbols=[...new Set(result.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol))].sort();
+    // Resting LIVE limit orders need the market observed as much as positions
+    // do: an account that holds only an open order has nothing else to value,
+    // and whether that order fills is decided on an observed book, below.
+    const resting=result.snapshot.orders.filter(o=>o.type==='LIMIT'&&!o.historical&&!!o.price&&(o.status==='OPEN'||o.status==='PARTIALLY_FILLED'));
+    const symbols=[...new Set([...result.snapshot.positions.filter(p=>p.status==='OPEN').map(p=>p.symbol),...resting.map(o=>o.symbol)])].sort();
     // The contracts this command did not execute on need a mark, not a book: one read of the collector's
     // validated live frame serves them all. A contract the frame does not hold as current — or whose mark
     // would no longer pass the freshness check by the time it is applied — is quoted itself, below.
@@ -422,10 +458,39 @@ export class NativeDemoService {
       const quotes=await Promise.all(quoted.slice(i,i+NATIVE_QUOTE_BATCH).map(symbol=>this.valuationQuote(symbol)));
       for(const checked of quotes)latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};
     }
+    // A RESTING LIVE LIMIT ORDER FILLS ON AN OBSERVED BOOK, INSIDE THE MINUTE.
+    // The fresh last crossing the order's price is the reason to LOOK; the
+    // book is what decides: the opposite side's depth at prices no worse
+    // than the order's, for as much as it has, at the order's own price as
+    // maker. The book is this command's own checked observation (the
+    // executed contract's fresh quote when it is the same contract), cut to
+    // what the resting orders could take, and journaled as a BOOK
+    // instruction only if it filled something. The consumption ledger is
+    // keyed by the provider snapshot, so a refresh that meets the same
+    // snapshot again fills nothing more. Nothing here waits on a bar.
+    const crossed=new Set<string>();
+    for(const o of resting){const q=latest[o.symbol];if(q&&(o.side==='LONG'?new BigNumber(q.last).lte(o.price!):new BigNumber(q.last).gte(o.price!)))crossed.add(o.symbol);}
+    const candidates:{symbol:string;book:NativeBook}[]=[];
+    for(const symbol of [...crossed].sort()){
+      const q=await this.valuationQuote(symbol);
+      const longs=resting.filter(o=>o.symbol===symbol&&o.side==='LONG'),shorts=resting.filter(o=>o.symbol===symbol&&o.side==='SHORT');
+      const sum=(os:typeof resting)=>os.reduce((v,o)=>v.plus(o.remaining),new BigNumber(0)).toFixed();
+      const asks=longs.length?truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},'BUY',sum(longs),BigNumber.maximum(...longs.map(o=>o.price!)).toFixed()).asks:[];
+      const bids=shorts.length?truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},'SELL',sum(shorts),BigNumber.minimum(...shorts.map(o=>o.price!)).toFixed()).bids:[];
+      candidates.push({symbol,book:{bids,asks,timestamp:q.bookGeneratedAt}});
+    }
     const at=Math.max(this.now(),result.snapshot.time);
     // The live risk pass values the account on THIS command's valuation.
     setDemoCollateral(result.snapshot,collateral);
-    return{...result,observed:applyLatestQuotes(result.snapshot,latest,at)};
+    const observed=applyLatestQuotes(result.snapshot,latest,at);
+    const books:{symbol:string;book:NativeBook;at:number}[]=[];
+    for(const c of candidates)if(executeRestingDemoOrders(result.snapshot,c.symbol,c.book,at)>0)books.push({...c,at});
+    return{...result,observed,books};
+  }
+  /** A live execution book that has left the freshness window by the time the command is about to commit. */
+  private expiredAtDecision(instruction:NativeInstruction|undefined){
+    if(!instruction||(instruction.kind!=='OPEN'&&instruction.kind!=='CLOSE')||!instruction.book)return false;
+    return this.now()-instruction.book.timestamp>PRIVATE_QUOTE_MAX_AGE_MS;
   }
   private async instruction(row:NativeAccount,request:NativeCommand,seq:number):Promise<NativeInstruction|undefined>{
     const id=`native-${randomUUID()}`;

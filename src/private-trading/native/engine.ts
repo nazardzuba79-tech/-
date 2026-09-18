@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
-import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
+import { validateLeverageRange, amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
 import type { ContractRules, ModelProfile, RiskTier, Side } from '../types';
 
 const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_HALF_EVEN, EXPONENTIAL_AT: 100 });
@@ -102,6 +102,14 @@ export interface DemoEvent {
    * marker per `actionId`, not one per level. Absent on older journals.
    */
   actionId?: string;
+  /** LEVERAGE only: the leverage the position was set to. Absent on events written before it was recorded. */
+  leverage?: string;
+  /**
+   * LEVERAGE only: the margin MOVED into (+) or out of (−) an isolated post by
+   * the change, so the journal itself says what the wallet contributed and
+   * took back. '0' for a cross position. Absent on older events.
+   */
+  marginDelta?: string;
 }
 export interface BookConsumption {
   /** Legacy field kept for states persisted before the identity change; unused. */
@@ -583,26 +591,40 @@ export function protectDemoPosition(s:DemoState,id:string,change:Partial<DemoPro
   validateProtection(s,p,next,next.triggerBy==='MARK'?p.markPrice:p.lastPrice);p.protection=next;s.time=time;
   emit(s,{kind:'PROTECTION',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
 }
+/**
+ * A LEVERAGE CHANGE IS NOT AN ORDER. It is validated as what it is: the
+ * leverage itself (range and step of the contract), the risk tier of the
+ * bucket the position is in NOW, at the current mark — not a fictitious
+ * market order for the whole accumulated position, which the generic order
+ * validator would refuse the moment the position exceeded
+ * `maxMarketOrderQty` or landed in a tier at its entry notional — then the
+ * margin the account can actually put behind it, and for an isolated
+ * position that the re-sized post still keeps it solvent.
+ */
 export function setDemoLeverage(s:DemoState,id:string,leverage:string,time:number) {
   requireTime(s,time);const p=getPosition(s,id),i=instrument(s,p.symbol);
-  validateContractOrder({rules:i.rules,profile:i.profile,quantity:p.quantity,price:p.entryPrice,leverage,market:true});
+  validateLeverageRange(i.rules,leverage);
+  const mark=s.marks[p.symbol]?.mark??p.markPrice;
+  const tier=selectRiskTier(out(exposure(s,p,mark)),i.profile);
+  if(tier.maxLeverage&&n(leverage).gt(tier.maxLeverage))throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
   if(s.orders.some(o=>active(o)&&o.positionId===id))throw new DemoEngineError('CANCEL_ORDERS_BEFORE_LEVERAGE');
   const before=p.leverage,postedBefore=p.isolatedMargin,walletBefore=s.walletBalance;p.leverage=leverage;
   // An isolated position's posted margin IS its leverage. Re-sizing it to
   // the new requirement moves the difference to or from the wallet, so
   // lowering leverage funds the position and raising it releases cash —
   // rather than leaving a post that no longer means anything.
+  let marginDelta=new D(0);
   if(p.marginType==='ISOLATED'){
     const required=n(p.quantity).times(p.entryPrice).div(leverage);
-    const delta=required.minus(p.isolatedMargin);
-    p.isolatedMargin=out(required);s.walletBalance=out(n(s.walletBalance).minus(delta));
+    marginDelta=required.minus(p.isolatedMargin);
+    p.isolatedMargin=out(required);s.walletBalance=out(n(s.walletBalance).minus(marginDelta));
   }
   const a=demoAccount(s);
   const short=n(a.equity).lt(n(a.usedMargin).plus(a.orderReserve))||n(s.walletBalance).lt(0)||isolatedLiquidatable(s,p);
   if(short){p.leverage=before;p.isolatedMargin=postedBefore;s.walletBalance=walletBefore;throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');}
   // Leverage changes margin requirements, NEVER quantity, entry or absolute P&L.
   p.roiBasis=out(n(p.quantity).times(p.entryPrice).div(leverage));s.time=time;
-  emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND'});
+  emit(s,{kind:'LEVERAGE',time,positionId:id,orderId:null,symbol:p.symbol,quantity:'0',price:null,fee:'0',cashflow:'0',pricing:'COMMAND',leverage,marginDelta:out(marginDelta)});
 }
 export function markDemoAccount(s:DemoState,marks:Record<string,{mark:string;last:string}>,time:number) {
   requireTime(s,time);for(const[symbol,v]of Object.entries(marks)){positive(v.mark);positive(v.last);s.marks[symbol]={...v,time};}
@@ -651,6 +673,42 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
     const profit=tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp));
     if(stop||profit){const q=p.protection.quantity??p.quantity;settleClose(s,p,q,p.lastPrice,time,stop?'STOP_LOSS':'TAKE_PROFIT',pricing,null);p.protection=noProtection();}
   }s.time=time;
+}
+/**
+ * RESTING LIVE LIMIT ORDERS AGAINST AN OBSERVED BOOK.
+ *
+ * A resting order is filled by what the market actually brings to it: the
+ * depth of the opposite side at prices no worse than its own, in the book
+ * the service just observed — for as much as that depth allows, and not one
+ * contract more. The fill is booked at the order's OWN price as maker (the
+ * order was resting; the incoming volume pays its price). The consumption
+ * ledger is the same one market orders use, keyed by the provider snapshot,
+ * so the same snapshot presented again brings nothing. A price that merely
+ * crossed the limit proves no volume; only the book does. Historical
+ * orders (`o.historical`) never take this path — they fill on the declared
+ * OHLC path, which is the explicit historical model.
+ */
+export function executeRestingDemoOrders(s:DemoState,symbol:string,book:ObservedBook,time:number){
+  requireTime(s,time);let fills=0;
+  for(const o of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o))){
+    const direction=o.side==='LONG'?'BUY':'SELL';
+    const consumed=consumeObservedBook(s,symbol,book,direction,o.remaining,time,o.price!);
+    for(const f of consumed.fills){
+      try{fillDemoOrder(s,o.id,f.quantity,o.price!,time,'OBSERVED_BOOK',true);consumed.record(f);fills++;}
+      catch(e){if(e instanceof DemoEngineError&&['INSUFFICIENT_FILL_MARGIN','POSITION_NOT_OPEN'].includes(e.code)){cancelDemoOrder(s,o.id,time);break;}throw e;}
+    }
+    consumed.prune();
+  }
+  if(fills){
+    // A fill books the position's mark at the fill price (the path's
+    // convention); this command already observed the market, and the
+    // positions carry THAT observation, not the price a resting order
+    // happened to trade at. Then the risk pass, on the observed mark.
+    const observed=s.marks[symbol];
+    if(observed)markDemoAccount(s,{[symbol]:{mark:observed.mark,last:observed.last}},time);
+    evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
+  }
+  s.time=time;return fills;
 }
 /** Observable depth is consumed only inside this private state; NEVER written to any public book. */
 export function executeDemoBook(s:DemoState,id:string,book:ObservedBook,time:number){

@@ -107,6 +107,13 @@ export function nativeInvariants(s: DemoState, valuation?: CollateralValuation):
     // settlement (gross − fee + released post) leaves uncovered, and none
     // otherwise.
     let qty = new D(0), entry = new D(0), post = new D(0);
+    // Everything the wallet put behind an isolated position, and took back, is
+    // in the journal: the post of each OPEN fill and the signed margin delta of
+    // each LEVERAGE change (recorded on the event). A LEVERAGE event written
+    // before the delta was recorded falls back to re-posting at the leverage
+    // of the next OPEN order, or the position's current one — the best the
+    // old journal allows, never a guess for a journal that has the data.
+    let netPosted = new D(0);
     const leverageAfter = (index: number) => {
       const next = events.slice(index + 1).find(e => e.kind === 'OPEN');
       const order = next ? s.orders.find(o => o.id === next.orderId) : undefined;
@@ -119,7 +126,7 @@ export function nativeInvariants(s: DemoState, valuation?: CollateralValuation):
         entry = qty.plus(q).isZero() ? entry : qty.times(entry).plus(q.times(price)).div(qty.plus(q));
         qty = qty.plus(q);
         const order = s.orders.find(o => o.id === e.orderId);
-        if (p.marginType === 'ISOLATED') post = post.plus(q.times(price).div(order ? order.leverage : p.leverage));
+        if (p.marginType === 'ISOLATED') { const posted = q.times(price).div(order ? order.leverage : p.leverage); post = post.plus(posted); netPosted = netPosted.plus(posted); }
       } else if ((REDUCING as readonly string[]).includes(e.kind)) {
         const q = n(e.quantity);
         if (q.gt(qty.plus('0.000000001'))) { fail('CLOSE_EXCEEDS_FOLD', `${p.id} ${e.id}`); break; }
@@ -140,7 +147,10 @@ export function nativeInvariants(s: DemoState, valuation?: CollateralValuation):
       } else if (e.kind === 'FUNDING') {
         if (p.marginType === 'ISOLATED') post = post.plus(e.cashflow);
       } else if (e.kind === 'LEVERAGE') {
-        if (p.marginType === 'ISOLATED') post = qty.times(entry).div(leverageAfter(i));
+        if (p.marginType === 'ISOLATED') {
+          const delta = e.marginDelta !== undefined ? n(e.marginDelta) : (e.leverage !== undefined ? qty.times(entry).div(e.leverage) : qty.times(entry).div(leverageAfter(i))).minus(post);
+          post = post.plus(delta); netPosted = netPosted.plus(delta);
+        }
       }
       if (post.lt('-0.000000001')) fail('POST_FOLD_NEGATIVE', `${p.id} after ${e.id}: ${post}`);
     }
@@ -154,12 +164,12 @@ export function nativeInvariants(s: DemoState, valuation?: CollateralValuation):
     const basis = p.status === 'OPEN' ? p.roiBasis : p.closedRoiBasis;
     if ((view.roiPercent === null) !== n(basis).lte(0)) fail('ROI_NULL_RULE', p.id);
     if (!eq(view.realizedPnl, realized.minus(openingFees).minus(closingFees).plus(fundingNet))) fail('REALIZED_VIEW', p.id);
-    // What the shared wallet paid for an isolated position is what it posted (and the opening fees), never more:
-    // realized loss, closing fees and funding beyond the post are exactly the SHORTFALL lines.
+    // What the shared wallet paid for an isolated position is what it posted — at the opens AND through every
+    // leverage change, less what leverage changes gave back — and the opening fees, never more: realized loss,
+    // closing fees and funding beyond that are exactly the SHORTFALL lines.
     if (p.marginType === 'ISOLATED' && p.status !== 'OPEN') {
-      const postedTotal = opens.reduce((v, e) => { const o = s.orders.find(x => x.id === e.orderId); return v.plus(n(e.quantity).times(e.price!).div(o ? o.leverage : p.leverage)); }, new D(0));
       const walletEffect = realized.minus(closingFees).plus(fundingNet).plus(shortfallCovered);
-      if (walletEffect.lt(postedTotal.negated().minus('0.000001'))) fail('ISOLATED_LOSS_BEYOND_POST', `${p.id} ${walletEffect} < -${postedTotal}`);
+      if (walletEffect.lt(netPosted.negated().minus('0.000001'))) fail('ISOLATED_LOSS_BEYOND_POST', `${p.id} ${walletEffect} < -${netPosted}`);
     }
   }
 

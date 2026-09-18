@@ -170,17 +170,25 @@ describe('cross account risk',()=>{
 });
 
 describe('orders, protection and funding through the replay',()=>{
-  test('a live limit partially fills from observed depth, rests, then completes as maker on the path',()=>{
+  test('a live limit partially fills from observed depth, rests through a path that crossed it, and completes as maker only from an observed BOOK',()=>{
     const i:NativeInstruction={id:'l1',at:T+5_000,kind:'OPEN',order:{id:'l1',symbol:'BTCUSDT',side:'LONG',type:'LIMIT',price:'50000',quantity:'2',leverage:'10'},instrument:inst(),mark:'50010',last:'50010',
       book:{timestamp:T+4_000,bids:[],asks:[{price:'50000',quantity:'0.5'},{price:'50010',quantity:'9'}]}};
     const bars={BTCUSDT:[bar(T,'50010','50005','50020','50010'),bar(T+M,'50010','49990','50010','50000'),...flat(T+2*M,T+3*M,'50000')]};
     const early=replayNativeDemo({deposit:'1000000',instructions:[i],bars:{BTCUSDT:bars.BTCUSDT.slice(0,1)},asOf:T+M});
     expect(early.orders[0]).toMatchObject({status:'PARTIALLY_FILLED',filled:'0.5',remaining:'1.5'});
-    const s=replayNativeDemo({deposit:'1000000',instructions:[i],bars,asOf:T+3*M});
+    // The path's low of 49 990 crossed the price: a LIVE order does not fill on that — a price is not volume.
+    const rested=replayNativeDemo({deposit:'1000000',instructions:[i],bars,asOf:T+3*M});
+    expect(rested.orders[0]).toMatchObject({status:'PARTIALLY_FILLED',filled:'0.5',remaining:'1.5'});
+    // An observed book with 5 offered at 49 990 completes it, at the order's own price, as maker.
+    const book:NativeInstruction={id:'b1',at:T+2*M+5_000,kind:'BOOK',symbol:'BTCUSDT',book:{timestamp:T+2*M+4_000,bids:[],asks:[{price:'49990',quantity:'5'}]}};
+    const s=replayNativeDemo({deposit:'1000000',instructions:[i,book],bars,asOf:T+3*M});
     expect(s.orders[0]).toMatchObject({status:'FILLED',filled:'2',averagePrice:'50000'});
     expect(s.positions[0]).toMatchObject({quantity:'2',entryPrice:'50000'});
     const fees=s.events.filter(e=>e.kind==='OPEN').map(e=>e.fee);
-    expect(fees).toEqual(['13.75','15']); // 0.5 taker from depth, 1.5 maker on the path
+    expect(fees).toEqual(['13.75','15']); // 0.5 taker from depth, 1.5 maker from the observed book
+    // The same book journaled again brings nothing more (one provider snapshot, one consumption).
+    const again=replayNativeDemo({deposit:'1000000',instructions:[i,book,{...book,id:'b2',at:T+2*M+6_000}],bars,asOf:T+3*M});
+    expect(again.events.filter(e=>e.kind==='OPEN')).toHaveLength(2);
   });
   test('cancel releases the reserve; the cancelled order never fills later',()=>{
     const i:NativeInstruction={id:'l1',at:T,kind:'OPEN',order:{id:'l1',symbol:'BTCUSDT',side:'LONG',type:'LIMIT',price:'49000',quantity:'1',leverage:'10'},instrument:inst(),mark:'50000',last:'50000',book:{timestamp:T,bids:[],asks:[]}};

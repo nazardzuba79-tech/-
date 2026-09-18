@@ -144,3 +144,46 @@ describe('a state persisted before the SHORTFALL line', () => {
     expect(codes(migrated)).toEqual([]);
   });
 });
+
+describe('margin an isolated position received through a leverage change counts (R7)', () => {
+  const noFee = { ...profile, takerFeeRate: '0', makerFeeRate: '0' };
+  function freshNoFee(): DemoState {
+    const s = emptyDemoState('100000', T - M);
+    registerDemoInstrument(s, { rules, profile: noFee });
+    markDemoAccount(s, { BTCUSDT: { mark: '100', last: '100' } }, T - M);
+    return s;
+  }
+  test('1 @ 100 at 10x (post 10) → 5x (post 20) → close @ 85: the loss of 15 is covered by the 20 actually posted — no violation, no shortfall', () => {
+    const s = freshNoFee();
+    const p = open(s, 'LONG', '1', '100', '10', 'ISOLATED');
+    expect(p.isolatedMargin).toBe('10');
+    setDemoLeverage(s, p.id, '5', s.time + 1);
+    expect(p.isolatedMargin).toBe('20');
+    expect(s.events.at(-1)).toMatchObject({ kind: 'LEVERAGE', leverage: '5', marginDelta: '10' });
+    close(s, p.id, '1', '85');
+    expect(p.realizedGross).toBe('-15');
+    expect(s.events.filter(e => e.kind === 'SHORTFALL')).toHaveLength(0);
+    expect(codes(s)).toEqual([]);
+  });
+  test('margin RETURNED by a leverage change counts the other way: 5x back to 10x returns 10, and a loss of 15 then leaves a shortfall of 5 — still no violation', () => {
+    const s = freshNoFee();
+    const p = open(s, 'LONG', '1', '100', '10', 'ISOLATED');
+    setDemoLeverage(s, p.id, '5', s.time + 1);
+    setDemoLeverage(s, p.id, '10', s.time + 1);
+    expect(p.isolatedMargin).toBe('10');
+    close(s, p.id, '1', '85');
+    expect(s.events.filter(e => e.kind === 'SHORTFALL').map(e => e.cashflow)).toEqual(['5']);
+    expect(codes(s)).toEqual([]);
+  });
+  test('a LEVERAGE event written before the delta was recorded still folds (compatibility), and a tampered delta is caught', () => {
+    const s = freshNoFee();
+    const p = open(s, 'LONG', '1', '100', '10', 'ISOLATED');
+    setDemoLeverage(s, p.id, '5', s.time + 1);
+    close(s, p.id, '1', '85');
+    const lever = s.events.find(e => e.kind === 'LEVERAGE')!;
+    delete lever.marginDelta; delete lever.leverage;                       // an old journal: only the position's current leverage tells
+    expect(codes(s)).toEqual([]);
+    lever.leverage = '5'; lever.marginDelta = '3';                         // a journal that lies about what was posted
+    expect(codes(s)).toEqual(expect.arrayContaining(['SHORTFALL_SLICE', 'ISOLATED_LOSS_BEYOND_POST']));
+  });
+});

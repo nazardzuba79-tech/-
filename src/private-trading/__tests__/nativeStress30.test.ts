@@ -57,11 +57,20 @@ const LADDER = [
 const instrument = (symbol: string): PrivateInstrument => ({ provider: 'bybit', symbol, baseAsset: symbol.replace(/USDT$/, ''), quoteAsset: 'USDT', settleAsset: 'USDT', contractType: 'LinearPerpetual', status: 'Trading', launchTime: Date.UTC(2020, 0, 1), fetchedAt: H0, fundingIntervalMinutes: 480,
   filters: { tickSize: '0.1', minPrice: '0.1', maxPrice: '10000000', qtyStep: '0.001', minOrderQty: '0.001', maxOrderQty: '1000', maxMarketOrderQty: '1000', minNotionalValue: '5' }, leverage: { min: '1', max: '100', step: '1' },
   riskTiers: symbol === 'TIERUSDT' ? LADDER : FLAT, parameterModel: 'CURRENT_INSTRUMENT_PARAMETERS', parameterVersion: 'STRESS_FIXTURE' });
+/** Prices with a memory: history answers with the price that was CURRENT at each bar, never today's. */
+class PriceTimeline {
+  private current = new Map<string, string>();
+  private timeline = new Map<string, { at: number; price: string }[]>();
+  constructor(private clock: Clock) {}
+  set(symbol: string, price: string) { this.current.set(symbol, price); (this.timeline.get(symbol) ?? this.timeline.set(symbol, []).get(symbol)!).push({ at: this.clock.now(), price }); return this; }
+  get(symbol: string) { return this.current.get(symbol); }
+  at(symbol: string, time: number) { const marks = this.timeline.get(symbol) ?? []; let price: string | undefined; for (const m of marks) { if (m.at <= time) price = m.price; else break; } return price ?? marks[0]?.price ?? '1000'; }
+}
 class FakeMarket {
-  prices = new Map<string, string>();
+  prices: PriceTimeline;
   depth = new Map<string, { price: string; quantity: string }[]>();
   calls = { instrument: 0, quote: 0, history: 0 };
-  constructor(private clock: Clock) {}
+  constructor(private clock: Clock) { this.prices = new PriceTimeline(clock); }
   price(symbol: string) { return this.prices.get(symbol) ?? '1000'; }
   async instrument(symbol: string) { this.calls.instrument++; return instrument(symbol); }
   async freshQuote(symbol: string): Promise<PrivateFreshQuote> {
@@ -74,8 +83,9 @@ class FakeMarket {
   }
   async history(r: PrivateHistoryRequest) {
     this.calls.history++;
-    const step = (r.intervalMinutes ?? 1) * M, candles = [], p = bn(this.price(r.symbol)).toFixed();
-    for (let t = r.startTime; t < r.endTime; t += step) candles.push({ timestamp: t, open: p, high: p, low: p, close: p });
+    const step = (r.intervalMinutes ?? 1) * M, candles = [];
+    // A bar carries the price that was current when it OPENED; a price set later in the minute is the next command's live quote, not the past.
+    for (let t = r.startTime; t < r.endTime; t += step) { const p = bn(this.prices.at(r.symbol, t)).toFixed(); candles.push({ timestamp: t, open: p, high: p, low: p, close: p }); }
     return { symbol: r.symbol, tradeCandles: candles, markCandles: structuredClone(candles), fundingEvents: [], expectedFundingTimestamps: [], intervalMs: step, complete: true, issues: [], fetchedAt: this.clock.now(), fundingScheduleModel: 'NATIVE_DEMO_FIXED_FUNDING_V1' as const, instrument: instrument(r.symbol) };
   }
   async resolveCandle(): Promise<never> { throw new Error('not used'); }
@@ -184,13 +194,12 @@ describe('30+ live positions through the real service, with every invariant afte
     expect(fills9[0].actionId).toBeDefined();
     market.depth.delete(symbolAt(9));
 
-    // 9. Exact reduce-only LIMIT close on a named position, filled later as maker when the path reaches it.
+    // 9. Exact reduce-only LIMIT close on a named position, filled later as maker from an observed book that crossed it.
     const p5 = openPosition(v, symbolAt(5), 'LONG');
     v = await run('reduce-limit', { kind: 'OPEN', symbol: symbolAt(5), side: 'SHORT', type: 'LIMIT', price: '1400', quantity: '1', leverage: '10', reduceOnly: true, positionId: p5.id, idempotencyKey: key() });
     expect(v.orders.find(o => o.reduceOnly && o.status === 'OPEN')).toMatchObject({ positionId: p5.id, reserved: '0' });
     expect(v.positions.some(p => p.id === p5.id)).toBe(true);
-    market.prices.set(symbolAt(5), '1450');
-    clock.t += 2 * M;
+    market.prices.set(symbolAt(5), '1450');                  // the next observed book has 100 on the bid at 1 449.9
     v = await run('reduce-limit-fills', { kind: 'REFRESH', idempotencyKey: key() });
     expect(v.positions.some(p => p.id === p5.id)).toBe(false);
     expect(v.orders.find(o => o.reduceOnly && o.positionId === p5.id)).toMatchObject({ status: 'FILLED', averagePrice: '1400' });

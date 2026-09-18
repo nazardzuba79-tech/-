@@ -142,6 +142,17 @@ export class ContractRuleError extends Error {
   }
 }
 
+/** The contract's leverage range and step — the part of order validation that a leverage change is also held to. */
+export function validateLeverageRange(rules: ContractRules, leverage: string): void {
+  const l = decimal(leverage, 'leverage', true);
+  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) {
+    throw new ContractRuleError('INVALID_LEVERAGE', {
+      limit: l.gt(rules.maxLeverage) ? 'maxLeverage' : l.lt(rules.minLeverage) ? 'minLeverage' : 'leverageStep',
+      allowed: l.gt(rules.maxLeverage) ? rules.maxLeverage : l.lt(rules.minLeverage) ? rules.minLeverage : rules.leverageStep,
+      actual: leverage,
+    });
+  }
+}
 /**
  * `reduceOnly`: the order only reduces an existing position. Every contract
  * rule still applies to it — quantity and price steps, order size limits,
@@ -173,13 +184,7 @@ export function validateContractOrder(input: { rules: ContractRules; quantity: s
   if (q.times(p).lt(rules.minNotionalValue)) {
     throw new ContractRuleError('INVALID_ORDER_SIZE', { limit: 'minNotionalValue', allowed: rules.minNotionalValue, actual: amount(q.times(p)) });
   }
-  if (l.lt(rules.minLeverage) || l.gt(rules.maxLeverage) || !l.minus(rules.minLeverage).mod(decimal(rules.leverageStep, 'leverage_step', true)).isZero()) {
-    throw new ContractRuleError('INVALID_LEVERAGE', {
-      limit: l.gt(rules.maxLeverage) ? 'maxLeverage' : l.lt(rules.minLeverage) ? 'minLeverage' : 'leverageStep',
-      allowed: l.gt(rules.maxLeverage) ? rules.maxLeverage : l.lt(rules.minLeverage) ? rules.minLeverage : rules.leverageStep,
-      actual: input.leverage,
-    });
-  }
+  validateLeverageRange(rules, input.leverage);
   validateProfile(input.profile);
   if (input.reduceOnly) return;
   const tier = selectRiskTier(amount(q.times(p)), input.profile);

@@ -50,7 +50,10 @@ class FakeMarket{
   historyRequests:PrivateHistoryRequest[]=[];
   constructor(private clock:Clock){}
   async instrument(symbol:string){return instrument(symbol);}
+  /** A source that answers late: the function runs (and may move the clock) before the quote is built. */
+  waitFor:Record<string,()=>Promise<void>|void>={};
   async freshQuote(symbol:string):Promise<PrivateFreshQuote>{
+    if(this.waitFor[symbol])await this.waitFor[symbol]();
     const t=this.clock.now()-(this.ageBySymbol[symbol]??this.quote.age);
     return{provider:'bybit',symbol,bids:[{price:this.quote.bid,quantity:this.quote.depth},{price:new BigNumber(this.quote.bid).minus(1000).toFixed(),quantity:'1000'}],asks:[{price:this.quote.ask,quantity:this.quote.depth},{price:new BigNumber(this.quote.ask).plus(1000).toFixed(),quantity:'1000'}],
       markPrice:this.quote.mark,lastPrice:this.quote.last,fundingRate:'0.0001',nextFundingTime:t+H,providerTimestamp:t,bookGeneratedAt:t,markProviderTimestamp:t,fetchedAt:t};
@@ -293,6 +296,75 @@ describe('freshness is checked at the moment a quote is USED, not only when it w
     const v=await f.service.command(actor,long({symbol:'BTCUSDT',margin:'1000',leverage:'20'}));
     expect(v.positions[0].quantity).toBe('2.4');
     expect(f.asked).toEqual(['BTCUSDT']);                       // the executed contract, fresh; ETH served from the still-fresh snapshot
+  });
+});
+
+describe('freshness after waiting on other sources (R8)',()=>{
+  /** Little cash, two priced assets: ETH answers at once, SOL only after `release` has run. */
+  function twoAssets(){
+    const f=setup();
+    f.repo.initialize=async function(this:typeof f.repo,_a:OwnerSession,key:string){
+      if(this.row)return structuredClone(this.row);const t=f.clock.now();
+      this.row={revision:1,deposit:'1000',commands:[],snapshot:emptyDemoState('1000',t),createdAt:t,source:'DEMO_BALANCE'};
+      this.revisions.set(1,revisionPayload(this.row));this.keys.set(key,{hash:commandHash({kind:'INITIALIZE'}),row:revisionPayload(this.row)});return structuredClone(this.row);
+    } as typeof f.repo.initialize;
+    // SOL is a token amount: without ETH the wallet cannot admit the 5 000 order on 1 000 of cash.
+    f.repo.wallet=[{asset:'ETH',available:'2',locked:'0'},{asset:'SOL',available:'0.001',locked:'0'}];
+    const asked:string[]=[];const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{asked.push(symbol);return answer(symbol);}) as typeof f.market.freshQuote;
+    return{...f,asked};
+  }
+  test('a price that was fresh when it answered but is stale by the time the slow source has answered is fetched ONCE more, and the decision is taken on that',async()=>{
+    const f=twoAssets();await f.service.initialize(actor,'r8-init');
+    // ETH's snapshot is 2.5 s old at fetch; SOL takes 3 s to answer (the clock moves inside its fetch).
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;f.asked.length=0;
+    f.market.ageBySymbol.ETHUSDT=2500;f.market.waitFor.SOLUSDT=()=>{f.clock.t+=3000;};
+    const v=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    // By the time both answered, ETH's first snapshot was 5.5 s old: it was fetched again (fresh at 2.5 s) and the wallet is priced on THAT.
+    expect(f.asked.filter(s=>s==='ETHUSDT')).toHaveLength(2);
+    expect(v.positions).toHaveLength(1);
+    expect(v.account!.collateralComplete).toBe(true);
+  });
+  test('when the second fetch is stale too, the asset is unpriced and no new risk is admitted on it — one extra round, never a loop',async()=>{
+    const f=twoAssets();await f.service.initialize(actor,'r8-init-2');
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;f.asked.length=0;
+    f.market.ageBySymbol.ETHUSDT=2500;
+    f.market.waitFor.SOLUSDT=()=>{f.clock.t+=3000;f.market.ageBySymbol.ETHUSDT=6000;};   // the provider's ETH snapshot has not moved on either
+    await expect(f.service.command(actor,long({margin:'5000',leverage:'20'}))).rejects.toMatchObject({code:'INSUFFICIENT_DEMO_MARGIN'});
+    expect(f.asked.filter(s=>s==='ETHUSDT')).toHaveLength(2);
+    expect(f.repo.row!.revision).toBe(1);
+  });
+  test('an execution book observed before a long wait is not the one the command commits on: the decision is taken again, once, on a fresh book',async()=>{
+    const f=twoAssets();await f.service.initialize(actor,'r8-init-3');
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;f.asked.length=0;
+    // The order's own quote is taken first; then the wallet valuation waits 6 s on SOL. The book is stale at the decision.
+    let waited=0;f.market.waitFor.SOLUSDT=()=>{if(waited++===0)f.clock.t+=6000;};
+    const t0=f.clock.t;
+    const v=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    expect(f.service.expiredDecisions).toBe(1);
+    // BTC was quoted three times: the first decision's book, the projected position's valuation once the first
+    // book had aged out of the reuse window, and the second decision's fresh book. Bounded, and every one checked.
+    expect(f.asked.filter(s=>s==='BTCUSDT')).toHaveLength(3);
+    expect(v.positions).toHaveLength(1);
+    const stored=f.repo.row!.commands.find(c=>c.kind==='OPEN')!;
+    expect(stored.kind==='OPEN'&&stored.book!.timestamp).toBe(t0+6000);          // the book that was fresh when the decision was made
+    expect(stored.at).toBe(t0+6000);
+  });
+  test('if the fresh book has expired again by the second decision, the command is refused, nothing is committed',async()=>{
+    const f=twoAssets();await f.service.initialize(actor,'r8-init-4');
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
+    // An open position, and a closed minute since it: every decision has to replay a history window for it,
+    // and THIS source is the slow one — 6 s per window, every time. The wallet quotes are cached and fast.
+    const first=await f.service.command(actor,long({margin:'500',leverage:'20'}));
+    expect(first.positions).toHaveLength(1);
+    f.clock.t=Math.floor(f.clock.t/M)*M+M+1000;
+    const history=f.market.history.bind(f.market);
+    f.market.history=(async(r:PrivateHistoryRequest)=>{f.clock.t+=6000;return history(r);}) as typeof f.market.history;
+    const revision=f.repo.row!.revision,commands=f.repo.row!.commands.length;
+    await expect(f.service.command(actor,long({margin:'500',leverage:'20'}))).rejects.toMatchObject({code:'quote_stale'});
+    expect(f.service.expiredDecisions).toBe(1);
+    expect(f.repo.row!.revision).toBe(revision);
+    expect(f.repo.row!.commands).toHaveLength(commands);
   });
 });
 
@@ -552,10 +624,12 @@ describe('a reducing order names ONE position, and the name has to fit',()=>{
   test('when the resting reduce fills, exactly the named position shrinks and the other bucket is untouched',async()=>{
     const {f,cross,isolated}=await twoBuckets();
     await f.service.command(actor,reduce(isolated.id));
-    // The path reaches the limit: a SHORT limit at 60 000 fills when last >= 60 000.
+    // The market trades up and the next observed book has 10 on the bid AT 60 000: the SHORT limit at 60 000
+    // fills from that book, at its own price, inside the same minute. (A bid of 59 999.9 would fill nothing:
+    // nobody is paying the order's price, whatever the last printed.)
     const t0=f.clock.t;f.market.price=t=>t<t0?'50000':'60000';
-    f.market.quote={...f.market.quote,mark:'60000',last:'60000',bid:'59999.9',ask:'60000.1'};
-    f.clock.t+=2*M;
+    f.market.quote={...f.market.quote,mark:'60000',last:'60000',bid:'60000',ask:'60000.1'};
+    f.clock.t+=NATIVE_QUOTE_REUSE_MS+1;
     const v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
     expect(v.positions.map(p=>[p.id,p.marginMode,p.quantity])).toEqual([[cross.id,'CROSS','2']]);
     expect(v.history.map(p=>[p.id,p.status])).toEqual([[isolated.id,'CLOSED']]);

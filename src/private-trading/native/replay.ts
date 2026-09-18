@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { amount, decimal } from '../math';
 import type { Candle } from '../types';
 import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
-  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
+  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeRestingDemoOrders, fillDemoOrder, markDemoAccount, setDemoCollateral,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
@@ -56,6 +56,13 @@ export type NativeInstruction = {id:string;at:number;seq?:number;
   | {kind:'LEVERAGE';positionId:string;leverage:string}
   /** A live quote that actually triggered TP/SL/liquidation. Journaled so a later replay can never undo it. */
   | {kind:'OBSERVE';marks:Record<string,{mark:string;last:string}>}
+  /**
+   * An observed book that resting LIVE limit orders of one contract were
+   * filled from, at their own price, for the depth it had (block R5).
+   * Journaled only when it filled something, so a later replay fills the
+   * same quantity from the same snapshot and nothing else.
+   */
+  | {kind:'BOOK';symbol:string;book:NativeBook}
 );
 /** Canonical state after every event strictly before `time`; `digest` pins which instructions it contains. */
 export interface NativeCheckpoint { time:number; digest:string; state:DemoState }
@@ -136,7 +143,11 @@ function segment(s:DemoState,group:Tick[]) {
     }
     const at=Math.max(s.time,Math.round(start+(time-start)*r.toNumber()));
     markDemoAccount(s,values(r),at);evaluateDemoRiskAndProtection(s,at);
-    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&activeOrder(o))){
+    // The assumed path fills only orders that BELONG to it: historical
+    // orders, placed on the declared OHLC model. A live resting order is
+    // filled by an observed book (a BOOK instruction), never by a path that
+    // proves a price and no volume.
+    for(const o of s.orders.filter(o=>points.some(p=>p.to.symbol===o.symbol)&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
       const last=s.marks[o.symbol].last;
       if(o.price&&(o.side==='LONG'?n(last).lte(o.price):n(last).gte(o.price))){
         try {fillDemoOrder(s,o.id,o.remaining,bounded(o.side,last,o.price),at,'OHLC_PATH_MODEL',true);}
@@ -218,6 +229,7 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);
   else if(c.kind==='LEVERAGE')setDemoLeverage(s,c.positionId,c.leverage,time);
   else if(c.kind==='OBSERVE'){markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
+  else if(c.kind==='BOOK')executeRestingDemoOrders(s,c.symbol,c.book,time);
 }
 function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(bars.length>50000)throw new DemoEngineError('HISTORY_LIMIT');
@@ -241,7 +253,7 @@ function processGroups(s:DemoState,ticks:Tick[],commands:NativeInstruction[]){
     }else segment(s,group);
     while(cursor<commands.length&&commands[cursor].at===time)apply(s,commands[cursor++],time);
     if(boundary)for(const t of group){
-      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&activeOrder(o))){
+      for(const o of s.orders.filter(o=>o.symbol===t.symbol&&o.type==='LIMIT'&&o.historical&&activeOrder(o))){
         // Marketable at its own placement moment = taker; resting until this boundary = maker.
         if(o.price&&(o.side==='LONG'?n(t.last).lte(o.price):n(t.last).gte(o.price)))fillDemoOrder(s,o.id,o.remaining,t.last,time,'OHLC_PATH_MODEL',o.createdAt!==time);
       }
