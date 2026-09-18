@@ -19,9 +19,9 @@
   --buy-dim: rgba(0, 214, 143, 0.14);
   --sell: #ff4d6a;
   --sell-dim: rgba(255, 77, 106, 0.14);
-  --accent: #f7a600;
-  --accent-hover: #ffb524;
-  --accent-dim: rgba(247, 166, 0, 0.14);
+  --accent: #f0c964;
+  --accent-hover: #f6d98a;
+  --accent-dim: rgba(240, 201, 100, 0.14);
   --neutral-dim: rgba(163, 173, 186, 0.12);
   /* Text/icon color for anything sitting ON TOP of an accent/buy/sell
      filled surface (CTA buttons, active chips, badges) — was repeated as
@@ -180,7 +180,7 @@ body {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 900px 500px at 8% -5%, rgba(247, 166, 0, 0.10), transparent 60%),
+    radial-gradient(ellipse 900px 500px at 8% -5%, rgba(240,201,100, 0.10), transparent 60%),
     radial-gradient(ellipse 700px 500px at 100% 10%, rgba(0, 214, 143, 0.07), transparent 60%),
     radial-gradient(ellipse 800px 600px at 50% 110%, rgba(91, 141, 239, 0.06), transparent 60%);
 }
@@ -208,11 +208,13 @@ body {
   --h-border: #1c2330;
   --h-text: #e8ecf3;
   --h-text-2: #9aa4b4;
-  --h-text-3: #6a7384;
+  --h-text-3: #7d8794;
   --h-hover: rgba(255, 255, 255, 0.04);
-  --h-accent: #f0c43f;
-  --h-accent-text: #1a1410;
-  --h-accent-hover: #f7d06a;
+  --h-chip: #1f242c;
+  --h-chip-hover: #262c36;
+  --h-accent: #f3ce71;
+  --h-accent-text: #0b0e11;
+  --h-accent-hover: #f6d98a;
   --h-admin: #8b8af6;
   --h-positive: #4cae7e;
   --h-negative: #e0747b;
@@ -312,7 +314,7 @@ body {
 }
 .nav-item.nav-active {
   color: var(--h-text);
-  background: rgba(240, 196, 63, 0.06);
+  background: rgba(240,201,100, 0.06);
 }
 .nav-item.nav-active::after {
   content: '';
@@ -374,7 +376,7 @@ body {
   align-items: center;
   gap: 5px;
   padding: 8px 14px;
-  background: linear-gradient(135deg, var(--h-accent), #e6b830);
+  background: linear-gradient(180deg, var(--h-accent), #f0c964);
   color: var(--h-accent-text);
   border: 0;
   border-radius: 6px;
@@ -382,13 +384,13 @@ body {
   font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(240, 196, 63, 0.18);
+  box-shadow: 0 2px 8px rgba(240, 201, 100, 0.18);
   transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
 .deposit-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(240, 196, 63, 0.28);
-  background: linear-gradient(135deg, var(--h-accent-hover), #e6b830);
+  box-shadow: 0 4px 14px rgba(240, 201, 100, 0.28);
+  background: linear-gradient(180deg, var(--h-accent-hover), #f3ce71);
 }
 .deposit-button:active {
   transform: translateY(1px);
@@ -476,7 +478,7 @@ body {
   place-items: center;
   flex: 0 0 auto;
   color: #0f1419;
-  background: #d9b633;
+  background: #f0c964;
   border-radius: 4px;
 }
 .wallet-balance strong {
@@ -526,7 +528,7 @@ body {
   padding-bottom: 9px;
 }
 .wallet-balance-menu .wbm-total strong {
-  color: #f0c43f;
+  color: #f0c964;
 }
 .wallet-balance-menu .wbm-actions {
   margin-top: 4px;
@@ -722,7 +724,7 @@ body {
   background: rgba(255, 255, 255, 0.04);
 }
 .ticker-item-button:focus-visible {
-  outline: 1px solid var(--h-accent, #f0c43f);
+  outline: 1px solid var(--h-accent, #f0c964);
   outline-offset: 1px;
   background: rgba(255, 255, 255, 0.04);
 }
@@ -745,7 +747,7 @@ body {
 .ticker-hot {
   padding: 1px 4px;
   color: #1a1410;
-  background: #f0c43f;
+  background: #f0c964;
   border-radius: 3px;
   font-size: 8px;
   font-weight: 800;
@@ -1074,7 +1076,7 @@ textarea:focus-visible {
   padding: 72px 32px 88px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 2% 70%, rgba(255, 167, 32, 0.08), transparent 22%),
+    radial-gradient(circle at 2% 70%, rgba(240,201,100, 0.08), transparent 22%),
     #030303;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -1193,7 +1195,7 @@ textarea:focus-visible {
 .market-dashboard__chart-glow,
 .market-dashboard__chart-line {
   fill: none;
-  stroke: #f5a300;
+  stroke: #f0c964;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -1364,7 +1366,7 @@ textarea:focus-visible {
   bottom: -1px;
   left: 0;
   height: 2px;
-  background: #f5a300;
+  background: #f0c964;
 }
 .market-dashboard__view-all {
   margin-left: auto;
@@ -2296,11 +2298,11 @@ a:hover > .nav-card-icon {
 :is(.futures-reference,.market-reference) > .global-header { font-family:'Inter Terminal', Inter, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif; height:48px; padding:0 20px; --h-text-2:#d1d4dc; --h-text-3:#a3a6af; background:#181a20; }
 :is(.futures-reference,.market-reference) > .global-header::before { content:none; }
 :is(.futures-reference,.market-reference) > .global-header .nav-item { font-family:inherit; font-size:14px; font-weight:400; letter-spacing:0; line-height:20px; margin:0; padding:0 12px; border-radius:0; }
-:is(.futures-reference,.market-reference) > .global-header .nav-active { color:#f7a600; background:transparent; }
+:is(.futures-reference,.market-reference) > .global-header .nav-active { color:var(--h-accent); background:transparent; }
 :is(.futures-reference,.market-reference) > .global-header .nav-active::after { bottom:0; height:2px; }
 :is(.futures-reference,.market-reference) > .global-header .header-icon,
 :is(.futures-reference,.market-reference) > .global-header .deposit-button { font-family:inherit; font-size:14px; font-weight:500; letter-spacing:0; }
-:is(.futures-reference,.market-reference) > .global-header .deposit-button { min-height:32px; height:32px; padding:0 16px; border-radius:6px; background:#f7a600; }
+:is(.futures-reference,.market-reference) > .global-header .deposit-button { min-height:32px; height:32px; padding:0 16px; border-radius:6px; background:linear-gradient(180deg,var(--h-accent),#f0c964); color:var(--h-accent-text); }
 @media(max-width:1024px) { :is(.futures-reference,.market-reference) > .global-header { height:56px; padding:0 16px; } }
 
 /* Studio terminal header: brighter navigation and a crisp white brand mark.
@@ -2322,10 +2324,27 @@ a:hover > .nav-card-icon {
    Appended last so it wins the ties against the terminal's own
    `.global-header .nav-item` padding rule above. */
 .global-header .header-actions > .nav-wallet-link {
-  padding: 0 6px;
+  /* A filled chip beside the CTA, as the owner's reference draws the pair:
+     the money controls read as one unit, one of them primary and one of them
+     not. The fill is the header's own raised step, not a new colour. */
+  padding: 0 14px;
   margin: 8px 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  border-radius: 6px;
+  background: var(--h-chip);
+  color: var(--h-text);
   font-size: 13px;
   font-weight: 500;
+}
+.global-header .header-actions > .nav-wallet-link:hover {
+  background: var(--h-chip-hover);
+  color: var(--h-text);
+}
+.global-header .header-actions > .nav-wallet-link:focus-visible {
+  outline: 2px solid var(--h-accent);
+  outline-offset: 2px;
 }
 .global-header .header-actions > .nav-wallet-link.nav-active::after {
   right: 2px;
@@ -2388,8 +2407,8 @@ a:hover > .nav-card-icon {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: rgba(240, 166, 58, 0.16);
-  color: #f0a63a;
+  background: rgba(240,201,100, 0.16);
+  color: #f0c964;
   font-size: 9.5px;
   font-weight: 700;
   line-height: 1;

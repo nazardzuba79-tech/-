@@ -7,4 +7,4 @@
 .private-position-line-label .private-line-quantity{background:var(--line);font-weight:700}
 .private-position-line-label .private-line-action{width:22px;padding:0;color:#9ea3aa;font-size:16px}
 .private-position-line-label button:disabled{opacity:.5;cursor:not-allowed}
-.private-position-line-label button:focus-visible{outline:2px solid #f7a600;outline-offset:2px}
+.private-position-line-label button:focus-visible{outline:2px solid #f0c964;outline-offset:2px}

@@ -189,11 +189,11 @@
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
   color: var(--text-secondary); cursor: pointer;
 }
-.futures-terminal .chart-surface[data-chart-picking] .chart-tools-trigger { display: grid; color: #ffb84d; border-color: #ffb84d; }
+.futures-terminal .chart-surface[data-chart-picking] .chart-tools-trigger { display: grid; color: #f0c964; border-color: #f0c964; }
 @media (hover: none), (pointer: coarse) {
   .futures-terminal .chart-tools-trigger { display: grid; }
 }
-.futures-terminal .chart-tools-trigger[aria-expanded=true] { color: #ffb84d; border-color: #ffb84d; }
+.futures-terminal .chart-tools-trigger[aria-expanded=true] { color: #f0c964; border-color: #f0c964; }
 
 .futures-terminal .chart-tools-menu {
   position: fixed; z-index: 60;
@@ -224,10 +224,10 @@
   color: var(--text-secondary); cursor: pointer; user-select: none;
 }
 .futures-terminal .chart-tools-switch:hover { background: rgba(255,255,255,.05); color: var(--text-primary); }
-.futures-terminal .chart-tools-switch input { accent-color: #ffb84d; cursor: pointer; margin: 0; }
+.futures-terminal .chart-tools-switch input { accent-color: #f0c964; cursor: pointer; margin: 0; }
 .futures-terminal .chart-tools-state {
   padding: 5px 6px; border-radius: 5px;
-  background: rgba(245,165,36,.1); color: #ffb84d; font-size: 11px; line-height: 1.35;
+  background: rgba(240,201,100,.1); color: #f0c964; font-size: 11px; line-height: 1.35;
 }
 .futures-terminal .chart-tools-action {
   width: 100%; text-align: left;
@@ -237,7 +237,7 @@
   transition: background 120ms ease, color 120ms ease;
 }
 .futures-terminal .chart-tools-action:hover { background: rgba(255,255,255,.06); color: var(--text-primary); }
-.futures-terminal .chart-tools-action.primary { color: #ffb84d; }
-.futures-terminal .chart-tools-action.primary:hover { background: rgba(245,165,36,.12); }
-.futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #ffb84d; outline-offset: 1px; }
+.futures-terminal .chart-tools-action.primary { color: #f0c964; }
+.futures-terminal .chart-tools-action.primary:hover { background: rgba(240,201,100,.12); }
+.futures-terminal .chart-tools-menu :is(button, input):focus-visible { outline: 1px solid #f0c964; outline-offset: 1px; }
 
