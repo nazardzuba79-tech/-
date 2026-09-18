@@ -26,7 +26,7 @@ const assets = [
   makeAsset('BTC', 1, 12, -9, ['BTC/USD']),
   makeAsset('ETH', 2, -21, 35, ['ETH/USDT']),
   makeAsset('ZERO', 3, 0, 0), makeAsset('UNKNOWN', 4, null, null),
-  ...Array.from({ length: 1500 }, (_, i) => makeAsset(`TAIL${String(i).padStart(4, '0')}`, i + 5, null, null)),
+  ...Array.from({ length: 1500 }, (_, i) => makeAsset(`ZTAIL${String(i).padStart(4, '0')}`, i + 5, null, null)),
 ];
 const live = new Map();
 let dom: any, root: any, host: HTMLElement, Table: any, state: any;
