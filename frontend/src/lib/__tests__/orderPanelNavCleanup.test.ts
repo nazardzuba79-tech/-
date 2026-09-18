@@ -242,7 +242,14 @@ describe('4. sums, units and the right axis', () => {
     // a number sharing one text run.
     const units = withClass(big(), 'fa-unit');
     expect(units.length).toBeGreaterThanOrEqual(2);
-    expect(units.every((n) => n.props.children === 'USDT')).toBe(true);
+    // The gap is a CHARACTER, not only a flex gap: a non-breaking space, so
+    // a copied balance reads `56 405 024.03 USDT` rather than one run, and
+    // the unit can never be left behind on a line of its own.
+    for (const unit of units) {
+      expect(Array.isArray(unit.props.children)).toBe(true);
+      expect(unit.props.children[0]).toBe('\u00A0');
+      expect(unit.props.children[1]).toBe('USDT');
+    }
   });
 
   test('every row puts its value in the same kind of cell', () => {
