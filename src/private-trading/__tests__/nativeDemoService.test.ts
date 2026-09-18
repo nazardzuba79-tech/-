@@ -176,6 +176,62 @@ describe('native demo service (fixture market, in-memory persistence)',()=>{
   });
 });
 
+describe('native Wallet collateral preferences',()=>{
+  test('disabling BTC leaves it in Wallet assets but removes it from Cross collateral, and persists',async()=>{
+    const f=setup();
+    await f.service.initialize(actor,'init-collateral-1');
+    const before=await f.service.wallet(actor);
+    if(!before)throw new Error('wallet expected');
+    const after=await f.service.setCollateralPreference(actor,'BTC',false,'collateral-btc-off');
+    expect(after.assetsValue).toBe(before.assetsValue);
+    expect(new BigNumber(before.account.collateral).minus(after.account.collateral).toFixed()).toBe('100000');
+    expect(after.rows.find(r=>r.asset==='BTC')).toMatchObject({collateralEnabled:false,collateralToggleable:true});
+    expect(f.repo.row?.disabledCollateralAssets).toEqual(['BTC']);
+    const reloaded=await f.service.wallet(actor);
+    expect(reloaded?.rows.find(r=>r.asset==='BTC')?.collateralEnabled).toBe(false);
+
+    const on=await f.service.setCollateralPreference(actor,'BTC',true,'collateral-btc-on');
+    expect(on.rows.find(r=>r.asset==='BTC')?.collateralEnabled).toBe(true);
+    expect(on.account.collateral).toBe(before.account.collateral);
+    expect(f.repo.row?.disabledCollateralAssets).toEqual([]);
+  });
+
+  test('server refuses to disable collateral that an existing account already needs',async()=>{
+    const f=setup();
+    // Build a legitimate position first. Then model a restored/migrated Cross
+    // account whose free settle cash has already been consumed elsewhere:
+    // BTC is what keeps the stored position safely above maintenance. The
+    // toggle guard must reason from the EXISTING account, not try to create
+    // an impossible new order just for this test.
+    f.repo.wallet=[{asset:'BTC',available:'2',locked:'0'}];
+    await f.service.initialize(actor,'init-collateral-2');
+    await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    f.repo.row!.snapshot.walletBalance='0';
+    const before=await f.service.wallet(actor);
+    expect(before?.account.liquidatable).toBe(false);
+    expect(new BigNumber(before!.account.collateral).gt(before!.account.maintenanceMargin)).toBe(true);
+
+    await expect(f.service.setCollateralPreference(actor,'BTC',false,'collateral-required'))
+      .rejects.toMatchObject({code:'collateral_required',status:409});
+    expect(f.repo.row?.disabledCollateralAssets??[]).toEqual([]);
+    expect((await f.service.wallet(actor))?.rows.find(r=>r.asset==='BTC')?.collateralEnabled).toBe(true);
+  });
+
+  test('cannot enable an unpriced asset as collateral',async()=>{
+    const f=setup();
+    await f.service.initialize(actor,'init-collateral-3');
+    const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{
+      if(symbol==='XYZUSDT')throw new Error('NO_SUCH_CONTRACT');
+      return answer(symbol);
+    }) as typeof f.market.freshQuote;
+    await f.service.setCollateralPreference(actor,'XYZ',false,'xyz-off');
+    await expect(f.service.setCollateralPreference(actor,'XYZ',true,'xyz-on'))
+      .rejects.toMatchObject({code:'collateral_unpriced',status:409});
+    expect(f.repo.row?.disabledCollateralAssets).toEqual(['XYZ']);
+  });
+});
+
 describe('the Cross collateral base is the whole wallet, priced or named',()=>{
   test('prices every asset it can and NAMES the one it cannot, instead of valuing it at 0',async()=>{
     const f=setup();

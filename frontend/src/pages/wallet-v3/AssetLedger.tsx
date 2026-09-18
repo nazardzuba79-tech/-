@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { ArrowDownIcon, ArrowUpIcon, CheckIcon, ChevronDownIcon, CircleSlash2Icon, EllipsisIcon, SearchIcon, WalletIcon, WifiOffIcon } from 'lucide-react';
 import { CryptoIcon } from '../../components/CryptoIcon';
 import { useLanguage } from '../../lib/i18n';
+import { useToast } from '../../lib/toast';
 import { EmptyState } from './ui';
 import { EM_DASH, MASK, decimalsFor, formatAmount, formatPercent, formatUsd, toneOf } from './format';
 import { LedgerRow } from './useWalletData';
@@ -33,6 +34,7 @@ export function AssetLedger({
   onDeposit,
   onTransfer,
   onWithdraw,
+  onCollateralChange,
 }: {
   rows: LedgerRow[];
   hidden: boolean;
@@ -47,14 +49,17 @@ export function AssetLedger({
   onDeposit: () => void;
   onTransfer: () => void;
   onWithdraw: () => void;
+  onCollateralChange?: (asset: string, enabled: boolean) => Promise<unknown>;
 }) {
   const { t, lang } = useLanguage();
+  const toast = useToast();
   const [query, setQuery] = useState('');
   const [hideZero, setHideZero] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('value');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [menu, setMenu] = useState<{ symbol: string; left: number; top: number } | null>(null);
+  const [collateralPending, setCollateralPending] = useState<Set<string>>(() => new Set());
   const sectionRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTrigger = useRef<HTMLButtonElement | null>(null);
@@ -132,6 +137,45 @@ export function AssetLedger({
 
   // Hidden-balance masking also covers the available figure, which lives
   // in the mobile detail; it is kept in the desktop row for the mask audit.
+  const toggleCollateral = async (row: LedgerRow) => {
+    if (!collateral || !row.collateralToggleable || !onCollateralChange || collateralPending.has(row.symbol)) return;
+    setCollateralPending((current) => new Set(current).add(row.symbol));
+    try {
+      // No optimistic margin state: the switch follows the authoritative
+      // Wallet object returned by the server mutation.
+      await onCollateralChange(row.symbol, !row.collateralEnabled);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('wallet.dataUnavailable'));
+    } finally {
+      setCollateralPending((current) => {
+        const next = new Set(current);
+        next.delete(row.symbol);
+        return next;
+      });
+    }
+  };
+
+  const collateralSwitch = (row: LedgerRow) => {
+    if (!collateral) return <span className="text-[13px] text-ink-4">{EM_DASH}</span>;
+    const pending = collateralPending.has(row.symbol);
+    const locked = !row.collateralToggleable || !onCollateralChange;
+    return (
+      <button
+        type="button"
+        className="wallet-toggle"
+        role="switch"
+        aria-checked={row.collateralEnabled}
+        aria-disabled={locked || pending}
+        disabled={locked || pending}
+        aria-busy={pending}
+        title={locked ? t('wallet.collateralLocked') : undefined}
+        onClick={() => void toggleCollateral(row)}
+      >
+        <i />
+      </button>
+    );
+  };
+
   const toggleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     else {
@@ -306,23 +350,7 @@ export function AssetLedger({
                           <span className="wallet-ledger-locked">{hidden ? MASK : formatAmount(r.locked, lang, dp)}</span>
                           <span className="wallet-ledger-available hidden">{hidden ? MASK : formatAmount(r.available, lang, dp)}</span>
                         </td>
-                        <td className="px-3 py-3.5">
-                          {collateral ? (
-                            // A state the SERVER decided (a priced holding backs
-                            // the margin); the switch only shows it and says so.
-                            <span
-                              className="wallet-toggle"
-                              role="switch"
-                              aria-checked={r.priced && r.total > 0}
-                              aria-disabled="true"
-                              title={t('wallet.collateralLocked')}
-                            >
-                              <i />
-                            </span>
-                          ) : (
-                            <span className="text-[13px] text-ink-4">{EM_DASH}</span>
-                          )}
-                        </td>
+                        <td className="px-3 py-3.5">{collateralSwitch(r)}</td>
                         <td className="py-3.5 pl-3 pr-5">{rowActions(r)}</td>
                       </tr>
                     );
@@ -373,6 +401,12 @@ export function AssetLedger({
                           <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.col24h')}</dt>
                           <dd className={`num mt-1 text-[14px] font-medium ${toneOf(r.changePercent24h)}`}>{formatPercent(r.changePercent24h, lang)}</dd>
                         </div>
+                        {collateral && (
+                          <div>
+                            <dt className="text-[12px] normal-case tracking-normal text-ink-3">{t('wallet.colAsCollateral')}</dt>
+                            <dd className="mt-1">{collateralSwitch(r)}</dd>
+                          </div>
+                        )}
                       </dl>
                       <div className="mt-3 border-t border-hair-soft pt-2">{rowActions(r)}</div>
                       </div>

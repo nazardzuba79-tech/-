@@ -100,7 +100,7 @@ export function crossAccount(
   const isolatedMargin = n(engine.isolatedMargin ?? '0');
   const isolatedPnl = n(engine.isolatedUnrealizedPnl ?? '0');
   const settleBalance = n(engine.walletBalance).plus(isolatedMargin);
-  const walletCollateral = n(valuation.priced);
+  const walletCollateral = n(valuation.collateralPriced);
   const collateral = settleBalance.plus(walletCollateral);
   const unrealizedPnl = n(engine.unrealizedPnl).plus(isolatedPnl);
   const equity = collateral.plus(unrealizedPnl);
@@ -134,7 +134,7 @@ export function crossAccount(
       ? hasOpenPositions && equity.minus(isolatedMargin).minus(isolatedPnl).lte(maintenanceMargin)
       : null,
     collateralComplete: valuation.complete,
-    unpricedAssets: valuation.unpriced,
+    unpricedAssets: valuation.collateralUnpriced,
     collateralAsOf: valuation.asOf,
   };
 }

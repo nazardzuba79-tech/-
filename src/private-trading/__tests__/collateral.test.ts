@@ -109,6 +109,39 @@ describe('multi-asset cross collateral valuation', () => {
     expect(v.lines.map((l) => l.status)).toEqual(['SETTLE', 'PRICED', 'UNPRICED']);
   });
 
+  it('keeps a disabled asset in wallet value while excluding it from Cross collateral', () => {
+    const v = valueCollateral(
+      [hold('USDT', '1000'), hold('BTC', '2'), hold('ETH', '10')],
+      [at('BTC', '100000'), at('ETH', '3000')],
+      'USDT',
+      new Set(['BTC']),
+    );
+    // Wallet still owns every priced asset.
+    expect(v.priced).toBe('231000');
+    // Margin uses USDT + ETH, not BTC.
+    expect(v.collateralPriced).toBe('31000');
+    expect(v.lines.find(line => line.asset === 'BTC')).toMatchObject({
+      value: '200000',
+      collateralEnabled: false,
+      status: 'PRICED',
+    });
+    expect(v.lines.find(line => line.asset === 'ETH')?.collateralEnabled).toBe(true);
+  });
+
+  it('an unpriced DISABLED holding does not make the margin collateral incomplete', () => {
+    const v = valueCollateral(
+      [hold('USDT', '1000'), hold('XYZ', '7')],
+      [],
+      'USDT',
+      new Set(['XYZ']),
+    );
+    expect(v.unpriced).toEqual(['XYZ']);
+    expect(v.collateralUnpriced).toEqual([]);
+    expect(v.complete).toBe(true);
+    expect(v.collateralPriced).toBe('1000');
+    expect(v.lines.find(line => line.asset === 'XYZ')?.collateralEnabled).toBe(false);
+  });
+
   it('an empty wallet is a complete valuation of zero, not an unknown', () => {
     const v = valueCollateral([], []);
     expect(v).toMatchObject({ priced: '0', complete: true, unpriced: [], asOf: null });

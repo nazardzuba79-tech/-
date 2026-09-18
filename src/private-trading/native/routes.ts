@@ -8,6 +8,7 @@ import { PrivateTradingError } from '../serviceTypes';
 import BigNumber from 'bignumber.js';
 const key=z.string().min(8).max(100).regex(/^[a-zA-Z0-9:_-]+$/);
 const positive=z.string().max(60).regex(/^\d{1,18}(?:\.\d{1,18})?$/).refine(x=>new BigNumber(x).gt(0));
+const collateralAsset=z.string().trim().toUpperCase().regex(/^[A-Z0-9]{2,16}$/);
 const candle=z.object({source:z.literal('BYBIT_LINEAR'),interval:z.enum(['1m','5m','15m','1h','4h','1d','1w']),openTime:z.number().int().positive(),pricePoint:z.enum(['OPEN','CLOSE'])}).strict();
 const protection=z.object({takeProfit:positive.nullable().optional(),stopLoss:positive.nullable().optional(),triggerBy:z.enum(['MARK','LAST']).optional(),quantity:positive.nullable().optional()}).strict();
 export const nativeCommandSchema=z.discriminatedUnion('kind',[
@@ -74,6 +75,10 @@ export function nativeDemoRoutes(service:NativeDemoService,actor:(res:Response)=
     return result;
   }));
   r.get('/collateral',handle((_req,res)=>service.collateral(actor(res))));
+  r.post('/collateral-preference',handle((req,res)=>{
+    const input=z.object({asset:collateralAsset,enabled:z.boolean(),idempotencyKey:key}).strict().parse(req.body);
+    return service.setCollateralPreference(actor(res),input.asset,input.enabled,input.idempotencyKey);
+  }));
   // The Wallet page's ONE request: the same authoritative account the
   // terminal reads, together with the per-asset collateral it was computed
   // from, so the two surfaces cannot report different equity and the page

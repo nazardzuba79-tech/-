@@ -128,7 +128,7 @@ export function WalletOverview({
 
   // The two accounts, as the server answered them.
   const fundingUsd = known(cross ? overview?.real.spotValueUsd : account?.spotUsd);
-  const unifiedUsd = known(cross ? account!.totalEquityUsd : account?.futuresUsd);
+  const unifiedUsd = known(cross ? account!.walletEquityUsd : account?.futuresUsd);
   // The headline: the sum of the accounts, when at least one is known. On
   // a plain ledger this is exactly the server's own total.
   const total = cross
