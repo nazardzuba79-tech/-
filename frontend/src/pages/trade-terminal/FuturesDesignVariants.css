@@ -1,8 +1,8 @@
 /* Review-only compositions. Plain /futures keeps the existing terminal. */
 .trade-terminal.futures-reference.futures-studio .terminal-design-review { display:flex; align-items:center; justify-content:center; gap:4px; flex:0 0 30px; order:-1; background:#0b0e11; border-bottom:1px solid #232a34; }
 .terminal-design-review button { appearance:none; border:0; border-radius:4px; padding:4px 14px; font-family:inherit; font-weight:500; font-size:11px; line-height:18px; color:#8d9ba9; background:transparent; cursor:pointer; }
-.terminal-design-review button[aria-pressed=true] { color:#f0c46b; background:#e9b44c16; box-shadow:inset 0 -1px #e9b44c; }
-.terminal-design-review button:focus-visible { outline:1px solid #e9b44c; outline-offset:-1px; }
+.terminal-design-review button[aria-pressed=true] { color:#f0c964; background:#e9b44c16; box-shadow:inset 0 -1px #f0c964; }
+.terminal-design-review button:focus-visible { outline:1px solid #f0c964; outline-offset:-1px; }
 
 /* Owner's corrections: single-line markets, one instrument strip, no
    redundant execution heading. Preserve every form and every metric. */
@@ -74,7 +74,7 @@
    plot and execution ticket adjacent; warmer accents and quieter framing. */
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] .terminal { background:#090f15; gap:12px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] :is(.reference-market-sidebar,.orderbook-area,.order-form-area,.bottom-panel,.futures-ticker-bar,.chart-area) { border-color:#2c343b; border-radius:10px; box-shadow:inset 0 1px #ffffff03; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] .ticker-bar { background:linear-gradient(105deg,#242625,#12161c 60%); border-left:2px solid #bc985c; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] .ticker-bar { background:linear-gradient(105deg,#242625,#12161c 60%); border-left:2px solid #f0c964; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs) { background:#151d25; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] .rb-center { background:#212a31; border-color:#4a4335; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio[data-terminal-design=focus] .fo-mlTrigger { background:#222a30; border-color:#49483e; }

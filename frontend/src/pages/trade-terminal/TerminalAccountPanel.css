@@ -13,7 +13,7 @@
   background:transparent; color:#bac7d5; cursor:pointer;
 }
 .trade-terminal.terminal-studio .terminal-account-toggle:hover { color:#f3f6fa; background:#ffffff08; }
-.trade-terminal.terminal-studio .terminal-account-toggle:focus-visible { outline:1px solid #e9b44c; outline-offset:-3px; }
+.trade-terminal.terminal-studio .terminal-account-toggle:focus-visible { outline:1px solid #f0c964; outline-offset:-3px; }
 .trade-terminal.terminal-studio .bottom-content[hidden] { display:none; }
 .trade-terminal.terminal-studio .account-tab-content[hidden] { display:none; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.terminal-studio .bottom-panel[data-account-compact=true] {
@@ -27,7 +27,9 @@
    older terminal sheets. It is intentionally visual only: no market/account
    number is generated here. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal-account-header > .bottom-tabs {
-  min-height:46px; height:46px; gap:22px;
+  /* 42px, so the bottom panel's head lines up with the chart heading, the
+     book tabs and the order-family strip. */
+  min-height:42px; height:42px; gap:22px;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .bottom-tab {
   font-size:13px; line-height:20px; font-weight:500;
@@ -146,7 +148,7 @@
        than ours, and the leverage select ~1.36x. The extra 34px comes out
        of the flexible chart track, so the pair list and the depth column
        keep their exact widths. */
-    grid-template-columns:212px minmax(0,1fr) 250px 312px;
+    grid-template-columns:226px minmax(0,1fr) 250px 312px;
     grid-template-rows:70px minmax(0,1fr) clamp(208px,25vh,272px);
   }
   /* The old shared .bottom-panel rule hard-coded 145px. Let the grid own the
@@ -160,7 +162,7 @@
 }
 @media(min-width:1025px) and (max-width:1279px) {
   .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal {
-    grid-template-columns:184px minmax(0,1fr) 220px 280px;
+    grid-template-columns:196px minmax(0,1fr) 220px 280px;
     grid-template-rows:70px minmax(0,1fr) clamp(190px,23vh,236px);
   }
 }
@@ -313,13 +315,19 @@
    order book, the chart, the positions table and every other page. Those
    are global and this brief is the ticket. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-panel {
-  --fo-surface:#0c1118;
-  --fo-control:#1d2531;
-  --fo-control-hover:#252f3d;
-  --fo-hairline:#232c39;
+  /* Aligned to the terminal palette, keeping every relationship the brief
+     above measured: the panel still sits more than 1.2 from its controls,
+     the hairline still sits within a few steps of the fill, and both
+     surfaces still carry more blue than red. What changed is that the
+     ticket's greys are now the same greys as the panels around it — it
+     used to read a few per cent warmer than the terminal it lives in. */
+  --fo-surface:#0a0e13;
+  --fo-control:#1f252e;
+  --fo-control-hover:#262d38;
+  --fo-hairline:#252c36;
   --fo-text:#ffffff;
-  --fo-text-2:#8b96a5;
-  --fo-text-3:#78838f;
+  --fo-text-2:#98a2b3;
+  --fo-text-3:#808a9a;
   --fo-field-height:44px;
   background:var(--fo-surface);
 }
@@ -438,12 +446,12 @@
   cursor:not-allowed;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.buy:disabled {
-  background:#12362c;
-  color:#a9c3ba;
+  background:#29a878;
+  color:#0b0e11;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-submitPair .submit-btn.sell:disabled {
-  background:#412129;
-  color:#d0a8b1;
+  background:#e04256;
+  color:#ffffff;
 }
 
 /* ── Account card: values in front, labels behind ─────────────────────── */
@@ -504,4 +512,89 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio
   :is(.fo-priceInputRow,.fo-qtyInputRow):focus-within {
   box-shadow:none;
+}
+
+/* ── THE BOTTOM TABLE FITS ITS PANEL ──────────────────────────────────────
+   Measured with one open position on a fixture terminal: the ten columns
+   asked for 1224px while the panel gives 1125px at 1440 and 965px at 1280,
+   so the row scrolled sideways and the first column — the contract itself —
+   could be scrolled out of sight. The numbers are what a trader acts on, so
+   none of them is dropped and none of them wraps. Three things give the
+   width back instead:
+
+   1. the long column HEADINGS may wrap onto a second line (the cells never
+      do), which is where most of the width was going: "Маркировочная цена"
+      alone held 156px for a seven-character value;
+   2. the horizontal padding steps 14px -> 9px below 1600px, ten columns
+      wide, and the close controls tighten with it;
+   3. `min-width:max-content` is dropped, so the table may finally use the
+      space it has rather than insisting on its content width.
+
+   Below 1280px the row can still be wider than the panel. There the first
+   column is pinned, so whatever else scrolls, the contract stays. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table {
+  min-width: 0;
+  table-layout: auto;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th {
+  white-space: normal;
+  line-height: 1.25;
+  vertical-align: bottom;
+  hyphens: none;
+}
+@media (max-width: 1599px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table th { padding: 8px 9px; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table td { padding: 10px 9px; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-actions { gap: 4px; }
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-position-close { padding: 4px 7px; }
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-positions-table :is(th,td):first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--panel, #12161c);
+}
+/* The empty state's own header table was pinned to 864px by a rule that
+   out-specified the intent to let it fit; it fits now. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-state-columns table {
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* ── THE WATCHLIST PRICE STOPPED FITTING ──────────────────────────────────
+   Measured at 1440: the rail is 212px, while the row's tracks plus its gaps
+   and padding asked for 222. The price column was the one that gave, so
+   `49,404.80` rendered as `49,404....` — a truncated price in a price list.
+   The fixed columns tighten by a couple of pixels each and the price gets a
+   track wide enough for an eight-figure quote; the name keeps enough for the
+   longest ticker the list shows. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row {
+  grid-template-columns: 12px 20px minmax(0, 1fr) 72px 48px;
+  gap: 3px;
+  padding: 4px 6px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pair-row .p-price {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* ── ONE RHYTHM ACROSS THE PANEL HEADS ────────────────────────────────────
+   Measured at 1440 before this: the chart heading and the book tabs sat at
+   42px tall on a 14px gutter, the bottom tabs at 46px on 14px, the order
+   family at 41px on 10px, and the ticker bar on 16px. Four panels, four
+   left edges. They now share 42px and a 12px gutter, so a horizontal line
+   drawn across the terminal meets every heading at the same place. The
+   order book keeps its own tighter 6px ladder gutter, which is deliberate. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio :is(.terminal-chart-heading,.rb-tabs,.bottom-tabs,.order-family-tabs) {
+  min-height: 42px;
+  height: 42px;
+  padding-inline: 12px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .terminal-account-header {
+  min-height: 42px;
+  height: 42px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .futures-ticker-bar {
+  padding-inline: 12px;
 }

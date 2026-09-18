@@ -1,6 +1,6 @@
 /* Shared presentation layer. Order payloads, account/risk calculations and feeds
    remain owned by their existing market components. */
-.trade-terminal.trade-terminal { --workspace-bg:#151e29; --chart-bg:#0d141d; --toolbar-bg:#151e28; --grid-bg:#0e151e; --panel-alt:#19232f; --bg-tertiary:#19232f; --border-color:#293440; --panel-border:#26303c; --accent:var(--accent-yellow); }
+.trade-terminal.trade-terminal { --workspace-bg:#151e29; --chart-bg:#0d141d; --toolbar-bg:#151e28; --grid-bg:#0e151e; --panel-alt:#1a1f27; --bg-tertiary:#1a1f27; --border-color:#293440; --panel-border:#26303c; --accent:var(--accent-yellow); }
 .trade-terminal.trade-terminal .ticker-bar, .trade-terminal.trade-terminal .cfd-ticker-bar { gap:12px; padding:8px 16px; min-height:62px; justify-content:space-between; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item, .trade-terminal.trade-terminal .cfd-ticker-metric { flex:1 1 auto; min-width:0; gap:4px; }
 .trade-terminal.trade-terminal .ticker-bar .ticker-item .label, .trade-terminal.trade-terminal .cfd-ticker-metric > :first-child { font-size:10px; white-space:normal; }
@@ -15,7 +15,7 @@
 .trade-terminal.trade-terminal .order-type-tab, .trade-terminal.trade-terminal .fo-typeTab { height:auto; padding:10px 0 8px; font-size:11px; }
 .trade-terminal.trade-terminal .cfd-product-terms { padding-block:10px; }
 .trade-terminal.trade-terminal .form-label, .trade-terminal.trade-terminal .fo-label, .trade-terminal.trade-terminal .cfd-label { font-size:11px; gap:5px; }
-.trade-terminal.trade-terminal .input-group, .trade-terminal.trade-terminal .fo-input, .trade-terminal.trade-terminal .cfd-input { border:1px solid transparent; border-radius:4px; background:#19232f; }
+.trade-terminal.trade-terminal .input-group, .trade-terminal.trade-terminal .fo-input, .trade-terminal.trade-terminal .cfd-input { border:1px solid transparent; border-radius:4px; background:#1a1f27; }
 .trade-terminal.trade-terminal .input-group:hover, .trade-terminal.trade-terminal .fo-input:hover, .trade-terminal.trade-terminal .cfd-input:hover { border-color:#3c4a5b; }
 .trade-terminal.trade-terminal .input-group:focus-within, .trade-terminal.trade-terminal .fo-input:focus, .trade-terminal.trade-terminal .cfd-input:focus { border-color:var(--accent-yellow); }
 .trade-terminal.trade-terminal .input-group input, .trade-terminal.trade-terminal .fo-input, .trade-terminal.trade-terminal .cfd-input { padding:8px 10px; font-size:13px; line-height:20px; min-height:36px; }
@@ -87,9 +87,9 @@
 .trade-terminal.trade-terminal .submit-btn, .trade-terminal.trade-terminal .cfd-submit { height:38px; }
 .trade-terminal.trade-terminal .terminal-size-range { appearance:none; background:transparent; border:0; padding:0; }
 .trade-terminal.trade-terminal .terminal-size-range::-webkit-slider-runnable-track { height:3px; border-radius:3px; background:#40505f; }
-.trade-terminal.trade-terminal .terminal-size-range::-webkit-slider-thumb { appearance:none; width:12px; height:12px; margin-top:-4.5px; border:2px solid var(--accent-yellow); border-radius:50%; background:#101720; }
+.trade-terminal.trade-terminal .terminal-size-range::-webkit-slider-thumb { appearance:none; width:12px; height:12px; margin-top:-4.5px; border:2px solid var(--accent-yellow); border-radius:50%; background:#1a1f27; }
 .trade-terminal.trade-terminal .terminal-size-range::-moz-range-track { height:3px; background:#40505f; }
-.trade-terminal.trade-terminal .terminal-size-range::-moz-range-thumb { width:9px; height:9px; border:2px solid var(--accent-yellow); border-radius:50%; background:#101720; }
+.trade-terminal.trade-terminal .terminal-size-range::-moz-range-thumb { width:9px; height:9px; border:2px solid var(--accent-yellow); border-radius:50%; background:#1a1f27; }
 .trade-terminal.trade-terminal .terminal-size-range:disabled { opacity:.4; cursor:not-allowed; }
 .trade-terminal.trade-terminal .cfd-columns, .trade-terminal.trade-terminal .cfd-option { grid-template-columns:minmax(0,1fr) 68px 48px; gap:4px; padding:8px 6px; }
 .trade-terminal.trade-terminal.futures-terminal .p-name { display:flex; flex-direction:column; align-items:flex-start; line-height:13px; }

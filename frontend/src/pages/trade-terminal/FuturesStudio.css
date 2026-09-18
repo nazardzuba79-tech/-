@@ -3,7 +3,7 @@
   --studio-canvas:#0b0e11; --studio-panel:#12161c; --studio-raised:#1a1f27;
   --workspace-bg:#12161c; --panel:#12161c; --panel-alt:#1a1f27;
   --border:#232a34; --border-color:#232a34; --text-primary:#eaeef3;
-  --text-secondary:#98a2b3; --text-tertiary:#5c6675; --accent-yellow:#f5a524;
+  --text-secondary:#98a2b3; --text-tertiary:#5c6675; --accent-yellow:#f0c964;
   background:var(--studio-canvas);
 }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal { padding:12px; gap:10px; background:var(--studio-canvas); }
@@ -16,7 +16,7 @@
   color:#dfe7ef; font-size:12px; letter-spacing:.1px;
 }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-order-heading { height:52px; min-height:52px; font-size:14px; gap:9px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-order-heading::before { content:''; width:3px; height:16px; background:#f5a524; border-radius:3px; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .reference-order-heading::before { content:''; width:3px; height:16px; background:#f0c964; border-radius:3px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .studio-market-heading { margin:0; padding:17px 14px 10px; font-size:14px; line-height:20px; font-weight:600; color:#e4ebf2; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pairs-search { padding:6px 10px 12px; background:transparent; border:0; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pairs-search input { background:#0c131b; border:1px solid #2a3745; border-radius:6px; height:36px; font-size:11px; }
@@ -28,7 +28,7 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row .p-base { font-size:12px; font-weight:600; letter-spacing:.1px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row .p-price { grid-column:2 / 4; grid-row:2; text-align:left; color:#98a2b3; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row .p-change { grid-column:4; grid-row:2; text-align:right; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row.active { background:#e9b44c12; box-shadow:inset 2px 0 #f5a524; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row.active { background:#e9b44c12; box-shadow:inset 2px 0 #f0c964; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row:hover { background:#1c2936; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pair-row :is(.p-price,.p-change) { font-size:11px; font-variant-numeric:tabular-nums; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .pairs-col-headers { padding-inline:12px; grid-template-columns:34px minmax(0,1fr) 65px; }
@@ -49,7 +49,7 @@
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools) { display:flex; flex-wrap:nowrap; align-items:center; gap:5px; min-width:0; max-width:100%; margin:0; overflow-x:auto; scrollbar-width:none; flex:0 0 26px; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tabs,.chart-tools)::-webkit-scrollbar { display:none; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab,.chart-tool-btn) { color:#a7b6c5; font-size:11px; border-radius:4px; flex-shrink:0; white-space:nowrap; min-height:25px; padding:4px 8px; }
-.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { background:#28313a; color:#ffb84d; }
+.trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell :is(.chart-tab.active,.chart-tool-btn.active) { background:#28313a; color:#f0c964; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .terminal-chart-shell .drawing-rail { background:#12161c; border-color:#232a34; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .repaired-futures-book .reference-book { background:#12161c; }
 .trade-terminal.futures-reference.futures-studio.futures-studio.futures-studio .repaired-futures-book .rb-controls { background:#12161c; padding:8px 10px; }
