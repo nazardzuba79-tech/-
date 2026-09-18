@@ -76,7 +76,11 @@
 .trade-terminal.trade-terminal.futures-reference .fo-submitPair { order:3; gap:12px; padding-top:6px; }
 .trade-terminal.trade-terminal.futures-reference .fo-submitPair .submit-btn { min-height:44px; font-size:13px; padding:10px 5px; white-space:nowrap; }
 .trade-terminal.trade-terminal.futures-reference .fo-form > :not(.fo-infoBox,.fo-reduceOnlyRow,.fo-submitPair) { order:0; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-summary { border-radius:0 !important; border:0 !important; border-top:1px solid var(--border-color) !important; background:transparent !important; padding:16px !important; margin:0 !important; gap:12px !important; }
+/* The extra 32px at the foot is the support launcher's footprint. It is
+   a fixed 42x28 tab in the bottom-right corner of this terminal, and
+   without the reserve the Deposit/Transfer buttons come to rest under
+   it — reachable only by scrolling past the end of the column. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-summary { border-radius:0 !important; border:0 !important; border-top:1px solid var(--border-color) !important; background:transparent !important; padding:16px 16px 48px !important; margin:0 !important; gap:12px !important; }
 .trade-terminal.trade-terminal.futures-reference .bottom-panel { border-top:1px solid var(--border-color); background:var(--workspace-bg); min-width:0; min-height:0; }
 .trade-terminal.trade-terminal.futures-reference .bottom-tabs { min-height:46px; gap:26px; padding:0 18px; background:var(--chart-bg); border-bottom:1px solid var(--border-color); }
 /* The tabs are a primary control, not a caption: they carry the counts a
@@ -124,13 +128,31 @@
 .trade-terminal.trade-terminal.futures-reference .futures-account-heading > span { min-width:0; line-height:20px; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-heading button { flex:0 0 28px; width:28px; height:28px; align-items:center; justify-content:center; border-radius:4px; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-heading button:hover { background:var(--panel-alt) !important; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-pnl { justify-content:space-between; font-size:13px; color:var(--text-secondary); padding-bottom:10px; border-bottom:1px solid var(--border-color); }
-.trade-terminal.trade-terminal.futures-reference .futures-account-pnl .mono { font-size:14px !important; font-weight:500 !important; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-track { background:#30303b !important; height:3px !important; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-risk > div:first-child { font-size:13px !important; line-height:18px; gap:8px; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-stat { gap:10px; line-height:20px; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-stat .mono { white-space:nowrap; font-size:14px; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-balance { padding-top:10px; border-top:1px solid var(--border-color); }
+/* The account figures: one label column, one right axis, one vertical
+   rhythm. Groups are separated by the row gap rather than by a rule after
+   every metric, which is what made the old card read as a stack of
+   unrelated strips. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-figures { display:flex; flex-direction:column; row-gap:7px; }
+/* `flex-wrap` is the whole narrow-panel story: the label never wraps and
+   the value never shrinks, so when the two cannot share a line the WHOLE
+   value drops to the next one, still right-aligned. A number is never
+   broken mid-way and never lands against its label. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-stat { display:flex; flex-wrap:wrap; align-items:baseline; column-gap:8px; row-gap:2px; line-height:20px; min-width:0; }
+.trade-terminal.trade-terminal.futures-reference .futures-account-stat .fa-label { flex:0 0 auto; min-width:0; font-size:11.5px; font-weight:400; color:var(--text-secondary); white-space:nowrap; }
+.trade-terminal.trade-terminal.futures-reference .futures-account-stat .fa-value { flex:0 0 auto; margin-left:auto; display:inline-flex; align-items:baseline; font-size:13px; font-weight:500; color:var(--text-primary); white-space:nowrap; font-variant-numeric:tabular-nums; font-feature-settings:'tnum' 1; }
+/* The unit is context, not the figure: it steps back a size and a tone so
+   the digits carry the row. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-stat .fa-unit { font-size:11px; font-weight:400; color:var(--text-tertiary); }
+.trade-terminal.trade-terminal.futures-reference .futures-account-pnl .fa-value { font-size:13px !important; font-weight:500 !important; }
+/* An incomplete valuation, as a mark beside the figure it qualifies. The
+   tooltip carries the sentence that used to sit above the numbers. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-stat .fa-flag { flex:0 0 auto; align-self:center; width:13px; height:13px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:rgba(240,166,58,.16); color:#f0a63a; font-size:9.5px; font-weight:700; line-height:1; cursor:help; }
+/* Both usage bars: same width, same thickness, same left and right edge,
+   so НМ and ПМ can be compared at a glance. The percent column is fixed
+   width for exactly that reason — a wider number must not shift the bar. */
+.trade-terminal.trade-terminal.futures-reference .futures-account-usage .fa-track { flex:0 0 34px; align-self:center; height:3px; margin-left:auto; border-radius:999px; background:#292c34; overflow:hidden; }
+.trade-terminal.trade-terminal.futures-reference .futures-account-usage .fa-fill { display:block; height:100%; border-radius:999px; transition:width 160ms linear; }
+.trade-terminal.trade-terminal.futures-reference .futures-account-usage .fa-value { flex:0 0 54px; margin-left:0; justify-content:flex-end; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-actions button { min-height:34px; font-size:13px !important; font-weight:500 !important; color:var(--text-primary) !important; background:var(--panel-alt) !important; }
 .trade-terminal.trade-terminal.futures-reference .futures-state-columns { flex-shrink:0; overflow:auto; scrollbar-width:thin; border-bottom:1px solid var(--border-color); }
 .trade-terminal.trade-terminal.futures-reference .futures-state-columns table { min-width:760px; }
@@ -311,7 +333,6 @@
 .trade-terminal.trade-terminal.futures-reference .fo-infoRow { font-size:12px; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-actions button { border:1px solid #383d48 !important; background:transparent !important; border-radius:5px !important; }
 .trade-terminal.trade-terminal.futures-reference .futures-account-actions button:hover { background:#252830 !important; }
-.trade-terminal.trade-terminal.futures-reference .futures-account-track { background:#292c34 !important; height:2px !important; }
 .futures-reference .rb-tabs button:hover { color:#f0f2f5; }
 .futures-reference .rb-modes button[aria-pressed=true] { background:#242730; box-shadow:inset 0 0 0 1px #363b45; }
 .futures-reference .rb-center { border-block:1px solid #252831; background:#17191f80; }

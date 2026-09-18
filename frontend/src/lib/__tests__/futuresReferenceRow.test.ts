@@ -171,8 +171,18 @@ describe('2. the positions row carries the reference columns', () => {
 });
 
 describe('3. the account summary under the order buttons', () => {
-  test('margin mode, both margins, margin balance and available balance', () => {
-    expect(SUMMARY).toContain("t('futures.marginType')");
+  test('both margins, margin balance and available balance — and no second margin-mode row', () => {
+    // Owner-approved change: the card used to repeat the margin mode under
+    // the order buttons, a few centimetres below the working Cross/Isolated
+    // switcher in the same panel. The duplicate row is gone, so the label
+    // now belongs to that switcher alone — asserted both ways, because
+    // deleting the CONTROL instead of the echo is the failure mode here.
+    expect(SUMMARY).not.toContain("t('futures.marginType')");
+    expect(source('components/FuturesMarginLeverage.tsx')).toContain("t('futures.marginType')");
+    // The two margin metrics are shown under short labels, with the full
+    // names kept as their tooltips — so both keys are still read here.
+    expect(SUMMARY).toContain("t('futures.initialMarginUsed')");
+    expect(SUMMARY).toContain("t('futures.maintenanceMarginUsed')");
     expect(SUMMARY).toContain("t('futures.initialMarginPct')");
     expect(SUMMARY).toContain("t('futures.maintenanceMarginPct')");
     expect(SUMMARY).toContain("t('futures.marginBalance')");
