@@ -1,0 +1,32 @@
+name: Wallet performance regression
+on:
+  pull_request:
+    paths:
+      - 'src/services/WalletPortfolioService.ts'
+      - 'src/services/PortfolioPerformanceEngine.ts'
+      - 'src/services/__tests__/WalletPortfolioService.test.ts'
+      - 'src/api/routes/portfolio.ts'
+      - '.github/workflows/wallet-performance.yml'
+permissions:
+  contents: read
+jobs:
+  wallet-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npm run build
+      - name: Wallet performance tests
+        run: npm test -- --runInBand --json --outputFile=wallet-performance-tests.json --runTestsByPath src/services/__tests__/WalletPortfolioService.test.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wallet-performance-tests
+          path: wallet-performance-tests.json
