@@ -410,6 +410,9 @@ export interface AnalyticsSnapshot {
 export interface AssetMarketSnapshot {
   priceUsd: number | null;
   changePercent24h: number | null;
+  /** Same provider row; optional only for backwards-compatible fixtures. */
+  changePercent7d?: number | null;
+  changePercent30d?: number | null;
   marketCapUsd: number | null;
   volume24hUsd: number | null;
   circulatingSupply: number | null;
@@ -433,7 +436,7 @@ export interface CanonicalAsset {
   market: AssetMarketSnapshot | null;
 }
 
-export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'symbol' | 'name';
+export type AssetSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'change7d' | 'change30d' | 'symbol' | 'name';
 
 export type AssetCatalogueResponse = GatewaySection<{
   assets: CanonicalAsset[];

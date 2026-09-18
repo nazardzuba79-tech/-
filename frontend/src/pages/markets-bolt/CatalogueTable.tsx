@@ -55,7 +55,7 @@ export type TradableFilter = 'all' | 'tradable' | 'favorites';
 
 interface Column {
   key: CatalogueSortKey;
-  labelKey: 'catalogue.asset' | 'catalogue.name' | 'markets.price' | 'markets.change24h' | 'catalogue.marketCap' | 'markets.volume24h';
+  labelKey: 'catalogue.asset' | 'catalogue.name' | 'markets.price' | 'markets.change24h' | 'markets.change7d' | 'markets.change30d' | 'catalogue.marketCap' | 'markets.volume24h';
   numeric: boolean;
   /** Hidden below this viewport width, so mobile keeps the fields that
    *  matter rather than squeezing six desktop columns into 390px. */
@@ -67,6 +67,8 @@ const COLUMNS: Column[] = [
   { key: 'name', labelKey: 'catalogue.name', numeric: false, hideBelow: 'lg' },
   { key: 'price', labelKey: 'markets.price', numeric: true },
   { key: 'change24h', labelKey: 'markets.change24h', numeric: true },
+  { key: 'change7d', labelKey: 'markets.change7d', numeric: true, hideBelow: 'lg' },
+  { key: 'change30d', labelKey: 'markets.change30d', numeric: true, hideBelow: 'lg' },
   { key: 'marketCap', labelKey: 'catalogue.marketCap', numeric: true, hideBelow: 'md' },
   { key: 'volume24h', labelKey: 'markets.volume24h', numeric: true, hideBelow: 'md' },
 ];
@@ -344,6 +346,10 @@ function CatalogueRow({
   const values = referenceValues(asset);
   const change = values.change;
   const changeText = changePct(change);
+  const change7d = asset.market?.changePercent7d ?? null;
+  const change30d = asset.market?.changePercent30d ?? null;
+  const change7dText = changePct(change7d);
+  const change30dText = changePct(change30d);
 
   return (
     <tr className={asset.tradable ? 'is-tradable' : undefined}>
@@ -381,6 +387,12 @@ function CatalogueRow({
       <td className="vx-cat-num">{quoted(price(values.price), values.priceQuote)}</td>
       <td className={`vx-cat-num ${changeText === null ? '' : change! >= 0 ? 'is-up' : 'is-down'}`}>
         {changeText ?? DASH}
+      </td>
+      <td className={`vx-cat-num vx-cat-hide-lg ${change7dText === null ? '' : change7d! >= 0 ? 'is-up' : 'is-down'}`}>
+        {change7dText ?? DASH}
+      </td>
+      <td className={`vx-cat-num vx-cat-hide-lg ${change30dText === null ? '' : change30d! >= 0 ? 'is-up' : 'is-down'}`}>
+        {change30dText ?? DASH}
       </td>
       <td className="vx-cat-num vx-cat-hide-md">{usd(asset.market?.marketCapUsd) ?? DASH}</td>
       <td className="vx-cat-num vx-cat-hide-md">{quoted(usd(values.volume), values.volumeQuote)}</td>

@@ -1,0 +1,35 @@
+name: Markets 7d/30d movers
+on:
+  pull_request:
+    paths:
+      - 'src/services/marketData/**'
+      - 'src/api/routes/marketData.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/catalogueStore.ts'
+      - 'frontend/src/pages/markets-bolt/CatalogueTable.tsx'
+      - 'frontend/src/lib/__tests__/marketHorizonSort.test.ts'
+      - '.github/workflows/markets-horizon-filters.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend build
+        run: npm run build
+      - name: Frontend production build
+        run: npm run build --prefix frontend
+        env:
+          VITE_API_URL: /api/v1
+      - name: 7d/30d catalogue engine regressions
+        run: npm test -- --runInBand --runTestsByPath src/services/marketData/__tests__/AssetRegistryHorizonSort.test.ts frontend/src/lib/__tests__/marketHorizonSort.test.ts src/api/routes/__tests__/marketData.test.ts
