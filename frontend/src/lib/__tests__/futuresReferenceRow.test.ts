@@ -102,11 +102,15 @@ describe('2. the positions row carries the reference columns', () => {
     }
   });
 
-  test('native Cross never presents an engine-only liquidation price as account-authoritative', () => {
+  test('native Cross shows the engine liquidation price only on a fully valued account', () => {
     expect(PANEL).toContain("execution.engine === 'NATIVE'");
     expect(PANEL).toContain("p.marginType === 'CROSS'");
     expect(PANEL).toContain('aggregate.collateralComplete');
-    expect(PANEL).toContain('aggregate.walletCollateral');
+    // The wallet valuation is journaled into the engine now (one collateral
+    // figure for admission, liquidation and the header), so a non-zero
+    // wallet collateral no longer hides the estimate; an INCOMPLETE one does.
+    expect(PANEL).toContain('(aggregate === null || !aggregate.collateralComplete)');
+    expect(PANEL).not.toContain("Number(aggregate.walletCollateral) !== 0");
     expect(PANEL).toContain('const liquidationPrice = nativeCrossLiquidationUnknown ? null : p.liquidationPrice;');
   });
 

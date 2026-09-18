@@ -4,7 +4,7 @@ import { PrivateTradingMarketData, PrivateChartInterval, assertPrivateFreshQuote
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
-import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, migrateDemoState, NATIVE_DEMO_MODEL } from './engine';
+import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
@@ -36,6 +36,14 @@ export const NATIVE_REFRESH_PERSIST_MS=15*MINUTE;
  */
 export const NATIVE_COMMAND_QUEUE_LIMIT=16;
 interface CommandLane{chain:Promise<unknown>;depth:number;/** The most recently queued plain REFRESH, while nothing was queued after it. */tailRefresh:Promise<unknown>|null}
+/** The three fields of a valuation the engine acts on. */
+export const externalCollateral=(v:CollateralValuation):ExternalCollateral=>({priced:v.priced,complete:v.complete,asOf:v.asOf});
+/** A copy of the snapshot valued on `valuation`, or the snapshot itself when it already carries the same figure. */
+function projectCollateral(snapshot:DemoState,valuation:CollateralValuation):DemoState{
+  const next=externalCollateral(valuation),current=snapshot.collateral??null;
+  if(current&&current.priced===next.priced&&current.complete===next.complete&&current.asOf===next.asOf)return snapshot;
+  const copy={...snapshot};setDemoCollateral(copy,next);return copy;
+}
 const outcome=(s:NativeAccount['snapshot'])=>JSON.stringify([s.events.map(e=>e.id+e.kind+e.time+e.price),s.orders.map(o=>o.status+o.filled),s.positions.map(p=>p.status+p.quantity)]);
 /** Keep only the observed depth a command can consume (deterministic replay without storing 1000 levels). */
 export function truncateBook(book:NativeBook,side:'BUY'|'SELL',quantity:string,limit?:string):NativeBook{
@@ -137,8 +145,13 @@ export class NativeDemoService {
     // the account it produces is the same account — never a second reading
     // of prices that could have moved between the two.
     const valuation=valued??await this.collateral(actor);
-    const open=row.snapshot.positions.some(p=>p.status==='OPEN');
-    return{...view,account:crossAccount(demoAccount(row.snapshot),valuation,open),ledger:accountLedger(row.snapshot)};
+    // A plain read projects the CURRENT valuation into the engine state it
+    // reports from, so the account figures and every position's liquidation
+    // reference are answered on the same collateral. Nothing is persisted.
+    const snapshot=projectCollateral(row.snapshot,valuation);
+    const projected=snapshot===row.snapshot?view:this.view({...row,snapshot});
+    const open=snapshot.positions.some(p=>p.status==='OPEN');
+    return{...projected,account:crossAccount(demoAccount(snapshot),valuation,open),ledger:accountLedger(snapshot)};
   }
   /**
    * THE AUTHORITATIVE ACCOUNT — one computation, server-side.
@@ -262,26 +275,33 @@ export class NativeDemoService {
       // same millisecond. A burst drained from the lane, or a clock that does
       // not advance, must never replay a reduce before the position it names.
       const seq=nextInstructionSeq(row.commands);
+      // The instruction first: its row-based checks (a reduce order that
+      // names a position that does not fit) refuse before any upstream read.
       const instruction=await this.instruction(row,request,seq);
+      // ONE valuation per command, taken BEFORE the decision and journaled
+      // with it: admission, the fill margin check, the liquidation verdict
+      // and the account in the response all read this same figure.
+      const valuation=await this.collateral(actor),collateral=externalCollateral(valuation);
+      if(instruction)instruction.collateral=collateral;
       const commands=structuredClone(instruction?[...row.commands,instruction]:row.commands);
-      if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row);
+      if(!commands.length&&!options.persist)return this.authoritative(actor,this.view(row),row,valuation);
       // Backdated trades re-simulate the scenario from the beginning; everything else continues the
       // canonical checkpoint, so outcomes already shown are never recomputed away.
       const incremental=row.checkpoint&&(!instruction||instruction.at>=row.checkpoint.time)?row.checkpoint:null;
-      const result=await this.replay(row,commands,incremental);
+      const result=await this.replay(row,commands,incremental,collateral);
       if(result.observed){
         // Same effect as the quotes just applied to the projected snapshot; never undone by a later replay.
-        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:instruction?seq+1:seq,marks:result.observed});
+        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:instruction?seq+1:seq,collateral,marks:result.observed});
       }
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
       const changed=!!instruction||!!result.observed||outcome(result.snapshot)!==outcome(row.snapshot);
       const stale=!row.checkpoint||result.checkpoint.time-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
-      if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged);}
+      if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged,valuation);}
       const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
-      return this.authoritative(actor,this.view(committed),committed);
+      return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }
-  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null):Promise<ReplayResult>{
+  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral):Promise<ReplayResult>{
     const load=(r:BarRequest)=>this.bars(r),asOf=this.now();
     let result:ReplayResult;
     try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,checkpoint},load);}
@@ -299,6 +319,8 @@ export class NativeDemoService {
       for(const q of quotes){const checked=assertPrivateFreshQuote(q,q.symbol,this.now());latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};}
     }
     const at=Math.max(this.now(),result.snapshot.time);
+    // The live risk pass values the account on THIS command's valuation.
+    setDemoCollateral(result.snapshot,collateral);
     return{...result,observed:applyLatestQuotes(result.snapshot,latest,at)};
   }
   private async instruction(row:NativeAccount,request:NativeCommand,seq:number):Promise<NativeInstruction|undefined>{

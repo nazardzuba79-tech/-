@@ -27,7 +27,10 @@ describe('the account has a single authoritative source', () => {
     // helper. When the poll and the order response each built their own,
     // available margin could disagree with itself for a poll interval.
     expect(service).toContain('private async authoritative');
-    expect(service).toContain('crossAccount(demoAccount(row.snapshot),valuation,open)');
+    // The snapshot is first projected onto THIS request's valuation, so the
+    // engine figures and the wallet figure in the response are one reading.
+    expect(service).toContain('crossAccount(demoAccount(snapshot),valuation,open)');
+    expect(service).toContain('const snapshot=projectCollateral(row.snapshot,valuation);');
     const authoritative = service.split('private async authoritative')[1];
     expect(authoritative).toBeDefined();
     // And no route bypasses it: `this.view(` never appears as a bare return.
@@ -80,7 +83,10 @@ describe('the account has a single authoritative source', () => {
     // isolated position, and that position's P&L, are subtracted back out
     // because neither backs the shared account — the engine liquidates an
     // isolated position on its own post instead.
-    expect(model).toContain('liquidatable: valuation.complete');
+    // `complete` is the JOURNALED valuation's flag when the engine carries
+    // one (the figure it admitted and judged on), else the valuation's.
+    expect(model).toContain('liquidatable: complete');
+    expect(model).toContain("const walletCollateral = journaled ? n(engine.externalCollateral as string) : n(valuation.priced);");
     expect(model).toContain('? hasOpenPositions && equity.minus(isolatedMargin).minus(isolatedPnl).lte(maintenanceMargin)');
     expect(model).toContain(': null,');
     // And the isolated post is still INSIDE the settle balance, so ring

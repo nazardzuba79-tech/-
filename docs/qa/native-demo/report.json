@@ -83,9 +83,9 @@
       "name": "quantity-to-usdt-calculator-1440",
       "passed": true,
       "evidence": {
-        "price": 50227.7,
+        "price": 50790.8,
         "quantity": 5,
-        "positionValue": "251138.50"
+        "positionValue": "253954.00"
       }
     },
     {
@@ -173,12 +173,12 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10100178.15 USDT",
+        "balance": "10101301.25 USDT",
         "available": [
-          "10049674.20 USDT"
+          "10050231.10 USDT"
         ],
         "risk": [
-          "0.50%",
+          "0.51%",
           "0.03%"
         ]
       }
@@ -204,7 +204,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t351593.90 USDT\t50227.8\t50227.7\t—\t\n-0.70\n-0.00%\n\t-193.38\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t150683.10 USDT\t50227.6\t50227.7\t—\t\n-0.30\n-0.00%\n\t-82.88\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t355535.60 USDT\t50790.9\t50790.8\t—\t\n-0.70\n-0.00%\n\t-195.54\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152372.40 USDT\t50790.7\t50790.8\t—\t\n-0.30\n-0.00%\n\t-83.80\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 1159,
           "full": 1228,
@@ -229,7 +229,7 @@
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
         "alt": "BTCUSDT · P&L -0.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-34e59beb-0b75-4666-a81f-0f2df66ba8ea",
+        "href": "/futures?nativeCard=native%3A9%3Anative-7c521ed0-2827-46e3-b288-a0cdaac5f897",
         "exported": "1080x1215"
       }
     },
@@ -267,20 +267,20 @@
       "name": "limit-close-targets-the-named-position-1440",
       "passed": true,
       "evidence": {
-        "crossId": "native-5a04e306-f869-45f9-bbc3-3232e09a0e07",
-        "isolatedId": "native-0041d96f-a1a8-415d-9ea9-c99da84567a9",
+        "crossId": "native-e71b369a-91a3-4e1d-a5b6-962b054a7f0b",
+        "isolatedId": "native-f658c655-6f44-4f47-a2a8-4d3ce42d24ac",
         "closes": [
           {
             "bucket": "ISOLATED",
-            "positionId": "native-0041d96f-a1a8-415d-9ea9-c99da84567a9",
-            "price": "100455.4",
-            "orderId": "native-fdc8b354-4012-4c57-916f-e69589c0ac6f"
+            "positionId": "native-f658c655-6f44-4f47-a2a8-4d3ce42d24ac",
+            "price": "101581.6",
+            "orderId": "native-11fd7490-ae3f-40a7-9738-29bf196924b9"
           },
           {
             "bucket": "CROSS",
-            "positionId": "native-5a04e306-f869-45f9-bbc3-3232e09a0e07",
-            "price": "100455.4",
-            "orderId": "native-5213f1b2-a7fb-4511-9a77-9864995808bb"
+            "positionId": "native-e71b369a-91a3-4e1d-a5b6-962b054a7f0b",
+            "price": "101581.6",
+            "orderId": "native-0ce70ed9-aa9b-410d-baf8-860a4901af85"
           }
         ]
       }
@@ -377,9 +377,9 @@
       "name": "quantity-to-usdt-calculator-390",
       "passed": true,
       "evidence": {
-        "price": 50227.7,
+        "price": 50790.8,
         "quantity": 5,
-        "positionValue": "251138.50"
+        "positionValue": "253954.00"
       }
     },
     {
@@ -467,12 +467,12 @@
       "passed": true,
       "evidence": {
         "mode": "Тип маржи\nКросс",
-        "balance": "10100178.15 USDT",
+        "balance": "10101301.25 USDT",
         "available": [
-          "10049674.20 USDT"
+          "10050231.10 USDT"
         ],
         "risk": [
-          "0.50%",
+          "0.51%",
           "0.03%"
         ]
       }
@@ -498,7 +498,7 @@
           "TP/SL",
           "Закрыть по"
         ],
-        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t351593.90 USDT\t50227.8\t50227.7\t—\t\n-0.70\n-0.00%\n\t-193.38\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t150683.10 USDT\t50227.6\t50227.7\t—\t\n-0.30\n-0.00%\n\t-82.88\tTP/SL\t\nЛимитный\nРынок",
+        "text": "Рынок\tРазмер\tСтоимость позиции\tЦена входа\tМаркировочная цена\tЦена ликвидации\tНереализ. PnL\tРеализ. PnL\tTP/SL\tЗакрыть по\n\nBTC/USDT\nЛонг · Кросс 10x\n\t7 BTC\t355535.60 USDT\t50790.9\t50790.8\t—\t\n-0.70\n-0.00%\n\t-195.54\tTP/SL\t\nЛимитный\nРынок\n\n\nBTC/USDT\nШорт · Кросс 10x\n\t3 BTC\t152372.40 USDT\t50790.7\t50790.8\t—\t\n-0.30\n-0.00%\n\t-83.80\tTP/SL\t\nЛимитный\nРынок",
         "scroll": {
           "client": 388,
           "full": 1224,
@@ -522,8 +522,8 @@
         "vh": 844,
         "clipped": false,
         "text": "Карточка результата\nОткрыть\nСохранить PNG",
-        "alt": "BTCUSDT · P&L -81.5 USDT",
-        "href": "/futures?nativeCard=native%3A9%3Anative-c3af1698-dab9-456a-869d-d5e920e0a445",
+        "alt": "BTCUSDT · P&L -0.5 USDT",
+        "href": "/futures?nativeCard=native%3A9%3Anative-84f05dc5-2f99-459d-9c37-96903060eab1",
         "exported": "1080x1215"
       }
     },
@@ -561,20 +561,20 @@
       "name": "limit-close-targets-the-named-position-390",
       "passed": true,
       "evidence": {
-        "crossId": "native-15845d16-c7d2-4de8-9aa4-2df9fd4e977f",
-        "isolatedId": "native-dbbc3a32-48ac-48ae-b57d-cd3c55ee818e",
+        "crossId": "native-cc05b7ea-9550-4405-8ef8-0ba0fe56bbca",
+        "isolatedId": "native-d6957beb-e919-4f38-8b5f-f955ba3f9e02",
         "closes": [
           {
             "bucket": "ISOLATED",
-            "positionId": "native-dbbc3a32-48ac-48ae-b57d-cd3c55ee818e",
-            "price": "100423.0",
-            "orderId": "native-a0084e2e-5ff0-4fd4-ad99-1aeb690e2214"
+            "positionId": "native-d6957beb-e919-4f38-8b5f-f955ba3f9e02",
+            "price": "101581.6",
+            "orderId": "native-66eb5e71-1c08-4c1b-ba8f-64be0a9c8368"
           },
           {
             "bucket": "CROSS",
-            "positionId": "native-15845d16-c7d2-4de8-9aa4-2df9fd4e977f",
-            "price": "100423.0",
-            "orderId": "native-29a519d7-0d33-45d1-bb64-b75018959bd6"
+            "positionId": "native-cc05b7ea-9550-4405-8ef8-0ba0fe56bbca",
+            "price": "101581.6",
+            "orderId": "native-58d7a134-e774-459c-a267-8cb129d2f7c2"
           }
         ]
       }

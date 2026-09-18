@@ -2,8 +2,8 @@ import BigNumber from 'bignumber.js';
 import { createHash } from 'crypto';
 import { amount, decimal } from '../math';
 import type { Candle } from '../types';
-import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState,
-  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount,
+import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
+  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
@@ -21,7 +21,9 @@ export type NativeCandleRef={source:'BYBIT_LINEAR';interval:string;openTime:numb
  * historical id order among themselves, so every stored checkpoint replays
  * exactly as it did.
  */
-export type NativeInstruction = {id:string;at:number;seq?:number} & (
+export type NativeInstruction = {id:string;at:number;seq?:number;
+  /** The wallet valuation this command was decided against; applied to the state before the instruction. Absent on older journals. */
+  collateral?:ExternalCollateral} & (
   | {kind:'OPEN';order:DemoOrderInput;instrument:DemoInstrument;mark:string;last:string;point?:string;maker?:boolean;book?:NativeBook;candle?:NativeCandleRef}
   | {kind:'CLOSE';positionId:string;quantity?:string;price:string;book?:NativeBook;candle?:NativeCandleRef}
   | {kind:'CANCEL';orderId:string}
@@ -160,6 +162,7 @@ function executeCloseBook(s:DemoState,positionId:string,quantity:string|undefine
   consumed.prune();
 }
 function apply(s:DemoState,c:NativeInstruction,time:number){
+  if(c.collateral!==undefined)setDemoCollateral(s,c.collateral);
   if(c.kind==='OPEN'){
     registerDemoInstrument(s,c.instrument);
     const exposed=exposedSymbols(s);exposed.add(c.order.symbol);

@@ -43,6 +43,13 @@ export interface EngineAccount {
   isolatedMargin?: string;
   /** ISOLATED positions' P&L, which the cross account is not entitled to. */
   isolatedUnrealizedPnl?: string;
+  /**
+   * The wallet valuation the ENGINE decided against (journaled with the
+   * command), or null when the state predates that. When present it is the
+   * figure used here too, so the response cannot disagree with admission.
+   */
+  externalCollateral?: string | null;
+  collateralComplete?: boolean | null;
 }
 
 export interface CrossAccount {
@@ -100,7 +107,13 @@ export function crossAccount(
   const isolatedMargin = n(engine.isolatedMargin ?? '0');
   const isolatedPnl = n(engine.isolatedUnrealizedPnl ?? '0');
   const settleBalance = n(engine.walletBalance).plus(isolatedMargin);
-  const walletCollateral = n(valuation.priced);
+  // ONE FIGURE. When the engine carries the journaled valuation, that is the
+  // number it admitted orders and judged liquidation on, and it is the number
+  // reported. A state that was never told (older rows, hand-built fixtures)
+  // falls back to the valuation passed in, which is what it always did.
+  const journaled = engine.externalCollateral !== undefined && engine.externalCollateral !== null;
+  const walletCollateral = journaled ? n(engine.externalCollateral as string) : n(valuation.priced);
+  const complete = journaled ? (engine.collateralComplete ?? valuation.complete) : valuation.complete;
   const collateral = settleBalance.plus(walletCollateral);
   const unrealizedPnl = n(engine.unrealizedPnl).plus(isolatedPnl);
   const equity = collateral.plus(unrealizedPnl);
@@ -130,10 +143,10 @@ export function crossAccount(
     // The whole point: never liquidate against collateral we know is short.
     // The cross question, asked on cross money: isolated positions answer for
     // themselves in the engine and neither rescue nor endanger the account.
-    liquidatable: valuation.complete
+    liquidatable: complete
       ? hasOpenPositions && equity.minus(isolatedMargin).minus(isolatedPnl).lte(maintenanceMargin)
       : null,
-    collateralComplete: valuation.complete,
+    collateralComplete: complete,
     unpricedAssets: valuation.unpriced,
     collateralAsOf: valuation.asOf,
   };

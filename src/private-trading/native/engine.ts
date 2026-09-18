@@ -1,6 +1,6 @@
 import BigNumber from 'bignumber.js';
 import { amount, decimal, linearPnl, selectRiskTier, validateContractOrder, validateProfile, weightedEntry, consumeBook } from '../math';
-import type { ContractRules, ModelProfile, Side } from '../types';
+import type { ContractRules, ModelProfile, RiskTier, Side } from '../types';
 
 const D = BigNumber.clone({ DECIMAL_PLACES: 36, ROUNDING_MODE: BigNumber.ROUND_HALF_EVEN, EXPONENTIAL_AT: 100 });
 const n = (x: string) => decimal(x);
@@ -25,6 +25,16 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
   historyResolution: Object.freeze(['1m<=7d', '15m<=45d', '1h']),
   /** Cross is answered on the shared account; Isolated is answered on the position's own posted margin. */
   liquidation: 'CROSS_ACCOUNT_EQUITY_LTE_MAINTENANCE | ISOLATED_POSITION_MARGIN_PLUS_PNL_LTE_MAINTENANCE',
+  /** Cross positions of one contract share a tier; every isolated position is its own tier bucket. */
+  riskBuckets: 'CROSS_PER_CONTRACT | ISOLATED_PER_POSITION',
+  /**
+   * Exposure that has grown past the last published risk tier (a rally on a
+   * position opened inside it) keeps the LAST tier's maintenance parameters
+   * so the account stays readable and the position stays closable. New
+   * risk beyond the last tier is refused at admission, as before. No lower
+   * maintenance rate is ever invented for it.
+   */
+  riskBeyondLastTier: 'LAST_TIER_PARAMETERS_FOR_EXISTING_EXPOSURE_NEW_RISK_REFUSED',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
@@ -103,8 +113,26 @@ export function consumeObservedBook(s: DemoState, symbol: string, book: Observed
   const prune = () => { for (const k of Object.keys(s.bookConsumption)) if (Number(k.split(':')[1]) < time - OBSERVED_BOOK_MAX_AGE_MS) delete s.bookConsumption[k]; };
   return { fills: result.fills, record, prune };
 }
+/**
+ * THE REST OF THE WALLET, AS THE ENGINE WAS TOLD IT.
+ *
+ * The engine is denominated in the settle asset and cannot price BTC or ETH
+ * itself; the service values them from the same market data the positions
+ * are marked at and JOURNALS the result with the command that used it. So
+ * order admission, the fill margin check, the cross liquidation verdict and
+ * the liquidation reference all read one figure — the one the account
+ * response is built from — instead of the engine deciding on the settle row
+ * alone while the response added the wallet afterwards.
+ *
+ * `complete: false` means some held asset had no price: `priced` is then a
+ * FLOOR. New risk is admitted only against that floor (never optimistic),
+ * and the account is not liquidated on it (never on an understated figure).
+ */
+export interface ExternalCollateral { priced: string; complete: boolean; asOf: number | null }
 export interface DemoState {
   version: 2; walletBalance: string; initialDeposit: string; positions: DemoPosition[];
+  /** Absent/null on states written before it existed: the engine then acts on the settle row alone, as it always did. */
+  collateral?: ExternalCollateral | null;
   orders: DemoOrder[]; events: DemoEvent[]; instruments: Record<string, DemoInstrument>;
   marks: Record<string, { mark: string; last: string; time: number }>;
   applied: Record<string, string>;
@@ -128,7 +156,12 @@ export const noProtection = (): DemoProtection => ({ takeProfit: null, stopLoss:
 export function emptyDemoState(balance: string, time: number): DemoState {
   if (n(balance).lt(0) || !Number.isSafeInteger(time) || time < 0) throw new DemoEngineError('INVALID_INITIAL_STATE');
   return { version: DEMO_STATE_VERSION, walletBalance: out(n(balance)), initialDeposit: out(n(balance)), positions: [], orders: [], events: [],
-    instruments: {}, marks: {}, applied: {}, bookConsumption: {}, time, nextEvent: 1 };
+    instruments: {}, marks: {}, applied: {}, bookConsumption: {}, time, nextEvent: 1, collateral: null };
+}
+/** Record the wallet valuation every later decision on this state is taken against. */
+export function setDemoCollateral(s: DemoState, collateral: ExternalCollateral | null) {
+  if (collateral) { decimal(collateral.priced, 'collateral'); if (n(collateral.priced).lt(0)) throw new DemoEngineError('INVALID_COLLATERAL'); }
+  s.collateral = collateral ? { priced: out(n(collateral.priced)), complete: collateral.complete, asOf: collateral.asOf } : null;
 }
 /**
  * READ A STORED STATE FORWARD.
@@ -170,21 +203,59 @@ function instrument(s: DemoState, symbol: string): DemoInstrument {
 export function registerDemoInstrument(s: DemoState, i: DemoInstrument) {
   validateProfile(i.profile); s.instruments[i.rules.symbol] = structuredClone(i);
 }
-function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMarginType) {
-  // Exposure is read PER BUCKET: an isolated position is its own risk book,
-  // so a cross tier must not be widened by it and vice versa.
-  return s.positions.filter(p => p.status === 'OPEN' && p.symbol === symbol && p.marginType === marginType).reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
-    .plus(s.orders.filter(o => active(o) && !o.reduceOnly && o.symbol === symbol && o.marginType === marginType).reduce((v,o) => v.plus(n(o.remaining).times(D.maximum(mark,o.price ?? mark))), new D(0)));
+/**
+ * The tier a bucket's notional falls in — and, past the last published tier,
+ * the LAST tier rather than an exception. See `NATIVE_DEMO_MODEL.riskBeyondLastTier`:
+ * a position that grew past the table on a rally must remain readable and
+ * closable; only NEW risk is refused (`selectRiskTier` in `placeDemoOrder`).
+ */
+export function riskTierFor(notional: string, profile: ModelProfile): { tier: RiskTier; beyondLastTier: boolean } {
+  try { return { tier: selectRiskTier(notional, profile), beyondLastTier: false }; }
+  catch (e) {
+    if (e instanceof Error && e.message === 'RISK_LIMIT_EXCEEDED' && profile.riskTiers.length) return { tier: profile.riskTiers[profile.riskTiers.length - 1], beyondLastTier: true };
+    throw e;
+  }
+}
+/**
+ * The position an order would FILL INTO, if any: same contract, direction and
+ * bucket, live (historical entries never merge). This is the fill rule in
+ * `fillDemoOrder`, read once here so admission and fill agree on it.
+ */
+function joinedPosition(s: DemoState, o: { symbol: string; side: Side; marginType: DemoMarginType; historical: boolean }) {
+  return o.historical ? undefined : s.positions.find(p => p.status === 'OPEN' && !p.historical && p.symbol === o.symbol && p.side === o.side && p.marginType === o.marginType);
+}
+/**
+ * The notional an order's TIER is chosen on, before the order itself.
+ *
+ * CROSS: every cross position and working cross order on the contract —
+ * they share the account, so the tier is a property of the whole contract
+ * (gross hedge maintenance, as declared).
+ *
+ * ISOLATED: only the position this order would join, plus working isolated
+ * orders that would join the same one. Another isolated position on the
+ * same contract — the other direction, or a historical entry — is its own
+ * risk book and must not widen this one's tier, and vice versa.
+ */
+function exposure(s: DemoState, o: { symbol: string; side: Side; marginType: DemoMarginType; historical: boolean }, mark: string) {
+  const positions = o.marginType === 'CROSS'
+    ? s.positions.filter(p => p.status === 'OPEN' && p.symbol === o.symbol && p.marginType === 'CROSS')
+    : [joinedPosition(s, o)].filter((p): p is DemoPosition => !!p);
+  const orders = s.orders.filter(x => active(x) && !x.reduceOnly && x.symbol === o.symbol && x.marginType === o.marginType
+    && (o.marginType === 'CROSS' || (!o.historical && !x.historical && x.side === o.side)));
+  return positions.reduce((v,p) => v.plus(n(p.quantity).times(mark)), new D(0))
+    .plus(orders.reduce((v,x) => v.plus(n(x.remaining).times(D.maximum(mark,x.price ?? mark))), new D(0)));
 }
 /**
  * ONE POSITION'S OWN RISK, at a mark this caller chooses.
  *
  * The tier is selected on the notional of the bucket this position belongs
  * to — for CROSS that is every cross position on the contract sharing the
- * account, for ISOLATED it is this position alone, because that is the
- * whole point of isolating it. The continuous tier deduction is then
- * allocated across the bucket in proportion to notional, exactly as it was
- * before; an isolated bucket of one simply receives all of it.
+ * account, for ISOLATED it is THIS POSITION ALONE, because that is the
+ * whole point of isolating it: two isolated positions on one contract are
+ * two risk books, and opening the second must not move the first one's
+ * maintenance or liquidation price. The continuous tier deduction is
+ * allocated across a cross bucket in proportion to notional; an isolated
+ * bucket of one simply receives all of it.
  *
  * `mark` is a parameter rather than `p.markPrice` so the liquidation search
  * can ask "what would this position's requirement be at that price" without
@@ -192,15 +263,16 @@ function exposure(s: DemoState, symbol: string, mark: string, marginType: DemoMa
  */
 export function positionRisk(s: DemoState, p: DemoPosition, mark: string) {
   const profile = instrument(s,p.symbol).profile, value = n(p.quantity).times(mark);
-  const bucket = s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && x.marginType === p.marginType);
+  const bucket = p.marginType === 'ISOLATED' ? [p] : s.positions.filter(x => x.status === 'OPEN' && x.symbol === p.symbol && x.marginType === 'CROSS');
   const total = bucket.reduce((v,x) => v.plus(n(x.quantity).times(mark)), new D(0));
-  const tier = selectRiskTier(out(total), profile);
+  const { tier, beyondLastTier } = riskTierFor(out(total), profile);
   const deduction = total.gt(0) ? n(tier.deduction).times(value).div(total) : new D(0);
   return {
     value,
     maintenance: D.maximum(0,value.times(tier.maintenanceRate).minus(deduction)).plus(value.times(profile.takerFeeRate)),
     initial: value.div(p.leverage).plus(value.times(profile.takerFeeRate)),
     unrealized: new D(linearPnl(p.side,p.quantity,p.entryPrice,mark)),
+    beyondLastTier,
   };
 }
 /** An ISOLATED position stands on its posted margin alone: this is what is left of it. */
@@ -270,14 +342,24 @@ export function demoAccount(s: DemoState) {
     upl = upl.plus(risk.unrealized);
   }
   for (const o of s.orders.filter(active)) reserve = reserve.plus(o.reserved);
-  const equity = n(s.walletBalance).plus(upl);
-  return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity),
+  // The wallet's other assets, as journaled. Null = never told: settle only.
+  const external = s.collateral ? n(s.collateral.priced) : new D(0);
+  const complete = s.collateral ? s.collateral.complete : true;
+  const settleEquity = n(s.walletBalance).plus(upl);
+  const equity = settleEquity.plus(external);
+  const hasCross = s.positions.some(p => p.status === 'OPEN' && p.marginType === 'CROSS');
+  const underMaintenance = hasCross && equity.lte(mm);
+  return { walletBalance: s.walletBalance, initialDeposit: s.initialDeposit, unrealizedPnl: out(upl), equity: out(equity), settleEquity: out(settleEquity),
     usedMargin: out(im), orderReserve: out(reserve), available: out(D.maximum(0,equity.minus(im).minus(reserve))),
     maintenanceMargin: out(mm), maintenanceRatio: equity.gt(0) ? out(mm.div(equity)) : null,
     isolatedMargin: out(isolatedMargin), isolatedUnrealizedPnl: out(isolatedUpl), isolatedMaintenanceMargin: out(isolatedMaintenance),
+    externalCollateral: s.collateral ? out(external) : null, collateralComplete: s.collateral ? complete : null,
     // Only CROSS positions can be liquidated by the account. An isolated
-    // one answers for itself, so it must not make this true.
-    liquidatable: s.positions.some(p => p.status === 'OPEN' && p.marginType === 'CROSS') && equity.lte(mm),
+    // one answers for itself, so it must not make this true. And an account
+    // whose collateral is only a floor is never liquidated on that floor:
+    // the verdict is withheld (`liquidationUnknown`), not guessed.
+    liquidatable: underMaintenance && complete,
+    liquidationUnknown: underMaintenance && !complete,
     deficit: out(D.maximum(0,n(s.walletBalance).negated())) };
 }
 export function demoPositionView(s: DemoState,p: DemoPosition) {
@@ -341,8 +423,12 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   // what isolation changes is that once posted it stops backing anything
   // else. So the affordability question at placement is the same one.
   if (!o.reduceOnly && (demoAccount(s).liquidatable || n(o.reserved).gt(demoAccount(s).available))) throw new DemoEngineError('INSUFFICIENT_DEMO_MARGIN');
-  const tier=selectRiskTier(out(exposure(s,o.symbol,quote.mark,marginType).plus(o.reduceOnly?'0':n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
-  if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  // A reducing order adds no exposure and is never refused by a tier: a
+  // position that has outgrown the table must still be closable at a price.
+  if (!o.reduceOnly) {
+    const tier=selectRiskTier(out(exposure(s,o,quote.mark).plus(n(o.quantity).times(D.maximum(price,quote.mark)))),rules.profile);
+    if (tier.maxLeverage && n(o.leverage).gt(tier.maxLeverage)) throw new DemoEngineError('TIER_LEVERAGE_EXCEEDED');
+  }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
 function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false) {
@@ -524,6 +610,10 @@ export function estimateDemoLiquidationPrice(s:DemoState,positionId:string):stri
   const p=s.positions.find(x=>x.id===positionId&&x.status==='OPEN');if(!p)return null;
   const current=s.marks[p.symbol];if(!current)return null;
   const isolated=p.marginType==='ISOLATED';
+  // A cross reference is a statement about the whole account. On a wallet
+  // that is only partly priced the account is a floor, and a price solved
+  // on a floor is not a liquidation price: unknown is null, never the mark.
+  if(!isolated&&s.collateral&&!s.collateral.complete)return null;
   // The direction the search walks. Cross nets same-contract hedges because
   // they share the collateral; an isolated position is alone by definition.
   const same=s.positions.filter(x=>x.status==='OPEN'&&x.symbol===p.symbol&&x.marginType==='CROSS');

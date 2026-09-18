@@ -499,3 +499,72 @@ describe('a reducing order names ONE position, and the name has to fit',()=>{
     expect(v.orders.find(o=>o.positionId===isolated.id&&o.reduceOnly)).toMatchObject({status:'FILLED',averagePrice:'60000',marginType:'ISOLATED'});
   });
 });
+
+describe('one collateral snapshot: admission, liquidation reference and the response agree',()=>{
+  /** Little settle cash, plenty of wallet BTC: the account is backed by the wallet, or it is not backed at all. */
+  function poor(){
+    const f=setup();
+    f.repo.initialize=async function(this:typeof f.repo,_a:OwnerSession,key:string){
+      if(this.row)return structuredClone(this.row);const t=f.clock.now();
+      this.row={revision:1,deposit:'1000',commands:[],snapshot:emptyDemoState('1000',t),createdAt:t,source:'DEMO_BALANCE'};
+      this.revisions.set(1,revisionPayload(this.row));this.keys.set(key,{hash:commandHash({kind:'INITIALIZE'}),row:revisionPayload(this.row)});return structuredClone(this.row);
+    } as typeof f.repo.initialize;
+    // ETH, not BTC: the position's own quote and the collateral quote are
+    // then different symbols, so a test can fail exactly one of them.
+    f.repo.wallet=[{asset:'ETH',available:'2',locked:'0'}];
+    return f;
+  }
+  test('an order the settle row cannot cover is admitted on the wallet the response reports, and the journal records that valuation',async()=>{
+    const f=poor();await f.service.initialize(actor,'one-snapshot-init');
+    const before=await f.service.state(actor);
+    // 2 ETH at the fixture mark (50 000 for every symbol) = 100 000 of collateral on top of 1 000 of cash.
+    expect(before.account!.walletCollateral).toBe('100000');expect(before.account!.available).toBe('101000');
+    const v=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    expect(v.positions).toHaveLength(1);expect(v.positions[0].quantity).toBe('2');
+    const stored=f.repo.row!.commands[0];
+    expect(stored.collateral).toEqual({priced:'100000',complete:true,asOf:f.clock.t});
+    expect(f.repo.row!.snapshot.collateral).toEqual(stored.collateral);
+    // The response account IS the engine account: same available, same verdict.
+    expect(v.account!.walletCollateral).toBe('100000');
+    expect(new BigNumber(v.account!.equity).minus(v.account!.initialMargin).minus(v.account!.orderReserve).toFixed()).toBe(v.account!.available);
+    expect(v.account!.liquidatable).toBe(false);
+    // A cross liquidation reference on the SAME pool: 100k behind a 100k position is unreachable.
+    expect(v.positions[0].liquidationPrice).toBeNull();
+  });
+  test('a plain read after the command reports the same account as the command did',async()=>{
+    const f=poor();await f.service.initialize(actor,'one-snapshot-init-2');
+    const v=await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    const read=await f.service.state(actor);
+    expect(read.account).toEqual(v.account);
+    expect(read.positions[0].liquidationPrice).toBe(v.positions[0].liquidationPrice);
+  });
+  test('an adverse move that the settle row alone could not survive is NOT liquidated while the wallet backs it, and IS once the wallet is gone',async()=>{
+    const f=poor();await f.service.initialize(actor,'one-snapshot-init-3');
+    await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    f.clock.t+=30_000;f.market.quote={...f.market.quote,mark:'45000',last:'45000',bid:'44999.9',ask:'45000.1'};
+    let v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    // -10 000 on 1 000 of cash: the settle row is deep under water; the account is not.
+    expect(v.positions).toHaveLength(1);expect(v.account!.liquidatable).toBe(false);
+    expect(new BigNumber(v.account!.equity).gt(0)).toBe(true);
+    // The owner moves the ETH out of the wallet: the next command sees an unbacked account and closes it.
+    f.repo.wallet=[];f.clock.t+=30_000;
+    v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(v.positions).toHaveLength(0);expect(v.history[0].status).toBe('LIQUIDATED');
+    const observe=f.repo.row!.commands.find(c=>c.kind==='OBSERVE')!;
+    expect(observe.collateral).toEqual({priced:'0',complete:true,asOf:null});
+  });
+  test('an unpriceable wallet asset withholds the verdict instead of liquidating on the floor',async()=>{
+    const f=poor();await f.service.initialize(actor,'one-snapshot-init-4');
+    await f.service.command(actor,long({margin:'5000',leverage:'20'}));
+    // The position's own quote still answers; the collateral asset's does not.
+    const answer=f.market.freshQuote.bind(f.market);
+    f.market.freshQuote=(async(symbol:string)=>{if(symbol==='ETHUSDT')throw new Error('PROVIDER_DOWN');return answer(symbol);}) as typeof f.market.freshQuote;
+    f.clock.t+=30_000;
+    f.market.quote={...f.market.quote,mark:'45000',last:'45000',bid:'44999.9',ask:'45000.1'};
+    const v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
+    expect(v.account!.collateralComplete).toBe(false);
+    expect(v.account!.liquidatable).toBeNull();
+    expect(v.positions).toHaveLength(1);
+    expect(v.positions[0].liquidationPrice).toBeNull();
+  });
+});
