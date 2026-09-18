@@ -602,6 +602,8 @@ export const RU = {
   'catalogue.filterAll': 'Все',
   'catalogue.filterTradable': 'Торгуется на VOLTEX',
   'catalogue.filterFavorites': 'Избранное',
+  'catalogue.gainers': 'Рост',
+  'catalogue.losers': 'Падение',
   'catalogue.tradable': 'Торгуется',
   'catalogue.dataOnly': 'Только данные',
   'catalogue.trade': 'Торговать',

@@ -452,6 +452,58 @@
   outline-offset: 2px;
 }
 
+
+/* ── Multi-period movers ──────────────────────────────────────────── */
+
+.vx-catalogue .vx-cat-head-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.vx-catalogue .vx-cat-change-controls,
+.vx-catalogue .vx-cat-change-periods,
+.vx-catalogue .vx-cat-change-direction {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.vx-catalogue .vx-cat-change-controls button {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 650;
+  cursor: pointer;
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.vx-catalogue .vx-cat-change-controls button:hover {
+  color: var(--text-title);
+  border-color: var(--text-muted);
+}
+
+.vx-catalogue .vx-cat-change-controls button.is-active {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.vx-catalogue .vx-cat-change-controls button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ── Responsive: drop columns by priority ─────────────────────────── */
 
 @media (max-width: 1023px) {
@@ -466,7 +518,17 @@
 }
 
 @media (max-width: 767px) {
+  .vx-catalogue .vx-cat-head-controls {
+    width: 100%;
+    align-items: flex-start;
+  }
+  .vx-catalogue .vx-cat-change-controls,
+  .vx-catalogue .vx-cat-change-periods,
+  .vx-catalogue .vx-cat-change-direction {
+    justify-content: flex-start;
+  }
   .vx-catalogue {
+
     padding: 14px 12px 12px;
   }
   .vx-catalogue .vx-cat-hide-md {

@@ -591,6 +591,8 @@ export const HI: Record<Key, string> = {
   'catalogue.filterAll': 'सभी',
   'catalogue.filterTradable': 'VOLTEX पर ट्रेड योग्य',
   'catalogue.filterFavorites': 'पसंदीदा',
+  'catalogue.gainers': 'बढ़त',
+  'catalogue.losers': 'गिरावट',
   'catalogue.tradable': 'ट्रेड योग्य',
   'catalogue.dataOnly': 'केवल डेटा',
   'catalogue.trade': 'ट्रेड करें',

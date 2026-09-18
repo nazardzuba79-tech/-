@@ -187,7 +187,7 @@ export function useCatalogue(): CatalogueState & { refresh: () => void } {
 // nulls-last rule. Running it here is what makes typing in the search box
 // instant and free.
 
-export type CatalogueSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'symbol' | 'name';
+export type CatalogueSortKey = 'rank' | 'marketCap' | 'volume24h' | 'price' | 'change24h' | 'change7d' | 'change30d' | 'symbol' | 'name';
 
 export interface CatalogueFilter {
   search?: string;
@@ -245,6 +245,10 @@ export function filterAndSortAssets<T extends CanonicalAsset>(assets: T[], filte
         return nullsLast(referenceValues(a).price, referenceValues(b).price, direction) || a.symbol.localeCompare(b.symbol);
       case 'change24h':
         return nullsLast(referenceValues(a).change, referenceValues(b).change, direction) || a.symbol.localeCompare(b.symbol);
+      case 'change7d':
+        return nullsLast(referenceValues(a).change7d, referenceValues(b).change7d, direction) || a.symbol.localeCompare(b.symbol);
+      case 'change30d':
+        return nullsLast(referenceValues(a).change30d, referenceValues(b).change30d, direction) || a.symbol.localeCompare(b.symbol);
       case 'symbol':
         return a.symbol.localeCompare(b.symbol) * direction;
       case 'name':

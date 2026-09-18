@@ -591,6 +591,8 @@ export const KO: Record<Key, string> = {
   'catalogue.filterAll': '전체',
   'catalogue.filterTradable': 'VOLTEX 거래 가능',
   'catalogue.filterFavorites': '즐겨찾기',
+  'catalogue.gainers': '상승',
+  'catalogue.losers': '하락',
   'catalogue.tradable': '거래 가능',
   'catalogue.dataOnly': '데이터 전용',
   'catalogue.trade': '거래',

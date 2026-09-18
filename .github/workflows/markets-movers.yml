@@ -1,0 +1,49 @@
+name: Markets 7d/30d movers
+on:
+  pull_request:
+    paths:
+      - 'src/services/CoinGeckoService.ts'
+      - 'src/services/marketData/AssetRegistry.ts'
+      - 'src/services/marketData/__tests__/AssetRegistry.test.ts'
+      - 'src/api/routes/marketData.ts'
+      - 'frontend/src/lib/api.ts'
+      - 'frontend/src/lib/catalogueStore.ts'
+      - 'frontend/src/lib/referenceAssets.ts'
+      - 'frontend/src/lib/__tests__/cryptoCatalogue.test.ts'
+      - 'frontend/src/lib/__tests__/marketsMoversControls.test.ts'
+      - 'frontend/src/pages/markets-bolt/**'
+      - 'frontend/src/lib/i18n/locales/**'
+      - '.github/workflows/markets-movers.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: markets-movers-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  markets-movers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Record tested commit and parents
+        run: git show -s --format='%H %P'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Backend TypeScript
+        run: npm run build
+      - name: Frontend production build
+        run: npm run build --prefix frontend
+        env:
+          VITE_API_URL: /api/v1
+      - name: Catalogue backend regressions
+        run: npm test -- --runInBand --runTestsByPath src/services/marketData/__tests__/AssetRegistry.test.ts src/services/marketData/__tests__/CatalogueScale.test.ts
+      - name: Catalogue frontend and actual period-control regressions
+        run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/cryptoCatalogue.test.ts frontend/src/lib/__tests__/marketsMoversControls.test.ts

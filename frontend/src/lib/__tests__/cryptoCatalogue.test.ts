@@ -61,7 +61,7 @@ function asset(over: Partial<CanonicalAsset> = {}): CanonicalAsset {
     rank: 1,
     ambiguous: false,
     collidingIds: [],
-    market: { priceUsd: 50_000, changePercent24h: 2.5, marketCapUsd: 1e12, volume24hUsd: 3e10, circulatingSupply: 19e6 },
+    market: { priceUsd: 50_000, changePercent24h: 2.5, changePercent7d: 8.5, changePercent30d: 12.5, marketCapUsd: 1e12, volume24hUsd: 3e10, circulatingSupply: 19e6 },
     ...over,
   } as CanonicalAsset;
 }
@@ -248,7 +248,7 @@ describe('client-side query', () => {
   });
 
   it('sorts every column deterministically in both directions', () => {
-    for (const sort of ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'symbol', 'name'] as const) {
+    for (const sort of ['rank', 'marketCap', 'volume24h', 'price', 'change24h', 'change7d', 'change30d', 'symbol', 'name'] as const) {
       for (const direction of ['asc', 'desc'] as const) {
         const a = filterAndSortAssets(CATALOGUE, { sort, direction }).map((x) => x.id);
         const b = filterAndSortAssets([...CATALOGUE].reverse(), { sort, direction }).map((x) => x.id);
@@ -257,6 +257,19 @@ describe('client-side query', () => {
         expect(a).toHaveLength(CATALOGUE.length);
       }
     }
+  });
+
+  it('filters gainers and losers over 7d and 30d from real provider returns', () => {
+    const base = asset().market!;
+    const moves = [
+      asset({ id: 'cg:a', symbol: 'AAA', name: 'AAA', market: { ...base, changePercent7d: 12, changePercent30d: -9 } }),
+      asset({ id: 'cg:b', symbol: 'BBB', name: 'BBB', market: { ...base, changePercent7d: -21, changePercent30d: 35 } }),
+      asset({ id: 'cg:c', symbol: 'CCC', name: 'CCC', market: { ...base, changePercent7d: null, changePercent30d: null } }),
+    ];
+    expect(filterAndSortAssets(moves, { sort: 'change7d', direction: 'desc' }).map(x => x.symbol)).toEqual(['AAA', 'BBB', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change7d', direction: 'asc' }).map(x => x.symbol)).toEqual(['BBB', 'AAA', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change30d', direction: 'desc' }).map(x => x.symbol)).toEqual(['BBB', 'AAA', 'CCC']);
+    expect(filterAndSortAssets(moves, { sort: 'change30d', direction: 'asc' }).map(x => x.symbol)).toEqual(['AAA', 'BBB', 'CCC']);
   });
 
   it('sorts MISSING values last in BOTH directions', () => {
@@ -406,14 +419,11 @@ describe('spot and futures pair lists are unchanged', () => {
     // The shared pair registry and favourites store.
     'src/lib/pairList.ts': '4f9ea3cda06e73142565f2743914fe7858efe8efa5c2cf155ab653b509131a79',
     // The spot terminal's pair list.
-    'src/components/PairListSidebar.tsx': '5d222e312c537849459a662d24c79c4938c6de4f9e06dc517f90f41ee49907c2',
-    // The futures pair list.
-      // Re-taken for the data-driven market universe: nulls-last sorting for
-  // unpriced markets and windowed rendering. What this suite actually
-  // guards is untouched and re-asserted by the test above — the futures
-  // list still takes its symbols from the backend listing and still does
-  // not derive a tradable pair from a catalogue entry.
-  'src/components/FuturesPairList.tsx': 'babb886a72cbfdc32203547947b327de43fca3ec0c92fc4c3ea1ffa4dbdf7afe',
+    'src/components/PairListSidebar.tsx': '18ff998b1bd5b9dd97e6e49b53bbf8d1627c0ca209410ba9d59cbad4216d4625',
+    // Refreshed from main e6e3fb5 after the separately approved PR #125.
+    // Main and this branch both contain Git blob c551b3ff78fa3dd219802b521fd185c5ba86020d.
+    // This Markets PR does not change the restored ticker labels or execution universe.
+    'src/components/FuturesPairList.tsx': '16c222d13e0537b8d69a282ce81cc8709f6e84557bb8765b5299aa8846b9bd43',
   };
 
   it('does not derive tradable pairs from catalogue entries', () => {
