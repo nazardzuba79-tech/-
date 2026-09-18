@@ -5,6 +5,12 @@ const root = resolve(__dirname, '../../../..');
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8').replace(/\r\n/g, '\n');
 const book = read('frontend/src/components/FuturesReferenceBook.tsx');
 const css = read('frontend/src/pages/trade-terminal/TerminalAccountPanel.css');
+const premium = read('frontend/src/pages/trade-terminal/TerminalPremium.css');
+/** The two sheets that paint the bar on the terminal the owner looks at: the
+ * rule here, and the palette token it resolves to. ReferenceFuturesTerminal
+ * still carries the pre-fix 30% fallback for designs this panel never uses,
+ * and is deliberately out of scope. */
+const SHEETS = [css, premium];
 /** Comments explain the rules; they must not be able to satisfy them. */
 const code = book.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
@@ -75,7 +81,19 @@ describe('depth bars are muted and settle between publishes', () => {
   const rule = css.slice(css.indexOf('.repaired-futures-book .rb-depth {', css.indexOf('Order-book calm')));
 
   it('draws the bars well under the old 30% alpha', () => {
-    const alphas = [...css.matchAll(/rgba\((?:20,160,115|200,64,74),\.(\d+)\)/g)].map((m) => Number('0.' + m[1]));
+    // Swept by rule rather than by colour literal: the palette re-values the
+    // bar (--buy-dim / --sell-dim in TerminalPremium.css, which paints it on
+    // the Futures terminal), and a re-valued palette must not be able to
+    // bring the weight back up. Every alpha that can reach a depth bar is
+    // collected — the backgrounds declared on `.rb-depth` in any terminal
+    // sheet, and the two dim tokens those rules resolve to.
+    const declared = SHEETS.flatMap((sheet) =>
+      [...sheet.matchAll(/\.rb-depth[^{]*\{([^}]*)\}/g)].flatMap((rule) => [
+        ...rule[1].matchAll(/rgba\([^)]*,\s*\.(\d+)\)/g),
+      ]),
+    );
+    const tokens = [...premium.matchAll(/--(?:buy|sell)-dim:\s*rgba\([^)]*,\s*\.(\d+)\)/g)];
+    const alphas = [...declared, ...tokens].map((m) => Number('0.' + m[1]));
     expect(alphas.length).toBeGreaterThan(0);
     expect(Math.max(...alphas)).toBeLessThanOrEqual(0.15);
   });

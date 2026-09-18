@@ -41,10 +41,10 @@
    not after a tall decorative heading. */
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .studio-market-heading {
   height:42px; min-height:42px; box-sizing:border-box; display:flex; align-items:center;
-  margin:0; padding:0 12px; font-size:13px; border-bottom:1px solid #26313d;
+  margin:0; padding:0 12px; font-size:13px; border-bottom:1px solid #232a34;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pairs-search {
-  padding:8px 10px; border-bottom:1px solid #26313d;
+  padding:8px 10px; border-bottom:1px solid #232a34;
 }
 .trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .pairs-search input {
   height:38px; font-size:12px; line-height:18px;
@@ -80,8 +80,8 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .fo-infoBox {
   background:transparent;
   border:0;
-  border-top:1px solid var(--border-color,#26313d);
-  border-bottom:1px solid var(--border-color,#26313d);
+  border-top:1px solid var(--border-color,#232a34);
+  border-bottom:1px solid var(--border-color,#232a34);
   border-radius:0;
   padding:8px 0;
   gap:4px;
@@ -257,11 +257,11 @@
    every bar was permanently mid-animation, so the ladder never sat still.
    140ms lands each bar well before the next publish. */
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-depth {
-  background:rgba(20,160,115,.13);
+  background:rgba(46,189,133,.13);
   transition:transform 140ms linear;
 }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .repaired-futures-book .rb-row.ask .rb-depth {
-  background:rgba(200,64,74,.13);
+  background:rgba(246,70,93,.13);
 }
 
 /* CENTRE PRICE. The number sits in its own slot and the direction arrow in a

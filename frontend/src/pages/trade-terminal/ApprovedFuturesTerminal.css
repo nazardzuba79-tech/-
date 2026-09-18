@@ -1,15 +1,15 @@
 /* Approved Futures presentation. Keep the existing responsive panel order,
    chart ownership, data subscriptions and order-entry controls. */
 .trade-terminal.trade-terminal.futures-terminal {
-  --bg-primary: #080f18;
+  --bg-primary: #0b0e11;
   --workspace-bg: #0c1722;
   --toolbar-bg: #0d1925;
-  --grid-bg: #07111b;
-  --panel-alt: #142333;
-  --bg-tertiary: #142333;
-  --border-color: #223345;
-  --panel-border: #223345;
-  --text-secondary: #a1b0c2;
+  --grid-bg: #0b0e11;
+  --panel-alt: #1a1f27;
+  --bg-tertiary: #1a1f27;
+  --border-color: #232a34;
+  --panel-border: #232a34;
+  --text-secondary: #98a2b3;
   --accent-yellow: #f4c451;
 }
 
@@ -25,7 +25,7 @@
 .trade-terminal.trade-terminal.futures-terminal .ticker-bar .ticker-item .label {
   font-size: 12px;
   line-height: 16px;
-  color: #a1b0c2;
+  color: #98a2b3;
 }
 .trade-terminal.trade-terminal.futures-terminal .ticker-bar .ticker-item .value {
   font-size: 13px;
@@ -39,7 +39,7 @@
 .trade-terminal.trade-terminal.futures-terminal .pair-name { font-size: var(--terminal-pair-size); }
 .trade-terminal.trade-terminal.futures-terminal .orderbook-col-headers {
   font-size: 12px;
-  color: #a1b0c2;
+  color: #98a2b3;
   min-height: 32px;
 }
 .trade-terminal.trade-terminal.futures-terminal .ob-row {
@@ -78,8 +78,8 @@
   white-space: normal;
   color: #fff;
 }
-.trade-terminal.trade-terminal.futures-terminal .fo-submitPair .submit-btn.buy { background: #00b879; }
-.trade-terminal.trade-terminal.futures-terminal .fo-submitPair .submit-btn.sell { background: #f33451; }
+.trade-terminal.trade-terminal.futures-terminal .fo-submitPair .submit-btn.buy { background: #2ebd85; }
+.trade-terminal.trade-terminal.futures-terminal .fo-submitPair .submit-btn.sell { background: #f6465d; }
 .trade-terminal.trade-terminal.futures-terminal .fo-submitPair .submit-btn:disabled { opacity: .45; cursor: not-allowed; }
 .trade-terminal.trade-terminal.futures-terminal .fo-tiersTitle { padding-block: 10px; }
 .trade-terminal.trade-terminal.futures-terminal .fo-tiersTh,
@@ -164,7 +164,7 @@
 .trade-terminal.trade-terminal.futures-terminal .pair-row > span { min-width: 0; }
 .trade-terminal.trade-terminal.futures-terminal .pair-row .p-name { overflow: hidden; }
 .trade-terminal.trade-terminal.futures-terminal .pairs-col-headers { grid-template-columns: minmax(0, 1fr) 62px 55px; gap: 2px; padding-inline: 7px; }
-.trade-terminal.trade-terminal.futures-terminal .bottom-tabs { flex: 0 0 auto; min-height: 46px; gap: 24px; padding-inline: 14px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid #202a35; }
+.trade-terminal.trade-terminal.futures-terminal .bottom-tabs { flex: 0 0 auto; min-height: 46px; gap: 24px; padding-inline: 14px; overflow-x: auto; scrollbar-width: thin; border-bottom: 1px solid #1a1f27; }
 .trade-terminal.trade-terminal.futures-terminal .bottom-tab { flex: 0 0 auto; padding: 12px 0; border-radius: 0; background: transparent; font-weight: 500; white-space: nowrap; }
 .trade-terminal.trade-terminal.futures-terminal .bottom-tab .badge { display: inline; padding: 0; margin-left: 5px; background: none; color: inherit; font-size: inherit; }
 .trade-terminal.trade-terminal.futures-terminal .bottom-tab .badge::before { content: '('; }
@@ -173,7 +173,7 @@
 .futures-terminal .futures-orders-caption { padding: 6px 12px; font-size: 10px; color: var(--text-secondary); }
 .futures-terminal .futures-orders-table { width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 12px; }
 .futures-terminal .futures-orders-table th { color: var(--text-secondary); font-size: 11px; font-weight: 400; }
-.futures-terminal .futures-orders-table th, .futures-terminal .futures-orders-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #202a35; font-variant-numeric: tabular-nums; }
+.futures-terminal .futures-orders-table th, .futures-terminal .futures-orders-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid #1a1f27; font-variant-numeric: tabular-nums; }
 .futures-terminal .futures-orders-table .futures-orders-empty { text-align: center; height: 75px; color: var(--text-secondary); }
 .futures-terminal .futures-orders-error { padding: 8px 12px; color: var(--sell); display: flex; gap: 12px; }
 .futures-terminal .futures-orders-error button { background: transparent; color: var(--accent-yellow); border: 0; cursor: pointer; }
