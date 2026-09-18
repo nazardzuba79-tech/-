@@ -220,3 +220,31 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .pair-selector .crypto-icon {
   flex:0 0 auto;
 }
+
+/* The instrument row's rhythm.
+
+   The cells were packed left against a fixed 14px gap, so all the slack
+   collected in one dead strip at the right end — 99px at 1600, 168px at
+   1920, 296px at 2048 — while cells of very different widths (127, 132, 92,
+   64, 59, 109, 130, 184) sat shoulder to shoulder. It read as crowded on the
+   left and empty on the right rather than as one distributed row.
+
+   `space-between` spends that slack on the gaps instead of hoarding it at
+   the end. `gap` stays as the FLOOR, so the cells can never be pushed closer
+   than 14px on a narrow bar — the distribution only ever adds. Scoped to the
+   width where the bar is correctly confined to the chart and depth columns;
+   below it the bar still spans the order column, and spreading cells across
+   that would park a metric above order entry. */
+@media(min-width:1500px) {
+  .trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar {
+    justify-content:space-between;
+  }
+}
+
+/* The 24h cell carries two figures now (`+900.76 (+1.18%)`) where every
+   other cell carries one, so at the shared 13px it read as the heaviest
+   thing in the row. One step down keeps it legible and stops it competing
+   with the last price above it. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-reference.futures-studio.terminal-studio .ticker-bar .ticker-item .value.change {
+  font-size:12px;
+}
