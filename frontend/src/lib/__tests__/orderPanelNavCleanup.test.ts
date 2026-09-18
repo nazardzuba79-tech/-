@@ -524,10 +524,16 @@ describe('10. the v4 order ticket', () => {
   test('the order column is wider and the chart absorbs it', () => {
     // Measured from the owner's two same-scale references: the marked
     // control row there is ~1.18x ours. 278 -> 312 is +12.2%.
-    expect(PANEL_CSS).toContain('grid-template-columns:212px minmax(0,1fr) 250px 312px;');
-    // The pair list and the depth column keep their exact widths — the
-    // flexible track is the one that gives.
-    expect(PANEL_CSS).not.toMatch(/grid-template-columns:212px minmax\(0,1fr\) 2[0-4]\d px? 312px/);
+    //
+    // The market rail then went 212 -> 226 in the polish pass, and that one
+    // is measured too: at 1440 the rail's row asked for 222px of tracks,
+    // gaps and padding inside 212px, so the price column gave way and the
+    // list rendered `49,404....` — a truncated price in a price list. The
+    // 14px comes from the flexible chart track, never from the order column
+    // or the depth column, which both still hold their exact widths.
+    expect(PANEL_CSS).toContain('grid-template-columns:226px minmax(0,1fr) 250px 312px;');
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:\d+px minmax\(0,1fr\) 2[0-4]\d px? 312px/);
+    expect(PANEL_CSS).not.toMatch(/grid-template-columns:\d+px minmax\(0,1fr\) 250px (?!312px)/);
   });
 
   test('the leverage select is no longer the squeezed one', () => {
@@ -556,11 +562,21 @@ describe('10. the v4 order ticket', () => {
     const sellDisabled = /\.submit-btn\.sell:disabled \{\s*background:(#[0-9a-f]{6});\s*color:(#[0-9a-f]{6});/.exec(PANEL_CSS);
     expect(buyDisabled).not.toBeNull();
     expect(sellDisabled).not.toBeNull();
+    // The owner's polish brief reverses the earlier judgement here: Long and
+    // Short are to stay BRIGHT at all times, so a trader can always see which
+    // side is which, and "you cannot press this yet" is carried by the cursor
+    // and by the form's own hints rather than by draining the button. What is
+    // still pinned is that the side keeps its own hue and its label stays
+    // readable — a disabled button must never become an unreadable grey slab.
+    const [buyBg, sellBg] = [hex(buyDisabled![1]), hex(sellDisabled![1])];
+    expect(buyBg[1]).toBeGreaterThan(buyBg[0]);   // green leads on Long
+    expect(buyBg[1]).toBeGreaterThan(buyBg[2]);
+    expect(sellBg[0]).toBeGreaterThan(sellBg[1]); // red leads on Short
+    expect(sellBg[0]).toBeGreaterThan(sellBg[2]);
     for (const m of [buyDisabled!, sellDisabled!]) {
-      // Obviously inactive: the fill is far quieter than the enabled one.
-      expect(luminance(hex(m[1]))).toBeLessThan(luminance(hex('#00b879')));
-      // But still a readable label, which is the whole point.
       expect(contrast(hex(m[2]), hex(m[1]))).toBeGreaterThan(3);
+      // Bright, not drained: the fill stays in the same band as the enabled one.
+      expect(luminance(hex(m[1]))).toBeGreaterThan(0.1);
     }
   });
 

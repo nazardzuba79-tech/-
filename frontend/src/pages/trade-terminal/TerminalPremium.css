@@ -13,91 +13,140 @@
    palette that moved a box would have moved the numbers a trader reads.
    Nothing here produces a market or account figure.
 
-   Scope: the Futures root (`.futures-terminal.futures-reference`), which the
-   Futures page and the private Futures-style terminal both carry, and both
-   import this sheet so the styling never depends on which page loaded first.
-   Spot and CFD roots do not match it and are untouched. */
+   Scope: every terminal root — `.futures-reference` for Futures and the
+   private Futures-style terminal, `.market-reference` for Spot and CFD. All
+   three pages import this sheet themselves, so the styling never depends on
+   which page loaded first, and the three terminals cannot drift apart. */
 
 /* ── Tokens ─────────────────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) {
   --bg:#0b0e11; --workspace-bg:#0b0e11; --studio-canvas:#0b0e11;
   --panel:#12161c; --studio-panel:#12161c; --toolbar-bg:#12161c; --chart-bg:#12161c; --voltex-plot-background:#12161c;
   --panel-alt:#1a1f27; --studio-raised:#1a1f27; --panel-alt-hover:#1f252e;
   --border:#232a34; --border-color:#232a34; --panel-border:#232a34; --layer-border:#232a34;
-  --text-primary:#eaeef3; --text-secondary:#98a2b3; --text-tertiary:#5c6675;
-  --accent:#f5a524; --accent-hover:#ffb84d; --accent-dim:rgba(245,165,36,.12); --accent-yellow:#f5a524; --on-accent:#0b0e11;
+  --text-primary:#eaeef3; --text-secondary:#98a2b3; --text-tertiary:#808a9a;
+  --accent:#f0c964; --accent-hover:#f0c964; --accent-dim:rgba(240,201,100,.12); --accent-yellow:#f0c964; --on-accent:#0b0e11;
   --buy:#2ebd85; --color-buy:#2ebd85; --buy-dim:rgba(46,189,133,.14);
   --sell:#f6465d; --color-sell:#f6465d; --sell-dim:rgba(246,70,93,.14);
   --neutral-dim:rgba(152,162,179,.12); --field-border:#2d3540;
   --bg-primary:#0b0e11; --bg-secondary:#12161c; --bg-tertiary:#1a1f27; --bg-hover:#1f252e;
-  --grid-bg:#0b0e11; --color-accent:#f5a524;
+  --grid-bg:#0b0e11; --color-accent:#f0c964;
   background:var(--studio-canvas);
   color:var(--text-primary);
   font-variant-numeric:tabular-nums;
 }
 
 /* ── Surfaces ───────────────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .terminal { background:var(--studio-canvas); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.reference-market-sidebar,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.futures-ticker-bar) {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .terminal { background:var(--studio-canvas); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.reference-market-sidebar,.chart-area,.orderbook-area,.order-form-area,.bottom-panel,.futures-ticker-bar) {
   background:var(--panel); border-color:var(--border); box-shadow:none;
 }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.terminal-chart-heading,.orderbook-header,.bottom-tabs,.terminal-account-header,.chart-toolbar,.drawing-rail,.orderbook-col-headers,.orderbook-asks,.orderbook-bids) {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.terminal-chart-heading,.orderbook-header,.bottom-tabs,.terminal-account-header,.chart-toolbar,.drawing-rail,.orderbook-col-headers,.orderbook-asks,.orderbook-bids) {
   background:var(--panel); border-color:var(--border);
 }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .futures-ticker-bar { background:var(--panel); background-image:none; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .terminal-chart-shell { --voltex-plot-background:#12161c; background:var(--panel); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .futures-ticker-bar { background:var(--panel); background-image:none; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .terminal-chart-shell { --voltex-plot-background:#12161c; background:var(--panel); }
 
 /* ── Text: three levels, numbers tabular ────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.ticker-item .label,.rb-columns,.futures-positions-table th,.fa-label,.orderbook-col-headers,.pairs-count) { color:var(--text-secondary); font-weight:500; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.ticker-item .value,.rb-row,.futures-positions-table td,.fa-value) { color:var(--text-primary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference input::placeholder { color:var(--text-tertiary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .fa-unit { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.mono,.rb-row,.fa-value,.futures-positions-table td.mono,.ticker-item .value,.rb-center strong) { font-variant-numeric:tabular-nums; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.text-buy,.rb-center strong.up) { color:var(--buy); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.ticker-item .value.price,.ticker-item .value.change) { color:var(--buy); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.ticker-item .value.price.down,.ticker-item .value.change.down) { color:var(--sell); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.futures-secondary-price,.futures-secondary-price .value) { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.text-sell,.rb-center strong.down) { color:var(--sell); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .label,.rb-columns,.futures-positions-table th,.fa-label,.orderbook-col-headers,.pairs-count) { color:var(--text-secondary); font-weight:500; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .value,.rb-row,.futures-positions-table td,.fa-value) { color:var(--text-primary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) input::placeholder { color:var(--text-tertiary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .fa-unit { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.mono,.rb-row,.fa-value,.futures-positions-table td.mono,.ticker-item .value,.rb-center strong) { font-variant-numeric:tabular-nums; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.text-buy,.rb-center strong.up) { color:var(--buy); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .value.price,.ticker-item .value.change) { color:var(--buy); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.ticker-item .value.price.down,.ticker-item .value.change.down) { color:var(--sell); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.futures-secondary-price,.futures-secondary-price .value) { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.text-sell,.rb-center strong.down) { color:var(--sell); }
 
 /* ── Order book depth: a hint of volume, never a shout ──────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .rb-row:hover { background:var(--panel-alt-hover); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .rb-row:hover { background:var(--panel-alt-hover); }
 
 /* ── Inputs ─────────────────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.order-family-input,.pairs-search input) {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.order-family-input,.pairs-search input) {
   background:var(--panel-alt); border-color:var(--field-border); color:var(--text-primary); box-shadow:none;
 }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 
 /* ── The one accent ─────────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.bottom-tab[aria-selected=true],.bottom-tab.active,.order-family-tabs [role=tab][aria-selected=true],.order-family-tabs button.active) { color:var(--accent); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.bottom-tab[aria-selected=true],.bottom-tab.active,.order-family-tabs [role=tab][aria-selected=true],.order-family-tabs button.active) { border-color:var(--accent); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.bottom-tab,.order-family-tabs [role=tab],.order-family-tabs button):not([aria-selected=true]):not(.active) { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab[aria-selected=true],.bottom-tab.active,.order-family-tabs [role=tab][aria-selected=true],.order-family-tabs button.active) { color:var(--accent); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab[aria-selected=true],.bottom-tab.active,.order-family-tabs [role=tab][aria-selected=true],.order-family-tabs button.active) { border-color:var(--accent); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab,.order-family-tabs [role=tab],.order-family-tabs button):not([aria-selected=true]):not(.active) { color:var(--text-secondary); }
 
 /* ── Secondary buttons ──────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button,.terminal-account-toggle) {
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button,.terminal-account-toggle) {
   background:var(--panel-alt); color:var(--text-primary); border-color:var(--border); box-shadow:none;
 }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button):hover:not(:disabled) { background:var(--panel-alt-hover); border-color:#2d3540; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button):disabled { color:var(--text-tertiary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button):hover:not(:disabled) { background:var(--panel-alt-hover); border-color:#2d3540; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.futures-position-close,.terminal-account-retry,.futures-account-actions button):disabled { color:var(--text-tertiary); }
 
 /* ── Account card ───────────────────────────────────────────────────── */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .fa-track { background:var(--neutral-dim); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .fa-track { background:var(--neutral-dim); }
 
 /* ── Chart chrome and drawing rail ──────────────────────────────────────
    TerminalChart.css and DrawingTools.css are loaded by Spot as well, so the
    palette reaches them from here rather than by editing them: Spot keeps the
    colours it has today, and the Futures chart stops being the one panel with
    its own greys and its own amber. */
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.terminal-chart-heading,.chart-toolbar) { background:var(--panel); border-color:var(--border); color:var(--text-primary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .terminal-chart-heading button { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .terminal-chart-heading button[aria-pressed=true] { color:var(--accent); border-bottom-color:var(--accent); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .terminal-chart-heading button:focus-visible { outline-color:var(--accent); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .chart-trade-status { background:var(--panel-alt); color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference :is(.chart-trade-status button,.chart-history-now) { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .voltex-plot-title { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail { background:var(--panel); border-color:var(--border); scrollbar-color:var(--border) transparent; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail::-webkit-scrollbar-thumb { background:var(--border); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail .tool-btn { color:var(--text-secondary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail .tool-btn:hover { background:var(--panel-alt-hover); color:var(--text-primary); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail .tool-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.futures-terminal.futures-reference .drawing-tools .drawing-rail [data-drawing-tool="clear"]:hover { background:var(--sell-dim); color:var(--sell); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.terminal-chart-heading,.chart-toolbar) { background:var(--panel); border-color:var(--border); color:var(--text-primary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .terminal-chart-heading button { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .terminal-chart-heading button[aria-pressed=true] { color:var(--accent); border-bottom-color:var(--accent); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .terminal-chart-heading button:focus-visible { outline-color:var(--accent); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .chart-trade-status { background:var(--panel-alt); color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.chart-trade-status button,.chart-history-now) { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .voltex-plot-title { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail { background:var(--panel); border-color:var(--border); scrollbar-color:var(--border) transparent; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail::-webkit-scrollbar-thumb { background:var(--border); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn { color:var(--text-secondary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn:hover { background:var(--panel-alt-hover); color:var(--text-primary); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail .tool-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .drawing-tools .drawing-rail [data-drawing-tool="clear"]:hover { background:var(--sell-dim); color:var(--sell); }
+
+/* ── ONE ACTIVE STATE, ONE HOVER, ONE FOCUS ──────────────────────────────
+   The three terminals had ten different focus rings between them (two of
+   them blue), four different ambers on tab strips, and controls whose
+   pressed state was indistinguishable from hover. A trader should be able to
+   learn one visual language and read it everywhere, so:
+
+     idle      secondary text, no fill
+     hover     primary text on the raised step
+     active    the accent, and a 2px accent rule under the label
+     focus     one 2px accent outline, offset 2, on everything focusable
+
+   Spot, CFD and Futures all take these, which is the point. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(button,a,input,select,textarea,[tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab,.order-family-tabs button,.order-family-tabs [role=tab],.order-type-tab,.pairs-tab,.chart-tab,.cfd-tab,.rb-tabs button) {
+  color: var(--text-secondary);
+  background: transparent;
+  transition: color .12s ease, background-color .12s ease, border-color .12s ease;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab,.order-family-tabs button,.order-family-tabs [role=tab],.order-type-tab,.pairs-tab,.chart-tab,.cfd-tab,.rb-tabs button):hover:not(:disabled) {
+  color: var(--text-primary);
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.bottom-tab.active,.bottom-tab[aria-selected=true],.order-family-tabs button.active,.order-family-tabs [role=tab][aria-selected=true],.order-type-tab.active,.pairs-tab.active,.chart-tab.active,.cfd-tab.active,.rb-tabs button[aria-selected=true]) {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: transparent;
+}
+/* The order book's density toggles read as pressed rather than merely
+   hovered: the pressed one carries the accent, the others do not. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .rb-modes button[aria-pressed=true] {
+  color: var(--accent);
+  opacity: 1;
+}
+/* The market row: one wash and one edge, in the same gold. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) :is(.pair-row.active,.pair-row[aria-selected=true],.cfd-option.active) {
+  background: var(--accent-dim);
+  border-left-color: var(--accent);
+  box-shadow: inset 2px 0 var(--accent);
+}
+/* A search field that shows nothing on focus is the one control a keyboard
+   user cannot place. Both terminals lost it to a later border rule. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal.trade-terminal:is(.futures-reference,.market-reference) .pairs-search input:focus-visible {
+  border-color: var(--accent);
+  outline: none;
+}

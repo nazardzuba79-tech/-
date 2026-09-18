@@ -1,12 +1,12 @@
 /* Spot and read-only CFD adopt the approved Futures surface hierarchy.
    Scope excludes Futures; chart frames and execution behavior stay native. */
 .trade-terminal.trade-terminal.market-reference {
-  --bg-primary:#101014; --bg-secondary:#16181d; --workspace-bg:#16181d;
-  --toolbar-bg:#1c1e24; --chart-bg:#101014; --bg-tertiary:#22252c;
-  --panel:#16181d; --panel-alt:#22252c; --bg-hover:#24272e;
-  --border-color:#292c33; --panel-border:#292c33; --layer-border:#292c33; --border:#292c33;
-  --text-primary:#eceef2; --text-secondary:#a7adb9; --text-tertiary:#929aa8;
-  --accent:#f7a600; --accent-yellow:#f7a600; --color-buy:#00c076; --color-sell:#f43150;
+  --bg-primary:#12161c; --bg-secondary:#12161c; --workspace-bg:#12161c;
+  --toolbar-bg:#1c1e24; --chart-bg:#12161c; --bg-tertiary:#1a1f27;
+  --panel:#12161c; --panel-alt:#1a1f27; --bg-hover:#24272e;
+  --border-color:#232a34; --panel-border:#232a34; --layer-border:#232a34; --border:#232a34;
+  --text-primary:#eaeef3; --text-secondary:#a7adb9; --text-tertiary:#98a2b3;
+  --accent:#f0c964; --accent-yellow:#f0c964; --color-buy:#2ebd85; --color-sell:#f43150;
   --font-family:'Inter Terminal',Inter,-apple-system,BlinkMacSystemFont,Roboto,Arial,sans-serif;
 }
 .trade-terminal.trade-terminal.market-reference .terminal,
@@ -69,7 +69,7 @@
 .trade-terminal.trade-terminal.market-reference .form-label { font-size:12px; color:var(--text-secondary); }
 .trade-terminal.trade-terminal.market-reference .input-group { min-height:44px; background:var(--panel-alt); border:1px solid #30343b; border-radius:5px; }
 .trade-terminal.trade-terminal.market-reference .input-group input { min-height:42px; padding:10px 12px; font-size:14px; color:var(--text-primary); }
-.trade-terminal.trade-terminal.market-reference .input-group:focus-within { border-color:var(--accent); box-shadow:0 0 0 1px #f7a60020; }
+.trade-terminal.trade-terminal.market-reference .input-group:focus-within { border-color:var(--accent); box-shadow:0 0 0 1px #f5a52420; }
 .trade-terminal.trade-terminal.market-reference .input-group:hover { border-color:#4b505a; }
 .trade-terminal.trade-terminal.market-reference .input-suffix { font-size:12px; color:var(--text-secondary); }
 .trade-terminal.trade-terminal.market-reference .submit-btn { min-height:44px; height:44px; border-radius:24px; font-size:14px; font-weight:600; }
@@ -80,7 +80,7 @@
 .trade-terminal.trade-terminal.market-reference .bottom-tab { font-size:12px; padding:12px 14px; }
 .trade-terminal.trade-terminal.market-reference .bottom-tab .badge { background:transparent; color:inherit; padding:0 3px; }
 .trade-terminal.trade-terminal.market-reference .terminal-size-range::-webkit-slider-runnable-track { background:#42474f; }
-.trade-terminal.trade-terminal.market-reference .terminal-size-range::-webkit-slider-thumb { background:#16181d; }
+.trade-terminal.trade-terminal.market-reference .terminal-size-range::-webkit-slider-thumb { background:#12161c; }
 .trade-terminal.trade-terminal.market-reference button:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
 .trade-terminal.trade-terminal.market-reference .cfd-columns { font-size:11px; min-height:34px; background:var(--chart-bg); border-bottom:1px solid var(--border); }
 .trade-terminal.trade-terminal.market-reference .cfd-columns button { background:transparent; color:var(--text-secondary); border:0; font-size:11px; padding:0; cursor:pointer; white-space:nowrap; }
