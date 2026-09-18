@@ -1,0 +1,240 @@
+{
+  "dist": "/tmp/main-v4/frontend/dist",
+  "token": "qa-user-c",
+  "viewports": [
+    {
+      "name": "1440x900",
+      "width": 1440,
+      "height": 900,
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "emptyState": {
+        "disabled": true,
+        "text": "Купить / Лонг"
+      },
+      "filledState": {
+        "disabled": false,
+        "text": "Купить / Лонг"
+      },
+      "reduceState": {
+        "buy": "Купить / Лонг",
+        "sell": "Продать / Шорт"
+      },
+      "columns": "212px 695px 250px 278px",
+      "orderColumn": {
+        "w": 278,
+        "h": 779
+      },
+      "chart": {
+        "w": 695,
+        "h": 553
+      },
+      "horizontalOverflow": 0,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "56 405 024.03 USDT",
+          "gap": "wrapped"
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "56 381 922.68 USDT",
+          "gap": 24
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+508.92 USDT",
+          "gap": 79
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "0.04%",
+          "gap": 87
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "<0.01%",
+          "gap": 87
+        }
+      ]
+    },
+    {
+      "name": "1366x768",
+      "width": 1366,
+      "height": 768,
+      "errors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "emptyState": {
+        "disabled": true,
+        "text": "Купить / Лонг"
+      },
+      "filledState": {
+        "disabled": false,
+        "text": "Купить / Лонг"
+      },
+      "reduceState": {
+        "buy": "Купить / Лонг",
+        "sell": "Продать / Шорт"
+      },
+      "columns": "212px 621px 250px 278px",
+      "orderColumn": {
+        "w": 278,
+        "h": 647
+      },
+      "chart": {
+        "w": 621,
+        "h": 438
+      },
+      "horizontalOverflow": 0,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "56 405 024.03 USDT",
+          "gap": "wrapped"
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "56 381 922.68 USDT",
+          "gap": 24
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+508.92 USDT",
+          "gap": 79
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "0.04%",
+          "gap": 87
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "<0.01%",
+          "gap": 87
+        }
+      ]
+    },
+    {
+      "name": "390x844",
+      "width": 390,
+      "height": 844,
+      "errors": [
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "WebSocket connection to 'wss://stream.bybit.com/v5/public/linear' failed: Establishing a tunnel via proxy server failed.",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "emptyState": {
+        "disabled": true,
+        "text": "Купить / Лонг"
+      },
+      "filledState": {
+        "disabled": false,
+        "text": "Купить / Лонг"
+      },
+      "reduceState": {
+        "buy": "Купить / Лонг",
+        "sell": "Продать / Шорт"
+      },
+      "columns": "none",
+      "orderColumn": {
+        "w": 388,
+        "h": 816
+      },
+      "chart": {
+        "w": 388,
+        "h": 460
+      },
+      "horizontalOverflow": 0,
+      "rows": [
+        {
+          "label": "Маржинальный баланс",
+          "value": "56 405 024.03 USDT",
+          "gap": 104
+        },
+        {
+          "label": "Доступная маржа",
+          "value": "56 381 922.68 USDT",
+          "gap": 134
+        },
+        {
+          "label": "Нереализ. PnL",
+          "value": "+508.92 USDT",
+          "gap": 189
+        },
+        {
+          "label": "Используемая НМ",
+          "value": "0.04%",
+          "gap": 197
+        },
+        {
+          "label": "Используемая ПМ",
+          "value": "<0.01%",
+          "gap": 197
+        }
+      ]
+    }
+  ]
+}

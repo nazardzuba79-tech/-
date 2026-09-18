@@ -73,6 +73,18 @@ const waitForServer = (port) => new Promise((resolve, reject) => {
               headerPresent: !!document.querySelector('header.global-header'),
               headerHeight: Math.round(document.querySelector('header.global-header')?.getBoundingClientRect().height ?? 0),
               walletLinksDesktop: document.querySelectorAll('.nav-desktop-right .nav-wallet-link').length,
+              // DOM presence is not access. Below the header's own mobile
+              // breakpoint the right-block wallet link is display:none and
+              // the drawer plus the bottom navigation carry the wallet, so
+              // the visible count is the one that answers "can I reach it".
+              walletLinksVisible: [...document.querySelectorAll('.nav-desktop-right .nav-wallet-link')]
+                .filter((n) => n.getClientRects().length > 0).length,
+              brandOverlapsWallet: (() => {
+                const brand = document.querySelector('.header-brand');
+                const wallet = document.querySelector('.nav-wallet-link');
+                if (!brand || !wallet || wallet.getClientRects().length === 0) return 0;
+                return Math.max(0, Math.round(brand.getBoundingClientRect().right - wallet.getBoundingClientRect().left));
+              })(),
               walletInLeftNav: document.querySelectorAll('.nav-desktop-links a[href="/wallet"]').length,
               walletThenDeposit: walletIndex >= 0 && depositIndex === walletIndex + 1,
               walletActive: !!document.querySelector('.nav-wallet-link.nav-active'),

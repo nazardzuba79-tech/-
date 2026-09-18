@@ -140,13 +140,25 @@ export function FuturesAccountSummary({
    * standing as a block of technical prose above the numbers.
    */
   const collateralIncomplete = aggregate ? !aggregate.collateralComplete && aggregate.unpricedAssets.length > 0 : false;
-  const incompleteNote = aggregate && collateralIncomplete
-    ? t('futures.collateralIncomplete', { assets: aggregate.unpricedAssets.join(', ') })
-    : '';
+  /**
+   * The message names no assets and no internal reason on purpose. Which
+   * ticker is unpriced is a fact about our providers, not about this
+   * trader's account; what they need to know is that the total in front of
+   * them is incomplete. `unpricedAssets` still DECIDES whether the mark
+   * appears, so the warning cannot be shown without one.
+   */
+  const incompleteNote = collateralIncomplete ? t('futures.collateralPartial') : '';
 
-  /** Label + amount + unit on the card's one right axis. */
-  const amountRow = (key: string, label: string, value: number | null, extra?: React.ReactNode, tone?: string) => (
-    <div className="futures-account-stat" key={key}>
+  /**
+   * Label + amount + unit on the card's one right axis.
+   *
+   * `rowClass` is the row's stable hook. It carries no styling of its own —
+   * it is what the browser QA and anything else outside this file address a
+   * particular figure by, so renaming the visible label never silently
+   * breaks a check that was reading the balance.
+   */
+  const amountRow = (key: string, rowClass: string, label: string, value: number | null, extra?: React.ReactNode, tone?: string) => (
+    <div className={`futures-account-stat ${rowClass}`} key={key}>
       <span className="fa-label">{label}</span>
       <span className="fa-value mono" style={tone ? { color: tone } : undefined}>
         <span className="fa-amount">{show(value, groupAmount)}</span>
@@ -168,7 +180,7 @@ export function FuturesAccountSummary({
     const known = value !== null && !unopened;
     const filled = known ? Math.min(100, Math.max(0, value)) : 0;
     return (
-      <div className="futures-account-stat futures-account-usage" key={key}>
+      <div className={`futures-account-stat futures-account-usage ${key === 'im' ? 'futures-account-im' : 'futures-account-mm'}`} key={key}>
         <span className="fa-label" title={full}>{short}</span>
         <span className="fa-track" aria-hidden="true">
           <span className="fa-fill" style={{ width: `${filled}%`, background: usageTone(known ? value : null) }} />
@@ -192,11 +204,11 @@ export function FuturesAccountSummary({
       </div>}
 
       <div className="futures-account-figures">
-        {amountRow('marginBalance', t('futures.marginBalance'), marginBalance,
+        {amountRow('marginBalance', 'futures-account-balance', t('futures.marginBalance'), marginBalance,
           collateralIncomplete
             ? <span className="fa-flag" role="img" title={incompleteNote} aria-label={incompleteNote}>!</span>
             : undefined)}
-        {amountRow('available', t('futures.availableMargin'), available)}
+        {amountRow('available', 'futures-account-available', t('futures.availableMargin'), available)}
         <div className="futures-account-stat futures-account-pnl">
           <span className="fa-label">{t('futures.unrealizedPnl')}</span>
           <span

@@ -7,3 +7,10 @@ uploads/
 outputs/
 .qa-copy/
 .qa-live/
+
+# Per-case result-card PNGs the large-values browser QA renders on every run
+# (14 files, ~22 MB). CI keeps them as a build artifact, and the folder
+# already tracks a representative card plus both terminal shots, so the
+# generated set stays out of the history rather than re-landing each run.
+docs/qa/native-demo/large-numbers/card-*-1440.png
+docs/qa/native-demo/large-numbers/card-*-390.png

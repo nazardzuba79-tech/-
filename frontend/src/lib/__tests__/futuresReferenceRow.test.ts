@@ -203,8 +203,18 @@ describe('3. the account summary under the order buttons', () => {
     // fake zero in a different disguise.
     expect(SUMMARY).toContain("value === null || unopened ? '—' : mask(format(value))");
     expect(SUMMARY).toContain('const unopened = activation !== null;');
-    // And the percentages take the same route rather than a second one.
-    expect(SUMMARY).toContain("const showPct = (value: number | null) => (value === null || unopened ? '—' : `${value.toFixed(2)}%`);");
+    // And the percentages take the same route rather than a second one:
+    // one function, same `null`/`unopened` test as `show`, still no zero.
+    expect(SUMMARY).toContain("    if (value === null || unopened) return '—';");
+    expect(SUMMARY).toContain('    return `${value.toFixed(2)}%`;');
+    // Owner-approved addition, asserted rather than assumed: a KNOWN usage
+    // smaller than two decimals reads `<0.01%`, not `0.00%`. On an
+    // eight-figure account nearly every honest margin usage lands under a
+    // hundredth of a percent, and flattening it to zero is the same loss
+    // the owner rejected on `0.04%`. The band is strictly above zero, so a
+    // real zero still prints `0.00%` and an unknown still prints the dash.
+    expect(SUMMARY).toContain("    if (value > 0 && value < 0.005) return '<0.01%';");
+    expect(SUMMARY).not.toMatch(/value >= 0 && value < 0\.005/);
     // The real account's derivation is unchanged — it is now the branch
     // taken when the engine publishes no aggregate of its own.
     expect(SUMMARY).toContain(': account.balances.data ? (row ? parseFloat(row.available) : 0) : null;');
