@@ -324,4 +324,32 @@
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-depth-bar.bid { background:rgba(14,203,129,.09); }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-spread { background:#16181e; }
 .trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price { font-weight:500; color:#eaecef; }
-.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio :is(.ob-spread-detail,.orderbook-spread .usd) { color:#848e9c; }
+/* `.ob-spread-detail` no longer renders on Spot — the spread moved to the
+   band's tooltip — so only the dollar equivalent is styled here. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .orderbook-spread .usd { color:#848e9c; }
+
+/* Spot panel chrome, to the reference: three display modes, and a centre band
+   that is one line — last traded, a fixed-width direction slot, the dollar
+   equivalent. The arrow can never move the digits; the spread is exact and
+   lives on the band's tooltip instead of a second line of small print. */
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-modes {
+  display:flex; align-items:center; gap:2px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-modes button {
+  appearance:none; border:0; background:transparent; border-radius:3px; padding:3px; line-height:0;
+  color:#848e9c; cursor:pointer;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-modes button svg { width:18px; height:15px; display:block; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-modes button[aria-pressed=true] { background:#22262f; color:#eaecef; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-hidden { display:none; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price {
+  display:flex; align-items:baseline; justify-content:flex-start; gap:6px;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-arrow {
+  display:inline-block; width:0.72em; text-align:center; font-size:0.72em; font-weight:600;
+}
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-last.up { color:#0ecb81; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-last.down { color:#f6465d; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-arrow,
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .ob-mid-label { color:#848e9c; }
+.trade-terminal.trade-terminal.trade-terminal.trade-terminal.spot-terminal.market-reference.terminal-studio .ob-spread-price .usd { margin-left:auto; }

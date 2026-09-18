@@ -1,17 +1,17 @@
 {
-  "label": "after2",
+  "label": "after3",
   "seed": 20260918,
   "frameMs": 100,
-  "windowMs": 15000,
+  "windowMs": 12000,
   "results": {
     "futures-desktop": {
       "rowsAdded": 0,
       "rowsRemoved": 0,
-      "textChanges": 4381,
-      "depthStyleWrites": 1496,
-      "otherAttr": 13,
+      "textChanges": 3715,
+      "depthStyleWrites": 1231,
+      "otherAttr": 10,
       "flashClassWrites": 0,
-      "samples": 61,
+      "samples": 49,
       "rowCounts": [
         38
       ],
@@ -19,19 +19,19 @@
         831
       ],
       "shots": [
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-0.png",
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-1.png",
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-futures-desktop-2.png"
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-futures-desktop-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-futures-desktop-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-futures-desktop-2.png"
       ]
     },
     "futures-mobile": {
       "rowsAdded": 0,
       "rowsRemoved": 0,
-      "textChanges": 1436,
-      "depthStyleWrites": 459,
-      "otherAttr": 14,
+      "textChanges": 1181,
+      "depthStyleWrites": 370,
+      "otherAttr": 16,
       "flashClassWrites": 0,
-      "samples": 60,
+      "samples": 48,
       "rowCounts": [
         12
       ],
@@ -43,11 +43,11 @@
     "spot-desktop": {
       "rowsAdded": 0,
       "rowsRemoved": 0,
-      "textChanges": 838,
-      "depthStyleWrites": 267,
-      "otherAttr": 0,
+      "textChanges": 622,
+      "depthStyleWrites": 201,
+      "otherAttr": 2,
       "flashClassWrites": 0,
-      "samples": 61,
+      "samples": 49,
       "rowCounts": [
         34
       ],
@@ -55,9 +55,9 @@
         889
       ],
       "shots": [
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-0.png",
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-1.png",
-        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob2/after2-spot-desktop-2.png"
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-spot-desktop-0.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-spot-desktop-1.png",
+        "/tmp/claude-0/-home-user--/eca490d5-f1aa-5d38-aedd-a5420f89b2f8/scratchpad/ob3/after3-spot-desktop-2.png"
       ]
     }
   }

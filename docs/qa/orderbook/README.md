@@ -60,3 +60,23 @@ was being replaced.
 against the row background):** row bg `#16181e`, text `#eaecef`, headers
 `#848e9c`, sell `#F6465D`, buy `#0ECB81`, depth tint alpha **0.09** on both
 sides. Applied to Futures, Private and Spot from one CSS block.
+
+## Third pass — the remaining reference details
+
+Row height was the one item I changed my mind about after measuring rather
+than after arguing. The reference frame's ladder is **34 CSS px in a 462 px
+panel** (ratio 0.0736); ours is **20 px in a 250 px panel** (0.080). The rows
+are already the same size *in proportion to the panel they live in* — the
+reference simply gives its book twice the width. Changing 20 px to 34 px
+would not match the reference, it would make our narrower panel show half as
+many levels. Left alone, on a measurement.
+
+Everything else on that list is done: the Spot centre is now last traded +
+fixed-width arrow + dollar equivalent on one line (the spread moved to the
+band's tooltip, exact, not deleted), the Spot panel gained the reference's
+three display modes, and grouping now steps one decade at a time —
+0,1 / 1 / 10 / 100 / 1 000 on a BTC book, which is the ladder the reference
+dropdown shows.
+
+Deliberately NOT copied: the `…` overflow menu (it would open nothing), and
+the global font stack, which is the whole product's, not the book's.

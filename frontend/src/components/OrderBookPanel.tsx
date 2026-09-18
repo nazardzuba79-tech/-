@@ -1,6 +1,7 @@
 import { formatBookAmount, formatBookTotal, formatCompactBookValue } from '../lib/terminalPresentation';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../lib/i18n';
+import { useMarketTicker } from '../lib/useMarketData';
 import { formatPrice } from '../lib/formatNumber';
 import { PanelRightClose } from 'lucide-react';
 import { aggregateSpotBook, defaultSpotGroupStep, formatSpotBookNumber, formatSpotSpreadPercent,
@@ -121,6 +122,23 @@ export function OrderBookPanel({
 }) {
   const { t } = useLanguage();
   const asksViewport = useRef<HTMLDivElement>(null);
+  // Which side(s) to draw — the reference's three display modes, which the
+  // Futures book already had and this one did not.
+  const [mode, setMode] = useState<'both' | 'bids' | 'asks'>('both');
+  /* The LAST TRADED price for the centre band, from the shared market snapshot
+     the rest of the page already subscribes to — no extra request. The band
+     used to print the mid; the reference prints the last, with a direction
+     arrow, and keeps the mid's job (a sanity number) in the spread tooltip. */
+  const { ticker } = useMarketTicker(pair ?? '');
+  const lastTraded = ticker && Number.isFinite(Number(ticker.lastPrice)) && Number(ticker.lastPrice) > 0 ? Number(ticker.lastPrice) : null;
+  const previousLast = useRef<{ pair?: string; price: number | null }>({ pair, price: null });
+  const [direction, setDirection] = useState<'up' | 'down' | ''>('');
+  useEffect(() => {
+    const old = previousLast.current;
+    if (old.pair !== pair || lastTraded === null) setDirection('');
+    else if (old.price !== null && old.price !== lastTraded) setDirection(lastTraded > old.price ? 'up' : 'down');
+    previousLast.current = { pair, price: lastTraded };
+  }, [pair, lastTraded]);
   const [visibleLevels, setVisibleLevels] = useState(VISIBLE_LEVELS_PER_SIDE);
   useEffect(() => {
     const element = asksViewport.current;
@@ -189,6 +207,17 @@ export function OrderBookPanel({
       <div className="orderbook-header">
         <span className="orderbook-title">{t('trade.orderBook')}</span>
         <div className="orderbook-header-actions">
+          {/* The reference's three display modes. Same glyphs as the Futures
+              book so the two panels read as one component. */}
+          <div className="ob-modes" role="group" aria-label={t('trade.orderBook')}>
+            {(['both', 'bids', 'asks'] as const).map(value => <button type="button" key={value}
+              aria-label={value === 'both' ? `${t('trade.buy')} / ${t('trade.sell')}` : t(value === 'bids' ? 'trade.buy' : 'trade.sell')}
+              aria-pressed={mode === value} onClick={() => setMode(value)}>
+              <svg viewBox="0 0 24 20" aria-hidden="true">{[0, 1, 2, 3].map(i => <g key={i}>
+                <path d={`M2 ${3 + i * 4}h7`} stroke={value === 'asks' || (value === 'both' && i < 2) ? '#f6465d' : '#0ecb81'} strokeWidth="3" />
+                <path d={`M12 ${3 + i * 4}h10`} stroke="currentColor" strokeWidth="2" /></g>)}</svg>
+            </button>)}
+          </div>
           <select
             className="ob-group-select"
             value={groupStep}
@@ -221,25 +250,30 @@ export function OrderBookPanel({
           down and build a new one — measured at 14 per second on the Futures
           book on a replayed feed, and this panel keyed the same way. Row N is
           the Nth level out from the touch; the level is its contents. */}
-      <div className="orderbook-asks" ref={asksViewport}>
+      <div className={`orderbook-asks${mode === 'bids' ? ' ob-hidden' : ''}`} ref={asksViewport}>
         {asksDepth.map((level, index) => (
           <Row key={`sell-${index}`} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="SELL" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}
       </div>
 
-      <div className="orderbook-spread">
+      {/* The reference centre: last traded, a fixed-width direction slot, then
+          the dollar equivalent. One line, and the arrow can never shift the
+          digits because it has its own slot. The spread is still exact and
+          still reachable — on the band's tooltip — instead of a second line of
+          small print under the price. When no trade has been seen the mid is
+          shown and labelled, rather than a blank. */}
+      <div className="orderbook-spread" title={spread !== null && spreadPct !== null
+        ? `${t('trade.spread')} ${priceLabel(spread)} (${spotPrecision ? formatSpotSpreadPercent(spreadPct) : `${spreadPct.toFixed(3)}%`})`
+        : undefined}>
         <div className="ob-spread-price">
-          {midPrice !== null ? priceLabel(midPrice) : '—'}
-          {showUsd && midPrice !== null && <span className="usd">≈ ${priceLabel(midPrice)}</span>}
+          <span className={`ob-last ${direction}`}>{lastTraded !== null ? priceLabel(lastTraded) : midPrice !== null ? priceLabel(midPrice) : '—'}</span>
+          <span className="ob-arrow" aria-hidden="true">{direction === 'up' ? '↑' : direction === 'down' ? '↓' : ''}</span>
+          {lastTraded === null && midPrice !== null && <small className="ob-mid-label">Mid</small>}
+          {showUsd && (lastTraded ?? midPrice) !== null && <span className="usd">≈ ${priceLabel((lastTraded ?? midPrice)!)}</span>}
         </div>
-        {spread !== null && spreadPct !== null && (
-          <div className="ob-spread-detail">
-            {t('trade.spread')} {priceLabel(spread)} ({spotPrecision ? formatSpotSpreadPercent(spreadPct) : `${spreadPct.toFixed(3)}%`})
-          </div>
-        )}
       </div>
 
-      <div className="orderbook-bids">
+      <div className={`orderbook-bids${mode === 'asks' ? ' ob-hidden' : ''}`}>
         {bidsDepth.map((level, index) => (
           <Row key={`buy-${index}`} level={level} decimals={decimals} spotStep={spotPrecision ? groupStep : undefined} side="BUY" maxDepth={maxDepth} onPick={onPickPrice} />
         ))}

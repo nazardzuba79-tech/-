@@ -180,6 +180,20 @@ app.get('/api/v1/market/live', (req, res) => {
   const keep = setInterval(() => res.write(': keep-alive\n\n'), 5000);
   req.on('close', () => clearInterval(keep));
 });
+/** The shared spot snapshot the market-data store polls. Without it the Spot
+ *  centre has no last traded price and correctly falls back to the mid — so
+ *  the fixture must serve it for the last+arrow path to be exercised at all. */
+app.get('/api/v1/market/snapshot', (_q, r) => {
+  const section = (value) => ({ available: true, source: 'qa', fetchedAt: Date.now(), stale: false, value });
+  // A last price that MOVES, so the direction arrow has something to report.
+  const drift = Math.floor((Date.now() / 1000) % 4) - 2;
+  r.json({
+    tickers: section([{ pair: 'BTC/USDT', lastPrice: START_MID + drift, high24h: START_MID * 1.02, low24h: START_MID * 0.98,
+      changePercent: 1.18, quoteVolume24h: 1.2e9, volume24h: 15000 }]),
+    overview: { available: false, source: 'qa', fetchedAt: Date.now(), stale: false, value: null },
+    sentiment: { available: false, source: 'qa', fetchedAt: Date.now(), stale: false, value: null },
+  });
+});
 app.get('/api/v1/*', (_q, r) => r.json([]));
 
 const dist = path.join(__dirname, '../frontend/dist');

@@ -190,3 +190,60 @@ describe('futures centre shows the mark price beside the last', () => {
     expect(page).not.toMatch(/getFuturesMarkPrice/);
   });
 });
+
+/**
+ * The remaining reference details the first two passes left out, and which
+ * the owner asked for by name.
+ */
+describe('the Spot panel carries the reference chrome', () => {
+  const spot = read('frontend/src/components/OrderBookPanel.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  it('centres on the LAST TRADED price with a fixed-width arrow, not the mid over a spread line', () => {
+    expect(spot).toContain('className={`ob-last ${direction}`}');
+    expect(spot).toContain('className="ob-arrow"');
+    // The old shape: mid as the headline and a second line of small print.
+    expect(spot).not.toContain('ob-spread-detail');
+    const arrow = css.slice(css.indexOf('.ob-spread-price .ob-arrow'));
+    expect(arrow).toMatch(/width:0\.\d+em/);
+    expect(arrow).toContain('text-align:center');
+  });
+
+  it('keeps the spread exact and reachable rather than deleting it', () => {
+    expect(spot).toContain("`${t('trade.spread')} ${priceLabel(spread)}");
+    expect(spot).toContain('formatSpotSpreadPercent(spreadPct)');
+  });
+
+  it('falls back to the mid, labelled, when no trade has been seen — never a blank or a zero', () => {
+    expect(spot).toContain("lastTraded !== null ? priceLabel(lastTraded) : midPrice !== null ? priceLabel(midPrice) : '—'");
+    expect(spot).toContain('className="ob-mid-label"');
+  });
+
+  it('reads the last price from the shared snapshot, adding no request of its own', () => {
+    expect(spot).toContain("import { useMarketTicker } from '../lib/useMarketData'");
+    expect(spot).not.toMatch(/setInterval|api\.getExternalTickers/);
+  });
+
+  it('offers the three display modes the reference has and the Futures book already had', () => {
+    expect(spot).toContain("useState<'both' | 'bids' | 'asks'>('both')");
+    expect(spot).toContain("mode === 'bids' ? ' ob-hidden' : ''");
+    expect(spot).toContain("mode === 'asks' ? ' ob-hidden' : ''");
+  });
+});
+
+/**
+ * Grouping. The reference offers decades — 0,1 / 1 / 10 / 100 / 1 000 on a
+ * BTC book. Ours offered 0,1 / 0,2 / 0,5 / 1 / 5: two steps no major venue
+ * has, and a coarsest step of 5 quote units, which on a $77k book is not
+ * coarse at all.
+ */
+describe('grouping steps follow the reference ladder', () => {
+  const lib = read('frontend/src/lib/spotOrderBook.ts');
+  it('steps one decade apart, finest step unchanged', () => {
+    expect(lib).toContain('[1, 10, 100, 1000, 10000]');
+    expect(lib).not.toContain('[1, 2, 5, 10, 50]');
+  });
+  it('still never synthesizes liquidity, only merges real levels', () => {
+    expect(lib).toContain('it never synthesizes');
+    expect(lib).not.toMatch(/\binterpolate\b|\bsynthesize\(/i);
+  });
+});
