@@ -51,6 +51,8 @@ export type CollateralStatus = 'SETTLE' | 'PRICED' | 'UNPRICED';
 
 export interface CollateralLine {
   asset: string;
+  /** Whether this wallet asset currently contributes to Cross margin. */
+  collateralEnabled: boolean;
   /** Free quantity, carried through so a reader can show it without a second read. */
   available: string;
   /** Quantity held against this account's own orders/positions. */
@@ -67,11 +69,15 @@ export interface CollateralLine {
 export interface CollateralValuation {
   settleAsset: string;
   lines: CollateralLine[];
-  /** Exact sum of the SETTLE and PRICED lines. Never includes a guess. */
+  /** Market value of every wallet holding that could be priced, even when not used as margin. */
   priced: string;
-  /** Assets held in non-zero quantity whose price is unknown. */
+  /** The subset of `priced` that is actually enabled as Cross collateral. */
+  collateralPriced: string;
+  /** Assets held in non-zero quantity whose market value is unknown. */
   unpriced: string[];
-  /** True when nothing held is unpriced — only then is `priced` the wallet. */
+  /** Enabled collateral assets whose price is unknown. */
+  collateralUnpriced: string[];
+  /** True when every ENABLED collateral asset can be valued. */
   complete: boolean;
   /** The STALEST `asOf` among the priced lines: a valuation is only as fresh as its oldest input. */
   asOf: number | null;
@@ -97,11 +103,14 @@ export function valueCollateral(
   holdings: CollateralHolding[],
   prices: CollateralPrice[],
   settleAsset = 'USDT',
+  disabledAssets: ReadonlySet<string> = new Set(),
 ): CollateralValuation {
   const quoted = new Map(prices.map((p) => [p.asset, p]));
   const lines: CollateralLine[] = [];
   const unpriced: string[] = [];
+  const collateralUnpriced: string[] = [];
   let priced = new D(0);
+  let collateralPriced = new D(0);
   let asOf: number | null = null;
 
   for (const holding of holdings) {
@@ -110,13 +119,16 @@ export function valueCollateral(
     const split = { available: amount(parts.available), locked: amount(parts.locked) };
 
     if (holding.asset === settleAsset) {
-      // The settle asset is the unit of account. It needs no quote and can
-      // never be unpriced, so it is never a reason to call a wallet unknown.
+      // The settle asset is the unit of account and the engine's cash ledger.
+      // It is always eligible collateral; the UI therefore renders it as a
+      // locked-on switch rather than pretending it can be removed.
       priced = priced.plus(quantity);
-      lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: '1', value: amount(quantity), status: 'SETTLE', source: null, asOf: null });
+      collateralPriced = collateralPriced.plus(quantity);
+      lines.push({ asset: holding.asset, collateralEnabled: true, ...split, quantity: amount(quantity), price: '1', value: amount(quantity), status: 'SETTLE', source: null, asOf: null });
       continue;
     }
 
+    const collateralEnabled = !disabledAssets.has(holding.asset);
     const quote = quoted.get(holding.asset);
     let price: BigNumber | null = null;
     if (quote && quote.price !== null) {
@@ -126,16 +138,31 @@ export function valueCollateral(
 
     if (price === null) {
       // A holding of nothing is not an unknown: there is no value to miss.
-      if (quantity.gt(0)) unpriced.push(holding.asset);
-      lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: null, value: null, status: 'UNPRICED', source: quote?.source ?? null, asOf: quote?.asOf ?? null });
+      if (quantity.gt(0)) {
+        unpriced.push(holding.asset);
+        if (collateralEnabled) collateralUnpriced.push(holding.asset);
+      }
+      lines.push({ asset: holding.asset, collateralEnabled, ...split, quantity: amount(quantity), price: null, value: null, status: 'UNPRICED', source: quote?.source ?? null, asOf: quote?.asOf ?? null });
       continue;
     }
 
     const value = quantity.times(price);
     priced = priced.plus(value);
-    if (quote!.asOf !== null && (asOf === null || quote!.asOf < asOf)) asOf = quote!.asOf;
-    lines.push({ asset: holding.asset, ...split, quantity: amount(quantity), price: amount(price), value: amount(value), status: 'PRICED', source: quote!.source, asOf: quote!.asOf });
+    if (collateralEnabled) {
+      collateralPriced = collateralPriced.plus(value);
+      if (quote!.asOf !== null && (asOf === null || quote!.asOf < asOf)) asOf = quote!.asOf;
+    }
+    lines.push({ asset: holding.asset, collateralEnabled, ...split, quantity: amount(quantity), price: amount(price), value: amount(value), status: 'PRICED', source: quote!.source, asOf: quote!.asOf });
   }
 
-  return { settleAsset, lines, priced: amount(priced), unpriced, complete: unpriced.length === 0, asOf };
+  return {
+    settleAsset,
+    lines,
+    priced: amount(priced),
+    collateralPriced: amount(collateralPriced),
+    unpriced,
+    collateralUnpriced,
+    complete: collateralUnpriced.length === 0,
+    asOf,
+  };
 }
