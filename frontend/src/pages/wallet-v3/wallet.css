@@ -1170,9 +1170,20 @@
   display: inline-block;
   width: 36px;
   height: 20px;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
   background: var(--w-hair-strong);
-  transition: background 0.15s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.vx-wallet .wallet-toggle:disabled {
+  cursor: not-allowed;
+  opacity: .62;
+}
+.vx-wallet .wallet-toggle:not(:disabled):focus-visible {
+  outline: 2px solid var(--w-gold);
+  outline-offset: 2px;
 }
 .vx-wallet .wallet-toggle[aria-checked='true'] {
   background: var(--w-gold);
