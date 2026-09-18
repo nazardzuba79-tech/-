@@ -24,6 +24,12 @@ Figures in these captures are the review stand's deterministic fixture
 (USDT 5 000 000, BTC 271 + 2.5, ETH 561, XRP 1 200 000 at fixed marks), not
 any real account. - `overview-owner-1440-dark.png` — the same Overview after one click on the
   rail's light/dark switch: dark surfaces, inverted text, gold curve kept.
+- `unified-flat-margin.png` / `unified-live-margin.png` — the margin band
+  with no position and then with a real one open, from
+  `scripts/qa-wallet-live-margin.cjs`: `IM 0,03% · 10 027,50 USD`,
+  `MM 0,00% · 277,50 USD`, `Нереализованный PnL −5,00 USD`, both gauges
+  filled, and the "nothing committed" note gone. Every figure is the
+  engine's own; the driver asserts the page equals it.
 
 Result of the run (re-taken for the full-bleed + theme pass): **124/124**
 checks; `scripts/qa-wallet-unified-account.cjs` **200/200** on the same
