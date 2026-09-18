@@ -303,8 +303,8 @@
 .futures-reference .rb-center strong { font-size:17px; font-weight:600; line-height:23px; letter-spacing:-.3px; font-variant-numeric:tabular-nums; }
 .futures-reference .rb-center > span { color:#98a2b3; font-size:10px; line-height:15px; white-space:nowrap; }
 .futures-reference .rb-ratio { position:relative; display:flex; justify-content:space-between; align-items:center; flex:0 0 22px; margin:6px 10px 8px; padding:0 5px; background:rgba(246,70,93,.2); font-size:11px; font-variant-numeric:tabular-nums; overflow:hidden; }
-.futures-reference .rb-ratio > i { position:absolute; inset:0 auto 0 0; background:#17372e; clip-path:polygon(0 0,100% 0,calc(100% - 11px) 100%,0 100%); transition:width 260ms cubic-bezier(.22,.61,.36,1); }
-.futures-reference .rb-ratio span { position:relative; color:#ea454f; }
+.futures-reference .rb-ratio > i { position:absolute; inset:0 auto 0 0; background:#183731; clip-path:polygon(0 0,100% 0,calc(100% - 11px) 100%,0 100%); transition:width 260ms cubic-bezier(.22,.61,.36,1); }
+.futures-reference .rb-ratio span { position:relative; color:#f6465d; }
 .futures-reference .rb-ratio span:first-of-type { color:#2ebd85; }
 .futures-reference .rb-ratio b { display:inline-block; padding:0 3px; border:1px solid currentColor; font-weight:500; line-height:17px; border-radius:2px; }
 .futures-reference .rb-tape { flex:1; overflow:auto; min-height:0; }
