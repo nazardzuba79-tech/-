@@ -1119,6 +1119,11 @@ export const KO: Record<Key, string> = {
   'futures.marginBalance': '증거금 잔액',
   'futures.initialMarginPct': '개시 증거금',
   'futures.maintenanceMarginPct': '유지 증거금',
+  // Short labels for the Futures summary's two margin-usage rows. The
+  // full names above stay as their tooltips, so the panel reads short
+  // without the metric losing its name.
+  'futures.initialMarginUsed': '사용 IM',
+  'futures.maintenanceMarginUsed': '사용 MM',
   'futures.depositAction': '입금',
   'futures.transferAction': '이체',
 

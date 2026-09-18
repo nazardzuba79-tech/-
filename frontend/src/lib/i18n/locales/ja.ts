@@ -1119,6 +1119,11 @@ export const JA: Record<Key, string> = {
   'futures.marginBalance': '証拠金残高',
   'futures.initialMarginPct': '初期証拠金',
   'futures.maintenanceMarginPct': '維持証拠金',
+  // Short labels for the Futures summary's two margin-usage rows. The
+  // full names above stay as their tooltips, so the panel reads short
+  // without the metric losing its name.
+  'futures.initialMarginUsed': '使用中IM',
+  'futures.maintenanceMarginUsed': '使用中MM',
   'futures.depositAction': '入金',
   'futures.transferAction': '振替',
 
