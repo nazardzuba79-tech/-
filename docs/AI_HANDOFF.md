@@ -2713,3 +2713,11 @@ withdrawal was placed.
 - **TESTED.** Frontend `tsc` PASS, `npm run build` PASS. NEW `spotButtonLabels.test.ts` **10/10**. Whole repo compared by test name against `origin/main` (`bb0d508`) in the same tree: **102 failing before, 102 after, zero new and zero fixed** (4 147 → 4 157 tests).
 - **NOT VERIFIED.** No production check. Five of the seven locales were checked for key presence only.
 - **NOT MERGED**, as instructed.
+
+### 2026-09-18 — Claude — Wallet rail: «Финансирование» gets the circled dollar (`claude/wallet-funding-icon`)
+
+- **One icon.** `WalletSideNav.tsx` used `PiggyBankIcon` for the `funding` item. It is now `CircleDollarSignIcon` — the SAME icon the Обзор account row already used for that account, and the one on the owner's reference. A piggy bank reads as savings; Финансирование is the spot ledger deposits land on, and the rail and the row naming one account two different ways is how a user ends up thinking they are two accounts.
+- **Nothing else.** No label, no route, no section behaviour, no other rail item, no Wallet logic, no balances. `PiggyBankIcon` is no longer imported anywhere in the file.
+- **Material files.** `frontend/src/pages/wallet-v3/WalletSideNav.tsx` — three lines, one of them the import.
+- **TESTED.** Frontend `tsc` PASS, `npm run build` PASS. `walletOverview.test.ts` + `walletUnifiedAccount.test.ts` (the two suites that read this file) **59/59**. Whole repo compared by test name against `origin/main` (`0a94681`) in the same tree: **102 failing before, 102 after, zero new and zero fixed**. Wallet page re-rendered in Chromium with zero page errors, and the rail now shows the circled dollar beside Финансирование.
+- **NOT VERIFIED.** No production check.
