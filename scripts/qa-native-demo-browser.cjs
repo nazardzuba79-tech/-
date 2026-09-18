@@ -10,6 +10,8 @@ const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const root = path.resolve(__dirname, '..'), front = path.join(root, 'frontend');
 const largeOnly = process.env.NATIVE_QA_LARGE_ONLY === '1';
+/** `NATIVE_QA_ONLY=<regex>` runs the matching checks alone (local iteration on one scenario); unset = every check. */
+const only = process.env.NATIVE_QA_ONLY ? new RegExp(process.env.NATIVE_QA_ONLY) : null;
 const out = path.join(root, 'docs/qa/native-demo', largeOnly ? 'large-numbers' : '');
 fs.mkdirSync(out, { recursive: true });
 const origin = 'http://127.0.0.1:4178';
@@ -27,6 +29,7 @@ function realAccountRequest(request) {
     (!['GET', 'HEAD', 'OPTIONS'].includes(request.method()) || /^\/api\/v1\/futures\/(balances|positions|orders|trades|fills|account|funding-history|transfers)(?:\/|$)/.test(p));
 }
 async function check(name, fn) {
+  if (only && !only.test(name)) return true;
   try { const evidence = await fn(); report.checks.push({ name, passed: true, ...(evidence === undefined ? {} : { evidence }) }); return true; }
   catch (error) {
     report.checks.push({ name, passed: false, error: String(error.stack || error) });
@@ -431,7 +434,16 @@ async function closeDuringRefresh(width) {
  * is measured here; this is the terminal.
  */
 async function tradeCycle(width, bucket) {
-  const s = await session(width), p = s.page;
+  const s = await session(width, async s => {
+    // A clean slate in THIS bucket: an earlier scenario may have left a position or a resting order on the
+    // shared fixture account (the other bucket is left alone — the merge rule keeps the buckets apart).
+    let state = s.initial;
+    for (const o of state.orders.filter(o => ['OPEN', 'PARTIALLY_FILLED'].includes(o.status) && o.symbol === 'BTCUSDT' && o.marginType === bucket))
+      state = await api(s.context, s.token, 'commands', { kind: 'CANCEL', orderId: o.id, idempotencyKey: `qa-cycle-clean-${bucket}-${width}-cancel-${o.id}` });
+    for (const x of state.positions.filter(x => x.status === 'OPEN' && x.symbol === 'BTCUSDT' && x.marginMode === bucket))
+      state = await api(s.context, s.token, 'commands', { kind: 'CLOSE', positionId: x.id, quantity: x.quantity, idempotencyKey: `qa-cycle-clean-${bucket}-${width}-close-${x.id}` });
+    s.initial = state;
+  }), p = s.page;
   const timings = [];
   const fixture = async body => { const r = await s.context.request.post(origin + '/__fixture/market', { data: body }); assert(r.ok(), 'Fixture market override refused'); };
   // The row of this bucket's LONG whose size cell reads `size` — parsed as a number, whatever the locale prints.
@@ -446,13 +458,16 @@ async function tradeCycle(width, bucket) {
       return !!cell && Number((cell.textContent || '').replace(/[^\d.]/g, '')) === Number(wantSize);
     });
   }, [bucket, size], { timeout: options.timeout ?? 25000 }) });
+  let currentStep = 'setup';
   const timed = async (step, kind, click, confirmed) => {
+    currentStep = step;
     const t0 = Date.now();
     const r = await command(s, kind, click);
     const serverMs = Date.now() - t0;
     await confirmed(r.state);
     const confirmedMs = Date.now() - t0;
     timings.push({ step, command: kind, serverMs, confirmedMs, revision: r.state.revision });
+    console.log(`[trade-cycle ${bucket} ${width}] ${step}: ${kind} confirmed by the server in ${serverMs} ms, on screen in ${confirmedMs} ms`);
     return r.state;
   };
   const lastFill = (state, kind) => [...state.events].reverse().find(e => e.kind === kind && e.pricing === 'OBSERVED_BOOK');
@@ -465,9 +480,10 @@ async function tradeCycle(width, bucket) {
     let state = await timed('open-market-2', 'OPEN', async () => { await family(p, 'MARKET'); await qty(p).fill('2'); await submit('LONG'); }, () => sized('2').waitFor());
     const position = state.positions.find(x => x.side === 'LONG' && x.marginMode === bucket); assert(position, `${bucket} long was not opened`);
     assert.equal(position.quantity, '2'); assert.equal(lastFill(state, 'OPEN').price, '50000.1');
-    // 2. Reduce-only MARKET 0.5 at 52 000 (bid 51 999.9): the position is 1.5, the entry is unchanged.
+    // 2. Reduce-only MARKET 0.5 at 52 000 (bid 51 999.9): the position is 1.5, the entry is unchanged. A reduce-only
+    //    MARKET from the form resolves the bucket's one position and is sent as a CLOSE naming it (#111's resolver).
     await fixture({ price: 52000 });
-    state = await timed('partial-close-0.5', 'OPEN', async () => { await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('0.5'); await submit('SHORT'); }, () => sized('1.5').waitFor());
+    state = await timed('partial-close-0.5', 'CLOSE', async () => { await family(p, 'MARKET'); await p.locator('.fo-reduceOnlyRow input').check(); await qty(p).fill('0.5'); await submit('SHORT'); }, () => sized('1.5').waitFor());
     assert.equal(state.positions.find(x => x.id === position.id).quantity, '1.5'); assert.equal(lastFill(state, 'CLOSE').price, '51999.9');
     assert.equal(state.positions.find(x => x.id === position.id).entryPrice, '50000.1');
     // 3. Add 1 at 48 000 (ask 48 000.1): one position of 2.5 at the averaged entry 49 200.1.
@@ -490,13 +506,21 @@ async function tradeCycle(width, bucket) {
     //    its OWN price, as maker, for 1. Server-confirmed on the refresh; the row shows 1.5 on the terminal's next refresh.
     await fixture({ price: 56000 });
     const movedAt = Date.now();
+    // The service reuses a quote younger than NATIVE_QUOTE_REUSE_MS, so the book a resting order fills from is at
+    // most that old: the refresh that observes the new market is the first one after that window, as for a trader.
+    const { NATIVE_QUOTE_REUSE_MS } = require(path.join(root, 'dist/private-trading/native/service'));
+    await delay(NATIVE_QUOTE_REUSE_MS + 100);
+    const refreshAt = Date.now();
     const filled = await api(s.context, s.token, 'commands', { kind: 'REFRESH', idempotencyKey: `qa-cycle-refresh-${bucket}-${width}-${movedAt}` });
-    const limitFillServerMs = Date.now() - movedAt;
+    const refreshMs = Date.now() - refreshAt;
     const done = filled.orders.find(o => o.id === resting.id);
     assert.equal(done.status, 'FILLED', 'The resting limit did not fill from the observed book'); assert.equal(done.averagePrice, '55000');
     assert.equal(filled.positions.find(x => x.id === position.id).quantity, '1.5');
     const limitFill = filled.events.find(e => e.orderId === resting.id && e.kind === 'CLOSE'); assert.equal(limitFill.price, '55000'); assert.equal(limitFill.pricing, 'OBSERVED_BOOK');
-    timings.push({ step: 'limit-close-fills-on-observed-book', command: 'REFRESH', serverMs: limitFillServerMs, confirmedMs: null, revision: filled.revision, note: 'server-confirmed by the refresh that observed the book; the row repaints on the terminal\'s next refresh or command' });
+    // The row repaints on the terminal's own refresh cadence (every 30 s) or on its next command: measured from the market move.
+    await sized('1.5').waitFor({ timeout: 45000 });
+    timings.push({ step: 'limit-close-fills-on-observed-book', command: 'REFRESH', serverMs: refreshMs, confirmedMs: Date.now() - movedAt, revision: filled.revision, note: 'not a click: server-confirmed by the first refresh after the quote-reuse window (serverMs is that refresh\'s round trip); confirmedMs is the market move to the row showing 1.5, which waits for the terminal\'s own 30-second refresh' });
+    console.log(`[trade-cycle ${bucket} ${width}] limit-close-fills-on-observed-book: REFRESH round trip ${refreshMs} ms; row repainted ${Date.now() - movedAt} ms after the market move (terminal refresh cadence)`);
     // 6. Full MARKET close from the row at 56 000 (bid 55 999.9): the row disappears.
     state = await timed('close-market-rest', 'CLOSE', async () => { const row = bucketRow(p, 'LONG', bucket); await row.waitFor(); await row.locator('.futures-position-close').nth(1).click(); }, () => bucketRow(p, 'LONG', bucket).waitFor({ state: 'detached' }));
     assert(!state.positions.some(x => x.id === position.id), 'The position is still open after the market close');
@@ -508,6 +532,11 @@ async function tradeCycle(width, bucket) {
     const panel = await p.locator('.futures-positions-panel').innerText();
     assert(!/не подтверждена|не закрыта|не отменён/i.test(panel), 'The terminal reported a refusal during the cycle');
     return { bucket, positionId: position.id, timings, realizedGross: closed.realizedGross, fees: Number(closed.openingFees) + Number(closed.closingFees), account: { equity: state.account.equity, available: state.account.available } };
+  } catch (error) {
+    // The context closes below, before check() could look: keep the screen and what the form had sent.
+    await p.screenshot({ path: path.join(out, `trade-cycle-${bucket.toLowerCase()}-${width}-failed.png`), fullPage: true }).catch(() => {});
+    const form = await p.evaluate(() => ({ submit: document.querySelector('.fo-submitPair')?.outerHTML ?? null, panel: document.querySelector('.fo-panel')?.innerText ?? null })).catch(() => null);
+    throw new Error(`${currentStep}: ${error.message}\ndrafts sent: ${JSON.stringify(s.drafts.map(d => d && { kind: d.kind, side: d.side, type: d.type, quantity: d.quantity, reduceOnly: d.reduceOnly, positionId: d.positionId }))}\nform: ${JSON.stringify(form)}`, { cause: error });
   } finally { try { await fixture({ price: null, bids: null, asks: null }); } catch {} await s.context.close(); }
 }
 async function chartFlow(width) {
