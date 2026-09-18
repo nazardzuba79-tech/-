@@ -192,9 +192,12 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
   // getExternalTicker call to the shared market-data store; the FIXTURE
   // VALUES ARE IDENTICAL, so every rendered-output assertion below still
   // asserts exactly what it did before.
+  // `__ticker` lets a case vary the quote without touching any other
+  // fixture; every existing assertion still runs against the values above.
   const referenceTicker = {
     lastPrice: '72345.67', changePercent24h: '2.34', high24h: '73000', low24h: '70000',
     volume24h: '123456', quoteVolume24h: '987654321',
+    ...(overrides.__ticker ?? {}),
   };
   // Tracked EXTERNAL derivatives statistics — the header's two
   // market-reference figures. `getFuturesOpenInterest` is deliberately
@@ -265,6 +268,11 @@ function mount(overrides: Record<string, any> = {}, countdown = false) {
       }, child, {setInterval,clearInterval});
       return child;
     }
+    // The instrument artwork. Stubbed rather than evaluated: it resolves a
+    // remote icon URL and falls back to a letter avatar, none of which this
+    // suite is about — but it must render SOMETHING, so the header's cell
+    // order and text assertions still see the real child count.
+    if (name === './CryptoIcon') return { CryptoIcon: ({ symbol }: { symbol: string }) => react.createElement('img', { alt: symbol }) };
     if (name === 'react') return react;
     if (name === '../lib/api') return { api };
     if (name === '../lib/futuresConfigStore') return futuresConfigModule;
@@ -311,7 +319,16 @@ test('visible metrics follow price, market, derivatives order without index or b
   const tree = component.render();
   const blocks = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'));
   expect(blocks).toHaveLength(7);
-  expect(text(blocks[0])).toBe('72,345.67futures.markPrice: 72,340.12');
+  // Last price, then mark price as the NUMBER ALONE. The owner's terminal
+  // pack drops the "Маркировочная цена:" prefix from the face of the header:
+  // the figure directly under the last price is the mark, and the label only
+  // repeated what the position of the cell already says.
+  expect(text(blocks[0])).toBe('72,345.6772,340.12');
+  // It is dropped from the VISIBLE text only. The cell still carries the
+  // label for assistive tech and on hover, so the number is never anonymous.
+  const markCell = nodes(blocks[0]).find(n => n.props.className === 'futures-secondary-price');
+  expect(markCell.props.title).toBe('futures.markPrice');
+  expect(nodes(markCell).find(n => n.props['aria-label'])?.props['aria-label']).toBe('futures.markPrice');
   expect(blocks.slice(1).map(b => text(nodes(b).find(n => n.props.className === 'label')))).toEqual([
     'futures.headerChange24h', 'futures.headerHigh24h', 'futures.headerLow24h',
     // The two market-reference cells name the unit they actually show —
@@ -413,4 +430,48 @@ test('professional RU terminology is additive and does not reuse Spot volume lab
     expect(dictionary).toContain(label);
   }
   expect(source).not.toContain("t('trade.volume24h')");
+});
+
+/**
+ * The 24h change cell shows the move in QUOTE currency AND the percent, as
+ * the owner's terminal pack asks: `+387.10 (+0.87%)`, `-387.10 (-0.87%)`.
+ *
+ * The absolute figure is DERIVED, because the feed publishes a last price
+ * and a percent but no previous close. The recovery is exact algebra —
+ * `last * p / (100 + p)` — so it agrees with the percent printed beside it
+ * by construction rather than by a second, independently fetched number
+ * that could disagree with it.
+ */
+describe('24h change shows the quote move beside the percent', () => {
+  const changeText = (ticker?: Record<string, string>) => {
+    const component = mount(ticker ? { __ticker: ticker } : {});
+    const tree = component.render();
+    const cell = nodes(tree)
+      .filter(n => n.props.className?.split(' ').includes('ticker-item'))[1];
+    return text(nodes(cell).find(n => n.props.className?.includes('change')));
+  };
+
+  it('prints the gain in quote currency and the percent, both signed', () => {
+    // 72,345.67 at +2.34% opened at 72,345.67 / 1.0234, so the move is
+    // 72,345.67 * 2.34 / 102.34 = 1,654.18 — not a rounded invention.
+    expect(changeText()).toBe('+1,654.18 (+2.34%)');
+  });
+
+  it('prints a fall with one minus on each figure, never a bare percent', () => {
+    expect(changeText({ lastPrice: '70000', changePercent24h: '-1.5' })).toBe('-1,065.99 (-1.50%)');
+  });
+
+  it('still prints the percent when the absolute move cannot be computed', () => {
+    // A -100% move means the open was zero: the division is undefined, so
+    // the quote figure is dropped rather than guessed, and the percent —
+    // which IS published — still renders.
+    expect(changeText({ lastPrice: '0', changePercent24h: '-100' })).toBe('(-100.00%)');
+  });
+
+  it('reports no change at all rather than a zero when there is no quote', () => {
+    const component = mount({ __noTicker: true });
+    const tree = component.render();
+    const cell = nodes(tree).filter(n => n.props.className?.split(' ').includes('ticker-item'))[1];
+    expect(text(nodes(cell).find(n => n.props.className?.includes('change')))).toBe('—');
+  });
 });

@@ -7,6 +7,7 @@ import { referenceNumber } from '../lib/futuresReference';
 import { useLanguage } from '../lib/i18n';
 import { formatPrice, formatCompact } from '../lib/formatNumber';
 import { useFuturesConfig } from '../lib/futuresConfigStore';
+import { CryptoIcon } from './CryptoIcon';
 
 /**
  * The futures instrument row, on the same `.ticker-bar` / `.stat` system the
@@ -152,6 +153,36 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
       }
     : null;
 
+  /**
+   * The 24h move in QUOTE currency, beside the percent — `+387.10 (+0.87%)`.
+   *
+   * DERIVED, not invented, and not a second source of truth. The feed
+   * publishes the last price and the 24h percent but no previous close
+   * (`LiveQuote` has no such field, and the collector does not carry Bybit's
+   * `prevPrice24h`), so the open is recovered by exact algebra from the two
+   * figures that ARE published:
+   *
+   *   open = last / (1 + p/100)   =>   last - open = last * p / (100 + p)
+   *
+   * It is therefore the same number the provider's own absolute change is,
+   * to the precision of the percent it publishes — no extra request and no
+   * second definition of "24h change" that could disagree with the percent
+   * printed next to it.
+   *
+   * Null whenever it cannot be computed honestly: no percent, a
+   * non-finite last price, or a -100% move, where the open is zero and the
+   * division is undefined. The percent still renders on its own then.
+   */
+  const absoluteChange24h = (() => {
+    const percent = stats?.changePercent ?? null;
+    const last = stats?.lastPrice ?? null;
+    if (percent === null || last === null || !Number.isFinite(last)) return null;
+    const denominator = 100 + percent;
+    if (denominator === 0) return null;
+    const move = (last * percent) / denominator;
+    return Number.isFinite(move) ? move : null;
+  })();
+
   const positive = (stats?.changePercent ?? 0) >= 0;
   const dir = positive ? 'up' : 'down';
 
@@ -169,21 +200,33 @@ export function FuturesTickerBar({ symbol, onSelectSymbol }: { symbol: string; o
           }
         }}
       >
+        {/* The instrument's own artwork, resolved by the same component the
+            market list uses, so the identity block reads as one unit:
+            logo + pair + the selector's caret. */}
+        <CryptoIcon symbol={baseAsset} size={20} />
         <span className="pair-name">{symbol}</span>
         <span className="pair-arrow" aria-hidden="true" />
       </div>
 
       <div className="ticker-item futures-primary-price">
         <span className={`value price ${dir}`} aria-label={t('trade.lastPrice')}>{stats ? formatPrice(stats.lastPrice) : '—'}</span>
-        <span className="futures-secondary-price">
-          <span className="label">{t('futures.markPrice')}: </span>
-          <span className="value">{markPrice !== null ? formatPrice(markPrice) : '—'}</span>
+        {/* Mark price, as the number alone. The label is dropped from the
+            face of the terminal — the figure directly under the last price
+            is the mark everywhere this design is used — but it stays in the
+            accessible name, so the cell is still self-describing to a
+            screen reader. */}
+        <span className="futures-secondary-price" title={t('futures.markPrice')}>
+          <span className="value" aria-label={t('futures.markPrice')}>
+            {markPrice !== null ? formatPrice(markPrice) : '—'}
+          </span>
         </span>
       </div>
       <div className="ticker-item">
         <span className="label">{t('futures.headerChange24h')}</span>
         <span className={`value change ${dir}`}>
-          {stats?.changePercent != null ? `${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%` : '—'}
+          {stats?.changePercent != null
+            ? `${absoluteChange24h !== null ? `${positive ? '+' : ''}${formatPrice(absoluteChange24h)} ` : ''}(${positive ? '+' : ''}${stats.changePercent.toFixed(2)}%)`
+            : '—'}
         </span>
       </div>
       <div className="ticker-item">
