@@ -123,6 +123,8 @@ async function run(width) {
   record(`${width}: exact isolated table id, picker cancelled, wrong side disabled`, { id: isolated.id });
 
   await price.fill(closePrice); await quantity.fill('0.010');
+  assert.equal(await page.locator('.fo-submitPair .sell').isDisabled(), false,
+    'Targeted LONG close is filled but SELL is not submit-ready');
   const partial = await uiCommand(page, 'OPEN', () => quantity.press('Enter'));
   assert.equal(partial.draft.positionId, isolated.id);
   assert.equal(partial.draft.marginType, 'ISOLATED');
