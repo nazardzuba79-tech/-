@@ -118,7 +118,11 @@ export function WalletPage() {
 
   return (
     <div className="vx-wallet">
-      <Nav active="/wallet" />
+      {/* No gainers strip here. Wallet is where a balance is read, not where
+          a market is watched, and the scrolling tape under the header pushed
+          the whole account down for no reason a Wallet user has. Trade and
+          Futures keep theirs — the flag is per page, not global. */}
+      <Nav active="/wallet" hideTicker />
 
       {/* Full-bleed, like the reference terminal: the rail sits against the
           left edge and the content runs to the right one. No page heading
