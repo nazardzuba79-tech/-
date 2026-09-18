@@ -118,7 +118,7 @@ export function WalletPage() {
 
   return (
     <div className="vx-wallet">
-      <Nav active="/wallet" />
+      <Nav active="/wallet" hideTicker />
 
       {/* Full-bleed, like the reference terminal: the rail sits against the
           left edge and the content runs to the right one. No page heading
