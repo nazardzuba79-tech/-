@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'frontend/src/components/FuturesPairList*'
+      - 'frontend/src/lib/__tests__/futuresPairSort.test.ts'
       - 'frontend/src/pages/trade-terminal/**'
       - 'frontend/src/pages/FuturesPage.tsx'
       - 'scripts/qa-futures-pair-labels.cjs'
@@ -23,10 +24,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts --no-audit --no-fund
       - name: Frontend TypeScript and production build
         run: npm run build --prefix frontend
+      - name: Existing Futures sorting and unknown-value regressions
+        run: npm test -- --runInBand --runTestsByPath frontend/src/lib/__tests__/futuresPairSort.test.ts
       - name: Browser tooling
         run: |
           npm install --prefix /tmp/pair-labels-browser --no-save --ignore-scripts --no-audit --no-fund playwright@1.63.0
