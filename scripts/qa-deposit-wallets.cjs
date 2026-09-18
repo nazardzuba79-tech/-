@@ -150,6 +150,9 @@ async function openModal(page, width) {
       modalZ,
       coveredCopyButtons: copies.filter(c => floating.some(f => hits(f, c))).length,
       floatingAbove: floating.length,
+      warningTones: [...modal.querySelectorAll('p')]
+        .filter(node => node.textContent?.includes('Отправляй на этот адрес'))
+        .map(node => getComputedStyle(node).color),
     };
   });
 }
@@ -195,8 +198,18 @@ async function openModal(page, width) {
         assert.equal(seen.selects, 0, `${scenario}/${width}: a <select> is still in the modal`);
         assert.ok(seen.addresses.every(address => address.length > 10), `${scenario}/${width}: a blank address rendered`);
         assert.equal(seen.copyButtons, expected.length, `${scenario}/${width}: one copy button per wallet expected`);
-        // The single combined warning, and the real minimum.
-        assert.match(seen.text, /Отправляйте только те активы/, `${scenario}/${width}: combined warning missing`);
+        // One warning per wallet, under the address it belongs to, naming
+        // that wallet's own assets — not one generic notice for all six.
+        const warnings = seen.text.match(/Отправляй на этот адрес только/g) ?? [];
+        assert.equal(warnings.length, expected.length,
+          `${scenario}/${width}: expected ${expected.length} per-address warnings, saw ${warnings.length}`);
+        // Amber, not the red this app uses for a loss or a failure.
+        assert.ok(seen.warningTones.length > 0, `${scenario}/${width}: no warning found to sample`);
+        for (const tone of seen.warningTones) {
+          const [r, g, b] = tone.match(/\d+(\.\d+)?/g).map(Number);
+          assert.ok(r > b && g > b, `${scenario}/${width}: warning tone ${tone} is not amber`);
+          assert.ok(!(r > 150 && g < 90), `${scenario}/${width}: warning tone ${tone} reads as red`);
+        }
         assert.match(seen.text, /от 20 \$/, `${scenario}/${width}: minimum not shown`);
         assert.ok(!seen.text.includes('{'), `${scenario}/${width}: an unsubstituted placeholder rendered`);
         // A wallet the user cannot tap to copy is a wallet they do not have.

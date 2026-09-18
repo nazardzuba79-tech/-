@@ -1,0 +1,74 @@
+{
+  "steps": [
+    {
+      "step": "opened",
+      "network": "Bitcoin",
+      "asset": "BTC",
+      "address": "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+      "order": [
+        "deposit-asset",
+        "deposit-network"
+      ],
+      "warningTone": "rgb(255, 245, 209)",
+      "text": "Спотовый счёт | Актив | BTC | Сеть | Bitcoin | Адрес для пополнения | QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001 | Мин. пополнение | Отправляй на этот адрес только BTC через сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств. | Отправляй на этот адрес только BTC через сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средс"
+    },
+    {
+      "step": "asset list",
+      "assets": [
+        "BTC",
+        "USDT",
+        "ETH"
+      ]
+    },
+    {
+      "step": "picked USDT",
+      "network": "USDT (TRC-20)",
+      "asset": "USDT",
+      "address": "QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002",
+      "order": [
+        "deposit-asset",
+        "deposit-network"
+      ],
+      "warningTone": "rgb(255, 245, 209)",
+      "text": "Спотовый счёт | Актив | USDT | Сеть | USDT (TRC-20) | Адрес для пополнения | QA-ONLY-T-NOT-A-VALID-DEPOSIT-ADDRESS-0002 | Мин. пополнение | Отправляй на этот адрес только USDT через сеть USDT (TRC-20). Перевод другого актива или через другую сеть может привести к потере средств. | Отправляй на этот адрес только USDT через сеть USDT (TRC-20). Перевод другого актива или через другую сеть может приве"
+    },
+    {
+      "step": "networks for USDT",
+      "networks": [
+        "USDT (TRC-20)",
+        "Ethereum (ERC20)"
+      ]
+    },
+    {
+      "step": "USDT on Ethereum",
+      "network": "Ethereum (ERC20)",
+      "asset": "USDT",
+      "address": "QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003",
+      "order": [
+        "deposit-asset",
+        "deposit-network"
+      ],
+      "warningTone": "rgb(255, 245, 209)",
+      "text": "Спотовый счёт | Актив | USDT | Сеть | Ethereum (ERC20) | Адрес для пополнения | QA-ONLY-0x-NOT-A-VALID-DEPOSIT-ADDRESS-0003 | Мин. пополнение | Отправляй на этот адрес только USDT через сеть Ethereum (ERC20). Перевод другого актива или через другую сеть может привести к потере средств. | Отправляй на этот адрес только USDT через сеть Ethereum (ERC20). Перевод другого актива или через другую сеть м"
+    },
+    {
+      "step": "picked BTC",
+      "network": "Bitcoin",
+      "asset": "BTC",
+      "address": "QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001",
+      "order": [
+        "deposit-asset",
+        "deposit-network"
+      ],
+      "warningTone": "rgb(255, 245, 209)",
+      "text": "Спотовый счёт | Актив | BTC | Сеть | Bitcoin | Адрес для пополнения | QA-ONLY-bc1q-NOT-A-VALID-DEPOSIT-ADDRESS-0001 | Мин. пополнение | Отправляй на этот адрес только BTC через сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средств. | Отправляй на этот адрес только BTC через сеть Bitcoin. Перевод другого актива или через другую сеть может привести к потере средс"
+    },
+    {
+      "step": "networks for BTC",
+      "networks": [
+        "Bitcoin"
+      ]
+    }
+  ],
+  "pageErrors": []
+}

@@ -23,6 +23,17 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
     solana: t('deposit.chain.solana'),
     ton: t('deposit.chain.ton'),
   };
+  // The bare network name, for the sentence that already names the asset.
+  // The card heading can say «USDT (TRC-20)»; the warning under it must not
+  // read "only USDT on the USDT (TRC-20) network".
+  const NETWORK_NAME: Record<string, string> = {
+    bitcoin: t('deposit.network.bitcoin'),
+    tron: t('deposit.network.tron'),
+    ethereum: t('deposit.network.ethereum'),
+    bsc: t('deposit.network.bsc'),
+    solana: t('deposit.network.solana'),
+    ton: t('deposit.network.ton'),
+  };
   const { loaded, wallets, minDepositUsd, error: loadError } = useDepositWallets(true);
   const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   // Which card was copied, not a bare flag — six Copy buttons share this.
@@ -80,11 +91,18 @@ export function DepositModal({ onClose }: { onClose: () => void }) {
                       {copied === wallet.chain ? t('deposit.copied') : t('deposit.copy')}
                     </button>
                   </div>
+                  {/* Under the address it belongs to, naming that wallet's own
+                      assets and network — an amber caution, not an alarm. */}
+                  <p style={styles.warning}>
+                    {t('deposit.warningAddress', {
+                      assets: wallet.assets.join(' / '),
+                      chain: NETWORK_NAME[wallet.chain] ?? wallet.chain,
+                    })}
+                  </p>
                 </div>
               ))}
             </div>
 
-            <div style={styles.warning}>{t('deposit.warningAll')}</div>
             <div style={styles.success}>{t('deposit.manualCreditNote')}</div>
           </>
         )}
@@ -178,14 +196,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 700,
     whiteSpace: 'nowrap',
   },
+  // Amber, not red. Red is the colour this app uses for a loss or a
+  // failure; sending to the right address is the normal case, and a red
+  // block over every wallet reads as "something is wrong here".
   warning: {
-    background: 'var(--sell-dim)',
-    color: 'var(--sell)',
-    padding: '8px 10px',
+    background: 'rgba(233, 173, 53, 0.10)',
+    border: '1px solid rgba(233, 173, 53, 0.30)',
+    color: '#e3b45c',
+    padding: '7px 9px',
     borderRadius: 8,
     fontSize: 11,
-    lineHeight: 1.5,
-    marginBottom: 8,
+    lineHeight: 1.45,
+    margin: '8px 0 0',
   },
   minBadge: {
     background: 'var(--panel-alt)',

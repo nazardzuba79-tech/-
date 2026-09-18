@@ -642,7 +642,14 @@ test.each([
   // (DepositModal.tsx, api.ts) are PRE-EXISTING failures on main cbe066e
   // and are deliberately left untouched.
   [wallet + 'TransferModal.tsx', '81d78430c88e2b691e8bbeecc81aca8f077d16580231581df248c370e6b2fc0d'],
-  [wallet + 'ui.tsx', 'a59be22e81e7e6ca4fc9271c440d08382710c9cf5a3071fcbe3799448ce5fae8'],
+  // ui.tsx re-pinned for ONE deliberate change to `Select`: its Escape
+  // handler now listens in the capture phase and stops propagation, so
+  // Escape closes the open dropdown instead of the dialog around it. The
+  // surrounding Modal also listens for Escape on `document` and registered
+  // first, so the whole deposit dialog used to shut when a user only wanted
+  // out of a list. No option, value, label, disabled rule, focus order or
+  // ARIA role changed, and no other export in this file was touched.
+  [wallet + 'ui.tsx', '304d71b9ab5a64d3d92c301bb42a9faf277647c840e38e923014e513a7b50f33'],
   [wallet + 'TransactionHistory.tsx', '3650f07956b54e5451e945d6d3e4561cfa0247bfd00d3549d6770374545037d5'],
   ['frontend/src/lib/api.ts', '364345bc08c0084e09387aaad375b185ca0c854d88ffe782c396b59617705d19'],
   // Re-taken for the same change, on the server side: the presentation
