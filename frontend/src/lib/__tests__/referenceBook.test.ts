@@ -102,5 +102,14 @@ test('price display is bounded while the price-pick value and tooltip preserve f
 test('center uses the fresh selected-contract execution; stale execution cannot override the ticker',async()=>{
  const trade={id:'latest',price:'100.50',quantity:'0.1',time:Date.now(),side:'BUY'};
  await render('BTC/USDT',bids,asks,[trade]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('100.50');
- await render('BTC/USDT',bids,asks,[{...trade,time:Date.now()-30001}]);expect(host.querySelector('.rb-center strong')!.textContent).toBe('↓100.25');
+ await render('BTC/USDT',bids,asks,[{...trade,time:Date.now()-30001}]);
+ // The arrow is no longer glued to the front of the number. It has its own
+ // fixed-width slot AFTER the price, as the reference terminal draws it, so
+ // that a flip from up to down cannot shift the digits sideways. Asserted as
+ // the two parts rather than as one concatenated string, which is what the
+ // panel actually guarantees.
+ const centre=host.querySelector('.rb-center strong')!;
+ expect(centre.querySelector('.rb-last')!.textContent).toBe('100.25');
+ expect(centre.querySelector('.rb-arrow')!.textContent).toBe('↓');
+ expect(centre.textContent).toBe('100.25↓');
 });
