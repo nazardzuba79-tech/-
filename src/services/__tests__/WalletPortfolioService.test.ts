@@ -412,10 +412,10 @@ describe('wallet performance — no account gets a generated history', () => {
  */
 describe('manual balance adjustments', () => {
   const snapshot = (date: string, value: string) => ({ createdAt: new Date(`${date}T09:00:00.000Z`), totalValueUsd: value });
-  const audit = (action: string, metadata: unknown, day: string) => ({
+  const audit = (action: string, metadata: unknown, day: string, time = '08:00:00.000Z') => ({
     action,
     metadata,
-    createdAt: new Date(`${day}T10:00:00.000Z`),
+    createdAt: new Date(`${day}T${time}`),
   });
 
   it('does not report an admin credit as profit', async () => {
@@ -482,33 +482,73 @@ describe('manual balance adjustments', () => {
   });
 
   it('counts the ledger the snapshot measures, and only that one', async () => {
-    // An account WITH a simulation ledger records its native equity, so a
-    // demo top-up is its flow and a real-ledger credit is not.
-    const rows = [
-      audit('DEMO_BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-08-29'),
-      audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '5000' }, '2026-08-29'),
-    ];
     const snapshots = [snapshot('2026-08-26', '1000'), snapshot('2026-08-29', '2000'), snapshot('2026-09-04', '2000')];
 
+    // Native account: only the DEMO +1000 belongs to the measured total.
+    // The unrelated real-ledger +5000 must not be subtracted from it.
     const native = prismaStub({
       portfolioSnapshot: { findMany: jest.fn().mockResolvedValue(snapshots) },
-      auditLog: { findMany: jest.fn().mockResolvedValue(rows) },
+      auditLog: { findMany: jest.fn().mockResolvedValue([
+        audit('DEMO_BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-08-29'),
+        audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '5000' }, '2026-08-29'),
+      ]) },
       nativeDemoAccount: { findUnique: jest.fn().mockResolvedValue({ userId: OWNER.id, revision: 3 }) },
     });
     expect((await serviceFor(native).service.performance(OWNER, REFERENCE)).periods['7d'].percent).toBeCloseTo(0, 6);
 
-    // The same rows on an account WITHOUT one: the real credit is its flow,
-    // and the 5 000 it never received must not be subtracted from it.
+    // Ordinary account: exactly the opposite ledger applies. The real
+    // +1000 explains the 1000 -> 2000 jump; the demo +5000 is irrelevant.
     const real = prismaStub({
       portfolioSnapshot: { findMany: jest.fn().mockResolvedValue(snapshots) },
-      auditLog: { findMany: jest.fn().mockResolvedValue(rows) },
+      auditLog: { findMany: jest.fn().mockResolvedValue([
+        audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-08-29'),
+        audit('DEMO_BALANCE_ADJUSTED', { asset: 'USDT', delta: '5000' }, '2026-08-29'),
+      ]) },
     });
-    const perf = await serviceFor(real).service.performance(NORMAL_USER, REFERENCE);
-    // value 2000 − flow 5000 would be negative; the engine refuses to
-    // manufacture that, so the honest reading here is "no return", never a
-    // fabricated collapse.
-    expect(perf.periods['7d'].percent).toBeLessThanOrEqual(0);
-    expect(Number.isFinite(perf.periods['7d'].percent as number)).toBe(true);
+    expect((await serviceFor(real).service.performance(NORMAL_USER, REFERENCE)).periods['7d'].percent).toBeCloseTo(0, 6);
+  });
+
+  it('assigns a same-day top-up to the first snapshot AFTER the money moved', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          { createdAt: new Date('2026-08-28T09:00:00.000Z'), totalValueUsd: '1000' },
+          // This observation was already recorded BEFORE the top-up below.
+          { createdAt: new Date('2026-08-29T09:00:00.000Z'), totalValueUsd: '1000' },
+          // The next observation is the first one that actually contains it.
+          { createdAt: new Date('2026-09-04T09:00:00.000Z'), totalValueUsd: '2000' },
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '1000' }, '2026-08-29', '16:30:00.000Z'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    const perf = await service.performance(NORMAL_USER, REFERENCE);
+    expect(perf.periods['7d'].percent).toBeCloseTo(0, 6);
+    expect(perf.periods['7d'].absolutePnl).toBeCloseTo(0, 6);
+  });
+
+  it('does not subtract a flow that no stored snapshot contains yet', async () => {
+    const prisma = prismaStub({
+      portfolioSnapshot: {
+        findMany: jest.fn().mockResolvedValue([
+          { createdAt: new Date('2026-08-28T09:00:00.000Z'), totalValueUsd: '1000' },
+          { createdAt: new Date('2026-09-04T09:00:00.000Z'), totalValueUsd: '1100' },
+        ]),
+      },
+      auditLog: {
+        findMany: jest.fn().mockResolvedValue([
+          audit('BALANCE_ADJUSTED', { asset: 'USDT', delta: '5000' }, '2026-09-04', '16:30:00.000Z'),
+        ]),
+      },
+    });
+    const { service } = serviceFor(prisma);
+    // The 16:30 credit is newer than the last 09:00 observation, so the
+    // stored curve still legitimately contains the +10% trading move only.
+    expect((await service.performance(NORMAL_USER, REFERENCE)).periods['7d'].percent).toBeCloseTo(10, 6);
   });
 
   it('does not subtract a real deposit from an account whose total is the simulation ledger', async () => {
