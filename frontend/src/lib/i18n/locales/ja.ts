@@ -324,6 +324,7 @@ export const JA: Record<Key, string> = {
   'deposit.copy': 'コピー',
   'deposit.copied': 'コピーしました',
   'deposit.warning': '⚠ {chain} ネットワークで {assets} のみを送金してください。別のネットワークまたは別の資産で送られた資金は永久に失われます。',
+  'deposit.warningAll': '⚠ 各アドレスの上に表示された資産のみを、そのアドレスのネットワークでのみ送金してください。別のネットワークまたは別の資産で送られた資金は永久に失われます。',
   'deposit.supportedAssets': '対応資産',
   'deposit.asset': '資産',
   'deposit.minAmountHint': '最低入金額は {amount} USD相当です。',

@@ -1,5 +1,5 @@
 export interface DepositConfig {
-  chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[] }[];
+  chains: { chain: string; nativeAsset: string; tokens: string[]; supportedAssets: string[]; address?: string }[];
   minDepositUsd: number;
   usdPeggedAssets: string[];
 }
@@ -11,7 +11,16 @@ export function validDepositConfig(value: unknown): value is DepositConfig {
   return typeof c.minDepositUsd === 'number' && Number.isFinite(c.minDepositUsd) && c.minDepositUsd > 0
     && strings(c.usdPeggedAssets) && Array.isArray(c.chains) && c.chains.every(chain => chain
       && typeof chain.chain === 'string' && typeof chain.nativeAsset === 'string'
-      && strings(chain.tokens) && strings(chain.supportedAssets));
+      && strings(chain.tokens) && strings(chain.supportedAssets)
+      // The treasury address rides along so a client showing every wallet at
+      // once needs ONE request instead of one per chain. It stays OPTIONAL on
+      // purpose: the frontend and the API deploy separately, and a frontend
+      // that hard-required it would break deposits outright in the window
+      // where it is live against an API that has not shipped it yet — callers
+      // fall back to /deposit-address/:chain. What is NOT tolerated is a
+      // present but empty or non-string address: that would print a blank
+      // address into a funds-receiving field, so the config is rejected.
+      && (chain.address === undefined || (typeof chain.address === 'string' && chain.address.length > 0)));
 }
 
 /** The backend supplies both the threshold and USD peg policy. The ticker is

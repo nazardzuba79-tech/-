@@ -324,6 +324,7 @@ export const HI: Record<Key, string> = {
   'deposit.copy': 'कॉपी करें',
   'deposit.copied': 'कॉपी हो गया',
   'deposit.warning': '⚠ केवल {chain} नेटवर्क पर {assets} भेजें। किसी अन्य नेटवर्क या अन्य एसेट के रूप में भेजे गए फंड हमेशा के लिए खो जाएंगे।',
+  'deposit.warningAll': '⚠ किसी पते के ऊपर सूचीबद्ध एसेट ही, और केवल उसी पते के नेटवर्क पर भेजें। किसी अन्य नेटवर्क या अन्य एसेट के रूप में भेजे गए फंड हमेशा के लिए खो जाएंगे।',
   'deposit.supportedAssets': 'समर्थित एसेट्स',
   'deposit.asset': 'एसेट',
   'deposit.minAmountHint': 'न्यूनतम डिपॉज़िट {amount} USD के बराबर है।',

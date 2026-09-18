@@ -327,6 +327,7 @@ export const ZH: Record<Key, string> = {
   'deposit.copy': '复制',
   'deposit.copied': '已复制',
   'deposit.warning': '⚠ 只能在 {chain} 网络发送 {assets}。发送到错误网络或错误资产的资金将永久丢失。',
+  'deposit.warningAll': '⚠ 只能发送地址上方列出的资产，并且只能使用该地址所属的网络。发送到错误网络或错误资产的资金将永久丢失。',
   'deposit.supportedAssets': '支持的资产',
   'deposit.asset': '资产',
   'deposit.minAmountHint': '最低充值金额为等值 {amount} 美元。',
