@@ -62,6 +62,9 @@ export interface UnifiedAccount {
    * what actually backs margin.
    */
   collateralUsd: number | null;
+  /** Economic Wallet value including all assets plus P&L; collateral toggles do not change it. */
+  walletEquityUsd: number | null;
+  /** Effective margin equity: enabled collateral plus P&L. */
   totalEquityUsd: number | null;
   availableUsd: number | null;
   unrealizedPnlUsd: number | null;
@@ -211,6 +214,7 @@ export function useWalletData() {
         // Keep the asset total independent from margin eligibility: a BTC
         // holding stays an asset even when the owner disables it as collateral.
         collateralUsd: finite(unified.assetsValue),
+        walletEquityUsd: finite(unified.assetsEquityValue),
         totalEquityUsd: finite(a.equity),
         availableUsd: finite(a.available),
         unrealizedPnlUsd: finite(a.unrealizedPnl),
@@ -235,6 +239,7 @@ export function useWalletData() {
       // between the two, so they are the same figure rather than a second
       // one derived from it.
       collateralUsd: overview.real.totalValueUsd,
+      walletEquityUsd: overview.real.totalValueUsd,
       totalEquityUsd: overview.real.totalValueUsd,
       // Spendable cash is a per-asset fact on a plain ledger, shown in the
       // rows. There is no single account-level "available margin" to report,
@@ -262,7 +267,7 @@ export function useWalletData() {
    */
   useEffect(() => {
     if (snapshotRecorded.current || unified === undefined) return;
-    const total = account?.totalEquityUsd ?? null;
+    const total = account?.walletEquityUsd ?? null;
     if (total === null || total <= 0) return;
     snapshotRecorded.current = true;
     api
