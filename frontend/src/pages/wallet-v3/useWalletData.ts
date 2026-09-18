@@ -33,6 +33,10 @@ export interface LedgerRow {
   valueUsd: number | null;
   /** True for rows the account can actually act on (deposit/withdraw). */
   spendable: boolean;
+  /** Server-confirmed margin-collateral preference for this asset. */
+  collateralEnabled: boolean;
+  /** Whether this row is allowed to change that preference. */
+  collateralToggleable: boolean;
   /**
    * False when this row's asset could not be priced. `valueUsd` is then
    * `null` — an unknown, NOT a zero — and the interface has to say so
@@ -204,7 +208,9 @@ export function useWalletData() {
       const a = unified.account;
       return {
         mode: 'CROSS',
-        collateralUsd: finite(a.collateral),
+        // Keep the asset total independent from margin eligibility: a BTC
+        // holding stays an asset even when the owner disables it as collateral.
+        collateralUsd: finite(unified.assetsValue),
         totalEquityUsd: finite(a.equity),
         availableUsd: finite(a.available),
         unrealizedPnlUsd: finite(a.unrealizedPnl),
@@ -217,8 +223,8 @@ export function useWalletData() {
         // Reporting a split it does not have would be an invention.
         spotUsd: null,
         futuresUsd: null,
-        valuationComplete: a.collateralComplete,
-        unpricedAssets: a.unpricedAssets,
+        valuationComplete: unified.assetsComplete,
+        unpricedAssets: unified.unpricedAssets,
         settleAsset: unified.collateral.settleAsset,
       };
     }
@@ -298,6 +304,8 @@ export function useWalletData() {
           // null all the way to the cell, which renders a dash.
           valueUsd: finite(r.value),
           spendable: false,
+          collateralEnabled: r.collateralEnabled,
+          collateralToggleable: r.collateralToggleable && unified.initialized !== false,
           priced: r.status !== 'UNPRICED',
         };
       });
@@ -331,6 +339,8 @@ export function useWalletData() {
         changePercent24h: ranking?.changePercent24h ?? null,
         valueUsd: b?.valueUsd ?? (priceUsd === null ? null : total * priceUsd),
         spendable: true,
+        collateralEnabled: false,
+        collateralToggleable: false,
         // Only a held asset can be an unknown: a row the account has none of
         // is not an incomplete valuation, it is an empty one.
         priced: priceUsd !== null || total === 0,
@@ -349,6 +359,15 @@ export function useWalletData() {
     return total / price;
   }, [account, unified, overview]);
 
+  const setCollateral = useCallback(async (asset: string, enabled: boolean) => {
+    const next = await nativeDemoApi.setCollateral(asset, enabled, crypto.randomUUID());
+    // The mutation returns the same authoritative Wallet object the page
+    // normally loads. Paint that confirmed result immediately; no optimistic
+    // margin number and no second valuation race.
+    setUnified(next);
+    return next;
+  }, []);
+
   const refresh = useCallback(() => {
     loadOverview();
     loadUnified();
@@ -365,6 +384,7 @@ export function useWalletData() {
     rows,
     rankingsLoaded,
     btcEquivalent,
+    setCollateral,
     refresh,
   };
 }
