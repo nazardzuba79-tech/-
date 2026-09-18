@@ -7,9 +7,9 @@
     "futures-desktop": {
       "rowsAdded": 0,
       "rowsRemoved": 0,
-      "textChanges": 4462,
-      "depthStyleWrites": 1531,
-      "otherAttr": 15,
+      "textChanges": 4381,
+      "depthStyleWrites": 1496,
+      "otherAttr": 13,
       "flashClassWrites": 0,
       "samples": 61,
       "rowCounts": [
@@ -27,8 +27,8 @@
     "futures-mobile": {
       "rowsAdded": 0,
       "rowsRemoved": 0,
-      "textChanges": 1460,
-      "depthStyleWrites": 448,
+      "textChanges": 1436,
+      "depthStyleWrites": 459,
       "otherAttr": 14,
       "flashClassWrites": 0,
       "samples": 60,

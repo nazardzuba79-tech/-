@@ -46,7 +46,8 @@ const arg = (name, fallback) => { const i = args.indexOf('--' + name); return i 
 const LABEL = arg('label', 'run');
 const OUT = path.resolve(arg('out', path.join(__dirname, '../docs/qa/orderbook')));
 const WINDOW_MS = Number(arg('window', 15000));
-const EVENT_NAME = 'message';
+/** The store subscribes to NAMED events (snapshot|delta|state), not the default `message`. */
+const EVENT_NAME = 'snapshot';
 
 /** Seeded PRNG — the whole point of this harness is that this is the only
  *  source of randomness and it starts from a fixed seed. */
