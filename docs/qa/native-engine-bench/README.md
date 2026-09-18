@@ -1,45 +1,60 @@
 # Native engine command-path benchmark
 
-Compute and call-count evidence for the native/simulation trading engine's command path, taken with
-`scripts/bench-native-engine.cjs` against the COMPILED service (`dist/`), an in-memory repository and a
-fixture market. It is the "before / after" for the engine correctness package (blocks A–C on
-`claude/peaceful-volta-h5zw7g`), not a production measurement.
+Timing and call-count evidence for the native/simulation Futures engine's command path, taken with
+`scripts/bench-native-engine.cjs` against the COMPILED service (`dist/`). It is the before / after for the
+engine correctness package on `claude/peaceful-volta-h5zw7g` (blocks A–D, then F1–F6), not a production
+measurement. The block-D files (`before.json`, `after.json`, `*-quote30ms.json`) were taken with the first
+version of the script (block D shape, one second of fixture time per op, 1 / 6 / 30 contracts); the F6 files
+(`before-eb259b6*.json`, `after-f5*.json`) with the phase-timed version described here. Both shapes render with
+`scripts/bench-native-engine-report.cjs`.
 
-## What is measured
+## What is measured (F6 script)
 
-- One `NativeDemoService.command()` from call to authoritative response, per command kind
-  (OPEN market 0.5, CLOSE 0.5, REFRESH), with N contracts already open (1 / 6 / 30), 1 000 operations,
-  one second of fixture time per operation (so every command sees a fresh quote and a distinct book
-  snapshot, and a minute boundary is crossed every 60 commands).
-- Upstream calls each command made: quotes (`freshQuote`) and history windows (`history`).
-- The persisted payload as the repository would write it (account payload + immutable revision, in the
-  stored shape) and the size of the JSON response.
-- OPEN outcomes: filled / partial / rejected, so a "fast" figure cannot hide refusals.
-- Node event-loop delay p99 across the run.
+- One `NativeDemoService.command()` from call to authoritative response, split into what it waited on:
+  **engine** = total − market wait − repository wait (replay, risk pass, projection, payload build: the pure
+  compute of a command); **market** = wall time with at least one market-data call in flight (`instrument`,
+  `freshQuote`, `marks`, `history`; a parallel batch counts once); **repository** = wall time with at least one
+  repository call in flight (`read`, `prior`, `holdings`, `commit` …); **serialize** = `JSON.stringify` of the
+  response (what the local server does before the bytes leave the process).
+- Per command kind — OPEN (accumulate 0.5), CLOSE (partial 0.5), CLOSE_FULL, OPEN_NEW (the re-open after a
+  full close), REDUCE_LIMIT (an exact reduce-only LIMIT that rests), CANCEL, REFRESH — at 1 / 10 / 20 / 30
+  contracts already open, 1 000 operations (300 for the slower variants), THREE seconds of fixture time per
+  operation so every command finds the service's 2-second quote snapshot expired (the worst case for
+  upstream calls; distinct book snapshot per command; a minute boundary every 20 commands).
+- The calls each command made: quotes, live-frame reads, history windows, instrument reads, repository calls
+  (commits separately). Fill outcomes (filled / partial / rejected) and every refusal code, so a fast figure
+  cannot hide refusals. Event-loop delay. The persisted payload (account + immutable revision, stored shape)
+  and the response size.
+- Variants: `BENCH_FRAME=1` (the fixture exposes the collector live-frame `marks()` of block F5; default:
+  every contract quoted itself, the path before F5); `BENCH_QUOTE_LATENCY_MS=30` (a simulated upstream round
+  trip per quote or frame read, so fan-out shows up as time); `BENCH_DB=1` (the REAL `PrismaNativeRepository`
+  on a disposable loopback PostgreSQL 16: repository wait is then real read/commit time and repository calls
+  are real transactions; runs on the real clock advanced three seconds per command); `BENCH_DIST=<dir>`
+  (another build's `dist/`, so the base branch is measured with the SAME script).
 
 ## What is NOT measured
 
-- PostgreSQL / Neon commit and read time, HTTP, TLS, the browser, React rendering. These are added on
-  top in production, never subtracted. The `quote latency 30 ms` variants add a simulated upstream round
-  trip per quote to show the fan-out cost; production quotes the local market-data collector.
-- Real Bybit liquidity or provider behaviour. Books and candles are synthetic fixtures.
-- Cold start, host sleep, reconnects, a thin book, a burst of 30 simultaneous commands — separate
-  scenarios, not run here.
+- HTTP transport and TLS (loopback in production between the API and the collector; the response
+  serialization cost IS measured), the browser, React rendering. Real Bybit liquidity or provider behaviour:
+  books and candles are synthetic fixtures. Cold start, host sleep, reconnects, a thin book.
+- Neon (the PostgreSQL figures are a local disposable cluster: same SQL, same transactions, no network).
 
 The p95 ≤ 1 s target in `ENGINE_CONTRACT.md` is an end-to-end target (click → confirmed DOM). These figures
-are the server compute component of that path only.
+are the server component of that path: engine compute, market-data wait, database wait, serialization.
 
 ## How to reproduce
 
 ```sh
 npm run build
-node scripts/bench-native-engine.cjs --ops 1000 --contracts 1,6,30 --label after --out docs/qa/native-engine-bench/after.json
-BENCH_QUOTE_LATENCY_MS=30 node scripts/bench-native-engine.cjs --ops 300 --contracts 1,6,30 --label after-quote30ms --out docs/qa/native-engine-bench/after-quote30ms.json
-node scripts/bench-native-engine-report.cjs docs/qa/native-engine-bench/before.json docs/qa/native-engine-bench/after.json
+node scripts/bench-native-engine.cjs --ops 1000 --contracts 1,10,20,30 --label after-F5 --out docs/qa/native-engine-bench/after-f5.json
+BENCH_FRAME=1 node scripts/bench-native-engine.cjs --ops 1000 --contracts 1,10,20,30 --label after-F5-frame --out docs/qa/native-engine-bench/after-f5-frame.json
+# the base branch with the same script: a worktree of main @ eb259b6, built, pointed at with BENCH_DIST
+BENCH_DIST=/path/to/worktree/dist node scripts/bench-native-engine.cjs --ops 1000 --contracts 1,6,10,20,30 --label before-eb259b6 --out docs/qa/native-engine-bench/before-eb259b6.json
+# PostgreSQL (disposable loopback TEST database only; the script refuses any other host)
+BENCH_DB=1 BENCH_FRAME=1 DATABASE_URL=postgresql://…@127.0.0.1:5432/… DIRECT_URL=… node scripts/bench-native-engine.cjs --ops 300 --contracts 1,10,20,30 --label after-F5-frame-postgres --out docs/qa/native-engine-bench/after-f5-frame-postgres.json
+BENCH_QUOTE_LATENCY_MS=30 node scripts/bench-native-engine.cjs --ops 300 --contracts 1,10,20,30 --label after-F5-quote30ms --out docs/qa/native-engine-bench/after-f5-quote30ms.json
+node scripts/bench-native-engine-report.cjs docs/qa/native-engine-bench/before-eb259b6.json docs/qa/native-engine-bench/after-f5.json docs/qa/native-engine-bench/after-f5-frame.json
 ```
-
-`before*.json` were produced from a worktree of `main` @ `107e350` with the same script (its store has no
-compaction, so its payload is measured as it wrote it). `after*.json` are the head of this branch.
 
 ## Results
 
