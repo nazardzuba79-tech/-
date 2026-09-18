@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckIcon, CopyIcon, TriangleAlertIcon } from 'lucide-react';
-import { useDepositOptions } from '../../lib/useDepositOptions';
+import { useDepositSelection, useDepositWallets, useMinimumEquivalent } from '../../lib/useDepositOptions';
 import { Key, useLanguage } from '../../lib/i18n';
 import { FieldLabel, Modal, SecondaryButton, Select } from './ui';
 import { formatAmount, formatUsd } from './format';
@@ -24,8 +24,10 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
     ton: 'deposit.chain.ton',
   };
 
-  const { chains, chain, setChain, address, assets, asset, setAsset,
-    error: loadError, minDepositUsd, minEquivalent, stable } = useDepositOptions(open);
+  const { wallets, minDepositUsd, usdPeggedAssets, error: loadError } = useDepositWallets(open);
+  // Asset first, then the networks that carry it — see useDepositSelection.
+  const { assets, asset, setAsset, networks, chain, setChain, address } = useDepositSelection(wallets);
+  const { minEquivalent, stable } = useMinimumEquivalent(minDepositUsd, usdPeggedAssets, asset, open);
   const error = loadError ? t(loadError === 'chains' ? 'deposit.loadChainsError' : 'deposit.loadAddressError') : null;
   const [copied, setCopied] = useState(false);
 
@@ -56,16 +58,9 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
           </p>
         )}
 
-        <div>
-          <FieldLabel>{t('deposit.network')}</FieldLabel>
-          <Select
-            id="deposit-network"
-            value={chain ?? ''}
-            onChange={setChain}
-            options={chains.map((c) => ({ value: c.chain, label: chainLabel(c.chain) }))}
-          />
-        </div>
-
+        {/* Asset above network. The other way round put the user in front of
+            an asset list that, on most chains, held exactly one entry —
+            opening it changed nothing and the screen read as stuck. */}
         <div>
           <FieldLabel>{t('wallet.colAsset')}</FieldLabel>
           <Select
@@ -73,6 +68,16 @@ export function DepositModal({ open, onClose }: { open: boolean; onClose: () => 
             value={asset}
             onChange={setAsset}
             options={assets.map((a) => ({ value: a, label: a }))}
+          />
+        </div>
+
+        <div>
+          <FieldLabel>{t('deposit.network')}</FieldLabel>
+          <Select
+            id="deposit-network"
+            value={chain}
+            onChange={setChain}
+            options={networks.map((c) => ({ value: c.chain, label: chainLabel(c.chain) }))}
           />
         </div>
 

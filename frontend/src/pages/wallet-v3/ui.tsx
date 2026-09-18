@@ -86,15 +86,22 @@ export function Select({
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      // Escape closes the LIST, not whatever contains it. The surrounding
+      // modal also listens for Escape on `document`, and it registered
+      // first, so without this the whole dialog shut and the user lost
+      // their place for wanting to back out of a dropdown. Capture runs
+      // before that bubble-phase listener, so stopping here is what keeps
+      // the two from firing on one key.
+      event.stopPropagation();
       setOpen(false);
       triggerRef.current?.focus();
     };
 
     document.addEventListener('pointerdown', onPointerDown);
-    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('keydown', onKeyDown, true);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
-      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('keydown', onKeyDown, true);
     };
   }, [open]);
 

@@ -1,0 +1,25 @@
+{
+  "status": "MEASURED",
+  "report": {
+    "spot": {},
+    "tape": {
+      "futures": {
+        "tapePresent": true,
+        "tapeHeight": 0,
+        "headerBottom": 48,
+        "contentTop": 0,
+        "gapBelowHeader": -48,
+        "bodyOverflowX": 0
+      },
+      "wallet": {
+        "tapePresent": true,
+        "tapeHeight": 34,
+        "headerBottom": 64,
+        "contentTop": 98,
+        "gapBelowHeader": 34,
+        "bodyOverflowX": 0
+      }
+    }
+  },
+  "pageErrors": []
+}

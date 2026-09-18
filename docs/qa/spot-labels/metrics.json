@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "report": {
+    "spot": {},
+    "tape": {
+      "futures": {
+        "tapePresent": true,
+        "tapeHeight": 0,
+        "headerBottom": 48,
+        "contentTop": 0,
+        "gapBelowHeader": -48,
+        "bodyOverflowX": 0
+      },
+      "wallet": {
+        "tapePresent": false,
+        "tapeHeight": 0,
+        "headerBottom": 64,
+        "contentTop": 64,
+        "gapBelowHeader": 0,
+        "bodyOverflowX": 0
+      }
+    }
+  },
+  "pageErrors": []
+}
