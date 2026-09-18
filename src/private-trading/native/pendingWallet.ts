@@ -31,6 +31,7 @@ export async function pendingNativeWallet(service: NativeDemoService, actor: Own
     // preference yet, so the switches are deliberately read-only.
     rows: unifiedWalletRows(account, valuation).map(row => ({ ...row, collateralToggleable: false })),
     assetsValue: valuation.priced,
+    assetsEquityValue: valuation.priced,
     assetsComplete: valuation.unpriced.length === 0,
     unpricedAssets: valuation.unpriced,
   };
