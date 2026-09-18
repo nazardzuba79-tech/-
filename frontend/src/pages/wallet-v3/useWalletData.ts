@@ -354,7 +354,7 @@ export function useWalletData() {
   }, [unified, overview, rankingBySymbol]);
 
   const btcEquivalent = useMemo(() => {
-    const total = account?.totalEquityUsd ?? null;
+    const total = account?.walletEquityUsd ?? null;
     if (total === null) return null;
     // The Cross account's own BTC mark, when it holds BTC, in preference to
     // the spot feed's: the equity it divides was valued at that mark.
