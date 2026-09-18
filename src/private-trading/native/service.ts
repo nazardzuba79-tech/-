@@ -144,6 +144,7 @@ export class NativeDemoService {
     const valued=valuation??await this.collateral(actor,row);
     const view=await this.authoritative(actor,this.view(row),row,valued);
     const account=view.account as CrossAccount;
+    const assetsValue=new BigNumber(account.settleBalance).plus(valued.priced);
     return{
       initialized:true,
       account,
@@ -153,7 +154,11 @@ export class NativeDemoService {
       // All wallet assets stay visible here even when the owner elects not
       // to use one of them as margin. Only account.collateral/equity use the
       // enabled subset.
-      assetsValue:new BigNumber(account.settleBalance).plus(valued.priced).toFixed(),
+      assetsValue:assetsValue.toFixed(),
+      // Wallet equity is the economic account value used by Overview and
+      // performance snapshots. Toggling collateral eligibility must not
+      // manufacture a profit/loss event.
+      assetsEquityValue:assetsValue.plus(account.unrealizedPnl).toFixed(),
       assetsComplete:valued.unpriced.length===0,
       unpricedAssets:valued.unpriced,
     };
