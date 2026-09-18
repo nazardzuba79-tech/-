@@ -108,6 +108,8 @@ export interface NativeWallet{
   rows:NativeWalletRow[];
   /** All priced wallet assets, including assets disabled as margin collateral. */
   assetsValue:string;
+  /** assetsValue + account P&L; unaffected by collateral on/off choices. */
+  assetsEquityValue:string;
   assetsComplete:boolean;
   unpricedAssets:string[];
 }
