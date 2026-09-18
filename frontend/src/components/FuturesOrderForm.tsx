@@ -547,7 +547,10 @@ export function FuturesOrderForm({
    *  trader last acted on — never a silent guess at the opposite side. */
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    place(side);
+    // A table close names its direction as well as its position. Enter must
+    // use that named closing side instead of whichever BUY/SELL state the
+    // form happened to hold before the close ticket arrived.
+    place(activeCloseTarget ? (activeCloseTarget.side === 'LONG' ? 'SELL' : 'BUY') : side);
   }
 
   return (
