@@ -84,6 +84,8 @@ it.each([['7d', 1, 'BTC', 'ETH'], ['30d', 2, 'ETH', 'BTC']])(
     expect(symbols()[1]).toBe('ZERO');
     expect(host.querySelector('.vx-cat-change-direction button[aria-pressed="true"]')?.textContent).toContain('catalogue.losers');
     await click('.vx-cat-change-periods button', 0);
+    // BTC is the 24h loser: move it to page one before reading its cell.
+    await click('.vx-cat-change-direction button', 1);
     expect(change('BTC')).toBe('-2.00%');
   }
 );
