@@ -4,7 +4,7 @@ import { PrivateTradingMarketData, PrivateChartInterval, PrivateMark, PrivateMar
 import { OwnerSession, PrivateTradingError } from '../serviceTypes';
 import { contractRules, simulationProfile } from '../service';
 import { NativeAccount, NativeRepository, commandHash } from './store';
-import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeRestingDemoOrders, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
+import { demoAccount, demoPositionView, DemoEngineError, DemoMarginType, DemoProtection, DemoState, ExternalCollateral, executeObservedBook, protectionTrigger, migrateDemoState, NATIVE_DEMO_MODEL, setDemoCollateral } from './engine';
 import { valueCollateral, CollateralPrice, CollateralValuation } from './collateral';
 import { crossAccount, CrossAccount } from './accountModel';
 import { unifiedWalletRows, UnifiedWalletRow } from './walletRows';
@@ -426,21 +426,27 @@ export class NativeDemoService {
         instruction=await this.instruction(row,request,seq);
       }
       let seqNext=instruction?seq+1:seq;
-      if(result.observed){
-        // Same effect as the quotes just applied to the projected snapshot; never undone by a later replay.
-        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:seqNext++,collateral,marks:result.observed});
+      if(result.observed||result.books.length){
+        // The marks and the collateral this pass decided on, journaled AHEAD
+        // of the books it executed: a later replay values, triggers, admits
+        // fills and runs the post-fill risk pass on exactly these, never on
+        // whatever an older entry left in the state. Never undone by a
+        // later replay.
+        const marks=Object.fromEntries(Object.entries(result.latest).map(([symbol,q])=>[symbol,{mark:q.mark,last:q.last}]));
+        const observedAt=Object.fromEntries(Object.entries(result.latest).map(([symbol,q])=>[symbol,q.time]));
+        commands.push({id:`observe-${randomUUID()}`,kind:'OBSERVE',at:result.snapshot.time,seq:seqNext++,collateral,marks,observedAt});
       }
-      // The books that filled resting live orders: journaled so a later replay fills exactly the same.
+      // The books this pass executed — a fill, a partial fill, a cancellation without a fill: journaled so a later replay does exactly the same.
       for(const b of result.books)commands.push({id:`book-${randomUUID()}`,kind:'BOOK',at:b.at,seq:seqNext++,symbol:b.symbol,book:b.book});
       const next:NativeAccount={...row,commands,snapshot:result.snapshot,checkpoint:result.checkpoint};
-      const changed=!!instruction||!!result.observed||outcome(result.snapshot)!==outcome(row.snapshot);
+      const changed=!!instruction||!!result.observed||result.books.length>0||outcome(result.snapshot)!==outcome(row.snapshot);
       const stale=!row.checkpoint||result.checkpoint.time-row.checkpoint.time>=NATIVE_REFRESH_PERSIST_MS;
       if(request.kind==='REFRESH'&&!options.persist&&!changed&&!stale){const unchanged={...next,revision:row.revision};return this.authoritative(actor,this.view(unchanged),unchanged,valuation);}
       const committed=await this.repository.commit(actor,row.revision,next,request.idempotencyKey,hash);
       return this.authoritative(actor,this.view(committed),committed,valuation);
     }
   }
-  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral):Promise<ReplayResult&{books:{symbol:string;book:NativeBook;at:number}[]}>{
+  private async replay(row:NativeAccount,commands:NativeInstruction[],checkpoint:NativeAccount['checkpoint']|null,collateral:ExternalCollateral):Promise<ReplayResult&{books:{symbol:string;book:NativeBook;at:number}[];latest:Record<string,{mark:string;last:string;time:number}>}>{
     const load=(r:BarRequest)=>this.bars(r),asOf=this.now();
     let result:ReplayResult;
     try{result=await replayNativeDemoAsync({deposit:row.deposit,instructions:commands,asOf,checkpoint},load);}
@@ -472,34 +478,53 @@ export class NativeDemoService {
       const quotes=await Promise.all(quoted.slice(i,i+NATIVE_QUOTE_BATCH).map(symbol=>this.valuationQuote(symbol)));
       for(const checked of quotes)latest[checked.symbol]={mark:checked.markPrice,last:checked.lastPrice,time:checked.markProviderTimestamp};
     }
-    // A RESTING LIVE LIMIT ORDER FILLS ON AN OBSERVED BOOK, INSIDE THE MINUTE.
-    // The fresh last crossing the order's price is the reason to LOOK; the
-    // book is what decides: the opposite side's depth at prices no worse
-    // than the order's, for as much as it has, at the order's own price as
-    // maker. The book is this command's own checked observation (the
-    // executed contract's fresh quote when it is the same contract), cut to
-    // what the resting orders could take, and journaled as a BOOK
-    // instruction only if it filled something. The consumption ledger is
-    // keyed by the provider snapshot, so a refresh that meets the same
-    // snapshot again fills nothing more. Nothing here waits on a bar.
-    const crossed=new Set<string>();
-    for(const o of resting){const q=latest[o.symbol];if(q&&(o.side==='LONG'?new BigNumber(q.last).lte(o.price!):new BigNumber(q.last).gte(o.price!)))crossed.add(o.symbol);}
+    // WHAT THIS PASS NEEDS A BOOK FOR. A fresh last that crossed a resting
+    // live limit order's price is the reason to LOOK at that contract's
+    // book; so is a live position whose take-profit or stop-loss triggers at
+    // these marks, and one still closing on a trigger from an earlier pass.
+    // The book decides: the depth of the opposite side, at prices no worse
+    // than a resting order's (its own price as maker) or at whatever levels
+    // there are for a triggered close (as taker). The book is this
+    // command's own checked observation (the executed contract's fresh
+    // quote when it is the same contract), cut to what the working items
+    // could take, executed after the marks and journaled as a BOOK
+    // instruction whenever it changed anything — behind an OBSERVE that
+    // carries the marks and the collateral it was decided on. The
+    // consumption ledger is keyed by the provider snapshot, so a refresh
+    // that meets the same snapshot again fills nothing more. Nothing here
+    // waits on a bar.
+    type Need={bids:{qty:BigNumber;limits:(string|null)[]};asks:{qty:BigNumber;limits:(string|null)[]}};
+    const needs=new Map<string,Need>();
+    const need=(symbol:string,side:'bids'|'asks',qty:string,limit:string|null)=>{
+      const entry=needs.get(symbol)??{bids:{qty:new BigNumber(0),limits:[]},asks:{qty:new BigNumber(0),limits:[]}};
+      entry[side].qty=entry[side].qty.plus(qty);entry[side].limits.push(limit);needs.set(symbol,entry);
+    };
+    for(const o of resting){
+      const q=latest[o.symbol];if(!q)continue;
+      if(o.side==='LONG'?new BigNumber(q.last).lte(o.price!):new BigNumber(q.last).gte(o.price!))need(o.symbol,o.side==='LONG'?'asks':'bids',o.remaining,o.price!);
+    }
+    for(const p of result.snapshot.positions.filter(p=>p.status==='OPEN'&&!p.historical)){
+      const q=latest[p.symbol];if(!q)continue;
+      const pending=p.pendingClose?BigNumber.minimum(p.pendingClose.quantity,p.quantity).toFixed():null;
+      const triggered=p.pendingClose?null:protectionTrigger(p,q.mark,q.last);
+      const quantity=pending??(triggered?(p.protection.quantity??p.quantity):null);
+      if(quantity!==null)need(p.symbol,p.side==='LONG'?'bids':'asks',quantity,null);
+    }
     const candidates:{symbol:string;book:NativeBook}[]=[];
-    for(const symbol of [...crossed].sort()){
-      const q=await this.valuationQuote(symbol);
-      const longs=resting.filter(o=>o.symbol===symbol&&o.side==='LONG'),shorts=resting.filter(o=>o.symbol===symbol&&o.side==='SHORT');
-      const sum=(os:typeof resting)=>os.reduce((v,o)=>v.plus(o.remaining),new BigNumber(0)).toFixed();
-      const asks=longs.length?truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},'BUY',sum(longs),BigNumber.maximum(...longs.map(o=>o.price!)).toFixed()).asks:[];
-      const bids=shorts.length?truncateBook({bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt},'SELL',sum(shorts),BigNumber.minimum(...shorts.map(o=>o.price!)).toFixed()).bids:[];
+    for(const symbol of [...needs.keys()].sort()){
+      const q=await this.valuationQuote(symbol),entry=needs.get(symbol)!,book={bids:q.bids,asks:q.asks,timestamp:q.bookGeneratedAt};
+      const bound=(limits:(string|null)[],pick:(...v:BigNumber[])=>BigNumber)=>limits.some(l=>l===null)?undefined:pick(...limits.map(l=>new BigNumber(l!))).toFixed();
+      const asks=entry.asks.qty.gt(0)?truncateBook(book,'BUY',entry.asks.qty.toFixed(),bound(entry.asks.limits,BigNumber.maximum)).asks:[];
+      const bids=entry.bids.qty.gt(0)?truncateBook(book,'SELL',entry.bids.qty.toFixed(),bound(entry.bids.limits,BigNumber.minimum)).bids:[];
       candidates.push({symbol,book:{bids,asks,timestamp:q.bookGeneratedAt}});
     }
     const at=Math.max(this.now(),result.snapshot.time);
-    // The live risk pass values the account on THIS command's valuation.
+    // The live risk pass values the account on THIS command's valuation and these marks; the books are executed after it.
     setDemoCollateral(result.snapshot,collateral);
     const observed=applyLatestQuotes(result.snapshot,latest,at);
     const books:{symbol:string;book:NativeBook;at:number}[]=[];
-    for(const c of candidates)if(executeRestingDemoOrders(result.snapshot,c.symbol,c.book,at)>0)books.push({...c,at});
-    return{...result,observed,books};
+    for(const c of candidates)if(executeObservedBook(result.snapshot,c.symbol,c.book,at)>0)books.push({...c,at});
+    return{...result,observed,books,latest};
   }
   /** A live execution book that has left the freshness window by the time the command is about to commit. */
   private expiredAtDecision(instruction:NativeInstruction|undefined){

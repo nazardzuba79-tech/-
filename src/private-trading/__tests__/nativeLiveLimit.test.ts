@@ -112,7 +112,8 @@ describe('an opening LIMIT on an account that holds nothing else', () => {
     expect(v.positions).toHaveLength(1);
     expect(v.positions[0]).toMatchObject({ quantity: '0.3', entryPrice: '48000' });
     const fill = v.events.find(e => e.kind === 'OPEN')!;
-    expect(fill).toMatchObject({ price: '48000', quantity: '0.3', pricing: 'OBSERVED_BOOK' });     // the order's OWN price, as maker
+    // The order's OWN price as maker — the declared model (MAKER_MODEL), named as such; the level the liquidity came from is kept.
+    expect(fill).toMatchObject({ price: '48000', quantity: '0.3', pricing: 'MAKER_MODEL', sourcePrice: '47500.1' });
     expect(bn(fill.fee).toFixed()).toBe(bn('0.3').times(48000).times(MAKER).toFixed());
     const book = f.journal().find(c => c.kind === 'BOOK')!;
     expect(book.kind === 'BOOK' && book.book).toEqual({ bids: [], asks: [{ price: '47500.1', quantity: '0.3' }], timestamp: f.clock.t });   // cut to what the order could take
@@ -165,7 +166,7 @@ describe('an exact reduce-only LIMIT on a position', () => {
     expect(v.orders.find(o => o.id === order.id)).toMatchObject({ status: 'PARTIALLY_FILLED', filled: '0.4', remaining: '0.6', averagePrice: '55000' });
     expect(v.positions[0]).toMatchObject({ id: p.id, quantity: '0.6', entryPrice: '50000.1' });
     const fill = v.events.find(e => e.kind === 'CLOSE')!;
-    expect(fill).toMatchObject({ price: '55000', quantity: '0.4', orderId: order.id, pricing: 'OBSERVED_BOOK' });
+    expect(fill).toMatchObject({ price: '55000', quantity: '0.4', orderId: order.id, pricing: 'MAKER_MODEL', sourcePrice: '55999.9' });
     expect(bn(fill.fee).toFixed()).toBe(bn('0.4').times(55000).times(MAKER).toFixed());
     expect(bn(fill.cashflow).plus(fill.fee).toFixed()).toBe(bn('0.4').times(bn(55000).minus('50000.1')).toFixed());
     // Same snapshot: nothing more.

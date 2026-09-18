@@ -7,6 +7,8 @@ export interface NativePosition {
   status:'OPEN'|'CLOSED'|'LIQUIDATED';openedAt:number;closedAt:number|null;historical:boolean;
   unrealizedPnl:string;realizedPnl:string;netPnl:string;roiPercent:string|null;roiBasis:string;closedRoiBasis:string;fundingNet:string;
   protection:NativeProtection;
+  /** A triggered live take-profit or stop-loss still being closed on observed books (what is left, the trigger it came from); null otherwise. */
+  pendingClose?:{reason:'STOP_LOSS'|'TAKE_PROFIT';quantity:string;triggerPrice:string;triggeredAt:number;actionId:string}|null;
   /**
    * The estimate on the basis that applies to THIS position, named by
    * `liquidationStatus`: an account-level Cross estimate with other
@@ -23,7 +25,7 @@ export interface NativePosition {
   shortfallCovered?:string;
 }
 export interface NativeOrder {id:string;symbol:string;side:string;type:string;quantity:string;remaining:string;filled:string;averagePrice:string|null;price:string|null;leverage:string;status:string;createdAt:number;marginType:'CROSS'|'ISOLATED'}
-export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string;
+export interface NativeEvent {id:string;kind:string;time:number;positionId:string|null;orderId:string|null;symbol:string;quantity:string;price:string|null;fee:string;cashflow:string;pricing:string;sourcePrice?:string;
   /** The one user action behind this fill; several fills of one close share it. Absent on older journals. */
   actionId?:string}
 export interface NativeState {

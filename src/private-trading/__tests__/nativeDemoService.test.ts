@@ -159,7 +159,10 @@ describe('native demo service (fixture market, in-memory persistence)',()=>{
     v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
     expect(v.revision).toBe(3);expect(v.positions).toHaveLength(0);
     expect(v.history[0]).toMatchObject({status:'CLOSED'});
-    expect(f.repo.row!.commands.map(c=>c.kind)).toEqual(['OPEN','OBSERVE']);
+    // R11/R12: the trigger is journaled with the marks it was decided on (OBSERVE), the close with the book it was filled from (BOOK).
+    expect(f.repo.row!.commands.map(c=>c.kind)).toEqual(['OPEN','OBSERVE','BOOK']);
+    expect(v.events.filter(e=>e.kind==='TRIGGER')).toHaveLength(1);
+    expect(v.events.filter(e=>e.kind==='TAKE_PROFIT').map(e=>e.pricing)).toEqual(['OBSERVED_BOOK']);
     f.clock.t+=40_000;f.market.quote={...f.market.quote,last:'50000'};
     v=await f.service.command(actor,{kind:'REFRESH',idempotencyKey:key()});
     expect(v.positions).toHaveLength(0);expect(v.history[0].status).toBe('CLOSED');

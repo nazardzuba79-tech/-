@@ -59,18 +59,32 @@ describe('canonical checkpoint: live outcomes are never recomputed away',()=>{
     expect(()=>replayNativeDemoWithBars({deposit:'1000000',instructions:[tpOpen(),backdated],bars:{BTCUSDT:bars()},asOf:T+10*M,checkpoint:first.checkpoint})).toThrow('CHECKPOINT_MISMATCH');
     expect(first.checkpoint.digest).toBe(instructionDigest([tpOpen()],T+4*M));
   });
-  test('a TP triggered by a live quote is journaled and survives later replays',()=>{
+  test('a TP triggered by a live quote is journaled (the trigger, then the book that closed it) and survives later replays',()=>{
+    // R12: the live quote TRIGGERS the take-profit — a fact about the price,
+    // journaled as one, no cash moves — and the CLOSE is a fact about an
+    // observed book, executed as taker for the depth it has. Nothing closes
+    // at the trigger price the book did not show.
     const i=tpOpen(),history=flat(T,T+4*M,'50000'),asOf=T+2*M+30_000;
     const live=replayNativeDemoWithBars({deposit:'1000000',instructions:[i],bars:{BTCUSDT:history},asOf,latest:{BTCUSDT:{mark:'50000',last:'50650',time:asOf}}});
     expect(live.observed).toEqual({BTCUSDT:{mark:'50000',last:'50650'}});
-    expect(live.snapshot.positions[0].status).toBe('CLOSED');
-    expect(live.snapshot.events.at(-1)).toMatchObject({kind:'TAKE_PROFIT',price:'50650',pricing:'LIVE_QUOTE_MODEL'});
+    expect(live.snapshot.positions[0].status).toBe('OPEN');
+    expect(live.snapshot.positions[0].pendingClose).toMatchObject({reason:'TAKE_PROFIT',quantity:'1.5',triggerPrice:'50650',triggeredAt:asOf});
+    expect(live.snapshot.positions[0].protection).toMatchObject({takeProfit:null,stopLoss:null});
+    expect(live.snapshot.events.at(-1)).toMatchObject({kind:'TRIGGER',price:'50650',quantity:'1.5',fee:'0',cashflow:'0',pricing:'LIVE_QUOTE_MODEL'});
     const observe:NativeInstruction={id:'observe-1',kind:'OBSERVE',at:asOf,marks:live.observed!};
-    const later=replayNativeDemoWithBars({deposit:'1000000',instructions:[i,observe],bars:{BTCUSDT:history},asOf:T+4*M,checkpoint:live.checkpoint});
+    // The book the next pass observed: 1 at 50640, 5 at 50630 — the 1.5 closes 1 @ 50640 and 0.5 @ 50630, as taker, in one action.
+    const book:NativeInstruction={id:'book-1',kind:'BOOK',at:asOf+2_000,symbol:'BTCUSDT',book:{timestamp:asOf+1_500,bids:[{price:'50640',quantity:'1'},{price:'50630',quantity:'5'}],asks:[]}};
+    const closed=replayNativeDemoWithBars({deposit:'1000000',instructions:[i,observe,book],bars:{BTCUSDT:history},asOf:asOf+2_000,checkpoint:live.checkpoint});
+    expect(closed.snapshot.positions[0].status).toBe('CLOSED');expect(closed.snapshot.positions[0].pendingClose).toBeNull();
+    const fills=closed.snapshot.events.filter(e=>e.kind==='TAKE_PROFIT');
+    expect(fills.map(e=>[e.price,e.quantity,e.pricing])).toEqual([['50640','1','OBSERVED_BOOK'],['50630','0.5','OBSERVED_BOOK']]);
+    expect(new Set(fills.map(e=>e.actionId)).size).toBe(1);
+    expect(fills[0].actionId).toBe(closed.snapshot.events.find(e=>e.kind==='TRIGGER')!.actionId);
+    const later=replayNativeDemoWithBars({deposit:'1000000',instructions:[i,observe,book],bars:{BTCUSDT:history},asOf:T+4*M,checkpoint:live.checkpoint});
     expect(later.snapshot.positions[0].status).toBe('CLOSED');
-    expect(later.snapshot.events.at(-1)).toMatchObject({kind:'TAKE_PROFIT',price:'50650'});
-    expect(later.snapshot.walletBalance).toBe(live.snapshot.walletBalance);
-    // Without the journal the minute bar (which never printed the quote) would reopen it: that is why it is stored.
+    expect(later.snapshot.events.filter(e=>e.kind==='TAKE_PROFIT').map(e=>[e.price,e.quantity])).toEqual([['50640','1'],['50630','0.5']]);
+    expect(later.snapshot.walletBalance).toBe(closed.snapshot.walletBalance);
+    // Without the journal the minute bar (which never printed the quote) would reopen it: that is why both are stored.
     expect(replayNativeDemoWithBars({deposit:'1000000',instructions:[i],bars:{BTCUSDT:history},asOf:T+4*M}).snapshot.positions[0].status).toBe('OPEN');
   });
 });

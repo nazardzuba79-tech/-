@@ -3,7 +3,7 @@ import { createHash } from 'crypto';
 import { amount, decimal } from '../math';
 import type { Candle } from '../types';
 import { closeDemoPosition, consumeObservedBook, DemoEngineError, demoAccount, DemoInstrument, DemoOrderInput, DemoProtection, DemoState, ExternalCollateral,
-  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeRestingDemoOrders, fillDemoOrder, markDemoAccount, setDemoCollateral,
+  emptyDemoState, evaluateDemoRiskAndProtection, executeDemoBook, executeObservedBook, fillDemoOrder, markDemoAccount, setDemoCollateral,
   NATIVE_DEMO_MODEL, placeDemoOrder, protectDemoPosition, registerDemoInstrument, setDemoLeverage, settleDemoFunding, cancelDemoOrder } from './engine';
 const D=BigNumber.clone({DECIMAL_PLACES:36,ROUNDING_MODE:BigNumber.ROUND_HALF_EVEN,EXPONENTIAL_AT:100});
 const n=(v:string)=>decimal(v), f=(v:BigNumber)=>amount(v);
@@ -54,13 +54,22 @@ export type NativeInstruction = {id:string;at:number;seq?:number;
   | {kind:'CANCEL';orderId:string}
   | {kind:'PROTECTION';positionId:string;protection:Partial<DemoProtection>}
   | {kind:'LEVERAGE';positionId:string;leverage:string}
-  /** A live quote that actually triggered TP/SL/liquidation. Journaled so a later replay can never undo it. */
-  | {kind:'OBSERVE';marks:Record<string,{mark:string;last:string}>}
   /**
-   * An observed book that resting LIVE limit orders of one contract were
-   * filled from, at their own price, for the depth it had (block R5).
-   * Journaled only when it filled something, so a later replay fills the
-   * same quantity from the same snapshot and nothing else.
+   * The marks a live pass valued the account on — journaled whenever that
+   * pass changed anything (a trigger, a liquidation) AND whenever a BOOK
+   * follows it, so a replay of the BOOK decides fill admission and the
+   * post-fill risk on the same marks and the same collateral (the base
+   * `collateral` field) the pass did, never on whatever an older entry
+   * left behind. `observedAt` keeps each mark's provider timestamp for
+   * the audit; the engine time of the observation is the instruction's.
+   */
+  | {kind:'OBSERVE';marks:Record<string,{mark:string;last:string}>;observedAt?:Record<string,number>}
+  /**
+   * An observed book that a live pass executed on one contract: the
+   * triggered protection closes and the resting live limit orders it
+   * filled, cancelled or partially filled (block R5, R10–R12). Journaled
+   * whenever it changed anything — a cancellation without a fill included —
+   * so a later replay does exactly the same from the same snapshot.
    */
   | {kind:'BOOK';symbol:string;book:NativeBook}
 );
@@ -229,7 +238,7 @@ function apply(s:DemoState,c:NativeInstruction,time:number){
   else if(c.kind==='PROTECTION')protectDemoPosition(s,c.positionId,c.protection,time);
   else if(c.kind==='LEVERAGE')setDemoLeverage(s,c.positionId,c.leverage,time);
   else if(c.kind==='OBSERVE'){markDemoAccount(s,c.marks,time);evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');}
-  else if(c.kind==='BOOK')executeRestingDemoOrders(s,c.symbol,c.book,time);
+  else if(c.kind==='BOOK')executeObservedBook(s,c.symbol,c.book,time);
 }
 function checkCoverage(bars:ReplayBar[],request:BarRequest){
   if(bars.length>50000)throw new DemoEngineError('HISTORY_LIMIT');

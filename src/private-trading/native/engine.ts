@@ -56,10 +56,38 @@ export const NATIVE_DEMO_MODEL = Object.freeze({
    * maintenance rate is ever invented for it.
    */
   riskBeyondLastTier: 'LAST_TIER_PARAMETERS_FOR_EXISTING_EXPOSURE_NEW_RISK_REFUSED',
+  /**
+   * A resting LIVE limit order is filled from an observed book for the depth
+   * the opposite side has at prices no worse than the order's — and booked
+   * at the ORDER'S OWN PRICE as maker (`pricing: 'MAKER_MODEL'`): the order
+   * was resting, so the incoming volume pays its price. That is a declared
+   * model price, not the level the book showed; the level is kept on the
+   * fill as `sourcePrice`, and the liquidity consumed is the level's.
+   */
+  restingLimitExecution: 'OWN_PRICE_AS_MAKER_FOR_OBSERVED_DEPTH_AT_OR_BETTER_SOURCE_PRICE_KEPT',
+  /**
+   * A LIVE take-profit or stop-loss is two facts. The TRIGGER is decided on
+   * the observed mark or last (journaled as a `TRIGGER` event, no cash
+   * moves); the CLOSE is decided on an observed book, as taker, at the
+   * level prices, for the depth there is — a remainder keeps working until
+   * the next book. Nothing closes at a trigger price the book did not show.
+   * The explicitly historical mode (positions on the declared OHLC path)
+   * keeps closing on the path. A liquidation is a declared settlement at
+   * the model price (bankruptcy for isolated, the observed last for cross),
+   * never presented as an observed fill.
+   */
+  liveProtection: 'TRIGGER_ON_OBSERVED_MARK_OR_LAST_CLOSE_ON_OBSERVED_BOOK_AS_TAKER_REMAINDER_KEEPS_WORKING',
+  liquidationSettlement: 'DECLARED_MODEL_PRICE_NOT_AN_OBSERVED_FILL',
 });
 export class DemoEngineError extends Error { constructor(public code: string) { super(code); } }
 export interface DemoInstrument { rules: ContractRules; profile: ModelProfile }
 export interface DemoProtection { takeProfit: string | null; stopLoss: string | null; triggerBy: 'MARK' | 'LAST'; quantity: string | null }
+/**
+ * A LIVE take-profit or stop-loss that has TRIGGERED and is being closed on
+ * observed books: what is still to close, the trigger it came from, and the
+ * one action id every fill of it carries. Cleared when nothing is left.
+ */
+export interface PendingClose { reason: 'STOP_LOSS' | 'TAKE_PROFIT'; quantity: string; triggerPrice: string; triggeredAt: number; actionId: string }
 export interface DemoOrder {
   id: string; symbol: string; side: Side; type: 'MARKET' | 'LIMIT'; quantity: string; remaining: string;
   filled: string; averagePrice: string | null; price: string | null; leverage: string; reserved: string;
@@ -89,12 +117,25 @@ export interface DemoPosition {
    * position that never settled past its post.
    */
   shortfallCovered: string;
+  /** A triggered live TP/SL still being closed on observed books; absent or null otherwise. */
+  pendingClose?: PendingClose | null;
 }
 export interface DemoEvent {
-  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL';
+  id: string; kind: 'OPEN' | 'CLOSE' | 'TAKE_PROFIT' | 'STOP_LOSS' | 'LIQUIDATION' | 'FUNDING' | 'CANCEL' | 'LEVERAGE' | 'PROTECTION' | 'SHORTFALL' | 'TRIGGER';
   time: number; positionId: string | null; orderId: string | null; symbol: string;
   quantity: string; price: string | null; fee: string; cashflow: string;
-  pricing: 'OBSERVED_BOOK' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  /**
+   * How the price of this event was decided. OBSERVED_BOOK: a level of a
+   * book the service observed, taken as taker. MAKER_MODEL: a resting live
+   * limit order's OWN price, the declared maker model, with the observed
+   * level kept as `sourcePrice`. LIVE_QUOTE_MODEL / OHLC_PATH_MODEL /
+   * MARK_SETTLEMENT: declared model prices (a trigger, a path point, a
+   * settlement), never an observed fill. SELECTED_POINT / COMMAND: the
+   * trader's own input.
+   */
+  pricing: 'OBSERVED_BOOK' | 'MAKER_MODEL' | 'LIVE_QUOTE_MODEL' | 'SELECTED_POINT' | 'OHLC_PATH_MODEL' | 'MARK_SETTLEMENT' | 'COMMAND';
+  /** MAKER_MODEL fills: the observed book level the liquidity came from. */
+  sourcePrice?: string;
   /**
    * The ONE user action (the journaled instruction) that produced this
    * settlement. A market close that consumed several book levels is several
@@ -436,7 +477,7 @@ export function demoPositionView(s: DemoState,p: DemoPosition) {
     // answered against the whole account, the other against this position's
     // own posted margin.
     liquidationStatus: (p.marginType === 'ISOLATED' ? 'ISOLATED_POSITION_ESTIMATE' : 'ACCOUNT_CROSS_ESTIMATE') as 'ISOLATED_POSITION_ESTIMATE' | 'ACCOUNT_CROSS_ESTIMATE',
-    marginMode: p.marginType };
+    marginMode: p.marginType, pendingClose: p.pendingClose ?? null };
 }
 function validateProtection(s: DemoState, p: {symbol:string;side:Side;quantity:string}, protection: DemoProtection, price: string) {
   if (!['MARK','LAST'].includes(protection.triggerBy)) throw new DemoEngineError('INVALID_TRIGGER_SOURCE');
@@ -499,7 +540,7 @@ export function placeDemoOrder(s: DemoState,input: DemoOrderInput,time: number) 
   }
   s.orders.push(o);s.applied[input.id]=fingerprint;s.time=time;return o;
 }
-function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string) {
+function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,time:number,kind:DemoEvent['kind'],pricing:DemoEvent['pricing'],orderId:string|null,maker=false,actionId?:string,sourcePrice?:string) {
   const qty=positive(quantity);if(qty.gt(p.quantity))throw new DemoEngineError('CLOSE_EXCEEDS_POSITION');
   // The fill is booked at the price it happened at, for the quantity it
   // happened for: the journal is the record of what the book did.
@@ -526,20 +567,27 @@ function settleClose(s: DemoState,p:DemoPosition,quantity:string,price:string,ti
     p.shortfallCovered=out(n(p.shortfallCovered??'0').plus(shortfall));
   } else s.walletBalance=out(n(s.walletBalance).plus(gross).minus(fee));
   p.quantity=out(n(p.quantity).minus(qty));p.markPrice=price;p.lastPrice=price;
-  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...action});
+  emit(s,{kind,time,positionId:p.id,orderId,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(gross.minus(fee)),pricing,...action,...(sourcePrice!==undefined?{sourcePrice}:{})});
   if(shortfall.gt(0))emit(s,{kind:'SHORTFALL',time,positionId:p.id,orderId,symbol:p.symbol,quantity,price:bankruptcy,fee:'0',cashflow:out(shortfall),pricing:'MARK_SETTLEMENT',...action});
   if(n(p.quantity).isZero()) {
-    p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();
+    p.status=kind==='LIQUIDATION'?'LIQUIDATED':'CLOSED';p.closedAt=time;p.protection=noProtection();p.pendingClose=null;
     for(const o of s.orders.filter(o=>active(o)&&o.positionId===p.id&&o.id!==orderId))cancelDemoOrder(s,o.id,time);
   }else if(p.protection.quantity!==null && n(p.protection.quantity).gt(p.quantity))p.protection.quantity=p.quantity;
 }
-export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false) {
+/**
+ * Fills `quantity` of an order at `price` and RETURNS THE QUANTITY IT ACTUALLY
+ * FILLED: a reducing order can never take more than its position still has,
+ * so the caller records exactly that in the liquidity ledger, never the
+ * quantity it asked for. `sourcePrice` is the observed book level a
+ * MAKER_MODEL fill drew its liquidity from, kept on the event.
+ */
+export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string,time:number,pricing:DemoEvent['pricing'],maker=false,sourcePrice?:string):string {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   if(positive(quantity).gt(o.remaining))throw new DemoEngineError('FILL_EXCEEDS_ORDER');positive(price);
   if(o.price && (o.side==='LONG'?n(price).gt(o.price):n(price).lt(o.price)))throw new DemoEngineError('FILL_OUTSIDE_LIMIT');
   if(o.reduceOnly) {
     const p=getPosition(s,o.positionId!);quantity=out(D.minimum(quantity,p.quantity));
-    settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker);
+    settleClose(s,p,quantity,price,time,'CLOSE',pricing,o.id,maker,undefined,sourcePrice);
   } else {
     // Same symbol+direction increases one LIVE position, opposite direction remains a hedge.
     // Each historical test entry stays its own position (own entry marker, P&L and card).
@@ -570,12 +618,13 @@ export function fillDemoOrder(s:DemoState,id:string,quantity:string,price:string
       p.isolatedMargin=out(n(p.isolatedMargin).plus(posted));
       s.walletBalance=out(n(s.walletBalance).minus(posted));
     }
-    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing,actionId:o.id});
+    emit(s,{kind:'OPEN',time,positionId:p.id,orderId:o.id,symbol:p.symbol,quantity,price,fee:out(fee),cashflow:out(fee.negated()),pricing,actionId:o.id,...(sourcePrice!==undefined?{sourcePrice}:{})});
   }
   o.averagePrice=weightedEntry([{quantity:o.filled,price:o.averagePrice??price},{quantity,price}].filter(x=>n(x.quantity).gt(0)));
   o.filled=out(n(o.filled).plus(quantity));o.remaining=out(n(o.remaining).minus(quantity));o.reserved=reserveFor(s,o,o.price??price);
   o.status=n(o.remaining).isZero()?'FILLED':'PARTIALLY_FILLED';s.time=time;
   if(o.reduceOnly&&active(o)&&!s.positions.some(p=>p.id===o.positionId&&p.status==='OPEN'))cancelDemoOrder(s,o.id,time);
+  return quantity;
 }
 export function cancelDemoOrder(s:DemoState,id:string,time:number) {
   requireTime(s,time);const o=s.orders.find(o=>o.id===id);if(!o)throw new DemoEngineError('ORDER_NOT_FOUND');if(!active(o))return;
@@ -668,54 +717,103 @@ export function evaluateDemoRiskAndProtection(s:DemoState,time:number,pricing:De
     for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.marginType==='CROSS'))settleClose(s,p,p.quantity,p.lastPrice,time,'LIQUIDATION',pricing,null);
   }
   for(const p of s.positions.filter(p=>p.status==='OPEN')) {
-    const v=n(p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice),{takeProfit:tp,stopLoss:sl}=p.protection;
-    const stop=sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl));
-    const profit=tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp));
-    if(stop||profit){const q=p.protection.quantity??p.quantity;settleClose(s,p,q,p.lastPrice,time,stop?'STOP_LOSS':'TAKE_PROFIT',pricing,null);p.protection=noProtection();}
+    const reason=protectionTrigger(p,p.markPrice,p.lastPrice);if(!reason)continue;
+    const q=p.protection.quantity??p.quantity,reference=p.protection.triggerBy==='MARK'?p.markPrice:p.lastPrice;
+    if(pricing==='LIVE_QUOTE_MODEL'&&!p.historical){
+      // LIVE: the trigger is a fact about the price and is journaled as one;
+      // the close is a fact about a book and waits for one
+      // (`executeObservedBook`). A trigger that lands on a position already
+      // closing adds to what is still to close, never past the position.
+      const existing=p.pendingClose??null;
+      const actionId=existing?.actionId??`e${s.nextEvent}`;
+      const quantity=out(D.minimum(p.quantity,n(q).plus(existing?.quantity??'0')));
+      p.pendingClose={reason:existing?.reason??reason,quantity,triggerPrice:reference,triggeredAt:existing?.triggeredAt??time,actionId};
+      p.protection=noProtection();
+      emit(s,{kind:'TRIGGER',time,positionId:p.id,orderId:null,symbol:p.symbol,quantity:q,price:reference,fee:'0',cashflow:'0',pricing,actionId});
+    }else{
+      // The declared OHLC path (and a historical position under any quote): the path point is the close.
+      settleClose(s,p,q,p.lastPrice,time,reason,pricing,null);p.protection=noProtection();
+    }
   }s.time=time;
 }
+/** Which protection a position's own trigger price has reached at these marks, if any (stop first, as before). */
+export function protectionTrigger(p:Pick<DemoPosition,'side'|'protection'>,mark:string,last:string):'STOP_LOSS'|'TAKE_PROFIT'|null{
+  const v=n(p.protection.triggerBy==='MARK'?mark:last),{takeProfit:tp,stopLoss:sl}=p.protection;
+  if(sl!==null&&(p.side==='LONG'?v.lte(sl):v.gte(sl)))return 'STOP_LOSS';
+  if(tp!==null&&(p.side==='LONG'?v.gte(tp):v.lte(tp)))return 'TAKE_PROFIT';
+  return null;
+}
 /**
- * RESTING LIVE LIMIT ORDERS AGAINST AN OBSERVED BOOK.
+ * ONE OBSERVED BOOK EXECUTES WHAT IS WORKING ON A CONTRACT.
  *
- * A resting order is filled by what the market actually brings to it: the
- * depth of the opposite side at prices no worse than its own, in the book
- * the service just observed — for as much as that depth allows, and not one
- * contract more. The fill is booked at the order's OWN price as maker (the
- * order was resting; the incoming volume pays its price). The consumption
- * ledger is the same one market orders use, keyed by the provider snapshot,
- * so the same snapshot presented again brings nothing. A price that merely
- * crossed the limit proves no volume; only the book does. Historical
- * orders (`o.historical`) never take this path — they fill on the declared
- * OHLC path, which is the explicit historical model.
+ * First the closes that a live take-profit or stop-loss has TRIGGERED: as
+ * taker, at the book's own level prices, for the depth the opposite side
+ * has — a stop on 1 contract that meets a single bid of 0.2 closes 0.2 at
+ * that bid and keeps 0.8 working for the next book; nothing closes at the
+ * trigger price. Then the resting live LIMIT orders: the depth of the
+ * opposite side at prices no worse than the order's, booked at the ORDER'S
+ * OWN price as maker (`MAKER_MODEL`, the observed level kept as
+ * `sourcePrice`). Every fill goes through the same consumption ledger,
+ * keyed by the provider snapshot, so the same snapshot presented again
+ * brings nothing; every recorded consumption is the quantity that was
+ * actually filled, never the quantity that was asked for; and every order
+ * is read again at each step, because a close in this pass may have
+ * cancelled it (a full close cancels the position's other orders) or left
+ * its position smaller than the order. An opening order whose margin no
+ * longer suffices is cancelled here (the declared rule), and that
+ * cancellation counts as a change the caller journals. Any other refusal
+ * is a fault and is thrown. Historical orders never take this path.
+ * Returns the number of events this book produced.
  */
-export function executeRestingDemoOrders(s:DemoState,symbol:string,book:ObservedBook,time:number){
-  requireTime(s,time);let fills=0;
-  for(const o of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o))){
-    const direction=o.side==='LONG'?'BUY':'SELL';
-    const consumed=consumeObservedBook(s,symbol,book,direction,o.remaining,time,o.price!);
+export function executeObservedBook(s:DemoState,symbol:string,book:ObservedBook,time:number):number{
+  requireTime(s,time);const before=s.events.length;
+  for(const p of s.positions.filter(p=>p.status==='OPEN'&&p.symbol===symbol&&!p.historical&&p.pendingClose)){
+    const pending=p.pendingClose!,want=out(D.minimum(pending.quantity,p.quantity));
+    if(n(want).lte(0)){p.pendingClose=null;continue;}
+    const consumed=consumeObservedBook(s,symbol,book,p.side==='LONG'?'SELL':'BUY',want,time);
+    let filled=new D(0);
+    for(const f of consumed.fills){settleClose(s,p,f.quantity,f.price,time,pending.reason,'OBSERVED_BOOK',null,false,pending.actionId);consumed.record(f);filled=filled.plus(f.quantity);}
+    consumed.prune();
+    if(p.status!=='OPEN'||n(pending.quantity).minus(filled).lte(0))p.pendingClose=null;
+    else pending.quantity=out(n(pending.quantity).minus(filled));
+  }
+  for(const id of s.orders.filter(o=>o.symbol===symbol&&o.type==='LIMIT'&&!o.historical&&o.price&&active(o)).map(o=>o.id)){
+    const o=s.orders.find(x=>x.id===id)!;if(!active(o))continue;
+    const position=()=>s.positions.find(x=>x.id===o.positionId&&x.status==='OPEN');
+    if(o.reduceOnly&&!position()){cancelDemoOrder(s,o.id,time);continue;}
+    const want=o.reduceOnly?out(D.minimum(o.remaining,position()!.quantity)):o.remaining;
+    if(n(want).lte(0))continue;
+    const consumed=consumeObservedBook(s,symbol,book,o.side==='LONG'?'BUY':'SELL',want,time,o.price!);
     for(const f of consumed.fills){
-      try{fillDemoOrder(s,o.id,f.quantity,o.price!,time,'OBSERVED_BOOK',true);consumed.record(f);fills++;}
-      catch(e){if(e instanceof DemoEngineError&&['INSUFFICIENT_FILL_MARGIN','POSITION_NOT_OPEN'].includes(e.code)){cancelDemoOrder(s,o.id,time);break;}throw e;}
+      if(!active(o))break;
+      const p=o.reduceOnly?position():undefined;if(o.reduceOnly&&!p)break;
+      const take=p?out(D.minimum(f.quantity,p.quantity)):f.quantity;if(n(take).lte(0))break;
+      let filled:string;
+      try{filled=fillDemoOrder(s,o.id,take,o.price!,time,'MAKER_MODEL',true,f.price);}
+      catch(e){if(e instanceof DemoEngineError&&e.code==='INSUFFICIENT_FILL_MARGIN'){cancelDemoOrder(s,o.id,time);break;}throw e;}
+      consumed.record({price:f.price,quantity:filled});
     }
     consumed.prune();
   }
-  if(fills){
+  if(s.events.length>before){
     // A fill books the position's mark at the fill price (the path's
-    // convention); this command already observed the market, and the
-    // positions carry THAT observation, not the price a resting order
-    // happened to trade at. Then the risk pass, on the observed mark.
+    // convention); this pass already observed the market, and the positions
+    // carry THAT observation. Then the risk pass, on the observed mark.
     const observed=s.marks[symbol];
     if(observed)markDemoAccount(s,{[symbol]:{mark:observed.mark,last:observed.last}},time);
     evaluateDemoRiskAndProtection(s,time,'LIVE_QUOTE_MODEL');
   }
-  s.time=time;return fills;
+  s.time=time;return s.events.length-before;
 }
 /** Observable depth is consumed only inside this private state; NEVER written to any public book. */
 export function executeDemoBook(s:DemoState,id:string,book:ObservedBook,time:number){
   const o=s.orders.find(o=>o.id===id);if(!o||!active(o))throw new DemoEngineError('ORDER_NOT_OPEN');
   const direction=o.side==='LONG'?'BUY':'SELL';
   const consumed=consumeObservedBook(s,o.symbol,book,direction,o.remaining,time,o.price??undefined);
-  for(const f of consumed.fills){fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record(f);}
+  for(const f of consumed.fills){
+    if(!active(o))break;
+    const filled=fillDemoOrder(s,id,f.quantity,f.price,time,'OBSERVED_BOOK');consumed.record({price:f.price,quantity:filled});
+  }
   if(o.type==='MARKET'&&active(o))cancelDemoOrder(s,id,time);
   consumed.prune();
 }
