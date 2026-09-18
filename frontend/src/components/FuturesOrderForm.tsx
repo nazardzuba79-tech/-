@@ -748,6 +748,13 @@ export function FuturesOrderForm({
             terminal does it. `side` is still the one piece of state the
             request carries; it is simply written at the moment of
             submitting rather than minutes earlier. */}
+        {/* The visible side buttons intentionally stay type=button because
+            they decide BUY vs SELL. This hidden submit control gives the
+            form a real implicit-submit target, so Enter in Price/Quantity
+            reliably reaches handleSubmit instead of doing nothing when the
+            form has multiple blocking inputs. handleSubmit still derives
+            the exact closing side for a named reduce-only target. */}
+        <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
         <div className="fo-submitPair">
           <button
             type="button"
