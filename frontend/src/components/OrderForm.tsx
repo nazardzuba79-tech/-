@@ -281,7 +281,7 @@ export function OrderForm({
           aria-pressed={side === 'BUY'}
           onClick={() => { setSide('BUY'); setPercent(0); setError(null); }}
         >
-          {t('trade.buy')} {baseAsset}
+          {t('trade.buy')}
         </button>
         <button
           type="button"
@@ -289,7 +289,7 @@ export function OrderForm({
           aria-pressed={side === 'SELL'}
           onClick={() => { setSide('SELL'); setPercent(0); setError(null); }}
         >
-          {t('trade.sell')} {baseAsset}
+          {t('trade.sell')}
         </button>
       </div>
 
@@ -477,7 +477,7 @@ export function OrderForm({
         )}
 
         <button type="submit" disabled={submitting} className={`submit-btn ${sideClass}`}>
-          {submitting ? t('auth.wait') : `${side === 'BUY' ? t('trade.buy') : t('trade.sell')} ${baseAsset}`}
+          {submitting ? t('auth.wait') : (side === 'BUY' ? t('trade.buy') : t('trade.sell'))}
         </button>
 
         {/* Fills the space that used to sit empty below the CTA — the same
